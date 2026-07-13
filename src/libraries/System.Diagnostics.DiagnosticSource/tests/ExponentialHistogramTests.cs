@@ -462,5 +462,96 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(producerCount * Iterations, collectedCount);
             Assert.Equal(collectedCount, collectedSum);
         }
+
+        [Fact]
+        public void ConcurrentUpdatesThenIdleCollectionsAndReuse()
+        {
+            const int ProducerCount = 32;
+            const int Iterations = 10_000;
+            ExponentialHistogramAggregator aggregator = new(new QuantileAggregation(0.5));
+            using Barrier barrier = new(ProducerCount + 1);
+            Exception? producerException = null;
+
+            Thread[] producers = new Thread[ProducerCount];
+            for (int i = 0; i < producers.Length; i++)
+            {
+                producers[i] = new(() =>
+                {
+                    try
+                    {
+                        barrier.SignalAndWait();
+                        for (int j = 0; j < Iterations; j++)
+                        {
+                            aggregator.Update(1);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Interlocked.CompareExchange(ref producerException, e, null);
+                    }
+                });
+                producers[i].Start();
+            }
+
+            barrier.SignalAndWait();
+            foreach (Thread producer in producers)
+            {
+                producer.Join();
+            }
+
+            Assert.Null(producerException);
+            Assert.True(GetUseStripes(aggregator));
+
+            HistogramStatistics stats = (HistogramStatistics)aggregator.Collect();
+            Assert.Equal(ProducerCount * Iterations, stats.Count);
+            Assert.Equal(stats.Count, stats.Sum);
+            Assert.Single(stats.Quantiles);
+            Assert.Equal(1, stats.Quantiles[0].Value);
+
+            object?[] retainedBuckets = GetStripeFields(aggregator, "Buckets");
+            Assert.Contains(retainedBuckets, bucket => bucket is not null);
+
+            aggregator.Update(2);
+            object?[] dirtyFlags = GetStripeFields(aggregator, "Dirty");
+            int dirtyStripe = Array.FindIndex(dirtyFlags, dirty => (bool)dirty!);
+            Assert.NotEqual(-1, dirtyStripe);
+            object?[] reusedBuckets = GetStripeFields(aggregator, "Buckets");
+            Assert.Same(retainedBuckets[dirtyStripe], reusedBuckets[dirtyStripe]);
+
+            stats = (HistogramStatistics)aggregator.Collect();
+            Assert.Equal(1, stats.Count);
+            Assert.Equal(2, stats.Sum);
+            Assert.Single(stats.Quantiles);
+            Assert.Equal(2, stats.Quantiles[0].Value);
+
+            Assert.Contains(GetStripeFields(aggregator, "Buckets"), bucket => bucket is not null);
+            stats = (HistogramStatistics)aggregator.Collect();
+            Assert.Equal(0, stats.Count);
+            Assert.Equal(0, stats.Sum);
+            Assert.Empty(stats.Quantiles);
+            Assert.All(GetStripeFields(aggregator, "Buckets"), Assert.Null);
+
+            static bool GetUseStripes(ExponentialHistogramAggregator aggregator) =>
+                (bool)typeof(ExponentialHistogramAggregator)
+                    .GetField("_useStripes", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetValue(aggregator)!;
+
+            static object?[] GetStripeFields(ExponentialHistogramAggregator aggregator, string fieldName)
+            {
+                Array stripes = (Array)typeof(ExponentialHistogramAggregator)
+                    .GetField("_stripes", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetValue(aggregator)!;
+                object?[] values = new object?[stripes.Length];
+                for (int i = 0; i < stripes.Length; i++)
+                {
+                    object stripe = stripes.GetValue(i)!;
+                    values[i] = stripe.GetType()
+                        .GetField(fieldName, BindingFlags.Instance | BindingFlags.Public)!
+                        .GetValue(stripe);
+                }
+
+                return values;
+            }
+        }
     }
 }
