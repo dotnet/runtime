@@ -1168,7 +1168,7 @@ protected:
 
         unsigned idCodeSize() const
         {
-            return 4;
+            return 4; // All PowerPC instructions are 4 bytes
         }
 #elif defined(TARGET_ARM)
 

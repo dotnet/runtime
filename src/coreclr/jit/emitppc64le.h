@@ -12,6 +12,7 @@
 #define ppc_bl(c,li)       ppc_emit32 (c, (18 << 26) | ((li) << 2) | 1)
 #define ppc_bcx(c,BO,BI,BD,AA,LK) ppc_emit32(c, (16 << 26) | ((BO) << 21 )| ((BI) << 16) | (BD << 2) | ((AA) << 1) | LK)
 #define ppc_bc(c,BO,BI,BD) ppc_bcx(c,BO,BI,BD,0,0)
+#define ppc_bcl(c,BO,BI,BD) ppc_bcx(c,BO,BI,BD,0,1)
 #define ppc_bcctrx(c,BO,BI,LK) ppc_emit32(c, (19 << 26) | (BO << 21 )| (BI << 16) | (0 << 11) | (528 << 1) | LK)
 #define ppc_bcctr(c,BO,BI) ppc_bcctrx(c,BO,BI,0)
 #define ppc_bcctrl(c,BO,BI) ppc_bcctrx(c,BO,BI,1)
@@ -362,6 +363,10 @@ bool emitIns_valid_imm_for_li(ssize_t imm);
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 
 void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
+
+void emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO_FIELD_HANDLE fldHnd, int offs);
+
+void emitIns_R_R_C(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, CORINFO_FIELD_HANDLE fldHnd, int offs);
 
 #endif
 #ifdef DEBUG

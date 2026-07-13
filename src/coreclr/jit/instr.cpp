@@ -2712,7 +2712,8 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 #elif defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
 #elif defined(TARGET_POWERPC64)
-    GetEmitter()->emitIns_Mov(INS_mov, size, reg, reg, /* canSkip */ true);
+    // li reg, 0 - Load immediate zero into register
+    GetEmitter()->emitIns_R_I(INS_li, size, reg, 0, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
 #else
 #error "Unknown TARGET"
 #endif

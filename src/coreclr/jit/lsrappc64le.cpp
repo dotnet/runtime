@@ -1032,7 +1032,20 @@ int LinearScan::BuildNode(GenTree* tree)
 		      case GT_RETFILT:
 		          assert(dstCount == 0);
 		          break;
-
+	
+		      case GT_JMPTABLE:
+		          srcCount = 0;
+		          assert(dstCount == 1);
+		          BuildDef(tree);
+		          break;
+	
+		      case GT_SWITCH_TABLE:
+		          buildInternalIntRegisterDefForNode(tree);
+		          srcCount = BuildBinaryUses(tree->AsOp());
+		          buildInternalRegisterUses();
+		          assert(dstCount == 0);
+		          break;
+	
 		     default:
 		     {
 		     printf("LSRA BuildNode: Unhandled operation: %s (oper=%d)\n",
