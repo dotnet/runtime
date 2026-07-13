@@ -51,7 +51,10 @@ param(
 
     # Conservative budget on the full URL string length in bytes. GitHub's front end
     # rejects a request line over ~8192 bytes with HTTP 414; 8000 leaves headroom.
-    [int]$MaxUrlBytes = 8000
+    [int]$MaxUrlBytes = 8000,
+
+    # GitHub rejects comment bodies over 65536 characters; 65000 leaves headroom.
+    [int]$MaxCommentLength = 65000
 )
 
 $ErrorActionPreference = "Stop"
@@ -93,33 +96,44 @@ if (-not [string]::IsNullOrWhiteSpace($CcMentions)) {
     $mentionLine = "`n`n/cc $($CcMentions.Trim())"
 }
 
-# When the body isn't pre-filled, include it in the comment for copy-paste.
-# The body is wrapped in a fenced code block so the raw markdown can be copied
-# verbatim. A four-backtick fence is used because the body itself contains
-# three-backtick code fences. (Built from a single-quoted variable so PowerShell's
-# backtick escaping doesn't collapse it.)
+# When the body isn't pre-filled in the URL it is embedded in the comment for
+# copy-paste, wrapped in a fenced code block so the raw markdown copies verbatim. A
+# four-backtick fence is used because the body itself contains three-backtick code
+# fences. (Built from a single-quoted variable so PowerShell's backtick escaping
+# doesn't collapse it.)
 $fence = '````'
-$copyPasteSection = ""
-if (-not $bodyInUrl) {
-    $copyPasteSection = @"
+
+# Assemble the comment. $bodyText is what goes inside the copy-paste fence; when
+# $truncated is set, a note points the reader at the complete issue-draft.md artifact
+# (used when the full body had to be shortened to fit GitHub's comment-length limit).
+$assemble = {
+    param([string]$bodyText, [bool]$truncated)
+
+    $copyPasteSection = ""
+    if (-not $bodyInUrl) {
+        $truncNote = if ($truncated) {
+            "`n`n> [!IMPORTANT]`n> The body below was truncated to fit GitHub's comment-length limit. Copy the complete body from the issue-draft.md workflow artifact instead."
+        } else { "" }
+
+        $copyPasteSection = @"
 
 
 The issue body is too long to pre-fill in the link above, so the link opens a
 **blank issue** with only the title, labels, and assignees set. Copy the body
-below into the description field before submitting.
+below into the description field before submitting.$truncNote
 
 <details>
 <summary>Issue body (click to expand, then copy)</summary>
 
 $($fence)md
-$issueBody
+$bodyText
 $fence
 
 </details>
 "@
-}
+    }
 
-$comment = @"
+    return @"
 ## Breaking Change Documentation
 
 A breaking change draft has been prepared for this PR.
@@ -132,11 +146,21 @@ After creating the issue, please email a link to it to the
 > [!NOTE]
 > This documentation was generated with AI assistance from Copilot.
 "@
+}
 
-# GitHub comment body limit is 65536 characters.
-$maxCommentLength = 65000
-if ($comment.Length -gt $maxCommentLength) {
-    Write-Warning "Comment body ($($comment.Length) chars) exceeds GitHub's comment length limit. The issue body may be too large to embed."
+$comment = & $assemble $issueBody $false
+
+# If embedding the full body pushes the comment past GitHub's limit, truncate the
+# embedded copy so the later post still succeeds. The complete body is always available
+# in issue-draft.md, which the truncation note points to.
+if (-not $bodyInUrl -and $comment.Length -gt $MaxCommentLength) {
+    $marker = "`n`n[... body truncated -- see the issue-draft.md artifact for the full text ...]"
+    $overhead = (& $assemble '' $true).Length
+    $available = $MaxCommentLength - $overhead - $marker.Length - 50   # 50-char safety margin
+    if ($available -lt 0) { $available = 0 }
+    $truncatedBody = $issueBody.Substring(0, [Math]::Min($issueBody.Length, $available)).TrimEnd() + $marker
+    $comment = & $assemble $truncatedBody $true
+    Write-Warning "Issue body too large to embed; truncated the copy-paste body to fit GitHub's comment-length limit. The full body is in the issue-draft.md artifact."
 }
 
 $comment | Out-File -FilePath $OutputPath -Encoding UTF8 -NoNewline
