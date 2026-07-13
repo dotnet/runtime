@@ -9,8 +9,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies;
 // The test assembly references "conditional.dll" only by the assembly name string.
 // All TypeMap entries in conditional.dll are conditional on AllConditionalTrimTarget,
 // which is never marked. So conditional.dll ends up with no surviving TypeMap entries.
-// The fix should cause this TypeMapAssemblyTarget attribute to be removed.
-// (No KeptAttributeAttribute here - the test framework verifies the attribute is NOT in the linked output.)
+// The fix should cause this TypeMapAssemblyTarget attribute to be removed from the linked output.
 [assembly: TypeMapAssemblyTarget<AllConditionalGroupType>("conditional")]
 
 namespace Mono.Linker.Tests.Cases.Reflection
@@ -23,6 +22,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
         references: new[] { "allconditionalgroup.dll" }, addAsReference: false)]
     [SetupLinkerAction("link", "System.Private.CoreLib")] // Needed to apply embedded XML (RemoveAttributeInstances)
     [SetupLinkerArgument("--ignore-link-attributes", "false")]
+    [RemovedAssembly("conditional.dll")]
+    [RemovedAttributeInAssembly("test", typeof(TypeMapAssemblyTargetAttribute<AllConditionalGroupType>))]
     [Kept]
     class TypeMapAssemblyTargetRemovedWhenAllEntriesTrimmed
     {
