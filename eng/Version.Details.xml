@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rtm.26356.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rtm.26358.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>86a9e8cc2bf5eef6fd6c944c2a656e59f8ad0387</Sha>
+      <Sha>be3dd61370b56cf0e0fadfb486cc3eafb82f910c</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="9.0.0-alpha.1.24167.3">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -55,14 +55,14 @@
       <Sha>803d8598f98fb4efd94604b32627ee9407f246db</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.26314.1">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.26353.2">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>41de496d32c25dc8c99957eed6b7d14385bc1511</Sha>
+      <Sha>d98c55d1363411ee1a0ff0c76c6e5d798e8147ec</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.26314.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.26353.2">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>41de496d32c25dc8c99957eed6b7d14385bc1511</Sha>
+      <Sha>d98c55d1363411ee1a0ff0c76c6e5d798e8147ec</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.18-servicing.26310.2">
