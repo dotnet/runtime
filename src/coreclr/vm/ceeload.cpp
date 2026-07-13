@@ -1816,7 +1816,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
                 // (RW) metadata interface: the reader only needs it to satisfy the
                 // binder, and producing the real importer would force this module's
                 // metadata to its locked RW backing store.
-                ReleaseHolder<IMetaDataImport2> pNoopImport = GetNoopMetaDataImport2();
+                ReleaseHolder<IMetaDataImport2> pNoopImport{ GetNoopMetaDataImport2() };
                 hr = pBinder->GetReaderFromStream(pNoopImport, pIStream, &pReader);
             }
         }
@@ -1835,7 +1835,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 
         if (SUCCEEDED(hr))
         {
-            m_pISymUnmanagedReader = pReader.Extract();
+            m_pISymUnmanagedReader = pReader.Detach();
             LOG((LF_CORDB, LL_INFO10, "M::GISUR: Loaded symbols for module %s\n", GetDebugName()));
         }
         else
