@@ -501,7 +501,7 @@ static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int wo
             continue;
         }
 
-        char buffer[512] = {};
+        char buffer[4096] = {}; // Make sure to be large enough for the title line
         if (hasHeader)
         {
             // Skip the title line
