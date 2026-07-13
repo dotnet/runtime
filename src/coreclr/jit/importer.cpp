@@ -6878,10 +6878,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                         JITDUMP("Remembering iterator class %s is interesting for GetEnumerator GDV\n",
                                                 eeGetClassName(likelyClass));
                                         IteratorGdvInfo gdvInfo;
-                                        gdvInfo.m_likelihood = inlineInfo->likelihood;
+                                        gdvInfo.m_likelihood      = inlineInfo->likelihood;
                                         gdvInfo.m_enumeratorLocal = lclNum;
 
-                                        IteratorGdvInfo existingInfo;
+                                        IteratorGdvInfo                        existingInfo;
                                         ClassHandleToIteratorGdvInfoMap* const gdvInfoMap = getImpIteratorGdvInfoMap();
                                         if (gdvInfoMap->Lookup(likelyClass, &existingInfo) &&
                                             (existingInfo.m_enumeratorLocal != lclNum))
@@ -6897,8 +6897,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                             const unsigned receiverLcl = receiver->AsLclVarCommon()->GetLclNum();
                                             JITDUMP("Remembering GetEnumerator receiver V%02u produces V%02u\n",
                                                     receiverLcl, lclNum);
-                                            getImpGetEnumeratorReceiverToEnumeratorMap()->Set(receiverLcl, lclNum,
-                                                                                             VarToUnsignedMap::Overwrite);
+                                            getImpGetEnumeratorReceiverToEnumeratorMap()
+                                                ->Set(receiverLcl, lclNum, VarToUnsignedMap::Overwrite);
                                         }
                                     }
                                 }
@@ -9018,9 +9018,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
                         }
 
+                        const bool mayNeedIteratorInfo = opts.OptimizationEnabled() &&
+                                                         (JitConfig.JitObjectStackAllocation() != 0) &&
+                                                         (JitConfig.JitObjectStackAllocationConditionalEscape() != 0) &&
+                                                         (hasImpEnumeratorGdvLocalMap() || hasIteratorGdvInfoMap());
                         const bool isEnumerableAndEnumerator =
-                            opts.OptimizationEnabled() &&
-                            info.compCompHnd->isEnumerableAndEnumerator(resolvedToken.hClass);
+                            mayNeedIteratorInfo && info.compCompHnd->isEnumerableAndEnumerator(resolvedToken.hClass);
 
                         // Flag if this allocation happens within a method that uses the static empty
                         // pattern (if we stack allocate this object, we can optimize the empty side away)

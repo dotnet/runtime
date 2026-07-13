@@ -428,8 +428,7 @@ void ObjectAllocator::PrepareAnalysis()
     // If we are going to do any conditional escape analysis, determine
     // how much extra BV space we'll need.
     //
-    bool const hasEnumeratorLocals =
-        m_compiler->hasImpEnumeratorGdvLocalMap() || m_compiler->hasIteratorGdvInfoMap();
+    bool const hasEnumeratorLocals = m_compiler->hasImpEnumeratorGdvLocalMap() || m_compiler->hasIteratorGdvInfoMap();
 
     if (hasEnumeratorLocals)
     {
@@ -3548,8 +3547,8 @@ bool ObjectAllocator::IsLinqIteratorCloneMethod(CORINFO_METHOD_HANDLE method)
     const char* namespaceName          = nullptr;
     const char* enclosingClassNames[1] = {nullptr};
     const char* methodName =
-        m_compiler->info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName,
-                                                                enclosingClassNames, ArrLen(enclosingClassNames));
+        m_compiler->info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames,
+                                                                ArrLen(enclosingClassNames));
 
     if ((namespaceName == nullptr) || (strcmp(namespaceName, "System.Linq") != 0) ||
         (enclosingClassNames[0] == nullptr) || (strcmp(enclosingClassNames[0], "Enumerable") != 0) ||
@@ -3583,7 +3582,7 @@ bool ObjectAllocator::IsLinqIteratorCloneMethod(CORINFO_METHOD_HANDLE method)
 bool ObjectAllocator::IsLinqIteratorClass(CORINFO_CLASS_HANDLE cls)
 {
     for (CORINFO_CLASS_HANDLE currentClass = cls; currentClass != NO_CLASS_HANDLE;
-         currentClass = m_compiler->info.compCompHnd->getParentType(currentClass))
+         currentClass                      = m_compiler->info.compCompHnd->getParentType(currentClass))
     {
         const char* className = m_compiler->info.compCompHnd->getClassNameFromMetadata(currentClass, nullptr);
 
@@ -3636,9 +3635,9 @@ void ObjectAllocator::PruneLinqIteratorClonePath(BasicBlock* cloneBlock)
 
     for (FlowEdge* const removedEdge : edgesToRemove)
     {
-        BasicBlock* const predBlock    = removedEdge->getSourceBlock();
-        FlowEdge* const   retainedEdge = (removedEdge == predBlock->GetTrueEdge()) ? predBlock->GetFalseEdge()
-                                                                                   : predBlock->GetTrueEdge();
+        BasicBlock* const predBlock = removedEdge->getSourceBlock();
+        FlowEdge* const   retainedEdge =
+            (removedEdge == predBlock->GetTrueEdge()) ? predBlock->GetFalseEdge() : predBlock->GetTrueEdge();
 
         JITDUMP("Pruning LINQ iterator Clone path from " FMT_BB " to " FMT_BB "; retaining " FMT_BB "\n",
                 predBlock->bbNum, cloneBlock->bbNum, retainedEdge->getDestinationBlock()->bbNum);
@@ -3696,7 +3695,7 @@ bool ObjectAllocator::CheckForGuardedUse(BasicBlock* block, GenTree* tree, unsig
 
     // Verify this appearance is under the same guard
     //
-    const bool isMainEnumeratorLocal = (pseudoGuardInfo->m_local == lclNum);
+    const bool isMainEnumeratorLocal        = (pseudoGuardInfo->m_local == lclNum);
     bool       isGetEnumeratorProducerLocal = false;
 
     if (!isMainEnumeratorLocal && m_compiler->hasGetEnumeratorReceiverToEnumeratorMap())
@@ -3807,8 +3806,8 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
 
                 JITDUMP("Flagging interesting iterator allocation [%06u] (%s, likelihood %u) for enumerator "
                         "cloning via V%02u\n",
-                        m_compiler->dspTreeID(data), m_compiler->eeGetClassName(allocClassHnd),
-                        gdvInfo.m_likelihood, enumeratorLocal);
+                        m_compiler->dspTreeID(data), m_compiler->eeGetClassName(allocClassHnd), gdvInfo.m_likelihood,
+                        enumeratorLocal);
                 map->Set(data, enumeratorLocal);
                 m_compiler->Metrics.EnumeratorGDV++;
             }
@@ -4591,8 +4590,8 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
             {
                 if (BitVecOps::IsMember(&traits, visitedBlocks, a->m_block->bbID))
                 {
-                    JITDUMP("Allowing alloc temp V%02u %s in " FMT_BB
-                            " not dominated by %s " FMT_BB " because it lies between alloc and def\n",
+                    JITDUMP("Allowing alloc temp V%02u %s in " FMT_BB " not dominated by %s " FMT_BB
+                            " because it lies between alloc and def\n",
                             a->m_lclNum, a->m_isDef ? "def" : "use", a->m_block->bbNum, domCheckBlockName,
                             domCheckBlock->bbNum);
                     continue;
@@ -4600,8 +4599,8 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
 
                 if (a->m_isDef)
                 {
-                    JITDUMP("Ignoring alloc temp V%02u def in " FMT_BB " not dominated by %s " FMT_BB "\n",
-                            a->m_lclNum, a->m_block->bbNum, domCheckBlockName, domCheckBlock->bbNum);
+                    JITDUMP("Ignoring alloc temp V%02u def in " FMT_BB " not dominated by %s " FMT_BB "\n", a->m_lclNum,
+                            a->m_block->bbNum, domCheckBlockName, domCheckBlock->bbNum);
                     continue;
                 }
 

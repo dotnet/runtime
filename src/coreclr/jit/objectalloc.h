@@ -85,9 +85,9 @@ struct CloneInfo : public GuardInfo
 
     // Locals that must be rewritten in the clone, and map
     // to their appearances
-    EnumeratorVarMap*         m_appearanceMap   = nullptr;
-    unsigned                  m_appearanceCount = 0;
-    jitstd::vector<unsigned>* m_allocTemps      = nullptr;
+    EnumeratorVarMap*            m_appearanceMap           = nullptr;
+    unsigned                     m_appearanceCount         = 0;
+    jitstd::vector<unsigned>*    m_allocTemps              = nullptr;
     jitstd::vector<BasicBlock*>* m_linqIteratorCloneBlocks = nullptr;
 
     // The initial GDV guard block, if any.
