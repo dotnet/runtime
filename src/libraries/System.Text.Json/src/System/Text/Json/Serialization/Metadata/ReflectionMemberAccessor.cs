@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -33,7 +34,26 @@ namespace System.Text.Json.Serialization.Metadata
                     : null;
             }
 
-            return () => ctorInfo.Invoke(null);
+            return () =>
+            {
+#if NET
+                return ctorInfo.Invoke(
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: null,
+                    culture: null);
+#else
+                try
+                {
+                    return ctorInfo.Invoke(null);
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
+                }
+#endif
+            };
         }
 
         public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
@@ -56,17 +76,26 @@ namespace System.Text.Json.Serialization.Metadata
                     argsToPass[i] = arguments[i];
                 }
 
+#if NET
+                return (T)constructor.Invoke(
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: argsToPass,
+                    culture: null);
+#else
                 try
                 {
                     return (T)constructor.Invoke(argsToPass);
                 }
-                catch (TargetInvocationException e)
+                catch (TargetInvocationException e) when (e.InnerException is not null)
                 {
                     // Plumb ArgumentException through for tuples with more than 7 generic parameters, e.g.
                     // System.ArgumentException : The last element of an eight element tuple must be a Tuple.
                     // This doesn't apply to the method below as it supports a max of 4 constructor params.
-                    throw e.InnerException ?? e;
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
                 }
+#endif
             };
         }
 
@@ -108,7 +137,23 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                 }
 
-                return (T)constructor.Invoke(arguments);
+#if NET
+                return (T)constructor.Invoke(
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: arguments,
+                    culture: null);
+#else
+                try
+                {
+                    return (T)constructor.Invoke(arguments);
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
+                }
+#endif
             };
         }
 
@@ -122,14 +167,23 @@ namespace System.Text.Json.Serialization.Metadata
 
             return value =>
             {
+#if NET
+                return (T)constructor.Invoke(
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: new object?[] { value },
+                    culture: null);
+#else
                 try
                 {
                     return (T)constructor.Invoke(new object?[] { value });
                 }
-                catch (TargetInvocationException e)
+                catch (TargetInvocationException e) when (e.InnerException is not null)
                 {
-                    throw e.InnerException ?? e;
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
                 }
+#endif
             };
         }
 
@@ -143,7 +197,24 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (TCollection collection, object? element)
             {
-                addMethod.Invoke(collection, new object[] { element! });
+#if NET
+                // Keep exception propagation aligned with ReflectionEmitMemberAccessor.
+                addMethod.Invoke(
+                    collection,
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: new object[] { element! },
+                    culture: null);
+#else
+                try
+                {
+                    addMethod.Invoke(collection, new object[] { element! });
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                }
+#endif
             };
         }
 
@@ -167,7 +238,24 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (object obj)
             {
-                return (TProperty)getMethodInfo.Invoke(obj, null)!;
+#if NET
+                return (TProperty)getMethodInfo.Invoke(
+                    obj,
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: null,
+                    culture: null)!;
+#else
+                try
+                {
+                    return (TProperty)getMethodInfo.Invoke(obj, null)!;
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
+                }
+#endif
             };
         }
 
@@ -177,7 +265,24 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (TDeclaringType obj)
             {
-                return (TProperty)getMethodInfo.Invoke(obj, null)!;
+#if NET
+                return (TProperty)getMethodInfo.Invoke(
+                    obj,
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: null,
+                    culture: null)!;
+#else
+                try
+                {
+                    return (TProperty)getMethodInfo.Invoke(obj, null)!;
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
+                }
+#endif
             };
         }
 
@@ -187,7 +292,23 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (object obj, TProperty value)
             {
-                setMethodInfo.Invoke(obj, new object[] { value! });
+#if NET
+                setMethodInfo.Invoke(
+                    obj,
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: new object[] { value! },
+                    culture: null);
+#else
+                try
+                {
+                    setMethodInfo.Invoke(obj, new object[] { value! });
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                }
+#endif
             };
         }
 
