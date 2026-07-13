@@ -33,15 +33,14 @@ void TOCFile::LoadToc(const char* inputFileName, bool validate)
         return;
     }
 
-    this->m_tocCount = header.count;
-    this->m_tocArray = new TOCElement[this->m_tocCount];
+    this->m_tocArray.resize(header.count);
 
     // Read the whole array
-    size_t read = fread(&this->m_tocArray[0], sizeof(TOCElement), this->m_tocCount, fpIndex);
-    if (read != this->m_tocCount)
+    size_t read = fread(&this->m_tocArray[0], sizeof(TOCElement), header.count, fpIndex);
+    if (read != header.count)
     {
         fclose(fpIndex);
-        this->Clear();
+        this->m_tocArray.resize(0);
         LogWarning("The index file %s is invalid: it appears to be truncated.", inputFileName);
         return;
     }
@@ -52,7 +51,7 @@ void TOCFile::LoadToc(const char* inputFileName, bool validate)
     if ((read != 1) || (sentinel != header.sig))
     {
         fclose(fpIndex);
-        this->Clear();
+        this->m_tocArray.resize(0);
         LogWarning("The index file %s is invalid: it appears to be missing the ending sentinel.", inputFileName);
         return;
     }
@@ -64,13 +63,13 @@ void TOCFile::LoadToc(const char* inputFileName, bool validate)
         int lastNum = -1;
 
         // Quickly validate that the index is sorted
-        for (size_t i = 0; i < this->m_tocCount; i++)
+        for (auto& next : this->m_tocArray)
         {
-            int nextNum = this->m_tocArray[i].Number;
+            int nextNum = next.Number;
             if (nextNum <= lastNum)
             {
                 // It wasn't sorted: abort
-                this->Clear();
+                this->m_tocArray.resize(0);
                 LogWarning("The index file %s is invalid: it is not sorted.", inputFileName);
                 return;
             }
