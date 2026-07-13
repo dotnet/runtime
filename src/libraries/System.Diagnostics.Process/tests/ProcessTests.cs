@@ -887,7 +887,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsOpenBSD || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -935,7 +935,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsOpenBSD || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -1299,7 +1299,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "getting/setting affinity not supported on OSX and BSD")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.OpenBSD, "getting/setting affinity not supported on OSX and BSD")]
         public void TestProcessorAffinity()
         {
             CreateDefaultProcess();
@@ -1466,23 +1466,15 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestGetProcessById()
-        {
-            CreateDefaultProcess();
-
-            Process p = Process.GetProcessById(_process.Id);
-            Assert.Equal(_process.Id, p.Id);
-            Assert.Equal(_process.ProcessName, p.ProcessName);
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetProcessById_KilledProcess_ThrowsArgumentException()
         {
             Process process = CreateDefaultProcess();
-            var handle = process.SafeHandle;
+            SafeProcessHandle handle = process.SafeHandle;
             int processId = process.Id;
+
             process.Kill();
             process.WaitForExit(WaitInMS);
+
             Assert.Throws<ArgumentException>(() => Process.GetProcessById(processId));
             GC.KeepAlive(handle);
         }

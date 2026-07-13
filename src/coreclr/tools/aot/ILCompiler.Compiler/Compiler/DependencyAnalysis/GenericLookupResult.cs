@@ -625,6 +625,9 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary, bool isConcreteInstantiation)
         {
             MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+
+            factory.TypeSystemContext.DetectGenericCycles(dictionary.Context, instantiatedMethod);
+
             if (isConcreteInstantiation || !instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any))
             {
                 // TODO-SIZE: this is address taken only in the delegate target case
@@ -635,7 +638,6 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any));
                 if (!instantiatedMethod.IsAbstract)
                 {
-                    factory.TypeSystemContext.DetectGenericCycles(dictionary.Context, instantiatedMethod);
                     return factory.ShadowNonConcreteMethod(instantiatedMethod);
                 }
                 return null;

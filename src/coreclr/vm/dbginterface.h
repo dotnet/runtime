@@ -380,6 +380,8 @@ public:
     virtual void ExternalMethodFixupNextStep(PCODE address) = 0;
     virtual void ProcessAnyPendingEvals(Thread* pThread) = 0;
 
+    virtual void SendCreateThreadAtInterpreterEntry(Thread* pRuntimeThread) = 0;
+
 #endif //DACCESS_COMPILE
 };
 

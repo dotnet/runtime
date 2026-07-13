@@ -946,7 +946,6 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
     return allocated;
 }
 
-#ifdef FEATURE_BASICFREEZE
 
 /*===============================RegisterFrozenSegment===============================
 **Action: Registers the frozen segment
@@ -1002,7 +1001,6 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment)
     END_QCALL;
 }
 
-#endif // FEATURE_BASICFREEZE
 
 /*==============================SuppressFinalize================================
 **Action: Indicate that an object's finalizer should not be run by the system
@@ -1918,8 +1916,11 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
             else
             {
                 // got another value type. Get the type
-                TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
+                // The type itself may be generic. We need to get the instantiated
+                // type for the field to properly call its method.
+                TypeHandle fieldTH = field->GetExactFieldType(TypeHandle(mt));
                 _ASSERTE(!fieldTH.IsNull());
+                _ASSERTE(!fieldTH.IsSharedByGenericInstantiations());
                 MethodTable* fieldMT = fieldTH.GetMethodTable();
                 if (CanCompareBitsOrUseFastGetHashCode(fieldMT))
                 {

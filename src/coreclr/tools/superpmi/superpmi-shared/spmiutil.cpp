@@ -295,6 +295,16 @@ void PutArm64Rel12(UINT32* pCode, INT32 imm12)
     *pCode = addInstr;
 }
 
+void PutArm64Rel12Ldr(UINT32* pCode, INT32 imm12)
+{
+    // For a 64-bit LDR the encoded immediate is scaled by the access size (8).
+    INT32  scaledImm12 = imm12 >> 3;
+    UINT32 ldrInstr    = *pCode;
+    ldrInstr &= 0xFFC003FF;
+    ldrInstr |= (scaledImm12 << 10);
+    *pCode = ldrInstr;
+}
+
 void PutThumb2Imm16(UINT16* p, UINT16 imm16)
 {
     USHORT Opcode0 = p[0];

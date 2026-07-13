@@ -400,6 +400,14 @@ target_link_libraries(paltests
   ${COMMON_TEST_LIBRARIES}
 )
 
+if(CLR_CMAKE_TARGET_OPENBSD)
+  # A few PAL tests (e.g. VirtualAlloc/VirtualProtect) deliberately request simultaneous
+  # W+X (PAGE_EXECUTE_READWRITE) mappings to exercise the PAL API. OpenBSD rejects those
+  # unless the binary carries the PT_OPENBSD_WXNEEDED note and runs from a wxallowed mount.
+  # The runtime itself never needs this (it uses W^X double-mapping), so scope it here.
+  target_link_options(paltests PRIVATE "-Wl,-z,wxneeded")
+endif(CLR_CMAKE_TARGET_OPENBSD)
+
 install (TARGETS paltests DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
 add_dependencies(paltests_install paltests)
 install (PROGRAMS runpaltests.sh runpaltestshelix.sh DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)

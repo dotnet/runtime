@@ -78,6 +78,7 @@ namespace R2RDump
                 writer.WriteLine($"    Variable Number: {varLoc.VariableNumber}");
                 writer.WriteLine($"    Start Offset: 0x{varLoc.StartOffset:X}");
                 writer.WriteLine($"    End Offset: 0x{varLoc.EndOffset:X}");
+                writer.WriteLine($"    Call return IL offset: 0x{varLoc.CallReturnValueILOffset:X}");
                 writer.WriteLine($"    Loc Type: {varLoc.VariableLocation.VarLocType}");
 
                 switch (varLoc.VariableLocation.VarLocType)

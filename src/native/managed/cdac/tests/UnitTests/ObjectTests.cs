@@ -54,17 +54,24 @@ public unsafe class ObjectTests
     }
 
     private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockDescriptors.MockObjectBuilder objectBuilder)
-        => new Dictionary<DataType, Target.TypeInfo>
-        {
-            [DataType.Object] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ObjectLayout),
-            [DataType.ObjectHeader] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ObjectHeaderLayout),
-            [DataType.String] = TargetTestHelpers.CreateTypeInfo(objectBuilder.StringLayout),
-            [DataType.Array] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ArrayLayout),
-            [DataType.Delegate] = TargetTestHelpers.CreateTypeInfo(objectBuilder.DelegateLayout),
-            [DataType.SyncTableEntry] = TargetTestHelpers.CreateTypeInfo(objectBuilder.SyncTableEntryLayout),
-            [DataType.SyncBlock] = TargetTestHelpers.CreateTypeInfo(objectBuilder.SyncBlockLayout),
-            [DataType.InteropSyncBlockInfo] = TargetTestHelpers.CreateTypeInfo(objectBuilder.InteropSyncBlockInfoLayout),
-        }.Concat(MethodTableTests.CreateContractTypes(objectBuilder.RTSBuilder)).ToDictionary();
+    {
+        Dictionary<DataType, Target.TypeInfo> types = MethodTableTests.CreateContractTypes(objectBuilder.RTSBuilder);
+
+        // Object-specific types take precedence; the full ContinuationObject layout (with field
+        // offsets) overrides the size-only entry provided by MethodTableTests.CreateContractTypes.
+        types[DataType.Object] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ObjectLayout);
+        types[DataType.ObjectHeader] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ObjectHeaderLayout);
+        types[DataType.String] = TargetTestHelpers.CreateTypeInfo(objectBuilder.StringLayout);
+        types[DataType.Array] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ArrayLayout);
+        types[DataType.Delegate] = TargetTestHelpers.CreateTypeInfo(objectBuilder.DelegateLayout);
+        types[DataType.ContinuationObject] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ContinuationLayout);
+        types[DataType.AsyncResumeInfo] = TargetTestHelpers.CreateTypeInfo(objectBuilder.AsyncResumeInfoLayout);
+        types[DataType.SyncTableEntry] = TargetTestHelpers.CreateTypeInfo(objectBuilder.SyncTableEntryLayout);
+        types[DataType.SyncBlock] = TargetTestHelpers.CreateTypeInfo(objectBuilder.SyncBlockLayout);
+        types[DataType.InteropSyncBlockInfo] = TargetTestHelpers.CreateTypeInfo(objectBuilder.InteropSyncBlockInfoLayout);
+
+        return types;
+    }
 
     private static (string Name, ulong Value)[] CreateContractGlobals(MockDescriptors.MockObjectBuilder objectBuilder)
         => MethodTableTests.CreateContractGlobals(objectBuilder.RTSBuilder).Concat(
@@ -114,6 +121,61 @@ public unsafe class ObjectTests
         string actual = contract.GetStringValue(TestStringAddress);
 
         Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void StringData(MockTarget.Architecture arch)
+    {
+        TargetPointer TestStringAddress = default;
+        int offsetToFirstChar = 0;
+        string expected = "test_string_value";
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                offsetToFirstChar = objectBuilder.StringLayout.GetField("m_FirstChar").Offset;
+                TestStringAddress = objectBuilder.AddStringObject(expected);
+            });
+
+        contract.GetStringData(TestStringAddress, out uint length, out uint actualOffsetToFirstChar);
+
+        Assert.Equal((uint)expected.Length, length);
+        Assert.Equal((uint)offsetToFirstChar, actualOffsetToFirstChar);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void Size(MockTarget.Architecture arch)
+    {
+        const int TestArrayLength = 10;
+        TargetPointer TestObjectAddress = default;
+        TargetPointer TestArrayAddress = default;
+        Array testArray = new int[TestArrayLength];
+        TargetTestHelpers targetTestHelpers = new(arch);
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                MockEEClass eeClass = objectBuilder.RTSBuilder.AddEEClass("TestClass");
+                MockMethodTable methodTable = objectBuilder.RTSBuilder.AddMethodTable("TestClass");
+                methodTable.BaseSize = objectBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                eeClass.MethodTable = methodTable.Address;
+                methodTable.EEClassOrCanonMT = eeClass.Address;
+                TestObjectAddress = objectBuilder.AddObject(methodTable.Address);
+
+                TestArrayAddress = objectBuilder.AddArrayObject(testArray);
+            });
+
+        // Fixed-size object: size is just the base size, no component data.
+        Assert.Equal(targetTestHelpers.ObjectBaseSize, contract.GetSize(TestObjectAddress));
+
+        // Variable-size object (array): base size plus component count times component size.
+        // AddArrayObject encodes the component size as the array length in the method table flags,
+        // so the expected component size here matches TestArrayLength rather than sizeof(int).
+        ulong componentSize = TestArrayLength;
+        ulong expectedArraySize = targetTestHelpers.ArrayBaseBaseSize + TestArrayLength * componentSize;
+        Assert.Equal(expectedArraySize, contract.GetSize(TestArrayAddress));
     }
 
     [Theory]
@@ -385,5 +447,88 @@ public unsafe class ObjectTests
         Assert.Equal(DelegateType.Unknown, info.DelegateType);
         Assert.Equal(0ul, info.TargetObject.Value);
         Assert.Equal(0ul, info.TargetMethodPtr.Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetContinuationInfo_WithResumeInfo(MockTarget.Architecture arch)
+    {
+        const ulong TestMethodTable = 0x00000000_10000200;
+        const ulong TestNext = 0x00000000_10000600;
+        const ulong TestDiagnosticIP = 0x00000000_aaaa1000;
+        const int TestState = 0x1234_5678;
+        TargetPointer continuationAddress = default;
+
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                ulong resumeInfoAddress = objectBuilder.AddAsyncResumeInfo(diagnosticIP: TestDiagnosticIP);
+                continuationAddress = objectBuilder.AddContinuationObject(
+                    methodTable: TestMethodTable,
+                    next: TestNext,
+                    resumeInfo: resumeInfoAddress,
+                    state: TestState);
+            });
+
+        ContinuationInfo info = contract.GetContinuationInfo(continuationAddress);
+
+        Assert.Equal(TestNext, info.Next.Value);
+        Assert.Equal(TestDiagnosticIP, info.DiagnosticIP.Value);
+        Assert.Equal(unchecked((uint)TestState), info.State);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetContinuationInfo_NullResumeInfo(MockTarget.Architecture arch)
+    {
+        const ulong TestMethodTable = 0x00000000_10000200;
+        const ulong TestNext = 0x00000000_10000600;
+        const int TestState = 42;
+        TargetPointer continuationAddress = default;
+
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                continuationAddress = objectBuilder.AddContinuationObject(
+                    methodTable: TestMethodTable,
+                    next: TestNext,
+                    resumeInfo: 0,
+                    state: TestState);
+            });
+
+        ContinuationInfo info = contract.GetContinuationInfo(continuationAddress);
+
+        Assert.Equal(TestNext, info.Next.Value);
+        Assert.Equal(TargetPointer.Null, info.DiagnosticIP);
+        Assert.Equal((uint)TestState, info.State);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetContinuationInfo_NullDiagnosticIP(MockTarget.Architecture arch)
+    {
+        const ulong TestMethodTable = 0x00000000_10000200;
+        const int TestState = 0;
+        TargetPointer continuationAddress = default;
+
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                ulong resumeInfoAddress = objectBuilder.AddAsyncResumeInfo(diagnosticIP: 0);
+                continuationAddress = objectBuilder.AddContinuationObject(
+                    methodTable: TestMethodTable,
+                    next: 0,
+                    resumeInfo: resumeInfoAddress,
+                    state: TestState);
+            });
+
+        ContinuationInfo info = contract.GetContinuationInfo(continuationAddress);
+
+        Assert.Equal(TargetPointer.Null, info.Next);
+        Assert.Equal(TargetPointer.Null, info.DiagnosticIP);
+        Assert.Equal((uint)TestState, info.State);
     }
 }

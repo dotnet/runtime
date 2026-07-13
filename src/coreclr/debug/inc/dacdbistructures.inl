@@ -709,7 +709,7 @@ CORDB_ADDRESS FieldData::GetStaticAddress()
 
 inline
 void EnCHangingFieldInfo::Init(VMPTR_Object     pObject,
-                               SIZE_T           offset,
+                               UINT             offset,
                                mdFieldDef       fieldToken,
                                CorElementType   elementType,
                                mdTypeDef        metadataToken,

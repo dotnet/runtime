@@ -1908,6 +1908,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte ExtractNarrowingSaturateUnsignedUpper(byte[] op1, short[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
+        public static sbyte SaturatingExtractNarrowingLower(short[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : (sbyte)0;
+
+        public static sbyte SaturatingExtractNarrowingUpper(sbyte[] even, short[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static byte SaturatingExtractNarrowingLower(ushort[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : (byte)0;
+
+        public static byte SaturatingExtractNarrowingUpper(byte[] even, ushort[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static byte SaturatingExtractUnsignedNarrowingLower(short[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturateUnsigned(op[i / 2]) : (byte)0;
+
+        public static byte SaturatingExtractUnsignedNarrowingUpper(byte[] even, short[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturateUnsigned(op[(i - 1) / 2]) : even[i];
+
         private static (short val, bool ovf) MultiplyDoublingOvf(sbyte op1, sbyte op2, bool rounding, short op3, bool subOp)
         {
             short product = (short)((short)op1 * (short)op2);
@@ -2268,6 +2280,18 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static ushort ExtractNarrowingSaturateUnsignedUpper(ushort[] op1, int[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
+
+        public static short SaturatingExtractNarrowingLower(int[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : (short)0;
+
+        public static short SaturatingExtractNarrowingUpper(short[] even, int[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static ushort SaturatingExtractNarrowingLower(uint[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : (ushort)0;
+
+        public static ushort SaturatingExtractNarrowingUpper(ushort[] even, uint[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static ushort SaturatingExtractUnsignedNarrowingLower(int[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturateUnsigned(op[i / 2]) : (ushort)0;
+
+        public static ushort SaturatingExtractUnsignedNarrowingUpper(ushort[] even, int[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturateUnsigned(op[(i - 1) / 2]) : even[i];
 
         private static (int val, bool ovf) MultiplyDoublingOvf(short op1, short op2, bool rounding, int op3, bool subOp)
         {
@@ -2652,6 +2676,18 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static uint ExtractNarrowingSaturateUnsignedUpper(uint[] op1, long[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
+
+        public static int SaturatingExtractNarrowingLower(long[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : 0;
+
+        public static int SaturatingExtractNarrowingUpper(int[] even, long[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static uint SaturatingExtractNarrowingLower(ulong[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : 0u;
+
+        public static uint SaturatingExtractNarrowingUpper(uint[] even, ulong[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static uint SaturatingExtractUnsignedNarrowingLower(long[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturateUnsigned(op[i / 2]) : 0u;
+
+        public static uint SaturatingExtractUnsignedNarrowingUpper(uint[] even, long[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturateUnsigned(op[(i - 1) / 2]) : even[i];
 
         private static (long val, bool ovf) MultiplyDoublingOvf(int op1, int op2, bool rounding, long op3, bool subOp)
         {
@@ -8486,5 +8522,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return sum;
         }
+
+        private static ulong RotateLeft1(ulong op) => (op << 1) | (op >> 63);
+
+        public static ulong BitwiseRotateLeftBy1AndXor(ulong op1, ulong op2)
+            => op1 ^ RotateLeft1(op2);
+
+        public static long BitwiseRotateLeftBy1AndXor(long op1, long op2)
+            => op1 ^ unchecked((long)RotateLeft1((ulong)op2));
     }
 }

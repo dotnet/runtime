@@ -62,15 +62,15 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NegativeInfinity, false };                  // Negative Infinity
             yield return new object[] { BFloat16.MinValue, true };                           // Min Negative Normal
-            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8400), true };   // Max Negative Normal
-            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x83FF), true };   // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8080), true };   // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x807F), true };   // Min Negative Subnormal
             yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8001), true };   // Max Negative Subnormal
             yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8000), true };   // Negative Zero
             yield return new object[] { BFloat16.NaN, false };                               // NaN
             yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0000), true };   // Positive Zero
             yield return new object[] { BFloat16.Epsilon, true };                            // Min Positive Subnormal
-            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x03FF), true };   // Max Positive Subnormal
-            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0400), true };   // Min Positive Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x007F), true };   // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0080), true };   // Min Positive Normal
             yield return new object[] { BFloat16.MaxValue, true };                           // Max Positive Normal
             yield return new object[] { BFloat16.PositiveInfinity, false };                  // Positive Infinity
         }
@@ -472,8 +472,11 @@ namespace System.Numerics.Tests
                 (float.NegativeInfinity, BFloat16.NegativeInfinity), // Overflow
                 (float.NaN, BFloat16.NaN), // Quiet Negative NaN
                 (BitConverter.UInt32BitsToSingle(0x7FC00000), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1000000)), // Quiet Positive NaN
-                (BitConverter.UInt32BitsToSingle(0xFFD55555), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1010101)), // Signalling Negative NaN
-                (BitConverter.UInt32BitsToSingle(0x7FD55555), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1010101)), // Signalling Positive NaN
+                (BitConverter.UInt32BitsToSingle(0xFFD55555), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1010101)), // Quiet Negative NaN with payload
+                (BitConverter.UInt32BitsToSingle(0x7FD55555), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1010101)), // Quiet Positive NaN with payload
+                (BitConverter.UInt32BitsToSingle(0x7F800001), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1000000)), // Positive NaN with payload only in the low 16 bits (must stay NaN, not Infinity)
+                (BitConverter.UInt32BitsToSingle(0xFF800001), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1000000)), // Negative NaN with payload only in the low 16 bits (must stay NaN, not Infinity)
+                (BitConverter.UInt32BitsToSingle(0x7FA00000), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1100000)), // Signalling Positive NaN with surviving high payload bit
                 (float.Epsilon, BitConverter.UInt16BitsToBFloat16(0)), // Underflow
                 (-float.Epsilon, BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000000)), // Underflow
                 (1f, BitConverter.UInt16BitsToBFloat16(0b0_01111111_0000000)), // 1
@@ -532,6 +535,19 @@ namespace System.Numerics.Tests
 
             foreach ((float original, BFloat16 expected) in data)
             {
+                // WASM on Mono lowers `float.Min` / `float.Max` through `f32.min` / `f32.max`
+                // (and `float.IsNaN(...)` branches through `f32.add`). The WebAssembly spec
+                // permits NaN-payload canonicalization on these ops but doesn't require it --
+                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
+                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
+                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
+                // trip through the software conversion path in that environment. Gated on
+                // Mono specifically since other WASM runtimes don't share this lowering.
+                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
+                // be removed once the conversion path either avoids the canonicalizing ops
+                // or the host engines start preserving NaN payloads.
+                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && float.IsNaN(original))
+                    continue;
                 yield return new object[] { original, expected };
             }
         }
@@ -617,6 +633,19 @@ namespace System.Numerics.Tests
 
             foreach ((double original, BFloat16 expected) in data)
             {
+                // WASM on Mono lowers `double.Min` / `double.Max` through `f64.min` / `f64.max`
+                // (and `double.IsNaN(...)` branches through `f64.add`). The WebAssembly spec
+                // permits NaN-payload canonicalization on these ops but doesn't require it --
+                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
+                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
+                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
+                // trip through the software conversion path in that environment. Gated on
+                // Mono specifically since other WASM runtimes don't share this lowering.
+                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
+                // be removed once the conversion path either avoids the canonicalizing ops
+                // or the host engines start preserving NaN payloads.
+                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && double.IsNaN(original))
+                    continue;
                 yield return new object[] { original, expected };
             }
         }
@@ -783,6 +812,12 @@ namespace System.Numerics.Tests
             // Overflow to infinity
             yield return new object[] { "0x1p128", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
             yield return new object[] { "-0x1p128", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
+
+            // Special values (Infinity/NaN) are supported with HexFloat
+            yield return new object[] { "Infinity", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "+Infinity", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "-Infinity", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
+            yield return new object[] { "NaN", NumberStyles.HexFloat, invariantFormat, float.NaN };
         }
 
         [Theory]
@@ -863,8 +898,6 @@ namespace System.Numerics.Tests
             yield return new object[] { "0x1.0p0garbage", NumberStyles.HexFloat, null, typeof(FormatException) }; // Trailing garbage
             yield return new object[] { "+-0x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double sign
             yield return new object[] { "0x1.0p+-1", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double exponent sign
-            yield return new object[] { "NaN", NumberStyles.HexFloat, null, typeof(FormatException) }; // NaN not valid for HexFloat
-            yield return new object[] { "Infinity", NumberStyles.HexFloat, null, typeof(FormatException) }; // Infinity not valid for HexFloat
             yield return new object[] { "0xX1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double X
             yield return new object[] { "x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0 before x
             yield return new object[] { "0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix

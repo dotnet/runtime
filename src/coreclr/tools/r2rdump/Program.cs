@@ -241,7 +241,9 @@ namespace R2RDump
                     OperatingSystem.Linux => TargetOS.Linux,
                     OperatingSystem.Apple => TargetOS.OSX,
                     OperatingSystem.FreeBSD => TargetOS.FreeBSD,
-                    OperatingSystem.NetBSD => TargetOS.FreeBSD,
+                    OperatingSystem.NetBSD => TargetOS.NetBSD,
+                    OperatingSystem.OpenBSD => TargetOS.OpenBSD,
+                    OperatingSystem.SunOS => TargetOS.SunOS,
                     OperatingSystem.Unknown => TargetOS.Unknown, // Webcil/WASM images don't encode OS
                     _ => throw new NotImplementedException(r2r.OperatingSystem.ToString()),
                 };

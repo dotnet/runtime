@@ -60,6 +60,7 @@ namespace Internal.ReadyToRunConstants
                         case InstructionSet.ARM64_SveSha3_Arm64: return ReadyToRunInstructionSet.SveSha3;
                         case InstructionSet.ARM64_SveSm4: return ReadyToRunInstructionSet.SveSm4;
                         case InstructionSet.ARM64_SveSm4_Arm64: return ReadyToRunInstructionSet.SveSm4;
+                        case InstructionSet.ARM64_Cssc: return ReadyToRunInstructionSet.Cssc;
 
                         default: throw new Exception("Unknown instruction set");
                     }
@@ -73,6 +74,18 @@ namespace Internal.ReadyToRunConstants
                         case InstructionSet.RiscV64_Zba: return ReadyToRunInstructionSet.Zba;
                         case InstructionSet.RiscV64_Zbb: return ReadyToRunInstructionSet.Zbb;
                         case InstructionSet.RiscV64_Zbs: return ReadyToRunInstructionSet.Zbs;
+
+                        default: throw new Exception("Unknown instruction set");
+                    }
+                }
+
+                case TargetArchitecture.Wasm32:
+                {
+                    switch (instructionSet)
+                    {
+                        case InstructionSet.Wasm32_WasmBase: return ReadyToRunInstructionSet.WasmBase;
+                        case InstructionSet.Wasm32_PackedSimd: return ReadyToRunInstructionSet.PackedSimd;
+                        case InstructionSet.Wasm32_Vector128: return null;
 
                         default: throw new Exception("Unknown instruction set");
                     }

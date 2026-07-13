@@ -1007,7 +1007,7 @@ private:
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
             //
-            CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedEntryHandle;
+            CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedResolvedToken.hMethod;
             if ((unboxedMethodHnd != nullptr) && (methodHnd != unboxedMethodHnd))
             {
                 // Demote this call to a non-inline candidate
@@ -1517,7 +1517,7 @@ private:
         GenTree* CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup)
         {
             GenTree* con = m_compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-            INDEBUG(con->AsIntCon()->gtTargetHandle = (size_t)methHnd);
+            INDEBUG(con->AsIntCon()->SetTargetHandle((size_t)methHnd));
             return con;
         }
     };

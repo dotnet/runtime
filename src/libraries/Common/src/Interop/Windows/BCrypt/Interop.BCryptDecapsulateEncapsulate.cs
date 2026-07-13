@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptDecapsulate(
             SafeBCryptKeyHandle hKey,
@@ -19,6 +20,7 @@ internal static partial class Interop
             out uint pcbSecretKey,
             uint dwFlags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptEncapsulate(
             SafeBCryptKeyHandle hKey,

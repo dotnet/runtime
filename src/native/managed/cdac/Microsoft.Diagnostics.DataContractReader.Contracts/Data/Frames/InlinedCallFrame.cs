@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal partial class InlinedCallFrame : IData<InlinedCallFrame>
 {
     [Field] public TargetPointer CallSiteSP { get; }
-    [Field] public TargetPointer CallerReturnAddress { get; }
+    [Field] public TargetCodePointer CallerReturnAddress { get; }
     [Field] public TargetPointer CalleeSavedFP { get; }
     [Field] public TargetPointer? SPAfterProlog { get; }
     [Field] public TargetPointer Datum { get; }
