@@ -340,41 +340,6 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return (int32_t)result;
     }
-    FCDECL2(int64_t, CallInterpreter_I64_I64_RetI64, int64_t, int64_t);
-    WASM_CALLABLE_FUNC_3(int64_t, CallInterpreter_I64_I64_RetI64, int64_t arg0, int64_t arg1, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[2];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        transitionBlock.args[0] = arg0;
-        transitionBlock.args[1] = arg1;
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        int64_t result = 0;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return result;
-    }
-    FCDECL1(int32_t, CallInterpreter_S8_RetI32, int8_t*);
-    WASM_CALLABLE_FUNC_2(int32_t, CallInterpreter_S8_RetI32, int8_t* arg0, PCODE portableEntrypoint)
-    {
-        struct
-        {
-            TransitionBlock block;
-            int64_t args[1];
-        } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = 0;
-        transitionBlock.block.m_StackPointer = callersStackPointer;
-        memcpy(&transitionBlock.args[0], arg0, 8);
-        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
-
-        void * result = NULL;
-        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
-        return (int32_t)result;
-    }
 }
 
 const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
@@ -394,9 +359,7 @@ const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
     { "Iiiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
     { "Iidp", (void*)&CallInterpreter_D64_RetI32 },
     { "Ildp", (void*)&CallInterpreter_D64_RetI64 },
-    { "IiiS8p", (void*)&CallInterpreter_I32_S8_RetI32 },
-    { "Illlp", (void*)&CallInterpreter_I64_I64_RetI64 },
-    { "IiS8p", (void*)&CallInterpreter_S8_RetI32 }
+    { "IiiS8p", (void*)&CallInterpreter_I32_S8_RetI32 }
 };
 
 const size_t g_wasmPortableEntryPointThunksCount = sizeof(g_wasmPortableEntryPointThunks) / sizeof(g_wasmPortableEntryPointThunks[0]);
@@ -531,13 +494,13 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
     pRD->IsCallerContextValid = FALSE;
 
-    if (m_pCallerReturnAddress == INLINED_PINVOKE_FROM_R2R)
+    if (dac_cast<TADDR>(m_pCallerReturnAddress) == INLINED_PINVOKE_FROM_R2R)
     {
         TADDR callSiteSP = dac_cast<TADDR>(m_pCallSiteSP);
         pRD->pCurrentContext->InterpreterSP = callSiteSP;
         pRD->pCurrentContext->InterpreterIP = GetWasmVirtualIPFromStackPointer(callSiteSP);
         _ASSERTE(pRD->pCurrentContext->InterpreterIP != 0); // We should be in RyuJit compiled code here
-        pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer(callSiteSP, (PCODE)pRD->pCurrentContext->InterpreterIP);
+        pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer(callSiteSP, pRD->pCurrentContext->InterpreterIP);
     }
     else
     {
@@ -545,6 +508,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
         pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
         pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
     }
+
     SyncRegDisplayToCurrentContext(pRD);
 
 #ifdef FEATURE_INTERPRETER
@@ -762,7 +726,7 @@ extern "C" __attribute__((naked)) void JIT_PInvokeBegin(void* sp, InlinedCallFra
 
 #ifdef DEBUG
 // Debug variant of these apis tests that sp and __stack_pointer are in sync
-EXTERN_C void* JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, InlinedCallFrame* pFrame)
+EXTERN_C void JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, InlinedCallFrame* pFrame)
 {
     _ASSERTE(sp == stack_pointer_global_value);
     Thread* pThread = (Thread*)pFrame->m_pThread;
@@ -774,9 +738,12 @@ EXTERN_C void* JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, In
 
 extern "C" __attribute__((naked)) void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 {
-    asm("local.get 0\n"                /* sp */
-        "global.set __stack_pointer\n" /* __stack_pointer = sp before any native code runs */
-        "local.get 1\n"                /* pFrame */
+    // Unlike JIT_PInvokeBegin, the debug variant does NOT reset the __stack_pointer global; it
+    // reads the current global and passes it alongside sp so JIT_PInvokeEndImpl can validate that
+    // R2R codegen kept sp == __stack_pointer across the call.
+    asm("local.get 0\n"                /* sp (arg1) */
+        "global.get __stack_pointer\n" /* current __stack_pointer global (arg2) */
+        "local.get 1\n"                /* pFrame (arg3) */
         "call %0\n"
         "return" ::"i"(JIT_PInvokeEndImpl));
 }
@@ -1471,6 +1438,50 @@ void InitializeWasmThunkCaches()
 InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
+
+    // String constructors use a special calling convention: they are compiled (both the R2R body and
+    // the caller-side thunks in crossgen2, see WasmLowering.GetStringCtorActualSignature) as static
+    // factory methods that allocate and return the string, i.e. "String Ctor(args)" rather than the
+    // declared "void .ctor(this, args)". The interpreter->R2R thunk selected here must therefore match
+    // that factory shape. This mirrors the R2R->interpreter direction in
+    // GetPortableEntryPointToInterpreterThunk (which uses the 'I'-prefixed keys).
+    if (pContextMD != NULL && pContextMD->IsCtor() && pContextMD->GetMethodTable()->IsString())
+    {
+        const char *thunkKey = nullptr;
+
+        if (metaSig.NumFixedArgs() == 1 && metaSig.NextArg() == ELEMENT_TYPE_VALUETYPE)
+        {
+            thunkKey = "MiS8p"; // String constructor with a single argument of type System.ReadOnlySpan<char>
+        }
+        else
+        {
+            switch (metaSig.NumFixedArgs())
+            {
+                case 1:
+                    thunkKey = "Miip";
+                    break;
+                case 2:
+                    thunkKey = "Miiip";
+                    break;
+                case 3:
+                    thunkKey = "Miiiip";
+                    break;
+                case 4:
+                    thunkKey = "Miiiiip";
+                    break;
+                default:
+                    PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk for string constructor");
+                    return NULL;
+            }
+        }
+
+        InterpreterCalliCookie stringCtorThunk = LookupThunk(thunkKey);
+        if (stringCtorThunk == NULL)
+        {
+            PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
+        }
+        return stringCtorThunk;
+    }
 
     InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
     if (thunk == NULL)

@@ -5040,7 +5040,25 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             //  intrinsics for the recursive call. Otherwise we will just recurse infinitely and overflow stack.
             //  This expansion can produce value that is inconsistent with the value seen by JIT/R2R code that can
             //  cause user code to misbehave. This is by design. One-off method Interpretation is for internal use only.
+            //
+            // Architecture-specific get_IsSupported (e.g. Sse2, PackedSimd) folds to NI_IsSupported_False and
+            // must be force-expanded here even outside InterpMode 3: the interpreter cannot execute those
+            // intrinsics (each is folded to a PlatformNotSupportedException throw), so an interpreted caller must
+            // observe IsSupported == false and take its scalar fallback. Otherwise it would call the R2R-compiled
+            // getter (which can report true, e.g. Wasm PackedSimd) and then reach an intrinsic it throws PNSE on.
+            //
+            // Vector{128,256,512}.get_IsHardwareAccelerated / Vector.get_IsHardwareAccelerated also fold to
+            // NI_IsSupported_False, but are intentionally NOT force-expanded: leaving them to call the R2R getter
+            // keeps interpreted code on the (working) software Vector fallbacks rather than the slower, less-tested
+            // scalar paths. They are still expanded under InterpMode 3 for one-off interpretation.
+            bool isArchIsSupported = false;
+            if (ni == NI_IsSupported_False)
+            {
+                const char* isSupportedMethodName = m_compHnd->getMethodNameFromMetadata(callInfo.hMethod, NULL, NULL, NULL, 0);
+                isArchIsSupported = (isSupportedMethodName != NULL) && (strcmp(isSupportedMethodName, "get_IsSupported") == 0);
+            }
             bool isMustExpand = (callInfo.hMethod == m_methodHnd) || (
+                    isArchIsSupported ||
                     ni == NI_System_StubHelpers_GetStubContext ||
                     ni == NI_System_StubHelpers_NextCallReturnAddress ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext ||
