@@ -80,7 +80,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static int StartAndForget(string fileName, IList<string>? arguments = null)
+        public static int StartAndForget(string fileName, IEnumerable<string>? arguments = null)
             => StartAndForget(CreateStartInfo(fileName, arguments));
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static ProcessExitStatus Run(string fileName, IList<string>? arguments = null, bool silent = false, TimeSpan? timeout = default)
+        public static ProcessExitStatus Run(string fileName, IEnumerable<string>? arguments = null, bool silent = false, TimeSpan? timeout = default)
         {
             ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
 
@@ -199,7 +199,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static async Task<ProcessExitStatus> RunAsync(string fileName, IList<string>? arguments = null, bool silent = false, CancellationToken cancellationToken = default)
+        public static async Task<ProcessExitStatus> RunAsync(string fileName, IEnumerable<string>? arguments = null, bool silent = false, CancellationToken cancellationToken = default)
         {
             ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
 
@@ -289,7 +289,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static ProcessTextOutput RunAndCaptureText(string fileName, IList<string>? arguments = null, TimeSpan? timeout = default)
+        public static ProcessTextOutput RunAndCaptureText(string fileName, IEnumerable<string>? arguments = null, TimeSpan? timeout = default)
             => RunAndCaptureText(CreateStartInfoForCapture(fileName, arguments), timeout);
 
         /// <summary>
@@ -355,10 +355,10 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Task<ProcessTextOutput> RunAndCaptureTextAsync(string fileName, IList<string>? arguments = null, CancellationToken cancellationToken = default)
+        public static Task<ProcessTextOutput> RunAndCaptureTextAsync(string fileName, IEnumerable<string>? arguments = null, CancellationToken cancellationToken = default)
             => RunAndCaptureTextAsync(CreateStartInfoForCapture(fileName, arguments), cancellationToken);
 
-        private static ProcessStartInfo CreateStartInfo(string fileName, IList<string>? arguments)
+        private static ProcessStartInfo CreateStartInfo(string fileName, IEnumerable<string>? arguments)
         {
             ArgumentException.ThrowIfNullOrEmpty(fileName);
 
@@ -374,7 +374,7 @@ namespace System.Diagnostics
             return startInfo;
         }
 
-        private static ProcessStartInfo CreateStartInfoForCapture(string fileName, IList<string>? arguments)
+        private static ProcessStartInfo CreateStartInfoForCapture(string fileName, IEnumerable<string>? arguments)
         {
             ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
             startInfo.RedirectStandardOutput = true;
