@@ -26,7 +26,7 @@ void TOCFile::LoadToc(const char* inputFileName, bool validate)
         uint32_t count;
     } header;
     const char sig[] = "INDX";
-    if (fread(&header, sizeof(header), 1, fpIndex) != 0 || memcmp(&header.sig, sig, sizeof(header.sig)) != 0)
+    if (fread(&header, sizeof(header), 1, fpIndex) != 1 || memcmp(&header.sig, sig, sizeof(header.sig)) != 0)
     {
         fclose(fpIndex);
         LogWarning("The index file %s is invalid: it seems to be missing the starting sentinel/length", inputFileName);
@@ -38,7 +38,7 @@ void TOCFile::LoadToc(const char* inputFileName, bool validate)
 
     // Read the whole array
     size_t read = fread(&this->m_tocArray[0], sizeof(TOCElement), this->m_tocCount, fpIndex);
-    if (read != this->m_tocCount * sizeof(TOCElement))
+    if (read != this->m_tocCount)
     {
         fclose(fpIndex);
         this->Clear();
@@ -49,7 +49,7 @@ void TOCFile::LoadToc(const char* inputFileName, bool validate)
     // Get the last 4 byte token
     uint32_t sentinel;
     read = fread(&sentinel, sizeof(sentinel), 1, fpIndex);
-    if ((read != sizeof(sentinel)) || (sentinel != header.sig))
+    if ((read != 1) || (sentinel != header.sig))
     {
         fclose(fpIndex);
         this->Clear();
