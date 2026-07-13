@@ -233,6 +233,23 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        public void ConcurrentTagAddsPreserveAllValues()
+        {
+            const int Count = 1_000;
+            Activity activity = new Activity("activity");
+
+            Parallel.For(0, Count, i => activity.AddTag(i.ToString(), i));
+
+            KeyValuePair<string, object>[] tags = activity.TagObjects.ToArray();
+            Assert.Equal(Count, tags.Length);
+            Assert.Equal(Count, tags.Select(tag => tag.Key).Distinct().Count());
+            foreach (KeyValuePair<string, object> tag in tags)
+            {
+                Assert.Equal(int.Parse(tag.Key), tag.Value);
+            }
+        }
+
         /// <summary>
         /// Tests activity SetParentId
         /// </summary>
