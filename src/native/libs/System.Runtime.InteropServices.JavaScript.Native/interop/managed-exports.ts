@@ -3,7 +3,7 @@
 
 import type { JSMarshalerArguments, GCHandle, MarshalerToCs, MarshalerToJs, CSFnHandle } from "./types";
 
-import { dotnetApi, dotnetAssert, dotnetBrowserUtilsExports, dotnetInteropJSExports, Module } from "./cross-module";
+import { dotnetAssert, dotnetBrowserUtilsExports, dotnetInteropJSExports, Module } from "./cross-module";
 import { allocStackFrame, getArg, isArgsException, setArgType, setGcHandle } from "./marshal";
 import { marshalExceptionToCs, marshalStringToCs } from "./marshal-to-cs";
 import { beginMarshalTaskToJs, endMarshalTaskToJs, marshalExceptionToJs, marshalInt32ToJs, marshalStringToJs } from "./marshal-to-js";
@@ -29,7 +29,6 @@ export function getManagedStackTrace(exceptionGCHandle: GCHandle): string {
         // unexpected exception here would be invalid runtime
         if (!error || typeof error.status !== "number") {
             dotnetBrowserUtilsExports.abortPosix(1, error, true);
-            dotnetApi.exit(1, error);
         }
         throw error;
     } finally {
@@ -54,7 +53,6 @@ export function releaseJsOwnedObjectByGcHandle(gcHandle: GCHandle) {
         // unexpected exception here would be invalid runtime
         if (!error || typeof error.status !== "number") {
             dotnetBrowserUtilsExports.abortPosix(1, error, true);
-            dotnetApi.exit(1, error);
         }
         throw error;
     } finally {
@@ -94,7 +92,6 @@ export function callDelegate(callbackGcHandle: GCHandle, arg1Js: any, arg2Js: an
             // unexpected exception here would be invalid runtime
             if (!error || typeof error.status !== "number") {
                 dotnetBrowserUtilsExports.abortPosix(1, error, true);
-                dotnetApi.exit(1, error);
             }
             throw error;
         }
@@ -142,7 +139,6 @@ export function completeTask(holderGcHandle: GCHandle, error?: any, data?: any, 
             // unexpected exception here would be invalid runtime
             if (!error || typeof error.status !== "number") {
                 dotnetBrowserUtilsExports.abortPosix(1, error, true);
-                dotnetApi.exit(1, error);
             }
             throw error;
         }
@@ -170,7 +166,6 @@ export function bindAssemblyExports(assemblyName: string): Promise<void> {
             // unexpected exception here would be invalid runtime
             if (!error || typeof error.status !== "number") {
                 dotnetBrowserUtilsExports.abortPosix(1, error, true);
-                dotnetApi.exit(1, error);
             }
             throw error;
         }
@@ -201,7 +196,6 @@ export function invokeJSExport(methodHandle: CSFnHandle, args: JSMarshalerArgume
         // unexpected exception here would be invalid runtime
         if (!error || typeof error.status !== "number") {
             dotnetBrowserUtilsExports.abortPosix(1, error, true);
-            dotnetApi.exit(1, error);
         }
         throw error;
     }
