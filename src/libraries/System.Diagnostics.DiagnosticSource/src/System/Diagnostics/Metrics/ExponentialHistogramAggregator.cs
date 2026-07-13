@@ -38,12 +38,16 @@ namespace System.Diagnostics.Metrics
         private const int ExponentGroupShift = 6;
         private const int ExponentGroupSize = 1 << ExponentGroupShift;
         private const int ExponentGroupMask = ExponentGroupSize - 1;
+        private const int ContentionSampleMask = 0x3F;
         private const int ContentionThreshold = 64;
         private const int MaxStripeCount = 8;
         private const int ExponentShift = 52;
         private const double MinRelativeError = 0.0001;
         private const int PositiveIntAndNan = ExponentArraySize / 2 - 1;
         private const int NegativeIntAndNan = ExponentArraySize - 1;
+
+        [ThreadStatic]
+        private static uint t_contentionSample;
 
         [ThreadStatic]
         private static int t_stripeIndex;
@@ -345,25 +349,7 @@ namespace System.Diagnostics.Metrics
 
             if (!Volatile.Read(ref _useStripes))
             {
-                bool lockTaken = false;
-                try
-                {
-                    Monitor.TryEnter(_singleLock, ref lockTaken);
-                    if (lockTaken && !Volatile.Read(ref _useStripes))
-                    {
-                        UpdateSingle(exponent, mantissa, measurement);
-                        return;
-                    }
-                }
-                finally
-                {
-                    if (lockTaken)
-                    {
-                        Monitor.Exit(_singleLock);
-                    }
-                }
-
-                if (Volatile.Read(ref _collecting))
+                if (!ShouldSampleContention())
                 {
                     lock (_singleLock)
                     {
@@ -374,19 +360,51 @@ namespace System.Diagnostics.Metrics
                         }
                     }
                 }
-                else if (Interlocked.Increment(ref _contentionCount) < ContentionThreshold)
+                else
                 {
-                    lock (_singleLock)
+                    bool lockTaken = false;
+                    try
                     {
-                        if (!Volatile.Read(ref _useStripes))
+                        Monitor.TryEnter(_singleLock, ref lockTaken);
+                        if (lockTaken && !Volatile.Read(ref _useStripes))
                         {
                             UpdateSingle(exponent, mantissa, measurement);
                             return;
                         }
                     }
-                }
+                    finally
+                    {
+                        if (lockTaken)
+                        {
+                            Monitor.Exit(_singleLock);
+                        }
+                    }
 
-                Volatile.Write(ref _useStripes, true);
+                    if (Volatile.Read(ref _collecting))
+                    {
+                        lock (_singleLock)
+                        {
+                            if (!Volatile.Read(ref _useStripes))
+                            {
+                                UpdateSingle(exponent, mantissa, measurement);
+                                return;
+                            }
+                        }
+                    }
+                    else if (Interlocked.Increment(ref _contentionCount) < ContentionThreshold)
+                    {
+                        lock (_singleLock)
+                        {
+                            if (!Volatile.Read(ref _useStripes))
+                            {
+                                UpdateSingle(exponent, mantissa, measurement);
+                                return;
+                            }
+                        }
+                    }
+
+                    Volatile.Write(ref _useStripes, true);
+                }
             }
 
             int stripeIndex = t_stripeIndex;
@@ -409,6 +427,22 @@ namespace System.Diagnostics.Metrics
                     stripe.Sum += measurement;
                 }
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool ShouldSampleContention()
+        {
+            uint sample = t_contentionSample;
+            if (sample == 0)
+            {
+                sample = (uint)Environment.CurrentManagedThreadId;
+            }
+
+            sample ^= sample << 13;
+            sample ^= sample >> 17;
+            sample ^= sample << 5;
+            t_contentionSample = sample;
+            return (sample & ContentionSampleMask) == 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

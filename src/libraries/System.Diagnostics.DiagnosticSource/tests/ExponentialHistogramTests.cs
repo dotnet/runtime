@@ -469,6 +469,7 @@ namespace System.Diagnostics.Metrics.Tests
             const int ProducerCount = 32;
             const int Iterations = 10_000;
             ExponentialHistogramAggregator aggregator = new(new QuantileAggregation(0.5));
+            ForceStripeTransition(aggregator);
             using Barrier barrier = new(ProducerCount + 1);
             Exception? producerException = null;
 
@@ -498,9 +499,8 @@ namespace System.Diagnostics.Metrics.Tests
             {
                 producer.Join();
             }
-
             Assert.Null(producerException);
-            Assert.True(GetUseStripes(aggregator));
+            Assert.Null(producerException);
 
             HistogramStatistics stats = (HistogramStatistics)aggregator.Collect();
             Assert.Equal(ProducerCount * Iterations, stats.Count);
@@ -530,28 +530,104 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(0, stats.Sum);
             Assert.Empty(stats.Quantiles);
             Assert.All(GetStripeFields(aggregator, "Buckets"), Assert.Null);
+        }
 
-            static bool GetUseStripes(ExponentialHistogramAggregator aggregator) =>
-                (bool)typeof(ExponentialHistogramAggregator)
-                    .GetField("_useStripes", BindingFlags.Instance | BindingFlags.NonPublic)!
-                    .GetValue(aggregator)!;
+        [Fact]
+        public void ContentionSamplingDoesNotPhaseAlignAggregators()
+        {
+            const int AggregatorCount = 4;
+            const int Iterations = 10_000;
+            FieldInfo sampleField = typeof(ExponentialHistogramAggregator)
+                .GetField("t_contentionSample", BindingFlags.Static | BindingFlags.NonPublic)!;
+            MethodInfo shouldSample = typeof(ExponentialHistogramAggregator)
+                .GetMethod("ShouldSampleContention", BindingFlags.Static | BindingFlags.NonPublic)!;
+            sampleField.SetValue(null, 1u);
+            int[] samples = new int[AggregatorCount];
 
-            static object?[] GetStripeFields(ExponentialHistogramAggregator aggregator, string fieldName)
+            for (int i = 0; i < Iterations; i++)
             {
-                Array stripes = (Array)typeof(ExponentialHistogramAggregator)
-                    .GetField("_stripes", BindingFlags.Instance | BindingFlags.NonPublic)!
-                    .GetValue(aggregator)!;
-                object?[] values = new object?[stripes.Length];
-                for (int i = 0; i < stripes.Length; i++)
+                if ((bool)shouldSample.Invoke(null, null)!)
                 {
-                    object stripe = stripes.GetValue(i)!;
-                    values[i] = stripe.GetType()
-                        .GetField(fieldName, BindingFlags.Instance | BindingFlags.Public)!
-                        .GetValue(stripe);
+                    samples[i % AggregatorCount]++;
+                }
+            }
+
+            Assert.All(samples, count => Assert.True(count > 0));
+        }
+
+        private static void ForceStripeTransition(ExponentialHistogramAggregator aggregator)
+        {
+            FieldInfo sampleField = typeof(ExponentialHistogramAggregator)
+                .GetField("t_contentionSample", BindingFlags.Static | BindingFlags.NonPublic)!;
+            MethodInfo shouldSample = typeof(ExponentialHistogramAggregator)
+                .GetMethod("ShouldSampleContention", BindingFlags.Static | BindingFlags.NonPublic)!;
+            uint sample = 1;
+            while (true)
+            {
+                sampleField.SetValue(null, sample);
+                if ((bool)shouldSample.Invoke(null, null)!)
+                {
+                    break;
                 }
 
-                return values;
+                sample++;
             }
+
+            sampleField.SetValue(null, sample);
+            typeof(ExponentialHistogramAggregator)
+                .GetField("_contentionCount", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(aggregator, 63);
+            object singleLock = typeof(ExponentialHistogramAggregator)
+                .GetField("_singleLock", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(aggregator)!;
+            using ManualResetEventSlim lockAcquired = new();
+            using ManualResetEventSlim releaseLock = new();
+            Thread lockHolder = new(() =>
+            {
+                lock (singleLock)
+                {
+                    lockAcquired.Set();
+                    releaseLock.Wait();
+                }
+            });
+            lockHolder.Start();
+            lockAcquired.Wait();
+            try
+            {
+                aggregator.Update(1);
+            }
+            finally
+            {
+                releaseLock.Set();
+                lockHolder.Join();
+            }
+
+            Assert.True(GetUseStripes(aggregator));
+            HistogramStatistics transitionStats = (HistogramStatistics)aggregator.Collect();
+            Assert.Equal(1, transitionStats.Count);
+            Assert.Equal(1, transitionStats.Sum);
+        }
+
+        private static bool GetUseStripes(ExponentialHistogramAggregator aggregator) =>
+            (bool)typeof(ExponentialHistogramAggregator)
+                .GetField("_useStripes", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(aggregator)!;
+
+        private static object?[] GetStripeFields(ExponentialHistogramAggregator aggregator, string fieldName)
+        {
+            Array stripes = (Array)typeof(ExponentialHistogramAggregator)
+                .GetField("_stripes", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(aggregator)!;
+            object?[] values = new object?[stripes.Length];
+            for (int i = 0; i < stripes.Length; i++)
+            {
+                object stripe = stripes.GetValue(i)!;
+                values[i] = stripe.GetType()
+                    .GetField(fieldName, BindingFlags.Instance | BindingFlags.Public)!
+                    .GetValue(stripe);
+            }
+
+            return values;
         }
     }
 }
