@@ -1111,15 +1111,25 @@ public sealed unsafe partial class SOSDacImpl
                 data->MTOfType = 0;
             }
 
-            // Read the field type's element type and encoded token from the field signature via the
-            // RuntimeTypeSystem contract so this method doesn't need to read ECMA metadata itself.
-            (CorElementType sigElementType, uint sigTypeToken) = rtsContract.GetFieldDescSignatureType(fieldDescTargetPtr);
-            data->TokenOfType = sigTypeToken;
-            if (sigTypeToken == (uint)EcmaMetadataUtils.TokenType.mdtTypeDef && data->MTOfType == 0)
+            // TokenOfType and the fallback sigType are read from the field's signature. These are
+            // SOS-specific display values (see DacpFieldDescData / DisplayFields), so decode the signature
+            // here rather than surfacing an SOS-shaped API on the RuntimeTypeSystem contract.
+            Contracts.ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+            MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+            FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
+            FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
+            (CorElementType typeCode, EntityHandle entityHandle) = EcmaMetadataUtils.ReadFieldSignatureType(mdReader, fieldDef.Signature);
+            if (typeCode is CorElementType.Class or CorElementType.ValueType)
             {
-                // There is no encoded token (i.e. a primitive type) and no MethodTable for it, so remember
-                // the element type from the signature.
-                data->sigType = sigElementType;
+                // if the typecode is class or value, the signature encodes the type token that follows
+                data->TokenOfType = (uint)MetadataTokens.GetToken(entityHandle);
+            }
+            else
+            {
+                // otherwise there is no encoded token, but we can encode the underlying type in sigType
+                data->TokenOfType = (uint)EcmaMetadataUtils.TokenType.mdtTypeDef;
+                if (data->MTOfType == 0)
+                    data->sigType = typeCode;
             }
 
             data->ModuleOfType = modulePtr.ToClrDataAddress(_target);

@@ -313,7 +313,6 @@ bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescRVA(TargetPointer fieldDescPointer);
 CorElementType GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer);
-(CorElementType ElementType, uint TypeToken) GetFieldDescSignatureType(TargetPointer fieldDescPointer);
 TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer);
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
 TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true);
@@ -2295,16 +2294,6 @@ uint GetFieldDescOffset(TargetPointer fieldDescPointer)
         return (uint)fieldDef.GetRelativeVirtualAddress();
     }
     return offset;
-}
-
-(CorElementType ElementType, uint TypeToken) GetFieldDescSignatureType(TargetPointer fieldDescPointer)
-{
-    // Resolve enclosing MT -> Module -> MetadataReader and read the field's signature blob.
-    // If metadata is unavailable, fall back to (GetFieldDescType(fieldDescPointer), mdTypeDefNil).
-    // Otherwise read the top-level element type from the signature (skipping custom modifiers).
-    // Unlike GetFieldDescType this preserves the precise element type (e.g. String/SzArray rather
-    // than the normalized Class). For class/valuetype fields the signature also encodes a type
-    // token (a token in the field's defining module); otherwise the token is mdTypeDefNil.
 }
 
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true)

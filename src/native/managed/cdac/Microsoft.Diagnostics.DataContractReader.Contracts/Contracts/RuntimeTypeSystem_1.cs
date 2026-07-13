@@ -2301,25 +2301,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return offset;
     }
 
-    (CorElementType ElementType, uint TypeToken) IRuntimeTypeSystem.GetFieldDescSignatureType(TargetPointer fieldDescPointer)
-    {
-        FieldDefinition? fieldDefOrNull = TryGetFieldDefinition(fieldDescPointer, out ModuleHandle moduleHandle, out _);
-        if (fieldDefOrNull is not FieldDefinition fieldDef)
-        {
-            // Metadata unavailable; fall back to the (normalized) type stored in the FieldDesc and no token.
-            return (((IRuntimeTypeSystem)this).GetFieldDescType(fieldDescPointer), (uint)EcmaMetadataUtils.TokenType.mdtTypeDef);
-        }
-
-        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
-        (CorElementType typeCode, EntityHandle entityHandle) = EcmaMetadataUtils.ReadFieldSignatureType(mdReader, fieldDef.Signature);
-        // For class/valuetype fields the signature encodes the type token (in the field's defining module);
-        // otherwise there is no encoded token.
-        uint typeToken = typeCode is CorElementType.Class or CorElementType.ValueType
-            ? (uint)MetadataTokens.GetToken(entityHandle)
-            : (uint)EcmaMetadataUtils.TokenType.mdtTypeDef;
-        return (typeCode, typeToken);
-    }
-
     // Resolves the FieldDefinition (and its containing module/enclosing type) for a FieldDesc from metadata.
     // Returns null if the metadata is not available (e.g. in a minidump).
     private FieldDefinition? TryGetFieldDefinition(TargetPointer fieldDescPointer, out ModuleHandle moduleHandle, out TypeHandle enclosingType)
