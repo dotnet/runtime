@@ -7,17 +7,26 @@
     <InterpreterIncompatible>true</InterpreterIncompatible>
     <BatchCLRTestEnvironmentCompatibilityCheck>
 $(BatchCLRTestEnvironmentCompatibilityCheck)
-IF "%DOTNET_JitStress%"=="" IF "%DOTNET_JitStressRegs%"=="" IF "%DOTNET_JITMinOpts%"=="" IF "%DOTNET_TailcallStress%"=="" goto :IteratorCeaCompatible
-  ECHO SKIPPING EXECUTION BECAUSE ONE OR MORE OF (DOTNET_JitStress, DOTNET_JitStressRegs, DOTNET_JITMinOpts, DOTNET_TailcallStress) IS SET
+IF "%DOTNET_TieredCompilation%"=="0" goto :IteratorCeaIncompatible
+IF "%COMPlus_TieredCompilation%"=="0" goto :IteratorCeaIncompatible
+IF "%DOTNET_TieredPGO%"=="0" goto :IteratorCeaIncompatible
+IF "%COMPlus_TieredPGO%"=="0" goto :IteratorCeaIncompatible
+IF NOT "%DOTNET_JitStress%"=="" goto :IteratorCeaIncompatible
+IF NOT "%DOTNET_JitStressRegs%"=="" goto :IteratorCeaIncompatible
+IF NOT "%DOTNET_JITMinOpts%"=="" goto :IteratorCeaIncompatible
+IF NOT "%DOTNET_TailcallStress%"=="" goto :IteratorCeaIncompatible
+goto :IteratorCeaCompatible
+:IteratorCeaIncompatible
+  ECHO SKIPPING EXECUTION BECAUSE ITERATOR CEA TESTS REQUIRE TIERED PGO AND NON-STRESS JIT SETTINGS
   popd
   Exit /b 0
 :IteratorCeaCompatible
     </BatchCLRTestEnvironmentCompatibilityCheck>
     <BashCLRTestEnvironmentCompatibilityCheck>
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [[ ( ! -z "$DOTNET_JitStress" ) || ( ! -z "$DOTNET_JitStressRegs" ) || ( ! -z "$DOTNET_JITMinOpts" ) || ( ! -z "$DOTNET_TailcallStress" ) ]]
+if [[ ( "$DOTNET_TieredCompilation" == "0" ) || ( "$COMPlus_TieredCompilation" == "0" ) || ( "$DOTNET_TieredPGO" == "0" ) || ( "$COMPlus_TieredPGO" == "0" ) || ( ! -z "$DOTNET_JitStress" ) || ( ! -z "$DOTNET_JitStressRegs" ) || ( ! -z "$DOTNET_JITMinOpts" ) || ( ! -z "$DOTNET_TailcallStress" ) ]]
 then
-  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (DOTNET_JitStress, DOTNET_JitStressRegs, DOTNET_JITMinOpts, DOTNET_TailcallStress) IS SET"
+  echo "SKIPPING EXECUTION BECAUSE ITERATOR CEA TESTS REQUIRE TIERED PGO AND NON-STRESS JIT SETTINGS"
   popd
   exit 0
 fi
