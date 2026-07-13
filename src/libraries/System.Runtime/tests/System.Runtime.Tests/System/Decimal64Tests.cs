@@ -1575,6 +1575,58 @@ namespace System.Tests
             Assert.Equal(expected, result);
         }
 
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64Unary), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void UnaryOperation_IntelReferenceVectors(string operation, ulong value, ulong expected)
+        {
+            Decimal64 v = Unsafe.BitCast<ulong, Decimal64>(value);
+
+            Decimal64 result = operation switch
+            {
+                "abs" => Decimal64.Abs(v),
+                "negate" => -v,
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64BinaryValue), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void BinaryValueOperation_IntelReferenceVectors(string operation, ulong left, ulong right, ulong expected)
+        {
+            Decimal64 l = Unsafe.BitCast<ulong, Decimal64>(left);
+            Decimal64 r = Unsafe.BitCast<ulong, Decimal64>(right);
+
+            Decimal64 result = operation switch
+            {
+                "copySign" => Decimal64.CopySign(l, r),
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64Predicate), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void Predicate_IntelReferenceVectors(string operation, ulong value, bool expected)
+        {
+            Decimal64 v = Unsafe.BitCast<ulong, Decimal64>(value);
+
+            bool result = operation switch
+            {
+                "isNaN" => Decimal64.IsNaN(v),
+                "isInf" => Decimal64.IsInfinity(v),
+                "isFinite" => Decimal64.IsFinite(v),
+                "isSigned" => Decimal64.IsNegative(v),
+                "isNormal" => Decimal64.IsNormal(v),
+                "isSubnormal" => Decimal64.IsSubnormal(v),
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, result);
+        }
+
         [Fact]
         public static void OneTest()
         {

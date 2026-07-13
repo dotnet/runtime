@@ -1569,6 +1569,58 @@ namespace System.Tests
             Assert.Equal(expected, result);
         }
 
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128Unary), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void UnaryOperation_IntelReferenceVectors(string operation, UInt128 value, UInt128 expected)
+        {
+            Decimal128 v = Unsafe.BitCast<UInt128, Decimal128>(value);
+
+            Decimal128 result = operation switch
+            {
+                "abs" => Decimal128.Abs(v),
+                "negate" => -v,
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128BinaryValue), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void BinaryValueOperation_IntelReferenceVectors(string operation, UInt128 left, UInt128 right, UInt128 expected)
+        {
+            Decimal128 l = Unsafe.BitCast<UInt128, Decimal128>(left);
+            Decimal128 r = Unsafe.BitCast<UInt128, Decimal128>(right);
+
+            Decimal128 result = operation switch
+            {
+                "copySign" => Decimal128.CopySign(l, r),
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128Predicate), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void Predicate_IntelReferenceVectors(string operation, UInt128 value, bool expected)
+        {
+            Decimal128 v = Unsafe.BitCast<UInt128, Decimal128>(value);
+
+            bool result = operation switch
+            {
+                "isNaN" => Decimal128.IsNaN(v),
+                "isInf" => Decimal128.IsInfinity(v),
+                "isFinite" => Decimal128.IsFinite(v),
+                "isSigned" => Decimal128.IsNegative(v),
+                "isNormal" => Decimal128.IsNormal(v),
+                "isSubnormal" => Decimal128.IsSubnormal(v),
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, result);
+        }
+
         [Fact]
         public static void OneTest()
         {
