@@ -503,6 +503,84 @@ namespace System.Numerics
         /// <returns>An estimate of <c>(<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" /></c>.</returns>
         public static Decimal128 MultiplyAddEstimate(Decimal128 left, Decimal128 right, Decimal128 addend) => (left * right) + addend;
 
+        /// <summary>Clamps a value to an inclusive minimum and maximum value.</summary>
+        /// <param name="value">The value to clamp.</param>
+        /// <param name="min">The inclusive minimum to which <paramref name="value" /> should clamp.</param>
+        /// <param name="max">The inclusive maximum to which <paramref name="value" /> should clamp.</param>
+        /// <returns>The result of clamping <paramref name="value" /> to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</returns>
+        /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
+        public static Decimal128 Clamp(Decimal128 value, Decimal128 min, Decimal128 max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return Min(Max(value, min), max);
+        }
+
+        /// <summary>Clamps a value to an inclusive minimum and maximum value using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="value">The value to clamp.</param>
+        /// <param name="min">The inclusive minimum to which <paramref name="value" /> should clamp.</param>
+        /// <param name="max">The inclusive maximum to which <paramref name="value" /> should clamp.</param>
+        /// <returns>The result of clamping <paramref name="value" /> to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</returns>
+        /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
+        public static Decimal128 ClampNative(Decimal128 value, Decimal128 min, Decimal128 max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return MinNative(MaxNative(value, min), max);
+        }
+
+        /// <summary>Copies the sign of a value to the sign of another value.</summary>
+        /// <param name="value">The value whose magnitude is used in the result.</param>
+        /// <param name="sign">The value whose sign is used in the result.</param>
+        /// <returns>A value with the magnitude of <paramref name="value" /> and the sign of <paramref name="sign" />.</returns>
+        public static Decimal128 CopySign(Decimal128 value, Decimal128 sign) => new Decimal128(Number.CopySignDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower), new UInt128(sign._upper, sign._lower)));
+
+        /// <summary>Compares two values to compute which is greater.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal128 Max(Decimal128 x, Decimal128 y) => new Decimal128(Number.MaxDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <summary>Compares two values to compute which is greater using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal128 MaxNative(Decimal128 x, Decimal128 y) => new Decimal128(Number.MaxNativeDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <summary>Compares two values to compute which is greater and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal128 MaxNumber(Decimal128 x, Decimal128 y) => new Decimal128(Number.MaxNumberDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <summary>Compares two values to compute which is lesser.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal128 Min(Decimal128 x, Decimal128 y) => new Decimal128(Number.MinDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <summary>Compares two values to compute which is lesser using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal128 MinNative(Decimal128 x, Decimal128 y) => new Decimal128(Number.MinNativeDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <summary>Compares two values to compute which is lesser and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal128 MinNumber(Decimal128 x, Decimal128 y) => new Decimal128(Number.MinNumberDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <summary>Computes the sign of a value.</summary>
+        /// <param name="value">The value whose sign is to be computed.</param>
+        /// <returns>A positive one if <paramref name="value" /> is positive, a negative one if <paramref name="value" /> is negative, and zero if <paramref name="value" /> is zero.</returns>
+        /// <exception cref="ArithmeticException"><paramref name="value" /> is <c>NaN</c>.</exception>
+        public static int Sign(Decimal128 value) => Number.SignDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower));
+
         private static readonly UInt128[] UInt128Powers10 =
             [
                 new UInt128(0, 1),

@@ -504,6 +504,84 @@ namespace System.Numerics
         /// <returns>An estimate of <c>(<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" /></c>.</returns>
         public static Decimal64 MultiplyAddEstimate(Decimal64 left, Decimal64 right, Decimal64 addend) => (left * right) + addend;
 
+        /// <summary>Clamps a value to an inclusive minimum and maximum value.</summary>
+        /// <param name="value">The value to clamp.</param>
+        /// <param name="min">The inclusive minimum to which <paramref name="value" /> should clamp.</param>
+        /// <param name="max">The inclusive maximum to which <paramref name="value" /> should clamp.</param>
+        /// <returns>The result of clamping <paramref name="value" /> to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</returns>
+        /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
+        public static Decimal64 Clamp(Decimal64 value, Decimal64 min, Decimal64 max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return Min(Max(value, min), max);
+        }
+
+        /// <summary>Clamps a value to an inclusive minimum and maximum value using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="value">The value to clamp.</param>
+        /// <param name="min">The inclusive minimum to which <paramref name="value" /> should clamp.</param>
+        /// <param name="max">The inclusive maximum to which <paramref name="value" /> should clamp.</param>
+        /// <returns>The result of clamping <paramref name="value" /> to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</returns>
+        /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
+        public static Decimal64 ClampNative(Decimal64 value, Decimal64 min, Decimal64 max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return MinNative(MaxNative(value, min), max);
+        }
+
+        /// <summary>Copies the sign of a value to the sign of another value.</summary>
+        /// <param name="value">The value whose magnitude is used in the result.</param>
+        /// <param name="sign">The value whose sign is used in the result.</param>
+        /// <returns>A value with the magnitude of <paramref name="value" /> and the sign of <paramref name="sign" />.</returns>
+        public static Decimal64 CopySign(Decimal64 value, Decimal64 sign) => new Decimal64(Number.CopySignDecimalIeee754<Decimal64, ulong>(value._value, sign._value));
+
+        /// <summary>Compares two values to compute which is greater.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal64 Max(Decimal64 x, Decimal64 y) => new Decimal64(Number.MaxDecimalIeee754<Decimal64, ulong>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which is greater using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal64 MaxNative(Decimal64 x, Decimal64 y) => new Decimal64(Number.MaxNativeDecimalIeee754<Decimal64, ulong>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which is greater and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal64 MaxNumber(Decimal64 x, Decimal64 y) => new Decimal64(Number.MaxNumberDecimalIeee754<Decimal64, ulong>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which is lesser.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal64 Min(Decimal64 x, Decimal64 y) => new Decimal64(Number.MinDecimalIeee754<Decimal64, ulong>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which is lesser using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal64 MinNative(Decimal64 x, Decimal64 y) => new Decimal64(Number.MinNativeDecimalIeee754<Decimal64, ulong>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which is lesser and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal64 MinNumber(Decimal64 x, Decimal64 y) => new Decimal64(Number.MinNumberDecimalIeee754<Decimal64, ulong>(x._value, y._value));
+
+        /// <summary>Computes the sign of a value.</summary>
+        /// <param name="value">The value whose sign is to be computed.</param>
+        /// <returns>A positive one if <paramref name="value" /> is positive, a negative one if <paramref name="value" /> is negative, and zero if <paramref name="value" /> is zero.</returns>
+        /// <exception cref="ArithmeticException"><paramref name="value" /> is <c>NaN</c>.</exception>
+        public static int Sign(Decimal64 value) => Number.SignDecimalIeee754<Decimal64, ulong>(value._value);
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Precision => Precision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.BufferLength => Number.Decimal64NumberBufferLength;

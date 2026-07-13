@@ -503,6 +503,84 @@ namespace System.Numerics
         /// <returns>An estimate of <c>(<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" /></c>.</returns>
         public static Decimal32 MultiplyAddEstimate(Decimal32 left, Decimal32 right, Decimal32 addend) => (left * right) + addend;
 
+        /// <summary>Clamps a value to an inclusive minimum and maximum value.</summary>
+        /// <param name="value">The value to clamp.</param>
+        /// <param name="min">The inclusive minimum to which <paramref name="value" /> should clamp.</param>
+        /// <param name="max">The inclusive maximum to which <paramref name="value" /> should clamp.</param>
+        /// <returns>The result of clamping <paramref name="value" /> to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</returns>
+        /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
+        public static Decimal32 Clamp(Decimal32 value, Decimal32 min, Decimal32 max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return Min(Max(value, min), max);
+        }
+
+        /// <summary>Clamps a value to an inclusive minimum and maximum value using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="value">The value to clamp.</param>
+        /// <param name="min">The inclusive minimum to which <paramref name="value" /> should clamp.</param>
+        /// <param name="max">The inclusive maximum to which <paramref name="value" /> should clamp.</param>
+        /// <returns>The result of clamping <paramref name="value" /> to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</returns>
+        /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
+        public static Decimal32 ClampNative(Decimal32 value, Decimal32 min, Decimal32 max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return MinNative(MaxNative(value, min), max);
+        }
+
+        /// <summary>Copies the sign of a value to the sign of another value.</summary>
+        /// <param name="value">The value whose magnitude is used in the result.</param>
+        /// <param name="sign">The value whose sign is used in the result.</param>
+        /// <returns>A value with the magnitude of <paramref name="value" /> and the sign of <paramref name="sign" />.</returns>
+        public static Decimal32 CopySign(Decimal32 value, Decimal32 sign) => new Decimal32(Number.CopySignDecimalIeee754<Decimal32, uint>(value._value, sign._value));
+
+        /// <summary>Compares two values to compute which is greater.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal32 Max(Decimal32 x, Decimal32 y) => new Decimal32(Number.MaxDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which is greater using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal32 MaxNative(Decimal32 x, Decimal32 y) => new Decimal32(Number.MaxNativeDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which is greater and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal32 MaxNumber(Decimal32 x, Decimal32 y) => new Decimal32(Number.MaxNumberDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which is lesser.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal32 Min(Decimal32 x, Decimal32 y) => new Decimal32(Number.MinDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which is lesser using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal32 MinNative(Decimal32 x, Decimal32 y) => new Decimal32(Number.MinNativeDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which is lesser and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal32 MinNumber(Decimal32 x, Decimal32 y) => new Decimal32(Number.MinNumberDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <summary>Computes the sign of a value.</summary>
+        /// <param name="value">The value whose sign is to be computed.</param>
+        /// <returns>A positive one if <paramref name="value" /> is positive, a negative one if <paramref name="value" /> is negative, and zero if <paramref name="value" /> is zero.</returns>
+        /// <exception cref="ArithmeticException"><paramref name="value" /> is <c>NaN</c>.</exception>
+        public static int Sign(Decimal32 value) => Number.SignDecimalIeee754<Decimal32, uint>(value._value);
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Precision => Precision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.BufferLength => Number.Decimal32NumberBufferLength;

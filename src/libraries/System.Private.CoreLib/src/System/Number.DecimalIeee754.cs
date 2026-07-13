@@ -1589,5 +1589,127 @@ namespace System
 
             return y;
         }
+
+        // The Max/Min helpers match the IEEE 754:2019 maximum/minimum family. Max/Min propagate NaN; the *Native
+        // variants mirror the greater-than/less-than operators (NaN never compares greater or less, so the second
+        // operand wins); the *Number variants drop NaN inputs. All treat +0 as greater than -0.
+
+        internal static TValue MaxDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (TDecimal.IsNaN(x))
+            {
+                return x;
+            }
+
+            if (TDecimal.IsNaN(y))
+            {
+                return y;
+            }
+
+            if (!EqualsDecimalIeee754<TDecimal, TValue>(x, y))
+            {
+                return GreaterThanDecimalIeee754<TDecimal, TValue>(x, y) ? x : y;
+            }
+
+            return TDecimal.IsNegative(y) ? x : y;
+        }
+
+        internal static TValue MinDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (TDecimal.IsNaN(x))
+            {
+                return x;
+            }
+
+            if (TDecimal.IsNaN(y))
+            {
+                return y;
+            }
+
+            if (!EqualsDecimalIeee754<TDecimal, TValue>(x, y))
+            {
+                return LessThanDecimalIeee754<TDecimal, TValue>(x, y) ? x : y;
+            }
+
+            return TDecimal.IsNegative(x) ? x : y;
+        }
+
+        internal static TValue MaxNativeDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            return GreaterThanDecimalIeee754<TDecimal, TValue>(x, y) ? x : y;
+        }
+
+        internal static TValue MinNativeDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            return LessThanDecimalIeee754<TDecimal, TValue>(x, y) ? x : y;
+        }
+
+        internal static TValue MaxNumberDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (!EqualsDecimalIeee754<TDecimal, TValue>(x, y))
+            {
+                if (!TDecimal.IsNaN(y))
+                {
+                    return LessThanDecimalIeee754<TDecimal, TValue>(y, x) ? x : y;
+                }
+
+                return x;
+            }
+
+            return TDecimal.IsNegative(y) ? x : y;
+        }
+
+        internal static TValue MinNumberDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (!EqualsDecimalIeee754<TDecimal, TValue>(x, y))
+            {
+                if (!TDecimal.IsNaN(y))
+                {
+                    return LessThanDecimalIeee754<TDecimal, TValue>(x, y) ? x : y;
+                }
+
+                return x;
+            }
+
+            return TDecimal.IsNegative(x) ? x : y;
+        }
+
+        internal static TValue CopySignDecimalIeee754<TDecimal, TValue>(TValue value, TValue sign)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // This method must work for all inputs, including NaN, so it operates on the raw bits: clear the sign of
+            // value, keep only the sign of sign, then combine them.
+            return (value & ~TDecimal.SignMask) | (sign & TDecimal.SignMask);
+        }
+
+        internal static int SignDecimalIeee754<TDecimal, TValue>(TValue decimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (TDecimal.IsNaN(decimalBits))
+            {
+                throw new ArithmeticException(SR.Arithmetic_NaN);
+            }
+
+            if (TDecimal.IsFinite(decimalBits) && TValue.IsZero(UnpackDecimalIeee754<TDecimal, TValue>(decimalBits).Significand))
+            {
+                return 0;
+            }
+
+            return ((decimalBits & TDecimal.SignMask) != TValue.Zero) ? -1 : +1;
+        }
     }
 }
