@@ -152,6 +152,15 @@ public interface IRuntimeTypeSystem : IContract
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if MethodTable represents a byreflike value (Span<T>, ReadOnlySpan<T>, etc.).
     bool IsByRefLike(TypeHandle typeHandle) => throw new NotImplementedException();
+    // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
+    // to 4, 8, or 16. Returns false otherwise (including on targets that don't
+    // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
+    // src/coreclr/vm/class.cpp.
+    bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize)
+    {
+        elementSize = 0;
+        throw new NotImplementedException();
+    }
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation subtype that has no metadata of its own
@@ -249,8 +258,10 @@ public interface IRuntimeTypeSystem : IContract
     // Or something else similar.
     // A no metadata method is also a StoredSigMethodDesc
     bool IsNoMetadataMethod(MethodDescHandle methodDesc, out string methodName) => throw new NotImplementedException();
-    // A StoredSigMethodDesc is a MethodDesc for which the signature isn't found in metadata.
-    bool IsStoredSigMethodDesc(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature) => throw new NotImplementedException();
+
+    // Gets the raw signature bytes for a MethodDesc by checking stored signature, async variant signature, then metadata.
+    // Returns false if no signature could be resolved.
+    bool TryGetMethodSignature(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature) => throw new NotImplementedException();
 
     // Return true for a MethodDesc that describes a method represented by the System.Reflection.Emit.DynamicMethod class
     // A DynamicMethod is also a StoredSigMethodDesc, and a NoMetadataMethod

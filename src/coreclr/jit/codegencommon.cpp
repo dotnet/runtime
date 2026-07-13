@@ -402,6 +402,9 @@ CodeGen::CodeGen(Compiler* theCompiler)
     m_cgEmitter->codeGen = this;
     m_cgEmitter->gcInfo  = &gcInfo;
 
+    // On wasm this is never set by register allocation, so initialize it here.
+    calleeRegArgMaskLiveIn = RBM_NONE;
+
 #ifdef DEBUG
     setVerbose(m_compiler->verbose);
 #endif // DEBUG
@@ -3415,6 +3418,11 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     }
 #endif
 
+    if (calleeRegArgMaskLiveIn == RBM_NONE)
+    {
+        return;
+    }
+
     regMaskTP paramRegs = calleeRegArgMaskLiveIn;
     if (m_compiler->opts.OptimizationDisabled())
     {
@@ -3682,7 +3690,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
     //
     assert(!m_compiler->opts.IsOSR());
 
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     unsigned varNum = 0;
 
@@ -3790,7 +3798,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
  */
 void CodeGen::genCheckUseBlockInit()
 {
-    assert(!m_compiler->compGeneratingProlog);
+    assert(!GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     unsigned initStkLclCnt = 0; // The number of int-sized stack local variables that need to be initialized (variables
                                 // larger than int count for more than 1).
@@ -4027,7 +4035,7 @@ void CodeGen::genCheckUseBlockInit()
  */
 void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& initDblRegs, const regNumber& initReg)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     // The first float/double reg that is initialized to 0. So they can be used to
     // initialize the remaining registers.
@@ -4154,7 +4162,7 @@ regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegZeroed)
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (genUseBlockInit)
     {
@@ -4597,7 +4605,7 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
 
 void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     const bool reportArg = m_compiler->lvaReportParamTypeArg();
 
@@ -5139,7 +5147,6 @@ void CodeGen::genFinalizeFrame()
  */
 void CodeGen::genFnProlog()
 {
-    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
 
     m_compiler->funSetCurrentFunc(0);
 
@@ -5835,10 +5842,7 @@ void CodeGen::genFnProlog()
 
         genHomeStackPartOfSplitParameter(initReg, &initRegZeroed);
 
-        if (calleeRegArgMaskLiveIn != RBM_NONE)
-        {
-            genHomeRegisterParams(initReg, &initRegZeroed);
-        }
+        genHomeRegisterParams(initReg, &initRegZeroed);
 
         // Home the incoming arguments.
         genEnregisterIncomingStackArgs();

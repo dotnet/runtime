@@ -589,55 +589,15 @@ const char* getWellKnownArgName(WellKnownArg arg)
     {
         case WellKnownArg::None:
             return "None";
-        case WellKnownArg::ThisPointer:
-            return "ThisPointer";
-        case WellKnownArg::VarArgsCookie:
-            return "VarArgsCookie";
-        case WellKnownArg::InstParam:
-            return "InstParam";
-        case WellKnownArg::AsyncContinuation:
-            return "AsyncContinuation";
-        case WellKnownArg::RetBuffer:
-            return "RetBuffer";
-        case WellKnownArg::PInvokeFrame:
-            return "PInvokeFrame";
-        case WellKnownArg::ShiftLow:
-            return "ShiftLow";
-        case WellKnownArg::ShiftHigh:
-            return "ShiftHigh";
-        case WellKnownArg::VirtualStubCell:
-            return "VirtualStubCell";
-        case WellKnownArg::PInvokeCookie:
-            return "PInvokeCookie";
-        case WellKnownArg::PInvokeTarget:
-            return "PInvokeTarget";
-        case WellKnownArg::R2RIndirectionCell:
-            return "R2RIndirectionCell";
-        case WellKnownArg::ValidateIndirectCallTarget:
-            return "ValidateIndirectCallTarget";
-        case WellKnownArg::DispatchIndirectCallTarget:
-            return "DispatchIndirectCallTarget";
-        case WellKnownArg::SwiftError:
-            return "SwiftError";
-        case WellKnownArg::SwiftSelf:
-            return "SwiftSelf";
-        case WellKnownArg::X86TailCallSpecialArg:
-            return "X86TailCallSpecialArg";
-        case WellKnownArg::StackArrayLocal:
-            return "StackArrayLocal";
-        case WellKnownArg::RuntimeMethodHandle:
-            return "RuntimeMethodHandle";
-        case WellKnownArg::AsyncExecutionContext:
-            return "AsyncExecutionContext";
-        case WellKnownArg::AsyncSynchronizationContext:
-            return "AsyncSynchronizationContext";
-        case WellKnownArg::WasmShadowStackPointer:
-            return "WasmShadowStackPointer";
-        case WellKnownArg::WasmPortableEntryPoint:
-            return "WasmPortableEntryPoint";
-    }
 
-    return "N/A";
+#define WELL_KNOWN_ARG(name, shortName, isILArg, addedByMorph)                                                         \
+    case WellKnownArg::name:                                                                                           \
+        return #name;
+#include "wellknownargs.h"
+
+        default:
+            return "N/A";
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2890,7 +2850,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     }
 
 #ifdef FEATURE_SIMD
-    if (varTypeIsStruct(elemTyp) && structSizeMightRepresentSIMDType(elemSize))
+    if (varTypeIsStruct(elemTyp))
     {
         elemTyp = impNormStructType(elemStructType);
     }
@@ -5411,7 +5371,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
                                                       CORINFO_METHOD_HANDLE callTargetStubHnd,
                                                       CORINFO_METHOD_HANDLE dispatcherHnd)
 {
-    GenTreeCall* callDispatcherNode = gtNewCallNode(CT_USER_FUNC, dispatcherHnd, TYP_VOID, fgMorphStmt->GetDebugInfo());
+    GenTreeCall* callDispatcherNode = gtNewUserCallNode(dispatcherHnd, TYP_VOID, fgMorphStmt->GetDebugInfo());
     // The dispatcher has signature
     // void DispatchTailCalls(void* callersRetAddrSlot, void* callTarget, ref byte retValue)
 
@@ -9329,11 +9289,13 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicId)
     {
-#if defined(TARGET_ARM64)
-        case NI_Vector64_Create:
-#endif // TARGET_ARM64
-        case NI_Vector128_Create:
+        case NI_Vector_Create:
         {
+            if ((simdSize != 8) && (simdSize != 16))
+            {
+                break;
+            }
+
             // The managed `Dot` API returns a scalar. However, many common usages require
             // it to be then immediately broadcast back to a vector so that it can be used
             // in a subsequent operation. One of the most common is normalizing a vector
@@ -9389,12 +9351,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             GenTreeHWIntrinsic* hwop1 = op1->AsHWIntrinsic();
 
-#if defined(TARGET_ARM64)
-            if ((hwop1->GetHWIntrinsicId() == NI_Vector64_ToScalar) ||
-                (hwop1->GetHWIntrinsicId() == NI_Vector128_ToScalar))
-#else
-            if (hwop1->GetHWIntrinsicId() == NI_Vector128_ToScalar)
-#endif
+            if (hwop1->GetHWIntrinsicId() == NI_Vector_ToScalar)
             {
                 op1 = hwop1->Op(1);
 
@@ -9407,11 +9364,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 hwop1    = op1->AsHWIntrinsic();
             }
 
-#if defined(TARGET_ARM64)
-            if ((hwop1->GetHWIntrinsicId() != NI_Vector64_Dot) && (hwop1->GetHWIntrinsicId() != NI_Vector128_Dot))
-#else
-            if (hwop1->GetHWIntrinsicId() != NI_Vector128_Dot)
-#endif
+            if (hwop1->GetHWIntrinsicId() != NI_Vector_Dot)
             {
                 break;
             }
@@ -11835,14 +11788,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
     switch (intrinsic)
     {
 #if !defined(TARGET_WASM)
-#if defined(TARGET_ARM64)
-        case NI_Vector64_CreateGeometricSequence:
-#endif // TARGET_ARM64
-        case NI_Vector128_CreateGeometricSequence:
-#if defined(TARGET_XARCH)
-        case NI_Vector256_CreateGeometricSequence:
-        case NI_Vector512_CreateGeometricSequence:
-#endif // TARGET_XARCH
+        case NI_Vector_CreateGeometricSequence:
         {
             assert(tree->GetOperandCount() == 2);
 
@@ -12754,6 +12700,21 @@ GenTree* Compiler::fgMorphTree(GenTree* tree)
             {
                 use.SetNode(fgMorphTree(use.GetNode()));
                 tree->gtFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
+
+                // A whole read of a promoted SIMD local is not a supported
+                // GT_FIELD_LIST operand. Preserve the post-morph promoted-struct
+                // invariant (see fgMorphHWIntrinsic) by marking it do-not-enregister
+                // (dependent promotion). Restrict this to SIMD locals: a non-SIMD
+                // promoted struct is a legal FIELD_LIST operand and must keep its
+                // independent promotion.
+                //
+                GenTree* const operand = use.GetNode();
+                if (operand->OperIs(GT_LCL_VAR) && varTypeIsSIMD(operand) &&
+                    lvaGetDesc(operand->AsLclVar())->lvPromoted)
+                {
+                    lvaSetVarDoNotEnregister(operand->AsLclVar()->GetLclNum()
+                                                 DEBUGARG(DoNotEnregisterReason::SimdUserForcesDep));
+                }
             }
             break;
 

@@ -1399,7 +1399,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 pParam->inlineInfo->InlineRoot->m_inlineStrategy
                     ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciStmt,
                                               pParam->inlineInfo->iciCall);
-            pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
             pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHandle;
 
             JITLOG_THIS(pParam->pThis,
@@ -2313,26 +2312,26 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     unsigned ilArgNum = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
-        InlArgInfo* argInfo = nullptr;
-        switch (arg.GetWellKnownArg())
+        InlArgInfo* argInfo;
+        if (arg.IsUserArg())
         {
-            case WellKnownArg::RetBuffer:
-            case WellKnownArg::AsyncContinuation:
-            case WellKnownArg::AsyncExecutionContext:
-            case WellKnownArg::AsyncSynchronizationContext:
-                continue;
-            case WellKnownArg::InstParam:
-                argInfo = inlineInfo->inlInstParamArgInfo;
-                break;
-            default:
-                assert(ilArgNum < inlineInfo->argCnt);
-                argInfo = &inlineInfo->inlArgInfo[ilArgNum++];
-                break;
+            assert(ilArgNum < inlineInfo->argCnt);
+            argInfo = &inlArgInfo[ilArgNum++];
+        }
+        else if (arg.GetWellKnownArg() == WellKnownArg::InstParam)
+        {
+            argInfo = inlineInfo->inlInstParamArgInfo;
+        }
+        else
+        {
+            continue;
         }
 
         assert(argInfo != nullptr);
         fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
     }
+
+    assert(ilArgNum == inlineInfo->argCnt);
 
     // Add the CCTOR check if asked for.
     // Note: We no longer do the optimization that is done before by staticAccessedFirstUsingHelper in the old inliner.

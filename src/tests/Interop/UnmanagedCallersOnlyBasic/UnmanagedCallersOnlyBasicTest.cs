@@ -45,6 +45,12 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         return DoubleImpl(n);
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = "IgnoredEntryPoint", AssociatedSourceType = typeof(UnmanagedCallersOnlyDll))]
+    public static int ManagedDoubleCallback_AllOptionalParameters(int n)
+    {
+        return DoubleImpl(n);
+    }
+
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("needs triage", TestPlatforms.Android)]
@@ -60,7 +66,23 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         Assert.Equal(expected, UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleCallback, n));
     }
 
-   [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [Fact]
+    public static void TestUnmanagedCallersOnlyValid_AllOptionalParameters()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_AllOptionalParameters)}...");
+
+        int n = 12345;
+        int expected = DoubleImpl(n);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall(&ManagedDoubleCallback_AllOptionalParameters, n);
+
+        Assert.Equal(expected, actual);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     public static int ManagedDoubleCallback_Stdcall(int n)
     {
         return DoubleImpl(n);

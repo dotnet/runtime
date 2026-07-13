@@ -337,22 +337,6 @@ internal class GcScanner
     /// </summary>
     private void PromoteCallerStack(TargetPointer frameAddress, GcScanContext scanContext)
     {
-        IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
-        RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
-        RuntimeInfoOperatingSystem os = runtimeInfo.GetTargetOperatingSystem();
-        // TODO(https://github.com/dotnet/runtime/issues/130008): extend ICallingConvention.TryComputeArgGCRefMapBlob
-        // coverage to non-Windows / ARM targets (SystemV-AMD64 / ARM64 struct-in-register classification, ARM32 ABI
-        // port) so this path is taken on those targets too instead of deferring to RecordDeferredFrame.
-        bool supportedByCallingConvention =
-            os is RuntimeInfoOperatingSystem.Windows
-            && arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64;
-
-        if (!supportedByCallingConvention)
-        {
-            scanContext.RecordDeferredFrame(frameAddress);
-            return;
-        }
-
         Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
         if (fmf.MethodDescPtr == TargetPointer.Null)
         {

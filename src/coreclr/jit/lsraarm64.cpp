@@ -985,8 +985,11 @@ int LinearScan::BuildNode(GenTree* tree)
                 {
                     assert(varTypeIsIntegral(tree->gtGetOp1()));
 
-                    // We need a SIMD register to execute popcnt
-                    buildInternalFloatRegisterDefForNode(tree, allSIMDRegs());
+                    // Without FEAT_CSSC we need a SIMD register to execute popcnt
+                    if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_Cssc))
+                    {
+                        buildInternalFloatRegisterDefForNode(tree, allSIMDRegs());
+                    }
 
                     BuildUse(tree->gtGetOp1());
                     buildInternalRegisterUses();
@@ -2348,8 +2351,7 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenT
 
     switch (intrinsicId)
     {
-        case NI_Vector64_CreateScalarUnsafe:
-        case NI_Vector128_CreateScalarUnsafe:
+        case NI_Vector_CreateScalarUnsafe:
             if (varTypeIsFloating(intrinsicTree->Op(1)))
             {
                 delayFreeOp = intrinsicTree->Op(1);
@@ -2365,8 +2367,7 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenT
             }
             break;
 
-        case NI_Vector64_ToScalar:
-        case NI_Vector128_ToScalar:
+        case NI_Vector_ToScalar:
             if (varTypeIsFloating(intrinsicTree))
             {
                 delayFreeOp = intrinsicTree->Op(1);
@@ -2374,10 +2375,10 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenT
             }
             break;
 
-        case NI_Vector64_ToVector128Unsafe:
-        case NI_Vector128_AsVector128Unsafe:
-        case NI_Vector128_AsVector3:
-        case NI_Vector128_GetLower:
+        case NI_Vector_ToVector128Unsafe:
+        case NI_Vector_AsVector128Unsafe:
+        case NI_Vector_AsVector3:
+        case NI_Vector_GetLower:
             delayFreeOp = intrinsicTree->Op(1);
             assert(delayFreeOp != nullptr);
             break;

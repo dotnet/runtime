@@ -31,7 +31,7 @@ namespace System.Runtime.CompilerServices
         [ThreadStatic]
         internal static unsafe AsyncStateMachineDispatcherInfo* t_current;
 
-        public static bool InstrumentCheckPoint
+        public static bool IsSupported
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #if NATIVEAOT
@@ -41,40 +41,48 @@ namespace System.Runtime.CompilerServices
             // postpone the support until proven needed.
             get => false;
 #else
-            get => AsyncInstrumentation.IsSupported && AsyncInstrumentation.ActiveFlags != AsyncInstrumentation.Flags.Disabled;
-#endif
-        }
-
-        public static bool AsyncProfilerInstrumentCheckPoint
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NATIVEAOT
-            // See InstrumentCheckPoint above for the rationale of disabling V1 on Native AOT.
-            get => false;
-#else
-            get => InstrumentCheckPoint && AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags());
+            get => AsyncInstrumentation.IsAsyncProfilerSupported;
 #endif
         }
 
         internal static unsafe AsyncStateMachineDispatcher? GetActiveDispatcher()
         {
+            if (!IsSupported)
+            {
+                return null;
+            }
+
             AsyncStateMachineDispatcherInfo* info = AsyncStateMachineDispatcherInfo.t_current;
             return info != null ? info->Dispatcher : null;
         }
 
-        internal static unsafe AsyncStateMachineDispatcher CreateDispatcher(IAsyncStateMachineBox box)
+        internal static unsafe IAsyncStateMachineBox CreateDispatcher(IAsyncStateMachineBox box, AsyncInstrumentation.Flags flags)
         {
-            if (box is AsyncStateMachineDispatcher existing)
+            if (!IsSupported)
             {
-                return existing;
+                return box;
+            }
+
+            if (box is AsyncStateMachineDispatcher)
+            {
+                return box;
             }
 
             AsyncStateMachineDispatcherInfo* info = AsyncStateMachineDispatcherInfo.t_current;
             AsyncStateMachineDispatcher? activeDispatcher = info != null ? info->Dispatcher : null;
 
+            if (activeDispatcher != null && ReferenceEquals(activeDispatcher.InnerBox, box))
+            {
+                if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
+                {
+                    AsyncProfiler.CreateAsyncContext.Append(activeDispatcher, ref info->AsyncProfilerInfo);
+                }
+
+                return activeDispatcher;
+            }
+
             AsyncStateMachineDispatcher dispatcher = new AsyncStateMachineDispatcher(box);
 
-            AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
             if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
             {
                 ulong parentDispatcherId = AsyncProfiler.DispatcherIds.CaptureParentDispatcherId();
@@ -95,6 +103,11 @@ namespace System.Runtime.CompilerServices
 
         internal static unsafe void UnwindAsyncFrame(object completingBox, AsyncInstrumentation.Flags flags)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
+
             AsyncStateMachineDispatcherInfo* info = t_current;
             if (info != null && ReferenceEquals(info->AsyncProfilerInfo.CurrentContinuation, completingBox))
             {
@@ -107,9 +120,13 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void ResumeAsyncMethod(IAsyncStateMachineBox box, AsyncInstrumentation.Flags flags)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
+
             AsyncStateMachineDispatcherInfo* info = t_current;
             AsyncStateMachineDispatcher? activeDispatcher = info != null ? info->Dispatcher : null;
             if (activeDispatcher == null)
@@ -147,9 +164,13 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void CompleteAsyncMethod(object completingBox, AsyncInstrumentation.Flags flags)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
+
             AsyncStateMachineDispatcherInfo* info = t_current;
             if (info != null && ReferenceEquals(info->AsyncProfilerInfo.CurrentContinuation, completingBox))
             {
@@ -166,7 +187,8 @@ namespace System.Runtime.CompilerServices
     internal sealed class AsyncStateMachineDispatcher : Task<VoidTaskResult>, IAsyncStateMachineBox
     {
         private IAsyncStateMachineBox? _inner;
-        private Action? _moveNextAction;
+
+        internal IAsyncStateMachineBox? InnerBox => _inner;
 
         internal IAsyncStateMachineBox? LastContinuation;
 
@@ -214,6 +236,9 @@ namespace System.Runtime.CompilerServices
             info.Dispatcher = this;
             info.AsyncProfilerInfo.CurrentContinuation = inner;
 
+            LastContinuation = null;
+            ReachedLastContinuation = false;
+
             try
             {
                 InstrumentedMoveNext(ref info, inner);
@@ -224,7 +249,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public Action MoveNextAction => _moveNextAction ??= MoveNext;
+        public Action MoveNextAction => (Action)(m_action ??= new Action(MoveNext));
 
         public IAsyncStateMachine GetStateMachineObject()
         {
@@ -257,10 +282,9 @@ namespace System.Runtime.CompilerServices
 
         private void InstrumentedMoveNext(ref AsyncStateMachineDispatcherInfo info, IAsyncStateMachineBox inner)
         {
-            AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
+            AsyncInstrumentation.Flags flags = AsyncInstrumentation.LoadFlags();
             try
             {
-                flags = AsyncInstrumentation.SyncActiveFlags();
                 if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
                 {
                     AsyncProfiler.ResumeAsyncContext.Resume(ref info);
