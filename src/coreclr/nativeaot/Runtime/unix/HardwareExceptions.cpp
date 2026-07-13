@@ -4,6 +4,7 @@
 #include "common.h"
 #include "CommonTypes.h"
 #include "Pal.h"
+#include "volatile.h"
 #include "PalLimitedContext.h"
 #include "CommonMacros.h"
 #include "config.h"
@@ -557,7 +558,7 @@ typedef int32_t (*FatalErrorHandlerForNativeExceptionFn)(int32_t errorCode, void
 // skip its default fatal handling (previous signal action chaining and crash dump).
 static bool ShouldSkipDefaultHandlingForNativeException(siginfo_t *siginfo, void *context)
 {
-    void* pCallback = g_pfnFatalErrorHandlerForNativeException;
+    void* pCallback = VolatileLoad(&g_pfnFatalErrorHandlerForNativeException);
     if (pCallback == NULL)
     {
         return false;

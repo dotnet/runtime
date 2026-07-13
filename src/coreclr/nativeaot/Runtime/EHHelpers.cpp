@@ -12,6 +12,7 @@
 #include "TypeManager.h"
 #include "PalLimitedContext.h"
 #include "Pal.h"
+#include "volatile.h"
 #include "holder.h"
 #include "Crst.h"
 #include "RuntimeInstance.h"
@@ -42,13 +43,12 @@ struct MethodRegionInfo
 // Class-library callback that routes a genuinely-unmanaged fatal exception (a fault whose
 // instruction pointer is not managed code, so it is never translated to a managed exception)
 // to a user-installed fatal error handler. NULL unless a handler has been registered, which
-// keeps the runtime's default fatal handling unchanged when the feature is unused. Read from
-// the platform-specific fatal choke points.
+// keeps the runtime's default fatal handling unchanged when the feature is unused.
 void* g_pfnFatalErrorHandlerForNativeException = NULL;
 
 FCIMPL1(void, RhpRegisterFatalErrorHandlerForNativeException, void* pCallback)
 {
-    g_pfnFatalErrorHandlerForNativeException = pCallback;
+    PalInterlockedExchangePointer(&g_pfnFatalErrorHandlerForNativeException, pCallback);
 }
 FCIMPLEND
 
@@ -476,7 +476,7 @@ static bool IsFatalHardwareExceptionForFatalErrorHandler(uintptr_t faultCode)
 // leaves behavior unchanged until a handler is registered.
 LONG WINAPI RhpUnhandledExceptionFilter(PEXCEPTION_POINTERS pExPtrs)
 {
-    void* pCallback = g_pfnFatalErrorHandlerForNativeException;
+    void* pCallback = VolatileLoad(&g_pfnFatalErrorHandlerForNativeException);
     if (pCallback != NULL)
     {
         uintptr_t faultCode = pExPtrs->ExceptionRecord->ExceptionCode;

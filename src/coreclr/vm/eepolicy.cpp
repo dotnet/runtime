@@ -792,7 +792,7 @@ static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(FatalErrorProperty p
     switch (prop)
     {
     case FEP_FatalErrorLogFunc:
-        *value = reinterpret_cast<void*>(GetFatalErrorLogFunc);
+        *value = reinterpret_cast<const void*>(reinterpret_cast<uintptr_t>(GetFatalErrorLogFunc));
         return 1;
 
     case FEP_Address:
