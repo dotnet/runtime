@@ -6,8 +6,8 @@
 
 namespace System.Net.Http
 {
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class BrotliCompressedContent : System.Net.Http.HttpContent
     {
         public BrotliCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.BrotliCompressionOptions compressionOptions) { }
@@ -56,8 +56,8 @@ namespace System.Net.Http
     }
     public sealed partial class GZipCompressedContent : System.Net.Http.HttpContent
     {
-        public GZipCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.ZLibCompressionOptions compressionOptions) { }
         public GZipCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.CompressionLevel compressionLevel = System.IO.Compression.CompressionLevel.Optimal) { }
+        public GZipCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.ZLibCompressionOptions compressionOptions) { }
         protected override void Dispose(bool disposing) { }
         protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
@@ -523,12 +523,12 @@ namespace System.Net.Http
         public StringContent(string content, System.Text.Encoding? encoding, string? mediaType) : base (default(byte[])) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class ZstandardCompressedContent : System.Net.Http.HttpContent
     {
-        public ZstandardCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.ZstandardCompressionOptions compressionOptions) { }
         public ZstandardCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.CompressionLevel compressionLevel = System.IO.Compression.CompressionLevel.Optimal) { }
+        public ZstandardCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.ZstandardCompressionOptions compressionOptions) { }
         protected override void Dispose(bool disposing) { }
         protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
