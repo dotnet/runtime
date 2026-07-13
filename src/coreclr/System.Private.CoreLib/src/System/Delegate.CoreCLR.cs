@@ -164,7 +164,7 @@ namespace System
             if (_methodPtrAux == IntPtr.Zero)
                 return (_target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + ((nuint)methodTable).GetHashCode();
             else
-                return (int)(nint)methodTable;
+                return ((nuint)methodTable).GetHashCode();
         }
 
         protected virtual MethodInfo GetMethodImpl()
