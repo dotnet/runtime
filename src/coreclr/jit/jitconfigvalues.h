@@ -439,6 +439,7 @@ RELEASE_CONFIG_INTEGER(EnableX86Serialize,          "EnableX86Serialize",       
 RELEASE_CONFIG_INTEGER(EnableArm64Aes,              "EnableArm64Aes",            1) // Allows Arm64 Aes+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Atomics,          "EnableArm64Atomics",        1) // Allows Arm64 Atomics+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Crc32,            "EnableArm64Crc32",          1) // Allows Arm64 Crc32+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64Cssc,             "EnableArm64Cssc",           1) // Allows Arm64 Cssc+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Dczva,            "EnableArm64Dczva",          1) // Allows Arm64 Dczva+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Dp,               "EnableArm64Dp",             1) // Allows Arm64 Dp+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Rdm,              "EnableArm64Rdm",            1) // Allows Arm64 Rdm+ hardware intrinsics to be disabled

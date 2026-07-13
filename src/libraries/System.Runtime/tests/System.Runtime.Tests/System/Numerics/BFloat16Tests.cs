@@ -472,8 +472,11 @@ namespace System.Numerics.Tests
                 (float.NegativeInfinity, BFloat16.NegativeInfinity), // Overflow
                 (float.NaN, BFloat16.NaN), // Quiet Negative NaN
                 (BitConverter.UInt32BitsToSingle(0x7FC00000), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1000000)), // Quiet Positive NaN
-                (BitConverter.UInt32BitsToSingle(0xFFD55555), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1010101)), // Signalling Negative NaN
-                (BitConverter.UInt32BitsToSingle(0x7FD55555), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1010101)), // Signalling Positive NaN
+                (BitConverter.UInt32BitsToSingle(0xFFD55555), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1010101)), // Quiet Negative NaN with payload
+                (BitConverter.UInt32BitsToSingle(0x7FD55555), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1010101)), // Quiet Positive NaN with payload
+                (BitConverter.UInt32BitsToSingle(0x7F800001), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1000000)), // Positive NaN with payload only in the low 16 bits (must stay NaN, not Infinity)
+                (BitConverter.UInt32BitsToSingle(0xFF800001), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1000000)), // Negative NaN with payload only in the low 16 bits (must stay NaN, not Infinity)
+                (BitConverter.UInt32BitsToSingle(0x7FA00000), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1100000)), // Signalling Positive NaN with surviving high payload bit
                 (float.Epsilon, BitConverter.UInt16BitsToBFloat16(0)), // Underflow
                 (-float.Epsilon, BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000000)), // Underflow
                 (1f, BitConverter.UInt16BitsToBFloat16(0b0_01111111_0000000)), // 1
@@ -809,6 +812,12 @@ namespace System.Numerics.Tests
             // Overflow to infinity
             yield return new object[] { "0x1p128", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
             yield return new object[] { "-0x1p128", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
+
+            // Special values (Infinity/NaN) are supported with HexFloat
+            yield return new object[] { "Infinity", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "+Infinity", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "-Infinity", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
+            yield return new object[] { "NaN", NumberStyles.HexFloat, invariantFormat, float.NaN };
         }
 
         [Theory]
@@ -889,8 +898,6 @@ namespace System.Numerics.Tests
             yield return new object[] { "0x1.0p0garbage", NumberStyles.HexFloat, null, typeof(FormatException) }; // Trailing garbage
             yield return new object[] { "+-0x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double sign
             yield return new object[] { "0x1.0p+-1", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double exponent sign
-            yield return new object[] { "NaN", NumberStyles.HexFloat, null, typeof(FormatException) }; // NaN not valid for HexFloat
-            yield return new object[] { "Infinity", NumberStyles.HexFloat, null, typeof(FormatException) }; // Infinity not valid for HexFloat
             yield return new object[] { "0xX1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double X
             yield return new object[] { "x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0 before x
             yield return new object[] { "0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix

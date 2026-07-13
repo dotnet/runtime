@@ -105,6 +105,7 @@ pr:
     - eng/pipelines/**
     - src/native/managed/cdac/**
     - src/coreclr/debug/runtimeinfo/**
+    - src/coreclr/vm/cdacstress.cpp
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
