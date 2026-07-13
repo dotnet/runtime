@@ -204,7 +204,7 @@ namespace System.IO.Compression
             const byte WindowsMadeByPlatform = 0;
             byte versionMadeByPlatform = (byte)(source.VersionMadeBy >> 8);
             if (mode != UnixFileMode.None && !OperatingSystem.IsWindows() && versionMadeByPlatform != WindowsMadeByPlatform)
-            { 
+            {
                 fileStreamOptions.UnixCreateMode = mode;
             }
         }
