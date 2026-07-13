@@ -646,7 +646,7 @@ Contracts used:
 
     public uint GetComponentSize(TypeHandle TypeHandle) =>!typeHandle.IsMethodTable() ? (uint)0 :  GetComponentSize(_methodTables[TypeHandle.Address]);
 
-    internal TargetPointer GetClassPointer(TypeHandle TypeHandle)
+    private TargetPointer GetClassPointer(TypeHandle TypeHandle)
     {
         // Returns TargetPointer.Null if not a MethodTable.
         // If EEClassOrCanonMT points directly to an EEClass, returns that pointer.
@@ -663,31 +663,26 @@ Contracts used:
     public bool TryGetSystemVAmd64EightByteClassification(TypeHandle typeHandle, out SystemVAmd64EightByteClassification classification)
     {
         classification = default;
-
-        TargetPointer eeClassPtr = GetClassPointer(typeHandle);
-        if (eeClassPtr == TargetPointer.Null)
+        if (!typeHandle.IsMethodTable())
             return false;
 
-        Data.EEClass eeClass = ... // read Data.EEClass from eeClassPtr
-        if (eeClass.OptionalFields == TargetPointer.Null)
+        // The SystemV eightbyte register classification lives in the EEClass optional fields and is
+        // only present on UNIX_AMD64_ABI builds; return false if the type has no optional fields.
+        TargetPointer optionalFields = GetClassData(typeHandle).OptionalFields;
+        if (optionalFields == TargetPointer.Null)
             return false;
 
-        Data.EEClassOptionalFields optFields = ... // read Data.EEClassOptionalFields from eeClass.OptionalFields
-        // EightByteRegistersInfo is only populated on UNIX_AMD64_ABI builds.
-        if (optFields.EightByteRegistersInfo is not Data.SystemVEightByteRegistersInfo info || info.NumEightBytes == 0)
+        TargetPointer eightByteInfo = optionalFields + /* EEClassOptionalFields::EightByteRegistersInfo offset */;
+        byte numEightBytes = target.Read<byte>(eightByteInfo + /* SystemVEightByteRegistersInfo::NumEightBytes offset */);
+
+        // The underlying data only stores two eightbyte slots; treat a count of 0 or > 2 as no classification.
+        if (numEightBytes == 0 || numEightBytes > 2)
             return false;
 
-        // The underlying data only stores two eightbyte slots; treat an out-of-range count as invalid.
-        if (info.NumEightBytes > 2)
-            return false;
-
-        SystemVAmd64EightByte first = new((SystemVAmd64Classification)info.EightByteClassification0, info.EightByteSize0);
-        SystemVAmd64EightByte? second = info.NumEightBytes > 1
-            ? new SystemVAmd64EightByte((SystemVAmd64Classification)info.EightByteClassification1, info.EightByteSize1)
-            : null;
-
-        classification = new SystemVAmd64EightByteClassification(first, second);
-        return true;
+        // For each eightbyte read its classification and size at the corresponding offsets:
+        //   EightByteClassification0/1 and EightByteSize0/1
+        // and populate 'classification' with one SystemVAmd64EightByte per eightbyte (First is always
+        // present; Second is present only when numEightBytes > 1). Return true.
     }
 
     public bool IsFreeObjectMethodTable(TypeHandle TypeHandle) => FreeObjectMethodTablePointer == TypeHandle.Address;

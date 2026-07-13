@@ -554,7 +554,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public uint GetComponentSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.ComponentSize;
 
-    internal TargetPointer GetClassPointer(TypeHandle typeHandle)
+    private TargetPointer GetClassPointer(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
             return TargetPointer.Null;
