@@ -1145,7 +1145,7 @@ public sealed unsafe partial class SOSDacImpl
             data->bIsThreadLocal = rtsContract.IsFieldDescThreadStatic(fieldDescTargetPtr) ? 1 : 0;
             data->bIsContextLocal = 0;
             data->bIsStatic = rtsContract.IsFieldDescStatic(fieldDescTargetPtr) ? 1 : 0;
-            data->NextField = fieldDescTargetPtr + _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
+            data->NextField = rtsContract.GetFieldDescNext(fieldDescTargetPtr).ToClrDataAddress(_target);
         }
         catch (System.Exception ex)
         {

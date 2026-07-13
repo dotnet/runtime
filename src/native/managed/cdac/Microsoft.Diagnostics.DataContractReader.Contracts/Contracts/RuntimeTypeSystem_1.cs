@@ -2329,6 +2329,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
+    TargetPointer IRuntimeTypeSystem.GetFieldDescNext(TargetPointer fieldDescPointer)
+    {
+        // On CoreCLR the FieldDescs of a type form a contiguous array, so the next one is one
+        // FieldDesc-size along.
+        return fieldDescPointer + _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
+    }
+
     TargetPointer IRuntimeTypeSystem.GetFieldDescByName(TypeHandle typeHandle, string fieldName)
     {
         if (!typeHandle.IsMethodTable())
