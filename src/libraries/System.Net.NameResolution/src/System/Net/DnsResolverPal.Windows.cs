@@ -123,10 +123,10 @@ namespace System.Net
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
                 // Network answers arrive in the ANSWER section, but locally-resolved names (e.g. "localhost"
-                // or hosts-file entries) are surfaced by DnsQueryEx in the QUESTION section instead. An
-                // address query only ever returns records for the queried name, so accept both sections to
-                // avoid silently dropping the loopback/hosts results.
-                if (hdr.wType == qtype && (section == Interop.Dnsapi.DNSREC_ANSWER || section == Interop.Dnsapi.DNSREC_QUESTION))
+                // or hosts-file entries) are surfaced by DnsQueryEx in the QUESTION section instead. Some
+                // misconfigured DNS servers (e.g. certain ISP resolvers) incorrectly place answers in the
+                // ADDITIONAL section; accept all three to match the permissive behaviour of GetAddrInfoExW.
+                if (hdr.wType == qtype && (section == Interop.Dnsapi.DNSREC_ANSWER || section == Interop.Dnsapi.DNSREC_QUESTION || section == Interop.Dnsapi.DNSREC_ADDITIONAL))
                 {
                     IntPtr dataPtr = cur + sizeof(Interop.Dnsapi.DNS_RECORD_HEADER);
                     if (TryParseAddress(hdr.wType, dataPtr, out IPAddress? address))
@@ -156,7 +156,7 @@ namespace System.Net
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
-                if (hdr.wType == Interop.Dnsapi.DNS_TYPE_SRV && section == Interop.Dnsapi.DNSREC_ANSWER)
+                if (hdr.wType == Interop.Dnsapi.DNS_TYPE_SRV && (section == Interop.Dnsapi.DNSREC_ANSWER || section == Interop.Dnsapi.DNSREC_ADDITIONAL))
                 {
                     IntPtr dataPtr = cur + sizeof(Interop.Dnsapi.DNS_RECORD_HEADER);
                     ref readonly Interop.Dnsapi.DNS_SRV_DATA data = ref AsStruct<Interop.Dnsapi.DNS_SRV_DATA>(dataPtr);
@@ -183,7 +183,7 @@ namespace System.Net
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
-                if (hdr.wType == Interop.Dnsapi.DNS_TYPE_TEXT && section == Interop.Dnsapi.DNSREC_ANSWER)
+                if (hdr.wType == Interop.Dnsapi.DNS_TYPE_TEXT && (section == Interop.Dnsapi.DNSREC_ANSWER || section == Interop.Dnsapi.DNSREC_ADDITIONAL))
                 {
                     IntPtr dataPtr = cur + sizeof(Interop.Dnsapi.DNS_RECORD_HEADER);
                     ref readonly Interop.Dnsapi.DNS_TXT_DATA data = ref AsStruct<Interop.Dnsapi.DNS_TXT_DATA>(dataPtr);
@@ -223,7 +223,7 @@ namespace System.Net
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
-                if (hdr.wType == qtype && section == Interop.Dnsapi.DNSREC_ANSWER)
+                if (hdr.wType == qtype && (section == Interop.Dnsapi.DNSREC_ANSWER || section == Interop.Dnsapi.DNSREC_ADDITIONAL))
                 {
                     IntPtr dataPtr = cur + sizeof(Interop.Dnsapi.DNS_RECORD_HEADER);
                     records.Add(selector(hdr, dataPtr));

@@ -452,6 +452,79 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("10.0.0.5", record.Address.ToString());
         }
 
+        // ---- Misconfigured DNS server: answers in ADDITIONAL section ----
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_AnswersInAdditionalSection_Returned(bool async)
+        {
+            // Some ISP/misconfigured DNS servers incorrectly place answers in the ADDITIONAL
+            // section instead of the ANSWER section. DnsResolver should accept them.
+            string name = UniqueName("addrsection");
+            _server.AddResponse(name, DnsRecordType.A, b => b
+                .Additional(name, DnsRecordType.A, new byte[] { 10, 0, 0, 1 }));
+            _server.AddResponse(name, DnsRecordType.AAAA, b => b
+                .Additional(name, DnsRecordType.AAAA, IPAddress.Parse("fd00::1").GetAddressBytes()));
+
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, Resolver, name);
+
+            Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            Assert.Equal(2, result.Records.Count);
+            Assert.Contains(result.Records, a => a.Address.ToString() == "10.0.0.1");
+            Assert.Contains(result.Records, a => a.Address.ToString() == "fd00::1");
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveTxt_AnswersInAdditionalSection_Returned(bool async)
+        {
+            string name = UniqueName("txtsection");
+            _server.AddResponse(name, DnsRecordType.TXT, b => b
+                .Additional(name, DnsRecordType.TXT, DnsResponseBuilder.BuildTxtRdata("v=spf1 -all")));
+
+            DnsResult<TxtRecord> result = await ResolveTxt(async, Resolver, name);
+
+            Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            TxtRecord record = Assert.Single(result.Records);
+            Assert.Equal("v=spf1 -all", Assert.Single(record.Values));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveMx_AnswersInAdditionalSection_Returned(bool async)
+        {
+            string name = UniqueName("mxsection");
+            _server.AddResponse(name, DnsRecordType.MX, b => b
+                .Additional(name, DnsRecordType.MX, DnsResponseBuilder.BuildMxRdata(10, "mail.test")));
+
+            DnsResult<MxRecord> result = await ResolveMx(async, Resolver, name);
+
+            Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            MxRecord record = Assert.Single(result.Records);
+            Assert.Equal("mail.test", record.Exchange);
+            Assert.Equal((ushort)10, record.Preference);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveSrv_AnswersInAdditionalSection_Returned(bool async)
+        {
+            string name = $"_http._tcp.{UniqueName("srvsection")}";
+            _server.AddResponse(name, DnsRecordType.SRV, b => b
+                .Additional(name, DnsRecordType.SRV, DnsResponseBuilder.BuildSrvRdata(10, 100, 8080, "node.test")));
+
+            DnsResult<SrvRecord> result = await ResolveSrv(async, Resolver, name);
+
+            Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            SrvRecord record = Assert.Single(result.Records);
+            Assert.Equal("node.test", record.Target);
+            Assert.Equal((ushort)8080, record.Port);
+        }
+
         // ---- Cancellation while a query is in flight ----
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
