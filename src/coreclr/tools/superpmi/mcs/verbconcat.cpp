@@ -14,7 +14,7 @@ int verbConcat::DoWork(const char* nameOfFile1, const char* nameOfFile2)
 
     LogVerbose("Concatenating '%s'+'%s' into %s", nameOfFile1, nameOfFile2, nameOfFile1);
 
-    FILE* fp1 = fopen(nameOfFile1, "ab+");
+    FILE* fp1 = fopen(nameOfFile1, "ab");
     if (fp1 == NULL)
     {
         LogError("Failed to open input 1 '%s'. errno=%d", nameOfFile1, errno);

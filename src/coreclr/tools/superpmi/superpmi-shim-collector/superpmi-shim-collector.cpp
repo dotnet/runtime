@@ -215,7 +215,7 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
 #endif
 
     // create our datafile
-    pJitInstance->fp = fopen(g_dataFileName.c_str(), "wb+");
+    pJitInstance->fp = fopen(g_dataFileName.c_str(), "wb");
     if (pJitInstance->fp == NULL)
     {
         LogError("Couldn't open file '%s': error %d", g_dataFileName.c_str(), errno);
