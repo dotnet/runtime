@@ -65,9 +65,9 @@ static inline char* minipal_getexepath(void)
     return strdup(path);
 #elif defined(__OpenBSD__)
     const int name[] = { CTL_KERN, KERN_PROC_ARGS, getpid(), KERN_PROC_ARGV };
-    void *argv[PATH_MAX];
+    char *argv[PATH_MAX];
     size_t len = sizeof(argv);
-    if (sysctl(name, 4, argv, &len, NULL, 0) != 0)
+    if (sysctl(name, 4, (void *)argv, &len, NULL, 0) != 0)
     {
         return NULL;
     }
@@ -78,7 +78,7 @@ static inline char* minipal_getexepath(void)
         const char *p = getenv("PATH");
         while (*p != '\0')
         {
-            size_t len = strcspn(p, ":");
+            len = strcspn(p, ":");
             char testPath[PATH_MAX];
             if (snprintf(testPath, sizeof(testPath), "%.*s/%s", (int)len, p, argv[0]) < (int)sizeof(testPath) &&
                 access(testPath, X_OK) == 0)
@@ -92,7 +92,7 @@ static inline char* minipal_getexepath(void)
         }
     }
 
-    return realpath((char *)argv[0], NULL);
+    return realpath(argv[0], NULL);
 #elif defined(__sun)
     const char* path = getexecname();
     if (path == NULL)

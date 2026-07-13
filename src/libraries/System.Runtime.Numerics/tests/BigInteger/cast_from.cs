@@ -574,6 +574,97 @@ namespace System.Numerics.Tests
             VerifyDoubleExplicitCastFromBigInteger(-9007199254740992, bigInteger);
         }
 
+        [Theory]
+        // The conversion must round to the nearest double using round-to-nearest, ties-to-even,
+        // matching a direct integer-to-double conversion rather than truncating toward zero.
+        [InlineData("4611686018427387903", 4611686018427387904.0)] // long.MaxValue / 2, rounds up
+        [InlineData("9223372036854775807", 9223372036854775808.0)] // long.MaxValue, rounds up
+        [InlineData("9007199254740993", 9007199254740992.0)]       // 2^53 + 1, rounds down
+        [InlineData("18014398509481986", 18014398509481984.0)]     // 2^54 + 2, halfway, ties to even (down)
+        [InlineData("18014398509481990", 18014398509481992.0)]     // 2^54 + 6, halfway, ties to even (up)
+        [InlineData("18014398509481987", 18014398509481988.0)]     // 2^54 + 3, above halfway, rounds up
+        public static void RunDoubleExplicitCastFromBigIntegerRoundingTests(string value, double expected)
+        {
+            BigInteger bigInteger = BigInteger.Parse(value);
+
+            Assert.Equal(expected, (double)bigInteger);
+            Assert.Equal(-expected, (double)(-bigInteger));
+        }
+
+        [Fact]
+        public static void RunDoubleExplicitCastFromBigIntegerBoundaryTests()
+        {
+            // A set bit far below the captured mantissa window (i.e. in a lower limb) must still act
+            // as a sticky bit and break what would otherwise be an exact halfway tie.
+            BigInteger tieDown = (BigInteger.One << 128) + (BigInteger.One << 75); // exact halfway, ties to even (down)
+            BigInteger roundUp = tieDown + 1;                                      // deep sticky bit forces round up
+
+            Assert.Equal(Math.ScaleB(1.0, 128), (double)tieDown);
+            Assert.Equal(Math.ScaleB(1.0, 128) + Math.ScaleB(1.0, 76), (double)roundUp);
+
+            // Rounding can carry all the way out of the finite range and overflow to infinity.
+            BigInteger overflowTie = (BigInteger.One << 1024) - (BigInteger.One << 970); // halfway between MaxValue and 2^1024
+
+            Assert.Equal(double.PositiveInfinity, (double)overflowTie);          // ties to even (infinity)
+            Assert.Equal(double.NegativeInfinity, (double)(-overflowTie));
+            Assert.Equal(double.MaxValue, (double)(overflowTie - 1));            // just below the midpoint rounds down
+            Assert.Equal(double.MinValue, (double)(-(overflowTie - 1)));
+        }
+
+        [Theory]
+        // Converting via double as an intermediate can double-round, so these must match a direct
+        // correctly-rounded BigInteger -> float conversion. 9007199791611905 (2^53 + 536870913) sits
+        // just above a float midpoint that is itself a double halfway case: rounding to double first
+        // ties to even (down onto the midpoint), then rounding to float ties to even (down again),
+        // landing 1 ULP below the correctly-rounded value.
+        [InlineData("9007199791611905", 9007200328482816f)] // 2^53 + 536870913, rounds up (double rounding would round down)
+        [InlineData("16777217", 16777216f)]                 // 2^24 + 1, halfway, ties to even (down)
+        [InlineData("16777219", 16777220f)]                 // 2^24 + 3, halfway, ties to even (up)
+        public static void RunSingleExplicitCastFromBigIntegerRoundingTests(string value, float expected)
+        {
+            BigInteger bigInteger = BigInteger.Parse(value);
+
+            Assert.Equal(expected, (float)bigInteger);
+            Assert.Equal(-expected, (float)(-bigInteger));
+        }
+
+        [Theory]
+        // Half has an 11-bit significand; integers up to Half.MaxValue are exact in double, so these
+        // are single-rounded and cannot double-round, but they still exercise ties-to-even rounding.
+        [InlineData("2049", 2048)] // 2^11 + 1, halfway, ties to even (down)
+        [InlineData("2051", 2052)] // 2^11 + 3, halfway, ties to even (up)
+        public static void RunHalfExplicitCastFromBigIntegerRoundingTests(string value, int expected)
+        {
+            BigInteger bigInteger = BigInteger.Parse(value);
+
+            Assert.Equal((Half)expected, (Half)bigInteger);
+            Assert.Equal((Half)(-expected), (Half)(-bigInteger));
+        }
+
+        [Fact]
+        public static void RunHalfExplicitCastFromBigIntegerOverflowTests()
+        {
+            // Halfway between Half.MaxValue (65504) and 2^16; ties to even, overflowing to infinity.
+            BigInteger overflowTie = 65520;
+
+            Assert.Equal(Half.PositiveInfinity, (Half)overflowTie);
+            Assert.Equal(Half.NegativeInfinity, (Half)(-overflowTie));
+        }
+
+        [Fact]
+        public static void RunBFloat16ExplicitCastFromBigIntegerRoundingTests()
+        {
+            // Like float, BFloat16 has a wider exponent range than its 8-bit significand can represent
+            // exactly in double, so it is prone to double rounding. 2^53 + 2^45 + 1 sits just above a
+            // BFloat16 midpoint (2^53 + 2^45) that is itself an exact double halfway case: rounding to
+            // double ties to even (down onto the midpoint), then rounding to BFloat16 ties to even
+            // (down again), landing 1 ULP below the correctly-rounded value.
+            BigInteger value = (BigInteger.One << 53) + (BigInteger.One << 45) + 1;
+
+            Assert.Equal((BFloat16)9077567998918656L, (BFloat16)value); // 2^53 + 2^46, rounds up
+            Assert.Equal((BFloat16)(-9077567998918656L), (BFloat16)(-value));
+        }
+
         [Fact]
         [OuterLoop]
         public static void RunDoubleExplicitCastFromLargeBigIntegerTests()
