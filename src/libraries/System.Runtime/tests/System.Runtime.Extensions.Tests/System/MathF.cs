@@ -1309,16 +1309,28 @@ namespace System.Tests
             // re-run the same vectors with hardware intrinsics disabled to deterministically exercise the
             // integer fallback and confirm it produces bit-for-bit identical results.
             var psi = new ProcessStartInfo();
-            psi.Environment.Add("DOTNET_EnableHWIntrinsic", "0");
+            psi.Environment["DOTNET_EnableHWIntrinsic"] = "0";
 
             RemoteExecutor.Invoke(static () =>
             {
+                // The integer fallback is only consulted for finite magnitudes below the integer boundary
+                // (2^23) with a digit count in the fast-path range; every other vector takes the dedicated
+                // integer-rounding overload or the arbitrary-precision routine regardless of the intrinsic
+                // switch, so skip them to keep the remote run focused and avoid redundant work.
+                const int MaxFastRoundingDigits = 10;
+                const float IntegerBoundary = 8388608.0f; // 2^23
+
                 foreach (object[] testData in Round_Digits_ExactValue_TestData())
                 {
                     float value = (float)testData[0];
                     int digits = (int)testData[1];
                     MidpointRounding mode = (MidpointRounding)testData[2];
                     float expected = (float)testData[3];
+
+                    if (digits is < 1 or > MaxFastRoundingDigits || MathF.Abs(value) >= IntegerBoundary)
+                    {
+                        continue;
+                    }
 
                     float actual = MathF.Round(value, digits, mode);
                     Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(actual));
