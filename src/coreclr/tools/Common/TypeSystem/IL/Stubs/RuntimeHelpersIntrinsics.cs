@@ -57,8 +57,12 @@ namespace Internal.IL.Stubs
                         if (elementType is MetadataType mdType)
                         {
                             if (mdType.Module == mdType.Context.SystemModule &&
-                                mdType.Namespace == "System.Text"u8 &&
-                                mdType.Name == "Rune"u8)
+                                ((mdType.Namespace == "System"u8 &&
+                                  (mdType.Name == "Guid"u8 ||
+                                   mdType.Name == "Int128"u8 ||
+                                   mdType.Name == "UInt128"u8)) ||
+                                 (mdType.Namespace == "System.Text"u8 &&
+                                  mdType.Name == "Rune"u8)))
                             {
                                 result = true;
                             }
