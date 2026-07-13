@@ -806,8 +806,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             // The same error (same code) recurs: it must NOT cancel the new token.
             IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
             fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32, code: 5)));
-            Assert.False(await ChangedWithin(second, WaitTimeForTokenToFire),
-                "A repeated identical error must not cancel tokens.");
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(second.HasChanged, "A repeated identical error must not cancel tokens.");
         }
 
         [Theory]
@@ -900,13 +900,6 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
             fileSystemWatcher.CallOnError(new ErrorEventArgs(null!));
             await WhenChanged(second);
-        }
-
-        private static async Task<bool> ChangedWithin(IChangeToken token, int milliseconds)
-        {
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            using IDisposable registration = token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
-            return await Task.WhenAny(tcs.Task, Task.Delay(milliseconds)) == tcs.Task;
         }
 
         private class TestPollingChangeToken : IPollingChangeToken
