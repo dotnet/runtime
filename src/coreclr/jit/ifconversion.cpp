@@ -678,17 +678,6 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 #endif
     }
 
-#ifndef TARGET_64BIT
-    // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
-    // handle contained relops efficiently after decomposition.
-    if (varTypeIsLong(select))
-    {
-        JITDUMP("Abort: SELECT of type Long on 32-bit system\n");
-        return true;
-    }
-#endif
-}
-
 // Use the SELECT as the source of the Then STORE/RETURN.
 m_thenOperation.node->AddAllEffectsFlags(select);
 if (m_mainOper == GT_STORE_LCL_VAR)
