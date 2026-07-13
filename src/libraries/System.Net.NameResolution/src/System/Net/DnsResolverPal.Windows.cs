@@ -287,6 +287,14 @@ namespace System.Net
         // 22000+). See https://dblohm7.ca/blog/2022/05/06/dnsqueryex-needs-love/.
         private static readonly bool s_asyncSyncCompletionBug = !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
 
+        // Cache the local hostname to avoid a native gethostname call on every query.
+        // null means the lookup failed at startup; we treat that as "use synchronous path" (safe fallback).
+        private static readonly Lazy<string?> s_hostName = new Lazy<string?>(() =>
+        {
+            try { return NameResolutionPal.GetHostName(); }
+            catch (SocketException) { return null; }
+        });
+
         private static bool IsSynchronouslyCompletingQueryName(string name)
         {
             if (IPAddress.IsValid(name))
@@ -294,11 +302,7 @@ namespace System.Net
                 return true;
             }
 
-            ReadOnlySpan<char> normalizedName = name;
-            if (normalizedName.EndsWith('.'))
-            {
-                normalizedName = normalizedName.Slice(0, normalizedName.Length - 1);
-            }
+            ReadOnlySpan<char> normalizedName = name.AsSpan().TrimEnd('.');
 
             if (normalizedName.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
                 normalizedName.Equals("loopback", StringComparison.OrdinalIgnoreCase) ||
@@ -308,14 +312,9 @@ namespace System.Net
                 return true;
             }
 
-            try
-            {
-                return normalizedName.Equals(NameResolutionPal.GetHostName(), StringComparison.OrdinalIgnoreCase);
-            }
-            catch (SocketException)
-            {
-                return false;
-            }
+            string? hostName = s_hostName.Value;
+            // If hostname lookup failed, use the synchronous path as a safe fallback.
+            return hostName is null || normalizedName.Equals(hostName, StringComparison.OrdinalIgnoreCase);
         }
 
         private static Task<DnsQueryRawResult> DnsQueryEx(IPEndPoint[] servers, bool async, string name, ushort queryType, CancellationToken cancellationToken)

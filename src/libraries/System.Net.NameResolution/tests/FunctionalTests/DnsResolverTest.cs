@@ -117,23 +117,27 @@ namespace System.Net.NameResolution.Tests
         private static async Task<DnsResult<AddressRecord>> Static_ResolveAddresses(bool async, string name)
             => async ? await Dns.ResolveAddressesAsync(name) : Dns.ResolveAddresses(name);
 
-        public static TheoryData<bool, string> SynchronouslyCompletingQueryNames => new()
+        public static TheoryData<bool, string> SynchronouslyCompletingQueryNames()
         {
-            { false, "localhost" },
-            { true, "localhost" },
-            { false, "loopback" },
-            { true, "loopback" },
-            { false, "..DnsServers" },
-            { true, "..DnsServers" },
-            { false, "..localmachine" },
-            { true, "..localmachine" },
-            { false, "127.0.0.1" },
-            { true, "127.0.0.1" },
-            { false, "::1" },
-            { true, "::1" },
-            { false, Dns.GetHostName() },
-            { true, Dns.GetHostName() },
-        };
+            string hostName = Dns.GetHostName();
+            return new TheoryData<bool, string>
+            {
+                { false, "localhost" },
+                { true, "localhost" },
+                { false, "loopback" },
+                { true, "loopback" },
+                { false, "..DnsServers" },
+                { true, "..DnsServers" },
+                { false, "..localmachine" },
+                { true, "..localmachine" },
+                { false, "127.0.0.1" },
+                { true, "127.0.0.1" },
+                { false, "::1" },
+                { true, "::1" },
+                { false, hostName },
+                { true, hostName },
+            };
+        }
 
         // ---- Windows network tests (require outbound DNS) ----
 
