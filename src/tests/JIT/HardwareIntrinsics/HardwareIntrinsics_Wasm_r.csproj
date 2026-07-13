@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NumberOfStripesToUseInStress>8</NumberOfStripesToUseInStress>
+
+    <!-- Wasm-specific intrinsics are only supported on the browser-wasm target. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'wasm'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="$(MSBuildThisFileDirectory)Wasm/**/*.csproj" Exclude="$(MSBuildThisFileDirectory)Wasm/**/*_ro.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>
