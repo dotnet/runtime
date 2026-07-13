@@ -1685,7 +1685,7 @@ namespace System.Diagnostics
         {
             private DiagNode<KeyValuePair<string, object?>>? _last;
 
-            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) : base(firstValue)
+            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) : base(set && firstValue.Value is null ? default : firstValue)
             {
                 if (!set || firstValue.Value is not null)
                 {
@@ -1786,6 +1786,7 @@ namespace System.Diagnostics
                         DiagNode<KeyValuePair<string, object?>>? next = Next;
                         if (next is null)
                         {
+                            Value = default;
                             _last = null;
                         }
                         else

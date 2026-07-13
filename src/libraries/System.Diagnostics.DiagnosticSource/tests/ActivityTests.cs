@@ -250,6 +250,45 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        public void TagsLinkedListClearsLastRemovedValue()
+        {
+            object value = new object();
+            object tags = CreateTagsLinkedList(new KeyValuePair<string, object?>("key", value));
+
+            tags.GetType().GetMethod("Remove").Invoke(tags, new object[] { "key" });
+
+            Assert.Null(tags.GetType().GetProperty("First").GetValue(tags));
+            Assert.Equal(default, (KeyValuePair<string, object?>)tags.GetType().GetField("Value").GetValue(tags));
+        }
+
+        [Fact]
+        public void TagsLinkedListDoesNotRetainIgnoredSetValue()
+        {
+            object tags = CreateTagsLinkedList(new KeyValuePair<string, object?>("key", null), set: true);
+
+            Assert.Null(tags.GetType().GetProperty("First").GetValue(tags));
+            Assert.Equal(default, (KeyValuePair<string, object?>)tags.GetType().GetField("Value").GetValue(tags));
+        }
+
+        [Fact]
+        public void TagsLinkedListToStringFormatsValues()
+        {
+            object tags = CreateTagsLinkedList(new KeyValuePair<string, object?>("string", "value"));
+            MethodInfo add = tags.GetType().GetMethod("Add", new Type[] { typeof(KeyValuePair<string, object>) });
+            add.Invoke(tags, new object[] { new KeyValuePair<string, object?>("object", 42) });
+            add.Invoke(tags, new object[] { new KeyValuePair<string, object?>("null", null) });
+
+            Assert.Equal("string:value, object:42, null:", tags.ToString());
+        }
+
+        private static object CreateTagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false)
+        {
+            Type tagsType = typeof(Activity).GetNestedType("TagsLinkedList", BindingFlags.NonPublic);
+            Assert.NotNull(tagsType);
+            return Activator.CreateInstance(tagsType, new object[] { firstValue, set });
+        }
+
         /// <summary>
         /// Tests activity SetParentId
         /// </summary>
