@@ -511,7 +511,7 @@ static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int wo
         while (!feof(fpReader))
         {
             fgets(buffer, sizeof(buffer) - 1, fpReader);
-            fputs(buffer, fpReader);
+            fputs(buffer, fpWriter);
         }
 
         hasHeader = true;
