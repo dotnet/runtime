@@ -985,8 +985,11 @@ int LinearScan::BuildNode(GenTree* tree)
                 {
                     assert(varTypeIsIntegral(tree->gtGetOp1()));
 
-                    // We need a SIMD register to execute popcnt
-                    buildInternalFloatRegisterDefForNode(tree, allSIMDRegs());
+                    // Without FEAT_CSSC we need a SIMD register to execute popcnt
+                    if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_Cssc))
+                    {
+                        buildInternalFloatRegisterDefForNode(tree, allSIMDRegs());
+                    }
 
                     BuildUse(tree->gtGetOp1());
                     buildInternalRegisterUses();

@@ -33,6 +33,8 @@ namespace System.Numerics
         // which stores zero with the biased exponent rather than the minimum exponent.
         private static UInt128 ZeroValue => new UInt128(0x3040_0000_0000_0000, 0);
         private static UInt128 NegativeZeroValue => new UInt128(0xB040_0000_0000_0000, 0);
+        // One (+1 * 10^0) shares the biased exponent of canonical zero with a coefficient of one.
+        private static UInt128 OneValue => new UInt128(0x3040_0000_0000_0000, 1);
         private static UInt128 QuietNaNValue => new UInt128(0xFC00_0000_0000_0000, 0);
 
         private const ulong SignMaskUpper = 0x8000_0000_0000_0000;
@@ -244,6 +246,128 @@ namespace System.Numerics
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower), format, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <summary>Computes the unary plus of a value.</summary>
+        /// <param name="value">The value for which to compute the unary plus.</param>
+        /// <returns><paramref name="value" /> unchanged.</returns>
+        public static Decimal128 operator +(Decimal128 value) => value;
+
+        /// <summary>Computes the unary negation of a value.</summary>
+        /// <param name="value">The value for which to compute the unary negation.</param>
+        /// <returns>The unary negation of <paramref name="value" />.</returns>
+        public static Decimal128 operator -(Decimal128 value) => new Decimal128(value._upper ^ SignMaskUpper, value._lower);
+
+        /// <summary>Increments a value.</summary>
+        /// <param name="value">The value to increment.</param>
+        /// <returns>The result of incrementing <paramref name="value" /> by one.</returns>
+        public static Decimal128 operator ++(Decimal128 value)
+        {
+            UInt128 result = Number.AddDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower), OneValue);
+            return new Decimal128(result);
+        }
+
+        /// <summary>Decrements a value.</summary>
+        /// <param name="value">The value to decrement.</param>
+        /// <returns>The result of decrementing <paramref name="value" /> by one.</returns>
+        public static Decimal128 operator --(Decimal128 value)
+        {
+            UInt128 result = Number.SubtractDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower), OneValue);
+            return new Decimal128(result);
+        }
+
+        /// <summary>Adds two values together to compute their sum.</summary>
+        /// <param name="left">The value to which <paramref name="right" /> is added.</param>
+        /// <param name="right">The value which is added to <paramref name="left" />.</param>
+        /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        public static Decimal128 operator +(Decimal128 left, Decimal128 right)
+        {
+            UInt128 result = Number.AddDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+            return new Decimal128(result);
+        }
+
+        /// <summary>Subtracts two values to compute their difference.</summary>
+        /// <param name="left">The value from which <paramref name="right" /> is subtracted.</param>
+        /// <param name="right">The value which is subtracted from <paramref name="left" />.</param>
+        /// <returns>The difference of <paramref name="right" /> subtracted from <paramref name="left" />.</returns>
+        public static Decimal128 operator -(Decimal128 left, Decimal128 right)
+        {
+            UInt128 result = Number.SubtractDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+            return new Decimal128(result);
+        }
+
+        /// <summary>Multiplies two values together to compute their product.</summary>
+        /// <param name="left">The value which <paramref name="right" /> multiplies.</param>
+        /// <param name="right">The value which multiplies <paramref name="left" />.</param>
+        /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        public static Decimal128 operator *(Decimal128 left, Decimal128 right)
+        {
+            UInt128 result = Number.MultiplyDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+            return new Decimal128(result);
+        }
+
+        /// <summary>Divides two values together to compute their quotient.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        public static Decimal128 operator /(Decimal128 left, Decimal128 right)
+        {
+            UInt128 result = Number.DivideDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+            return new Decimal128(result);
+        }
+
+        /// <summary>Compares two values to determine equality.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator ==(Decimal128 left, Decimal128 right)
+        {
+            return Number.EqualsDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+        }
+
+        /// <summary>Compares two values to determine inequality.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is not equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator !=(Decimal128 left, Decimal128 right)
+        {
+            return !(left == right);
+        }
+
+        /// <summary>Compares two values to determine which is less.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is less than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator <(Decimal128 left, Decimal128 right)
+        {
+            return Number.LessThanDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+        }
+
+        /// <summary>Compares two values to determine which is greater.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is greater than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator >(Decimal128 left, Decimal128 right)
+        {
+            return Number.GreaterThanDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+        }
+
+        /// <summary>Compares two values to determine which is less or equal.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is less than or equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator <=(Decimal128 left, Decimal128 right)
+        {
+            return Number.LessThanOrEqualDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+        }
+
+        /// <summary>Compares two values to determine which is greater or equal.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is greater than or equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator >=(Decimal128 left, Decimal128 right)
+        {
+            return Number.GreaterThanOrEqualDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
         }
 
         //
