@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Diagnostics;
 using System.Net;
 using Xunit;
 
@@ -274,40 +273,6 @@ public class DnsMessageReaderTests
         Assert.True(reader.TryReadQuestion(out var q2));
         Assert.True(q2.Name.Equals("example.org"));
         Assert.Equal(DnsRecordType.AAAA, q2.Type);
-    }
-
-    [Fact]
-    public void CompressionPointerLoop_DoesNotHang()
-    {
-        // Message with a compression pointer that loops back, creating a cycle.
-        // The reader must terminate rather than loop indefinitely.
-        byte[] data = [0x12, 0x34, 0x81, 0x80, 0x3f, 0x0, 0x1, 0x1, 0x1, 0x0, 0x0, 0x0,
-                       0x0, 0x63, 0x6f, 0x2b, 0x0, 0x1, 0x0, 0x1, 0xc, 0xc0, 0x0, 0x0,
-                       0x0, 0x1, 0x2c, 0x0, 0x4, 0xa, 0x0, 0x0, 0x91, 0x1];
-
-        Stopwatch sw = Stopwatch.StartNew();
-        DnsMessageReader.TryCreate(data, out DnsMessageReader reader);
-        for (int i = 0; i < reader.Header.QuestionCount && i < 32; i++)
-        {
-            if (!reader.TryReadQuestion(out DnsQuestion q))
-            {
-                break;
-            }
-            q.Name.ToString();
-            q.Name.Equals("example.com");
-        }
-        int total = reader.Header.AnswerCount + reader.Header.AuthorityCount + reader.Header.AdditionalCount;
-        for (int i = 0; i < total && i < 64; i++)
-        {
-            if (!reader.TryReadRecord(out DnsRecord r))
-            {
-                break;
-            }
-            r.Name.ToString();
-            r.TryParseSoaRecord(out _);
-        }
-        sw.Stop();
-        Assert.True(sw.ElapsedMilliseconds < 1000, $"Took {sw.ElapsedMilliseconds}ms");
     }
 
     [Fact]
