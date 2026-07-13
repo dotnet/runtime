@@ -469,8 +469,7 @@ namespace System.Diagnostics.Tracing
             // The event descriptor's keywords are OR'd with the reserved session-mask bits when the
             // manifest is created (see EventSource). Strip those bits before the keyword check so this
             // mirrors EventSource.IsEnabledByDefault/IsEnabledCommon, which compare against the
-            // session-mask-cleared keywords. Without this, an event declared with keyword 0 never
-            // matches the keywords == 0 fast path below because its descriptor keyword is non-zero.
+            // session-mask-cleared keywords.
             long keywords = eventDescriptor.Keywords & unchecked((long)~SessionMask.All.ToEventKeywords());
 
             if (IsEnabled(eventDescriptor.Level, keywords))
@@ -1197,11 +1196,9 @@ namespace System.Diagnostics.Tracing
                 //
                 // Check if Keyword is enabled
                 //
-                // An "any" keyword mask of 0 matches all keywords. This mirrors the convention used by
-                // EventSource.IsEnabledCommon and native ETW's MatchAnyKeyword == 0 semantics, so events
-                // reach every sink consistently. In particular, EventPipe/dotnet-trace enable named
-                // providers with keyword 0; without this an event declared with a non-zero keyword would
-                // be dropped here even though the outer IsEnabledCommon gate already enabled it.
+                // An "any" keyword mask of 0 means "match all keywords", matching
+                // EventSource.IsEnabledCommon and ETW's MatchAnyKeyword == 0 semantics. The final
+                // keyword filtering is still enforced per-session (e.g. by EventPipe natively).
                 //
                 if ((keywords == 0) ||
                     ((_anyKeywordMask == 0 || (keywords & _anyKeywordMask) != 0) &&
