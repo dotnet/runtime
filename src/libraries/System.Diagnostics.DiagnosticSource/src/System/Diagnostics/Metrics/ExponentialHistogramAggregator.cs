@@ -31,7 +31,8 @@ namespace System.Diagnostics.Metrics
     // The uncontended implementation uses a 4096-entry array indexed by the sign and exponent from the IEEE 754 representation,
     // with mantissa bucket arrays allocated on demand. After repeated contention it switches permanently to a bounded set of
     // stripes. Each stripe uses a sparse two-level exponent tree so that parallelism does not multiply the 32KB top-level array.
-    // Collect locks all active state, atomically detaches the interval, and merges the stripes outside the locks.
+    // Collect locks all active state, merges and clears the exact interval under those locks, then calculates quantiles after
+    // releasing them.
     internal sealed class ExponentialHistogramAggregator : Aggregator
     {
         private const int ExponentArraySize = 4096;
