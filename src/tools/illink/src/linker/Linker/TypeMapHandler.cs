@@ -118,14 +118,6 @@ namespace Mono.Linker
             if (entry.TargetType is { } targetType
                 && _context.Resolve(UnwrapToResolvableType(targetType)) is TypeDefinition targetTypeDef)
                 _markStep.MarkRequirementsForInstantiatedTypes(targetTypeDef);
-
-            // MarkAssembly (above) already calls TriggerPendingAssemblyTargets on its first invocation.
-            // This explicit call handles the rare case where MarkAssembly for entry.Origin had already
-            // run before any TypeMap entry in that assembly was marked (so nothing was pending at that
-            // time), and new entries were later deferred while the assembly was still not yet marked.
-            // In practice it is usually a no-op, but it guarantees correctness regardless of ordering.
-            if (entry.Attribute.AttributeType.Name is "TypeMapAttribute`1" or "TypeMapAssociationAttribute`1")
-                TriggerPendingAssemblyTargets(entry.Origin);
         }
 
         void MarkAssemblyTargetIfReady(TypeReference typeMapGroup, CustomAttributeWithOrigin entry, AssemblyDefinition? targetAssembly, MethodDefinition? callingMethod)
@@ -151,9 +143,8 @@ namespace Mono.Linker
             }
         }
 
-        // Called from MarkStep.MarkAssembly whenever an assembly is first marked (for any reason), and
-        // also from MarkTypeMapAttribute when a TypeMap/TypeMapAssociation entry is marked. The two call
-        // sites together ensure that pending TypeMapAssemblyTarget attributes are flushed regardless of
+        // Called from MarkStep.MarkAssembly whenever an assembly is first marked (for any reason).
+        // This ensures that pending TypeMapAssemblyTarget attributes are flushed regardless of
         // the order in which assemblies are visited.
         internal void TriggerPendingAssemblyTargets(AssemblyDefinition newlyMarkedAssembly)
         {
