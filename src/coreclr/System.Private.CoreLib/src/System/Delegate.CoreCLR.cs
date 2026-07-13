@@ -162,7 +162,7 @@ namespace System
             }
 #endif
             if (_methodPtrAux == IntPtr.Zero)
-                return (_target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + (int)(nint)methodTable;
+                return (_target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + ((nuint)methodTable).GetHashCode();
             else
                 return (int)(nint)methodTable;
         }
