@@ -229,7 +229,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 out CertificateAuthority[] intermediates,
                 out X509Certificate2 endEntity,
                 intermediateAuthorityCount: IntermediateCount,
-                pkiOptionsInSubject: false);
+                pkiOptionsInSubject: false,
+                testName: nameof(AiaCompletionHasLimits));
 
             using (responder)
             using (root)
