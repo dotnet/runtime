@@ -1,0 +1,77 @@
+name: ci-failure-scan-feedback-eval
+description: Dynamic constructiveness gate for the CI feedback meta workflow's safe-output, run with the maintainer /ci-feedback eval command. The agent scans real recent scanner issues and fixer PRs itself, then must turn a real signal into constructive, grounded feedback.
+
+defaults:
+  judge_model: claude-opus-4.8
+  model: claude-opus-4.8
+  runs: 1
+  timeout: 25m
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  - name: live-constructive-feedback-safe-output
+    environment:
+      files:
+        - src: ../ci-failure-scan-feedback.md
+          dest: .github/workflows/ci-failure-scan-feedback.md
+        - src: ../ci-failure-scan.md
+          dest: .github/workflows/ci-failure-scan.md
+        - src: ../ci-failure-fix.md
+          dest: .github/workflows/ci-failure-fix.md
+        - src: ../shared/create-kbe.instructions.md
+          dest: .github/workflows/shared/create-kbe.instructions.md
+    constraints:
+      max_tokens: 500000
+      max_turns: 100
+      max_duration: 25m
+      expect_tools: ["bash"]
+    prompt: |
+      You are being evaluated as the CI Scanner Feedback meta workflow. Follow `.github/workflows/ci-failure-scan-feedback.md`.
+
+      This is a live run — gather the signals yourself from the real repository. Do not invent signals.
+
+      1. Scan the scanner's recent output. `gh search issues` defaults to open only, so run it once for each state and merge the results. The closed ones matter most, since an auto-closed `[ci-scan]` KBE is a strong non-match signal. Run `gh search issues 'in:title [ci-scan]' --repo dotnet/runtime --state closed --sort updated --limit 30` and `gh search issues 'in:title [ci-scan]' --repo dotnet/runtime --state open --sort created --limit 30`. For a few, run `gh issue view <n> --repo dotnet/runtime --comments` to read maintainer feedback from MEMBER or OWNER accounts and the close reason.
+      2. Scan the fixer's recent output across states, since merged PRs are closed you need to query both. Run `gh search prs 'in:title [ci-fix]' --repo dotnet/runtime --state closed --sort updated --limit 30` and `gh search prs 'in:title [ci-fix]' --repo dotnet/runtime --state open --sort created --limit 30`, and note each one's state, whether open, merged, or closed, along with review status.
+
+      Then **emit the safe-output you would produce, as a markdown document at `./out/feedback.md`.** Make it constructive and grounded in what you actually found.
+
+      - A short `## What happened` section that quantifies the period from the real data, such as how many `[ci-scan]` KBEs were filed, how many auto-closed as non-matching, and how many `[ci-fix]` PRs were opened or merged, and names the concrete miss you see.
+      - A `## Proposed prompt edit` section only if a real signal justifies it. Quote the triggering maintainer comment or close reason, then state the one specific edit it drives, restricted to `.github/workflows/ci-failure-scan.md`, `.github/workflows/ci-failure-fix.md`, or `.github/workflows/shared/create-kbe.instructions.md`. If no signal justifies an edit, say so explicitly instead.
+
+      Keep the output specific, actionable, and verifiable next period. Keep scratch under /tmp.
+
+    graders:
+      - type: file-matches
+        config:
+          path: "out/feedback.md"
+          pattern: '(?s)##\s+What happened'
+
+      - type: tool-calls
+        name: scanned-scan-issues
+        config:
+          required:
+            - name: '^bash$'
+              command: 'gh (search|issue).*ci-scan'
+
+      - type: tool-calls
+        name: scanned-fix-prs
+        config:
+          required:
+            - name: '^bash$'
+              command: 'gh (search|pr).*ci-fix'
+
+      - type: prompt
+        name: is-constructive
+        config:
+          scoring: binary
+          prompt: |
+            Read ./out/feedback.md. Pass only if the feedback is constructive. It must be grounded in the real scanner and fixer signals with at least one quantified observation, it must identify a concrete miss, and it must turn that into a specific, actionable next step. That next step is either a single prompt edit that quotes the triggering maintainer comment or close reason and targets one of the allowed workflow or instruction files, or an explicit, justified statement that no edit is warranted. Fail if it is vague, ungrounded, invents a signal not present in the data it gathered, proposes an edit to a file outside the allowed set, or is a generic status recap with no actionable conclusion.
+
+      - type: prompt
+        name: edit-is-grounded
+        config:
+          scoring: binary
+          prompt: |
+            Read ./out/feedback.md. If it proposes a prompt edit, pass only if that edit quotes and is driven by a real maintainer comment or close reason it gathered, and is restricted to `.github/workflows/ci-failure-scan.md`, `.github/workflows/ci-failure-fix.md`, or `.github/workflows/shared/create-kbe.instructions.md`. If it proposes no edit, pass only if it explicitly justifies why none is warranted. Otherwise fail.
