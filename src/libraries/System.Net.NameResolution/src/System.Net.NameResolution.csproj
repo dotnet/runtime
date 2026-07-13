@@ -89,6 +89,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
     <Compile Include="System\Net\DnsResolverPal.Managed.cs" />
+    <Compile Include="System\Net\DnsSocket.cs" />
     <Compile Include="System\Net\ResolvConf.cs" />
     <Compile Include="System\Net\DnsWireEnums.cs" />
     <Compile Include="System\Net\DnsMessageHeader.cs" />
@@ -177,10 +178,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
-    <!-- Reference the Sockets reference assembly to avoid a circular project dependency
-         (System.Net.Sockets references System.Net.NameResolution). The implementation is
-         resolved from the shared framework at runtime. -->
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Sockets\ref\System.Net.Sockets.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\src\System.Security.Cryptography.csproj" />
   </ItemGroup>
 

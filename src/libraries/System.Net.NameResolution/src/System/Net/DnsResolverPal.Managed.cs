@@ -20,8 +20,11 @@ namespace System.Net
     // Managed stub-resolver implementation of the DNS PAL for Unix platforms.
     //
     // Builds and parses DNS wire messages and talks to the configured servers over
-    // UDP (with TCP fallback on truncation) using System.Net.Sockets. When no servers
-    // are configured, the system servers from /etc/resolv.conf are used.
+    // UDP (with TCP fallback on truncation). Sockets are reached through the DnsSocket
+    // reflection wrapper because System.Net.NameResolution cannot statically reference
+    // System.Net.Sockets (that would create a shared-framework dependency cycle, since
+    // Sockets already depends on NameResolution). When no servers are configured, the
+    // system servers from /etc/resolv.conf are used.
     //
     // Each entry point takes a `bool async` flag. When async is false the underlying
     // socket operations are issued synchronously (blocking) and the returned Task is
@@ -536,25 +539,25 @@ namespace System.Net
         private static async Task<int> SendUdpQueryAsync(
             ReadOnlyMemory<byte> query, IPEndPoint server, byte[] responseBuffer, CancellationToken cancellationToken)
         {
-            using Socket socket = new Socket(server.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using DnsSocket socket = new DnsSocket(server.AddressFamily, stream: false);
             using CancellationTokenSource timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeoutCts.CancelAfter(s_queryTimeout);
 
             await socket.ConnectAsync(server, timeoutCts.Token).ConfigureAwait(false);
-            await socket.SendAsync(query, SocketFlags.None, timeoutCts.Token).ConfigureAwait(false);
-            return await socket.ReceiveAsync(responseBuffer, SocketFlags.None, timeoutCts.Token).ConfigureAwait(false);
+            await socket.SendAsync(query, timeoutCts.Token).ConfigureAwait(false);
+            return await socket.ReceiveAsync(responseBuffer, timeoutCts.Token).ConfigureAwait(false);
         }
 
         private static int SendUdpQuerySync(
             ReadOnlyMemory<byte> query, IPEndPoint server, byte[] responseBuffer)
         {
-            using Socket socket = new Socket(server.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using DnsSocket socket = new DnsSocket(server.AddressFamily, stream: false);
             socket.SendTimeout = (int)s_queryTimeout.TotalMilliseconds;
             socket.ReceiveTimeout = (int)s_queryTimeout.TotalMilliseconds;
 
             socket.Connect(server);
-            socket.Send(query.Span, SocketFlags.None);
-            return socket.Receive(responseBuffer, SocketFlags.None);
+            socket.Send(query.Span);
+            return socket.Receive(responseBuffer);
         }
 
         private static async Task<(byte[]? Buffer, int Length, Exception? Error)> TryTcpFallbackAsync(
@@ -596,7 +599,7 @@ namespace System.Net
         private static async Task<(byte[] Buffer, int Length)> SendTcpQueryAsync(
             ReadOnlyMemory<byte> query, IPEndPoint server, CancellationToken cancellationToken)
         {
-            using Socket socket = new Socket(server.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            using DnsSocket socket = new DnsSocket(server.AddressFamily, stream: true);
             using CancellationTokenSource timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeoutCts.CancelAfter(s_queryTimeout);
 
@@ -631,26 +634,13 @@ namespace System.Net
         private static (byte[] Buffer, int Length) SendTcpQuerySync(
             ReadOnlyMemory<byte> query, IPEndPoint server)
         {
-            using Socket socket = new Socket(server.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            using DnsSocket socket = new DnsSocket(server.AddressFamily, stream: true);
             socket.SendTimeout = (int)s_queryTimeout.TotalMilliseconds;
             socket.ReceiveTimeout = (int)s_queryTimeout.TotalMilliseconds;
 
             // Connect with explicit timeout to prevent unbounded blocking when
             // the server's TCP endpoint is unreachable.
-            IAsyncResult ar = socket.BeginConnect(server, null, null);
-            try
-            {
-                if (!ar.AsyncWaitHandle.WaitOne(s_queryTimeout))
-                {
-                    socket.Close();
-                    throw new SocketException((int)SocketError.TimedOut);
-                }
-                socket.EndConnect(ar);
-            }
-            finally
-            {
-                ar.AsyncWaitHandle.Close();
-            }
+            socket.ConnectWithTimeout(server, s_queryTimeout);
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(InitialTcpBufferSize);
             try
@@ -678,12 +668,12 @@ namespace System.Net
             }
         }
 
-        private static async Task ReceiveExactAsync(Socket socket, Memory<byte> buffer, CancellationToken cancellationToken)
+        private static async Task ReceiveExactAsync(DnsSocket socket, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             int totalReceived = 0;
             while (totalReceived < buffer.Length)
             {
-                int received = await socket.ReceiveAsync(buffer[totalReceived..], SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                int received = await socket.ReceiveAsync(buffer[totalReceived..], cancellationToken).ConfigureAwait(false);
                 if (received == 0)
                 {
                     ThrowMalformedResponse();
@@ -692,12 +682,12 @@ namespace System.Net
             }
         }
 
-        private static void ReceiveExactSync(Socket socket, Span<byte> buffer)
+        private static void ReceiveExactSync(DnsSocket socket, Span<byte> buffer)
         {
             int totalReceived = 0;
             while (totalReceived < buffer.Length)
             {
-                int received = socket.Receive(buffer.Slice(totalReceived), SocketFlags.None);
+                int received = socket.Receive(buffer.Slice(totalReceived));
                 if (received == 0)
                 {
                     ThrowMalformedResponse();
@@ -706,12 +696,12 @@ namespace System.Net
             }
         }
 
-        private static async Task SendExactAsync(Socket socket, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        private static async Task SendExactAsync(DnsSocket socket, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             int totalSent = 0;
             while (totalSent < buffer.Length)
             {
-                int sent = await socket.SendAsync(buffer[totalSent..], SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                int sent = await socket.SendAsync(buffer[totalSent..], cancellationToken).ConfigureAwait(false);
                 if (sent == 0)
                 {
                     throw new IOException();
@@ -720,12 +710,12 @@ namespace System.Net
             }
         }
 
-        private static void SendExactSync(Socket socket, ReadOnlySpan<byte> buffer)
+        private static void SendExactSync(DnsSocket socket, ReadOnlySpan<byte> buffer)
         {
             int totalSent = 0;
             while (totalSent < buffer.Length)
             {
-                int sent = socket.Send(buffer.Slice(totalSent), SocketFlags.None);
+                int sent = socket.Send(buffer.Slice(totalSent));
                 if (sent == 0)
                 {
                     throw new IOException();
