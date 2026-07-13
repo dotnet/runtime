@@ -2162,6 +2162,81 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 return nextNode;
             }
 
+            // We can also recognize when the value being inserted is itself a scalar
+            // extracted from another vector, such as:
+            //
+            //   Insert(vector, CreateScalarUnsafe(vector2.GetElement(idx1)), idx2)
+            //
+            // In this case, insertps can select the source element directly from
+            // vector2 using count_s (bits 6-7), which lets us fold away the separate
+            // extraction (which otherwise requires its own movshdup/unpckhps/shufps).
+            //
+            // insertps operates purely on the 32-bit lanes of the low 128 bits of its
+            // source register, so this is valid for any 4-byte element type (float, int,
+            // or uint) and for a source vector of any width, provided the element being
+            // extracted is one of the first four. That is all count_s can encode and all
+            // that resides in the low 128 bits, which is the only part insertps reads.
+
+            if ((count_s == 0) && op2->OperIsHWIntrinsic(NI_Vector_CreateScalarUnsafe))
+            {
+                GenTreeHWIntrinsic* createScalar = op2->AsHWIntrinsic();
+                GenTree*            scalarOp     = createScalar->Op(1);
+
+                if (scalarOp->OperIsHWIntrinsic() && (genTypeSize(scalarOp->AsHWIntrinsic()->GetSimdBaseType()) == 4))
+                {
+                    GenTreeHWIntrinsic* extract   = scalarOp->AsHWIntrinsic();
+                    NamedIntrinsic      extractId = extract->GetHWIntrinsicId();
+
+                    GenTree* srcVec      = nullptr;
+                    GenTree* srcIdx      = nullptr;
+                    ssize_t  count_s_new = 0;
+
+                    if (extractId == NI_Vector_ToScalar)
+                    {
+                        // ToScalar is effectively GetElement with a source index of zero
+                        srcVec = extract->Op(1);
+                    }
+                    else if ((extractId == NI_Vector_GetElement) && extract->Op(2)->IsCnsIntOrI())
+                    {
+                        srcVec      = extract->Op(1);
+                        srcIdx      = extract->Op(2);
+                        count_s_new = srcIdx->AsIntConCommon()->IconValue();
+                    }
+
+                    // The source index must fit in count_s, which also guarantees the element
+                    // resides in the low 128 bits of the source register.
+                    //
+                    // We additionally require that the source vector is used from a register.
+                    // When the extraction reads from a contained memory operand, the existing
+                    // lowering already produces an optimal `insertps xmm, m32` (which encodes
+                    // the element offset in the address) and rewriting it to the register form
+                    // would instead force a full vector load.
+
+                    if ((srcVec != nullptr) && !srcVec->isContained() && (count_s_new >= 0) && (count_s_new <= 3) &&
+                        IsInvariantInRange(srcVec, node))
+                    {
+                        count_s = count_s_new;
+
+                        ival = (count_s << 6) | (count_d << 4) | (zmask);
+                        op3->AsIntConCommon()->SetIconValue(ival);
+
+                        // Carry the original source vector directly and remove the now
+                        // unused extraction and scalar creation nodes.
+
+                        node->Op(2) = srcVec;
+                        op2         = srcVec;
+
+                        if (srcIdx != nullptr)
+                        {
+                            BlockRange().Remove(srcIdx);
+                        }
+
+                        BlockRange().Remove(extract);
+                        BlockRange().Remove(createScalar);
+                    }
+                }
+            }
+
             if (!op1->OperIsHWIntrinsic())
             {
                 // Nothing to do if op1 isn't an intrinsic
