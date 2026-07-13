@@ -677,7 +677,6 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
 #endif
     }
-    
     // Use the SELECT as the source of the Then STORE/RETURN.
     m_thenOperation.node->AddAllEffectsFlags(select);
     if (m_mainOper == GT_STORE_LCL_VAR)
@@ -733,13 +732,13 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
     }
 
-    #ifdef DEBUG
+#ifdef DEBUG
     if (m_compiler->verbose)
     {
         JITDUMP("\nAfter if conversion\n");
         IfConvertDump();
     }
-    #endif
+#endif
 
     return true;
 }
