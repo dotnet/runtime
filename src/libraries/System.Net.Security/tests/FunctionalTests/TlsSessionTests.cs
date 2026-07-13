@@ -2883,5 +2883,119 @@ namespace System.Net.Security.Tests
 
             Assert.Throws<InvalidOperationException>(() => GetClientHelloBytesHelper(session));
         }
+
+        // Repro for the socket-replay/peek BIO heap corruption. A socket-bound (fd-mode)
+        // server session driven through the deferred-options path (NeedsTlsContext ->
+        // SetContext) activates the socket-replay write BIO. Calling Shutdown() on that
+        // session makes OpenSSL emit close_notify, which flows through the
+        // ManagedSpanBio-only window/spill helpers (BioSetWriteWindow / BioGetWriteResult /
+        // BioDrainSpill). On a socket-replay BIO those helpers must be no-ops; if they
+        // instead reinterpret the smaller SocketReplayBioCtx as a ManagedSpanBioCtx they
+        // write past the end of the allocation and silently corrupt the adjacent heap
+        // chunk. glibc then aborts on a later malloc/free ("free(): invalid next size" /
+        // "corrupted size vs. prev_size", SIGABRT), taking down the whole test host. That
+        // native abort is the only failure this test cares about; managed exceptions are
+        // swallowed. The deferred-options path engages the socket-replay BIO regardless of the
+        // CaptureClientHello switch, so no switch manipulation is needed here (and would
+        // otherwise pollute the parallel suite via the process-global AppContext switch).
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task SocketBoundSession_DeferredOptions_ShutdownAcrossConnections_DoesNotCorruptHeap()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            // One shared bootstrap context (empty options -> defers to NeedsTlsContext) and
+            // one real host context, mirroring Kestrel's DirectTls per-listener model.
+            using TlsContext bootstrapCtx = TlsContext.CreateServer(new SslServerAuthenticationOptions());
+            using TlsContext hostCtx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                ClientCertificateRequired = false,
+            });
+
+            // Each Shutdown() performs a fixed out-of-bounds write past a 24-byte calloc'd
+            // chunk; a handful of sequential connections is enough for glibc to trip on a
+            // subsequent allocation. Use a comfortable margin.
+            const int Connections = 32;
+            for (int i = 0; i < Connections; i++)
+            {
+                await RunOneDeferredShutdownConnectionAsync(bootstrapCtx, hostCtx, serverName);
+            }
+        }
+
+        private static async Task RunOneDeferredShutdownConnectionAsync(TlsContext bootstrapCtx, TlsContext hostCtx, string serverName)
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            serverSocket.Blocking = false;
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            using TlsSocketSession session = NewSocketSession(bootstrapCtx, serverHandle);
+
+            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+            Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            Task serverHandshake = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    TlsOperationStatus s = session.Handshake();
+                    if (s == TlsOperationStatus.Complete)
+                    {
+                        return;
+                    }
+                    if (s == TlsOperationStatus.NeedsTlsContext)
+                    {
+                        session.SetContext(hostCtx);
+                        continue;
+                    }
+                    if (s == TlsOperationStatus.NeedsCertificateValidation)
+                    {
+                        session.AcceptWithDefaultValidation();
+                        continue;
+                    }
+                    if (s == TlsOperationStatus.NeedMoreData || s == TlsOperationStatus.DestinationTooSmall)
+                    {
+                        await Task.Delay(5);
+                        continue;
+                    }
+                    throw new InvalidOperationException($"Unexpected handshake status: {s}");
+                }
+            });
+
+            await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(session.IsHandshakeComplete);
+
+            // Drive close_notify from the server side -- the operation that flows through the
+            // window/spill helpers on the socket-replay write BIO.
+            TlsOperationStatus shutdownStatus = session.Shutdown();
+            GC.KeepAlive(shutdownStatus);
+
+            // Let the client observe EOF so the exchange is well-formed; the result is not
+            // asserted (the point of the test is the absence of a native abort).
+            try
+            {
+                byte[] buf = new byte[16];
+                await clientSsl.ReadAsync(buf).AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            catch
+            {
+            }
+        }
     }
 }
