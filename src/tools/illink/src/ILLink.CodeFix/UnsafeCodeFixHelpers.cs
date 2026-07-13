@@ -54,8 +54,6 @@ namespace ILLink.CodeFix
                 if (update.AddSafetyDocumentation && !UnsafeMigrationAnalysis.HasSafetyDocumentation(replacement))
                     replacement = AddSafetyDocumentation(replacement);
 
-                replacement = replacement.WithLeadingTrivia(replacement.GetLeadingTrivia());
-
                 changedRoot = changedRoot.ReplaceNode(declaration, replacement);
             }
 
@@ -66,13 +64,17 @@ namespace ILLink.CodeFix
             SyntaxNode declaration,
             SyntaxGenerator generator)
             => declaration is AccessorDeclarationSyntax accessor
-                ? accessor.WithModifiers(accessor.Modifiers.Insert(
-                    0,
-                    SyntaxFactory.Token(SyntaxKind.UnsafeKeyword)
-                        .WithTrailingTrivia(SyntaxFactory.Space)))
+                ? accessor
+                    .WithModifiers(accessor.Modifiers.Insert(
+                        0,
+                        SyntaxFactory.Token(SyntaxKind.UnsafeKeyword)
+                            .WithTrailingTrivia(SyntaxFactory.Space)))
+                    .WithKeyword(accessor.Keyword.WithLeadingTrivia(SyntaxFactory.TriviaList()))
+                    .WithLeadingTrivia(accessor.GetLeadingTrivia())
                 : generator.WithModifiers(
                     declaration,
-                    generator.GetModifiers(declaration).WithIsUnsafe(true));
+                    generator.GetModifiers(declaration).WithIsUnsafe(true))
+                    .WithLeadingTrivia(declaration.GetLeadingTrivia());
 
         public static UnsafeStatementSyntax CreateUnsafeStatement(params StatementSyntax[] statements)
         {

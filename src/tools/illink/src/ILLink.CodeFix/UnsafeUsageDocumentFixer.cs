@@ -649,7 +649,7 @@ namespace ILLink.CodeFix
 
         private static bool IsSkipLocalsInitEnabled(Document document)
             => document.Project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue(
-                "build_property.SkipLocalsInit",
+                $"build_property.{MSBuildPropertyOptionNames.SkipLocalsInit}",
                 out string? value) &&
                 string.Equals(value?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
     }
