@@ -119,9 +119,11 @@ namespace Mono.Linker
                 && _context.Resolve(UnwrapToResolvableType(targetType)) is TypeDefinition targetTypeDef)
                 _markStep.MarkRequirementsForInstantiatedTypes(targetTypeDef);
 
-            // When a TypeMap or TypeMapAssociation entry is marked, the origin assembly becomes "alive" for
-            // type-map purposes. Trigger any pending TypeMapAssemblyTarget attributes that are waiting for
-            // this assembly to have at least one surviving entry.
+            // MarkAssembly (above) already calls TriggerPendingAssemblyTargets on its first invocation.
+            // This explicit call handles the rare case where MarkAssembly for entry.Origin had already
+            // run before any TypeMap entry in that assembly was marked (so nothing was pending at that
+            // time), and new entries were later deferred while the assembly was still not yet marked.
+            // In practice it is usually a no-op, but it guarantees correctness regardless of ordering.
             if (entry.Attribute.AttributeType.Name is "TypeMapAttribute`1" or "TypeMapAssociationAttribute`1")
                 TriggerPendingAssemblyTargets(entry.Origin);
         }
@@ -137,22 +139,24 @@ namespace Mono.Linker
 
             if (_context.Annotations.IsMarked(targetAssembly))
             {
-                // Target assembly is already in the output because it has surviving TypeMap entries.
+                // Target assembly is already marked. Ideally we would only keep the attribute when the
+                // assembly has at least one surviving TypeMap/TypeMapAssociation entry, but checking that
+                // here would add complexity for a narrow case. We accept this slight over-approximation.
                 MarkTypeMapAttribute(entry, new DependencyInfo(DependencyKind.TypeMapAssemblyTarget, callingMethod));
             }
             else
             {
-                // Target assembly is not yet marked. Defer: mark when (if) the assembly eventually gets a
-                // surviving TypeMap entry marked.
+                // Target assembly is not yet marked. Defer: mark when (if) the assembly eventually gets marked.
                 _pendingAssemblyTargetsByAssembly.AddToList(targetAssembly, (typeMapGroup, entry, callingMethod));
             }
         }
 
-        void TriggerPendingAssemblyTargets(AssemblyDefinition newlyMarkedAssembly)
+        // Called from MarkStep.MarkAssembly whenever an assembly is first marked (for any reason), and
+        // also from MarkTypeMapAttribute when a TypeMap/TypeMapAssociation entry is marked. The two call
+        // sites together ensure that pending TypeMapAssemblyTarget attributes are flushed regardless of
+        // the order in which assemblies are visited.
+        internal void TriggerPendingAssemblyTargets(AssemblyDefinition newlyMarkedAssembly)
         {
-            // When a TypeMap/TypeMapAssociation entry is marked, its origin assembly becomes alive. If there
-            // are any TypeMapAssemblyTarget attributes waiting for this assembly to be alive, mark them now.
-            // The group visibility check is implicit: entries are only added to this dict after the group is seen.
             if (!_pendingAssemblyTargetsByAssembly.Remove(newlyMarkedAssembly, out List<(TypeReference Group, CustomAttributeWithOrigin Attr, MethodDefinition? CallingMethod)>? waiting))
                 return;
 
