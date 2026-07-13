@@ -586,8 +586,12 @@ namespace System.Numerics
             uint bits = BitConverter.SingleToUInt32Bits(value);
             uint roundedBits = RoundMidpointToEven(bits, 16);
 
-            // Only do rounding for non-NaN
-            return new BFloat16((ushort)(!float.IsNaN(value) ? roundedBits : (bits >> 16)));
+            // Only do rounding for non-NaN. For NaN we truncate to the top 16 bits, but that can
+            // zero out all of BFloat16's significand bits (e.g. 0x7F80_0001 -> 0x7F80, which is
+            // +Infinity), silently turning the NaN into an Infinity. Force the MSB of the significand
+            // (the quiet bit) so the result stays a NaN while preserving the sign and any surviving payload.
+            const uint QuietBit = 1u << (TrailingSignificandLength - 1);
+            return new BFloat16((ushort)(!float.IsNaN(value) ? roundedBits : ((bits >> 16) | QuietBit)));
         }
 
         private static unsafe BFloat16 RoundFromUnsigned<TInteger>(TInteger value)
