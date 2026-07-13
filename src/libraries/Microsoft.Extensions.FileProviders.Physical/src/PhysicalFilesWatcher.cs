@@ -52,8 +52,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         // The last Error reported by the FileSystemWatcher that could indicate a persistent failure,
         // remembered until a change is successfully delivered (see OnFileSystemEntryChange). Guarded by
-        // _errorLock. Used to detect the same error occurring again with no progress in between, like
-        // file system that can't be watched (for example a network share or a WSL path accessed from Windows).
+        // _errorLock. Used to detect the same error occurring again with no progress in between, like a
+        // file system that can't be watched (for example, a network share or a WSL path accessed from Windows).
         private Exception? _lastError;
         private readonly object _errorLock = new();
 
@@ -459,12 +459,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private void ClearLastError()
         {
-            if (_lastError is not null)
+            lock (_errorLock)
             {
-                lock (_errorLock)
-                {
-                    _lastError = null;
-                }
+                _lastError = null;
             }
         }
 
