@@ -222,6 +222,9 @@ namespace System
                     NextBytes(bytes);
                     bytes[^1] &= topMask;
 
+                    // Masking clears any sign bit and any bits beyond the shortest width of T.MaxValue,
+                    // but custom IBinaryInteger<T> implementations can still have unrepresentable values
+                    // within that width. Reject those rather than assuming the mask is sufficient.
                     T value = T.ReadLittleEndian(bytes, isUnsigned: true);
                     if (value <= T.MaxValue)
                     {
