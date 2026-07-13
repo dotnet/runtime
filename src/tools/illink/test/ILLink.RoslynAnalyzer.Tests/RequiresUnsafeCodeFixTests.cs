@@ -1881,6 +1881,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
                         remove { }
                     }
 
+                    // <safety>This is not XML documentation.</safety>
+                    public unsafe void CommentOnlySafetyTag() { }
+
                     /// <safety>Documented.</safety>
                     public unsafe void DocumentedMethod() { }
 
@@ -1909,6 +1912,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
                         add { }
                         remove { }
                     }
+
+                    // <safety>This is not XML documentation.</safety>
+                    public void CommentOnlySafetyTag() { }
 
                     /// <safety>Documented.</safety>
                     public unsafe void DocumentedMethod() { }
@@ -2287,7 +2293,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
 
                 public class C
                 {
-                    private readonly int _field = new ValueProvider().Value();
+                    private readonly int _field = new ValueProvider(/* keep */).Value();
 
                     public C() : this(new ValueProvider().Value())
                     {
@@ -2369,7 +2375,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
 
                 public class C
                 {
-                    private readonly int _field = unsafe(/* SAFETY: Audit */new ValueProvider().Value());
+                    private readonly int _field = unsafe(/* SAFETY: Audit */new ValueProvider(/* keep */).Value());
 
                     public C() : this(unsafe(/* SAFETY: Audit */new ValueProvider().Value()))
                     {
@@ -2533,6 +2539,49 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
                             // SAFETY: Audit
                             span = stackalloc int[4];
                         }
+                        return span.Length;
+                    }
+                }
+                """;
+
+            await VerifyUnsafeUsageMigrationCodeFix(
+                source,
+                fixedSource,
+                baselineExpected: [
+                    UnsafeUsageMigrationDiagnostic().WithLocation(0),
+                    DiagnosticResult.CompilerError("CS9361").WithLocation(0)
+                ],
+                fixedExpected: []);
+        }
+
+        [Fact]
+        public async Task UnsafeUsageMigration_PreservesCommentsInLocalInitializer()
+        {
+            var source = """
+                using System;
+                using System.Runtime.CompilerServices;
+
+                public class C
+                {
+                    [SkipLocalsInit]
+                    public int Sum()
+                    {
+                        Span<int> span = {|#0:stackalloc int[4 /* keep */]|};
+                        return span.Length;
+                    }
+                }
+                """;
+
+            var fixedSource = """
+                using System;
+                using System.Runtime.CompilerServices;
+
+                public class C
+                {
+                    [SkipLocalsInit]
+                    public int Sum()
+                    {
+                        Span<int> span = unsafe(/* SAFETY: Audit */stackalloc int[4 /* keep */]);
                         return span.Length;
                     }
                 }

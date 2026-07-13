@@ -389,6 +389,9 @@ namespace ILLink.CodeFix
             if (variable.Initializer is not { } initializer)
                 return false;
 
+            if (initializer.Value.DescendantTrivia(descendIntoTrivia: true).Any(IsComment))
+                return false;
+
             TypeSyntax type = declaration.Declaration.Type;
             ILocalSymbol? localSymbol = semanticModel.GetDeclaredSymbol(variable) as ILocalSymbol;
             ITypeSymbol? localType = localSymbol?.Type ??
@@ -443,6 +446,12 @@ namespace ILLink.CodeFix
             fix = StatementFix.Forward(forwardDeclaration, assignment);
             return true;
         }
+
+        private static bool IsComment(SyntaxTrivia trivia)
+            => trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) ||
+                trivia.IsKind(SyntaxKind.MultiLineCommentTrivia) ||
+                trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) ||
+                trivia.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia);
 
         private static bool IsSpanTypeSyntax(TypeSyntax type)
         {

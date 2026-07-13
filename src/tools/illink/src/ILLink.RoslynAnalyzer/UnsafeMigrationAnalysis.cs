@@ -127,8 +127,7 @@ namespace ILLink.RoslynAnalyzer
         }
 
         public static bool HasSafetyDocumentation(SyntaxNode declaration)
-            => declaration.GetLeadingTrivia().ToFullString().Contains("<safety>", StringComparison.Ordinal) ||
-                declaration.GetLeadingTrivia()
+            => declaration.GetLeadingTrivia()
                 .Select(static trivia => trivia.GetStructure())
                 .OfType<DocumentationCommentTriviaSyntax>()
                 .SelectMany(static documentation => documentation.DescendantNodes())
