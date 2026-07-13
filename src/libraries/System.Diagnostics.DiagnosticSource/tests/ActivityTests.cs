@@ -2930,5 +2930,123 @@ namespace System.Diagnostics.Tests
             Assert.Equal(3, a!.Links.Count());
             Assert.Equal(new[] { link1, link2, link3 }, a.Links.ToArray());
         }
+
+        [Fact]
+        public void TestLinksAndEventsEmptyWhenListenerDeclinesSampling()
+        {
+            // When no listener requests AllDataAndRecorded, Activity.Create takes the "not recorded" early-exit path
+            // and never touches the co-located ActivityLinksLinkedList/ActivityEventsLinkedList types at all. Links/Events
+            // must still report as empty (via the shared DiagLinkedList<T> empty singleton), regardless of what links
+            // were requested at creation time or added afterward.
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.None,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestLinksAndEventsEmptyWhenListenerDeclinesSampling));
+
+            var link = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded));
+
+            using Activity? a = source.StartActivity("op", ActivityKind.Internal, default(ActivityContext), null, new[] { link });
+            Assert.Null(a);
+        }
+
+        [Fact]
+        public void TestLinksEventsAndTagsCoexistIndependently()
+        {
+            // Regression test covering the interaction between this round's Links/Events co-location and the
+            // separately co-located first-tag storage (TagsLinkedList): setting tags, links, and events on the
+            // same Activity must not corrupt or cross-contaminate any of the three independent collections.
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestLinksEventsAndTagsCoexistIndependently));
+
+            var link = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded));
+
+            using Activity? a = source.StartActivity("op", ActivityKind.Internal, default(ActivityContext), null, new[] { link });
+            Assert.NotNull(a);
+
+            a!.SetTag("http.method", "GET");
+            a.SetTag("http.status_code", 200);
+            a.AddEvent(new ActivityEvent("request.received"));
+
+            Assert.Single(a.Links);
+            Assert.Equal(link, a.Links.First());
+
+            Assert.Single(a.Events);
+            Assert.Equal("request.received", a.Events.First().Name);
+
+            Assert.Equal(2, a.TagObjects.Count());
+            Assert.Equal("GET", a.GetTagItem("http.method"));
+            Assert.Equal(200, a.GetTagItem("http.status_code"));
+
+            // Adding more of each afterward must not disturb the others.
+            a.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None)));
+            a.AddEvent(new ActivityEvent("response.sent"));
+            a.SetTag("http.url", "https://example.com/");
+
+            Assert.Equal(2, a.Links.Count());
+            Assert.Equal(2, a.Events.Count());
+            Assert.Equal(3, a.TagObjects.Count());
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("string-value")]
+        [InlineData(42)]
+        public void TestActivityEventWithVariousTagDataTypesOnCoLocatedFirstEvent(object? tagValue)
+        {
+            // The first ActivityEvent is now co-located with the ActivityEventsLinkedList container; ensure its
+            // embedded ActivityTagsCollection continues to round-trip null, string, and boxed-value-type tag data.
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestActivityEventWithVariousTagDataTypesOnCoLocatedFirstEvent));
+
+            using Activity? a = source.StartActivity("op");
+            Assert.NotNull(a);
+
+            var tags = new ActivityTagsCollection { { "key", tagValue } };
+            a!.AddEvent(new ActivityEvent("ev", tags: tags));
+
+            ActivityEvent onlyEvent = Assert.Single(a.Events);
+            Assert.Equal(tagValue, onlyEvent.Tags.First().Value);
+        }
+
+        [Fact]
+        public void TestActivityLinkWithTagsOnCoLocatedFirstLink()
+        {
+            // The first ActivityLink is now co-located with the ActivityLinksLinkedList container; ensure its
+            // embedded tags (ActivityTagsCollection) survive both the "passed at creation" and "AddLink" paths.
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestActivityLinkWithTagsOnCoLocatedFirstLink));
+
+            var tags = new ActivityTagsCollection { { "reason", "batch" } };
+            var linkWithTags = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded), tags);
+
+            using Activity? createdWithLink = source.StartActivity("op", ActivityKind.Internal, default(ActivityContext), null, new[] { linkWithTags });
+            Assert.NotNull(createdWithLink);
+            ActivityLink onlyLink = Assert.Single(createdWithLink!.Links);
+            Assert.Equal("batch", onlyLink.Tags!.First().Value);
+
+            using Activity? addedLink = source.StartActivity("op");
+            Assert.NotNull(addedLink);
+            addedLink!.AddLink(linkWithTags);
+            ActivityLink onlyAddedLink = Assert.Single(addedLink.Links);
+            Assert.Equal("batch", onlyAddedLink.Tags!.First().Value);
+        }
     }
 }
