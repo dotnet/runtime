@@ -520,6 +520,7 @@ namespace System.Text.Json
                 finally
                 {
                     bufferState.Dispose();
+                    readStack.Dispose();
                 }
             }
         }

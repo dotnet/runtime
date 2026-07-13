@@ -52,6 +52,7 @@ namespace System.Text.Json.Serialization.Metadata
             finally
             {
                 bufferState.Dispose();
+                readStack.Dispose();
             }
         }
 
@@ -98,6 +99,7 @@ namespace System.Text.Json.Serialization.Metadata
             finally
             {
                 bufferState.Dispose();
+                readStack.Dispose();
             }
         }
 
