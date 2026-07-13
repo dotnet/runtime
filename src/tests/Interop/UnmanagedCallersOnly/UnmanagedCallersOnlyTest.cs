@@ -158,7 +158,6 @@ public unsafe class Program
     {
         return DoubleImpl(val);
     }
-
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWindows))]
