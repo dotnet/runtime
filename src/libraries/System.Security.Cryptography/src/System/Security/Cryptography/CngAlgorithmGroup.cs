@@ -164,7 +164,6 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An object that specifies the Composite ML-DSA family of algorithms.
         /// </value>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         internal static CngAlgorithmGroup CompositeMLDsa =>
             field ??= new CngAlgorithmGroup("CompositeMLDSA"); // NCRYPT_COMPOSITE_MLDSA_ALGORITHM_GROUP
 
