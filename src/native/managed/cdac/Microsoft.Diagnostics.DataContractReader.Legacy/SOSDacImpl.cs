@@ -1057,7 +1057,6 @@ public sealed unsafe partial class SOSDacImpl
 
             IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-            ISignature signatureContract = _target.Contracts.Signature;
 
             TargetPointer fieldDescTargetPtr = fieldDesc.ToTargetPointer(_target);
             CorElementType fieldDescType = rtsContract.GetFieldDescType(fieldDescTargetPtr);
@@ -1073,17 +1072,19 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
             MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
             FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
+
+            TypeHandle foundTypeHandle = rtsContract.GetFieldDescApproxTypeHandle(fieldDescTargetPtr);
             try
             {
-                // try to completely decode the signature
-                TypeHandle foundTypeHandle = signatureContract.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
-
                 // get the MT of the type
                 // This is an implementation detail of the DAC that we replicate here to get method tables for non-MT types
                 // that we can return to SOS for pretty-printing.
                 // In the future we may want to return a TypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
                 // DAC equivalent: src/coreclr/vm/typehandle.inl TypeHandle::GetMethodTable
-                if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
+                if (foundTypeHandle.IsNull)
+                    // if we can't find the MT (e.g in a minidump)
+                    data->MTOfType = 0;
+                else if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
                     data->MTOfType = rtsContract.GetPrimitiveType(CorElementType.U).Address.ToClrDataAddress(_target);
                 // array MTs
                 else if (rtsContract.IsArray(foundTypeHandle, out _))
