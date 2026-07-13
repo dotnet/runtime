@@ -44,7 +44,8 @@ internal sealed class DacEnumerableHash
             entries.AddRange(elements);
         }
 
-        // In STRESS testing, we may stop while this table is resizing.
+        // In STRESS testing, we may stop while this table is resizing, so we
+        // can't assert that Count equals the number of walked entries.
         Entries = entries;
     }
 
