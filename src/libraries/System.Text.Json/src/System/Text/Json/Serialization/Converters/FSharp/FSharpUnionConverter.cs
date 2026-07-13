@@ -144,8 +144,15 @@ namespace System.Text.Json.Serialization.Converters
             state.Initialize(jsonTypeInfo);
             state.Push();
 
-            OnTryRead(ref reader, typeToConvert, options, ref state, out T? value);
-            return value!;
+            try
+            {
+                OnTryRead(ref reader, typeToConvert, options, ref state, out T? value);
+                return value!;
+            }
+            finally
+            {
+                state.Dispose();
+            }
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
@@ -404,6 +411,10 @@ namespace System.Text.Json.Serialization.Converters
             {
                 state.DisposePendingDisposablesOnException();
                 throw;
+            }
+            finally
+            {
+                state.Dispose();
             }
         }
 

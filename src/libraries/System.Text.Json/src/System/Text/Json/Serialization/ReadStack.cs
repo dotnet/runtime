@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -91,11 +92,28 @@ namespace System.Text.Json
         {
             if (_stack is null)
             {
-                _stack = new ReadStackFrame[4];
+                _stack = ArrayPool<ReadStackFrame>.Shared.Rent(4);
             }
             else if (_count - 1 == _stack.Length)
             {
-                Array.Resize(ref _stack, 2 * _stack.Length);
+                ReadStackFrame[] newStack = ArrayPool<ReadStackFrame>.Shared.Rent(2 * _stack.Length);
+                Array.Copy(_stack, newStack, _stack.Length);
+                ArrayPool<ReadStackFrame>.Shared.Return(_stack, clearArray: true);
+                _stack = newStack;
+            }
+        }
+
+        /// <summary>
+        /// Returns the pooled backing array (if any) to the shared <see cref="ArrayPool{T}"/>.
+        /// Must be called exactly once per top-level (de)serialization operation, after the
+        /// <see cref="ReadStack"/> is no longer in use, including on exceptional code paths.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_stack is not null)
+            {
+                ArrayPool<ReadStackFrame>.Shared.Return(_stack, clearArray: true);
+                _stack = null!;
             }
         }
 

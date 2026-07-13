@@ -290,6 +290,10 @@ namespace System.Text.Json
                 reader = restore;
                 throw;
             }
+            finally
+            {
+                state.Dispose();
+            }
         }
 
         private static object? ReadAsObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
@@ -314,6 +318,10 @@ namespace System.Text.Json
             {
                 reader = restore;
                 throw;
+            }
+            finally
+            {
+                state.Dispose();
             }
         }
 

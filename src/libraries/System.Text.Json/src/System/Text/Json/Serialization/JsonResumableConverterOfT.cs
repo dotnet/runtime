@@ -24,8 +24,15 @@ namespace System.Text.Json.Serialization
             JsonTypeInfo jsonTypeInfo = options.GetTypeInfoInternal(typeToConvert);
             state.Initialize(jsonTypeInfo);
 
-            TryRead(ref reader, typeToConvert, options, ref state, out T? value, out _);
-            return value;
+            try
+            {
+                TryRead(ref reader, typeToConvert, options, ref state, out T? value, out _);
+                return value;
+            }
+            finally
+            {
+                state.Dispose();
+            }
         }
 
         public sealed override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
@@ -45,6 +52,10 @@ namespace System.Text.Json.Serialization
             {
                 state.DisposePendingDisposablesOnException();
                 throw;
+            }
+            finally
+            {
+                state.Dispose();
             }
         }
     }

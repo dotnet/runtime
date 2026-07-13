@@ -142,11 +142,18 @@ namespace System.Text.Json
             ReadStack state = default;
             state.Initialize(jsonTypeInfo);
 
-            TValue? value = jsonTypeInfo.Deserialize(ref reader, ref state);
+            try
+            {
+                TValue? value = jsonTypeInfo.Deserialize(ref reader, ref state);
 
-            // The reader should have thrown if we have remaining bytes, unless AllowMultipleValues is true.
-            Debug.Assert(reader.BytesConsumed == (actualByteCount ?? utf8Json.Length) || reader.CurrentState.Options.AllowMultipleValues);
-            return value;
+                // The reader should have thrown if we have remaining bytes, unless AllowMultipleValues is true.
+                Debug.Assert(reader.BytesConsumed == (actualByteCount ?? utf8Json.Length) || reader.CurrentState.Options.AllowMultipleValues);
+                return value;
+            }
+            finally
+            {
+                state.Dispose();
+            }
         }
 
         private static object? ReadFromSpanAsObject(ReadOnlySpan<byte> utf8Json, JsonTypeInfo jsonTypeInfo, int? actualByteCount = null)
@@ -159,11 +166,18 @@ namespace System.Text.Json
             ReadStack state = default;
             state.Initialize(jsonTypeInfo);
 
-            object? value = jsonTypeInfo.DeserializeAsObject(ref reader, ref state);
+            try
+            {
+                object? value = jsonTypeInfo.DeserializeAsObject(ref reader, ref state);
 
-            // The reader should have thrown if we have remaining bytes, unless AllowMultipleValues is true.
-            Debug.Assert(reader.BytesConsumed == (actualByteCount ?? utf8Json.Length) || reader.CurrentState.Options.AllowMultipleValues);
-            return value;
+                // The reader should have thrown if we have remaining bytes, unless AllowMultipleValues is true.
+                Debug.Assert(reader.BytesConsumed == (actualByteCount ?? utf8Json.Length) || reader.CurrentState.Options.AllowMultipleValues);
+                return value;
+            }
+            finally
+            {
+                state.Dispose();
+            }
         }
     }
 }

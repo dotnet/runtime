@@ -53,9 +53,16 @@ namespace System.Text.Json.Serialization.Metadata
                 WriteStack state = default;
                 state.Initialize(this, rootValueBoxed);
 
-                bool success = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
-                Debug.Assert(success);
-                writer.Flush();
+                try
+                {
+                    bool success = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
+                    Debug.Assert(success);
+                    writer.Flush();
+                }
+                finally
+                {
+                    state.Dispose();
+                }
             }
         }
 
@@ -239,6 +246,8 @@ namespace System.Text.Json.Serialization.Metadata
                     {
                         disposable.Dispose();
                     }
+
+                    state.Dispose();
                 }
             }
         }
@@ -327,6 +336,7 @@ namespace System.Text.Json.Serialization.Metadata
                 finally
                 {
                     Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, bufferWriter);
+                    state.Dispose();
                 }
             }
         }
