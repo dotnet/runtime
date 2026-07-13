@@ -52,6 +52,9 @@
 
   <Target Name="RunSingleMergedTest">
     <Exec Command="chmod +x $(TestWrapperScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(OS)' != 'Windows_NT'" />
+    <!-- Remove any stale results file so the Copy below only picks up results from this run;
+         a crashing runner never writes one, and would otherwise copy a prior run's results. -->
+    <Delete Files="$(TestResultsXmlFile)" />
     <Exec Command="$(TestWrapperScript) &gt; $(RedirectOutputToFile) 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" ContinueOnError="ErrorAndContinue">
       <Output TaskParameter="ExitCode" PropertyName="MergedTestExitCode" />
     </Exec>

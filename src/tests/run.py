@@ -1261,13 +1261,13 @@ def parse_crashed_runner_file(args, item):
     script = None
     try:
         with open(crash_file, 'r', encoding='utf-8') as f:
+            # WriteLinesToFile splits on ';', so ExitCode= and Script= are on separate lines.
             for line in f:
                 line = line.strip()
                 if line.startswith("ExitCode="):
-                    parts = line.split(";", 1)
-                    exit_code = parts[0][len("ExitCode="):]
-                    if len(parts) > 1 and parts[1].startswith("Script="):
-                        script = parts[1][len("Script="):]
+                    exit_code = line[len("ExitCode="):]
+                elif line.startswith("Script="):
+                    script = line[len("Script="):]
     except Exception as e:
         print("Warning: Failed to parse crash file %s: %s" % (crash_file, e))
         return None

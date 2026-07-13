@@ -187,6 +187,8 @@ public sealed class ConditionalTest : ITestInfo
             if (skipReporting.Length > 0)
             {
                 builder.AppendLine(skipReporting);
+                // Return so a skipped test isn't also reported as passed by the trailing
+                // ReportPassedTest. Safe because each executor holds a single test.
                 builder.AppendLine("return;");
             }
         }
@@ -489,6 +491,8 @@ public sealed class AlwaysSkippedTest : ITestInfo
         if (skipReporting.Length > 0)
         {
             builder.AppendLine(skipReporting);
+            // Return so a skipped test isn't also reported as passed by the trailing
+            // ReportPassedTest. Safe because each executor holds a single test.
             builder.AppendLine("return;");
         }
         return builder;
