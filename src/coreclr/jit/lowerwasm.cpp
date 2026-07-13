@@ -892,9 +892,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //    node - The hardware intrinsic node.
 //
 // Notes:
-//  If the immediate operand is constant, it should be marked as contained. If not, then we set GTF_HW_NEEDS_JUMP_TABLE
-//  and mark the operands as multiply used so they'll be allocated wasm locals (needed for the jump table which uses
-//  nested blocks).
+//  If the immediate operand is constant, it should be marked as contained.
+//  If not, we mark the operands as multiply used so they'll be allocated wasm locals (needed for the
+//  jump table which uses nested blocks).
 GenTree* Lowering::LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node)
 {
     GenTree* immOp = node->GetImmOp();
