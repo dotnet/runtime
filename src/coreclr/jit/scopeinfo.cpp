@@ -158,6 +158,9 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack() const
 //
 void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumber otherReg)
 {
+    assert(genIsValidIntReg(reg));
+    assert(otherReg == REG_NA || genIsValidIntReg(otherReg));
+
     if (otherReg == REG_NA)
     {
         // Only one register is used
@@ -409,10 +412,10 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 #ifdef TARGET_64BIT
         case TYP_FLOAT:
         case TYP_DOUBLE:
-            // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
-            // so no XMM registers can get debug information.
+            // VLT_REG_FP uses a 0-based FP register index; the DBI adds the
+            // platform-specific XMM0/V0 base when converting to CorDebugRegister.
             this->vlType       = VLT_REG_FP;
-            this->vlReg.vlrReg = varDsc->GetRegNum();
+            this->vlReg.vlrReg = (regNumber)(varDsc->GetRegNum() - REG_FP_FIRST);
             break;
 
 #else // !TARGET_64BIT
@@ -442,12 +445,9 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         {
             this->vlType = VLT_REG_FP;
 
-            // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
-            // so no XMM registers can get debug information.
-            //
-            // Note: Need to initialize vlrReg field, otherwise during jit dump hitting an assert
-            // in eeDispVar() --> getRegName() that regNumber is valid.
-            this->vlReg.vlrReg = varDsc->GetRegNum();
+            // VLT_REG_FP uses a 0-based FP register index; the DBI adds the
+            // platform-specific XMM0/V0 base when converting to CorDebugRegister.
+            this->vlReg.vlrReg = (regNumber)(varDsc->GetRegNum() - REG_FP_FIRST);
             break;
         }
 #endif // FEATURE_SIMD
@@ -486,6 +486,7 @@ CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg,
 //
 // Arguments:
 //    varDsc       - the variable it is desired to build the "siVarLoc".
+//    offset       - offset into the variable to add
 //    stackLevel   - the current stack level. If the stack pointer changes in
 //                   the function, we must adjust stack pointer-based local
 //                   variable offsets to compensate.
@@ -494,12 +495,12 @@ CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg,
 //    A "siVarLoc" representing the variable location, which could live
 //    in a register, an stack position, or a combination of both.
 //
-CodeGenInterface::siVarLoc CodeGenInterface::getSiVarLoc(const LclVarDsc* varDsc, unsigned int stackLevel) const
+CodeGenInterface::siVarLoc CodeGenInterface::getSiVarLoc(const LclVarDsc* varDsc, int offset, int stackLevel) const
 {
     // For stack vars, find the base register, and offset
 
     regNumber baseReg;
-    signed    offset = varDsc->GetStackOffset();
+    offset += varDsc->GetStackOffset();
 
     if (!varDsc->lvFramePointerBased)
     {
@@ -1074,11 +1075,13 @@ void CodeGenInterface::VariableLiveKeeper::siStartVariableLiveRange(const LclVar
 
     // Only the variables that exists in the IL, "this", and special arguments are reported, as long as they were
     // allocated.
-    if (m_compiler->opts.compDbgInfo && (varNum < m_LiveDscCount) && (varDsc->lvIsInReg() || varDsc->lvOnFrame))
+    // TODO-SVE: Do we need to support this for scalable vectors?
+    if (m_compiler->opts.compDbgInfo && (varNum < m_LiveDscCount) && (varDsc->lvIsInReg() || varDsc->lvOnFrame) &&
+        varDsc->lvValueSize().IsExact())
     {
         // Build siVarLoc for this born "varDsc"
         CodeGenInterface::siVarLoc varLocation =
-            m_compiler->codeGen->getSiVarLoc(varDsc, m_compiler->codeGen->getCurrentStackLevel());
+            m_compiler->codeGen->getSiVarLoc(varDsc, 0, (int)m_compiler->codeGen->getCurrentStackLevel());
 
         VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];
         // this variable live range is valid from this point
@@ -1147,7 +1150,7 @@ void CodeGenInterface::VariableLiveKeeper::siUpdateVariableLiveRange(const LclVa
     {
         // Build the location of the variable
         CodeGenInterface::siVarLoc siVarLoc =
-            m_compiler->codeGen->getSiVarLoc(varDsc, m_compiler->codeGen->getCurrentStackLevel());
+            m_compiler->codeGen->getSiVarLoc(varDsc, 0, (int)m_compiler->codeGen->getCurrentStackLevel());
 
         // Report the home change for this variable
         VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];
@@ -1686,7 +1689,7 @@ NATIVE_OFFSET CodeGen::psiGetVarStackOffset(const LclVarDsc* lclVarDsc) const
 //
 void CodeGen::psiBegProlog()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     m_compiler->compResetScopeLists();
 
@@ -1733,7 +1736,25 @@ void CodeGen::psiBegProlog()
 
         if (reg1 != REG_NA)
         {
-            varLocation.storeVariableInRegisters(reg1, reg2);
+            if (genIsValidFloatReg(reg1))
+            {
+                // FP parameter in XMM/V register — encode as VLT_REG_FP with
+                // 0-based FP register index.
+                varLocation.vlType       = VLT_REG_FP;
+                varLocation.vlReg.vlrReg = (regNumber)(reg1 - REG_FP_FIRST);
+            }
+            else
+            {
+                // Integer register parameter. On SysV x64, the second segment
+                // may be in an XMM register for mixed struct passing — drop it
+                // since VLT_REG_REG cannot encode FP registers.
+                // TODO: Supporting this case is tracked by https://github.com/dotnet/runtime/issues/129344
+                if (reg2 != REG_NA && !genIsValidIntReg(reg2))
+                {
+                    reg2 = REG_NA;
+                }
+                varLocation.storeVariableInRegisters(reg1, reg2);
+            }
         }
         else
         {
@@ -1754,7 +1775,7 @@ void CodeGen::psiBegProlog()
 //
 void CodeGen::psiEndProlog()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     varLiveKeeper->psiClosePrologVariableRanges();
 }
 
@@ -1779,22 +1800,21 @@ void CodeGen::genSetScopeInfo()
     }
 #endif
 
-    unsigned varsLocationsCount = 0;
-
-    varsLocationsCount = (unsigned int)varLiveKeeper->getLiveRangesCount();
+    unsigned varsLocationsCount = (unsigned int)(varLiveKeeper->getLiveRangesCount() + emittedCallReturnInfo->size());
 
     if (varsLocationsCount == 0)
     {
         // No variable home to report
-        m_compiler->eeSetLVcount(0);
+        m_compiler->eeAllocateLVs(0);
         m_compiler->eeSetLVdone();
         return;
     }
 
-    noway_assert(m_compiler->opts.compScopeInfo && (m_compiler->info.compVarScopesCount > 0));
+    noway_assert((m_compiler->opts.compScopeInfo && (m_compiler->info.compVarScopesCount > 0)) ||
+                 (varLiveKeeper->getLiveRangesCount() == 0));
 
     // Initialize the table where the reported variables' home will be placed.
-    m_compiler->eeSetLVcount(varsLocationsCount);
+    m_compiler->eeAllocateLVs(varsLocationsCount);
 
 #ifdef DEBUG
     genTrnslLocalVarCount = varsLocationsCount;
@@ -1804,11 +1824,18 @@ void CodeGen::genSetScopeInfo()
     }
 #endif
 
-    // We can have one of both flags defined, both, or none. Specially if we need to compare both
-    // both results. But we cannot report both to the debugger, since there would be overlapping
-    // intervals, and may not indicate the same variable location.
+    if (varLiveKeeper->getLiveRangesCount() > 0)
+    {
+        genSetScopeInfoUsingVariableRanges();
+    }
 
-    genSetScopeInfoUsingVariableRanges();
+    for (const EmittedCallReturnInfo& callReturnInfo : *emittedCallReturnInfo)
+    {
+        UNATIVE_OFFSET retOffset = callReturnInfo.returnLocation.CodeOffset(GetEmitter());
+
+        m_compiler->eeSetLVinfo(m_compiler->eeVarsCount++, retOffset, retOffset + 1, callReturnInfo.callILOffset,
+                                ICorDebugInfo::CALL_RETURN_ILNUM, callReturnInfo.returnValueLoc);
+    }
 
     m_compiler->eeSetLVdone();
 }
@@ -1999,7 +2026,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
 #endif // DEBUG
 
-    m_compiler->eeSetLVinfo(which, startOffs, length, ilVarNum, *varLoc);
+    m_compiler->eeSetLVinfo(which, startOffs, startOffs + length, 0, ilVarNum, *varLoc);
 }
 
 /*****************************************************************************/

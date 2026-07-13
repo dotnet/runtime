@@ -427,19 +427,13 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out double result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
-            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out double result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         //
@@ -721,10 +715,27 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
         int IFloatingPoint<double>.GetSignificandBitLength() => 53;
 
+        internal bool TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt16BigEndian(destination, Exponent))
+            {
+                bytesWritten = sizeof(short);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (BinaryPrimitives.TryWriteInt16BigEndian(destination, Exponent))
+            return TryWriteExponentBigEndian(destination, out bytesWritten);
+        }
+
+        internal bool TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt16LittleEndian(destination, Exponent))
             {
                 bytesWritten = sizeof(short);
                 return true;
@@ -737,9 +748,14 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (BinaryPrimitives.TryWriteInt16LittleEndian(destination, Exponent))
+            return TryWriteExponentLittleEndian(destination, out bytesWritten);
+        }
+
+        internal bool TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt64BigEndian(destination, Significand))
             {
-                bytesWritten = sizeof(short);
+                bytesWritten = sizeof(ulong);
                 return true;
             }
 
@@ -750,7 +766,12 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (BinaryPrimitives.TryWriteUInt64BigEndian(destination, Significand))
+            return TryWriteSignificandBigEndian(destination, out bytesWritten);
+        }
+
+        internal bool TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt64LittleEndian(destination, Significand))
             {
                 bytesWritten = sizeof(ulong);
                 return true;
@@ -763,14 +784,7 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (BinaryPrimitives.TryWriteUInt64LittleEndian(destination, Significand))
-            {
-                bytesWritten = sizeof(ulong);
-                return true;
-            }
-
-            bytesWritten = 0;
-            return false;
+            return TryWriteSignificandLittleEndian(destination, out bytesWritten);
         }
 
         //
@@ -1465,6 +1479,27 @@ namespace System
                 result = default;
                 return false;
             }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out double result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out double result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out double result, out int bytesConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed);
         }
 
         //
@@ -2272,7 +2307,7 @@ namespace System
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out double result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />

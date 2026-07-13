@@ -364,7 +364,7 @@ namespace System.Security.Cryptography.X509Certificates
             return s_ocspDir;
         }
 
-        private static string GetCrlFileName(SafeX509Handle cert, string crlUrl)
+        private static unsafe string GetCrlFileName(SafeX509Handle cert, string crlUrl)
         {
             // X509_issuer_name_hash returns "unsigned long", which is marshalled as ulong.
             // But it only sets 32 bits worth of data, so force it down to uint just... in case.

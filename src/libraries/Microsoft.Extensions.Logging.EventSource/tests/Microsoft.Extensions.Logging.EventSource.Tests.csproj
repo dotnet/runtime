@@ -5,8 +5,6 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
-    <!-- https://github.com/dotnet/runtime/issues/126862 -->
-    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>

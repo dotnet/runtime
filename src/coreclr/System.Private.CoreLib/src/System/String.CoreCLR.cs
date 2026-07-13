@@ -11,10 +11,12 @@ namespace System
 {
     public partial class String
     {
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe string FastAllocateString(MethodTable *pMT, nint length);
+        private static extern unsafe string FastAllocateString(MethodTable *pMT, nint length);
 
         [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe string FastAllocateString(nint length)
         {
             return FastAllocateString(TypeHandle.TypeHandleOf<string>().AsMethodTable(), length);

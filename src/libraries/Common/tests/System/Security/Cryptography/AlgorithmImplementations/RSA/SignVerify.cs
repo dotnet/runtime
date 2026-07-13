@@ -1022,7 +1022,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 modulus2048Signature);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
         public void VerifyExpectedSignature_PssSha256_RSA16384()
         {
             byte[] modulus2048Signature = (
@@ -1098,7 +1098,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 modulus2048Signature);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
         public void VerifyExpectedSignature_PssSha384()
         {
             byte[] bigModulusSignature = (

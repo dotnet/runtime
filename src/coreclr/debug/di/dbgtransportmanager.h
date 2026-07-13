@@ -7,6 +7,10 @@
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_DI
 
+#ifdef HOST_UNIX
+#include <pthread.h>
+#endif
+
 // TODO: Ideally we'd like to remove this class and don't do any process related book keeping in DBI.
 
 // This is a registry of all the processes a debugger knows about, different components call it in order to
@@ -52,12 +56,24 @@ private:
     {
         ProcessEntry           *m_pNext;            // Next entry in the list
         DWORD                   m_dwPID;            // Process ID for this entry
-        HANDLE                  m_hProcess;         // Process handle
+        HANDLE                  m_hProcessExited;   // Waitable handle that becomes signaled when the
+                                                    // process exits. On HOST_WINDOWS this is the process
+                                                    // handle itself; on HOST_UNIX it is a manual-reset
+                                                    // event signaled by the poller thread below.
         DbgTransportSession    *m_transport;        // Debugger's connection to the process
         DWORD                   m_cProcessRef;      // Ref count
+#ifdef HOST_UNIX
+        pthread_t               m_pollerThread;     // Thread that polls m_dwPID for exit
+        bool                    m_fPollerStarted;   // True once m_pollerThread has been created
+        Volatile<bool>          m_fStopPoller;      // Set to true to ask the poller thread to exit
+#endif // HOST_UNIX
 
         ~ProcessEntry();
     };
+
+#ifdef HOST_UNIX
+    static void *ProcessExitPollerThread(void *arg);
+#endif
 
     ProcessEntry           *m_pProcessList;         // Head of list of currently alive processes (unsorted)
     RSLock                  m_sLock;                // Lock protecting read and write access to the target list

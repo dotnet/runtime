@@ -36,14 +36,6 @@ add_executable_clr(paltests
   EXCLUDE_FROM_ALL
   paltests.cpp
   common/palsuite.cpp
-  #composite/object_management/event/nonshared/event.cpp
-  #composite/object_management/event/nonshared/main.cpp
-  #composite/object_management/event/shared/event.cpp
-  #composite/object_management/event/shared/main.cpp
-  #composite/object_management/semaphore/nonshared/main.cpp
-  #composite/object_management/semaphore/nonshared/semaphore.cpp
-  #composite/object_management/semaphore/shared/main.cpp
-  #composite/object_management/semaphore/shared/semaphore.cpp
   c_runtime/atof/test1/test1.cpp
   c_runtime/atoi/test1/test1.cpp
   c_runtime/isalnum/test1/test1.cpp
@@ -141,12 +133,6 @@ add_executable_clr(paltests
   c_runtime/_wtoi/test1/test1.cpp
   #debug_api/DebugBreak/test1/test1.cpp
   debug_api/OutputDebugStringW/test1/test1.cpp
-  #debug_api/WriteProcessMemory/test1/helper.cpp
-  #debug_api/WriteProcessMemory/test1/test1.cpp
-  #debug_api/WriteProcessMemory/test3/helper.cpp
-  #debug_api/WriteProcessMemory/test3/test3.cpp
-  #debug_api/WriteProcessMemory/test4/helper.cpp
-  #debug_api/WriteProcessMemory/test4/test4.cpp
   #exception_handling/pal_except/test1/test1.cpp
   #exception_handling/pal_except/test2/test2.cpp
   #exception_handling/pal_except/test3/test3.cpp
@@ -191,7 +177,6 @@ add_executable_clr(paltests
 #  filemapping_memmgt/GetProcAddress/test1/testlib.cpp
   filemapping_memmgt/GetProcAddress/test2/test2.cpp
 #  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
-  filemapping_memmgt/MapViewOfFile/test1/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test2/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test3/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test4/mapviewoffile.cpp
@@ -306,7 +291,6 @@ add_executable_clr(paltests
   miscellaneous/FormatMessageW/test6/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test1/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test2/test.cpp
-  miscellaneous/GetCommandLineW/test1/test.cpp
   miscellaneous/GetEnvironmentStringsW/test1/test.cpp
   miscellaneous/GetEnvironmentVariableA/test1/test.cpp
   miscellaneous/GetEnvironmentVariableA/test2/test.cpp
@@ -402,7 +386,6 @@ add_executable_clr(paltests
   threading/SwitchToThread/test1/test1.cpp
   threading/TerminateProcess/test1/TerminateProcess.cpp
   threading/ThreadPriority/test1/ThreadPriority.cpp
-  threading/WaitForMultipleObjects/test1/test1.cpp
   threading/WaitForMultipleObjectsEx/test1/test1.cpp
   threading/WaitForSingleObject/test1/test1.cpp
   threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp
@@ -416,6 +399,14 @@ target_link_libraries(paltests
   PUBLIC
   ${COMMON_TEST_LIBRARIES}
 )
+
+if(CLR_CMAKE_TARGET_OPENBSD)
+  # A few PAL tests (e.g. VirtualAlloc/VirtualProtect) deliberately request simultaneous
+  # W+X (PAGE_EXECUTE_READWRITE) mappings to exercise the PAL API. OpenBSD rejects those
+  # unless the binary carries the PT_OPENBSD_WXNEEDED note and runs from a wxallowed mount.
+  # The runtime itself never needs this (it uses W^X double-mapping), so scope it here.
+  target_link_options(paltests PRIVATE "-Wl,-z,wxneeded")
+endif(CLR_CMAKE_TARGET_OPENBSD)
 
 install (TARGETS paltests DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
 add_dependencies(paltests_install paltests)

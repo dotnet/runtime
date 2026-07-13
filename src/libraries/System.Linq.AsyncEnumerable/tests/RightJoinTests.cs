@@ -67,6 +67,36 @@ namespace System.Linq.Tests
 #endif
 
         [Fact]
+        public async Task NullKeysRemainUnmatched()
+        {
+            string[] expected =
+            [
+                "<null>:#i1",
+                "a:A",
+                "<null>:#i2",
+                "<null>:b"
+            ];
+
+            Assert.Equal(
+                expected,
+                await CreateSource("#o1", "a", "#o2").RightJoin(
+                    CreateSource("#i1", "A", "#i2", "b"),
+                    s => s[0] == '#' ? null : s,
+                    s => s[0] == '#' ? null : s,
+                    (outer, inner) => $"{outer ?? "<null>"}:{inner}",
+                    StringComparer.OrdinalIgnoreCase).ToListAsync());
+
+            Assert.Equal(
+                expected,
+                await CreateSource("#o1", "a", "#o2").RightJoin(
+                    CreateSource("#i1", "A", "#i2", "b"),
+                    async (s, ct) => s[0] == '#' ? null : s,
+                    async (s, ct) => s[0] == '#' ? null : s,
+                    async (outer, inner, ct) => $"{outer ?? "<null>"}:{inner}",
+                    StringComparer.OrdinalIgnoreCase).ToListAsync());
+        }
+
+        [Fact]
         public async Task Cancellation_Cancels()
         {
             IAsyncEnumerable<int> source = CreateSource(2, 4, 8, 16);

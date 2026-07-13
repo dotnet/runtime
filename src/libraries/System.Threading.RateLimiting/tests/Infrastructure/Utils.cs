@@ -28,14 +28,12 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         // Gets and runs the Heartbeat function on the DefaultPartitionedRateLimiter
-        internal static Task RunTimerFunc<T>(PartitionedRateLimiter<T> limiter)
+        internal static Task RunTimerFunc<TResource, TKey>(PartitionedRateLimiter<TResource> limiter)
         {
             // Use Type.GetType so that trimming can see what type we're reflecting on, but assert it's the one we got
             var limiterTypeDef = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2, System.Threading.RateLimiting");
-            var limiterType = limiter.GetType();
-            Assert.Equal(limiterTypeDef, limiterType.GetGenericTypeDefinition());
-            if (string.Empty.Length > 0)
-                limiterType = limiterTypeDef;
+            var limiterType = limiterTypeDef.MakeGenericType(typeof(TResource), typeof(TKey));
+            Assert.Equal(limiter.GetType(), limiterType);
 
             var innerTimer = limiterType.GetField("_timer", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(innerTimer);

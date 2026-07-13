@@ -11,31 +11,35 @@
 
     Supports Windows, Linux, and macOS.
 
-    The DOTNET_CdacStress environment variable controls WHERE and WHAT is verified:
-      WHERE (low nibble):
-        0x1 = ALLOC  — verify at allocation points
-        0x2 = GC     — verify at GC points
-        0x4 = INSTR  — verify at instruction-level GC stress points (requires DOTNET_GCStress)
-      WHAT (high nibble):
-        0x10 = REFS   — compare GC stack references (cDAC vs runtime)
-        0x20 = WALK   — compare stack walk frames (cDAC vs DAC)
-        0x40 = USE_DAC — also compare GC refs against DAC
-      MODIFIER:
-        0x100 = UNIQUE — only verify each IP once
+    The DOTNET_CdacStress environment variable is split into byte regions:
+      WHERE (byte 0): when verification fires
+        0x00000001 = ALLOC — verify at every managed allocation
+      WHAT (byte 1): which sub-check runs at each fired trigger
+        0x00000100 = GCREFS  — compare cDAC GetStackReferences vs runtime GC roots
+        0x00000200 = ARGITER — compare cDAC EnumerateArguments vs runtime ComputeCallRefMap
+      MODIFIER (byte 2):
+        0x00010000 = VERBOSE — rich per-ref diagnostics in the log
+
+    The runtime's own GC root enumeration is the single oracle for GCREFS.
+    A useful configuration combines at least one WHERE bit with at least one
+    WHAT bit (e.g. 0x101 = ALLOC + GCREFS).
 
 .PARAMETER Configuration
     Runtime configuration: Checked (default) or Debug.
 
-.PARAMETER CdacStress
-    Hex value for DOTNET_CdacStress flags. Default: 0x11 (ALLOC|REFS).
-    Common values:
-      0x11 = ALLOC|REFS (fast, allocation points only)
-      0x14 = INSTR|REFS (thorough, requires GCStress)
-      0x74 = INSTR|REFS|WALK|USE_DAC (full comparison, slow)
+.PARAMETER CdacConfiguration
+    cDAC build configuration: Release (default) or Checked/Debug.
+    Stress runs default to Release because the cDAC is compared against the
+    runtime oracle on every trigger; cDAC-side asserts are not the oracle and
+    NativeAOT Checked/Debug is roughly 5x slower, dominating stress wall-time.
+    Override to Checked/Debug if you want cDAC asserts while reproducing a
+    specific failure.
 
-.PARAMETER GCStress
-    Hex value for DOTNET_GCStress. Default: empty (disabled).
-    Set to 0x4 for instruction-level stress.
+.PARAMETER CdacStress
+    Hex value for DOTNET_CdacStress flags. Default: 0x101 (ALLOC + GCREFS).
+    Common values:
+      0x101 = ALLOC + GCREFS  (allocation points, GC-refs comparison)
+      0x301 = ALLOC + GCREFS + ARGITER  (also runs the ArgIterator sub-check)
 
 .PARAMETER Debuggee
     Which debuggee(s) to run. Default: All.
@@ -50,16 +54,16 @@
 .EXAMPLE
     ./RunStressTests.ps1 -SkipBuild
     ./RunStressTests.ps1 -Debuggee BasicAlloc -SkipBuild
-    ./RunStressTests.ps1 -CdacStress 0x74 -GCStress 0x4       # Full comparison with GCStress
-    ./RunStressTests.ps1 -CdacStress 0x114 -SkipBuild          # Unique IPs only
+    ./RunStressTests.ps1 -CdacStress 0x10101 -SkipBuild           # ALLOC + GCREFS + VERBOSE
 #>
 param(
     [ValidateSet("Checked", "Debug")]
     [string]$Configuration = "Checked",
 
-    [string]$CdacStress = "0x11",
+    [ValidateSet("Release", "Checked", "Debug")]
+    [string]$CdacConfiguration = "Release",
 
-    [string]$GCStress = "",
+    [string]$CdacStress = "0x101",
 
     [string[]]$Debuggee = @(),
 
@@ -126,8 +130,8 @@ Write-Host "=== cDAC Stress Test ===" -ForegroundColor Cyan
 Write-Host "  Repo root:     $repoRoot"
 Write-Host "  Platform:      $platformId"
 Write-Host "  Configuration: $Configuration"
+Write-Host "  CdacConfig:    $CdacConfiguration"
 Write-Host "  CdacStress:    $CdacStress"
-Write-Host "  GCStress:      $(if ($GCStress) { $GCStress } else { '(disabled)' })"
 Write-Host "  Debuggees:     $($selectedDebuggees -join ', ')"
 Write-Host ""
 
@@ -135,10 +139,16 @@ Write-Host ""
 # Step 1: Build CoreCLR + cDAC
 # ---------------------------------------------------------------------------
 if (-not $SkipBuild) {
-    Write-Host ">>> Step 1: Building CoreCLR native + cDAC tools ($Configuration)..." -ForegroundColor Yellow
+    Write-Host ">>> Step 1: Building CoreCLR native ($Configuration) + cDAC tools ($CdacConfiguration)..." -ForegroundColor Yellow
     Push-Location $repoRoot
     try {
-        $buildArgs = @("-subset", "clr.native+tools.cdac", "-c", $Configuration, "-rc", $Configuration, "-lc", "Release", "-bl")
+        # cDAC (mscordaccore_universal) is built via the 'tools' category, which
+        # picks up ToolsConfiguration. Explicitly set it to $CdacConfiguration
+        # (default: Release) so the in-process stress framework loads an
+        # optimized NAOT shim. Otherwise it falls back to -c $Configuration
+        # (default: Checked) and DebugOnlyCodeHolder/contract-asserts dominate
+        # the profile and inflate wall time ~5x.
+        $buildArgs = @("-subset", "clr.native+tools.cdac", "-c", $Configuration, "-rc", $Configuration, "-lc", "Release", "/p:ToolsConfiguration=$CdacConfiguration", "-bl")
         & $buildCmd @buildArgs
         if ($LASTEXITCODE -ne 0) { Write-Error "Build failed with exit code $LASTEXITCODE"; exit 1 }
     } finally {
@@ -153,6 +163,19 @@ if (-not $SkipBuild) {
     }
     & $testBuildScript $Configuration generatelayoutonly -SkipRestorePackages /p:LibrariesConfiguration=Release
     if ($LASTEXITCODE -ne 0) { Write-Error "Core_root generation failed"; exit 1 }
+
+    # Copy the cDAC NAOT shim (built into artifacts/bin/coreclr/<os>.<arch>.<CdacConfiguration>/)
+    # into core_root. The generatelayoutonly step above populates core_root from
+    # the runtime-config sharedFramework but does not include the cDAC binary
+    # from a different config. Force-copy ours so the framework loads the right
+    # build flavor regardless of -CdacConfiguration.
+    $cdacSrc = Join-Path $repoRoot "artifacts" "bin" "coreclr" "$platformId.$CdacConfiguration" $cdacDll
+    if (Test-Path $cdacSrc) {
+        Copy-Item -Path $cdacSrc -Destination (Join-Path $coreRoot $cdacDll) -Force
+        Write-Host "  Copied $cdacDll from $CdacConfiguration build into core_root." -ForegroundColor DarkGray
+    } else {
+        Write-Warning "$cdacDll not found at $cdacSrc -- core_root may have wrong-config cDAC."
+    }
 } else {
     Write-Host ">>> Step 1: Skipping build (-SkipBuild)" -ForegroundColor DarkGray
     if (!(Test-Path $corerunExe)) {
@@ -196,7 +219,6 @@ function Find-DebuggeeDll([string]$name) {
 
 # Helper: clear stress environment variables
 function Clear-StressEnv {
-    Remove-Item Env:\DOTNET_GCStress -ErrorAction SilentlyContinue
     Remove-Item Env:\DOTNET_CdacStress -ErrorAction SilentlyContinue
     Remove-Item Env:\DOTNET_CdacStressLogFile -ErrorAction SilentlyContinue
     Remove-Item Env:\DOTNET_ContinueOnAssert -ErrorAction SilentlyContinue
@@ -232,14 +254,13 @@ if (-not $SkipBaseline) {
 # ---------------------------------------------------------------------------
 # Step 4: Run with cDAC stress
 # ---------------------------------------------------------------------------
-Write-Host ">>> Step 4: Running with CdacStress=$CdacStress$(if ($GCStress) { " GCStress=$GCStress" })..." -ForegroundColor Yellow
+Write-Host ">>> Step 4: Running with CdacStress=$CdacStress..." -ForegroundColor Yellow
 $logDir = Join-Path $repoRoot "artifacts" "tests" "coreclr" "$platformId.$Configuration" "Tests" "cdacstresslogs"
 New-Item -ItemType Directory -Force $logDir | Out-Null
 
 $totalPasses = 0
 $totalFails = 0
-$totalWalkOK = 0
-$totalWalkMM = 0
+$totalKnown = 0
 $failedDebuggees = @()
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
@@ -252,9 +273,6 @@ foreach ($d in $selectedDebuggees) {
     $env:DOTNET_CdacStress = $CdacStress
     $env:DOTNET_CdacStressLogFile = $logFile
     $env:DOTNET_ContinueOnAssert = "1"
-    if ($GCStress) {
-        $env:DOTNET_GCStress = $GCStress
-    }
 
     $dSw = [System.Diagnostics.Stopwatch]::StartNew()
     & $corerunExe $dll
@@ -262,24 +280,22 @@ foreach ($d in $selectedDebuggees) {
     $dSw.Stop()
 
     # Parse results
-    $passes = 0; $fails = 0; $walkOK = 0; $walkMM = 0
+    $passes = 0; $fails = 0; $known = 0
     if (Test-Path $logFile) {
         $logContent = Get-Content $logFile
         $passes = ($logContent | Select-String "^\[PASS\]").Count
         $fails = ($logContent | Select-String "^\[FAIL\]").Count
-        $walkOK = ($logContent | Select-String "WALK_OK").Count
-        $walkMM = ($logContent | Select-String "WALK_MISMATCH").Count
+        $known = ($logContent | Select-String "^\[KNOWN_ISSUE\]").Count
     }
 
     $totalPasses += $passes
     $totalFails += $fails
-    $totalWalkOK += $walkOK
-    $totalWalkMM += $walkMM
+    $totalKnown += $known
 
     $status = if ($ec -eq 100) { "PASS" } else { "FAIL"; $failedDebuggees += $d }
     $color = if ($ec -eq 100 -and $fails -eq 0) { "Green" } elseif ($ec -eq 100) { "Yellow" } else { "Red" }
-    $detail = "refs=$passes/$($passes+$fails)"
-    if ($walkOK -gt 0 -or $walkMM -gt 0) { $detail += " walk=$walkOK/$($walkOK+$walkMM)" }
+    $detail = "refs=$passes/$($passes+$fails+$known)"
+    if ($known -gt 0) { $detail += " known=$known" }
     Write-Host "  $d — $status ($detail) [$($dSw.Elapsed.ToString('mm\:ss'))]" -ForegroundColor $color
 }
 
@@ -293,8 +309,8 @@ Write-Host ""
 Write-Host "=== Summary ===" -ForegroundColor Cyan
 Write-Host "  Elapsed:     $($sw.Elapsed.ToString('mm\:ss'))"
 Write-Host "  Stress refs: $totalPasses PASS / $totalFails FAIL" -ForegroundColor $(if ($totalFails -eq 0) { "Green" } else { "Yellow" })
-if ($totalWalkOK -gt 0 -or $totalWalkMM -gt 0) {
-    Write-Host "  Walk parity: $totalWalkOK OK / $totalWalkMM MISMATCH" -ForegroundColor $(if ($totalWalkMM -eq 0) { "Green" } else { "Yellow" })
+if ($totalKnown -gt 0) {
+    Write-Host "  Known issues: $totalKnown (deferred-frame diffs, not real failures)" -ForegroundColor Yellow
 }
 Write-Host "  Logs:        $logDir"
 

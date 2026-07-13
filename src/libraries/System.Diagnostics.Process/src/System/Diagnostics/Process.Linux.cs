@@ -231,7 +231,7 @@ namespace System.Diagnostics
         /// <summary>Gets the name that was used to start the process, or null if it could not be retrieved.</summary>
         /// <param name="procPid">The pid for the target process.</param>
         /// <param name="stat">The stat for the target process.</param>
-        internal static string GetUntruncatedProcessName(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat stat)
+        internal static unsafe string GetUntruncatedProcessName(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat stat)
         {
             string cmdLineFilePath = Interop.procfs.GetCmdLinePathForProcess(procPid);
 

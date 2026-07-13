@@ -25,7 +25,7 @@ namespace System.Text.Json
             }
         }
 
-        public static byte[] EscapeValue(
+        public static unsafe byte[] EscapeValue(
             ReadOnlySpan<byte> utf8Value,
             int firstEscapeIndexVal,
             JavaScriptEncoder? encoder)
@@ -53,7 +53,7 @@ namespace System.Text.Json
             return escapedString;
         }
 
-        private static byte[] GetEscapedPropertyNameSection(
+        private static unsafe byte[] GetEscapedPropertyNameSection(
             ReadOnlySpan<byte> utf8Value,
             int firstEscapeIndexVal,
             JavaScriptEncoder? encoder)

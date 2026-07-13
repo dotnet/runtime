@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 
 using Internal.IL;
 using Internal.TypeSystem;
@@ -65,6 +66,41 @@ namespace ILCompiler.Compiler.Tests
             DevirtualizationManager scanDevirt = GetDevirtualizationManagerFromScan(testType.GetMethod("Run"u8, null));
 
             Assert.False(scanDevirt.IsEffectivelySealed(testType.GetNestedType("Abstract"u8)));
+        }
+
+        [Fact]
+        public void TestVariantInterfaceGenericMethodResolution()
+        {
+            DefType objectType = _context.GetWellKnownType(WellKnownType.Object);
+            MetadataType baseType = _testModule.GetType("GvmVariantInterface"u8, "GvmVariantBase"u8);
+            MetadataType derivedType = _testModule.GetType("GvmVariantInterface"u8, "GvmVariantDerived"u8);
+            MetadataType implementationType = _testModule.GetType("GvmVariantInterface"u8, "ClassWithVariantGvms"u8);
+
+            MetadataType inVariantType = _testModule.GetType("GvmVariantInterface"u8, "IInVariantGvm`1"u8);
+            MetadataType outVariantType = _testModule.GetType("GvmVariantInterface"u8, "IOutVariantGvm`1"u8);
+
+            MethodDesc inObjectMethod = inVariantType.MakeInstantiatedType(objectType).GetMethods().Single(m => m.GetName() == "Func").MakeInstantiatedMethod(objectType);
+            MethodDesc inBaseMethod = inVariantType.MakeInstantiatedType(baseType).GetMethods().Single(m => m.GetName() == "Func").MakeInstantiatedMethod(objectType);
+            MethodDesc inDerivedMethod = inVariantType.MakeInstantiatedType(derivedType).GetMethods().Single(m => m.GetName() == "Func").MakeInstantiatedMethod(objectType);
+            MethodDesc outObjectMethod = outVariantType.MakeInstantiatedType(objectType).GetMethods().Single(m => m.GetName() == "Func").MakeInstantiatedMethod(objectType);
+            MethodDesc outBaseMethod = outVariantType.MakeInstantiatedType(baseType).GetMethods().Single(m => m.GetName() == "Func").MakeInstantiatedMethod(objectType);
+            MethodDesc outDerivedMethod = outVariantType.MakeInstantiatedType(derivedType).GetMethods().Single(m => m.GetName() == "Func").MakeInstantiatedMethod(objectType);
+
+            MethodImplRecord[] methodImpls = implementationType.FindMethodsImplWithMatchingDeclName(inObjectMethod.Name);
+            Assert.NotNull(methodImpls);
+
+            MethodDesc inObjectImpl = methodImpls.Single(m => m.Decl.GetMethodDefinition() == inObjectMethod.GetMethodDefinition()).Body.MakeInstantiatedMethod(objectType);
+            MethodDesc inBaseImpl = methodImpls.Single(m => m.Decl.GetMethodDefinition() == inBaseMethod.GetMethodDefinition()).Body.MakeInstantiatedMethod(objectType);
+            MethodDesc outDerivedImpl = methodImpls.Single(m => m.Decl.GetMethodDefinition() == outDerivedMethod.GetMethodDefinition()).Body.MakeInstantiatedMethod(objectType);
+            MethodDesc outBaseImpl = methodImpls.Single(m => m.Decl.GetMethodDefinition() == outBaseMethod.GetMethodDefinition()).Body.MakeInstantiatedMethod(objectType);
+
+            var devirt = new DevirtualizationManager();
+            Assert.Equal(inObjectImpl, devirt.ResolveVirtualMethod(inObjectMethod, implementationType, out _));
+            Assert.Equal(inBaseImpl, devirt.ResolveVirtualMethod(inBaseMethod, implementationType, out _));
+            Assert.Equal(inObjectImpl, devirt.ResolveVirtualMethod(inDerivedMethod, implementationType, out _));
+            Assert.Equal(outDerivedImpl, devirt.ResolveVirtualMethod(outObjectMethod, implementationType, out _));
+            Assert.Equal(outBaseImpl, devirt.ResolveVirtualMethod(outBaseMethod, implementationType, out _));
+            Assert.Equal(outDerivedImpl, devirt.ResolveVirtualMethod(outDerivedMethod, implementationType, out _));
         }
     }
 }

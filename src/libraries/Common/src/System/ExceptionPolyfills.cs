@@ -20,9 +20,45 @@ namespace System
             }
         }
 
+        extension(ArgumentOutOfRangeException)
+        {
+            public static void ThrowIfLessThan<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null) where T : IComparable<T>
+            {
+                if (value.CompareTo(other) < 0)
+                {
+                    ThrowArgumentOutOfRangeException(paramName);
+                }
+            }
+        }
+
         [DoesNotReturn]
         private static void ThrowArgumentNullException(string? paramName) =>
             throw new ArgumentNullException(paramName);
+
+        [DoesNotReturn]
+        private static void ThrowArgumentOutOfRangeException(string? paramName) =>
+            throw new ArgumentOutOfRangeException(paramName);
+
+        extension(ArgumentException)
+        {
+            public static void ThrowIfNullOrEmpty([NotNull] string? argument, [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+            {
+                if (string.IsNullOrEmpty(argument))
+                {
+                    ThrowNullOrEmptyException(argument, paramName);
+                }
+            }
+        }
+
+        [DoesNotReturn]
+        private static void ThrowNullOrEmptyException(string? argument, string? paramName)
+        {
+            if (argument is null)
+            {
+                ThrowArgumentNullException(paramName);
+            }
+            throw new ArgumentException("The value cannot be an empty string.", paramName);
+        }
 
         extension(ObjectDisposedException)
         {

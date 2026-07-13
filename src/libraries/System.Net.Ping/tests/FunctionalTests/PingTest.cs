@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 
@@ -24,6 +25,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             public static volatile bool WasFinalized;
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public static void CreateAndRelease()
             {
                 new FinalizingPing();

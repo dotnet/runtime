@@ -10,11 +10,13 @@ namespace System
 {
     internal static partial class Number
     {
-        private static unsafe bool TryParseNumber<TChar>(scoped ref TChar* str, TChar* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
+        private static unsafe bool TryParseNumber<TChar>(TChar* str, TChar* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(str != null);
-            Debug.Assert(strEnd != null);
+            // str/strEnd may be null when the input is an empty span (e.g. default(ReadOnlySpan<TChar>)
+            // originating from a null string), in which case they are both null and the range is empty.
+            Debug.Assert((str != null) || (str == strEnd));
+            Debug.Assert((strEnd != null) || (str == strEnd));
             Debug.Assert(str <= strEnd);
             Debug.Assert((styles & (NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) == 0);
 
@@ -269,41 +271,48 @@ namespace System
                             number.IsNegative = false;
                         }
                     }
-                    str = p;
-                    return true;
+
+                    int index = (int)(p - str);
+                    var value = new ReadOnlySpan<TChar>(str, (int)(strEnd - str));
+
+                    // For compatibility we still need to process any trailing
+                    // nulls that exist and report them as having been consumed.
+
+                    index = ConsumeTrailingNulls(value, index);
+
+                    if ((index == value.Length) || ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0))
+                    {
+                        elementsConsumed = index;
+                        return true;
+                    }
                 }
             }
-            str = p;
+
+            elementsConsumed = 0;
             return false;
         }
 
-        internal static unsafe bool TryStringToNumber<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
+        internal static unsafe bool TryStringToNumber<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(info != null);
 
             fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
             {
-                TChar* p = stringPointer;
-
-                if (!TryParseNumber(ref p, p + value.Length, styles, ref number, info)
-                    || ((int)(p - stringPointer) < value.Length && !TrailingZeros(value, (int)(p - stringPointer))))
-                {
-                    number.CheckConsistency();
-                    return false;
-                }
+                bool succeeded = TryParseNumber(stringPointer, stringPointer + value.Length, styles, ref number, info, out elementsConsumed);
+                number.CheckConsistency();
+                return succeeded;
             }
-
-            number.CheckConsistency();
-            return true;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
-        private static bool TrailingZeros<TChar>(ReadOnlySpan<TChar> value, int index)
+        private static int ConsumeTrailingNulls<TChar>(ReadOnlySpan<TChar> value, int index)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            // For compatibility, we need to allow trailing zeros at the end of a number string
-            return !value.Slice(index).ContainsAnyExcept(TChar.CastFrom('\0'));
+            // For compatibility, we need to allow trailing nulls at the end of a number string
+            var remainder = value.Slice(index);
+
+            var nullsToConsume = remainder.IndexOfAnyExcept(TChar.CastFrom('\0'));
+            return index + ((nullsToConsume >= 0) ? nullsToConsume : remainder.Length);
         }
 
         private static bool IsWhite(uint ch) => (ch == 0x20) || ((ch - 0x09) <= (0x0D - 0x09));
@@ -339,7 +348,11 @@ namespace System
         private static unsafe TChar* MatchChars<TChar>(TChar* p, TChar* pEnd, ReadOnlySpan<TChar> value)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert((p != null) && (pEnd != null) && (p <= pEnd));
+            // p/pEnd may be null when the input being parsed is an empty span (e.g. from a null string),
+            // in which case they are both null and the range is empty; the loop below never dereferences p then.
+            Debug.Assert((p != null) || (p == pEnd));
+            Debug.Assert((pEnd != null) || (p == pEnd));
+            Debug.Assert(p <= pEnd);
 
             fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
             {

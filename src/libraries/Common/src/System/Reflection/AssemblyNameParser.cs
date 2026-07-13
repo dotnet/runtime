@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -244,7 +244,7 @@ namespace System.Reflection
         private static bool IsAttribute(string candidate, string attributeKind)
             => candidate.Equals(attributeKind, StringComparison.OrdinalIgnoreCase);
 
-        private static bool TryParseVersion(string attributeValue, ref Version? version)
+        private static unsafe bool TryParseVersion(string attributeValue, ref Version? version)
         {
 #if NET
             ReadOnlySpan<char> attributeValueSpan = attributeValue;
@@ -364,7 +364,7 @@ namespace System.Reflection
         // Return the next token in assembly name. If the result is Token.String,
         // sets "tokenString" to the tokenized string.
         //
-        private bool TryGetNextToken(out string tokenString, out Token token)
+        private unsafe bool TryGetNextToken(out string tokenString, out Token token)
         {
             tokenString = string.Empty;
             char c;
