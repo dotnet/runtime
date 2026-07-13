@@ -638,13 +638,19 @@ namespace System.Net
             // Connect with explicit timeout to prevent unbounded blocking when
             // the server's TCP endpoint is unreachable.
             IAsyncResult ar = socket.BeginConnect(server, null, null);
-            if (!ar.AsyncWaitHandle.WaitOne(s_queryTimeout))
+            try
             {
-                socket.Close();
-                ar.AsyncWaitHandle.Close();
-                throw new SocketException((int)SocketError.TimedOut);
+                if (!ar.AsyncWaitHandle.WaitOne(s_queryTimeout))
+                {
+                    socket.Close();
+                    throw new SocketException((int)SocketError.TimedOut);
+                }
+                socket.EndConnect(ar);
             }
-            socket.EndConnect(ar);
+            finally
+            {
+                ar.AsyncWaitHandle.Close();
+            }
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(InitialTcpBufferSize);
             try

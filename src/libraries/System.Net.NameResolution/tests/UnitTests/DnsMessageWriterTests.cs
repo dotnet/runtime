@@ -55,10 +55,10 @@ public class DnsMessageWriterTests
 
         Span<byte> nameBuffer = stackalloc byte[DnsEncodedName.MaxEncodedLength];
 
-        DnsEncodedName.TryEncode("a.com", nameBuffer, out var name1, out _);
+        Assert.Equal(OperationStatus.Done, DnsEncodedName.TryEncode("a.com", nameBuffer, out var name1, out _));
         Assert.True(writer.TryWriteQuestion(name1, DnsRecordType.A));
 
-        DnsEncodedName.TryEncode("b.com", nameBuffer, out var name2, out _);
+        Assert.Equal(OperationStatus.Done, DnsEncodedName.TryEncode("b.com", nameBuffer, out var name2, out _));
         Assert.True(writer.TryWriteQuestion(name2, DnsRecordType.AAAA));
 
         // Header(12) + Q1(1+1+3+1+3+1+4) + Q2 (same) = 12 + 11 + 11 = 34

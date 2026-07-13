@@ -453,7 +453,8 @@ namespace System.Net
                         return false; // truncated pointer
                     }
 
-                    // first compression pointer tells us where the wire encoding ends, any subsequent lables/pointers are parts of the preceding message parts
+                    // The first compression pointer tells us where the wire encoding ends; any
+                    // subsequent labels/pointers are parts of the preceding message parts.
                     if (!foundWireEnd)
                     {
                         wireLength = pos + 2 - offset;

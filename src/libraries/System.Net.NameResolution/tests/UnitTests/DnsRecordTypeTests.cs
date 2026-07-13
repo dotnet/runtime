@@ -217,19 +217,33 @@ public class DnsRecordTypeTests
     {
         DnsRecordType actualType = (DnsRecordType)actualTypeValue;
 
-        // Use a valid A record, but try to parse as every other type
-        byte[] rdata = [192, 168, 1, 1];
-        DnsRecord record = GetAnswerRecord(BuildResponse(actualType, rdata));
+        // Build a record with valid RDATA for its own type, then verify each TryParse*
+        // succeeds only for the matching type and fails for every other type.
+        DnsRecord record = GetAnswerRecord(BuildResponse(actualType, GetValidRData(actualType)));
 
-        // Try parsing as each type — only the matching one should succeed
-        if (actualType != DnsRecordType.A) Assert.False(record.TryParseARecord(out _));
-        if (actualType != DnsRecordType.AAAA) Assert.False(record.TryParseAAAARecord(out _));
-        if (actualType != DnsRecordType.CNAME) Assert.False(record.TryParseCNameRecord(out _));
-        if (actualType != DnsRecordType.MX) Assert.False(record.TryParseMxRecord(out _));
-        if (actualType != DnsRecordType.SRV) Assert.False(record.TryParseSrvRecord(out _));
-        if (actualType != DnsRecordType.TXT) Assert.False(record.TryParseTxtRecord(out _));
-        if (actualType != DnsRecordType.PTR) Assert.False(record.TryParsePtrRecord(out _));
-        if (actualType != DnsRecordType.NS) Assert.False(record.TryParseNsRecord(out _));
+        Assert.Equal(actualType == DnsRecordType.A, record.TryParseARecord(out _));
+        Assert.Equal(actualType == DnsRecordType.AAAA, record.TryParseAAAARecord(out _));
+        Assert.Equal(actualType == DnsRecordType.CNAME, record.TryParseCNameRecord(out _));
+        Assert.Equal(actualType == DnsRecordType.MX, record.TryParseMxRecord(out _));
+        Assert.Equal(actualType == DnsRecordType.SRV, record.TryParseSrvRecord(out _));
+        Assert.Equal(actualType == DnsRecordType.TXT, record.TryParseTxtRecord(out _));
+        Assert.Equal(actualType == DnsRecordType.PTR, record.TryParsePtrRecord(out _));
+        Assert.Equal(actualType == DnsRecordType.NS, record.TryParseNsRecord(out _));
+
+        // Returns valid RDATA for the given record type.
+        static byte[] GetValidRData(DnsRecordType type) => type switch
+        {
+            DnsRecordType.A => [192, 168, 1, 1],
+            DnsRecordType.AAAA => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            DnsRecordType.CNAME or DnsRecordType.PTR or DnsRecordType.NS =>
+                [0x04, (byte)'h', (byte)'o', (byte)'s', (byte)'t', 0x04, (byte)'t', (byte)'e', (byte)'s', (byte)'t', 0x00],
+            DnsRecordType.MX =>
+                [0x00, 0x0A, 0x04, (byte)'m', (byte)'a', (byte)'i', (byte)'l', 0x04, (byte)'t', (byte)'e', (byte)'s', (byte)'t', 0x00],
+            DnsRecordType.SRV =>
+                [0x00, 0x0A, 0x00, 0x14, 0x1F, 0x90, 0x03, (byte)'s', (byte)'r', (byte)'v', 0x04, (byte)'t', (byte)'e', (byte)'s', (byte)'t', 0x00],
+            DnsRecordType.TXT => [0x05, (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o'],
+            _ => throw new ArgumentOutOfRangeException(nameof(type)),
+        };
     }
 
     [Fact]

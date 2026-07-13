@@ -38,13 +38,11 @@ namespace System.Net
             DnsRecordType type,
             DnsRecordClass @class = DnsRecordClass.Internet)
         {
-            if (!name.TryCopyEncodedTo(_destination[_bytesWritten..], out int nameWritten))
-            {
-                return false;
-            }
-
-            // type (2) + class (2)
-            if (_bytesWritten + nameWritten + 4 > _destination.Length)
+            // Reserve the trailing 4 bytes for TYPE + CLASS up front so that encoding the
+            // name cannot consume the space they require.
+            Span<byte> destination = _destination[_bytesWritten..];
+            if (destination.Length < 4 ||
+                !name.TryCopyEncodedTo(destination[..^4], out int nameWritten))
             {
                 return false;
             }
