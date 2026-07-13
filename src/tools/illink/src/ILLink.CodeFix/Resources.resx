@@ -129,6 +129,12 @@
   <data name="RequiresUnsafeCodeFixTitle" xml:space="preserve">
     <value>Add 'unsafe' to parent method</value>
   </data>
+  <data name="UnsafeModifierMigrationCodeFixTitle" xml:space="preserve">
+    <value>Remove legacy unsafe modifiers</value>
+  </data>
+  <data name="UnsafeUsageMigrationCodeFixTitle" xml:space="preserve">
+    <value>Migrate unsafe usages</value>
+  </data>
   <data name="UconditionalSuppressMessageCodeFixTitle" xml:space="preserve">
     <value>Add UnconditionalSuppressMessage attribute to parent method</value>
   </data>

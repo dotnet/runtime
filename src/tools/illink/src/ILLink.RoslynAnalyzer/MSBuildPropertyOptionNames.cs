@@ -9,6 +9,11 @@ namespace ILLink.RoslynAnalyzer
         public const string IncludeAllContentForSelfExtract = nameof(IncludeAllContentForSelfExtract);
         public const string EnableTrimAnalyzer = nameof(EnableTrimAnalyzer);
         public const string EnableAotAnalyzer = nameof(EnableAotAnalyzer);
+#if DEBUG
+        public const string EnableUnsafeAnalyzer = nameof(EnableUnsafeAnalyzer);
+        public const string EnableUnsafeMigration = nameof(EnableUnsafeMigration);
+        public const string SkipLocalsInit = nameof(SkipLocalsInit);
+#endif
         public const string VerifyReferenceAotCompatibility = nameof(VerifyReferenceAotCompatibility);
         public const string VerifyReferenceTrimCompatibility = nameof(VerifyReferenceTrimCompatibility);
     }

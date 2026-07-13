@@ -219,6 +219,12 @@ namespace ILLink.Shared
         // Feature guard diagnostic ids.
         ReturnValueDoesNotMatchFeatureGuards = 4000,
         InvalidFeatureGuard = 4001,
+
+#if DEBUG
+        // Unsafe evolution migration diagnostic ids.
+        UnsafeModifierMigration = 5005,
+        UnsafeUsageMigration = 5006,
+#endif
     }
 
     public static class DiagnosticIdExtensions
@@ -251,7 +257,10 @@ namespace ILLink.Shared
             {
                 > 2000 and < 3000 => DiagnosticCategory.Trimming,
                 >= 3000 and < 3050 => DiagnosticCategory.SingleFile,
-                >= 3050 and <= 6000 => DiagnosticCategory.AOT,
+#if DEBUG
+                >= 5000 and <= 6000 => DiagnosticCategory.Unsafe,
+#endif
+                >= 3050 and < 5000 => DiagnosticCategory.AOT,
                 _ => throw new ArgumentException($"The provided diagnostic id '{diagnosticId}' does not fall into the range of supported warning codes 2001 to 6000 (inclusive).")
             };
 

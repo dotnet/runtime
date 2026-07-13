@@ -1269,4 +1269,16 @@
   <data name="DataflowAnalysisDidNotConvergeMessage" xml:space="preserve">
     <value>Trim dataflow analysis of member '{0}' took too long to complete. Trim safety cannot be guaranteed.</value>
   </data>
+  <data name="UnsafeModifierMigrationTitle" xml:space="preserve">
+    <value>Unsafe modifier requires migration</value>
+  </data>
+  <data name="UnsafeModifierMigrationMessage" xml:space="preserve">
+    <value>This file contains unsafe modifiers that should be removed for the updated memory safety rules.</value>
+  </data>
+  <data name="UnsafeUsageMigrationTitle" xml:space="preserve">
+    <value>Unsafe usage requires migration</value>
+  </data>
+  <data name="UnsafeUsageMigrationMessage" xml:space="preserve">
+    <value>This file requires unsafe annotations or explicit unsafe contexts for the updated memory safety rules.</value>
+  </data>
 </root>

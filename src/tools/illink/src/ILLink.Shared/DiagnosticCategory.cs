@@ -11,5 +11,8 @@ namespace ILLink.Shared
         public const string SingleFile = nameof(SingleFile);
         public const string Trimming = nameof(Trimming);
         public const string AOT = nameof(AOT);
+#if DEBUG
+        public const string Unsafe = nameof(Unsafe);
+#endif
     }
 }
