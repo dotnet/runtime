@@ -111,8 +111,8 @@ namespace System.Diagnostics
 
         private TagsLinkedList? _tags;
         private BaggageLinkedList? _baggage;
-        private DiagLinkedList<ActivityLink>? _links;
-        private DiagLinkedList<ActivityEvent>? _events;
+        private ActivityLinksLinkedList? _links;
+        private ActivityEventsLinkedList? _events;
         private Dictionary<string, object>? _customProperties;
         private string? _displayName;
         private ActivityStatusCode _statusCode;
@@ -529,7 +529,7 @@ namespace System.Diagnostics
         /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity AddEvent(ActivityEvent e)
         {
-            if (_events != null || Interlocked.CompareExchange(ref _events, new DiagLinkedList<ActivityEvent>(e), null) != null)
+            if (_events != null || Interlocked.CompareExchange(ref _events, new ActivityEventsLinkedList(e), null) != null)
             {
                 _events.Add(e);
             }
@@ -614,7 +614,7 @@ namespace System.Diagnostics
         /// </remarks>
         public Activity AddLink(ActivityLink link)
         {
-            if (_links != null || Interlocked.CompareExchange(ref _links, new DiagLinkedList<ActivityLink>(link), null) != null)
+            if (_links != null || Interlocked.CompareExchange(ref _links, new ActivityLinksLinkedList(link), null) != null)
             {
                 _links.Add(link);
             }
@@ -1197,7 +1197,7 @@ namespace System.Diagnostics
                 {
                     if (enumerator.MoveNext())
                     {
-                        activity._links = new DiagLinkedList<ActivityLink>(enumerator);
+                        activity._links = new ActivityLinksLinkedList(enumerator);
                     }
                 }
             }
@@ -1901,6 +1901,130 @@ namespace System.Diagnostics
                     }
 
                     return stringBuilder.ToString();
+                }
+            }
+        }
+
+        // Co-locates the first ActivityLink with the list container itself, avoiding the extra node allocation that a plain
+        // DiagLinkedList<ActivityLink> would incur for the first element. Mirrors the same optimization applied to
+        // TagsLinkedList above. Every instance is always constructed with at least one value (via AddLink or the
+        // links-enumerator overload used by ActivitySource.CreateActivity), so unlike TagsLinkedList there is no need to
+        // support representing an "empty" state.
+        internal sealed class ActivityLinksLinkedList : DiagNode<ActivityLink>, IEnumerable<ActivityLink>
+        {
+            private DiagNode<ActivityLink> _last;
+
+            public ActivityLinksLinkedList(ActivityLink firstValue) : base(firstValue) => _last = this;
+
+            public ActivityLinksLinkedList(IEnumerator<ActivityLink> e) : base(e.Current)
+            {
+                _last = this;
+
+                while (e.MoveNext())
+                {
+                    _last.Next = new DiagNode<ActivityLink>(e.Current);
+                    _last = _last.Next;
+                }
+            }
+
+            public DiagNode<ActivityLink> First => this;
+
+            public void Add(ActivityLink value)
+            {
+                DiagNode<ActivityLink> newNode = new DiagNode<ActivityLink>(value);
+
+                lock (this)
+                {
+                    _last.Next = newNode;
+                    _last = newNode;
+                }
+            }
+
+            public DiagEnumerator<ActivityLink> GetEnumerator() => new DiagEnumerator<ActivityLink>(this);
+            IEnumerator<ActivityLink> IEnumerable<ActivityLink>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            public override string ToString()
+            {
+                lock (this)
+                {
+                    var vsb = new ValueStringBuilder(stackalloc char[256]);
+                    vsb.Append("[");
+
+                    DiagNode<ActivityLink>? current = this;
+                    while (current is not null)
+                    {
+                        ActivityLink al = current.Value;
+                        ActivityLinkedListFormatting.ActivityLinkToString(ref al, ref vsb);
+                        current = current.Next;
+                        if (current is not null)
+                        {
+                            vsb.Append(",\u200B");
+                        }
+                    }
+
+                    vsb.Append("]");
+                    return vsb.ToString();
+                }
+            }
+        }
+
+        // Co-locates the first ActivityEvent with the list container itself; see ActivityLinksLinkedList above for rationale.
+        internal sealed class ActivityEventsLinkedList : DiagNode<ActivityEvent>, IEnumerable<ActivityEvent>
+        {
+            private DiagNode<ActivityEvent> _last;
+
+            public ActivityEventsLinkedList(ActivityEvent firstValue) : base(firstValue) => _last = this;
+
+            public ActivityEventsLinkedList(IEnumerator<ActivityEvent> e) : base(e.Current)
+            {
+                _last = this;
+
+                while (e.MoveNext())
+                {
+                    _last.Next = new DiagNode<ActivityEvent>(e.Current);
+                    _last = _last.Next;
+                }
+            }
+
+            public DiagNode<ActivityEvent> First => this;
+
+            public void Add(ActivityEvent value)
+            {
+                DiagNode<ActivityEvent> newNode = new DiagNode<ActivityEvent>(value);
+
+                lock (this)
+                {
+                    _last.Next = newNode;
+                    _last = newNode;
+                }
+            }
+
+            public DiagEnumerator<ActivityEvent> GetEnumerator() => new DiagEnumerator<ActivityEvent>(this);
+            IEnumerator<ActivityEvent> IEnumerable<ActivityEvent>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            public override string ToString()
+            {
+                lock (this)
+                {
+                    var vsb = new ValueStringBuilder(stackalloc char[256]);
+                    vsb.Append("[");
+
+                    DiagNode<ActivityEvent>? current = this;
+                    while (current is not null)
+                    {
+                        ActivityEvent ae = current.Value;
+                        ActivityLinkedListFormatting.ActivityEventToString(ref ae, ref vsb);
+                        current = current.Next;
+                        if (current is not null)
+                        {
+                            vsb.Append(",\u200B");
+                        }
+                    }
+
+                    vsb.Append("]");
+                    return vsb.ToString();
                 }
             }
         }

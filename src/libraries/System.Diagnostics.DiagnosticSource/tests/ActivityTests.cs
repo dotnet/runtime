@@ -2792,5 +2792,143 @@ namespace System.Diagnostics.Tests
             Assert.Contains("Name = \"TestEvent\"", debuggerDisplay);
             Assert.Contains("Timestamp =", debuggerDisplay);
         }
+
+        [Fact]
+        public void TestLinksAtCreationSingleLinkToStringMatchesAddLinkToString()
+        {
+            // Ensures the co-located first-node list used for links passed at Activity creation produces identical
+            // ToString() output to the equivalent list built by calling AddLink after creation, and to a list with
+            // multiple links (which allocates additional, non-co-located nodes).
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestLinksAtCreationSingleLinkToStringMatchesAddLinkToString));
+
+            var link1 = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded));
+            var link2 = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None));
+
+            using Activity? createdWithLink = source.StartActivity("op", ActivityKind.Internal, default(ActivityContext), null, new[] { link1 });
+            Assert.NotNull(createdWithLink);
+            using Activity? addedLink = source.StartActivity("op");
+            Assert.NotNull(addedLink);
+            addedLink!.AddLink(link1);
+
+            Assert.Equal(createdWithLink!.Links.ToString(), addedLink.Links.ToString());
+            Assert.Single(createdWithLink.Links);
+            Assert.Single(addedLink.Links);
+
+            // Multiple links: one co-located at creation plus one appended afterward.
+            using Activity? multi = source.StartActivity("op", ActivityKind.Internal, default(ActivityContext), null, new[] { link1 });
+            Assert.NotNull(multi);
+            multi!.AddLink(link2);
+            Assert.Equal(2, multi.Links.Count());
+            Assert.Contains(link1, multi.Links);
+            Assert.Contains(link2, multi.Links);
+        }
+
+        [Fact]
+        public void TestEventsSingleEventToStringAndMultipleEvents()
+        {
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestEventsSingleEventToStringAndMultipleEvents));
+
+            using Activity? a = source.StartActivity("op");
+            Assert.NotNull(a);
+            Assert.Empty(a!.Events);
+            Assert.Equal("[]", a.Events.ToString());
+
+            a.AddEvent(new ActivityEvent("first"));
+            Assert.Single(a.Events);
+            string firstOnlyToString = a.Events.ToString()!;
+            Assert.Contains("first", firstOnlyToString);
+            Assert.DoesNotContain(",\u200B(", firstOnlyToString);
+
+            a.AddEvent(new ActivityEvent("second"));
+            Assert.Equal(2, a.Events.Count());
+            string bothToString = a.Events.ToString()!;
+            Assert.Contains("first", bothToString);
+            Assert.Contains("second", bothToString);
+            Assert.Contains(",\u200B", bothToString);
+        }
+
+        [Fact]
+        public void TestConcurrentAddLinkAndAddEventDoNotLoseEntries()
+        {
+            // Regression test for the co-located first-node list types (ActivityLinksLinkedList / ActivityEventsLinkedList):
+            // concurrent AddLink/AddEvent calls racing on the Interlocked.CompareExchange-guarded first assignment, followed
+            // by lock-protected appends, must not lose any entries or corrupt the list.
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestConcurrentAddLinkAndAddEventDoNotLoseEntries));
+            using Activity? a = source.StartActivity("op");
+            Assert.NotNull(a);
+
+            const int ThreadCount = 8;
+            const int PerThread = 200;
+            Barrier barrier = new Barrier(ThreadCount * 2);
+
+            Task[] tasks = new Task[ThreadCount * 2];
+            for (int t = 0; t < ThreadCount; t++)
+            {
+                int threadId = t;
+                tasks[t] = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    for (int i = 0; i < PerThread; i++)
+                    {
+                        a!.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None)));
+                    }
+                });
+                tasks[ThreadCount + t] = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    for (int i = 0; i < PerThread; i++)
+                    {
+                        a!.AddEvent(new ActivityEvent($"evt-{threadId}-{i}"));
+                    }
+                });
+            }
+
+            Task.WaitAll(tasks);
+
+            Assert.Equal(ThreadCount * PerThread, a!.Links.Count());
+            Assert.Equal(ThreadCount * PerThread, a.Events.Count());
+        }
+
+        [Fact]
+        public void TestActivityCreateWithMultipleLinksEnumeratorPath()
+        {
+            // Covers Activity.Create's links-from-enumerator construction path (used by ActivitySource.CreateActivity),
+            // which now constructs the co-located ActivityLinksLinkedList directly from the enumerator instead of via
+            // a parameterless DiagLinkedList followed by per-item Add calls.
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+            using ActivitySource source = new ActivitySource(nameof(TestActivityCreateWithMultipleLinksEnumeratorPath));
+
+            var link1 = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded));
+            var link2 = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None));
+            var link3 = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded));
+
+            using Activity? a = source.StartActivity("op", ActivityKind.Internal, default(ActivityContext), null, new[] { link1, link2, link3 });
+            Assert.NotNull(a);
+            Assert.Equal(3, a!.Links.Count());
+            Assert.Equal(new[] { link1, link2, link3 }, a.Links.ToArray());
+        }
     }
 }

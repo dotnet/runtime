@@ -151,7 +151,70 @@ namespace System.Diagnostics
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        private static void ActivityLinkToString(ref ActivityLink al, ref ValueStringBuilder vsb)
+        public override string ToString()
+        {
+            lock (this)
+            {
+                DiagNode<T>? current = _first;
+                if (current is null)
+                {
+                    return "[]";
+                }
+
+                var vsb = new ValueStringBuilder(stackalloc char[256]);
+                vsb.Append("[");
+
+                if (typeof(T) == typeof(ActivityLink))
+                {
+                    while (current is not null)
+                    {
+                        ActivityLink al = (ActivityLink)(object)current.Value!;
+                        ActivityLinkedListFormatting.ActivityLinkToString(ref al, ref vsb);
+                        current = current.Next;
+                        if (current is not null)
+                        {
+                            vsb.Append(",\u200B");
+                        }
+                    }
+                }
+                else if (typeof(T) == typeof(ActivityEvent))
+                {
+                    while (current is not null)
+                    {
+                        ActivityEvent ae = (ActivityEvent)(object)current.Value!;
+                        ActivityLinkedListFormatting.ActivityEventToString(ref ae, ref vsb);
+                        current = current.Next;
+                        if (current is not null)
+                        {
+                            vsb.Append(",\u200B");
+                        }
+                    }
+                }
+                else
+                {
+                    while (current is not null)
+                    {
+                        vsb.Append(current.Value?.ToString() ?? "null");
+                        current = current.Next;
+                        if (current is not null)
+                        {
+                            vsb.Append(",\u200B");
+                        }
+                    }
+                }
+
+                vsb.Append("]");
+                return vsb.ToString();
+            }
+        }
+    }
+
+    // Shared formatting helpers used by DiagLinkedList<T> and by the co-located ActivityLinksLinkedList/ActivityEventsLinkedList
+    // types (see Activity.cs), which store the first ActivityLink/ActivityEvent alongside the list container itself to avoid
+    // allocating a separate node for it.
+    internal static class ActivityLinkedListFormatting
+    {
+        public static void ActivityLinkToString(ref ActivityLink al, ref ValueStringBuilder vsb)
         {
             ActivityContext ac = al.Context;
 
@@ -184,7 +247,7 @@ namespace System.Diagnostics
             vsb.Append(")");
         }
 
-        private static void ActivityEventToString(ref ActivityEvent ae, ref ValueStringBuilder vsb)
+        public static void ActivityEventToString(ref ActivityEvent ae, ref ValueStringBuilder vsb)
         {
             vsb.Append("(");
             vsb.Append(ae.Name);
@@ -207,63 +270,6 @@ namespace System.Diagnostics
                 vsb.Append("]");
             }
             vsb.Append(")");
-        }
-
-        public override string ToString()
-        {
-            lock (this)
-            {
-                DiagNode<T>? current = _first;
-                if (current is null)
-                {
-                    return "[]";
-                }
-
-                var vsb = new ValueStringBuilder(stackalloc char[256]);
-                vsb.Append("[");
-
-                if (typeof(T) == typeof(ActivityLink))
-                {
-                    while (current is not null)
-                    {
-                        ActivityLink al = (ActivityLink)(object)current.Value!;
-                        ActivityLinkToString(ref al, ref vsb);
-                        current = current.Next;
-                        if (current is not null)
-                        {
-                            vsb.Append(",\u200B");
-                        }
-                    }
-                }
-                else if (typeof(T) == typeof(ActivityEvent))
-                {
-                    while (current is not null)
-                    {
-                        ActivityEvent ae = (ActivityEvent)(object)current.Value!;
-                        ActivityEventToString(ref ae, ref vsb);
-                        current = current.Next;
-                        if (current is not null)
-                        {
-                            vsb.Append(",\u200B");
-                        }
-                    }
-                }
-                else
-                {
-                    while (current is not null)
-                    {
-                        vsb.Append(current.Value?.ToString() ?? "null");
-                        current = current.Next;
-                        if (current is not null)
-                        {
-                            vsb.Append(",\u200B");
-                        }
-                    }
-                }
-
-                vsb.Append("]");
-                return vsb.ToString();
-            }
         }
     }
 
