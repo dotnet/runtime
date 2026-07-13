@@ -2,12 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
 using Xunit;
 using static Microsoft.Diagnostics.DataContractReader.TestInfrastructure.TestHelpers;
 
@@ -67,6 +72,26 @@ public class MethodTableTests
             .AddContract<IRuntimeTypeSystem>(version: "c1")
             .Build();
         return target;
+    }
+
+    private static TestPlaceholderTarget CreateTarget(
+        MockTarget.Architecture arch,
+        Action<MockRTS> configure,
+        Mock<ILoader> loader,
+        Mock<IEcmaMetadata> ecmaMetadata)
+    {
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockRTS rtsBuilder = new(targetBuilder.MemoryBuilder);
+
+        configure?.Invoke(rtsBuilder);
+
+        return targetBuilder
+            .AddTypes(CreateContractTypes(rtsBuilder))
+            .AddGlobals(CreateContractGlobals(rtsBuilder))
+            .AddContract<IRuntimeTypeSystem>(version: "c1")
+            .AddMockContract(loader)
+            .AddMockContract(ecmaMetadata)
+            .Build();
     }
 
     [Theory]
@@ -1357,5 +1382,83 @@ public class MethodTableTests
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Assert.Throws<InvalidOperationException>(() => contract.GetFieldDescOffset(fieldDescPtr));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetFieldDescOffset_BigRVA_ResolvesRvaFromMetadata(MockTarget.Architecture arch)
+    {
+        const int expectedRva = 0x1234;
+        byte[] metadata = BuildMetadataWithRvaField(expectedRva, out FieldDefinitionHandle fieldHandle);
+        using MetadataReaderProvider provider = MetadataReaderProvider.FromMetadataImage(ImmutableArray.Create(metadata));
+        MetadataReader reader = provider.GetMetadataReader();
+
+        TargetPointer modulePtr = new(0x0001_0000);
+        Contracts.ModuleHandle moduleHandle = new(modulePtr);
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(modulePtr)).Returns(moduleHandle);
+
+        Mock<IEcmaMetadata> ecmaMetadata = new(MockBehavior.Strict);
+        ecmaMetadata.Setup(e => e.GetMetadata(It.IsAny<Contracts.ModuleHandle>())).Returns(reader);
+
+        TargetPointer fieldDescPtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
+
+                MockEEClass eeClass = rtsBuilder.AddEEClass("RvaType");
+                eeClass.CorTypeAttr = (uint)(TypeAttributes.Public | TypeAttributes.Class);
+
+                MockMethodTable methodTable = rtsBuilder.AddMethodTable("RvaType");
+                methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                methodTable.ParentMethodTable = systemObjectMethodTablePtr;
+                methodTable.NumVirtuals = 3;
+                methodTable.Module = modulePtr;
+                eeClass.MethodTable = methodTable.Address;
+                methodTable.EEClassOrCanonMT = eeClass.Address;
+
+                fieldDescPtr = rtsBuilder.AddFieldDesc(
+                    methodTable.Address,
+                    CorElementType.I4,
+                    MockRTS.FieldOffsetBigRVAValue,
+                    (uint)MetadataTokens.GetRowNumber(fieldHandle)).Address;
+            },
+            loader,
+            ecmaMetadata);
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Assert.Equal((uint)expectedRva, contract.GetFieldDescOffset(fieldDescPtr));
+    }
+
+    private static byte[] BuildMetadataWithRvaField(int rva, out FieldDefinitionHandle fieldHandle)
+    {
+        MetadataBuilder mdBuilder = new();
+        mdBuilder.AddModule(0, mdBuilder.GetOrAddString("TestModule"), mdBuilder.GetOrAddGuid(Guid.Empty), default, default);
+        mdBuilder.AddAssembly(mdBuilder.GetOrAddString("TestAssembly"), new Version(1, 0, 0, 0), default, default, 0, AssemblyHashAlgorithm.None);
+
+        BlobBuilder fieldSig = new();
+        new BlobEncoder(fieldSig).FieldSignature().Int32();
+        BlobHandle fieldSigHandle = mdBuilder.GetOrAddBlob(fieldSig);
+
+        fieldHandle = mdBuilder.AddFieldDefinition(
+            FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.HasFieldRVA,
+            mdBuilder.GetOrAddString("RvaField"),
+            fieldSigHandle);
+        mdBuilder.AddFieldRelativeVirtualAddress(fieldHandle, rva);
+
+        mdBuilder.AddTypeDefinition(
+            default,
+            default,
+            mdBuilder.GetOrAddString("<Module>"),
+            default,
+            fieldHandle,
+            MetadataTokens.MethodDefinitionHandle(1));
+
+        MetadataRootBuilder rootBuilder = new(mdBuilder);
+        BlobBuilder blobBuilder = new();
+        rootBuilder.Serialize(blobBuilder, 0, 0);
+        return blobBuilder.ToArray();
     }
 }

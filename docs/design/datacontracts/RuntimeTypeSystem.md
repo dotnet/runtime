@@ -311,7 +311,7 @@ uint GetFieldDescMemberDef(TargetPointer fieldDescPointer);
 bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescRVA(TargetPointer fieldDescPointer);
-uint GetFieldDescType(TargetPointer fieldDescPointer);
+CorElementType GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer);
 (CorElementType ElementType, uint TypeToken) GetFieldDescSignatureType(TargetPointer fieldDescPointer);
 TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer);
@@ -2274,10 +2274,10 @@ bool IsFieldDescRVA(TargetPointer fieldDescPointer)
     return (DWord1 & (uint)FieldDescFlags1.IsRVA) != 0;
 }
 
-uint GetFieldDescType(TargetPointer fieldDescPointer)
+CorElementType GetFieldDescType(TargetPointer fieldDescPointer)
 {
     uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
-    return (DWord2 & (uint)FieldDescFlags2.TypeMask) >> 27;
+    return (CorElementType)((DWord2 & (uint)FieldDescFlags2.TypeMask) >> 27);
 }
 
 uint GetFieldDescOffset(TargetPointer fieldDescPointer)
