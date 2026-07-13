@@ -643,10 +643,10 @@
 		</type>
 
 	</assembly>
-	<!-- STAThreadAttribute is only read by the native runtime (object.c: prepare_thread_to_exec_main)
-	     when launching an entry point via mono_runtime_run_main to set the apartment state. That path is
-	     not reachable on single-threaded runtimes (browser/wasi), where the entry point is invoked directly
-	     and apartment state is meaningless, so the type can be trimmed there. -->
+	<!-- STAThreadAttribute is read by the native runtime (object.c: prepare_thread_to_exec_main)
+	     when launching an entry point via mono_runtime_run_main to set the apartment state.
+	     On single-threaded runtimes this attribute can be trimmed: apartment state is meaningless
+	     there and the native lookup tolerates the type being absent. -->
 	<assembly fullname="System.Private.CoreLib" feature="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" featurevalue="true" featuredefault="true">
 		<type fullname="System.STAThreadAttribute" />
 	</assembly>
