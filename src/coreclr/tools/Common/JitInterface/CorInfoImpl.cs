@@ -3608,17 +3608,20 @@ namespace Internal.JitInterface
             CompilerTypeSystemContext context = _compilation.TypeSystemContext;
             DefType asyncHelpers = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
 
+            TypeDesc returnType = caller.Signature.ReturnType;
             MethodDesc runtimeDeterminedCaller = caller.GetSharedRuntimeFormMethodTarget();
+            TypeDesc runtimeDeterminedReturnType = runtimeDeterminedCaller.Signature.ReturnType;
 
-            TypeDesc returnType = runtimeDeterminedCaller.Signature.ReturnType;
             MethodDesc runtimeDeterminedResult;
+            MethodDesc result;
             if (returnType.IsVoid)
             {
                 TypeDesc parameterType = isValueTask
                     ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
                     : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
                 MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.Void), [parameterType]);
-                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature);
+                result = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature);
+                runtimeDeterminedResult = result;
             }
             else
             {
@@ -3627,17 +3630,14 @@ namespace Internal.JitInterface
                     ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8).MakeInstantiatedType(signatureVariable)
                     : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8).MakeInstantiatedType(signatureVariable);
                 MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 1, signatureVariable, [parameterType]);
-                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature).MakeInstantiatedMethod(returnType);
+                result = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature).MakeInstantiatedMethod(returnType);
+                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature).MakeInstantiatedMethod(runtimeDeterminedReturnType);
             }
 
-            MethodDesc result = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            MethodDesc targetMethod = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            *contextHandle = contextFromMethod(result);
 
-            // Use the runtime-determined method as the context for inlining the
-            // await call, exactly as getCallInfo reports its contextHandle
-            // (which may be an approximate/shared instantiation).
-            *contextHandle = contextFromMethod(runtimeDeterminedResult);
-
-            if (result.RequiresInstArg())
+            if (targetMethod.RequiresInstArg())
             {
 #if READYTORUN
                 if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
@@ -3662,7 +3662,7 @@ namespace Internal.JitInterface
 #endif
             }
 
-            return ObjectToHandle(result);
+            return ObjectToHandle(targetMethod);
         }
 
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
