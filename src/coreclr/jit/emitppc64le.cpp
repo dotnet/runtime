@@ -1452,6 +1452,46 @@ void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNu
     //TODO POWERPC64 vikas
     _ASSERTE(!"NYI POWERPC64");
 }
+
+/*****************************************************************************
+ *
+ *  Add an instruction with a register and constant data field handle (for PC-relative patching)
+ */
+void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO_FIELD_HANDLE fldHnd, int offs)
+{
+    assert(ins == INS_lis);  // Only lis uses this for now
+    assert(offs == 0);
+    
+    // Use emitNewInstrCns to allocate a large descriptor with idAddrUnion
+    instrDesc* id = emitNewInstrCns(attr, 0);
+    id->idIns(ins);
+    id->idReg1(reg);
+    id->idAddr()->iiaFieldHnd = fldHnd;
+    id->idSetIsDspReloc();  // Mark for PC-relative relocation
+    
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add an instruction with two registers and constant data field handle (for PC-relative patching)
+ */
+void emitter::emitIns_R_R_C(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, CORINFO_FIELD_HANDLE fldHnd, int offs)
+{
+    assert(ins == INS_addi);  // Only addi uses this for now
+    assert(offs == 0);
+    
+    // Use emitNewInstrCns to allocate a large descriptor with idAddrUnion
+    instrDesc* id = emitNewInstrCns(attr, 0);
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idAddr()->iiaFieldHnd = fldHnd;
+    id->idSetIsDspReloc();  // Mark for PC-relative relocation
+    
+    appendToCurIG(id);
+}
+
 void emitter::emitIns(instruction ins)
 {
     instrDesc* id = emitNewInstr(EA_8BYTE);
@@ -1476,6 +1516,9 @@ void emitter::emitIns(instruction ins)
             break;
         case INS_isync:
             fmt = IF_SR_1G;  // isync
+            break;
+        case INS_bcl:
+            fmt = IF_BI_0;  // bcl 20, 31, $+4 (branch conditional)
             break;
         default:
             fmt = IF_NONE;
@@ -1802,9 +1845,52 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            }
            break;
        case INS_addi:
-           // addi rD, rA, SIMM
-           ppc_addi (dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
-           break;
+            // addi rD, rA, SIMM
+            if (id->idIsDspReloc())
+            {
+                // PC-relative patching for jump table address or method start
+                CORINFO_FIELD_HANDLE fldHnd = id->idAddr()->iiaFieldHnd;
+                
+                // Get data offset (could be jump table or method start)
+                int dataOffs = emitComp->eeGetJitDataOffs(fldHnd);
+                
+                // Calculate current code offset
+                size_t currentCodeOffset = dst - emitCodeBlock;
+                
+                // Calculate target offset in final layout
+                // At runtime: code section [0..emitTotalCodeSize), data section [emitTotalCodeSize..)
+                int64_t targetOffset;
+                const unsigned FIRST_BB_SENTINEL = 0x0FFFFFFE;
+                if (dataOffs == -1 || dataOffs == (int)FIRST_BB_SENTINEL)
+                {
+                    // Special case: -1 or sentinel means fgFirstBB (first basic block)
+                    // Jump table offsets are relative to fgFirstBB, not method start
+                    insGroup* igFirst = (insGroup*)emitCodeGetCookie(emitComp->fgFirstBB);
+                    targetOffset = igFirst->igOffs;
+                }
+                else
+                {
+                    // Normal case: jump table data at emitTotalCodeSize + dataOffs
+                    targetOffset = emitTotalCodeSize + dataOffs;
+                }
+                
+                // Calculate offset from bcl PC to target
+                // For addi after lis: bcl at (currentCodeOffset - 12)
+                // bcl instruction captured PC+4, which is at (currentCodeOffset - 12) + 4 = currentCodeOffset - 8
+                int64_t offset = targetOffset - (currentCodeOffset - 8);
+                
+                // Extract low 16 bits for addi: offset@l
+                int16_t offsetLo = (int16_t)(offset & 0xFFFF);
+                
+                // Use the target register as base (not R0 which would be treated as 0)
+                regNumber targetReg = id->idReg1();
+                ppc_addi(dstRW, targetReg, targetReg, offsetLo);
+            }
+            else
+            {
+                ppc_addi(dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+            }
+            break;
 
        case INS_li:
            // li rD, value (pseudo-op: addi rD, 0, value)
@@ -1812,9 +1898,48 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            break;
 
        case INS_lis:
-           // lis rD, value (pseudo-op: addis rD, 0, value)
-           ppc_lis (dstRW, id->idReg1(), emitGetInsSC(id));
-           break;
+            // lis rD, value (pseudo-op: addis rD, 0, value)
+            if (id->idIsDspReloc())
+            {
+                // PC-relative patching for jump table address or method start
+                CORINFO_FIELD_HANDLE fldHnd = id->idAddr()->iiaFieldHnd;
+                
+                // Get data offset (could be jump table or method start)
+                int dataOffs = emitComp->eeGetJitDataOffs(fldHnd);
+                
+                // Calculate current code offset
+                size_t currentCodeOffset = dst - emitCodeBlock;
+                
+                // Calculate target offset in final layout
+                // At runtime: code section [0..emitTotalCodeSize), data section [emitTotalCodeSize..)
+                int64_t targetOffset;
+                const unsigned FIRST_BB_SENTINEL = 0x0FFFFFFE;
+                if (dataOffs == -1 || dataOffs == (int)FIRST_BB_SENTINEL)
+                {
+                    // Special case: -1 or sentinel means fgFirstBB (first basic block)
+                    // Jump table offsets are relative to fgFirstBB, not method start
+                    insGroup* igFirst = (insGroup*)emitCodeGetCookie(emitComp->fgFirstBB);
+                    targetOffset = igFirst->igOffs;
+                }
+                else
+                {
+                    // Normal case: jump table data at emitTotalCodeSize + dataOffs
+                    targetOffset = emitTotalCodeSize + dataOffs;
+                }
+                
+                // Calculate offset from bcl PC to target
+                // bcl instruction captured PC+4, which is at (currentCodeOffset - 8) + 4 = currentCodeOffset - 4
+                int64_t offset = targetOffset - (currentCodeOffset - 4);
+                
+                // Extract high-adjusted 16 bits for lis: offset@ha
+                int16_t offsetHa = (int16_t)((offset + 0x8000) >> 16);
+                ppc_lis(dstRW, id->idReg1(), offsetHa);
+            }
+            else
+            {
+                ppc_lis(dstRW, id->idReg1(), emitGetInsSC(id));
+            }
+            break;
 
        case INS_ori:
            // ori rA, rS, UIMM
@@ -2044,6 +2169,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                ppc_bc (dstRW, PPC_BR_FALSE, PPC_BR_GT, offset);
            }
            break;
+
+       case INS_bcl:
+           // bcl BO, BI, target - Branch Conditional and Link
+           // For PC-relative addressing, we use: bcl 20, 31, $+4
+           // BO=20 (branch always), BI=31 (ignored), offset=1 (next instruction)
+           ppc_bcl (dstRW, 20, 31, 1);
+           break;
+
        // Floating-point arithmetic instructions
        case INS_fadds:
            // fadds fD, fA, fB - Floating Add Single
@@ -2231,7 +2364,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
        default:
-           _ASSERTE(!"NYI");
+            _ASSERTE(!"NYI");
 
     }
 
@@ -2266,6 +2399,7 @@ const char* emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id
         case INS_bne:     return "bne     ";
         case INS_b:       return "b       ";
         case INS_bl:      return "bl      ";
+        case INS_bcl:     return "bcl     ";
         case INS_blr:     return "blr     ";
         case INS_mflr:    return "mflr    ";
         case INS_mtlr:    return "mtlr    ";
@@ -2605,6 +2739,8 @@ void emitter::emitDispIns(
 //
 size_t emitter::emitInsSize(instrDesc* id)
 {
+    instruction ins = id->idIns();
+    
     return 4; // All PowerPC instructions are 4 bytes
 }
 

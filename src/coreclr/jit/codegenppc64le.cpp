@@ -2272,18 +2272,103 @@ void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 //
 void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 {
-    NYI_POWERPC64("genTableBasedSwitch - requires emitIns_R_L and emitIns_R_C implementation for address resolution");
+    genConsumeOperands(treeNode->AsOp());
+    regNumber idxReg  = treeNode->AsOp()->gtOp1->GetRegNum();
+    regNumber baseReg = treeNode->AsOp()->gtOp2->GetRegNum();
+
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
+
+    // Block-relative approach for PPC64 (similar to x86):
+    // 1. baseReg has jump table address (from genJumpTable)
+    // 2. Load block-relative offset from jump table into baseReg
+    // 3. Get method start address (fgFirstBB) using bcl/mflr + PC-relative
+    // 4. Add block offset to method start to get target in R12 (PPC64LE ABI requirement)
+    
+    // Step 1: Load block-relative offset from jump table into baseReg
+    // Calculate table entry address: baseReg + (idxReg << 2)
+    GetEmitter()->emitIns_R_R_I(INS_sldi, EA_8BYTE, tmpReg, idxReg, 2);
+    GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, tmpReg, baseReg, tmpReg);
+    // Load 32-bit block-relative offset with sign extension into baseReg
+    GetEmitter()->emitIns_R_R_I(INS_lwa, EA_4BYTE, baseReg, tmpReg, 0);
+
+    // Step 2: Get method start address (fgFirstBB) using bcl/mflr + PC-relative
+    // This is similar to genJumpTable but calculates offset to method start instead
+    regNumber methodStartReg = tmpReg;  // Reuse tmpReg for method start address
+    regNumber offsetReg = REG_R0;       // Use R0 for offset calculation
+    
+    // Capture current PC
+    GetEmitter()->emitIns(INS_bcl);
+    GetEmitter()->emitIns_R(INS_mflr, EA_PTRSIZE, methodStartReg);
+    
+    // Get field handle for fgFirstBB (first basic block)
+    // Use a special sentinel value to indicate fgFirstBB (not a real data offset)
+    // Jump table offsets are relative to fgFirstBB, not method start
+    // Maximum encodable value is 0x0FFFFFFF (after left shift by 2, must be < 0x40000000)
+    // We use 0x0FFFFFFE as sentinel since real jump tables will be much smaller
+    const unsigned FIRST_BB_SENTINEL = 0x0FFFFFFE;
+    CORINFO_FIELD_HANDLE fldHnd = compiler->eeFindJitDataOffs(FIRST_BB_SENTINEL);
+    
+    // Load offset from current PC to method start
+    // lis offsetReg, offset@ha
+    GetEmitter()->emitIns_R_C(INS_lis, EA_PTRSIZE, offsetReg, fldHnd, 0);
+    // addi methodStartReg, methodStartReg, offset@l
+    GetEmitter()->emitIns_R_R_C(INS_addi, EA_PTRSIZE, methodStartReg, methodStartReg, fldHnd, 0);
+    // add methodStartReg, methodStartReg, offsetReg
+    GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, methodStartReg, methodStartReg, offsetReg);
+    
+    // Step 3: Add block-relative offset to method start to get absolute target address
+    // IMPORTANT: Store result in R12 as required by PPC64LE ABI for indirect branches
+    // R12 = methodStartReg + baseReg (target = method_start + block_offset)
+    GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_R12, methodStartReg, baseReg);
+
+    // Step 4: Jump to target (R12 contains target address per PPC64LE ABI)
+    GetEmitter()->emitIns_R(INS_mtctr, EA_PTRSIZE, REG_R12);
+    GetEmitter()->emitIns(INS_bctr);
 }
 
 //------------------------------------------------------------------------
-// genJumpTable: Emits the jump table and an instruction to get the address of the first element
+// genJumpTable: Emits the jump table and loads its address using PC-relative addressing
 //
 // Arguments:
 //    treeNode - the GT_JMPTABLE node
 //
+// Notes:
+//    Uses PC-relative addressing to load the jump table address.
+//    The jump table contains absolute addresses that will be relocated by the runtime.
+//
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    NYI_POWERPC64("genJumpTable - requires emitIns_R_C implementation for address resolution");
+    // Use block-relative addressing for jump table on PPC64LE
+    // The jump table contains offsets relative to the method start
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, true);  // true = use block-relative offsets
+    regNumber targetReg = treeNode->GetRegNum();
+    
+    regNumber tmpReg = REG_R0;  // Use R0 as temporary register
+    
+    // Get current PC using bcl/mflr technique
+    GetEmitter()->emitIns(INS_bcl);  // bcl 20, 31, $+4 - branch to next instruction
+    GetEmitter()->emitIns_R(INS_mflr, EA_PTRSIZE, targetReg);  // mflr targetReg - get PC into targetReg
+    
+    // Calculate offset from current PC back to method start
+    // We need: method_start = PC - offset_to_method_start
+    // Then we can add block-relative offsets from jump table to method_start
+    
+    // For now, load the jump table address (we'll fix the offset calculation in emitter)
+    // Get field handle for the jump table data
+    CORINFO_FIELD_HANDLE fldHnd = compiler->eeFindJitDataOffs(jmpTabBase);
+    
+    // Load high 16 bits of offset: lis tmpReg, offset@ha
+    GetEmitter()->emitIns_R_C(INS_lis, EA_PTRSIZE, tmpReg, fldHnd, 0);
+    
+    // Add low 16 bits of offset to targetReg: addi targetReg, targetReg, offset@l
+    // This gives: targetReg = PC + offset_low
+    GetEmitter()->emitIns_R_R_C(INS_addi, EA_PTRSIZE, targetReg, targetReg, fldHnd, 0);
+    
+    // Add high bits to get absolute jump table address
+    // targetReg = targetReg + tmpReg = (PC + offset_low) + offset_high
+    GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, targetReg, targetReg, tmpReg);
+    
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------

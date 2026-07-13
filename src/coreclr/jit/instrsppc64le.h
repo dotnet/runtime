@@ -38,6 +38,7 @@ INST(mtctr,       "mtctr",        0,      XFX_FORM,     0x7C0903A6)  // Move to 
 INST(bctr,        "bctr",         0,      XL_FORM,      0x4E800420)  // Branch to Count Register
 INST(bctrl,       "bctrl",        0,      XL_FORM,      0x4E800421)  // Branch to Count Register and Link
 INST(bl,          "bl",           0,      I_FORM,       0x48000001)  // Branch and Link
+INST(bcl,         "bcl",          0,      B_FORM,       0x40000001)  // Branch Conditional and Link
 INST(addi,        "addi",         0,      D_FORM,       0x38000000)
 INST(li,    	  "li",    	  0, 	  D_FORM,   	0x38000000)  // addi with RA=0
 INST(lis,   	  "lis",   	  0, 	  D_FORM,   	0x3C000000)  // addis with RA=0

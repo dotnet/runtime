@@ -12582,6 +12582,7 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
 	{ "IntroducedMethodEnumerator",".ctor"},
 	{ "Filter",".ctor"},
 	{ "System.MdUtf8String",".ctor"},
+	{ "MemberInfoCache`1[__Canon]:.ctor"},
 
     };
 
