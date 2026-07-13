@@ -26,7 +26,8 @@ namespace System
 
         public const float Tau = 6.283185307f;
 
-        private const int maxRoundingDigits = 6;
+        // The largest digit count the fast rounding path handles; larger counts use the exact routine.
+        private const int maxFastRoundingDigits = 6;
 
         // Below this boundary a float may have a fractional portion; at or above it every
         // representable value is already an integer (2^23).
@@ -425,9 +426,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Round(float x, int digits, MidpointRounding mode)
         {
-            if ((uint)digits > maxRoundingDigits)
+            if (digits < 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_RoundingDigits_MathF(nameof(digits));
+                ThrowHelper.ThrowArgumentOutOfRange_RoundingDigits(nameof(digits));
             }
 
             if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
@@ -447,7 +448,9 @@ namespace System
             // this comparison is naturally false for those cases.
             if (Abs(x) < singleIntegerBoundary)
             {
-                if (!Number.TryRoundToDecimalDigitsFast(x, digits, mode, out float rounded))
+                // The fast path only handles the small-digit range where `10^digits` is exactly
+                // representable; larger counts fall back to the exact arbitrary-precision routine.
+                if ((digits > maxFastRoundingDigits) || !Number.TryRoundToDecimalDigitsFast(x, digits, mode, out float rounded))
                 {
                     rounded = Number.RoundToDecimalDigits<float>(x, digits, mode);
                 }

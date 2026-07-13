@@ -1264,6 +1264,23 @@ namespace System.Tests
             yield return new object[] { float.Epsilon, 6, MidpointRounding.ToPositiveInfinity, 1e-6f };
             yield return new object[] { -float.Epsilon, 6, MidpointRounding.ToNegativeInfinity, -1e-6f };
             yield return new object[] { 1.5e-40f, 6, MidpointRounding.ToEven, 0.0f };
+
+            // The historical 0-6 digit cap has been lifted; any non-negative digit count is now accepted.
+            // Rounding to a digit count at or beyond the precision needed to round-trip a float (9) is a
+            // no-op, since the exactly rounded decimal converts back to the original value.
+            yield return new object[] { 0.1f, 8, MidpointRounding.ToEven, 0.1f };
+            yield return new object[] { 0.1f, 10, MidpointRounding.ToEven, 0.1f };
+            yield return new object[] { 0.1f, 20, MidpointRounding.AwayFromZero, 0.1f };
+            yield return new object[] { 0.1f, 100, MidpointRounding.ToEven, 0.1f };
+
+            // A fractional part first appears beyond the 6th digit here, so rounding at 8 digits is
+            // meaningful and was unreachable under the old cap.
+            yield return new object[] { 2.5e-8f, 8, MidpointRounding.AwayFromZero, 3e-8f };
+
+            // The smallest subnormals combined with very large digit counts exercise the deepest part of the
+            // exact arbitrary-precision path (near its worst-case buffer size), which must stay correct.
+            yield return new object[] { float.Epsilon, 45, MidpointRounding.AwayFromZero, float.Epsilon };
+            yield return new object[] { float.Epsilon, 44, MidpointRounding.AwayFromZero, 0.0f };
         }
 
         [Theory]
@@ -1308,6 +1325,15 @@ namespace System.Tests
         public static void Round_Digits_InvalidMidpointRounding_ThrowsArgumentException(float value)
         {
             AssertExtensions.Throws<ArgumentException>("mode", () => MathF.Round(value, 3, (MidpointRounding)(-1)));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public static void Round_Digits_NegativeDigits_ThrowsArgumentOutOfRangeException(int digits)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("digits", () => MathF.Round(1.5f, digits));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("digits", () => MathF.Round(1.5f, digits, MidpointRounding.ToEven));
         }
 
         [Theory]

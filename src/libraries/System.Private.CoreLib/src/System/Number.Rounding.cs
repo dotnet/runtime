@@ -297,12 +297,22 @@ namespace System
             where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
         {
             Debug.Assert(TNumber.IsFinite(value));
-            Debug.Assert((uint)digits <= 15);
+            Debug.Assert(digits >= 0);
 
             bool isNegative = TNumber.IsNegative(value);
 
             // Decompose the input into `mantissa * 2^exponent`, giving us the exact value.
             ulong mantissa = ExtractFractionAndBiasedExponent(value, out int exponent);
+
+            // When `exponent + digits >= 0` the scaled value is already an integer, so `value` is an
+            // exact multiple of `10^-digits` and rounding leaves it unchanged. This also bounds the
+            // work below: only `digits < -exponent` reaches the arbitrary-precision arithmetic, keeping
+            // both the `BigInteger` and the digit buffer within their fixed capacities. The widening to
+            // `long` avoids overflow for pathologically large `digits`.
+            if (((long)exponent + digits) >= 0)
+            {
+                return value;
+            }
 
             // We want the nearest integer to `|value| * 10^digits`, which is `numerator / denominator`
             // where both are computed exactly. The `2^exponent` term stays in the numerator when the

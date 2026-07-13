@@ -1288,6 +1288,26 @@ namespace System.Tests
             yield return new object[] { double.Epsilon, 15, MidpointRounding.ToPositiveInfinity, 1e-15 };
             yield return new object[] { -double.Epsilon, 15, MidpointRounding.ToNegativeInfinity, -1e-15 };
             yield return new object[] { 5e-320, 10, MidpointRounding.ToEven, 0.0 };
+
+            // The historical 0-15 digit cap has been lifted; any non-negative digit count is now accepted.
+            // Rounding to a digit count at or beyond the precision needed to round-trip a double (17) is a
+            // no-op, since the exactly rounded decimal converts back to the original value.
+            yield return new object[] { 0.1, 16, MidpointRounding.ToEven, 0.1 };
+            yield return new object[] { 0.1, 17, MidpointRounding.ToEven, 0.1 };
+            yield return new object[] { 0.1, 20, MidpointRounding.AwayFromZero, 0.1 };
+            yield return new object[] { 655.925, 30, MidpointRounding.AwayFromZero, 655.925 };
+            yield return new object[] { 0.1, 1000, MidpointRounding.ToEven, 0.1 };
+
+            // A fractional part first appears beyond the 15th digit here, so rounding at 16 digits is
+            // meaningful and was unreachable under the old cap.
+            yield return new object[] { 2.5e-16, 16, MidpointRounding.ToEven, 3e-16 };
+            yield return new object[] { 2.5e-16, 16, MidpointRounding.AwayFromZero, 3e-16 };
+
+            // The smallest subnormals combined with very large digit counts exercise the deepest part of the
+            // exact arbitrary-precision path (near its worst-case buffer size), which must stay correct.
+            yield return new object[] { double.Epsilon, 324, MidpointRounding.AwayFromZero, double.Epsilon };
+            yield return new object[] { double.Epsilon, 323, MidpointRounding.AwayFromZero, 0.0 };
+            yield return new object[] { 2.2250738585072014e-308, 1074, MidpointRounding.AwayFromZero, 2.2250738585072014e-308 };
         }
 
         [Theory]
@@ -1332,6 +1352,15 @@ namespace System.Tests
         public static void Round_Double_Digits_InvalidMidpointRounding_ThrowsArgumentException(double value)
         {
             AssertExtensions.Throws<ArgumentException>("mode", () => Math.Round(value, 3, (MidpointRounding)(-1)));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public static void Round_Double_Digits_NegativeDigits_ThrowsArgumentOutOfRangeException(int digits)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("digits", () => Math.Round(1.5, digits));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("digits", () => Math.Round(1.5, digits, MidpointRounding.ToEven));
         }
 
         [Fact]
