@@ -690,15 +690,15 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     }
     m_compiler->gtSetEvalOrder(m_thenOperation.node);
     m_compiler->fgSetStmtSeq(m_thenOperation.stmt);
-    
+
     // Replace JTRUE with STORE(SELECT)/RETURN(SELECT) statement.
     m_compiler->fgInsertStmtBefore(m_startBlock, m_startBlock->lastStmt(), m_thenOperation.stmt);
     m_compiler->fgRemoveStmt(m_startBlock, m_startBlock->lastStmt());
     m_thenOperation.block->SetFirstStmt(nullptr);
-    
+
     BasicBlock* falseBb = m_startBlock->GetFalseTarget();
     BasicBlock* trueBb  = m_startBlock->GetTrueTarget();
-    
+
     // JTRUE block now contains SELECT. Change its kind and make it flow
     // directly into block where flows merge, which is null in case of GT_RETURN.
     bool hasElseBlock = HasElseBlock();
@@ -713,13 +713,13 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
     assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
-    
+
     auto removeBlock = [&](BasicBlock* block) {
         block->bbWeight = BB_ZERO_WEIGHT;
         m_compiler->fgRemoveAllRefPreds(block, m_startBlock);
         m_compiler->fgRemoveBlock(block, true);
     };
-    
+
     removeBlock(falseBb);
     if (m_elseOperation.block != nullptr)
     {
@@ -732,7 +732,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
             m_compiler->fgRemoveStmt(m_startBlock, m_elseOperation.stmt);
         }
     }
-    
+
     #ifdef DEBUG
     if (m_compiler->verbose)
     {
@@ -740,7 +740,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         IfConvertDump();
     }
     #endif
-    
+
     return true;
 }
 
