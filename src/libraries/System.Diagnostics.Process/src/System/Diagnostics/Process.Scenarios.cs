@@ -362,16 +362,7 @@ namespace System.Diagnostics
         {
             ArgumentException.ThrowIfNullOrEmpty(fileName);
 
-            ProcessStartInfo startInfo = new(fileName);
-            if (arguments is not null)
-            {
-                foreach (string argument in arguments)
-                {
-                    startInfo.ArgumentList.Add(argument);
-                }
-            }
-
-            return startInfo;
+            return arguments is not null ? new(fileName, arguments) : new(fileName);
         }
 
         private static ProcessStartInfo CreateStartInfoForCapture(string fileName, IEnumerable<string>? arguments)
