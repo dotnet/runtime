@@ -139,7 +139,7 @@ namespace System
                 return InternalEqualMethodHandles(this, d);
         }
 
-        public override int GetHashCode()
+        public override unsafe int GetHashCode()
         {
             //
             // this is not right in the face of a method being jitted in one delegate and not in another
@@ -151,10 +151,20 @@ namespace System
             else
                 return unchecked((int)((long)_methodPtrAux));
             */
+            MethodTable* methodTable = RuntimeHelpers.GetMethodTable(this);
+#if FEATURE_TYPEEQUIVALENCE
+            // Type-equivalent delegates from different assemblies must have the same hash code
+            // when they point to the same method (since Equals returns true for them).
+            // Exclude the type from the hash code for type-equivalent delegate types.
+            if (methodTable->HasTypeEquivalence)
+            {
+                methodTable = null;
+            }
+#endif
             if (_methodPtrAux == IntPtr.Zero)
-                return (_target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + GetType().GetHashCode();
+                return (_target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + (int)(nint)methodTable;
             else
-                return GetType().GetHashCode();
+                return (int)(nint)methodTable;
         }
 
         protected virtual MethodInfo GetMethodImpl()
