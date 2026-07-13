@@ -1251,7 +1251,7 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
             }
         }
 
-        // For polarities where genCodeForCompare would emit a trailing xori 1 (like GE/LE or 
+        // For polarities where genCodeForCompare would emit a trailing xori 1 (like GE/LE or
         // floating-point unordered), reverse the condition in-place and swap the SELECT arms.
         // czero.{eqz,nez} encode both polarities directly, dropping the need for xori.
         else if (m_compiler->gtTryReverseCond(cond))

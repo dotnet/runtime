@@ -4857,8 +4857,8 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                                             bool          allowMultipleFlagsChecks)
 {
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
-        // We should never get here on architectures without a status register.
-        return false;
+    // We should never get here on architectures without a status register.
+    return false;
 #endif
 
     JITDUMP("Lowering condition:\n");
