@@ -3612,8 +3612,8 @@ namespace Internal.JitInterface
             MethodDesc runtimeDeterminedCaller = caller.GetSharedRuntimeFormMethodTarget();
             TypeDesc runtimeDeterminedReturnType = runtimeDeterminedCaller.Signature.ReturnType;
 
-            MethodDesc runtimeDeterminedResult;
             MethodDesc result;
+            MethodDesc runtimeDeterminedResult;
             if (returnType.IsVoid)
             {
                 TypeDesc parameterType = isValueTask
