@@ -159,16 +159,17 @@ public unsafe class Program
         return DoubleImpl(val);
     }
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWindows))]
-    public static void TestUnmanagedCallersOnlyViaUnmanagedCalli_Fastcall()
+    [Fact]
+    public static void TestUnmanagedCallersOnlyViaUnmanagedCalli_Fastcall_ThrowsTypeLoadException()
     {
-        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyViaUnmanagedCalli_Fastcall)}...");
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyViaUnmanagedCalli_Fastcall_ThrowsTypeLoadException)}...");
 
-        int n = 1234;
-        int expected = DoubleImpl(n);
-        delegate* unmanaged[Fastcall]<int, int> nativeMethod = &CallbackViaUnmanagedCalli_Fastcall;
-        Assert.Equal(expected, nativeMethod(n));
+        TypeLoadException ex = Assert.Throws<TypeLoadException>(() =>
+        {
+            delegate* unmanaged[Fastcall]<int, int> fp = &CallbackViaUnmanagedCalli_Fastcall;
+            fp(1234);
+        });
+        Assert.Contains("Unsupported unmanaged calling convention", ex.Message);
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]

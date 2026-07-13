@@ -13,9 +13,6 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE DoubleImplNative(int n)
 typedef int (STDMETHODCALLTYPE *CALLBACKPROC)(int n);
 typedef int (__stdcall *CALLBACKPROC_STDCALL)(int n);
 typedef int (__cdecl *CALLBACKPROC_CDECL)(int n);
-#ifdef _WIN32
-typedef int (__fastcall *CALLBACKPROC_FASTCALL)(int n);
-#endif // _WIN32
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcMultipleTimes(int m, CALLBACKPROC pCallbackProc, int n)
 {
@@ -40,13 +37,6 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Cdecl(CALLBACKPROC_C
 {
     return pCallbackProc(n);
 }
-
-#ifdef _WIN32
-extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Fastcall(CALLBACKPROC_FASTCALL pCallbackProc, int n)
-{
-    return pCallbackProc(n);
-}
-#endif // _WIN32
 
 namespace
 {
