@@ -314,6 +314,7 @@ bool IsFieldDescRVA(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef);
 TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer);
+TargetPointer GetFieldDescNext(TargetPointer fieldDescPointer);
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
 TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true);
 ```
@@ -2318,6 +2319,12 @@ TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
     // bound to the enclosing class as generic context, and return the resulting
     // TypeHandle. Returns TypeHandle.Null if any link in the chain is unavailable
     // (e.g. uncached constructed instantiation).
+}
+
+TargetPointer GetFieldDescNext(TargetPointer fieldDescPointer)
+{
+    // The FieldDescs of a type form a contiguous array, so the next one is one FieldDesc-size along.
+    return fieldDescPointer + /* sizeof(FieldDesc) */;
 }
 ```
 
