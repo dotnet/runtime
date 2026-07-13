@@ -1250,21 +1250,12 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
                 BlockRange().Remove(relop);
             }
         }
-        // genCodeForCompare reverses GE/LE into LT/GT and emits a trailing xori 1.
-        // czero.{eqz,nez} encode both polarities directly, so swap SELECT arms and
-        // use the un-reversed compare to drop the xori.
-        else if (relop->OperIs(GT_GE, GT_LE))
+
+        // For polarities where genCodeForCompare would emit a trailing xori 1 (like GE/LE or 
+        // floating-point unordered), reverse the condition in-place and swap the SELECT arms.
+        // czero.{eqz,nez} encode both polarities directly, dropping the need for xori.
+        else if (m_compiler->gtTryReverseCond(cond))
         {
-            relop->SetOper(GenTree::ReverseRelop(relop->OperGet()));
-            std::swap(sel->gtOp1, sel->gtOp2);
-        }
-        // Floating-point unordered comparisons emit the ordered compare + xori 1.
-        // Mirror what LowerJTrue does: reverse the FP relop and clear NAN_UN, swapping
-        // SELECT arms to preserve semantics.
-        else if (varTypeIsFloating(relop->gtGetOp1()) && (relop->gtFlags & GTF_RELOP_NAN_UN) != 0)
-        {
-            relop->ChangeOper(GenTree::ReverseRelop(relop->OperGet()));
-            relop->gtFlags &= ~GTF_RELOP_NAN_UN;
             std::swap(sel->gtOp1, sel->gtOp2);
         }
     }
