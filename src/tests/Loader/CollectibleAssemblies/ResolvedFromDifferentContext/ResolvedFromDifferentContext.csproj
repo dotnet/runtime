@@ -4,8 +4,6 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Test creates non-collectible AssemblyLoadContext -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!-- Test polls a fixed number of times for collectible ALCs to be unloaded, which is unreliable under GC stress -->
-    <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
