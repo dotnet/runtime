@@ -63,6 +63,8 @@ export interface AssetEntryInternal extends AssetEntry {
     priority?: boolean
     shortName?: string
     inprogress?: boolean
+    tableSize?: number
+    payloadSize?: number
 }
 
 export type LoaderConfigInternal = LoaderConfig & {

@@ -8,6 +8,11 @@
     <!-- <WasmXHarnessMonoArgs>- -setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug</WasmXHarnessMonoArgs> -->
     <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
 
+    <!-- ReadyToRun precompiled images cannot be Edit-and-Continue / metadata-updated, so R2R is
+         incompatible with this hot-reload test (MetadataUpdaterSupport=true). Opt out of the
+         default CoreCLR-browser R2R opt-in from eng/testing/tests.browser.targets. -->
+    <DisableR2R>true</DisableR2R>
+
     <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
     <IgnoreForCI Condition="'$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">true</IgnoreForCI>
   </PropertyGroup>
