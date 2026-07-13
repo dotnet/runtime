@@ -44,6 +44,7 @@ extends:
       jobs:
 
       #
+      # dummy
       # s390x & PPC64 little endian
       # Build the whole product using Mono and run libraries tests
       #
