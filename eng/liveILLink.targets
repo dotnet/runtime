@@ -75,7 +75,9 @@
                         '$(IsNETCoreAppSrc)' == 'true' And
                         '$(AssemblyName)' != 'System.Private.CoreLib' And
                         Exists('$(ArtifactsBinDir)ref\$(TargetFramework)\System.Runtime.dll') And
-                        Exists('$(ArtifactsBinDir)System.Private.CoreLib\ref\$(Configuration)\$(TargetFramework)\System.Private.CoreLib.dll')">
+                        Exists('$(ArtifactsBinDir)System.Private.CoreLib\ref\$(Configuration)\$(TargetFramework)\System.Private.CoreLib.dll') And
+                        Exists('$(ArtifactsBinDir)ILLink.RoslynAnalyzer\$(ToolsConfiguration)\netstandard2.0\ILLink.RoslynAnalyzer.dll') And
+                        Exists('$(ArtifactsBinDir)ILLink.CodeFixProvider\$(ToolsConfiguration)\netstandard2.0\ILLink.CodeFixProvider.dll')">
     <ProjectReference Remove="@(ProjectReference)" />
     <Reference Include="$(ArtifactsBinDir)ref\$(TargetFramework)\*.dll"
                Exclude="$(ArtifactsBinDir)ref\$(TargetFramework)\$(AssemblyName).dll"

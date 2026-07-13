@@ -8,9 +8,11 @@ using ILLink.CodeFix;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
+using RoslynCodeFixProvider = Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider;
 using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
     ILLink.RoslynAnalyzer.DynamicallyAccessedMembersAnalyzer,
     ILLink.CodeFix.RequiresUnsafeCodeFixProvider>;
@@ -160,6 +162,55 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
                 DiagnosticDescriptor descriptor = DiagnosticDescriptors.GetDiagnosticDescriptor(diagnosticId);
                 Assert.Equal("Unsafe", descriptor.Category);
                 Assert.Empty(descriptor.HelpLinkUri);
+            }
+        }
+
+        [Fact]
+        public async Task UnsafeMigrationCodeFixes_AreNotRegisteredWhenMigrationDisabled()
+        {
+            using var workspace = new AdhocWorkspace();
+            ProjectId projectId = ProjectId.CreateNewId();
+            DocumentId documentId = DocumentId.CreateNewId(projectId);
+            Solution solution = workspace.CurrentSolution
+                .AddProject(ProjectInfo.Create(
+                    projectId,
+                    VersionStamp.Default,
+                    "Test",
+                    "Test",
+                    LanguageNames.CSharp,
+                    compilationOptions: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary),
+                    parseOptions: new CSharpParseOptions(LanguageVersion.Preview)))
+                .AddDocument(documentId, "Test.cs", SourceText.From("class C { }"));
+
+            Assert.True(workspace.TryApplyChanges(solution));
+            Document document = workspace.CurrentSolution.GetDocument(documentId)!;
+            SyntaxTree syntaxTree = (await document.GetSyntaxTreeAsync())!;
+
+            foreach ((RoslynCodeFixProvider provider, string diagnosticId) in new[]
+            {
+                ((RoslynCodeFixProvider)new UnsafeModifierMigrationCodeFixProvider(), DiagnosticId.UnsafeModifierMigration.AsString()),
+                (new UnsafeUsageMigrationCodeFixProvider(), RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+            })
+            {
+                var descriptor = new DiagnosticDescriptor(
+                    diagnosticId,
+                    diagnosticId,
+                    diagnosticId,
+                    "Test",
+                    DiagnosticSeverity.Warning,
+                    isEnabledByDefault: true);
+                Diagnostic diagnostic = Diagnostic.Create(
+                    descriptor,
+                    Location.Create(syntaxTree, new TextSpan(0, 1)));
+                bool registered = false;
+                var context = new CodeFixContext(
+                    document,
+                    diagnostic,
+                    (_, _) => registered = true,
+                    default);
+
+                await provider.RegisterCodeFixesAsync(context);
+                Assert.False(registered);
             }
         }
 

@@ -20,6 +20,12 @@ namespace ILLink.CodeFix
         private const string SafetyDocumentation = "/// <safety>TODO: Audit.</safety>";
         private const string UnsafeExpressionPlaceholder = "__unsafe_operand__";
 
+        public static bool IsMigrationEnabled(Document document)
+            => document.Project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue(
+                $"build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration}",
+                out string? value) &&
+                string.Equals(value?.Trim(), "true", System.StringComparison.OrdinalIgnoreCase);
+
         public static async Task<Document> ApplyDeclarationUpdatesAsync(
             Document document,
             CancellationToken cancellationToken)

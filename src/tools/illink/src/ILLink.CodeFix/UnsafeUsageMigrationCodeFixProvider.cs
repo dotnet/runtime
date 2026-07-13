@@ -37,6 +37,9 @@ namespace ILLink.CodeFix
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
+            if (!UnsafeCodeFixHelpers.IsMigrationEnabled(context.Document))
+                return Task.CompletedTask;
+
             string title = CodeFixTitle.ToString();
             context.RegisterCodeFix(
                 CodeAction.Create(
