@@ -466,7 +466,14 @@ namespace System.Diagnostics.Tracing
         {
             WriteEventErrorCode status = WriteEventErrorCode.NoError;
 
-            if (IsEnabled(eventDescriptor.Level, eventDescriptor.Keywords))
+            // The event descriptor's keywords are OR'd with the reserved session-mask bits when the
+            // manifest is created (see EventSource). Strip those bits before the keyword check so this
+            // mirrors EventSource.IsEnabledByDefault/IsEnabledCommon, which compare against the
+            // session-mask-cleared keywords. Without this, an event declared with keyword 0 never
+            // matches the keywords == 0 fast path below because its descriptor keyword is non-zero.
+            long keywords = eventDescriptor.Keywords & unchecked((long)~SessionMask.All.ToEventKeywords());
+
+            if (IsEnabled(eventDescriptor.Level, keywords))
             {
                 int argCount = eventPayload.Length;
 
@@ -1190,11 +1197,11 @@ namespace System.Diagnostics.Tracing
                 //
                 // Check if Keyword is enabled
                 //
-                // A session that specifies an "any" keyword mask of 0 matches all keywords,
-                // which mirrors the convention used by EventSource.IsEnabledCommon. Without this,
-                // events written through the object[] varargs path (EventProvider.WriteEvent) are
-                // dropped for EventPipe sessions enabled with keyword 0, even though the manifest
-                // (specialized) write path emits them.
+                // An "any" keyword mask of 0 matches all keywords. This mirrors the convention used by
+                // EventSource.IsEnabledCommon and native ETW's MatchAnyKeyword == 0 semantics, so events
+                // reach every sink consistently. In particular, EventPipe/dotnet-trace enable named
+                // providers with keyword 0; without this an event declared with a non-zero keyword would
+                // be dropped here even though the outer IsEnabledCommon gate already enabled it.
                 //
                 if ((keywords == 0) ||
                     ((_anyKeywordMask == 0 || (keywords & _anyKeywordMask) != 0) &&
