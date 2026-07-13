@@ -190,19 +190,16 @@ namespace System
         /// Unlike <see cref="Next()"/>, which returns an <see cref="int"/> that is less than <see cref="int.MaxValue"/>,
         /// <c>NextInteger&lt;int&gt;()</c> returns an <see cref="int"/> in the inclusive range from zero through
         /// <see cref="int.MaxValue"/> and may return <see cref="int.MaxValue"/>.
-        /// <remarks><typeparamref name="T"/> must behave as if it were a two's complement value with all values in range being representable.</remarks>
+        /// <para><typeparamref name="T"/> must behave as if it were a two's complement value with all values in range being representable.</para>
         /// </remarks>
         public T NextInteger<T>() where T : IBinaryInteger<T>, IMinMaxValue<T>
         {
-            if (!T.IsPositive(T.MaxValue))
+            if (T.MaxValue == T.Zero)
             {
-                if (T.MaxValue == T.Zero)
-                {
-                    return T.Zero;
-                }
-
-                throw new ArgumentOutOfRangeException(nameof(T), SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegative, nameof(T.MaxValue), T.MaxValue));
+                return T.Zero;
             }
+
+            ArgumentOutOfRangeException.ThrowIfNegative(T.MaxValue);
 
             int bitLength = T.MaxValue.GetShortestBitLength();
             int byteCount = (bitLength + 7) >> 3;
@@ -220,10 +217,17 @@ namespace System
 
             try
             {
-                NextBytes(bytes);
-                bytes[^1] &= topMask;
+                while (true)
+                {
+                    NextBytes(bytes);
+                    bytes[^1] &= topMask;
 
-                return T.ReadLittleEndian(bytes, isUnsigned: true);
+                    T value = T.ReadLittleEndian(bytes, isUnsigned: true);
+                    if (value <= T.MaxValue)
+                    {
+                        return value;
+                    }
+                }
             }
             finally
             {
