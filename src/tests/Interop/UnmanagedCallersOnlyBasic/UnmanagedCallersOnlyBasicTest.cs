@@ -28,6 +28,9 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         public static extern int CallManagedProc_Cdecl(delegate* unmanaged[Cdecl]<int, int> callbackProc, int n);
 
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int CallManagedProc_Fastcall(delegate* unmanaged[Fastcall]<int, int> callbackProc, int n);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
         public static extern int CallManagedProcMultipleTimes(int m, IntPtr callbackProc, int n);
 
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
@@ -133,17 +136,17 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
-    [Fact]
-    public static void TestUnmanagedCallersOnly_CallConvFastcall_ThrowsTypeLoadException()
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+    public static void TestUnmanagedCallersOnlyValid_CallConvFastcall()
     {
-        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnly_CallConvFastcall_ThrowsTypeLoadException)}...");
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvFastcall)}...");
 
-        TypeLoadException ex = Assert.Throws<TypeLoadException>(() =>
-        {
-            delegate* unmanaged[Fastcall]<int, int> fp = &ManagedDoubleCallback_Fastcall;
-            fp(12345);
-        });
-        Assert.Contains("Unsupported unmanaged calling convention", ex.Message);
+        int n = 12345;
+        int expected = DoubleImpl(n);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Fastcall(&ManagedDoubleCallback_Fastcall, n);
+
+        Assert.Equal(expected, actual);
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]

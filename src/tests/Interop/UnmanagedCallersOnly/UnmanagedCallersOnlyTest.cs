@@ -153,25 +153,6 @@ public unsafe class Program
         }
     }
 
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvFastcall)])]
-    public static int CallbackViaUnmanagedCalli_Fastcall(int val)
-    {
-        return DoubleImpl(val);
-    }
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
-    [Fact]
-    public static void TestUnmanagedCallersOnlyViaUnmanagedCalli_Fastcall_ThrowsTypeLoadException()
-    {
-        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyViaUnmanagedCalli_Fastcall_ThrowsTypeLoadException)}...");
-
-        TypeLoadException ex = Assert.Throws<TypeLoadException>(() =>
-        {
-            delegate* unmanaged[Fastcall]<int, int> fp = &CallbackViaUnmanagedCalli_Fastcall;
-            fp(1234);
-        });
-        Assert.Contains("Unsupported unmanaged calling convention", ex.Message);
-    }
-
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
