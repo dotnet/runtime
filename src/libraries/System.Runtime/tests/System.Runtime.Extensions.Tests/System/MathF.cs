@@ -1277,6 +1277,15 @@ namespace System.Tests
             // meaningful and was unreachable under the old cap.
             yield return new object[] { 2.5e-8f, 8, MidpointRounding.AwayFromZero, 3e-8f };
 
+            // The fast rounding path is exact through 10 fractional digits for float; exercise the boundary
+            // (9, 10) and confirm the exact routine takes over just beyond it (11) while staying correct.
+            yield return new object[] { 2.5e-9f, 9, MidpointRounding.ToEven, 2e-9f };
+            yield return new object[] { 2.5e-9f, 9, MidpointRounding.AwayFromZero, 2e-9f };
+            yield return new object[] { 2.5e-10f, 10, MidpointRounding.ToEven, 2e-10f };
+            yield return new object[] { 2.5e-10f, 10, MidpointRounding.AwayFromZero, 2e-10f };
+            yield return new object[] { 2.5e-11f, 11, MidpointRounding.ToEven, 3e-11f };
+            yield return new object[] { 2.5e-11f, 11, MidpointRounding.AwayFromZero, 3e-11f };
+
             // The smallest subnormals combined with very large digit counts exercise the deepest part of the
             // exact arbitrary-precision path (near its worst-case buffer size), which must stay correct.
             yield return new object[] { float.Epsilon, 45, MidpointRounding.AwayFromZero, float.Epsilon };

@@ -27,8 +27,9 @@ namespace System
 
         public const double Tau = 6.283185307179586476925;
 
-        // The largest digit count the fast rounding path handles; larger counts use the exact routine.
-        private const int maxFastRoundingDigits = 15;
+        // The largest digit count the fast rounding path handles: `10^digits` must fit a `ulong` for the
+        // integer fallback (10^19 is the last that does); larger counts use the exact routine.
+        private const int maxFastRoundingDigits = 19;
 
         // Below this boundary a double may have a fractional portion; at or above it every
         // representable value is already an integer (2^52).

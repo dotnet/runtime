@@ -21,7 +21,7 @@ namespace System
         public static bool TryRoundToDecimalDigitsFast(double value, int digits, MidpointRounding mode, out double result)
         {
             Debug.Assert(double.IsFinite(value));
-            Debug.Assert((uint)digits <= 15);
+            Debug.Assert((uint)digits <= 19);
             Debug.Assert((uint)mode <= (uint)MidpointRounding.ToPositiveInfinity);
 
             return (Fma.IsSupported || AdvSimd.Arm64.IsSupported)
@@ -33,7 +33,7 @@ namespace System
         public static bool TryRoundToDecimalDigitsFast(float value, int digits, MidpointRounding mode, out float result)
         {
             Debug.Assert(float.IsFinite(value));
-            Debug.Assert((uint)digits <= 6);
+            Debug.Assert((uint)digits <= 10);
             Debug.Assert((uint)mode <= (uint)MidpointRounding.ToPositiveInfinity);
 
             return (Fma.IsSupported || AdvSimd.Arm64.IsSupported)
@@ -175,7 +175,7 @@ namespace System
 
             int shift = -exponent;
 
-            // `mantissa` (< 2^24) times `10^digits` (<= 10^6) is at most ~2^44, so it never overflows a ulong.
+            // `mantissa` (< 2^24) times `10^digits` (<= 10^10) is at most ~2^57, so it never overflows a ulong.
             ulong scaled = mantissa * (ulong)Pow10DoubleTable[digits];
 
             if (!TryGetFloorAndMidpoint(scaled, shift, SingleIntegerBoundaryLog2, out ulong floor, out int midpointComparison, out bool hasRemainder))

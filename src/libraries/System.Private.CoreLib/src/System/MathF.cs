@@ -26,8 +26,9 @@ namespace System
 
         public const float Tau = 6.283185307f;
 
-        // The largest digit count the fast rounding path handles; larger counts use the exact routine.
-        private const int maxFastRoundingDigits = 6;
+        // The largest digit count the fast rounding path handles: `10^digits` must be exactly representable
+        // as a `float` (10^10 is the last that is); larger counts use the exact routine.
+        private const int maxFastRoundingDigits = 10;
 
         // Below this boundary a float may have a fractional portion; at or above it every
         // representable value is already an integer (2^23).
