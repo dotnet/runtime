@@ -1666,7 +1666,7 @@ namespace System.Numerics.Tensors.Tests
         {
             foreach (MidpointRounding mode in Enum.GetValues(typeof(MidpointRounding)))
             {
-                foreach (int digits in new[] { 0, 1, 4 })
+                foreach (int digits in new[] { 0, 1, 4, 20 })
                 {
                     yield return new object[] { mode, digits };
                 }

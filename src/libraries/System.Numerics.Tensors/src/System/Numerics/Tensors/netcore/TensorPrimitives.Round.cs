@@ -113,23 +113,9 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            // The digit-based rounding currently defers to the scalar `T.Round` for every element. A
-            // correctly-rounded vectorized implementation needs the exact (e.g. double-double or
-            // arbitrary precision) scaled value to match the scalar result at the midpoints, so that
-            // acceleration is left as a future improvement.
-            if (typeof(T) == typeof(float))
+            if (digits < 0)
             {
-                if ((uint)digits > 6)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(digits));
-                }
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                if ((uint)digits > 15)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(digits));
-                }
+                throw new ArgumentOutOfRangeException(nameof(digits));
             }
 
             if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
@@ -137,6 +123,10 @@ namespace System.Numerics.Tensors
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
             }
 
+            // The digit-based rounding defers to the scalar `T.Round` for every element, which accepts any
+            // non-negative `digits` (matching the scalar API). A correctly-rounded vectorized implementation
+            // needs the exact (e.g. double-double or arbitrary precision) scaled value to match the scalar
+            // result at the midpoints, so that acceleration is left as a future improvement.
             InvokeSpanIntoSpan(x, new RoundFallbackOperator<T>(digits, mode), destination);
         }
 
