@@ -365,6 +365,45 @@ namespace System.Net.Security.Tests
             return expectedBuffer.SequenceEqual(actualBuffer);
         }
 
+        // Regression test for buffer-pool reuse on the encrypted write/handshake output path
+        // (SslStreamPal.*.EncryptMessage / HandshakeInternal -> ProtocolToken.SetPayload).
+        // Exercises many back-to-back writes of varying sizes -- including sizes that force
+        // token buffer growth via EnsureAvailableSpace -- and verifies data integrity across
+        // pooled-buffer reuse, so any accidental data bleed between reused rented buffers,
+        // truncation, or double-return corruption would be caught.
+        [Fact]
+        public async Task SslStream_StreamToStream_RepeatedVariableSizeWrites_RoundTripsCorrectly()
+        {
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new SslStream(stream1, false, AllowAnyServerCertificate))
+            using (var server = new SslStream(stream2, false, delegate { return true; }))
+            {
+                await DoHandshake(client, server);
+
+                int[] sizes = { 1, 2, 7, 64, 255, 1024, 4096, 16 * 1024, 64 * 1024, 3, 1, 65 * 1024 };
+                var rng = new Random(12345);
+
+                foreach (int size in sizes)
+                {
+                    byte[] expected = new byte[size];
+                    rng.NextBytes(expected);
+
+                    await WriteAsync(client, expected, 0, expected.Length);
+
+                    byte[] actual = new byte[size];
+                    int totalRead = 0;
+                    while (totalRead < size)
+                    {
+                        int n = await ReadAsync(server, actual, totalRead, size - totalRead);
+                        Assert.True(n > 0, "Unexpected EOF while reading round-tripped data.");
+                        totalRead += n;
+                    }
+
+                    Assert.True(VerifyOutput(actual, expected), $"Data mismatch for size {size}.");
+                }
+            }
+        }
+
         protected bool AllowAnyServerCertificate(
             object sender,
             X509Certificate certificate,
