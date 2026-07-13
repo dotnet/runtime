@@ -8,7 +8,7 @@ function libCoreRunFactory() {
         "$ENV",
         "$FS",
         "corerun_shutdown",
-        "emscripten_stack_get_current",
+        "__stack_pointer",
         "$UTF8ToString"
     ];
     if (LibraryManager.library.$NODEFS) {
@@ -56,7 +56,7 @@ function libCoreRunFactory() {
                 let value = 0;
                 let shift = 0;
 
-                for (;;) {
+                for (; ;) {
                     if (offset >= limit) {
                         throw new RangeError("Unexpected end of input while reading ULEB128");
                     }
@@ -184,7 +184,7 @@ function libCoreRunFactory() {
                 wasmModule = new WebAssembly.Module(wasmBytes);
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to construct WebAssembly module for Webcil image:", {wasmPath, errorMessage});
+                console.error("Failed to construct WebAssembly module for Webcil image:", { wasmPath, errorMessage });
                 return false;
             }
 
@@ -209,7 +209,7 @@ function libCoreRunFactory() {
                 wasmTable.grow(tableSize);
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to grow WebAssembly table for Webcil image:", {wasmPath, errorMessage});
+                console.error("Failed to grow WebAssembly table for Webcil image:", { wasmPath, errorMessage });
                 return false;
             }
 
@@ -236,10 +236,11 @@ function libCoreRunFactory() {
                         table: wasmTable,
                         tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
                         imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr)
-                    }});
+                    }
+                });
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to construct WebAssembly instance for Webcil image:", {wasmPath, errorMessage});
+                console.error("Failed to construct WebAssembly instance for Webcil image:", { wasmPath, errorMessage });
                 return false;
             } finally {
                 stackRestore(sp);
