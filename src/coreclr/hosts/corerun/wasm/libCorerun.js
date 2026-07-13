@@ -8,6 +8,7 @@ function libCoreRunFactory() {
         "$ENV",
         "$FS",
         "corerun_shutdown",
+        "emscripten_stack_get_current",
         "$UTF8ToString"
     ];
     if (LibraryManager.library.$NODEFS) {
