@@ -1260,8 +1260,23 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 {
                     unsigned argOffsetOut = treeNode->getArgOffset();
                     
-                    // Use first target register as temporary (it's already been placed)
-                    regNumber tempReg = treeNode->GetRegNumByIdx(0);
+                    // Get internal temp register allocated by LSRA for stack fields
+                    // Don't use target registers as they're needed for the call
+                    regNumber tempReg = REG_NA;
+                    if (internalRegisters.Count(treeNode, RBM_ALLFLOAT) > 0)
+                    {
+                        tempReg = internalRegisters.GetSingle(treeNode, RBM_ALLFLOAT);
+                        JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit - Using internal register %s for stack fields\n",
+                               getRegName(tempReg));
+                    }
+                    else
+                    {
+                        // Fallback: use a volatile float register that's not in use
+                        // f0 is volatile and not used for arguments in this context
+                        tempReg = REG_F0;
+                        JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit - No internal register, using fallback %s\n",
+                               getRegName(tempReg));
+                    }
                     
                     for (unsigned i = 0; i < stackFields; i++)
                     {
@@ -1271,8 +1286,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                         GetEmitter()->emitIns_R_S(loadIns, emitActualTypeSize(hfaType), tempReg, srcLclNum, fieldOffset);
                         GetEmitter()->emitIns_S_R(storeIns, emitActualTypeSize(hfaType), tempReg, varNumOut, stackOffset);
                         
-                        JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit - Stored HFA field %d from V%02u+%u to stack+%u\n",
-                               treeNode->gtNumRegs + i, srcLclNum, fieldOffset, stackOffset);
+                        JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit - Stored HFA field %d from V%02u+%u to stack+%u using %s\n",
+                               treeNode->gtNumRegs + i, srcLclNum, fieldOffset, stackOffset, getRegName(tempReg));
                     }
                 }
                 
@@ -1395,6 +1410,34 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         }
         else if (source->OperIs(GT_FIELD_LIST))
         {
+            // For FIELD_LIST sources (created by fgMorphMultiregStructArg), detect if this is an HFA struct
+            // by checking the first field's source
+            GenTreeFieldList* fieldList = source->AsFieldList();
+            GenTreeFieldList::Use* firstUse = fieldList->Uses().GetHead();
+            if (firstUse != nullptr)
+            {
+                GenTree* firstFieldNode = firstUse->GetNode();
+                if (firstFieldNode->OperIs(GT_LCL_FLD, GT_LCL_VAR))
+                {
+                    unsigned srcLclNum = firstFieldNode->OperIs(GT_LCL_FLD)
+                                        ? firstFieldNode->AsLclFld()->GetLclNum()
+                                        : firstFieldNode->AsLclVar()->GetLclNum();
+                    LclVarDsc* varDsc = compiler->lvaGetDesc(srcLclNum);
+                    CORINFO_CLASS_HANDLE classHnd = varDsc->lvClassHnd;
+                    if (classHnd == NO_CLASS_HANDLE && varDsc->GetLayout() != nullptr)
+                    {
+                        classHnd = varDsc->GetLayout()->GetClassHandle();
+                    }
+                    
+                    if (classHnd != NO_CLASS_HANDLE)
+                    {
+                        var_types hfaType;
+                        unsigned hfaSlots;
+                        isHfaStruct = IsPpc64leHfaLikeStruct(compiler, classHnd, &hfaType, &hfaSlots);
+                    }
+                }
+            }
+            
             // For FIELD_LIST sources (created by fgMorphMultiregStructArg), the fields are already
             // loaded into registers. We just need to handle HFA structs specially.
             if (isHfaStruct)
@@ -2586,6 +2629,7 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
     var_types hfaType = TYP_UNDEF;
     unsigned hfaSlots = 0;
+    bool isHfaParam = false;
     
     if (genIsValidFloatReg(targetReg) && varTypeIsStruct(varDsc))
     {
@@ -2604,6 +2648,7 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
         {
             // This is an HFA struct, use the HFA element type
             loadType = hfaType;
+            isHfaParam = varDsc->lvIsParam;
             JITDUMP("[PPC64LE HFA DEBUG] genCodeForLclFld - HFA detected, overriding load type from %s to %s for V%02u+%u -> %s (hfaSlots=%u, lvIsParam=%d)\n",
                    varTypeName(targetType), varTypeName(loadType), varNum, offs, getRegName(targetReg), hfaSlots, varDsc->lvIsParam);
         }
@@ -2611,6 +2656,52 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 
     emitAttr    attr = emitActualTypeSize(loadType);
     instruction ins  = ins_Load(loadType);
+    
+    // For split HFA parameters, check if this field is passed on the stack or in a register
+    if (isHfaParam && varDsc->lvIsParam)
+    {
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
+        unsigned fieldSize = (hfaType == TYP_FLOAT) ? 4 : 8;
+        
+        // Find which segment this field offset belongs to
+        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        {
+            const ABIPassingSegment& segment = abiInfo.Segment(i);
+            if (segment.Offset == offs && segment.Size == fieldSize)
+            {
+                if (segment.IsPassedInRegister())
+                {
+                    // Field is passed in a register - LSRA has already assigned the correct register
+                    // No load needed, just produce the register
+                    JITDUMP("[PPC64LE HFA DEBUG] genCodeForLclFld - V%02u+%u already in register %s (passed in register)\n",
+                           varNum, offs, getRegName(targetReg));
+                    genProduceReg(tree);
+                    return;
+                }
+                else
+                {
+                    // Field is on the incoming stack - load from caller's stack frame
+                    int stackOffset = segment.GetStackOffset();
+                    
+                    // The incoming parameters are relative to the caller's SP (before our frame allocation)
+                    // After frame allocation (stdu r1, -frameSize(r1)), our SP is moved down
+                    // The incoming parameters are now at (current SP + frameSize + stackOffset)
+                    int frameSize = genTotalFrameSize();
+                    int adjustedOffset = stackOffset + frameSize;
+                    
+                    JITDUMP("[PPC64LE HFA DEBUG] genCodeForLclFld - Loading V%02u+%u from incoming stack: ABI offset=%d, adjusted offset=%d (frame=%d)\n",
+                           varNum, offs, stackOffset, adjustedOffset, frameSize);
+                    
+                    // Load from incoming parameter area
+                    emit->emitIns_R_AR(ins, attr, targetReg, REG_SPBASE, adjustedOffset);
+                    genProduceReg(tree);
+                    return;
+                }
+            }
+        }
+    }
+    
+    // Normal case: load from local variable's home location
     emit->emitIns_R_S(ins, attr, targetReg, varNum, offs);
 
     genProduceReg(tree);

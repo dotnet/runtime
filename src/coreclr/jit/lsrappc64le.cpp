@@ -97,6 +97,83 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  float
 {
 	    _ASSERTE(!"NYI");
 }
+//------------------------------------------------------------------------
+// BuildDefForHfaLclFld: Build a def for GT_LCL_FLD accessing an HFA struct parameter,
+//   using ABI passing information to determine the correct register allocation.
+//
+// Arguments:
+//    lclFld - The GT_LCL_FLD node
+//
+// Returns:
+//    true if this was an HFA field and a def was built, false otherwise
+//
+bool LinearScan::BuildDefForHfaLclFld(GenTreeLclFld* lclFld)
+{
+    unsigned varNum = lclFld->GetLclNum();
+    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+    
+    // Check if this is an HFA struct parameter with ABI info
+    if (!varDsc->lvIsParam || !varTypeIsStruct(varDsc))
+    {
+        return false;
+    }
+    
+    // Get class handle to check if it's an HFA
+    CORINFO_CLASS_HANDLE classHnd = varDsc->lvClassHnd;
+    if (classHnd == NO_CLASS_HANDLE)
+    {
+        ClassLayout* layout = varDsc->GetLayout();
+        if (layout != nullptr)
+        {
+            classHnd = layout->GetClassHandle();
+        }
+    }
+    
+    var_types hfaType = TYP_UNDEF;
+    unsigned numFields = 0;
+    if (classHnd == NO_CLASS_HANDLE ||
+        !IsPpc64leHfaLikeStruct(compiler, classHnd, &hfaType, &numFields))
+    {
+        return false;
+    }
+    
+    JITDUMP("[PPC64LE HFA DEBUG] BuildDefForHfaLclFld - V%02u is HFA struct (type=%s, fields=%u)\n",
+           varNum, varTypeName(hfaType), numFields);
+    
+    // This is an HFA struct - check ABI passing information
+    const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
+    unsigned fieldOffset = lclFld->GetLclOffs();
+    unsigned fieldSize = (hfaType == TYP_FLOAT) ? 4 : 8;
+    
+    // Find which segment this field offset belongs to
+    for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+    {
+        const ABIPassingSegment& segment = abiInfo.Segment(i);
+        if (segment.Offset == fieldOffset && segment.Size == fieldSize)
+        {
+            if (segment.IsPassedInRegister())
+            {
+                // Field is passed in a register - use fixed register allocation
+                regNumber reg = segment.GetRegister();
+                SingleTypeRegSet regMask = (SingleTypeRegSet)segment.GetRegisterMask();
+                BuildDef(lclFld, regMask);
+                JITDUMP("[PPC64LE LSRA] LCL_FLD V%02u+%u: HFA field in fixed register %s\n",
+                       varNum, fieldOffset, getRegName(reg));
+            }
+            else
+            {
+                // Field is on stack - use normal allocation
+                BuildDef(lclFld);
+                JITDUMP("[PPC64LE LSRA] LCL_FLD V%02u+%u: HFA field on stack at offset %u\n",
+                       varNum, fieldOffset, segment.GetStackOffset());
+            }
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 
 //------------------------------------------------------------------------
 // filterConsecutiveCandidatesForSpill: Amoung the selected consecutiveCandidates,
@@ -909,7 +986,17 @@ int LinearScan::BuildNode(GenTree* tree)
 	    // Only build a def if the node is not contained
 	    if (!tree->isContained())
 	    {
-	        BuildDef(tree);
+	        // PPC64LE: For HFA struct parameters, use ABI passing info for register allocation
+	        bool handledAsHfa = false;
+	        if (tree->OperIs(GT_LCL_FLD))
+	        {
+	            handledAsHfa = BuildDefForHfaLclFld(tree->AsLclFld());
+	        }
+	        
+	        if (!handledAsHfa)
+	        {
+	            BuildDef(tree);
+	        }
 	    }
 	    break;
               case GT_ADD:

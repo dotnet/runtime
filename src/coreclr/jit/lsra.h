@@ -2077,6 +2077,10 @@ private:
     void BuildDefWithKills(GenTree* tree, int dstCount, SingleTypeRegSet dstCandidates, regMaskTP killMask);
 #endif // TARGET_ARMARCH || TARGET_RISCV64 || TARGET_LOONGARCH64
     void BuildCallDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask);
+#ifdef TARGET_POWERPC64
+    bool BuildDefForHfaLclFld(GenTreeLclFld* lclFld);
+#endif // TARGET_POWERPC64
+
 
     int BuildReturn(GenTree* tree);
 #ifdef TARGET_XARCH

@@ -12391,7 +12391,126 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         "Setup",
         "GetEnvironmentVariable",
         "ThrowIfNull",
-        "GetReference"
+        "GetReference",
+	"get_Capacity",
+	"ThrowIfNullOrEmpty",
+	"IsNullOrEmpty",
+	"Enter",
+	"get_MaxValue",
+	"IsHandleRedirected",
+	"IsCompletedMethod",
+	"get_Value",
+	"GetRawStringData",
+
+	"GetExtendedString",
+        "ReleaseHandle",
+        "AllBytesInUInt32AreAscii",
+        "Close",
+        "GetNumber",
+        "EventSource_GetClrConfig",
+        "set_Capacity",
+        "GetMethodTable",
+        "get_Name",
+        "get_Instance",
+        "get_Log",
+        "get_IsMeterSupported",
+        "get_Out",
+        "ReadUnaligned",
+        "WriteUnaligned",
+        "_Memmove",
+        "set_Item",
+        "InitializeIsMeterSupported",
+        "GetClrConfig",
+        "Contains",
+        "get_Term",
+        "ReadInt",
+
+        "IsEntered",
+        "AreSameType",
+        "AreSame",
+        "IsBitwiseEquatable",
+        "get_IsOutputRedirected",
+        "GetTypeFromHandle",
+        "AsPointer",
+        "GetUnderlyingNativeHandle",
+        "Unregister",
+	
+	"IsNullOrWhiteSpace",
+       	"IndexOfAnyChar",
+       	"InitializeIsSupported",
+	"CountHexDigits",
+ 	"NegateIfNeeded",
+	"IsAsciiLetter",
+      	"Max",
+        "RoundUpToEven",
+        "Min",
+	"IsEventSourceLoggingEnabled",
+ 	"Log2",
+  	"IndexOfChar",
+       	"IsNullRef",
+       	"LoadNUInt",
+       	"AsRef",
+ 
+	"get_CanWrite",
+       	"get_CanSeek",
+       	"get_HasLeftoverData",
+       	"get_State",
+       	"get_BufferSize",
+       	"get_Path",
+        "ThrowIfInvalid",
+       	"GetHandleValue",
+       	"InternalFree",
+
+	"get_Default",
+	"get_Ordinal",
+      	"get_OrdinalIgnoreCase",
+      	"GetStringComparer",
+      	"wcslen",
+      	"ByteOffset",
+      	"GetBucket",
+        "get_Attributes",
+        "get_Keys",
+        "get_IsCompleted",
+        "get_IsClosed",
+        "ThrowIfNegative",
+        "Grow",
+       "IsNullHandle",
+       "GetRuntimeFieldInfo",
+       "System.IRuntimeFieldInfo.get_Value",
+       "GetRVAFieldInfo",
+       "get_HasExtendedStrings",
+        "get_Key",
+       "GetControlCharacters",
+       "CheckTerminalSettingsInvalidated",
+       "get_IsInputRedirected",
+       "get_Invariant",
+       "TryGetAppLocalIcuSwitchValue",
+       "get_SupportsRandomAccess",
+       "get_Term",
+       "LoadICU",
+       "IndexOfAnyValueType",
+       "InvalidateCachedCursorPosition",
+       "get_CurrentThread",
+       "InitializeCurrentThread",
+       "WriteLineIf",
+       "get_IsTypeDesc",
+       "IsPow2", 
+       "IsAscii",
+       "LoadICU",
+       "EqualsIgnoreCase",
+       "UInt32OrdinalIgnoreCaseAscii",
+       "KeepAlive",
+       "EqualsIgnoreCase_Scalar",
+       "As",
+       "ThrowIfNegativeOrZero",
+       "IsNegative",
+       "IsWhiteSpace",
+       "IsSurrogate",
+       "AddByteOffset",
+       "IndexOfAnyChar",
+       "NullRef"
+
+
     };
 
     struct JitInclusionEntry
@@ -12436,12 +12555,35 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
 	{ "System.Diagnostics.Tracing.NativeRuntimeEventSource",".cctor"},
 	{ "System.Diagnostics.Tracing.NativeRuntimeEventSource",".ctor"},
 	{ "System.Diagnostics.Tracing.TraceLoggingEventHandleTable",".ctor"},
-	{ "System.Diagnostics.Tracing.TraceLoggingEventHandleTable",".ctor"},
 	{ "System.Diagnostics.Tracing.ActivityTracker",".cctor"},
 	{ "System.Diagnostics.Tracing.ActivityTracker",".ctor"},
 	{ "System.Text.Encoding",".cctor"},
 	{ "UTF8EncodingSealed",".ctor"},
 	{ "System.ReadOnlySpan`1[Byte]",".ctor"},
+        { "System.Text.EncoderReplacementFallback",".cctor"},
+        { "System.Text.EncoderFallback",".ctor"},
+        { "System.Text.DecoderReplacementFallback",".cctor"},
+        { "System.Text.DecoderFallback",".ctor"},
+        { "System.Text.UTF8Encoding",".ctor"},
+        { "System.Text.UTF8Encoding",".cctor"},
+        { "System.Diagnostics.Tracing.Statics",".cctor"},
+        { "OrdinalComparer",".ctor"},
+        { "System.Collections.Generic.List`1[Char]",".cctor"},
+        { "System.Collections.Generic.Dictionary`2[Char,__Canon]:.ctor"},
+        { "System.Diagnostics.Tracing.EventSourceInitHelper",".cctor"},
+        { "System.Collections.Generic.List`1[__Canon]",".cctor"},
+        { "OverrideEventProvider",".ctor"},
+        { "System.Diagnostics.Tracing.EventPipeEventProvider",".ctor"},
+        { "System.Runtime.InteropServices.GCHandle",".ctor"},
+	{ "System.Reflection.MethodBase",".ctor"},
+	{ "System.Reflection.MemberInfo",".ctor"},
+	{ "System.Reflection.ConstructorInfo",".ctor"},
+	{ "System.Reflection.ConstructorInfo",".cctor"},
+	{ "IntroducedMethodEnumerator",".ctor"},
+	{ "Filter",".ctor"},
+	{ "System.MdUtf8String",".ctor"},
+	{ "MemberInfoCache`1[__Canon]:.ctor"},
+
     };
 
     const size_t numInclusions = sizeof(jitInclusionList) / sizeof(jitInclusionList[0]);
@@ -12554,7 +12696,30 @@ interpreterFallback = ShouldUseInterpreterFallback(ftnDesc, ftnName);
  
             fclose(fp);
         }
- 
+
+        /*static char filename[64];
+        static bool logFileInitialized = false;
+
+        if (!logFileInitialized)
+        {
+                std::time_t now = std::time(nullptr);
+                std::strftime(filename,sizeof(filename),"./log-%d-%m-%y-%H:%M.log",std::localtime(&now));
+                logFileInitialized = true;
+        }
+
+        FILE* fp = fopen(filename, "a");
+        if (fp != nullptr)
+        {
+                if (interpreterFallback)
+                {
+                        fprintf(fp,"Jitting -> %s:%s\n",ftnDesc->m_pszDebugClassName,ftnName);
+                }
+                else
+                {
+                        fprintf(fp,"Interpreting -> %s:%s\n",ftnDesc->m_pszDebugClassName,ftnName);
+                }
+                fclose(fp);
+        }*/
 #endif
 
     if (interpreterFallback == false)
