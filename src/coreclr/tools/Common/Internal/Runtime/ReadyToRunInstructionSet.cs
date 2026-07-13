@@ -103,7 +103,8 @@ namespace Internal.ReadyToRunConstants
         SveSm4 = 90,
         WasmBase = 91,
         PackedSimd = 92,
-        LAM_BH = 93,
-        LAM_CAS = 94,
+        Cssc = 93,
+        LAM_BH = 94,
+        LAM_CAS = 95,
     }
 }

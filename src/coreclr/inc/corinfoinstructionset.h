@@ -40,21 +40,22 @@ enum CORINFO_InstructionSet
     InstructionSet_SveAes=21,
     InstructionSet_SveSha3=22,
     InstructionSet_SveSm4=23,
-    InstructionSet_ArmBase_Arm64=24,
-    InstructionSet_AdvSimd_Arm64=25,
-    InstructionSet_Aes_Arm64=26,
-    InstructionSet_Crc32_Arm64=27,
-    InstructionSet_Dp_Arm64=28,
-    InstructionSet_Rdm_Arm64=29,
-    InstructionSet_Sha1_Arm64=30,
-    InstructionSet_Sha256_Arm64=31,
-    InstructionSet_Sve_Arm64=32,
-    InstructionSet_Sve2_Arm64=33,
-    InstructionSet_Sha3_Arm64=34,
-    InstructionSet_Sm4_Arm64=35,
-    InstructionSet_SveAes_Arm64=36,
-    InstructionSet_SveSha3_Arm64=37,
-    InstructionSet_SveSm4_Arm64=38,
+    InstructionSet_Cssc=24,
+    InstructionSet_ArmBase_Arm64=25,
+    InstructionSet_AdvSimd_Arm64=26,
+    InstructionSet_Aes_Arm64=27,
+    InstructionSet_Crc32_Arm64=28,
+    InstructionSet_Dp_Arm64=29,
+    InstructionSet_Rdm_Arm64=30,
+    InstructionSet_Sha1_Arm64=31,
+    InstructionSet_Sha256_Arm64=32,
+    InstructionSet_Sve_Arm64=33,
+    InstructionSet_Sve2_Arm64=34,
+    InstructionSet_Sha3_Arm64=35,
+    InstructionSet_Sm4_Arm64=36,
+    InstructionSet_SveAes_Arm64=37,
+    InstructionSet_SveSha3_Arm64=38,
+    InstructionSet_SveSm4_Arm64=39,
 #endif // TARGET_ARM64
 #ifdef TARGET_LOONGARCH64
     InstructionSet_LAM_BH=1,
@@ -753,6 +754,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "SveSm4";
         case InstructionSet_SveSm4_Arm64 :
             return "SveSm4_Arm64";
+        case InstructionSet_Cssc :
+            return "Cssc";
 #endif // TARGET_ARM64
 #ifdef TARGET_LOONGARCH64
         case InstructionSet_LAM_BH :
@@ -972,6 +975,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_SveAes: return InstructionSet_SveAes;
         case READYTORUN_INSTRUCTION_SveSha3: return InstructionSet_SveSha3;
         case READYTORUN_INSTRUCTION_SveSm4: return InstructionSet_SveSm4;
+        case READYTORUN_INSTRUCTION_Cssc: return InstructionSet_Cssc;
 #endif // TARGET_ARM64
 #ifdef TARGET_LOONGARCH64
         case READYTORUN_INSTRUCTION_LAM_BH: return InstructionSet_LAM_BH;
