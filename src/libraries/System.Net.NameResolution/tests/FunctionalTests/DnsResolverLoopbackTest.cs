@@ -525,6 +525,51 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal((ushort)8080, record.Port);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_UnrelatedAdditionalRecords_Ignored(bool async)
+        {
+            // Glue records for other owner names in the ADDITIONAL section must not be returned
+            // as answers for the queried name.
+            string name = UniqueName("addrsection");
+            string otherName = UniqueName("other");
+            _server.AddResponse(name, DnsRecordType.A, b => b
+                .Additional(name, DnsRecordType.A, new byte[] { 10, 0, 0, 1 })
+                .Additional(otherName, DnsRecordType.A, new byte[] { 10, 0, 0, 99 }));
+            _server.AddResponse(name, DnsRecordType.AAAA, b => b
+                .Additional(name, DnsRecordType.AAAA, IPAddress.Parse("fd00::1").GetAddressBytes())
+                .Additional(otherName, DnsRecordType.AAAA, IPAddress.Parse("fd00::99").GetAddressBytes()));
+
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, Resolver, name);
+
+            Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            Assert.Equal(2, result.Records.Count);
+            Assert.Contains(result.Records, a => a.Address.ToString() == "10.0.0.1");
+            Assert.Contains(result.Records, a => a.Address.ToString() == "fd00::1");
+            Assert.DoesNotContain(result.Records, a => a.Address.ToString() == "10.0.0.99");
+            Assert.DoesNotContain(result.Records, a => a.Address.ToString() == "fd00::99");
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveMx_UnrelatedAdditionalRecords_Ignored(bool async)
+        {
+            // Additional-section records for other owner names must not be returned as answers.
+            string name = UniqueName("mxsection");
+            string otherName = UniqueName("other");
+            _server.AddResponse(name, DnsRecordType.MX, b => b
+                .Additional(name, DnsRecordType.MX, DnsResponseBuilder.BuildMxRdata(10, "mail.test"))
+                .Additional(otherName, DnsRecordType.MX, DnsResponseBuilder.BuildMxRdata(20, "glue.test")));
+
+            DnsResult<MxRecord> result = await ResolveMx(async, Resolver, name);
+
+            Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            MxRecord record = Assert.Single(result.Records);
+            Assert.Equal("mail.test", record.Exchange);
+        }
+
         // ---- Cancellation while a query is in flight ----
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]

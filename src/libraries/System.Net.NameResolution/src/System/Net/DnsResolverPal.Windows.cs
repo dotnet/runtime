@@ -31,7 +31,7 @@ namespace System.Net
         public static async Task<DnsResult<SrvRecord>> ResolveSrv(IPEndPoint[] servers, bool async, string name, CancellationToken cancellationToken)
         {
             using DnsQueryRawResult raw = await DnsQueryEx(servers, async, name, Interop.Dnsapi.DNS_TYPE_SRV, cancellationToken).ConfigureAwait(false);
-            return ParseSrv(raw);
+            return ParseSrv(raw, name);
         }
 
         public static Task<DnsResult<MxRecord>> ResolveMx(IPEndPoint[] servers, bool async, string name, CancellationToken cancellationToken)
@@ -49,7 +49,7 @@ namespace System.Net
         public static async Task<DnsResult<TxtRecord>> ResolveTxt(IPEndPoint[] servers, bool async, string name, CancellationToken cancellationToken)
         {
             using DnsQueryRawResult raw = await DnsQueryEx(servers, async, name, Interop.Dnsapi.DNS_TYPE_TEXT, cancellationToken).ConfigureAwait(false);
-            return ParseTxt(raw);
+            return ParseTxt(raw, name);
         }
 
         // ---- Per-record-type selectors (shared by all record types) ----
@@ -98,19 +98,19 @@ namespace System.Net
         private static async Task<DnsResult<AddressRecord>> QueryAddresses(IPEndPoint[] servers, bool async, string name, ushort qtype, CancellationToken cancellationToken)
         {
             using DnsQueryRawResult raw = await DnsQueryEx(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
-            return ParseAddresses(raw, qtype);
+            return ParseAddresses(raw, qtype, name);
         }
 
         private static async Task<DnsResult<TRecord>> QuerySimple<TRecord>(IPEndPoint[] servers, bool async, string name, ushort qtype, CancellationToken cancellationToken,
             Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, TRecord> selector)
         {
             using DnsQueryRawResult raw = await DnsQueryEx(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
-            return ParseSimple(raw, qtype, selector);
+            return ParseSimple(raw, qtype, name, selector);
         }
 
         // ---- Record-list parsers ----
 
-        private static unsafe DnsResult<AddressRecord> ParseAddresses(DnsQueryRawResult raw, ushort qtype)
+        private static unsafe DnsResult<AddressRecord> ParseAddresses(DnsQueryRawResult raw, ushort qtype, string queryName)
         {
             if (raw.ResponseCode != DnsResponseCode.NoError)
             {
@@ -125,8 +125,11 @@ namespace System.Net
                 // Network answers arrive in the ANSWER section, but locally-resolved names (e.g. "localhost"
                 // or hosts-file entries) are surfaced by DnsQueryEx in the QUESTION section instead. Some
                 // misconfigured DNS servers (e.g. certain ISP resolvers) incorrectly place answers in the
-                // ADDITIONAL section; accept all three to match the permissive behaviour of GetAddrInfoExW.
-                if (hdr.wType == qtype && (section == Interop.Dnsapi.DNSREC_ANSWER || section == Interop.Dnsapi.DNSREC_QUESTION || section == Interop.Dnsapi.DNSREC_ADDITIONAL))
+                // ADDITIONAL section; accept all three to match the permissive behavior of GetAddrInfoExW.
+                // For ADDITIONAL records, require that the owner name matches the queried name to avoid
+                // accidentally accepting glue records that belong to other owner names.
+                if (hdr.wType == qtype && (section == Interop.Dnsapi.DNSREC_ANSWER || section == Interop.Dnsapi.DNSREC_QUESTION ||
+                    (section == Interop.Dnsapi.DNSREC_ADDITIONAL && OwnerNameMatchesQuery(hdr.pName, queryName))))
                 {
                     IntPtr dataPtr = cur + sizeof(Interop.Dnsapi.DNS_RECORD_HEADER);
                     if (TryParseAddress(hdr.wType, dataPtr, out IPAddress? address))
@@ -140,7 +143,7 @@ namespace System.Net
             return new DnsResult<AddressRecord>(DnsResponseCode.NoError, records, raw.NegativeCacheTtl);
         }
 
-        private static unsafe DnsResult<SrvRecord> ParseSrv(DnsQueryRawResult raw)
+        private static unsafe DnsResult<SrvRecord> ParseSrv(DnsQueryRawResult raw, string queryName)
         {
             if (raw.ResponseCode != DnsResponseCode.NoError)
             {
@@ -156,7 +159,8 @@ namespace System.Net
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
-                if (hdr.wType == Interop.Dnsapi.DNS_TYPE_SRV && (section == Interop.Dnsapi.DNSREC_ANSWER || section == Interop.Dnsapi.DNSREC_ADDITIONAL))
+                if (hdr.wType == Interop.Dnsapi.DNS_TYPE_SRV && (section == Interop.Dnsapi.DNSREC_ANSWER ||
+                    (section == Interop.Dnsapi.DNSREC_ADDITIONAL && OwnerNameMatchesQuery(hdr.pName, queryName))))
                 {
                     IntPtr dataPtr = cur + sizeof(Interop.Dnsapi.DNS_RECORD_HEADER);
                     ref readonly Interop.Dnsapi.DNS_SRV_DATA data = ref AsStruct<Interop.Dnsapi.DNS_SRV_DATA>(dataPtr);
@@ -171,7 +175,7 @@ namespace System.Net
             return new DnsResult<SrvRecord>(DnsResponseCode.NoError, records, raw.NegativeCacheTtl);
         }
 
-        private static unsafe DnsResult<TxtRecord> ParseTxt(DnsQueryRawResult raw)
+        private static unsafe DnsResult<TxtRecord> ParseTxt(DnsQueryRawResult raw, string queryName)
         {
             if (raw.ResponseCode != DnsResponseCode.NoError)
             {
@@ -183,7 +187,8 @@ namespace System.Net
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
-                if (hdr.wType == Interop.Dnsapi.DNS_TYPE_TEXT && (section == Interop.Dnsapi.DNSREC_ANSWER || section == Interop.Dnsapi.DNSREC_ADDITIONAL))
+                if (hdr.wType == Interop.Dnsapi.DNS_TYPE_TEXT && (section == Interop.Dnsapi.DNSREC_ANSWER ||
+                    (section == Interop.Dnsapi.DNSREC_ADDITIONAL && OwnerNameMatchesQuery(hdr.pName, queryName))))
                 {
                     IntPtr dataPtr = cur + sizeof(Interop.Dnsapi.DNS_RECORD_HEADER);
                     ref readonly Interop.Dnsapi.DNS_TXT_DATA data = ref AsStruct<Interop.Dnsapi.DNS_TXT_DATA>(dataPtr);
@@ -210,7 +215,7 @@ namespace System.Net
             return new DnsResult<TxtRecord>(DnsResponseCode.NoError, records, raw.NegativeCacheTtl);
         }
 
-        private static unsafe DnsResult<TRecord> ParseSimple<TRecord>(DnsQueryRawResult raw, ushort qtype,
+        private static unsafe DnsResult<TRecord> ParseSimple<TRecord>(DnsQueryRawResult raw, ushort qtype, string queryName,
             Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, TRecord> selector)
         {
             if (raw.ResponseCode != DnsResponseCode.NoError)
@@ -223,7 +228,8 @@ namespace System.Net
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
-                if (hdr.wType == qtype && (section == Interop.Dnsapi.DNSREC_ANSWER || section == Interop.Dnsapi.DNSREC_ADDITIONAL))
+                if (hdr.wType == qtype && (section == Interop.Dnsapi.DNSREC_ANSWER ||
+                    (section == Interop.Dnsapi.DNSREC_ADDITIONAL && OwnerNameMatchesQuery(hdr.pName, queryName))))
                 {
                     IntPtr dataPtr = cur + sizeof(Interop.Dnsapi.DNS_RECORD_HEADER);
                     records.Add(selector(hdr, dataPtr));
@@ -346,6 +352,22 @@ namespace System.Net
 
         private static unsafe string? PtrToString(char* p) =>
             p == null ? null : new string(p);
+
+        // Returns true if the DNS record owner name (from DNS_RECORD_HEADER.pName) matches the
+        // queried name, using case-insensitive comparison and normalizing trailing dots.
+        // Used to filter ADDITIONAL-section records so that glue records for other owner names
+        // are not mistakenly returned as answers.
+        private static unsafe bool OwnerNameMatchesQuery(char* pName, string queryName)
+        {
+            if (pName == null)
+            {
+                return false;
+            }
+
+            ReadOnlySpan<char> owner = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pName).TrimEnd('.');
+            ReadOnlySpan<char> query = queryName.AsSpan().TrimEnd('.');
+            return owner.Equals(query, StringComparison.OrdinalIgnoreCase);
+        }
 
         // Reinterprets an unmanaged pointer as a readonly reference to a struct, avoiding the
         // marshalling copy of Marshal.PtrToStructure. The single pointer cast is confined here.
