@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
 using System.Threading.Tasks;
@@ -13,6 +14,28 @@ namespace System.Net.Security.Tests
 
     public static class SslStreamCertificateContextTests
     {
+        [Fact]
+        public static void GetCertificateHash_ReusesHashAndDetectsDisposedCertificate()
+        {
+            using X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate();
+            SslStreamCertificateContext context = SslStreamCertificateContext.Create(certificate, null, offline: true);
+            MethodInfo getCertificateHash = typeof(SslStreamCertificateContext).GetMethod(
+                "GetCertificateHash",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.NotNull(getCertificateHash);
+            byte[] firstHash = (byte[])getCertificateHash.Invoke(context, null);
+            byte[] secondHash = (byte[])getCertificateHash.Invoke(context, null);
+            Assert.Same(firstHash, secondHash);
+            Assert.Equal(certificate.GetCertHash(HashAlgorithmName.SHA512), firstHash);
+
+            certificate.Dispose();
+
+            TargetInvocationException exception = Assert.Throws<TargetInvocationException>(
+                () => getCertificateHash.Invoke(context, null));
+            Assert.IsAssignableFrom<CryptographicException>(exception.InnerException);
+        }
+
         [Fact]
         [OuterLoop("Subject to resource contention and load.")]
         [PlatformSpecific(TestPlatforms.Linux)]
