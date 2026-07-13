@@ -472,10 +472,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
         [SupportedOSPlatform("maccatalyst")]
         private void OnFileSystemEntryChange(string fullPath)
         {
-            // A delivered change proves the watcher is working, so forget any remembered error; a later
-            // identical error then starts over rather than being treated as a persistent recurrence.
-            ClearLastError();
-
             try
             {
                 // Ignore events outside _root (can happen when the FSW watches an ancestor directory).
@@ -493,6 +489,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 {
                     return;
                 }
+
+                // A relevant change was delivered, which proves the watcher is working, so forget any
+                // remembered error; a later identical error then starts over rather than being treated
+                // as a persistent recurrence. This should run only for changes inside _root that aren't
+                // excluded, so unrelated events don't reset the detection while an unwatchable-root
+                // error loop is in progress.
+                ClearLastError();
 
                 string relativePath = fullPath.Substring(_root.Length);
                 ReportChangeForMatchedEntries(relativePath);

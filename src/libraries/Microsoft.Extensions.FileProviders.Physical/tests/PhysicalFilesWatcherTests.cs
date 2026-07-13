@@ -885,6 +885,35 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task OnError_ChangeOutsideRoot_DoesNotResetDetection()
+        {
+            // When the watcher watches an ancestor, it can deliver events for
+            // siblings outside _root. Such events must not reset the persistent-error detection, otherwise
+            // unrelated activity could prevent suppression from engaging during an unwatchable-root loop.
+            using var tempDir = new TempDirectory(GetTestFilePath());
+            string rootDir = Path.Combine(tempDir.Path, "rootDir");
+            Directory.CreateDirectory(rootDir);
+
+            // The FSW watches the ancestor (tempDir), so it can raise events outside rootDir.
+            using var fileSystemWatcher = new MockFileSystemWatcher(tempDir.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(rootDir, fileSystemWatcher, pollForChanges: false);
+
+            IChangeToken first = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32: false, code: 5)));
+            await WhenChanged(first);
+
+            // A change to a sibling outside rootDir must NOT reset the remembered error.
+            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, tempDir.Path, "outside.txt"));
+
+            // The same error recurs: it must still be suppressed.
+            IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32: false, code: 5)));
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(second.HasChanged, "An out-of-root change must not reset persistent-error detection.");
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task OnError_NullException_IsAlwaysReported()
         {
             // An Error with no exception carries no identity to de-duplicate, so every occurrence is
