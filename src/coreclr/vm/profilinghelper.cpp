@@ -796,8 +796,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
     for (SString::Iterator sectionStart = profilerList.Begin(); sectionStart != listEnd; )
     {
         // The current section spans from sectionStart up to the next ';', or to the end
-        // of the list if no ';' remains. Using Find as a loop condition (as was done
-        // previously) silently drops the final entry when it has no trailing ';'.
+        // of the list if no ';' remains.
         SString::Iterator sectionEnd = sectionStart;
         if (!profilerList.Find(sectionEnd, W(';')))
         {

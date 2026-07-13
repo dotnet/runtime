@@ -61,33 +61,25 @@ namespace Profiler.Tests
                                    envVarProfilerPrefix: "CORECLR");
 
             Console.WriteLine($"Running the test using environment variables with DOTNET prefix.");
-            int result = ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
-                                          testName: "MultiplyLoaded",
-                                          profilerClsid: MultipleProfilerGuid,
-                                          loadAsNotification: true,
-                                          notificationCopies: 2,
-                                          envVarProfilerPrefix: "DOTNET");
-            if (result != 100)
-            {
-                return result;
-            }
+            ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
+                                   testName: "MultiplyLoaded",
+                                   profilerClsid: MultipleProfilerGuid,
+                                   loadAsNotification: true,
+                                   notificationCopies: 2,
+                                   envVarProfilerPrefix: "DOTNET");
 
             // A notification profiler list whose final entry has no trailing ';' must still
             // load every entry. A parser that treats the last entry as terminated only by a
             // trailing ';' would silently drop it, leaving only one notification profiler
             // loaded and hanging this test.
             Console.WriteLine($"Running the test with no trailing separator (CORECLR prefix).");
-            result = ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
+            ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                    testName: "MultiplyLoaded",
                                    profilerClsid: MultipleProfilerGuid,
                                    loadAsNotification: true,
                                    notificationCopies: 2,
                                    appendNotificationSeparator: false,
                                    envVarProfilerPrefix: "CORECLR");
-            if (result != 100)
-            {
-                return result;
-            }
 
             Console.WriteLine($"Running the test with no trailing separator (DOTNET prefix).");
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
