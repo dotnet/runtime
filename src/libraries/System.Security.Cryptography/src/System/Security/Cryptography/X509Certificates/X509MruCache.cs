@@ -201,7 +201,7 @@ namespace System.Security.Cryptography.X509Certificates
             // * The current head is where we expire next time.
             // * Under the lock: If there is an expire node, determine the new count by walking to it,
             //   and unlink it from the previous node.
-            // * After the lock: Dispose all the values from the prune node onward.
+            // * After the lock: Pass the pruned head (which includes any nodes after it) to Pruned for any cleanup.
 
             Node? prune;
             int countStart;

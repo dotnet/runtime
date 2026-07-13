@@ -338,6 +338,11 @@ namespace System.Security.Cryptography.X509Certificates
                         OpenSslX509ChainEventSource.Log.HttpCacheBackgroundSuccess(uri);
                     }
                 }
+                catch
+                {
+                    // downloadTask should already be swallowing all exceptions, but just in case,
+                    // don't let the opportunistic background refresh end in a faulted state.
+                }
                 finally
                 {
                     if (!success)
@@ -349,6 +354,9 @@ namespace System.Security.Cryptography.X509Certificates
 
                         lock (_lock)
                         {
+                            // Strictly speaking, we don't need a lock to set this back to false,
+                            // but since this node may still be in the cache, just take the lock
+                            // to avoid any mishandling by future code.
                             node.Value.RefreshInProgress = false;
                         }
                     }
