@@ -41,9 +41,6 @@ partial interface IRuntimeTypeSystem : IContract
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
     public virtual TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle);
-    // Returns the EEClass pointer for this MethodTable. For non-canonical MTs, follows the tagged pointer
-    // to the canonical MT and returns its EEClass.
-    public virtual TargetPointer GetClassPointer(TypeHandle typeHandle);
     // True if this MethodTable is the canonical MethodTable (i.e., EEClassOrCanonMT points directly to the EEClass)
     public virtual bool IsCanonicalMethodTable(TypeHandle typeHandle);
     public virtual TargetPointer GetParentMethodTable(TypeHandle typeHandle);
@@ -82,6 +79,10 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(TypeHandle typeHandle);
+    // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
+    // (used to decide how a struct is passed in registers), or false if the type has no such
+    // classification (not applicable, or the runtime was not built with UNIX_AMD64_ABI).
+    public virtual bool TryGetSystemVAmd64EightByteClassification(TypeHandle typeHandle, out SystemVAmd64EightByteClassification classification);
     // True if the MethodTable represents a continuation type used by the async continuation feature
     public virtual bool IsContinuationWithoutMetadata(TypeHandle typeHandle);
     // Returns the GC pointer runs for the method table as (offset, size) pairs. Each
@@ -547,6 +548,13 @@ The contract additionally depends on these data descriptors
 | `EEClass` | `NumStaticFields` | Count of static fields of the EEClass |
 | `EEClass` | `NumThreadStaticFields` | Count of threadstatic fields of the EEClass |
 | `EEClass` | `FieldDescList` | A list of fields in the type |
+| `EEClass` | `OptionalFields` | Pointer to the `EEClassOptionalFields` for this type, or null if it has none |
+| `EEClassOptionalFields` | `EightByteRegistersInfo` | Inline `SystemVEightByteRegistersInfo` describing the SystemV AMD64 register-passing classification (only populated on UNIX_AMD64_ABI builds) |
+| `SystemVEightByteRegistersInfo` | `NumEightBytes` | Number of eightbyte slots used to pass the value type in registers (0 if not passed in registers) |
+| `SystemVEightByteRegistersInfo` | `EightByteClassification0` | Register classification of the first eightbyte |
+| `SystemVEightByteRegistersInfo` | `EightByteClassification1` | Register classification of the second eightbyte |
+| `SystemVEightByteRegistersInfo` | `EightByteSize0` | Byte size of the first eightbyte |
+| `SystemVEightByteRegistersInfo` | `EightByteSize1` | Byte size of the second eightbyte |
 | `TypeDesc` | `TypeAndFlags` | The lower 8 bits are the CorElementType of the `TypeDesc`, the upper 24 bits are reserved for flags |
 | `ParamTypeDesc` | `TypeArg` | Associated type argument |
 | `TypeVarTypeDesc` | `Module` | Pointer to module which defines the type variable |
@@ -638,7 +646,7 @@ Contracts used:
 
     public uint GetComponentSize(TypeHandle TypeHandle) =>!typeHandle.IsMethodTable() ? (uint)0 :  GetComponentSize(_methodTables[TypeHandle.Address]);
 
-    public TargetPointer GetClassPointer(TypeHandle TypeHandle)
+    internal TargetPointer GetClassPointer(TypeHandle TypeHandle)
     {
         // Returns TargetPointer.Null if not a MethodTable.
         // If EEClassOrCanonMT points directly to an EEClass, returns that pointer.
@@ -650,6 +658,36 @@ Contracts used:
     {
         TargetPointer eeClassPtr = GetClassPointer(TypeHandle);
         ... // read Data.EEClass data from eeClassPtr
+    }
+
+    public bool TryGetSystemVAmd64EightByteClassification(TypeHandle typeHandle, out SystemVAmd64EightByteClassification classification)
+    {
+        classification = default;
+
+        TargetPointer eeClassPtr = GetClassPointer(typeHandle);
+        if (eeClassPtr == TargetPointer.Null)
+            return false;
+
+        Data.EEClass eeClass = ... // read Data.EEClass from eeClassPtr
+        if (eeClass.OptionalFields == TargetPointer.Null)
+            return false;
+
+        Data.EEClassOptionalFields optFields = ... // read Data.EEClassOptionalFields from eeClass.OptionalFields
+        // EightByteRegistersInfo is only populated on UNIX_AMD64_ABI builds.
+        if (optFields.EightByteRegistersInfo is not Data.SystemVEightByteRegistersInfo info || info.NumEightBytes == 0)
+            return false;
+
+        // The underlying data only stores two eightbyte slots; treat an out-of-range count as invalid.
+        if (info.NumEightBytes > 2)
+            return false;
+
+        SystemVAmd64EightByte first = new((SystemVAmd64Classification)info.EightByteClassification0, info.EightByteSize0);
+        SystemVAmd64EightByte? second = info.NumEightBytes > 1
+            ? new SystemVAmd64EightByte((SystemVAmd64Classification)info.EightByteClassification1, info.EightByteSize1)
+            : null;
+
+        classification = new SystemVAmd64EightByteClassification(first, second);
+        return true;
     }
 
     public bool IsFreeObjectMethodTable(TypeHandle TypeHandle) => FreeObjectMethodTablePointer == TypeHandle.Address;
