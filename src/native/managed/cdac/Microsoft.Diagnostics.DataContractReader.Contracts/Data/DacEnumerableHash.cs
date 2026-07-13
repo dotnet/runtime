@@ -44,14 +44,7 @@ internal sealed class DacEnumerableHash
             entries.AddRange(elements);
         }
 
-        // Note: we intentionally do NOT assert that Count equals the number of
-        // walked entries. Count and the bucket chains are only guaranteed
-        // consistent for a quiescent table (the frozen-dump case the native DAC
-        // walker assumes). The cDAC stress framework reads this table from a
-        // LIVE process where the runtime may be concurrently inserting entries
-        // or growing the table (allocating a new bucket array chained via
-        // SLOT_NEXT and migrating entries), so the stored Count legitimately
-        // diverges from what a single-snapshot bucket walk observes.
+        // In STRESS testing, we may stop while this table is resizing.
         Entries = entries;
     }
 
