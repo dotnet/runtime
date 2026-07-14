@@ -287,10 +287,12 @@ namespace System.Net.Primitives.Functional.Tests
         public static void GetCredential_PathCaseMismatch_ReturnsNull()
         {
             CredentialCache cc = new CredentialCache();
-            cc.Add(new Uri("http://microsoft:80/CaseSensitivePath"), authenticationType1, credential1);
+            // Use a multi-segment path so the compared prefix (everything up to the last '/')
+            // is non-empty and includes characters whose case can differ.
+            cc.Add(new Uri("http://microsoft:80/CaseSensitive/path"), authenticationType1, credential1);
 
             // The path is compared case-sensitively, so a differently-cased path must not match.
-            NetworkCredential nc = cc.GetCredential(new Uri("http://microsoft:80/casesensitivepath"), authenticationType1);
+            NetworkCredential nc = cc.GetCredential(new Uri("http://microsoft:80/casesensitive/path"), authenticationType1);
             Assert.Null(nc);
         }
 
@@ -298,9 +300,10 @@ namespace System.Net.Primitives.Functional.Tests
         public static void GetCredential_PathCaseMatch_ReturnsCredential()
         {
             CredentialCache cc = new CredentialCache();
-            cc.Add(new Uri("http://microsoft:80/CaseSensitivePath"), authenticationType1, credential1);
+            cc.Add(new Uri("http://microsoft:80/CaseSensitive/path"), authenticationType1, credential1);
 
-            NetworkCredential nc = cc.GetCredential(new Uri("http://microsoft:80/CaseSensitivePath"), authenticationType1);
+            // Exact-case prefix match, including a longer request URI to exercise prefix matching.
+            NetworkCredential nc = cc.GetCredential(new Uri("http://microsoft:80/CaseSensitive/path/resource"), authenticationType1);
             Assert.Equal(credential1, nc);
         }
 
@@ -308,11 +311,11 @@ namespace System.Net.Primitives.Functional.Tests
         public static void GetCredential_HostCaseInsensitivePathCaseSensitive()
         {
             CredentialCache cc = new CredentialCache();
-            cc.Add(new Uri("http://MICROSOFT:80/CaseSensitivePath"), authenticationType1, credential1);
+            cc.Add(new Uri("http://MICROSOFT:80/CaseSensitive/path"), authenticationType1, credential1);
 
             // Host comparison remains case-insensitive while the path portion is case-sensitive.
-            Assert.Equal(credential1, cc.GetCredential(new Uri("http://microsoft:80/CaseSensitivePath"), authenticationType1));
-            Assert.Null(cc.GetCredential(new Uri("http://microsoft:80/casesensitivepath"), authenticationType1));
+            Assert.Equal(credential1, cc.GetCredential(new Uri("http://microsoft:80/CaseSensitive/path/resource"), authenticationType1));
+            Assert.Null(cc.GetCredential(new Uri("http://microsoft:80/casesensitive/path/resource"), authenticationType1));
         }
 
         [Fact]
