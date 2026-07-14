@@ -11,10 +11,10 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE DoubleImplNative(int n)
 }
 
 typedef int (STDMETHODCALLTYPE *CALLBACKPROC)(int n);
-typedef int (__stdcall *CALLBACKPROC_STDCALL)(int n);
-typedef int (__cdecl *CALLBACKPROC_CDECL)(int n);
+typedef int (__stdcall *CALLBACKPROC_STDCALL)(int m, int n, int o);
+typedef int (__cdecl *CALLBACKPROC_CDECL)(int m, int n, int o);
 #ifdef _WIN32
-typedef int (__fastcall *CALLBACKPROC_FASTCALL)(int n);
+typedef int (__fastcall *CALLBACKPROC_FASTCALL)(int m, int n, int o);
 #endif // _WIN32
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcMultipleTimes(int m, CALLBACKPROC pCallbackProc, int n)
@@ -31,20 +31,20 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc(CALLBACKPROC pCallba
     return CallManagedProcMultipleTimes(1, pCallbackProc, n);
 }
 
-extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Stdcall(CALLBACKPROC_STDCALL pCallbackProc, int n)
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Stdcall(CALLBACKPROC_STDCALL pCallbackProc, int m, int n, int o)
 {
-    return pCallbackProc(n);
+    return pCallbackProc(m, n, o);
 }
 
-extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Cdecl(CALLBACKPROC_CDECL pCallbackProc, int n)
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Cdecl(CALLBACKPROC_CDECL pCallbackProc, int m, int n, int o)
 {
-    return pCallbackProc(n);
+    return pCallbackProc(m, n, o);
 }
 
 #ifdef _WIN32
-extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Fastcall(CALLBACKPROC_FASTCALL pCallbackProc, int n)
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Fastcall(CALLBACKPROC_FASTCALL pCallbackProc, int m, int n, int o)
 {
-    return pCallbackProc(n);
+    return pCallbackProc(m, n, o);
 }
 #endif // _WIN32
 

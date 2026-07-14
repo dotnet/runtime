@@ -22,13 +22,13 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         public static extern int CallManagedProc(IntPtr callbackProc, int n);
 
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
-        public static extern int CallManagedProc_Stdcall(delegate* unmanaged[Stdcall]<int, int> callbackProc, int n);
+        public static extern int CallManagedProc_Stdcall(delegate* unmanaged[Stdcall]<int, int, int, int> callbackProc, int m, int n, int o);
 
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
-        public static extern int CallManagedProc_Cdecl(delegate* unmanaged[Cdecl]<int, int> callbackProc, int n);
+        public static extern int CallManagedProc_Cdecl(delegate* unmanaged[Cdecl]<int, int, int, int> callbackProc, int m, int n, int o);
 
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
-        public static extern int CallManagedProc_Fastcall(delegate* unmanaged[Fastcall]<int, int> callbackProc, int n);
+        public static extern int CallManagedProc_Fastcall(delegate* unmanaged[Fastcall]<int, int, int, int> callbackProc, int m, int n, int o);
 
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
         public static extern int CallManagedProcMultipleTimes(int m, IntPtr callbackProc, int n);
@@ -49,9 +49,9 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = "IgnoredEntryPoint", AssociatedSourceType = typeof(UnmanagedCallersOnlyDll))]
-    public static int ManagedDoubleCallback_AllOptionalParameters(int n)
+    public static int ManagedDoubleCallback_AllOptionalParameters(int m, int n, int o)
     {
-        return DoubleImpl(n);
+        return DoubleImpl(m, n, o);
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
@@ -80,15 +80,20 @@ public unsafe class UnmanagedCallersOnlyBasicTest
 
         int n = 12345;
         int expected = DoubleImpl(n);
-        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall(&ManagedDoubleCallback_AllOptionalParameters, n);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall(&ManagedDoubleCallback_AllOptionalParameters, n, 0, 0);
 
         Assert.Equal(expected, actual);
     }
 
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
-    public static int ManagedDoubleCallback_Stdcall(int n)
+    private static int DoubleImpl(int m, int n, int o)
     {
-        return DoubleImpl(n);
+        return 2 * (m + n + o);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    public static int ManagedDoubleCallback_Stdcall(int m, int n, int o)
+    {
+        return DoubleImpl(m, n, o);
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
@@ -100,17 +105,19 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvStdcall)}...");
 
+        int m = -13;
         int n = 12345;
-        int expected = DoubleImpl(n);
-        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall(&ManagedDoubleCallback_Stdcall, n);
+        int o = 13;
+        int expected = DoubleImpl(m, n, o);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall(&ManagedDoubleCallback_Stdcall, m, n, o);
 
         Assert.Equal(expected, actual);
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    public static int ManagedDoubleCallback_Cdecl(int n)
+    public static int ManagedDoubleCallback_Cdecl(int m, int n, int o)
     {
-        return DoubleImpl(n);
+        return DoubleImpl(m, n, o);
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
@@ -122,17 +129,19 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvCdecl)}...");
 
+        int m = -13;
         int n = 12345;
-        int expected = DoubleImpl(n);
-        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Cdecl(&ManagedDoubleCallback_Cdecl, n);
+        int o = 13;
+        int expected = DoubleImpl(m, n, o);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Cdecl(&ManagedDoubleCallback_Cdecl, m, n, o);
 
         Assert.Equal(expected, actual);
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvFastcall)])]
-    public static int ManagedDoubleCallback_Fastcall(int n)
+    public static int ManagedDoubleCallback_Fastcall(int m, int n, int o)
     {
-        return DoubleImpl(n);
+        return DoubleImpl(m, n, o);
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
@@ -142,9 +151,11 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvFastcall)}...");
 
+        int m = -13;
         int n = 12345;
-        int expected = DoubleImpl(n);
-        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Fastcall(&ManagedDoubleCallback_Fastcall, n);
+        int o = 13;
+        int expected = DoubleImpl(m, n, o);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Fastcall(&ManagedDoubleCallback_Fastcall, m, n, o);
 
         Assert.Equal(expected, actual);
     }
