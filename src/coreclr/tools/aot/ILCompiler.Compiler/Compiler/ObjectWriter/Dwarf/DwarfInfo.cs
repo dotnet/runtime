@@ -519,9 +519,9 @@ namespace ILCompiler.ObjectWriter
                     }
                     break;
                 case VarLocType.VLT_REG_REG:
-                    e.OpReg(loc.C);
-                    e.OpPiece();
                     e.OpReg(loc.B);
+                    e.OpPiece();
+                    e.OpReg(loc.C);
                     e.OpPiece();
                     break;
                 case VarLocType.VLT_REG_STK:
