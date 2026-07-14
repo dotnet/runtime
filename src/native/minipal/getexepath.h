@@ -65,34 +65,56 @@ static inline char* minipal_getexepath(void)
     return strdup(path);
 #elif defined(__OpenBSD__)
     const int name[] = { CTL_KERN, KERN_PROC_ARGS, getpid(), KERN_PROC_ARGV };
-    char *argv[PATH_MAX];
-    size_t len = sizeof(argv);
-    if (sysctl(name, 4, (void *)argv, &len, NULL, 0) != 0)
+    size_t len = 0;
+    if (sysctl(name, 4, NULL, &len, NULL, 0) != 0 || len == 0)
     {
         return NULL;
     }
 
-    // if it's a bare command name (e.g. "dotnet" without a '/'), search the path for the executable.
-    if (strchr(argv[0], '/') == NULL)
+    char *buf = (char *)malloc(len);
+    if (buf == NULL)
+    {
+        return NULL;
+    }
+
+    if (sysctl(name, 4, buf, &len, NULL, 0) != 0)
+    {
+        free(buf);
+        return NULL;
+    }
+
+    // Cast the start of the buffer to access the char * layout safely
+    char **argv = (char **)buf;
+    const char *exe = argv[0];
+
+    if (strchr(exe, '/') == NULL)
     {
         const char *p = getenv("PATH");
-        while (*p != '\0')
+        while (p != NULL && *p != '\0')
         {
-            len = strcspn(p, ":");
-            char testPath[PATH_MAX];
-            if (snprintf(testPath, sizeof(testPath), "%.*s/%s", (int)len, p, argv[0]) < (int)sizeof(testPath) &&
-                access(testPath, X_OK) == 0)
+            size_t seg = strcspn(p, ":");
+            char path[PATH_MAX];
+            
+            if (snprintf(path, sizeof(path), "%.*s/%s", (int)seg, p, exe) < (int)sizeof(path))
             {
-                return realpath(testPath, NULL);
+                struct stat sb;
+                if (stat(path, &sb) == 0 && S_ISREG(sb.st_mode))
+                {
+                    char *resolved = realpath(path, NULL);
+                    free(buf);
+                    return resolved;
+                }
             }
 
-            p += len;
+            p += seg;
             if (*p == ':')
                 p++;
         }
     }
 
-    return realpath(argv[0], NULL);
+    char *resolved = realpath(exe, NULL);
+    free(buf);
+    return resolved;
 #elif defined(__sun)
     const char* path = getexecname();
     if (path == NULL)
