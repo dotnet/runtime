@@ -1848,7 +1848,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         nuint legacyHandle = 0;
         FrameType ftResult = FrameType.kInvalid;
         StackWalkFrameInfo frameInfo = default;
+#if DEBUG
         bool haveFrameInfo = false;
+#endif
         try
         {
             GCHandle gcHandle = GCHandle.FromIntPtr((nint)pSFIHandle);
@@ -1890,7 +1892,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 if (fInitFrameData && pFrameData != 0)
                 {
                     frameInfo = _target.Contracts.StackWalk.GetCurrentFrameInfo(handle);
+#if DEBUG
                     haveFrameInfo = true;
+#endif
                     InitFrameData(handle, ftResult, frameInfo, pFrameData);
                 }
             }
@@ -1911,7 +1915,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 new Span<byte>(pLegacyCtx, (int)contextSize).Clear();
                 Debugger_STRData legacyData = default;
-                legacyData.ctx = (ulong)pLegacyCtx;
+                legacyData.ctx = (nuint)pLegacyCtx;
                 int legacyRetVal = 0;
                 int hrLocal = _legacy.GetStackWalkCurrentFrameInfo(legacyHandle, (nint)(&legacyData), &legacyRetVal);
                 Debug.ValidateHResult(hr, hrLocal);
@@ -2010,7 +2014,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return context;
     }
 
-    private void WriteContext(IStackDataFrameHandle handle, ulong ctxPtr)
+    private void WriteContext(IStackDataFrameHandle handle, nuint ctxPtr)
     {
         if (ctxPtr == 0)
             return;
@@ -2025,7 +2029,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
 
         Debugger_STRData* pDest = (Debugger_STRData*)pFrameData;
-        ulong incomingCtx = pDest->ctx;
+        nuint incomingCtx = pDest->ctx;
 
         Debugger_STRData data = default;
         data.ctx = incomingCtx;
