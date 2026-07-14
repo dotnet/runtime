@@ -7347,8 +7347,11 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
             || methodTable == CoreLibBinder::GetClass(CLASS__UINT32)
             || methodTable == CoreLibBinder::GetClass(CLASS__INT64)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINT64)
+            || methodTable == CoreLibBinder::GetClass(CLASS__INT128)
+            || methodTable == CoreLibBinder::GetClass(CLASS__UINT128)
             || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
+            || methodTable == CoreLibBinder::GetClass(CLASS__GUID)
             || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
             || methodTable->IsEnum()
             || IsBitwiseEquatable(typeHandle, methodTable))
@@ -10926,7 +10929,9 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
 #endif
 
 #ifdef PROFILING_SUPPORTED
-    if (CORProfilerTrackEnterLeave() && !ftn->IsNoMetadata())
+    // P/Invokes are surfaced to profilers via ManagedToUnmanaged/UnmanagedToManaged
+    // transition callbacks, not Enter/Leave, so exclude them from ELT.
+    if (CORProfilerTrackEnterLeave() && !ftn->IsNoMetadata() && !ftn->IsPInvoke())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
 
     if (CORProfilerTrackTransitions())

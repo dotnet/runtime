@@ -1787,6 +1787,9 @@ enum CorInfoContinuationFlags
     // If this bit is set the continuation context is a TaskScheduler that
     // we should continue on.
     CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 1 << 2,
+    // If this bit is set this is an await of valueTask.AsTask()
+    // (common pattern when returning a value-task in an async version)
+    CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK = 1 << 3,
 
     // The flags encode where in the continuation various members are stored.
     // If the encoded index is 0, it means no such member is present.
