@@ -1942,7 +1942,7 @@ void CodeGen::genSetScopeInfo()
     genTrnslLocalVarCount = varsLocationsCount;
     if (varsLocationsCount)
     {
-        genTrnslLocalVarInfo = new (m_compiler, CMK_DebugOnly) TrnslLocalVarInfo[varsLocationsCount];
+        genTrnslLocalVarInfo = new (m_compiler, CMK_DebugOnly) TrnslLocalVarInfo[varsLocationsCount]();
     }
 #endif
 
