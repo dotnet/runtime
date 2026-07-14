@@ -109,7 +109,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- Address resolution ----
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_Unspecified_ReturnsBothV4AndV6(bool async)

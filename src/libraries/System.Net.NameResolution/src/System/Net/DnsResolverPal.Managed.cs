@@ -66,7 +66,7 @@ namespace System.Net
             {
                 AddressFamily.InterNetwork => DnsRecordType.A,
                 AddressFamily.InterNetworkV6 => DnsRecordType.AAAA,
-                _ => throw new ArgumentException(SR.net_invalid_ip_addr, nameof(addressFamily)),
+                _ => throw new ArgumentException(SR.net_dns_unsupported_address_family, nameof(addressFamily)),
             };
 
             using DnsResponse response = await SendQuery(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
