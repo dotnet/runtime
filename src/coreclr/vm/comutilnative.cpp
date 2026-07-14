@@ -60,8 +60,6 @@ FCIMPL1(FC_BOOL_RET, ExceptionNative::IsImmutableAgileException, Object* pExcept
 
     OBJECTREF pException = (OBJECTREF) pExceptionUNSAFE;
 
-    // The preallocated exception objects may be used from multiple AppDomains
-    // and therefore must remain immutable from the application's perspective.
     FC_RETURN_BOOL(CLRException::IsPreallocatedExceptionObject(pException));
 }
 FCIMPLEND
@@ -124,30 +122,6 @@ extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandl
 
 #ifdef FEATURE_COMINTEROP
 
-static BSTR BStrFromString(STRINGREF s)
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    WCHAR *wz;
-    int cch;
-    BSTR bstr;
-
-    if (s == NULL)
-        return NULL;
-
-    s->RefInterpretGetStringValuesDangerousForGC(&wz, &cch);
-
-    bstr = SysAllocString(wz);
-    if (bstr == NULL)
-        COMPlusThrowOM();
-
-    return bstr;
-}
-
 static BSTR GetExceptionDescription(OBJECTREF objException)
 {
     CONTRACTL
@@ -161,30 +135,11 @@ static BSTR GetExceptionDescription(OBJECTREF objException)
 
     BSTR bstrDescription;
 
-    STRINGREF MessageString = NULL;
-    GCPROTECT_BEGIN(MessageString)
     GCPROTECT_BEGIN(objException)
     {
-        // read Exception.Message property
-        MethodDescCallSite getMessage(METHOD__EXCEPTION__GET_MESSAGE, &objException);
-
-        ARG_SLOT GetMessageArgs[] = { ObjToArgSlot(objException)};
-        MessageString = getMessage.Call_RetSTRINGREF(GetMessageArgs);
-
-        // if the message string is empty then use the exception classname.
-        if (MessageString == NULL || MessageString->GetStringLength() == 0) {
-            // call GetClassName
-            MethodDescCallSite getClassName(METHOD__EXCEPTION__GET_CLASS_NAME, &objException);
-            ARG_SLOT GetClassNameArgs[] = { ObjToArgSlot(objException)};
-            MessageString = getClassName.Call_RetSTRINGREF(GetClassNameArgs);
-            _ASSERTE(MessageString != NULL && MessageString->GetStringLength() != 0);
-        }
-
-        // Allocate the description BSTR.
-        int DescriptionLen = MessageString->GetStringLength();
-        bstrDescription = SysAllocStringLen(MessageString->GetBuffer(), DescriptionLen);
+        UnmanagedCallersOnlyCaller getDescriptionBstr(METHOD__EXCEPTION__GET_DESCRIPTION_BSTR);
+        bstrDescription = getDescriptionBstr.InvokeThrowing_Ret<BSTR>(&objException);
     }
-    GCPROTECT_END();
     GCPROTECT_END();
 
     return bstrDescription;
@@ -200,19 +155,17 @@ static BSTR GetExceptionSource(OBJECTREF objException)
         PRECONDITION( IsException(objException->GetMethodTable()) );
     }
     CONTRACTL_END;
+    
+    BSTR bstrSource;
 
-    STRINGREF refRetVal;
     GCPROTECT_BEGIN(objException)
-
-    // read Exception.Source property
-    MethodDescCallSite getSource(METHOD__EXCEPTION__GET_SOURCE, &objException);
-
-    ARG_SLOT GetSourceArgs[] = { ObjToArgSlot(objException)};
-
-    refRetVal = getSource.Call_RetSTRINGREF(GetSourceArgs);
-
+    {
+        UnmanagedCallersOnlyCaller getSourceBstr(METHOD__EXCEPTION__GET_SOURCE_BSTR);
+        bstrSource = getSourceBstr.InvokeThrowing_Ret<BSTR>(&objException);
+    }
     GCPROTECT_END();
-    return BStrFromString(refRetVal);
+
+    return bstrSource;
 }
 
 static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD *pdwHelpContext)
@@ -229,20 +182,11 @@ static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD 
     }
     CONTRACTL_END;
 
-    *pdwHelpContext = 0;
-
-    GCPROTECT_BEGIN(objException);
-
-    // call managed code to parse help context
-    MethodDescCallSite getHelpContext(METHOD__EXCEPTION__GET_HELP_CONTEXT, &objException);
-
-    ARG_SLOT GetHelpContextArgs[] =
+    GCPROTECT_BEGIN(objException)
     {
-        ObjToArgSlot(objException),
-        PtrToArgSlot(pdwHelpContext)
-    };
-    *pbstrHelpFile = BStrFromString(getHelpContext.Call_RetSTRINGREF(GetHelpContextArgs));
-
+        UnmanagedCallersOnlyCaller getHelpContextBstr(METHOD__EXCEPTION__GET_HELP_CONTEXT_BSTR);
+        getHelpContextBstr.InvokeThrowing(&objException, pbstrHelpFile, pdwHelpContext);
+    }
     GCPROTECT_END();
 }
 
@@ -522,42 +466,6 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* 
     ThrowTypeAccessException(&accessContext, TypeHandle::FromPtr(callee).GetMethodTable());
 
     END_QCALL;
-}
-
-extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length)
-{
-    QCALL_CONTRACT;
-
-#if defined(HOST_X86) || defined(HOST_AMD64)
-    if (length > 0x100)
-    {
-        // memset ends up calling rep stosb if the hardware claims to support it efficiently. rep stosb is up to 2x slower
-        // on misaligned blocks. Workaround this issue by aligning the blocks passed to memset upfront.
-
-        *(uint64_t*)dst = 0;
-        *((uint64_t*)dst + 1) = 0;
-        *((uint64_t*)dst + 2) = 0;
-        *((uint64_t*)dst + 3) = 0;
-
-        void* end = (uint8_t*)dst + length;
-        *((uint64_t*)end - 1) = 0;
-        *((uint64_t*)end - 2) = 0;
-        *((uint64_t*)end - 3) = 0;
-        *((uint64_t*)end - 4) = 0;
-
-        dst = ALIGN_UP((uint8_t*)dst + 1, 32);
-        length = ALIGN_DOWN((uint8_t*)end - 1, 32) - (uint8_t*)dst;
-    }
-#endif
-
-    memset(dst, 0, length);
-}
-
-extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length)
-{
-    QCALL_CONTRACT;
-
-    memmove(dst, src, length);
 }
 
 FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
@@ -1038,7 +946,6 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
     return allocated;
 }
 
-#ifdef FEATURE_BASICFREEZE
 
 /*===============================RegisterFrozenSegment===============================
 **Action: Registers the frozen segment
@@ -1094,7 +1001,6 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment)
     END_QCALL;
 }
 
-#endif // FEATURE_BASICFREEZE
 
 /*==============================SuppressFinalize================================
 **Action: Indicate that an object's finalizer should not be run by the system
@@ -1654,21 +1560,6 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
     END_QCALL;
 }
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-
-extern "C" void QCALLTYPE X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    __cpuidex(cpuInfo, functionId, subFunctionId);
-
-    END_QCALL;
-}
-
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-
 //
 // ObjectNative
 //
@@ -1837,13 +1728,6 @@ FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
 FCIMPLEND
 
 #include <optdefault.h>
-
-extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
-{
-    QCALL_CONTRACT;
-
-    minipal_memory_barrier_process_wide();
-}
 
 static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)
 {
@@ -2032,8 +1916,11 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
             else
             {
                 // got another value type. Get the type
-                TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
+                // The type itself may be generic. We need to get the instantiated
+                // type for the field to properly call its method.
+                TypeHandle fieldTH = field->GetExactFieldType(TypeHandle(mt));
                 _ASSERTE(!fieldTH.IsNull());
+                _ASSERTE(!fieldTH.IsSharedByGenericInstantiations());
                 MethodTable* fieldMT = fieldTH.GetMethodTable();
                 if (CanCompareBitsOrUseFastGetHashCode(fieldMT))
                 {
@@ -2091,7 +1978,7 @@ FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTab
 {
     FCALL_CONTRACT;
 
-    _ASSERTE(mt->IsTruePrimitive() || mt->IsEnum());
+    _ASSERTE(mt->IsPrimitive());
 
     // MethodTable::GetInternalCorElementType has unnecessary overhead for primitives and enums
     // Call EEClass::GetInternalCorElementType directly to avoid it

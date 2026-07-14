@@ -254,8 +254,7 @@ namespace System.Threading.Channels
                 // Complete a blocked reader if necessary
                 if (blockedReader is not null)
                 {
-                    error = ChannelUtilities.CreateInvalidCompletionException(error);
-                    blockedReader.TrySetException(error);
+                    blockedReader.TrySetException(ChannelUtilities.CreateInvalidCompletionException(error));
                 }
 
                 // Complete a waiting reader if necessary.  (We really shouldn't have both a blockedReader

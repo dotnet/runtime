@@ -9,8 +9,35 @@ using Xunit;
 
 namespace System.Formats.Asn1.Tests.Reader
 {
-    public sealed class ReadUTF8String
+    public sealed class ReadUTF8StringAsnReaderTests : ReadUTF8StringBase
     {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateClassReader(data, ruleSet, options);
+        }
+    }
+
+    public sealed class ReadUTF8StringValueAsnReaderTests : ReadUTF8StringBase
+    {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateValueReader(data, ruleSet, options);
+        }
+    }
+
+    public abstract class ReadUTF8StringBase
+    {
+        internal abstract AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default);
+
         public static IEnumerable<object[]> ValidEncodingData { get; } =
             new object[][]
             {
@@ -120,13 +147,13 @@ namespace System.Formats.Asn1.Tests.Reader
 
         [Theory]
         [MemberData(nameof(ValidEncodingData))]
-        public static void GetUTF8String_Success(
+        public void GetUTF8String_Success(
             AsnEncodingRules ruleSet,
             string inputHex,
             string expectedValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
             string value = reader.ReadCharacterString(UniversalTagNumber.UTF8String);
 
             Assert.Equal(expectedValue, value);
@@ -134,7 +161,7 @@ namespace System.Formats.Asn1.Tests.Reader
 
         [Theory]
         [MemberData(nameof(ValidEncodingData))]
-        public static void TryCopyUTF8String(
+        public void TryCopyUTF8String(
             AsnEncodingRules ruleSet,
             string inputHex,
             string expectedValue)
@@ -142,7 +169,7 @@ namespace System.Formats.Asn1.Tests.Reader
             byte[] inputData = inputHex.HexToByteArray();
             char[] output = new char[expectedValue.Length];
 
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
             bool copied;
             int charsWritten;
 
@@ -170,7 +197,7 @@ namespace System.Formats.Asn1.Tests.Reader
 
         [Theory]
         [MemberData(nameof(ValidEncodingData))]
-        public static void TryCopyUTF8StringBytes(
+        public void TryCopyUTF8StringBytes(
             AsnEncodingRules ruleSet,
             string inputHex,
             string expectedString)
@@ -179,7 +206,7 @@ namespace System.Formats.Asn1.Tests.Reader
             string expectedHex = Text.Encoding.UTF8.GetBytes(expectedString).ByteArrayToHex();
             byte[] output = new byte[expectedHex.Length / 2];
 
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
             bool copied;
             int bytesWritten;
 
@@ -215,17 +242,17 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER, "0C0120", true)]
         [InlineData(AsnEncodingRules.BER, "2C80" + "040120" + "0000", false)]
         [InlineData(AsnEncodingRules.BER, "2C03" + "040120", false)]
-        public static void TryGetUTF8StringBytes(
+        public void TryGetUTF8StringBytes(
             AsnEncodingRules ruleSet,
             string inputHex,
             bool expectSuccess)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             bool got = reader.TryReadPrimitiveCharacterStringBytes(
                 new Asn1Tag(UniversalTagNumber.UTF8String),
-                out ReadOnlyMemory<byte> contents);
+                out ReadOnlySpan<byte> contents);
 
             if (expectSuccess)
             {
@@ -233,7 +260,7 @@ namespace System.Formats.Asn1.Tests.Reader
 
                 Assert.True(
                     Unsafe.AreSame(
-                        ref MemoryMarshal.GetReference(contents.Span),
+                        ref MemoryMarshal.GetReference(contents),
                         ref inputData[2]));
             }
             else
@@ -257,17 +284,18 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("Length Too Long", AsnEncodingRules.CER, "0C034869")]
         [InlineData("Length Too Long", AsnEncodingRules.DER, "0C034869")]
         [InlineData("Constructed Form", AsnEncodingRules.DER, "2C03040149")]
-        public static void TryGetUTF8StringBytes_Throws(
+        public void TryGetUTF8StringBytes_Throws(
             string description,
             AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             Assert.Throws<AsnContentException>(
-                () => reader.TryReadPrimitiveCharacterStringBytes(new Asn1Tag(UniversalTagNumber.UTF8String), out _));
+                ref reader,
+                static (ref reader) => reader.TryReadPrimitiveCharacterStringBytes(new Asn1Tag(UniversalTagNumber.UTF8String), out _));
         }
 
         [Theory]
@@ -313,7 +341,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("NonEmpty Null", AsnEncodingRules.BER, "2C80000100")]
         [InlineData("NonEmpty Null", AsnEncodingRules.CER, "2C80000100")]
         [InlineData("LongLength Null", AsnEncodingRules.BER, "2C80008100")]
-        public static void TryCopyUTF8StringBytes_Throws(
+        public void TryCopyUTF8StringBytes_Throws(
             string description,
             AsnEncodingRules ruleSet,
             string inputHex)
@@ -324,10 +352,11 @@ namespace System.Formats.Asn1.Tests.Reader
             outputData[0] = 252;
 
             int bytesWritten = -1;
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             Assert.Throws<AsnContentException>(
-                () => reader.TryReadCharacterStringBytes(
+                ref reader,
+                (ref reader) => reader.TryReadCharacterStringBytes(
                     outputData,
                     new Asn1Tag(UniversalTagNumber.UTF8String),
                     out bytesWritten));
@@ -336,16 +365,17 @@ namespace System.Formats.Asn1.Tests.Reader
             Assert.Equal(252, outputData[0]);
         }
 
-        private static void TryCopyUTF8String_Throws_Helper(AsnEncodingRules ruleSet, byte[] inputData)
+        private void TryCopyUTF8String_Throws_Helper(AsnEncodingRules ruleSet, byte[] inputData)
         {
             char[] outputData = new char[inputData.Length + 1];
             outputData[0] = 'a';
 
             int bytesWritten = -1;
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             Assert.Throws<AsnContentException>(
-                () => reader.TryReadCharacterString(outputData, UniversalTagNumber.UTF8String, out bytesWritten));
+                ref reader,
+                (ref reader) => reader.TryReadCharacterString(outputData, UniversalTagNumber.UTF8String, out bytesWritten));
 
             Assert.Equal(-1, bytesWritten);
             Assert.Equal('a', outputData[0]);
@@ -356,17 +386,18 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("Bad UTF8 value", AsnEncodingRules.CER, "0C02E280")]
         [InlineData("Bad UTF8 value", AsnEncodingRules.DER, "0C02E280")]
         [InlineData("Wrong Tag", AsnEncodingRules.BER, "04024869")]
-        public static void GetUTF8String_Throws(
+        public void GetUTF8String_Throws(
             string description,
             AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadCharacterString(UniversalTagNumber.UTF8String));
+                ref reader,
+                static (ref reader) => reader.ReadCharacterString(UniversalTagNumber.UTF8String));
         }
 
         [Theory]
@@ -413,7 +444,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("NonEmpty Null", AsnEncodingRules.CER, "2C80000100")]
         [InlineData("LongLength Null", AsnEncodingRules.BER, "2C80008100")]
         [InlineData("Bad UTF8 value", AsnEncodingRules.BER, "0C02E280")]
-        public static void TryCopyUTF8String_Throws(
+        public void TryCopyUTF8String_Throws(
             string description,
             AsnEncodingRules ruleSet,
             string inputHex)
@@ -424,7 +455,7 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Fact]
-        public static void TryCopyUTF8String_Throws_CER_NestedTooLong()
+        public void TryCopyUTF8String_Throws_CER_NestedTooLong()
         {
             // CER says that the maximum encoding length for a UTF8String primitive
             // is 1000.
@@ -453,7 +484,7 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Fact]
-        public static void TryCopyUTF8String_Throws_CER_NestedTooShortIntermediate()
+        public void TryCopyUTF8String_Throws_CER_NestedTooShortIntermediate()
         {
             // CER says that the maximum encoding length for a UTF8String primitive
             // is 1000, and in the constructed form the lengths must be
@@ -491,7 +522,7 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Fact]
-        public static void TryCopyUTF8StringBytes_Success_CER_MaxPrimitiveLength()
+        public void TryCopyUTF8StringBytes_Success_CER_MaxPrimitiveLength()
         {
             // CER says that the maximum encoding length for a UTF8String primitive
             // is 1000.
@@ -513,7 +544,7 @@ namespace System.Formats.Asn1.Tests.Reader
 
             byte[] output = new byte[1000];
 
-            AsnReader reader = new AsnReader(input, AsnEncodingRules.CER);
+            AsnReaderWrapper reader = CreateWrapper(input, AsnEncodingRules.CER);
 
             bool success = reader.TryReadCharacterStringBytes(
                 output,
@@ -529,7 +560,7 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Fact]
-        public static void TryCopyUTF8StringBytes_Success_CER_MinConstructedLength()
+        public void TryCopyUTF8StringBytes_Success_CER_MinConstructedLength()
         {
             // CER says that the maximum encoding length for a UTF8String primitive
             // is 1000, and that a constructed form must be used for values greater
@@ -581,7 +612,7 @@ namespace System.Formats.Asn1.Tests.Reader
 
             byte[] output = new byte[1001];
 
-            AsnReader reader = new AsnReader(input, AsnEncodingRules.CER);
+            AsnReaderWrapper reader = CreateWrapper(input, AsnEncodingRules.CER);
 
             bool success = reader.TryReadCharacterStringBytes(
                 output,
@@ -600,24 +631,26 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
         {
             byte[] inputData = { 0x0C, 2, (byte)'e', (byte)'l' };
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
             const UniversalTagNumber EncodingType = UniversalTagNumber.UTF8String;
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.TryReadPrimitiveCharacterStringBytes(Asn1Tag.Null, out _));
+                static (ref reader) => reader.TryReadPrimitiveCharacterStringBytes(Asn1Tag.Null, out _));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.TryReadPrimitiveCharacterStringBytes(new Asn1Tag(TagClass.ContextSpecific, 0), out _));
+                ref reader,
+                static (ref reader) => reader.TryReadPrimitiveCharacterStringBytes(new Asn1Tag(TagClass.ContextSpecific, 0), out _));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
-            Assert.True(reader.TryReadPrimitiveCharacterStringBytes(new Asn1Tag(EncodingType), out ReadOnlyMemory<byte> value));
+            Assert.True(reader.TryReadPrimitiveCharacterStringBytes(new Asn1Tag(EncodingType), out ReadOnlySpan<byte> value));
             Assert.Equal("656C", value.ByteArrayToHex());
             Assert.False(reader.HasData, "HasData after read");
         }
@@ -626,38 +659,42 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
         {
             byte[] inputData = { 0x87, 2, (byte)'h', (byte)'i' };
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             const UniversalTagNumber EncodingType = UniversalTagNumber.UTF8String;
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.TryReadPrimitiveCharacterStringBytes(Asn1Tag.Null, out _));
+                static (ref reader) => reader.TryReadPrimitiveCharacterStringBytes(Asn1Tag.Null, out _));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.TryReadPrimitiveCharacterStringBytes(new Asn1Tag(EncodingType), out _));
+                ref reader,
+                static (ref reader) => reader.TryReadPrimitiveCharacterStringBytes(new Asn1Tag(EncodingType), out _));
 
             Assert.True(reader.HasData, "HasData after default tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.TryReadPrimitiveCharacterStringBytes(new Asn1Tag(TagClass.Application, 0), out _));
+                ref reader,
+                static (ref reader) => reader.TryReadPrimitiveCharacterStringBytes(new Asn1Tag(TagClass.Application, 0), out _));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
             Assert.Throws<AsnContentException>(
-                () => reader.TryReadPrimitiveCharacterStringBytes(new Asn1Tag(TagClass.ContextSpecific, 1), out _));
+                ref reader,
+                static (ref reader) => reader.TryReadPrimitiveCharacterStringBytes(new Asn1Tag(TagClass.ContextSpecific, 1), out _));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
             Assert.True(
                 reader.TryReadPrimitiveCharacterStringBytes(
                     new Asn1Tag(TagClass.ContextSpecific, 7),
-                    out ReadOnlyMemory<byte> value));
+                    out ReadOnlySpan<byte> value));
 
             Assert.Equal("6869", value.ByteArrayToHex());
             Assert.False(reader.HasData, "HasData after reading value");
@@ -670,28 +707,28 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER, "80023132", TagClass.ContextSpecific, 0)]
         [InlineData(AsnEncodingRules.CER, "4C023132", TagClass.Application, 12)]
         [InlineData(AsnEncodingRules.DER, "DF8A46023132", TagClass.Private, 1350)]
-        public static void ExpectedTag_IgnoresConstructed(
+        public void ExpectedTag_IgnoresConstructed(
             AsnEncodingRules ruleSet,
             string inputHex,
             TagClass tagClass,
             int tagValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             Assert.True(
                 reader.TryReadPrimitiveCharacterStringBytes(
                     new Asn1Tag(tagClass, tagValue, true),
-                    out ReadOnlyMemory<byte> val1));
+                    out ReadOnlySpan<byte> val1));
 
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
 
             Assert.True(
                 reader.TryReadPrimitiveCharacterStringBytes(
                     new Asn1Tag(tagClass, tagValue, false),
-                    out ReadOnlyMemory<byte> val2));
+                    out ReadOnlySpan<byte> val2));
 
             Assert.False(reader.HasData);
 

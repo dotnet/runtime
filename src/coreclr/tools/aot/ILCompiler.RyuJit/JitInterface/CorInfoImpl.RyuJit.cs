@@ -15,6 +15,7 @@ using Internal.TypeSystem.Ecma;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using System.Runtime.CompilerServices;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -29,12 +30,10 @@ namespace Internal.JitInterface
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
 
-        private uint OffsetOfDelegateFirstTarget => (uint)(4 * PointerSize); // Delegate._functionPointer
         private int SizeOfReversePInvokeTransitionFrame => 2 * PointerSize;
 
         private RyuJitCompilation _compilation;
         private MethodDebugInformation _debugInfo;
-        private MethodDesc _asyncResumptionStub;
         private MethodCodeNode _methodCodeNode;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
@@ -53,6 +52,14 @@ namespace Internal.JitInterface
         private UnboxingMethodDesc getUnboxingThunk(MethodDesc method)
         {
             return _unboxingThunkFactory.GetUnboxingMethod(method);
+        }
+
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
+        {
+            MethodDesc asyncResumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+
+            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(asyncResumptionStub));
+            return ObjectToHandle(asyncResumptionStub);
         }
 
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
@@ -94,7 +101,8 @@ namespace Internal.JitInterface
             CFI_ADJUST_CFA_OFFSET,    // Offset is adjusted relative to the current one.
             CFI_DEF_CFA_REGISTER,     // New register is used to compute CFA
             CFI_REL_OFFSET,           // Register is saved at offset from the current CFA
-            CFI_DEF_CFA               // Take address from register and add offset to it.
+            CFI_DEF_CFA,              // Take address from register and add offset to it.
+            CFI_NEGATE_RA_STATE,      // Sign the return address in lr with the platform PAC key
         }
 
         // Get the CFI data in the same shape as clang/LLVM generated one. This improves the compatibility with libunwind and other unwind solutions
@@ -125,6 +133,7 @@ namespace Internal.JitInterface
             }
 
             int offset = 0;
+            bool shouldAddPacOpCode = false;
             while (offset < blobData.Length)
             {
                 codeOffset = Math.Max(codeOffset, blobData[offset++]);
@@ -178,6 +187,15 @@ namespace Internal.JitInterface
                             }
                         }
                         break;
+
+                    case CFI_OPCODE.CFI_NEGATE_RA_STATE:
+                        Debug.Assert(cfaRegister == spReg);
+                        Debug.Assert(cfaOffset == 0);
+                        // TODO-PAC: Support prologs that adjust SP before signing LR.
+                        // Currently we require PAC to be emitted before any stack adjustment.
+                        Debug.Assert(spOffset == 0);
+                        shouldAddPacOpCode = true;
+                        break;
                 }
             }
 
@@ -187,6 +205,14 @@ namespace Internal.JitInterface
 
                 using (BinaryWriter cfiWriter = new BinaryWriter(cfiStream))
                 {
+                    if (shouldAddPacOpCode)
+                    {
+                        cfiWriter.Write((byte)codeOffset);
+                        cfiWriter.Write((byte)CFI_OPCODE.CFI_NEGATE_RA_STATE);
+                        cfiWriter.Write((short)-1);
+                        cfiWriter.Write(0);
+                    }
+
                     if (cfaRegister != -1)
                     {
                         cfiWriter.Write((byte)codeOffset);
@@ -246,14 +272,20 @@ namespace Internal.JitInterface
 
         private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle, ref CORINFO_LOOKUP lookup)
         {
+            ComputeLookup(pResolvedToken.tokenContext != contextFromMethodBeingCompiled(), entity, helperId, callerHandle, ref lookup);
+        }
+
+        private void ComputeLookup(bool isInlining, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle, ref CORINFO_LOOKUP lookup)
+        {
             Debug.Assert(callerHandle != null);
 
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
             {
-                lookup.lookupKind.needsRuntimeLookup = true;
-                lookup.runtimeLookup.signature = null;
-
                 GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(callerHandle, helperId, entity);
+
+                lookup.lookupKind.needsRuntimeLookup = true;
+                lookup.lookupKind.runtimeLookupKind = GetLookupKindFromContextSource(genericLookup.ContextSource);
+                lookup.runtimeLookup.signature = null;
 
                 if (genericLookup.UseHelper)
                 {
@@ -262,15 +294,16 @@ namespace Internal.JitInterface
                     // currently do it for an inline. This is not a big issue because ReadyToRun helpers
                     // in optimized code only happen in special build configurations (such as
                     // `-O --noscan` or multimodule build).
-                    if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
+                    if (isInlining)
                     {
                         lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
                         return;
                     }
 
+                    ISymbolNode helper = GetGenericLookupHelper(lookup.lookupKind.runtimeLookupKind, genericLookup.HelperId, callerHandle, genericLookup.HelperObject);
                     lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                    lookup.lookupKind.runtimeLookupFlags = (ushort)genericLookup.HelperId;
-                    lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(genericLookup.HelperObject);
+                    lookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE;
+                    lookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
                 }
                 else if (genericLookup.UseNull)
                 {
@@ -297,11 +330,7 @@ namespace Internal.JitInterface
                     lookup.runtimeLookup.testForNull = false;
                     lookup.runtimeLookup.indirectFirstOffset = false;
                     lookup.runtimeLookup.indirectSecondOffset = false;
-                    lookup.lookupKind.runtimeLookupFlags = 0;
-                    lookup.lookupKind.runtimeLookupArgs = null;
                 }
-
-                lookup.lookupKind.runtimeLookupKind = GetLookupKindFromContextSource(genericLookup.ContextSource);
             }
             else
             {
@@ -311,7 +340,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
+        private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
         {
             switch (id)
             {
@@ -336,23 +365,13 @@ namespace Internal.JitInterface
                     {
                         // Token == 0 means "initialize this class". We only expect RyuJIT to call it for this case.
                         Debug.Assert(pResolvedToken.token == 0 && pResolvedToken.tokenScope == null);
-                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
+                        Debug.Assert(MethodBeingCompiled.IsSharedByGenericInstantiations);
 
                         DefType typeToInitialize = (DefType)HandleToObject(callerHandle).OwningType;
                         Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
 
                         DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, ReadyToRunHelperId.GetNonGCStaticBase, HandleToObject(callerHandle), helperArg);
-                        pLookup = CreateConstLookupToSymbol(helper);
-                    }
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
-                    {
-                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
-
-                        ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
-                        object helperArg = HandleToObject(pGenericLookupKind.runtimeLookupArgs);
-                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, HandleToObject(callerHandle), helperArg);
+                        ISymbolNode helper = GetGenericLookupHelper(GetGenericRuntimeLookupKind(MethodBeingCompiled), ReadyToRunHelperId.GetNonGCStaticBase, HandleToObject(callerHandle), helperArg);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;
@@ -403,8 +422,8 @@ namespace Internal.JitInterface
                 }
                 else if (directMethod != null)
                 {
-                    // We resolved on a canonical form of the valuetype. Now find the method on the runtime determined form.
-                    Debug.Assert(directMethod.OwningType.IsValueType);
+                    // We resolved on a canonical form. Now find the method on the runtime determined form.
+                    Debug.Assert(directMethod.OwningType.IsValueType || directMethod.Signature.IsStatic);
                     Debug.Assert(!forceRuntimeLookup);
 
                     MethodDesc targetOfLookup;
@@ -449,8 +468,10 @@ namespace Internal.JitInterface
                 {
                     MethodDesc contextMethod = HandleToObject(callerHandle);
                     pLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.DelegateCtor;
-                    pLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(delegateInfo);
+                    pLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+                    pLookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_DELEGATE_CTOR;
+                    ISymbolNode helper = GetGenericLookupHelper(pLookup.lookupKind.runtimeLookupKind, ReadyToRunHelperId.DelegateCtor, contextMethod, delegateInfo);
+                    pLookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
                 }
             }
             else
@@ -467,11 +488,13 @@ namespace Internal.JitInterface
             switch (ftnNum)
             {
                 case CorInfoHelpFunc.CORINFO_HELP_THROW:
-                case CorInfoHelpFunc.CORINFO_HELP_THROWEXACT: // TODO: (async): THROWEXACT
                     id = ReadyToRunHelper.Throw;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_RETHROW:
                     id = ReadyToRunHelper.Rethrow;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROWEXACT:
+                    id = ReadyToRunHelper.ThrowExact;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_USER_BREAKPOINT:
                     id = ReadyToRunHelper.DebugBreak;
@@ -512,9 +535,6 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF:
-                    id = ReadyToRunHelper.ByRefWriteBarrier;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:
                     id = ReadyToRunHelper.WriteBarrier_EAX;
@@ -762,16 +782,25 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION:
-                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null));
+                    id = ReadyToRunHelper.AllocContinuation;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
-                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Threading"u8, "Monitor"u8, "GetSyncObjectFromClassHandle"u8, null));
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTable"u8, null));
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
-                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Threading"u8, "Monitor"u8, "GetClassHandleFromMethodParam"u8, null));
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("Internal.Runtime.CompilerHelpers"u8, "SharedCodeHelpers"u8, "GetClassHandleFromMethodParam"u8, null));
 
                 case CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
                     id = ReadyToRunHelper.GVMLookupForSlot;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT:
+                    if ((_compilation._compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0
+                        // Not implemented on x86: https://github.com/dotnet/runtime/issues/99516
+                        && _compilation.NodeFactory.TypeSystemContext.Target.Architecture != TargetArchitecture.X86)
+                        return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatchGuarded"u8));
+                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatch"u8));
+                case CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpResolveInterfaceMethodFast"u8));
 
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                     id = ReadyToRunHelper.TypeHandleToRuntimeType;
@@ -823,37 +852,6 @@ namespace Internal.JitInterface
             }
 
             pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(method));
-        }
-
-        private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
-        {
-            // Assume we can tail call unless proved otherwise
-            bool result = true;
-
-            if (!fIsTailPrefix)
-            {
-                MethodDesc caller = HandleToObject(callerHnd);
-
-                if (caller.OwningType is EcmaType ecmaOwningType
-                    && ecmaOwningType.Module.EntryPoint == caller)
-                {
-                    // Do not tailcall from the application entrypoint.
-                    // We want Main to be visible in stack traces.
-                    result = false;
-                }
-
-                if (caller.IsNoInlining)
-                {
-                    // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
-                    // to mean "I want to always see this method in stacktrace")
-                    //
-                    // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
-                    // to emit fast tail calls if optimizations are disabled.
-                    result = false;
-                }
-            }
-
-            return result;
         }
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
@@ -1046,6 +1044,9 @@ namespace Internal.JitInterface
                     case (int)MappingTypes.NO_MAPPING:
                         continue;
                 }
+                // Ignore these; see WalkILOffsetsCallback in src/coreclr/vm/debugdebugger.cpp.
+                if (nativeToILInfo->source == SourceTypes.CALL_INSTRUCTION)
+                    continue;
 
                 debugLocInfos.Add(new DebugLocInfo((int)nativeToILInfo->nativeOffset, ilOffset));
             }
@@ -1247,15 +1248,19 @@ namespace Internal.JitInterface
                 // shared generic code - it may just resolve it to a candidate suitable for
                 // JIT compilation, and require a runtime lookup for the actual code pointer
                 // to call.
-
-                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup, ref staticResolution);
-                if (directMethod == null && constrainedType.IsEnum)
+                if (constrainedType.IsEnum)
                 {
-                    // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
-                    // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
-                    directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(constrainedType, method);
+                    // Optimize constrained calls to enum's GetHashCode method. TryResolveConstraintMethodApprox would return
+                    // null since the virtual method resolves to System.Enum's implementation and that's a reference type.
+                    // We can't do this for any other method since ToString and Equals have different semantics for enums
+                    // and their underlying type.
+                    if (method.OwningType.IsObject && method.Name == "GetHashCode"u8)
+                    {
+                        constrainedType = constrainedType.UnderlyingType;
+                    }
                 }
 
+                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup, ref staticResolution);
                 if (directMethod != null)
                 {
                     // Either
@@ -1351,23 +1356,16 @@ namespace Internal.JitInterface
             else
             {
                 // We can devirtualize the callvirt if the method is not virtual to begin with
-                bool canDevirt = !targetMethod.IsVirtual;
+                bool canDevirt = targetMethod.IsCallEffectivelyDirect();
 
-                // Final/sealed has no meaning for interfaces, but might let us devirtualize otherwise
-                if (!canDevirt && !targetMethod.OwningType.IsInterface)
+                // We might be able to devirt based on whole program view
+                if (!canDevirt
+                    // Do not devirt if devirtualization would need a generic dictionary entry that we didn't predict
+                    // during scanning (i.e. compiling a shared method body and we need to call another shared body
+                    // with a method generic dictionary argument).
+                    && (!pResult->exactContextNeedsRuntimeLookup || !targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg()))
                 {
-                    // Check if we can devirt per metadata
-                    canDevirt = targetMethod.IsFinal || targetMethod.OwningType.IsSealed();
-
-                    // We might be able to devirt based on whole program view
-                    if (!canDevirt
-                        // Do not devirt if devirtualization would need a generic dictionary entry that we didn't predict
-                        // during scanning (i.e. compiling a shared method body and we need to call another shared body
-                        // with a method generic dictionary argument).
-                        && (!pResult->exactContextNeedsRuntimeLookup || !targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg()))
-                    {
-                        canDevirt = _compilation.IsEffectivelySealed(targetMethod);
-                    }
+                    canDevirt = _compilation.IsEffectivelySealed(targetMethod);
                 }
 
                 if (canDevirt)
@@ -1452,12 +1450,15 @@ namespace Internal.JitInterface
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
+                    MethodDesc caller = HandleToObject(callerHandle);
+
                     pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
                     pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(HandleToObject(callerHandle));
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
+                    pResult->codePointerOrStubLookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE;
+                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(caller);
+                    object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                    ISymbolNode helper = GetGenericLookupHelper(pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind, ReadyToRunHelperId.MethodEntry, caller, helperArg);
+                    pResult->codePointerOrStubLookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
                 }
                 else
                 {
@@ -1693,8 +1694,6 @@ namespace Internal.JitInterface
             {
                 pResult->sig.flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
             }
-
-            pResult->_wrapperDelegateInvoke = 0;
         }
 
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
@@ -2276,7 +2275,7 @@ namespace Internal.JitInterface
         private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
         {
             MetadataType type = HandleToObject(baseType) as MetadataType;
-            if (type == null)
+            if (type == null || type.HasVariance)
             {
                 return -1;
             }
@@ -2488,11 +2487,28 @@ namespace Internal.JitInterface
             pInfo->tlsGetAddrFtnPtr = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("__tls_get_addr"u8)));
         }
 
+        private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
+        {
+            throw new NotImplementedException();
+        }
+
 #pragma warning disable CA1822 // Mark members as static
         private bool notifyMethodInfoUsage(CORINFO_METHOD_STRUCT_* ftn)
 #pragma warning restore CA1822 // Mark members as static
         {
             return true;
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
+#pragma warning restore CA1822 // Mark members as static
+        {
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig)
+#pragma warning restore CA1822 // Mark members as static
+        {
         }
     }
 }

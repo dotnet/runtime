@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Decrypt_WrongKey(RSAEncryptionPadding.OaepSHA1);
         }
 
-        [ConditionalFact(nameof(SupportsSha2Oaep))]
+        [ConditionalFact(typeof(EncryptDecrypt_TrySpan), nameof(SupportsSha2Oaep))]
         public void Decrypt_WrongKey_OAEP_SHA256()
         {
             Decrypt_WrongKey(RSAEncryptionPadding.OaepSHA256);

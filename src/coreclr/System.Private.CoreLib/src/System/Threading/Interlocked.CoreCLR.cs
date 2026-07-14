@@ -248,13 +248,5 @@ namespace System.Threading
         public static long Read(ref readonly long location) =>
             CompareExchange(ref Unsafe.AsRef(in location), 0, 0);
         #endregion
-
-        #region MemoryBarrierProcessWide
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
-        private static partial void _MemoryBarrierProcessWide();
-
-        /// <summary>Provides a process-wide memory barrier that ensures that reads and writes from any CPU cannot move across the barrier.</summary>
-        public static void MemoryBarrierProcessWide() => _MemoryBarrierProcessWide();
-        #endregion
     }
 }

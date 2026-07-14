@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace R2RDumpTests
 {
@@ -36,6 +37,7 @@ namespace R2RDumpTests
             return Path.GetFullPath(exe);
         }
 
+        [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
         [Fact]
         [SkipOnMono("Ready-To-Run is a CoreCLR-only feature", TestPlatforms.Any)]
         public static void DumpCoreLib()

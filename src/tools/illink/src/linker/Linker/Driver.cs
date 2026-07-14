@@ -38,8 +38,17 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
 using ILLink.Shared;
+
+#if ILTRIM
+using ILCompiler;
+using ILogger = ILCompiler.ILogWriter;
+using DependencyNode = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>;
+using AssemblyRootNode = ILCompiler.DependencyAnalysis.AssemblyRootNode;
+using TrimmingDescriptorNode = ILCompiler.DependencyAnalysis.TrimmingDescriptorNode;
+#else
 using Mono.Cecil;
 using Mono.Linker.Steps;
+#endif
 
 namespace Mono.Linker
 {
@@ -84,7 +93,9 @@ namespace Mono.Linker
         }
 
         readonly Queue<string> arguments;
+#if !ILTRIM
         bool _needAddBypassNGenStep;
+#endif
         LinkContext? context;
         protected LinkContext Context
         {
@@ -214,7 +225,7 @@ namespace Mono.Linker
         // -1 => error setting up context
         protected int SetupContext(ILogger? customLogger = null)
         {
-            Pipeline p = GetStandardPipeline();
+            var p = GetStandardPipeline();
             context = GetDefaultContext(p, customLogger);
 
             var body_substituter_steps = new Stack<string>();
@@ -230,7 +241,11 @@ namespace Mono.Linker
             MetadataTrimming metadataTrimming = MetadataTrimming.Any;
             DependenciesFileFormat fileType = DependenciesFileFormat.Xml;
 
+#if ILTRIM
+            var inputs = p;
+#else
             List<BaseStep> inputs = CreateDefaultResolvers();
+#endif
 
             while (arguments.Count > 0)
             {
@@ -391,6 +406,7 @@ namespace Mono.Linker
                             context.TrimAction = action.Value;
                             continue;
                         }
+#if !ILTRIM
                         case "--custom-step":
                             if (!GetStringParam(token, out string? custom_step))
                                 return -1;
@@ -416,6 +432,14 @@ namespace Mono.Linker
 
                             context.SetCustomData(values[0], values[1]);
                             continue;
+#else
+                        case "--parallelism":
+                            if (!GetStringParam(token, out string? parallelismValue))
+                                return -1;
+
+                            context.MaxDegreeOfParallelism = int.Parse(parallelismValue);
+                            continue;
+#endif
 
                         case "--keep-com-interfaces":
                             if (!GetBoolParam(token, l => context.KeepComInterfaces = l))
@@ -538,8 +562,10 @@ namespace Mono.Linker
                             //
                             if (!GetBoolParam(token, l =>
                             {
+#if !ILTRIM
                                 if (!l)
                                     p.RemoveStep(typeof(RegenerateGuidStep));
+#endif
                             }))
                                 return -1;
 
@@ -588,6 +614,7 @@ namespace Mono.Linker
                             if (!GetStringParam(token, out string? generateWarningSuppressionsArgument))
                                 return -1;
 
+#if !ILTRIM
                             if (!GetWarningSuppressionWriterFileOutputKind(generateWarningSuppressionsArgument, out var fileOutputKind))
                             {
                                 context.LogError(null, DiagnosticId.InvalidGenerateWarningSuppressionsValue, generateWarningSuppressionsArgument);
@@ -595,6 +622,7 @@ namespace Mono.Linker
                             }
 
                             context.WarningSuppressionWriter = new WarningSuppressionWriter(context, fileOutputKind);
+#endif
                             continue;
 
                         case "--notrimwarn":
@@ -745,19 +773,17 @@ namespace Mono.Linker
                                 return -1;
                             }
 
+#if ILTRIM
+                            inputs.Add(new TrimmingDescriptorNode(xmlFile));
+#else
                             inputs.Add(new ResolveFromXmlStep(File.OpenRead(xmlFile), xmlFile));
+#endif
                             continue;
                         }
                         case "a":
                         {
-                            if (!GetStringParam(token, out string? assemblyFile))
+                            if (!GetStringParam(token, out string? assemblyName))
                                 return -1;
-
-                            if (!File.Exists(assemblyFile) && assemblyFile.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                context.LogError(null, DiagnosticId.RootAssemblyCouldNotBeFound, assemblyFile);
-                                return -1;
-                            }
 
                             AssemblyRootMode rmode = AssemblyRootMode.AllMembers;
                             var rootMode = GetNextStringValue();
@@ -770,7 +796,11 @@ namespace Mono.Linker
                                 rmode = parsed_rmode.Value;
                             }
 
-                            inputs.Add(new RootAssemblyInput(assemblyFile, rmode));
+#if ILTRIM
+                            inputs.Add(new AssemblyRootNode(assemblyName, rmode));
+#else
+                            inputs.Add(new RootAssemblyInput(assemblyName, rmode));
+#endif
                             continue;
                         }
                         case "b":
@@ -855,6 +885,7 @@ namespace Mono.Linker
                 }
             }
 
+#if !ILTRIM
             //
             // Modify the default pipeline
             //
@@ -914,10 +945,12 @@ namespace Mono.Linker
                 if (!AddCustomStep(p, custom_step))
                     return -1;
             }
+#endif
 
             return 0;
         }
 
+#if !ILTRIM
         // Returns the exit code of the process. 0 indicates success.
         // Known non-recoverable errors (LinkerFatalErrorException) set the exit code
         // to the error code.
@@ -974,6 +1007,7 @@ namespace Mono.Linker
         }
 
         partial void PreProcessPipeline(Pipeline pipeline);
+#endif
 
         private static IEnumerable<int> ProcessWarningCodes(string value)
         {
@@ -997,6 +1031,7 @@ namespace Mono.Linker
             }
         }
 
+#if !ILTRIM
         Assembly? GetCustomAssembly(string arg)
         {
             if (Path.IsPathRooted(arg))
@@ -1224,6 +1259,7 @@ namespace Mono.Linker
 
             return (TStep?)Activator.CreateInstance(step);
         }
+#endif
 
         static string[] GetFiles(string param)
         {
@@ -1259,12 +1295,14 @@ namespace Mono.Linker
                 case "skip":
                     return AssemblyAction.Skip;
 
+#if !ILTRIM
                 case "addbypassngen":
                     _needAddBypassNGenStep = true;
                     return AssemblyAction.AddBypassNGen;
                 case "addbypassngenused":
                     _needAddBypassNGenStep = true;
                     return AssemblyAction.AddBypassNGenUsed;
+#endif
             }
 
             Context.LogError(null, DiagnosticId.InvalidAssemblyAction, s);
@@ -1358,6 +1396,7 @@ namespace Mono.Linker
             return false;
         }
 
+#if !ILTRIM
         protected static bool GetWarningSuppressionWriterFileOutputKind(string text, out WarningSuppressionWriter.FileOutputKind fileOutputKind)
         {
             switch (text.ToLowerInvariant())
@@ -1375,6 +1414,7 @@ namespace Mono.Linker
                     return false;
             }
         }
+#endif
 
         bool GetBoolParam(string token, Action<bool> action)
         {
@@ -1435,6 +1475,7 @@ namespace Mono.Linker
             return arg;
         }
 
+#if !ILTRIM
         protected virtual LinkContext GetDefaultContext(Pipeline pipeline, ILogger? logger)
         {
             return new LinkContext(pipeline, logger ?? new ConsoleLogger(), "output")
@@ -1449,6 +1490,7 @@ namespace Mono.Linker
         {
             return new List<BaseStep>();
         }
+#endif
 
         static bool IsValidAssemblyName(string value)
         {
@@ -1460,7 +1502,7 @@ namespace Mono.Linker
             Console.WriteLine(_linker);
 
             Console.WriteLine($"illink [options] {resolvers}");
-            Console.WriteLine("  -a FILE [MODE]      Assembly file used as root assembly with optional MODE value to alter default root mode");
+            Console.WriteLine("  -a ASSEMBLYNAME [MODE]  Assembly name used as root assembly with optional MODE value to alter default root mode");
             Console.WriteLine("                      Mode can be one of the following values");
             Console.WriteLine("                        all: Keep all members in root assembly");
             Console.WriteLine("                        default: Use entry point for applications and all members for libraries");
@@ -1571,6 +1613,7 @@ namespace Mono.Linker
             Console.WriteLine("   https://github.com/dotnet/runtime/tree/main/src/tools/illink");
         }
 
+#if !ILTRIM
         static Pipeline GetStandardPipeline()
         {
             Pipeline p = new Pipeline();
@@ -1580,9 +1623,9 @@ namespace Mono.Linker
             p.AppendStep(new ValidateVirtualMethodAnnotationsStep());
             p.AppendStep(new ProcessWarningsStep());
             p.AppendStep(new OutputWarningSuppressions());
+            p.AppendStep(new CodeRewriterStep());
             p.AppendStep(new SweepStep());
             p.AppendStep(new CheckSuppressionsDispatcher());
-            p.AppendStep(new CodeRewriterStep());
             p.AppendStep(new CleanStep());
             p.AppendStep(new RegenerateGuidStep());
             p.AppendStep(new OutputStep());
@@ -1593,5 +1636,6 @@ namespace Mono.Linker
         {
             context?.Dispose();
         }
+#endif
     }
 }

@@ -26,7 +26,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasNullModem))]
         public void Handshake_Default()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -48,7 +48,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasNullModem))]
         public void Handshake_None_BeforeOpen()
         {
             Debug.WriteLine("Verifying None Handshake before open");
@@ -56,7 +56,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasNullModem))]
         public void Handshake_XOnXOff_BeforeOpen()
         {
             Debug.WriteLine("Verifying XOnXOff Handshake before open");
@@ -64,7 +64,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void Handshake_RequestToSend_BeforeOpen()
         {
             Debug.WriteLine("Verifying RequestToSend Handshake before open");
@@ -72,7 +72,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void Handshake_RequestToSendXOnXOff_BeforeOpen()
         {
             Debug.WriteLine("Verifying RequestToSendXOnXOff Handshake before open");
@@ -80,7 +80,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasNullModem))]
         public void Handshake_None_AfterOpen()
         {
             Debug.WriteLine("Verifying None Handshake after open");
@@ -88,14 +88,14 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasNullModem))]
         public void Handshake_XOnXOff_AfterOpen()
         {
             Debug.WriteLine("Verifying XOnXOff Handshake after open");
             VerifyHandshakeAfterOpen((int)Handshake.XOnXOff);
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void Handshake_RequestToSend_AfterOpen()
         {
             Debug.WriteLine("Verifying RequestToSend Handshake after open");
@@ -103,35 +103,35 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void Handshake_RequestToSendXOnXOff_AfterOpen()
         {
             Debug.WriteLine("Verifying RequestToSendXOnXOff Handshake after open");
             VerifyHandshakeAfterOpen((int)Handshake.RequestToSendXOnXOff);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasOneSerialPort))]
         public void Handshake_Int32MinValue()
         {
             Debug.WriteLine("Verifying Int32.MinValue Handshake");
             VerifyException(int.MinValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasOneSerialPort))]
         public void Handshake_Neg1()
         {
             Debug.WriteLine("Verifying -1 Handshake");
             VerifyException(-1, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasOneSerialPort))]
         public void Handshake_4()
         {
             Debug.WriteLine("Verifying 4 Handshake");
             VerifyException(4, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Handshake_Property), nameof(HasOneSerialPort))]
         public void Handshake_Int32MaxValue()
         {
             Debug.WriteLine("Verifying Int32.MaxValue Handshake");

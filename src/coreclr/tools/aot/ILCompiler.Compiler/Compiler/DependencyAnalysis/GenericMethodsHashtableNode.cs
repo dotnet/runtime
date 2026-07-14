@@ -14,9 +14,8 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hashtable of all compiled generic method instantiations
     /// </summary>
-    public sealed class GenericMethodsHashtableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class GenericMethodsHashtableNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public GenericMethodsHashtableNode(ExternalReferencesTableNode externalReferences)
@@ -29,7 +28,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__generic_methods_hashtable"u8);
         }
 
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -69,9 +67,11 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     int flags = 0;
-                    MethodDesc methodForMetadata = GetMethodForMetadata(method, out bool isAsyncVariant);
+                    MethodDesc methodForMetadata = GetMethodForMetadata(method, out bool isAsyncVariant, out bool isReturnDroppingAsyncThunk);
                     if (isAsyncVariant)
                         flags |= GenericMethodsHashtableConstants.IsAsyncVariant;
+                    if (isReturnDroppingAsyncThunk)
+                        flags |= GenericMethodsHashtableConstants.IsReturnDroppingAsyncThunk;
 
                     int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, methodForMetadata);
 
@@ -89,8 +89,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] streamBytes = nativeWriter.Save();
-
-            _size = streamBytes.Length;
 
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
@@ -112,18 +110,26 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(argNode, "GenericMethodsHashtable entry instantiation argument"));
             }
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, GetMethodForMetadata(method, out _));
+            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, GetMethodForMetadata(method, out _, out _));
         }
 
-        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant)
+        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant, out bool isReturnDroppingAsyncThunk)
         {
             MethodDesc result = method.GetTypicalMethodDefinition();
+            if (result is ReturnDroppingAsyncThunk rdThunk)
+            {
+                isAsyncVariant = false;
+                isReturnDroppingAsyncThunk = true;
+                return rdThunk.AsyncVariantTarget.Target;
+            }
             if (result is AsyncMethodVariant asyncVariant)
             {
                 isAsyncVariant = true;
+                isReturnDroppingAsyncThunk = false;
                 return asyncVariant.Target;
             }
             isAsyncVariant = false;
+            isReturnDroppingAsyncThunk = false;
             return result;
         }
 

@@ -204,6 +204,7 @@ function set_exit_code_and_quit_now (exit_code: number, reason?: any): void {
 }
 
 async function flush_node_streams () {
+    if (!ENVIRONMENT_IS_NODE) return;
     try {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
@@ -313,7 +314,7 @@ function fatal_handler (event: any, reason: any, type: string) {
             mono_exit(1, reason);
         }
     } catch (err) {
-        // no not re-throw from the fatal handler
+        // do not re-throw from the fatal handler
     }
 }
 

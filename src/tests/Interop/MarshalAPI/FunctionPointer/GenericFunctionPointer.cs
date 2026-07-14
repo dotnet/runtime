@@ -113,7 +113,7 @@ public partial class FunctionPtr
         Assert.Equal(expectedValue, outVar);
     }
 
-    [ConditionalFact(nameof(CanRunInvalidGenericFunctionPointerTest))]
+    [ConditionalFact(typeof(FunctionPtr), nameof(CanRunInvalidGenericFunctionPointerTest))]
     [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static void RunInvalidGenericFunctionPointerTest()
     {

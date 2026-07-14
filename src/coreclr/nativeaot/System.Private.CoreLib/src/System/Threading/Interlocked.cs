@@ -196,10 +196,5 @@ namespace System.Threading
             return CompareExchange(ref location, 0, 0);
         }
         #endregion
-
-        public static void MemoryBarrierProcessWide()
-        {
-            RuntimeImports.RhFlushProcessWriteBuffers();
-        }
     }
 }

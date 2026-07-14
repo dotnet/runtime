@@ -14,7 +14,7 @@ namespace Microsoft.Android.Build
 {
     public sealed class AndroidProject
     {
-        private const string DefaultMinApiLevel = "21";
+        private const string DefaultMinApiLevel = "24";
         private const string Cmake = "cmake";
 
         private TaskLoggingHelper logger;

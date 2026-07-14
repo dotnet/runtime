@@ -55,7 +55,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.InRange(stopWatch.ElapsedMilliseconds, timeout - 10, 5000);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(50)]

@@ -3,12 +3,12 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-#if !NET10_0_OR_GREATER
+#if !NET
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 #endif
 
-#if !NET10_0_OR_GREATER && !NETSTANDARD
+#if !NET && !NETSTANDARD
 using System.Diagnostics;
 using Internal.Cryptography;
 #endif
@@ -38,12 +38,11 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The public key was invalid, or otherwise could not be imported.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLKem? GetMLKemPublicKey(this X509Certificate2 certificate)
         {
             ArgumentNullException.ThrowIfNull(certificate);
 
-#if NET10_0_OR_GREATER
+#if NET
             return certificate.GetMLKemPublicKey();
 #else
             if (MLKemAlgorithm.FromOid(certificate.GetKeyAlgorithm()) is null)
@@ -83,12 +82,11 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   An error occurred accessing the private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLKem? GetMLKemPrivateKey(this X509Certificate2 certificate)
         {
             ArgumentNullException.ThrowIfNull(certificate);
 
-#if NET10_0_OR_GREATER
+#if NET
             return certificate.GetMLKemPrivateKey();
 #else
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
@@ -121,13 +119,12 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="PlatformNotSupportedException">
         ///   Combining a certificate and an ML-KEM private key is not supported on this platform.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, MLKem privateKey)
         {
             ArgumentNullException.ThrowIfNull(certificate);
             ArgumentNullException.ThrowIfNull(privateKey);
 
-#if NET10_0_OR_GREATER
+#if NET
             return certificate.CopyWithPrivateKey(privateKey);
 #else
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
@@ -152,12 +149,11 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The public key was invalid, or otherwise could not be imported.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa? GetMLDsaPublicKey(this X509Certificate2 certificate)
         {
             ArgumentNullException.ThrowIfNull(certificate);
 
-#if NET10_0_OR_GREATER
+#if NET
             return certificate.GetMLDsaPublicKey();
 #else
             if (MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(certificate.GetKeyAlgorithm()) is null)
@@ -197,12 +193,11 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   An error occurred accessing the private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLDsa? GetMLDsaPrivateKey(this X509Certificate2 certificate)
         {
             ArgumentNullException.ThrowIfNull(certificate);
 
-#if NET10_0_OR_GREATER
+#if NET
             return certificate.GetMLDsaPrivateKey();
 #elif NETSTANDARD
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLDsa)));
@@ -247,13 +242,12 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="PlatformNotSupportedException">
         ///   Combining a certificate and an ML-DSA private key is not supported on this platform.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, MLDsa privateKey)
         {
             ArgumentNullException.ThrowIfNull(certificate);
             ArgumentNullException.ThrowIfNull(privateKey);
 
-#if NET10_0_OR_GREATER
+#if NET
             return certificate.CopyWithPrivateKey(privateKey);
 #elif NETSTANDARD
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLDsa)));
@@ -316,7 +310,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(certificate);
 
-#if NET10_0_OR_GREATER
+#if NET
             return certificate.GetSlhDsaPublicKey();
 #else
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
@@ -346,7 +340,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(certificate);
 
-#if NET10_0_OR_GREATER
+#if NET
             return certificate.GetSlhDsaPrivateKey();
 #else
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
@@ -388,7 +382,7 @@ namespace System.Security.Cryptography.X509Certificates
             ArgumentNullException.ThrowIfNull(certificate);
             ArgumentNullException.ThrowIfNull(privateKey);
 
-#if NET10_0_OR_GREATER
+#if NET
             return certificate.CopyWithPrivateKey(privateKey);
 #else
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
@@ -418,7 +412,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(certificate);
 
-#if NET10_0_OR_GREATER
+#if NET
             return certificate.GetCompositeMLDsaPublicKey();
 #else
             if (CompositeMLDsaAlgorithm.GetAlgorithmFromOid(certificate.GetKeyAlgorithm()) is null)
@@ -463,7 +457,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(certificate);
 
-#if NET10_0_OR_GREATER
+#if NET
             return certificate.GetCompositeMLDsaPrivateKey();
 #else
             if (CompositeMLDsaAlgorithm.GetAlgorithmFromOid(certificate.GetKeyAlgorithm()) is null)
@@ -507,7 +501,7 @@ namespace System.Security.Cryptography.X509Certificates
             ArgumentNullException.ThrowIfNull(certificate);
             ArgumentNullException.ThrowIfNull(privateKey);
 
-#if NET10_0_OR_GREATER
+#if NET
             return certificate.CopyWithPrivateKey(privateKey);
 #elif NETSTANDARD
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLDsa)));
@@ -543,7 +537,7 @@ namespace System.Security.Cryptography.X509Certificates
 #endif
         }
 
-#if !NET10_0_OR_GREATER
+#if !NET
         private static ArraySegment<byte> GetCertificateSubjectPublicKeyInfo(X509Certificate2 certificate)
         {
             // We construct the SubjectPublicKeyInfo from the certificate as-is, parameters and all. Consumers

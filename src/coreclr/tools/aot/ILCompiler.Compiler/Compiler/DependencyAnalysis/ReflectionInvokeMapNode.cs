@@ -15,17 +15,14 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map between reflection metadata and generated method bodies.
     /// </summary>
-    internal sealed class ReflectionInvokeMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ReflectionInvokeMapNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public ReflectionInvokeMapNode(ExternalReferencesTableNode externalReferences)
         {
             _externalReferences = externalReferences;
         }
-
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -65,6 +62,10 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!method.IsAbstract)
             {
+                if (method.IsSharedByGenericInstantiations)
+                {
+                    dependencies.Add(factory.ShadowNonConcreteMethod(method), "Shadow generic reflectable method");
+                }
                 dependencies.Add(factory.AddressTakenMethodEntrypoint(method), "Body of a reflectable method");
             }
 
@@ -215,8 +216,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] hashTableBytes = writer.Save();
-
-            _size = hashTableBytes.Length;
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

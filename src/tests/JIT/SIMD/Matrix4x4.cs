@@ -31,6 +31,7 @@ public class Matrix4x4Test
         return returnVal;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123104", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     [Fact]
     public static int TestEntryPoint()
     {

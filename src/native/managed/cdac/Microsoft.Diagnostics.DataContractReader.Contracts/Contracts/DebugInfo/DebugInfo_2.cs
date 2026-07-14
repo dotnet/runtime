@@ -31,6 +31,14 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
     private readonly Target _target = target;
     private readonly IExecutionManager _eman = target.Contracts.ExecutionManager;
 
+    bool IDebugInfo.HasDebugInfo(TargetCodePointer pCode)
+    {
+        if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
+            return false;
+
+        return _eman.GetDebugInfo(cbh, out _) != TargetPointer.Null;
+    }
+
     IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset)
     {
         // Get the method's DebugInfo
@@ -38,8 +46,11 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
             throw new InvalidOperationException($"No CodeBlockHandle found for native code {pCode}.");
         TargetPointer debugInfo = _eman.GetDebugInfo(cbh, out bool _);
 
-        TargetCodePointer nativeCodeStart = _eman.GetStartAddress(cbh);
-        codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
+        TargetPointer nativeCodeStart = _eman.GetStartAddress(cbh);
+        codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - nativeCodeStart);
+
+        if (debugInfo == TargetPointer.Null)
+            return [];
 
         return RestoreBoundaries(debugInfo, preferUninstrumented);
     }
@@ -104,5 +115,56 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
         }
 
         return [];
+    }
+
+    IEnumerable<DebugVarInfo> IDebugInfo.GetMethodVarInfo(TargetCodePointer pCode, out uint codeOffset)
+    {
+        if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
+            throw new InvalidOperationException($"No CodeBlockHandle found for native code {pCode}.");
+        TargetPointer debugInfo = _eman.GetDebugInfo(cbh, out bool _);
+
+        // Compute code offset from the method's native code entry point, not from the code block start.
+        // GetStartAddress returns the start of the current code block (which may be a funclet for exception
+        // handlers). Variable location offsets are always relative to the method entry point, so we must use
+        // GetNativeCode from the NativeCodeVersion, matching the native DAC's GetMethodVarInfo which uses
+        // NativeCodeVersion::GetNativeCode() for this purpose
+        ICodeVersions cv = _target.Contracts.CodeVersions;
+        NativeCodeVersionHandle ncvh = cv.GetNativeCodeVersionForIP(pCode);
+        if (!ncvh.Valid)
+            throw new InvalidOperationException($"No NativeCodeVersion found for native code {pCode}.");
+        TargetCodePointer nativeCodeStart = cv.GetNativeCode(ncvh);
+        codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
+
+        if (debugInfo == TargetPointer.Null)
+            return [];
+
+        DebugInfoChunks chunks = DecodeChunks(debugInfo);
+
+        if (chunks.VarsSize > 0)
+        {
+            bool isX86 = _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86;
+            NativeReader varsNativeReader = new(new TargetStream(_target, chunks.VarsStart, chunks.VarsSize), _target.IsLittleEndian);
+            return DebugInfoHelpers.DoVars(varsNativeReader, isX86);
+        }
+
+        return [];
+    }
+
+    IReadOnlyList<AsyncSuspensionInfo> IDebugInfo.GetAsyncSuspensionPoints(TargetCodePointer pCode)
+    {
+        if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
+            throw new InvalidOperationException($"No CodeBlockHandle found for native code {pCode}.");
+        TargetPointer debugInfo = _eman.GetDebugInfo(cbh, out bool _);
+
+        if (debugInfo == TargetPointer.Null)
+            return Array.Empty<AsyncSuspensionInfo>();
+
+        DebugInfoChunks chunks = DecodeChunks(debugInfo);
+
+        if (chunks.AsyncInfoSize == 0)
+            return Array.Empty<AsyncSuspensionInfo>();
+
+        NativeReader asyncNativeReader = new(new TargetStream(_target, chunks.AsyncInfoStart, chunks.AsyncInfoSize), _target.IsLittleEndian);
+        return DebugInfoHelpers.DoAsyncInfo(asyncNativeReader);
     }
 }

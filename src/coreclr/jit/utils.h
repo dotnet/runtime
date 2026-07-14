@@ -67,6 +67,14 @@ inline bool isPow2(T i)
     return (i > 0 && ((i - 1) & i) == 0);
 }
 
+// return true if abs(arg) is a power of 2
+template <typename T>
+inline bool isAbsPow2(T i)
+{
+    static_assert(std::numeric_limits<T>::is_signed);
+    return (i == std::numeric_limits<T>::min()) || isPow2(std::abs(i));
+}
+
 template <typename T>
 constexpr bool AreContiguous(T val1, T val2)
 {
@@ -588,8 +596,7 @@ enum class ExceptionSetFlags : uint32_t
     ArithmeticException      = 0x4,
     NullReferenceException   = 0x8,
     IndexOutOfRangeException = 0x10,
-    StackOverflowException   = 0x20,
-    UnknownException         = 0x40,
+    UnknownException         = 0x20,
 };
 
 class HelperCallProperties

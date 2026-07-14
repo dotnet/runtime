@@ -13,5 +13,6 @@
 INTERPRETER_NORETURN void NO_WAY(const char* message);
 INTERPRETER_NORETURN void BADCODE(const char* message);
 INTERPRETER_NORETURN void NOMEM();
+INTERPRETER_NORETURN void SKIPCODE(const char* message);
 
 #endif

@@ -27,4 +27,13 @@ internal class RISCV64FrameHandler(Target target, ContextHolder<RISCV64Context> 
 
         UpdateFromRegisterDict(args.Registers);
     }
+
+    public override void HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
+    {
+        base.HandleFaultingExceptionFrame(frame);
+
+        // Clear the CONTEXT_UNWOUND_TO_CALL flag
+        const uint CONTEXT_UNWOUND_TO_CALL = (uint)ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL;
+        _holder.Context.ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
+    }
 }

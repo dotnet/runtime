@@ -179,6 +179,7 @@ namespace Internal.NativeFormat
         IsUnboxingStub              = 0x2,
         HasFunctionPointer          = 0x4,
         IsAsyncVariant              = 0x8,
+        IsReturnDroppingAsyncThunk  = 0x10,
     };
 
     [Flags]

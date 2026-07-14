@@ -380,6 +380,20 @@ namespace System.Reflection.Tests
             TestUtils.AssertNewObjectReturnedEachTime(() => type.GetTypeInfo().ImplementedInterfaces);
             CustomAttributeTests.ValidateCustomAttributesAllocatesFreshObjectsEachTime(() => type.CustomAttributes);
 
+            // Verify that Type[] returning methods return actual Type[] arrays, not internal implementation types (RoType[], etc.)
+            // This prevents ArrayTypeMismatchException when using Span APIs
+            Assert.Equal(typeof(Type[]), type.GenericTypeArguments.GetType());
+            Assert.Equal(typeof(Type[]), type.GetTypeInfo().GenericTypeParameters.GetType());
+            Assert.Equal(typeof(Type[]), type.GetGenericArguments().GetType());
+            Assert.Equal(typeof(Type[]), type.GetInterfaces().GetType());
+#if NET
+            if (type.IsFunctionPointer)
+            {
+                Assert.Equal(typeof(Type[]), type.GetFunctionPointerParameterTypes().GetType());
+                Assert.Equal(typeof(Type[]), type.GetFunctionPointerCallingConventions().GetType());
+            }
+#endif
+
             const BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy;
             foreach (MemberInfo mem in type.GetMember("*", MemberTypes.All, bf))
             {

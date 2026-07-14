@@ -359,7 +359,7 @@ namespace System.Tests
         // We still test these cultures parsing but with ParseExact instead.
         internal static bool IsNotArabicCulture => !CultureInfo.CurrentCulture.Name.StartsWith("ar", StringComparison.OrdinalIgnoreCase);
 
-        [ConditionalFact(nameof(IsNotArabicCulture))]
+        [ConditionalFact(typeof(TimeOnlyTests), nameof(IsNotArabicCulture))]
         public static void BasicFormatParseTest()
         {
             string pattern = "hh:mm:ss tt";
@@ -388,13 +388,13 @@ namespace System.Tests
             Assert.True(TimeOnly.TryParse(s.AsSpan(), CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedTimeOnly1));
             Assert.Equal(parsedTimeOnly, parsedTimeOnly1);
 
-            Assert.False(TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out parsedTimeOnly1));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out parsedTimeOnly1));
             AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal));
-            Assert.False(TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out parsedTimeOnly1));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out parsedTimeOnly1));
             AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal));
-            Assert.False(TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsedTimeOnly1));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsedTimeOnly1));
             AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal));
-            Assert.False(TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out parsedTimeOnly1));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out parsedTimeOnly1));
             AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault));
 
             s = "     " + s + "     ";
@@ -404,7 +404,7 @@ namespace System.Tests
             Assert.Equal(timeOnly, parsedTimeOnly);
         }
 
-        [ConditionalFact(nameof(IsNotArabicCulture))]
+        [ConditionalFact(typeof(TimeOnlyTests), nameof(IsNotArabicCulture))]
         public static void FormatParseTest()
         {
             string[] patterns = new string[] { CultureInfo.CurrentCulture.DateTimeFormat.ShortTimePattern, CultureInfo.CurrentCulture.DateTimeFormat.LongTimePattern, "t", "T", "o", "r" };
@@ -619,6 +619,126 @@ namespace System.Tests
                 Assert.Throws<FormatException>(() => $"{timeOnly:u}");
                 Assert.Throws<FormatException>(() => $"{timeOnly:dd-yyyy}");
             }
+        }
+
+        [Fact]
+        public static void TryParseExact_InvalidDateTimeStyles_ThrowsArgumentException()
+        {
+            // Test that TryParseExact throws ArgumentException for invalid DateTimeStyles
+            string validInput = "14:30:00";
+            string format = "HH:mm:ss";
+            TimeOnly result;
+
+            // Test ReadOnlySpan<char> overload with single format
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput.AsSpan(), format.AsSpan(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput.AsSpan(), format.AsSpan(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput.AsSpan(), format.AsSpan(), CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput.AsSpan(), format.AsSpan(), CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out result));
+
+            // Test string overload with single format
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput, format, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput, format, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput, format, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput, format, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out result));
+
+            // Test ReadOnlySpan<char> overload with multiple formats
+            string[] formats = new[] { "HH:mm:ss", "hh:mm:ss tt" };
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput.AsSpan(), formats, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput.AsSpan(), formats, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput.AsSpan(), formats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput.AsSpan(), formats, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out result));
+
+            // Test string overload with multiple formats
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput, formats, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput, formats, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput, formats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParseExact(validInput, formats, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out result));
+        }
+
+        [Fact]
+        public static void TryParseExact_InvalidFormatSpecifier_ThrowsFormatException()
+        {
+            // Test that TryParseExact throws FormatException for null/empty format specifiers
+            string validInput = "14:30:00";
+            TimeOnly result;
+
+            // Test with array containing null format as first element
+            string?[] formatsWithNull = new string?[] { null, "HH:mm:ss", "hh:mm:ss tt" };
+            Assert.Throws<FormatException>(() => TimeOnly.TryParseExact(validInput.AsSpan(), formatsWithNull, CultureInfo.InvariantCulture, DateTimeStyles.None, out result));
+            Assert.Throws<FormatException>(() => TimeOnly.TryParseExact(validInput, formatsWithNull, CultureInfo.InvariantCulture, DateTimeStyles.None, out result));
+
+            // Test with array containing empty format as first element
+            string[] formatsWithEmpty = new[] { "", "HH:mm:ss", "hh:mm:ss tt" };
+            Assert.Throws<FormatException>(() => TimeOnly.TryParseExact(validInput.AsSpan(), formatsWithEmpty, CultureInfo.InvariantCulture, DateTimeStyles.None, out result));
+            Assert.Throws<FormatException>(() => TimeOnly.TryParseExact(validInput, formatsWithEmpty, CultureInfo.InvariantCulture, DateTimeStyles.None, out result));
+        }
+
+        [Fact]
+        public static void ParseExact_Hour24_Success()
+        {
+            // ISO 8601 allows 24:00:00 to represent end of day (midnight of next day)
+            // For TimeOnly, this should wrap around to 00:00:00
+            TimeOnly result = TimeOnly.ParseExact("24:00:00.0000000", "HH:mm:ss.fffffff", CultureInfo.InvariantCulture);
+            Assert.Equal(new TimeOnly(0, 0, 0), result);
+
+            result = TimeOnly.ParseExact("24:00:00", "HH:mm:ss", CultureInfo.InvariantCulture);
+            Assert.Equal(new TimeOnly(0, 0, 0), result);
+        }
+
+        [Fact]
+        public static void ParseExact_Hour24_Invalid_ThrowsFormatException()
+        {
+            // Hour=24 is only valid when minute, second, and fraction are all zero
+            Assert.Throws<FormatException>(() => TimeOnly.ParseExact("24:00:01", "HH:mm:ss", CultureInfo.InvariantCulture));
+            Assert.Throws<FormatException>(() => TimeOnly.ParseExact("24:01:00", "HH:mm:ss", CultureInfo.InvariantCulture));
+            Assert.Throws<FormatException>(() => TimeOnly.ParseExact("24:00:00.0000001", "HH:mm:ss.fffffff", CultureInfo.InvariantCulture));
+        }
+
+        [Fact]
+        public static void TryParseExact_Hour24_Success()
+        {
+            bool success = TimeOnly.TryParseExact("24:00:00", "HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out TimeOnly result);
+            Assert.True(success);
+            Assert.Equal(new TimeOnly(0, 0, 0), result);
+        }
+
+        [Fact]
+        public static void TryParseExact_Hour24_Invalid_ReturnsFalse()
+        {
+            bool success = TimeOnly.TryParseExact("24:00:01", "HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out TimeOnly result);
+            Assert.False(success);
+        }
+
+        [Fact]
+        public static void Parse_Hour24_Success()
+        {
+            // TimeOnly.Parse goes through the heuristic parser (ProcessDateTimeSuffix)
+            TimeOnly result = TimeOnly.Parse("24:00:00", CultureInfo.InvariantCulture);
+            Assert.Equal(new TimeOnly(0, 0, 0), result);
+        }
+
+        [Fact]
+        public static void Parse_Hour24_Invalid_ThrowsFormatException()
+        {
+            // Hour=24 is only valid when minute, second, and fraction are all zero
+            Assert.Throws<FormatException>(() => TimeOnly.Parse("24:00:01", CultureInfo.InvariantCulture));
+            Assert.Throws<FormatException>(() => TimeOnly.Parse("24:01:00", CultureInfo.InvariantCulture));
+            Assert.Throws<FormatException>(() => TimeOnly.Parse("24:00:00.0000001", CultureInfo.InvariantCulture));
+        }
+
+        [Fact]
+        public static void TryParse_Hour24_Success()
+        {
+            bool success = TimeOnly.TryParse("24:00:00", CultureInfo.InvariantCulture, out TimeOnly result);
+            Assert.True(success);
+            Assert.Equal(new TimeOnly(0, 0, 0), result);
+        }
+
+        [Fact]
+        public static void TryParse_Hour24_Invalid_ReturnsFalse()
+        {
+            bool success = TimeOnly.TryParse("24:00:01", CultureInfo.InvariantCulture, out TimeOnly result);
+            Assert.False(success);
         }
     }
 }

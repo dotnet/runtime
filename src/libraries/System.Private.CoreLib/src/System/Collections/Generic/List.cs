@@ -22,8 +22,8 @@ namespace System.Collections.Generic
     {
         private const int DefaultCapacity = 4;
 
-        internal T[] _items; // Do not rename (binary serialization)
-        internal int _size; // Do not rename (binary serialization)
+        internal T[] _items; // Do not rename (binary serialization) [cDAC] [ComWrappers] : Contract depends on this exact name
+        internal int _size; // Do not rename (binary serialization) [cDAC] [ComWrappers] : Contract depends on this exact name
         internal int _version; // Do not rename (binary serialization)
 
 #pragma warning disable CA1825, IDE0300 // avoid the extra generic instantiation for Array.Empty<T>()

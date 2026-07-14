@@ -5,7 +5,6 @@
 #include "gcenv.h"
 #include <exinfo.h>
 
-#if defined(FEATURE_EH_FUNCLETS)
 #if defined(USE_GC_INFO_DECODER)
 
 struct FindFirstInterruptiblePointState
@@ -86,7 +85,6 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 }
 
 #endif
-#endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------------
 // Determine whether we should report the generic parameter context
@@ -266,11 +264,10 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     gcctx->cf = pCF;
 
     bool fReportGCReferences = true;
-#if defined(FEATURE_EH_FUNCLETS)
+
     // We may have unwound this crawlFrame and thus, shouldn't report the invalid
     // references it may contain.
     fReportGCReferences = pCF->ShouldCrawlframeReportGCReferences();
-#endif // defined(FEATURE_EH_FUNCLETS)
 
     if (fReportGCReferences)
     {
@@ -297,7 +294,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     #endif // _DEBUG
 
             DWORD relOffsetOverride = NO_OVERRIDE_OFFSET;
-#if defined(FEATURE_EH_FUNCLETS)
+
             if (pCF->ShouldParentToFuncletUseUnwindTargetLocationForGCReporting())
             {
                 // We're in a special case of unwinding from a funclet, and resuming execution in
@@ -317,7 +314,6 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                 STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Setting override offset = %u for method %pM ControlPC = %p\n",
                     relOffsetOverride, pMD, GetControlPC(pCF->GetRegisterSet()));
             }
-#endif // FEATURE_EH_FUNCLETS
 
             pCM->EnumGcRefs(pCF->GetRegisterSet(),
                             pCF->GetCodeInfo(),

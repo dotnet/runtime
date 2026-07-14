@@ -1,14 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Interop
 {
@@ -48,22 +44,6 @@ namespace Microsoft.Interop
                 .Combine(context.CreateEnvironmentFlagsProvider())
                 .Select((data, ct) =>
                     new StubEnvironment(data.Left, data.Right));
-        }
-
-        public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<DiagnosticInfo> diagnostics)
-        {
-            context.RegisterSourceOutput(diagnostics.Where(diag => diag is not null), (context, diagnostic) =>
-            {
-                context.ReportDiagnostic(diagnostic.ToDiagnostic());
-            });
-        }
-
-        public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<Diagnostic> diagnostics)
-        {
-            context.RegisterSourceOutput(diagnostics.Where(diag => diag is not null), (context, diagnostic) =>
-            {
-                context.ReportDiagnostic(diagnostic);
-            });
         }
 
         public static void RegisterConcatenatedSyntaxOutputs<TNode>(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<TNode> nodes, string fileName)

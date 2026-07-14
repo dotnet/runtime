@@ -97,17 +97,13 @@ int64_t minipal_hires_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
     return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#elif HAVE_CLOCK_MONOTONIC
+#else
     struct timespec ts;
-    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
-    if (result != 0)
-    {
-        assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
-    }
+    int result;
+    result = clock_gettime(CLOCK_MONOTONIC, &ts);
+    assert(result == 0 && "clock_gettime(CLOCK_MONOTONIC) failed");
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
-#else
-    #error "minipal_hires_ticks requires clock_gettime_nsec_np or clock_gettime to be supported."
 #endif
 }
 
@@ -115,7 +111,7 @@ int64_t minipal_lowres_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
     return  (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMilliSecondsToNanoSeconds);
-#elif HAVE_CLOCK_MONOTONIC
+#else
     struct timespec ts;
 
     // emscripten exposes CLOCK_MONOTONIC_COARSE but doesn't implement it
@@ -129,19 +125,15 @@ int64_t minipal_lowres_ticks(void)
     const clockid_t clockType = CLOCK_MONOTONIC;
 #endif
 
-    int result = clock_gettime(clockType, &ts);
-    if (result != 0)
-    {
+    int result;
+    result = clock_gettime(clockType, &ts);
 #if HAVE_CLOCK_MONOTONIC_COARSE && !defined(__EMSCRIPTEN__)
-        assert(!"clock_gettime(CLOCK_MONOTONIC_COARSE) failed");
+    assert(result == 0 && "clock_gettime(CLOCK_MONOTONIC_COARSE) failed");
 #else
-        assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
+    assert(result == 0 && "clock_gettime(CLOCK_MONOTONIC) failed");
 #endif
-    }
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToMilliSeconds)) + ((int64_t)(ts.tv_nsec) / (int64_t)(tccMilliSecondsToNanoSeconds));
-#else
-    #error "minipal_lowres_ticks requires clock_gettime_nsec_np or clock_gettime to be supported."
 #endif
 }
 

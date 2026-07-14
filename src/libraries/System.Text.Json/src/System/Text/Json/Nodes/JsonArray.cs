@@ -238,7 +238,7 @@ namespace System.Text.Json.Nodes
             List[index] = value;
         }
 
-        internal override void GetPath(ref ValueStringBuilder path, JsonNode? child)
+        internal override unsafe void GetPath(ref ValueStringBuilder path, JsonNode? child)
         {
             Parent?.GetPath(ref path, this);
 

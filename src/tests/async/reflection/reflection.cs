@@ -237,11 +237,34 @@ public class Async2Reflection
     [Fact]
     public static void UnsafeAccessors()
     {
+        PrivateAsync1<int>.s = 0;
+        PrivateAsync2.s = 0;
+
         Accessors2.accessor<int>(null, 7).GetAwaiter().GetResult();
         Assert.Equal(4, PrivateAsync1<int>.s);
         Assert.Equal(4, PrivateAsync2.s);
 
         Accessors1<int>.accessor(null, 7).GetAwaiter().GetResult();
+        Assert.Equal(8, PrivateAsync1<int>.s);
+        Assert.Equal(8, PrivateAsync2.s);
+    }
+
+    [Fact]
+    public static void UnsafeAccessorsAsync()
+    {
+        UnsafeAccessorsAsyncInner().GetAwaiter().GetResult();
+    }
+
+    private static async Task UnsafeAccessorsAsyncInner()
+    {
+        PrivateAsync1<int>.s = 0;
+        PrivateAsync2.s = 0;
+
+        await Accessors2.accessor<int>(null, 7);
+        Assert.Equal(4, PrivateAsync1<int>.s);
+        Assert.Equal(4, PrivateAsync2.s);
+
+        await Accessors1<int>.accessor(null, 7);
         Assert.Equal(8, PrivateAsync1<int>.s);
         Assert.Equal(8, PrivateAsync2.s);
     }
@@ -287,6 +310,8 @@ public class Async2Reflection
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void FromStack(int level)
     {
         // StackFrame.GetMethod() is not supported on NativeAOT
@@ -348,9 +373,11 @@ public class Async2Reflection
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void FromStackDMI(int level)
     {
         if (level == 0)

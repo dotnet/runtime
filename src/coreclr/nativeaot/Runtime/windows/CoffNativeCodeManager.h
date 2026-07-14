@@ -92,11 +92,13 @@ public:
 
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                     REGDISPLAY *    pRegisterSet,        // in
-                                    PTR_PTR_VOID *  ppvRetAddrLocation); // out
+                                    PTR_PTR_VOID *  ppvRetAddrLocation,  // out
+                                    uintptr_t *     pSpForArm64PacSign); // out
 
 #ifdef TARGET_X86
     GCRefKind GetReturnValueKind(MethodInfo *   pMethodInfo,
-                                    REGDISPLAY *   pRegisterSet);
+                                 REGDISPLAY *   pRegisterSet,
+                                 bool* isAsync);
 #endif
 
     PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC);

@@ -17,7 +17,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace {Namespace}
 {
     public static partial class Program
     {
@@ -485,7 +485,9 @@ namespace JIT.HardwareIntrinsics.Arm
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ConditionalSelectScenario_TrueValue({RetVectorType}<{RetBaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op2VectorType}<{Op2BaseType}> op2, {Op3VectorType}<{Op3BaseType}> op3, {RetVectorType}<{RetBaseType}> falseOp)
         {
-            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2, op3, {Imm1}, {Imm2}), falseOp);
+            var result = (falseOp == {RetVectorType}<{RetBaseType}>.Zero) ?
+                         Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2, op3, {Imm1}, {Imm2}), {RetVectorType}<{RetBaseType}>.Zero) :
+                         Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2, op3, {Imm1}, {Imm2}), falseOp);
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateConditionalSelectResult_TrueValue(mask, op1, op2, op3, falseOp, _dataTable.outArrayPtr);
         }

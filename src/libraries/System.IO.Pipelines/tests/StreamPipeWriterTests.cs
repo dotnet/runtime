@@ -192,7 +192,7 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(0, writer.UnflushedBytes);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CanDoMultipleAsyncWritesToStream()
         {
             var pipe = new Pipe();
@@ -248,7 +248,7 @@ namespace System.IO.Pipelines.Tests
             await readsTask;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CanCancelFlushAsyncWithCancellationTokenStreamFlushAsyncThrows()
         {
             var stream = new CancelledWritesStream();
@@ -269,7 +269,7 @@ namespace System.IO.Pipelines.Tests
             writer.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CanCancelFlushAsyncWithCancellationTokenWhenStreamWriteAsyncThrows()
         {
             var stream = new CancelledWritesStream();
@@ -290,7 +290,7 @@ namespace System.IO.Pipelines.Tests
             writer.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CanCancelFlushAsyncWithCancelPendingFlushStreamFlushAsyncThrows()
         {
             var stream = new CancelledWritesStream();
@@ -311,7 +311,7 @@ namespace System.IO.Pipelines.Tests
             writer.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CanCancelFlushAsyncWithCancelPendingFlushStreamWriteAsyncThrows()
         {
             var stream = new CancelledWritesStream();
@@ -332,7 +332,7 @@ namespace System.IO.Pipelines.Tests
             writer.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task StreamWriteAsyncThrowingDoesNotReturnMemoryToPool()
         {
             using (var pool = new DisposeTrackingBufferPool())
@@ -358,7 +358,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task StreamFlushAsyncThrowingDoesReturnMemoryToPool()
         {
             using (var pool = new DisposeTrackingBufferPool())

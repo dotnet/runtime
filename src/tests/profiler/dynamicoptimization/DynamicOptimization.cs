@@ -80,12 +80,16 @@ namespace Profiler.Tests
             RuntimeHelpers.PrepareMethod(GetMainMethod(beforeDisableInlining).MethodHandle);
             var actual = GetInlineCount();
             Console.WriteLine($"After jitting first case, inline count is: {actual}");
-            var expected = TestLibrary.Utilities.IsCoreClrInterpreter ? 0 : initialInlineCount + 1;
-            if (expected != actual)
+            var expected = initialInlineCount + 1;
+            bool skipInlineChecksForInterpreter = TestLibrary.Utilities.IsCoreClrInterpreter && actual == 0;
+            if ((expected != actual) && !skipInlineChecksForInterpreter)
             {
                 throw new Exception($"Expected {expected}, got {actual}");
             }
-            // first case: inlining count should not have increased
+            expected = actual; // When the interpreter test modes are enabled, we may have 0 or the expected set of
+            // inline counts. Once we reach this point, set expected to actual.
+
+            // second case: inlining count should not have increased
             RuntimeHelpers.PrepareMethod(GetMainMethod(afterDisableInlining).MethodHandle);
             actual = GetInlineCount();
             Console.WriteLine($"After jitting second case, inline count is: {actual}");
@@ -97,7 +101,7 @@ namespace Profiler.Tests
             RuntimeHelpers.PrepareMethod(GetMainMethod(afterReenableInlining).MethodHandle);
             actual = GetInlineCount();
             Console.WriteLine($"After jitting third case, inline count is: {actual}");
-            if (!TestLibrary.Utilities.IsCoreClrInterpreter)
+            if (!skipInlineChecksForInterpreter)
                 expected++;
 
             if (expected != actual)

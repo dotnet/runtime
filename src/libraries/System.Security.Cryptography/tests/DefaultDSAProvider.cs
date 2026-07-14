@@ -5,14 +5,18 @@ using Test.Cryptography;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    public class DefaultDSAProvider : IDSAProvider
+    public class DefaultDSAProvider : DSAProvider
     {
-        public DSA Create()
+        public static readonly DefaultDSAProvider Instance = new DefaultDSAProvider();
+
+        private DefaultDSAProvider() { }
+
+        public override DSA Create()
         {
             return DSA.Create();
         }
 
-        public DSA Create(int keySize)
+        public override DSA Create(int keySize)
         {
 #if NET
             return DSA.Create(keySize);
@@ -23,17 +27,12 @@ namespace System.Security.Cryptography.Dsa.Tests
 #endif
         }
 
-        public bool SupportsFips186_3
+        public override bool SupportsFips186_3
         {
             get
             {
-                return PlatformSupport.IsDSASupported && !PlatformDetection.IsWindows7;
+                return PlatformSupport.IsDSASupported;
             }
         }
-    }
-
-    public partial class DSAFactory
-    {
-        private static readonly IDSAProvider s_provider = new DefaultDSAProvider();
     }
 }

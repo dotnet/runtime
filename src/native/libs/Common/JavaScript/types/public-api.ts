@@ -10,9 +10,12 @@ import type { EmscriptenModule, NativePointer, TypedArray } from "./emscripten";
 export interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
+    /**
+     * @deprecated This method is no longer supported and will be removed in a future version.
+     */
+    withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
      * "command line" arguments for the Main() method.
      * @param args
@@ -67,8 +70,12 @@ export interface DotnetHostBuilder {
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
     /**
      * Downloads all the assets but doesn't create the runtime instance.
+     * @param httpCacheOnly If true, resources are only fetched into the browser HTTP cache
+     *   and discarded. A subsequent create() call will re-fetch from cache and do full init.
+     *   If false (default), resources are downloaded and loaded into WASM memory, so that
+     *   a subsequent create() call only needs to initialize the managed runtime.
      */
-    download(): Promise<void>;
+    download(httpCacheOnly?: boolean): Promise<void>;
     /**
      * Starts the runtime and returns promise of the API object.
      */
@@ -91,10 +98,6 @@ export interface DotnetHostBuilder {
     runMainAndExit(): Promise<number>;
 }
 export type LoaderConfig = {
-    /**
-     * Additional search locations for assets.
-     */
-    remoteSources?: string[];
     /**
      * It will not fail the startup is .pdb files can't be downloaded
      */
@@ -206,7 +209,6 @@ export interface Assets {
     lazyAssembly?: AssemblyAsset[];
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
-    jsModuleWorker?: JsAsset[];
     jsModuleDiagnostics?: JsAsset[];
     jsModuleNative: JsAsset[];
     jsModuleRuntime: JsAsset[];
@@ -329,10 +331,6 @@ export interface AssetEntry {
      */
     culture?: string;
     /**
-     * If true, an attempt will be made to load the asset from each location in LoaderConfig.remoteSources.
-     */
-    loadRemote?: boolean;
-    /**
      * If true, the runtime startup would not fail if the asset download was not successful.
      */
     isOptional?: boolean;
@@ -361,10 +359,6 @@ export type SingleAssetBehaviors =
      * The javascript module for loader.
      */
     | "js-module-dotnet"
-    /**
-     * The javascript module for threads.
-     */
-    | "js-module-threads"
     /**
      * The javascript module for diagnostic server and client.
      */
@@ -413,7 +407,12 @@ export type AssetBehaviors = SingleAssetBehaviors |
     /**
      * The javascript module that came from nuget package .
      */
-    | "js-module-library-initializer";
+    | "js-module-library-initializer"
+    /**
+     * Managed assembly packaged as Webcil v 1.0
+     */
+    | "webcil"
+    ;
 export declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.
@@ -435,7 +434,6 @@ export declare const enum GlobalizationMode {
 
 export type DotnetModuleConfig = {
     config?: LoaderConfig;
-    configSrc?: string;
     onConfigLoaded?: (config: LoaderConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
@@ -467,12 +465,6 @@ export type RunAPIType = {
      * @param reason could be a string or an Error object.
      */
     exit: (code: number, reason?: any) => void;
-    /**
-     * Sets the environment variable for the "process"
-     * @param name
-     * @param value
-     */
-    setEnvironmentVariable: (name: string, value: string) => void;
     /**
      * Returns the [JSExport] methods of the assembly with the given name
      * @param assemblyName
@@ -665,7 +657,7 @@ export type DiagnosticsAPIType = {
 export type DiagnosticCommandProviderV2 = {
     keywords: [number, number];
     logLevel: number;
-    provider_name: string;
+    providerName: string;
     arguments: string | null;
 };
 
@@ -731,9 +723,6 @@ export declare function exit(exitCode: number, reason?: any): void;
 
 export declare const dotnet: DotnetHostBuilder;
 
-declare global {
-    function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
-}
 export declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 

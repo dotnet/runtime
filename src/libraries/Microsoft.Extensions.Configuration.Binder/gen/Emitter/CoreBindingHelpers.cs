@@ -413,8 +413,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
                         {
                             // Add exception logic for parameter ctors; must be present in configuration object.
-                            // In case of Arrays, we emit extra block to handle empty arrays. The throw block will not be `else` case at that time.
-                            EmitThrowBlock(condition: _typeIndex.GetEffectiveTypeSpec(member.TypeRef) is ArraySpec ? $"if ({member.Name} is null)" : "else");
+                            // In case of Arrays and IEnumerable<T>, we emit extra block to handle collection. The throw block will not be `else` case at that time.
+                            TypeSpec typeSpec = _typeIndex.GetEffectiveTypeSpec(member.TypeRef);
+                            EmitThrowBlock(condition: typeSpec is ArraySpec || typeSpec.IsExactIEnumerableOfT ? $"if ({member.Name} is null)" : "else");
                         }
 
                         _writer.WriteLine();

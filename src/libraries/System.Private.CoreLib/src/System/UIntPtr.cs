@@ -316,6 +316,16 @@ namespace System
         [Intrinsic]
         public static nuint LeadingZeroCount(nuint value) => (nuint)BitOperations.LeadingZeroCount(value);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        public static nuint Log10(nuint value)
+        {
+#if TARGET_64BIT
+            return (nuint)ulong.Log10((ulong)value);
+#else
+            return (nuint)uint.Log10((uint)value);
+#endif
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         [Intrinsic]
         public static nuint PopCount(nuint value) => (nuint)BitOperations.PopCount(value);
@@ -357,19 +367,10 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(nuint_t))
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(nuint_t));
-
                     // We have at least 4/8 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<nuint>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUIntPtrBigEndian(source.Slice(source.Length - sizeof(nuint_t)));
                 }
                 else
                 {
@@ -380,7 +381,7 @@ namespace System
                     for (int i = 0; i < source.Length; i++)
                     {
                         result <<= 8;
-                        result |= Unsafe.Add(ref sourceRef, i);
+                        result |= source[i];
                     }
                 }
             }
@@ -414,17 +415,10 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(nuint_t))
                 {
                     // We have at least 4/8 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<nuint>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUIntPtrLittleEndian(source);
                 }
                 else
                 {
@@ -436,7 +430,7 @@ namespace System
 
                     for (int i = 0; i < source.Length; i++)
                     {
-                        nuint part = Unsafe.Add(ref sourceRef, i);
+                        nuint part = source[i];
                         part <<= (i * 8);
                         result |= part;
                     }
@@ -1174,6 +1168,27 @@ namespace System
                 result = default;
                 return false;
             }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nuint result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            return nuint_t.TryParse(s, style, provider, out Unsafe.As<nuint, nuint_t>(ref result), out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nuint result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            return nuint_t.TryParse(s, style, provider, out Unsafe.As<nuint, nuint_t>(ref result), out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out nuint result, out int bytesConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            return nuint_t.TryParse(utf8Text, style, provider, out Unsafe.As<nuint, nuint_t>(ref result), out bytesConsumed);
         }
 
         //

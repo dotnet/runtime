@@ -55,3 +55,22 @@ if (CLR_CMAKE_TARGET_WIN32)
     target_link_libraries(nativehost PRIVATE delayimp.lib ole32 oleaut32)
 endif()
 
+# Build a second executable that links against the static nethost library (libnethost)
+# instead of the shared one. This validates the static library consumption scenario.
+add_executable(nativehost_static ${SOURCES})
+
+add_sanitizer_runtime_support(nativehost_static)
+
+install_with_stripped_symbols(nativehost_static TARGETS corehost_test)
+
+target_compile_definitions(nativehost_static PRIVATE NETHOST_USE_AS_STATIC)
+
+target_link_libraries(nativehost_static PRIVATE
+    libnethost
+    hostmisc
+    $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)
+
+if (CLR_CMAKE_TARGET_WIN32)
+    target_link_libraries(nativehost_static PRIVATE ole32 oleaut32)
+endif()
+

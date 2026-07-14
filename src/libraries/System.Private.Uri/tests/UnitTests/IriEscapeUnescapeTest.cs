@@ -158,14 +158,21 @@ namespace System.Net.Test.Uri.IriTest
 
         private void EscapeUnescapeAllUriComponentsInDifferentCultures(string uriInput)
         {
-            string result_en_query = IriHelper.EscapeUnescapeIri(uriInput, true);
-            string result_en_nonQuery = IriHelper.EscapeUnescapeIri(uriInput, false);
+            string result_en_query = EscapeUnescapeIri(uriInput, true);
+            string result_en_nonQuery = EscapeUnescapeIri(uriInput, false);
 
             using (new ThreadCultureChange("zh-cn"))
             {
-                Assert.Equal(result_en_query, IriHelper.EscapeUnescapeIri(uriInput, true));
-                Assert.Equal(result_en_nonQuery, IriHelper.EscapeUnescapeIri(uriInput, false));
+                Assert.Equal(result_en_query, EscapeUnescapeIri(uriInput, true));
+                Assert.Equal(result_en_nonQuery, EscapeUnescapeIri(uriInput, false));
             }
+        }
+
+        private static string EscapeUnescapeIri(string input, bool isQuery)
+        {
+            var vsb = new ValueStringBuilder();
+            IriHelper.EscapeUnescapeIri(ref vsb, input, isQuery);
+            return vsb.ToString();
         }
     }
 }

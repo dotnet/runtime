@@ -156,8 +156,8 @@ namespace System.Collections.Frozen
                     if (canSwitchIgnoreCaseHashToCaseSensitive)
                     {
                         // If count is 0 then uniqueString equals hashString,
-                        // and as we have just checked that IsAllAscii(hashString) is true
-                        // then we know IsAllAscii(uniqueString) must be true,
+                        // and as we have just checked that Ascii.IsValid(hashString) is true
+                        // then we know Ascii.IsValid(uniqueString) must be true,
                         // so we can skip the check.
                         if ((count > 0 && !allUniqueStringsAreConfirmedAscii && !Ascii.IsValid(uniqueString)) ||
                             ContainsAnyAsciiLetters(uniqueString.AsSpan()))

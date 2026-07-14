@@ -2090,6 +2090,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 					*op = MINT_TAN;
 				} else if (strcmp (tm, "Tanh") == 0){
 					*op = MINT_TANH;
+				} else if (strcmp (tm, "Truncate") == 0) {
+					*op = MINT_TRUNC;
 				}
 			}
 		} else if (csignature->param_count == 2 && csignature->params [0]->type == param_type && csignature->params [1]->type == param_type) {
@@ -2101,6 +2103,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				*op = MINT_MIN;
 			else if (strcmp (tm, "Max") == 0)
 				*op = MINT_MAX;
+			else if (strcmp (tm, "CopySign") == 0)
+				*op = MINT_COPYSIGN;
 		} else if (csignature->param_count == 3 && csignature->params [0]->type == param_type && csignature->params [1]->type == param_type && csignature->params [2]->type == param_type) {
 			if (strcmp (tm, "FusedMultiplyAdd") == 0)
 				*op = MINT_FMA;
@@ -2587,6 +2591,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Thread")) {
 		if (!strcmp (tm, "MemoryBarrier") && csignature->param_count == 0)
+			*op = MINT_MONO_MEMORY_BARRIER;
+	} else if (in_corlib && !strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Volatile")) {
+		if ((!strcmp (tm, "ReadBarrier") || !strcmp (tm, "WriteBarrier")) && csignature->param_count == 0)
 			*op = MINT_MONO_MEMORY_BARRIER;
 	} else if (in_corlib &&
 			!strcmp (klass_name_space, "System.Runtime.CompilerServices") &&

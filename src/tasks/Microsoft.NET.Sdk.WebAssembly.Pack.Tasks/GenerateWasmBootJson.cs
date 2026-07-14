@@ -119,7 +119,7 @@ public class GenerateWasmBootJson : Task
 
     private void WriteBootConfig(string entryAssemblyName)
     {
-        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish);
+        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion);
 
         var result = new BootJsonData
         {
@@ -538,35 +538,35 @@ public class GenerateWasmBootJson : Task
         return lazyLoadAssembliesNoExtension.TryGetValue(fileName, out lazyLoadedAssembly);
     }
 
-    private Version? parsedTargetFrameworkVersion;
     private static readonly Version version80 = new Version(8, 0);
     private static readonly Version version90 = new Version(9, 0);
     private static readonly Version version100 = new Version(10, 0);
     private static readonly Version version110 = new Version(11, 0);
 
-    private bool IsTargeting80OrLater()
-        => IsTargetingVersionOrLater(version80);
-
-    private bool IsTargeting90OrLater()
-        => IsTargetingVersionOrLater(version90);
-
-    private bool IsTargeting100OrLater()
-        => IsTargetingVersionOrLater(version100);
-
-    private bool IsTargeting110OrLater()
-        => IsTargetingVersionOrLater(version110);
-
-    private bool IsTargetingVersionOrLater(Version version)
+    private Version? parsedTargetFrameworkVersion;
+    private Version ParsedTargetFrameworkVersion
     {
-        if (parsedTargetFrameworkVersion == null)
+        get
         {
-            string tfv = TargetFrameworkVersion;
-            if (tfv.StartsWith("v"))
-                tfv = tfv.Substring(1);
+            if (parsedTargetFrameworkVersion == null)
+            {
+                string tfv = TargetFrameworkVersion;
+#if NET
+                if (tfv.StartsWith('v'))
+#else
+                if (tfv.StartsWith("v", StringComparison.Ordinal))
+#endif
+                    tfv = tfv.Substring(1);
 
-            parsedTargetFrameworkVersion = Version.Parse(tfv);
+                parsedTargetFrameworkVersion = Version.Parse(tfv);
+            }
+
+            return parsedTargetFrameworkVersion;
         }
-
-        return parsedTargetFrameworkVersion >= version;
     }
+
+    private bool IsTargeting80OrLater() => ParsedTargetFrameworkVersion >= version80;
+    private bool IsTargeting90OrLater() => ParsedTargetFrameworkVersion >= version90;
+    private bool IsTargeting100OrLater() => ParsedTargetFrameworkVersion >= version100;
+    private bool IsTargeting110OrLater() => ParsedTargetFrameworkVersion >= version110;
 }

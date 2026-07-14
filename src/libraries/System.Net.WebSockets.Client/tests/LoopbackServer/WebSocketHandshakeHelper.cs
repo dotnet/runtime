@@ -193,7 +193,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
 
             // send server EOS (half-closing from server side)
-            requestData.Http11Connection!.Socket.Shutdown(SocketShutdown.Send);
+            await requestData.Http11Connection!.Socket.ShutdownAsync(SocketShutdown.Send);
         }
 
         public static async Task SendHttp2ServerResponseAndEosAsync(WebSocketRequestData requestData, bool eosInHeadersFrame, Func<WebSocketRequestData, CancellationToken, Task>? requestDataCallback, CancellationToken cancellationToken)

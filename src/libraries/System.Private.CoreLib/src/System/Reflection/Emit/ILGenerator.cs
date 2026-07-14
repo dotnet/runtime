@@ -44,6 +44,16 @@ namespace System.Reflection.Emit
 
         public abstract void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes);
 
+        /// <summary>
+        /// Puts a <see cref="OpCodes.Calli"/> instruction onto the Microsoft intermediate language (MSIL) stream,
+        /// specifying the type of the function pointer to call indirectly.
+        /// </summary>
+        /// <param name="functionPointerType">
+        /// The type of the function pointer to indirectly call.
+        /// The specified type must represent a function pointer type.
+        /// </param>
+        public virtual void EmitCalli(Type functionPointerType) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+
         public abstract void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes);
 
         public abstract void Emit(OpCode opcode, SignatureHelper signature);

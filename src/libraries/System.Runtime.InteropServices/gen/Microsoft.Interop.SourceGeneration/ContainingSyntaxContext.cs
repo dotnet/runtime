@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
@@ -148,6 +149,44 @@ namespace Microsoft.Interop
                 wrappedMember = NamespaceDeclaration(ParseName(ContainingNamespace)).AddMembers(wrappedMember);
             }
             return wrappedMember;
+        }
+
+        public void WriteToWithUnsafeModifier<TState>(IndentedTextWriter writer, TState writeMembersState, Action<IndentedTextWriter, TState> writeMembers)
+        {
+            if (ContainingNamespace is not null)
+            {
+                writer.WriteLine($"namespace {ContainingNamespace}");
+                writer.WriteLine('{');
+                writer.Indent++;
+            }
+
+            // When creating syntax we walk from most nested type to least nested and then enclose this chain in a namespace.
+            // With string writing things are exactly opposite: we are starting with a namespace and then print headers of types
+            // from least nested to most nested one. Since syntax model was the original one we have containing syntaxes stored as
+            // most convenient for it, so for string writing we have to walk them in the reverse order. When we eventually port
+            // our source generation to string writing we should reverse the order of elements for the convenience of that model instead.
+            for (int i = ContainingSyntax.Length - 1; i >= 0; i--)
+            {
+                ContainingSyntax syntax = ContainingSyntax[i];
+
+                writer.WriteLine($"{string.Join(" ", syntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword))} {syntax.TypeKind.GetDeclarationKeyword()} {syntax.Identifier}{syntax.TypeParameters}");
+                writer.WriteLine('{');
+                writer.Indent++;
+            }
+
+            writeMembers(writer, writeMembersState);
+
+            for (int i = 0; i < ContainingSyntax.Length; i++)
+            {
+                writer.Indent--;
+                writer.WriteLine('}');
+            }
+
+            if (ContainingNamespace is not null)
+            {
+                writer.Indent--;
+                writer.WriteLine('}');
+            }
         }
     }
 }

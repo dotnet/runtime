@@ -196,25 +196,32 @@ mono_ios_runtime_init (void)
     char contract_str[19]; // 0x + 16 hex digits + '\0'
     snprintf(contract_str, 19, "0x%zx", (size_t)(&host_contract));
 
-    // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
-    const char *appctx_keys [] = {
-        "RUNTIME_IDENTIFIER",
-        "APP_CONTEXT_BASE_DIRECTORY",
-        "TRUSTED_PLATFORM_ASSEMBLIES",
-        "HOST_RUNTIME_CONTRACT",
-#if !defined(INVARIANT_GLOBALIZATION)
-        "ICU_DAT_FILE_PATH"
+#if defined(INVARIANT_GLOBALIZATION)
+#define PROPERTY_COUNT %AppContextPropertyCount_InvariantGlobalization%
+#else
+#define PROPERTY_COUNT %AppContextPropertyCount%
 #endif
-    };
-    const char *appctx_values [] = {
-        APPLE_RUNTIME_IDENTIFIER,
-        bundle,
-        compute_trusted_platform_assemblies(),
-        contract_str,
+
+    // Hardcoded properties + runtime config properties (generated at build time)
+    const char *appctx_keys[PROPERTY_COUNT];
+    appctx_keys[0] = "RUNTIME_IDENTIFIER";
+    appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
+    appctx_keys[2] = "TRUSTED_PLATFORM_ASSEMBLIES";
+    appctx_keys[3] = "HOST_RUNTIME_CONTRACT";
 #if !defined(INVARIANT_GLOBALIZATION)
-        icu_dat_path
+    appctx_keys[4] = "ICU_DAT_FILE_PATH";
 #endif
-    };
+%AppContextKeys%
+
+    const char *appctx_values[PROPERTY_COUNT];
+    appctx_values[0] = APPLE_RUNTIME_IDENTIFIER;
+    appctx_values[1] = bundle;
+    appctx_values[2] = compute_trusted_platform_assemblies();
+    appctx_values[3] = contract_str;
+#if !defined(INVARIANT_GLOBALIZATION)
+    appctx_values[4] = icu_dat_path;
+#endif
+%AppContextValues%
 
     const char* executable = "%EntryPointLibName%";
     const char *executablePath = [[[[NSBundle mainBundle] executableURL] path] UTF8String];

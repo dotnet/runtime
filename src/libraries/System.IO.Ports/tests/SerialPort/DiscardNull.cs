@@ -29,7 +29,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_Default_Read_byte_int_int()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -49,7 +49,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_Default_Read_char_int_int()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -69,7 +69,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_Default_ReadByte()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -88,7 +88,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_Default_ReadChar()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -108,7 +108,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_Default_ReadLine()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -128,7 +128,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_Default_ReadTo()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -147,49 +147,49 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_true_Read_byte_int_int_Before()
         {
             Debug.WriteLine("Verifying true DiscardNull with Read_byte_int_int before open");
             VerifyDiscardNullBeforeOpen(true, Read_byte_int_int, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_true_Read_char_int_int_After()
         {
             Debug.WriteLine("Verifying true DiscardNull with Read_char_int_int after open");
             VerifyDiscardNullAfterOpen(true, Read_char_int_int, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_true_ReadByte_Before()
         {
             Debug.WriteLine("Verifying true DiscardNull with ReadByte before open");
             VerifyDiscardNullBeforeOpen(true, ReadByte, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_true_ReadChar_After()
         {
             Debug.WriteLine("Verifying true DiscardNull with ReadChar after open");
             VerifyDiscardNullAfterOpen(true, ReadChar, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_true_ReadLine_Before()
         {
             Debug.WriteLine("Verifying true DiscardNull with ReadLine before open");
             VerifyDiscardNullBeforeOpen(true, ReadLine, true);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_true_ReadTo_After()
         {
             Debug.WriteLine("Verifying true DiscardNull with ReadTo after open");
             VerifyDiscardNullAfterOpen(true, ReadTo, true);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_true_false_Read_byte_int_int_Before()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -212,7 +212,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_true_true_Read_char_int_int_After()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -235,7 +235,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(DiscardNull_Property), nameof(HasNullModem))]
         public void DiscardNull_false_flase_Default_ReadByte()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -315,7 +315,7 @@ namespace System.IO
         ///   4. Isn't a cross-plat friendly concept/behavior
         /// </remarks>
         [return: NotNullIfNotNull(nameof(path))]
-        internal static string? NormalizeDirectorySeparators(string? path)
+        internal static unsafe string? NormalizeDirectorySeparators(string? path)
         {
             if (string.IsNullOrEmpty(path))
                 return path;

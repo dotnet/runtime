@@ -114,7 +114,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 Binaries.GetExeName(AppName),
                 bundleDirectory,
                 options,
-                targetFrameworkVersion: bundleVersion,
+                Binaries.CurrentOSPlatform,
+                RuntimeInformation.OSArchitecture,
+                bundleVersion,
                 macosCodesign: RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
 
             // Get all files in the source directory and all sub-directories.

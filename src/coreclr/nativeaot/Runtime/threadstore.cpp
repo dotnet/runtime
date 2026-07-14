@@ -23,14 +23,14 @@
 #include "yieldprocessornormalized.h"
 #include <minipal/time.h>
 #include <minipal/thread.h>
-#include "asyncsafethreadmap.h"
-
-#include "slist.inl"
+#include "SignalSafeThreadMap.h"
 
 EXTERN_C volatile uint32_t RhpTrapThreads;
 volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;
 
 GVAL_IMPL_INIT(PTR_Thread, RhpSuspendingThread, 0);
+
+SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);
 
 ThreadStore * GetThreadStore()
 {
@@ -144,12 +144,12 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
     pAttachingThread->m_ThreadStateFlags = Thread::TSF_Attached;
 
-    pTS->m_ThreadList.PushHead(pAttachingThread);
+    pTS->m_ThreadList.InsertHead(pAttachingThread);
 
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
-    if (!InsertThreadIntoAsyncSafeMap(pAttachingThread->m_threadId, pAttachingThread))
+    if (!InsertThreadIntoSignalSafeMap(pAttachingThread->m_threadId, pAttachingThread))
     {
-        PalPrintFatalError("\nFailed to insert thread into async-safe map due to out of memory.\n");
+        PalPrintFatalError("\nFailed to insert thread into signal-safe map due to out of memory.\n");
         RhFailFast();
     }
 #endif // TARGET_UNIX && !TARGET_WASM
@@ -193,13 +193,13 @@ void ThreadStore::DetachCurrentThread()
         // Note that when process is shutting down, the threads may be rudely terminated,
         // possibly while holding the threadstore lock. That is ok, since the process is being torn down.
         CrstHolder threadStoreLock(&pTS->m_Lock);
-        ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
         // remove the thread from the list of managed threads.
-        pTS->m_ThreadList.RemoveFirst(pDetachingThread);
+        bool removed = pTS->m_ThreadList.RemoveFirst(pDetachingThread);
+        ASSERT(removed);
         // tidy up GC related stuff (release allocation context, etc..)
         pDetachingThread->Detach();
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
-        RemoveThreadFromAsyncSafeMap(pDetachingThread->m_threadId, pDetachingThread);
+        RemoveThreadFromSignalSafeMap(pDetachingThread->m_threadId, pDetachingThread);
 #endif
     }
 
@@ -368,7 +368,7 @@ EXTERN_C RuntimeThreadLocals* RhpGetThread()
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
 Thread * ThreadStore::GetCurrentThreadIfAvailableAsyncSafe()
 {
-    return (Thread*)FindThreadInAsyncSafeMap(minipal_get_current_thread_id_no_cache());
+    return (Thread*)FindThreadInSignalSafeMap(minipal_get_current_thread_id_no_cache());
 }
 #endif // TARGET_UNIX && !TARGET_WASM
 

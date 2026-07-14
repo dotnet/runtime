@@ -70,8 +70,11 @@ void
 DataBlob::Clear()
 {
     m_cbSize = 0;
+#ifndef TARGET_WASM
     // For debugging purposes let's put invalid non-NULL pointer here
+    // Emscripten doesn't handle this case well in memcpy, so don't do it for WASM target.
     INDEBUG_MD(m_pbData = const_pbBadFood);
+#endif // !TARGET_WASM
 } // DataBlob::Clear
 
 #undef const_pbBadFood

@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
     [KeptAttributeAttribute(typeof(IgnoreTestCaseAttribute), By = Tool.Trimmer)]
 
     [SetupLinkerDescriptorFile("UsedNonRequiredExportedTypeIsKeptWhenRooted.xml")]
-    [SetupLinkerArgument("-a", "libfwd.dll", "visible")]
+    [SetupLinkerArgument("-a", "libfwd", "visible")]
 
     [SetupCompileBefore("libfwd.dll", new[] { "Dependencies/UsedNonRequiredExportedTypeIsKeptWhenRooted_lib.cs" })]
     [SetupCompileAfter("lib.dll", new[] { "Dependencies/UsedNonRequiredExportedTypeIsKeptWhenRooted_lib.cs" })]

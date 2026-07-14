@@ -15,7 +15,7 @@ public struct SingleDoubleStruct {
 public struct SingleI64Struct {
     public Int64 Value;
 }
-public struct PairStruct {
+public struct WasmAppBuilderTestsPairStruct {
     public int A, B;
 }
 public unsafe struct MyFixedArray {
@@ -51,7 +51,7 @@ public class Test
         var res = indirect(sds);
         Console.WriteLine("TestOutput -> s (s)=" + res.Value);
 
-        var pair = new PairStruct { A = 1, B = 2 };
+        var pair = new WasmAppBuilderTestsPairStruct { A = 1, B = 2 };
         var paires = accept_and_return_pair(pair);
         Console.WriteLine("TestOutput -> paires.B=" + paires.B);
 
@@ -97,7 +97,7 @@ public class Test
     public static extern Int64 direct64(Int64 arg);
 
     [DllImport("wasm-abi", EntryPoint="accept_and_return_pair")]
-    public static extern PairStruct accept_and_return_pair(PairStruct arg);
+    public static extern WasmAppBuilderTestsPairStruct accept_and_return_pair(WasmAppBuilderTestsPairStruct arg);
 
     [DllImport("wasm-abi", EntryPoint="accept_and_return_fixedarray")]
     public static extern MyFixedArray accept_and_return_fixedarray(MyFixedArray arg);
