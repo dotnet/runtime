@@ -1,15 +1,10 @@
 # Hybrid Globalization
 
-`HybridGlobalization` mode uses platform-native internationalization APIs where possible. On Apple mobile platforms (iOS/tvOS/MacCatalyst), Hybrid is always active: the runtime primarily uses Foundation/NSLocale APIs and links against the system `icucore` library for remaining ICU-backed operations, including IDN mapping; no app-local ICU data file is loaded. Invariant mode takes precedence over Hybrid on all platforms.
-
-Hybrid has lower priority than Invariant. To switch on the mode set the property in the build file:
-```
-<HybridGlobalization>true</HybridGlobalization>
-```
+`HybridGlobalization` mode uses platform-native internationalization APIs where possible. On Apple mobile platforms (iOS/tvOS/MacCatalyst), Hybrid is always active unless Invariant mode is enabled. The `HybridGlobalization` build property is retained for linker and native-build compatibility; it does not enable Hybrid mode or app-local ICU data on these platforms.
 
 ## Behavioral differences
 
-Hybrid mode does not use ICU data for some functions connected with globalization but relies on functions native to the platform. Because native APIs do not fully cover all the functionalities we currently support and because ICU data can be excluded from the ICU datafile only in batches defined by ICU filters, not all functions will work the same way or not all will be supported. To see what to expect after switching on `HybridGlobalization`, read the following paragraphs.
+Hybrid mode does not use ICU data for some functions connected with globalization but relies on functions native to the platform. Because native APIs do not fully cover all the functionality currently supported, behavior can differ from ICU-based platforms and some functionality is unsupported. The following sections describe these differences.
 
 ### Apple platforms
 
@@ -129,7 +124,7 @@ Not covered case:
 
 - Some letters consist of more than one grapheme.
 
-   Apple Native Api does not guarantee that string will be segmented by letters but by graphemes. E.g. in `cs-CZ` and `sk-SK` "ch" is 1 letter, 2 graphemes. The following code with `HybridGlobalization` switched off returns -1 (not found) while with `HybridGlobalization` switched on, it returns 1.
+   Apple Native Api does not guarantee that string will be segmented by letters but by graphemes. E.g. in `cs-CZ` and `sk-SK` "ch" is 1 letter, 2 graphemes. The following code returns -1 (not found) on ICU-based platforms and 1 on Apple mobile platforms.
 
    ``` C#
    new CultureInfo("sk-SK").CompareInfo.IndexOf("ch", "h"); // -1 or 1
@@ -138,7 +133,7 @@ Not covered case:
 - Some graphemes have multi-grapheme equivalents.
    E.g. in `de-DE` ß (%u00DF) is one letter and one grapheme and "ss" is one letter and is recognized as two graphemes. Apple Native API's equivalent of `IgnoreNonSpace` treats them as the same letter when comparing. Similar case: ǳ (%u01F3) and dz.
 
-   Using `IgnoreNonSpace` for these two with `HybridGlobalization` off, also returns 0 (they are equal). However, the workaround used in `HybridGlobalization` will compare them grapheme-by-grapheme and will return -1.
+   Using `IgnoreNonSpace` for these two on ICU-based platforms also returns 0 (they are equal). However, the Apple mobile implementation compares them grapheme-by-grapheme and returns -1.
 
    ``` C#
    new CultureInfo("de-DE").CompareInfo.IndexOf("strasse", "stra\u00DFe", 0, CompareOptions.IgnoreNonSpace); // 0 or -1
