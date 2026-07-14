@@ -23,6 +23,12 @@ namespace System.IO.Compression;
 /// This mirrors the <c>TarReader</c> / <c>TarEntry</c> pattern in
 /// <c>System.Formats.Tar</c>.
 /// </para>
+/// <para>
+/// Once enumeration completes (that is, once a <c>GetNextEntry</c> call returns
+/// <see langword="null"/>), the reader has consumed into the archive's trailing
+/// central directory, so the position of the underlying stream is unspecified.
+/// Reading additional data from the stream after enumeration ends is not supported.
+/// </para>
 /// </remarks>
 public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
 {
@@ -89,6 +95,8 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
     /// </param>
     /// <returns>
     /// The next <see cref="ZipArchiveEntry"/>, or <see langword="null"/> if there are no more entries.
+    /// When <see langword="null"/> is returned, the underlying stream has been consumed into the
+    /// trailing central directory and its position is unspecified.
     /// </returns>
     /// <exception cref="ObjectDisposedException">The reader has been disposed.</exception>
     /// <exception cref="InvalidDataException">The archive stream contains invalid data.</exception>
@@ -109,6 +117,17 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         if (bytesRead < ZipLocalFileHeader.SizeOfLocalHeader)
         {
             _reachedEnd = true;
+
+            // A clean end of the archive is either no more bytes at all, or a short trailing
+            // end-of-entries record such as the 22-byte end-of-central-directory of an empty
+            // archive. Any other non-empty partial read means the stream ended in the middle of
+            // a local file header, i.e. the archive is truncated.
+            if (bytesRead != 0 &&
+                !(bytesRead >= sizeof(uint) && IsKnownEndOfEntriesSignature(headerBytes)))
+            {
+                throw new InvalidDataException(SR.UnexpectedEndOfStream);
+            }
+
             return null;
         }
 
@@ -182,6 +201,8 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>
     /// The next <see cref="ZipArchiveEntry"/>, or <see langword="null"/> if there are no more entries.
+    /// When <see langword="null"/> is returned, the underlying stream has been consumed into the
+    /// trailing central directory and its position is unspecified.
     /// </returns>
     public async ValueTask<ZipArchiveEntry?> GetNextEntryAsync(
         bool copyData = false, CancellationToken cancellationToken = default)
@@ -205,6 +226,17 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         if (bytesRead < ZipLocalFileHeader.SizeOfLocalHeader)
         {
             _reachedEnd = true;
+
+            // A clean end of the archive is either no more bytes at all, or a short trailing
+            // end-of-entries record such as the 22-byte end-of-central-directory of an empty
+            // archive. Any other non-empty partial read means the stream ended in the middle of
+            // a local file header, i.e. the archive is truncated.
+            if (bytesRead != 0 &&
+                !(bytesRead >= sizeof(uint) && IsKnownEndOfEntriesSignature(headerBytes)))
+            {
+                throw new InvalidDataException(SR.UnexpectedEndOfStream);
+            }
+
             return null;
         }
 
@@ -362,6 +394,10 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         {
             ReadDataDescriptor(entry, crcStream);
         }
+
+        // The forward-only stream is invalidated once the reader advances, so dispose it here to
+        // release the inflater and other native resources instead of waiting for finalization.
+        entry.ForwardDataStream?.Dispose();
     }
 
     private async ValueTask AdvanceDataStreamIfNeededAsync(CancellationToken cancellationToken)
@@ -379,6 +415,13 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         if (entry.HasDataDescriptor && entry.ForwardDataStream is CrcValidatingReadStream crcStream)
         {
             await ReadDataDescriptorAsync(entry, crcStream, cancellationToken).ConfigureAwait(false);
+        }
+
+        // The forward-only stream is invalidated once the reader advances, so dispose it here to
+        // release the inflater and other native resources instead of waiting for finalization.
+        if (entry.ForwardDataStream is not null)
+        {
+            await entry.ForwardDataStream.DisposeAsync().ConfigureAwait(false);
         }
     }
 

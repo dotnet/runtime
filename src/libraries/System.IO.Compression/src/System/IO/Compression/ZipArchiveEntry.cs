@@ -243,7 +243,6 @@ namespace System.IO.Compression
             _versionMadeBySpecification = ZipVersionNeededValues.Default;
             _versionToExtract = (ZipVersionNeededValues)versionNeeded;
             _generalPurposeBitFlag = (BitFlagValues)generalPurposeBitFlag;
-            _isEncrypted = (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
             CompressionMethod = compressionMethod;
             _lastModified = lastModified;
             _compressedSize = compressedSize;
@@ -571,6 +570,11 @@ namespace System.IO.Compression
         /// <param name="password">The password used to decrypt the entry. If the entry is not encrypted, this parameter is ignored.</param>
         public Stream Open(ReadOnlySpan<char> password)
         {
+            if (_isForwardReadEntry)
+            {
+                return OpenForwardReadMode();
+            }
+
             ThrowIfInvalidArchive();
 
             if (IsEncrypted && password.IsEmpty)
@@ -618,6 +622,16 @@ namespace System.IO.Compression
 
         public Stream Open(FileAccess access, ReadOnlySpan<char> password)
         {
+            if (_isForwardReadEntry)
+            {
+                if (access != FileAccess.Read)
+                {
+                    throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
+                }
+
+                return OpenForwardReadMode();
+            }
+
             ThrowIfInvalidArchive();
             ValidateAccessForMode(access);
 
@@ -1262,7 +1276,7 @@ namespace System.IO.Compression
             return _forwardDataStream;
         }
 
-        private CrcValidatingReadStream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlySpan<char> password = default)
+        private Stream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlySpan<char> password = default)
         {
             Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offsetOfCompressedData, _compressedSize);
             Stream streamToDecompress;

@@ -22,6 +22,12 @@ public partial class ZipArchiveEntry
     public Task<Stream> OpenAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (_isForwardReadEntry)
+        {
+            return Task.FromResult<Stream>(OpenForwardReadMode());
+        }
+
         ThrowIfInvalidArchive();
         return OpenAsyncCore(InferAccessFromMode(), default, cancellationToken);
     }
@@ -48,6 +54,17 @@ public partial class ZipArchiveEntry
     public Task<Stream> OpenAsync(FileAccess access, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (_isForwardReadEntry)
+        {
+            if (access != FileAccess.Read)
+            {
+                throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
+            }
+
+            return Task.FromResult<Stream>(OpenForwardReadMode());
+        }
+
         ThrowIfInvalidArchive();
         ValidateAccessForMode(access);
         return OpenAsyncCore(access, default, cancellationToken);
@@ -75,6 +92,17 @@ public partial class ZipArchiveEntry
     public Task<Stream> OpenAsync(FileAccess access, ReadOnlySpan<char> password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (_isForwardReadEntry)
+        {
+            if (access != FileAccess.Read)
+            {
+                throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
+            }
+
+            return Task.FromResult<Stream>(OpenForwardReadMode());
+        }
+
         ThrowIfInvalidArchive();
         ValidateAccessForMode(access);
 
@@ -103,6 +131,12 @@ public partial class ZipArchiveEntry
     public Task<Stream> OpenAsync(ReadOnlySpan<char> password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (_isForwardReadEntry)
+        {
+            return Task.FromResult<Stream>(OpenForwardReadMode());
+        }
+
         ThrowIfInvalidArchive();
 
         if (IsEncrypted && password.IsEmpty)

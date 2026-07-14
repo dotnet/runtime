@@ -117,6 +117,30 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Read_TruncatedLocalFileHeader_ThrowsInvalidData(bool async)
+        {
+            byte[] zipBytes = CreateZipWithEntries(CompressionLevel.Optimal, seekable: true);
+
+            // Cut the stream in the middle of the first local file header. The reader sees a
+            // non-empty partial read that is not an end-of-entries record, so it must treat the
+            // archive as truncated rather than silently reporting end-of-archive.
+            byte[] truncated = zipBytes[..15];
+
+            using MemoryStream archiveStream = new(truncated);
+            using ZipStreamReader reader = new(archiveStream);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => reader.GetNextEntryAsync().AsTask());
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         public async Task CopyData_PreservesEntryAfterAdvancing(bool async)
         {
             byte[] zipBytes = CreateZipWithEntries(CompressionLevel.Optimal, seekable: true);
@@ -464,6 +488,12 @@ namespace System.IO.Compression.Tests
                 ? await reader.GetNextEntryAsync(copyData: copyData)
                 : reader.GetNextEntry(copyData: copyData);
         }
+
+        private static async ValueTask<Stream> OpenEntry(ZipArchiveEntry entry, bool async) =>
+            async ? await entry.OpenAsync() : entry.Open();
+
+        private static async ValueTask<Stream> OpenEntry(ZipArchiveEntry entry, FileAccess access, bool async) =>
+            async ? await entry.OpenAsync(access) : entry.Open(access);
 
         private static bool IsDirectory(ZipArchiveEntry entry) =>
             entry.FullName.Length > 0 && (entry.FullName[^1] is '/' or '\\');
