@@ -7,10 +7,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ci-workflow-eval-${{ github.event.issue.number }}
-  cancel-in-progress: true
-
 jobs:
   acknowledge:
     if: >-
@@ -24,16 +20,29 @@ jobs:
         github.event.comment.body == '/ci-eval' || startsWith(github.event.comment.body, '/ci-eval ')
       )
     runs-on: ubuntu-latest
+    environment: copilot-pat-pool
     permissions:
       issues: write
+      pull-requests: read
+      statuses: write
     steps:
       - name: Acknowledge the command
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
+          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
+            const { owner, repo } = context.repo;
+            const { data: pr } = await github.rest.pulls.get({
+              owner, repo, pull_number: context.issue.number,
+            });
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha: pr.head.sha, state: 'pending',
+              context: 'ci-workflow-eval',
+              target_url: `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              description: 'CI workflow eval is running',
+            });
             await github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner, repo: context.repo.repo,
-              comment_id: context.payload.comment.id, content: 'eyes',
+              owner, repo, comment_id: context.payload.comment.id, content: 'eyes',
             });
 
   pat_pool:
@@ -71,11 +80,21 @@ jobs:
           for i in $(seq 0 9); do
             var="COPILOT_PAT_${i}"
             if [ -n "${!var}" ]; then
-              PAT_NUMBERS+=("${i}")
+              if ! status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+                --header "Authorization: Bearer ${!var}" \
+                --header "Accept: application/vnd.github+json" \
+                https://api.github.com/user); then
+                status=000
+              fi
+              if [ "$status" = 200 ]; then
+                PAT_NUMBERS+=("${i}")
+              else
+                echo "::warning::Ignoring COPILOT_PAT_${i}: GitHub /user returned HTTP ${status}."
+              fi
             fi
           done
           if [ ${#PAT_NUMBERS[@]} -eq 0 ]; then
-            echo "::notice::No PAT pool entries set — falling back to COPILOT_GITHUB_TOKEN."
+            echo "::notice::No valid PAT pool entries found — falling back to COPILOT_GITHUB_TOKEN."
             exit 0
           fi
           PAT_INDEX=$(( RANDOM % ${#PAT_NUMBERS[@]} ))
@@ -98,6 +117,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: copilot-pat-pool
     timeout-minutes: 120
+    concurrency:
+      group: ci-workflow-eval-${{ github.event.issue.number }}
+      cancel-in-progress: true
     permissions:
       contents: read
       issues: read
@@ -105,6 +127,7 @@ jobs:
     outputs:
       guard_run: ${{ steps.guard.outputs.run }}
       guard_reason: ${{ steps.guard.outputs.reason }}
+      head_sha: ${{ steps.guard.outputs.head_sha }}
     steps:
       - name: Select the spec(s) from the command
         id: sel
@@ -147,6 +170,7 @@ jobs:
             });
             const headRepo = pr.head.repo ? pr.head.repo.full_name : null;
             const base = `${owner}/${repo}`;
+            core.setOutput('head_sha', pr.head.sha);
             if (headRepo !== base) {
               core.setOutput('run', 'false');
               core.setOutput('reason',
@@ -288,8 +312,11 @@ jobs:
         github.event.comment.body == '/ci-eval' || startsWith(github.event.comment.body, '/ci-eval ')
       )
     runs-on: ubuntu-latest
+    environment: copilot-pat-pool
     permissions:
       issues: write
+      pull-requests: read
+      statuses: write
     steps:
       - name: Download the report
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -301,24 +328,51 @@ jobs:
       - name: Post the report
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
+          EVAL_RESULT: ${{ needs.eval.result }}
           GUARD_RUN: ${{ needs.eval.outputs.guard_run }}
           GUARD_REASON: ${{ needs.eval.outputs.guard_reason }}
+          HEAD_SHA: ${{ needs.eval.outputs.head_sha }}
         with:
+          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
             const path = require('path');
             const marker = '<!-- ci-workflow-eval -->';
             let body;
+            let reportUnavailable = false;
             if (process.env.GUARD_RUN === 'true') {
               const header = '> [!NOTE]\n> AI/Copilot-generated eval report (Vally), triggered by a maintainer eval command.\n\n';
               let report = '_eval report unavailable_';
-              try { report = fs.readFileSync(path.join(process.env.RUNNER_TEMP, 'vally', 'report.md'), 'utf8'); } catch {}
+              try {
+                report = fs.readFileSync(path.join(process.env.RUNNER_TEMP, 'vally', 'report.md'), 'utf8');
+              } catch {
+                reportUnavailable = true;
+              }
               body = `${marker}\n${header}${report}`;
             } else {
               body = `${marker}\n${process.env.GUARD_REASON || '_eval skipped_'}`;
             }
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
+            const evalResult = process.env.EVAL_RESULT;
+            const authenticationFailed = body.includes('Authentication failed');
+            const passed = process.env.GUARD_RUN === 'true' &&
+              evalResult === 'success' &&
+              !body.includes('❌ failed') &&
+              !reportUnavailable;
+            const failed = process.env.GUARD_RUN === 'true' &&
+              evalResult === 'failure' &&
+              !authenticationFailed &&
+              !reportUnavailable;
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha: process.env.HEAD_SHA,
+              state: passed ? 'success' : failed ? 'failure' : 'error',
+              context: 'ci-workflow-eval',
+              target_url: `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              description: passed ? 'All selected evals passed' :
+                failed ? 'One or more selected evals failed' :
+                'CI workflow eval could not complete',
+            });
             const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
             const existing = comments.find(c => c.body && c.body.includes(marker));
             if (existing) {
