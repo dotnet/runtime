@@ -22,6 +22,9 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         public static extern int CallManagedProc(IntPtr callbackProc, int n);
 
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int CallManagedProc_Stdcall_SingleArg(delegate* unmanaged[Stdcall]<int, int> callbackProc, int n);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
         public static extern int CallManagedProc_Stdcall(delegate* unmanaged[Stdcall]<int, int, int, int> callbackProc, int m, int n, int o);
 
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
@@ -49,9 +52,9 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = "IgnoredEntryPoint", AssociatedSourceType = typeof(UnmanagedCallersOnlyDll))]
-    public static int ManagedDoubleCallback_AllOptionalParameters(int m, int n, int o)
+    public static int ManagedDoubleCallback_AllOptionalParameters(int n)
     {
-        return DoubleImpl(m, n, o);
+        return DoubleImpl(n);
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
@@ -80,20 +83,20 @@ public unsafe class UnmanagedCallersOnlyBasicTest
 
         int n = 12345;
         int expected = DoubleImpl(n);
-        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall(&ManagedDoubleCallback_AllOptionalParameters, n, 0, 0);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall_SingleArg(&ManagedDoubleCallback_AllOptionalParameters, n);
 
         Assert.Equal(expected, actual);
     }
 
-    private static int DoubleImpl(int m, int n, int o)
+    private static int MixSum(int m, int n, int o)
     {
-        return 2 * (m + n + o);
+         return (2 * m) + (3 * n) + (5 * o);
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
-    public static int ManagedDoubleCallback_Stdcall(int m, int n, int o)
+    public static int ManagedMixSumCallback_Stdcall(int m, int n, int o)
     {
-        return DoubleImpl(m, n, o);
+        return MixSum(m, n, o);
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
@@ -105,19 +108,19 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvStdcall)}...");
 
-        int m = -13;
-        int n = 12345;
-        int o = 13;
-        int expected = DoubleImpl(m, n, o);
-        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall(&ManagedDoubleCallback_Stdcall, m, n, o);
+        int m = 3;
+        int n = 4;
+        int o = 5;
+        int expected = MixSum(m, n, o);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall(&ManagedMixSumCallback_Stdcall, m, n, o);
 
         Assert.Equal(expected, actual);
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    public static int ManagedDoubleCallback_Cdecl(int m, int n, int o)
+    public static int ManagedMixSumCallback_Cdecl(int m, int n, int o)
     {
-        return DoubleImpl(m, n, o);
+        return MixSum(m, n, o);
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
@@ -129,19 +132,19 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvCdecl)}...");
 
-        int m = -13;
-        int n = 12345;
-        int o = 13;
-        int expected = DoubleImpl(m, n, o);
-        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Cdecl(&ManagedDoubleCallback_Cdecl, m, n, o);
+        int m = 3;
+        int n = 4;
+        int o = 5;
+        int expected = MixSum(m, n, o);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Cdecl(&ManagedMixSumCallback_Cdecl, m, n, o);
 
         Assert.Equal(expected, actual);
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvFastcall)])]
-    public static int ManagedDoubleCallback_Fastcall(int m, int n, int o)
+    public static int ManagedMixSumCallback_Fastcall(int m, int n, int o)
     {
-        return DoubleImpl(m, n, o);
+        return MixSum(m, n, o);
     }
 
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
@@ -151,11 +154,11 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvFastcall)}...");
 
-        int m = -13;
-        int n = 12345;
-        int o = 13;
-        int expected = DoubleImpl(m, n, o);
-        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Fastcall(&ManagedDoubleCallback_Fastcall, m, n, o);
+        int m = 3;
+        int n = 4;
+        int o = 5;
+        int expected = MixSum(m, n, o);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Fastcall(&ManagedMixSumCallback_Fastcall, m, n, o);
 
         Assert.Equal(expected, actual);
     }
