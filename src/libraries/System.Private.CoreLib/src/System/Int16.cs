@@ -609,24 +609,17 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static short CopySign(short value, short sign)
         {
-            short absValue = value;
+            // signMask is all-bits-set when value and sign differ in sign, in which case value needs to be negated.
+            int signMask = (value ^ sign) >> 31;
+            short result = (short)((value ^ signMask) - signMask);
 
-            if (absValue < 0)
+            if ((sign >= 0) && (result < 0))
             {
-                absValue = (short)(-absValue);
+                // value was short.MinValue and a non-negative result was requested, which is unrepresentable.
+                Math.ThrowNegateTwosCompOverflow();
             }
 
-            if (sign >= 0)
-            {
-                if (absValue < 0)
-                {
-                    Math.ThrowNegateTwosCompOverflow();
-                }
-
-                return absValue;
-            }
-
-            return (short)(-absValue);
+            return result;
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />

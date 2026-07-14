@@ -78,6 +78,10 @@
 #include "entrypoints.h"
 #endif // TARGET_BROWSER
 
+#ifdef TARGET_WASI
+#include "wasm/entrypoints.h"
+#endif // TARGET_WASI
+
 #ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
@@ -176,6 +180,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeMethodHandle_IsCAVisibleFromDecoratedType)
     DllImportEntry(RuntimeMethodHandle_Destroy)
     DllImportEntry(RuntimeMethodHandle_GetStubIfNeededSlow)
+    DllImportEntry(RuntimeMethodHandle_GetNativeCode)
     DllImportEntry(RuntimeMethodHandle_GetMethodBody)
     DllImportEntry(RuntimeModule_GetScopeName)
     DllImportEntry(RuntimeModule_GetFullyQualifiedName)
@@ -539,6 +544,10 @@ static const Entry s_QCall[] =
     DllImportEntry(SystemJS_ScheduleTimer)
     DllImportEntry(SystemJS_ScheduleBackgroundJob)
 #endif // TARGET_BROWSER
+#ifdef TARGET_WASI
+    DllImportEntry(WasiFinalizer_RunWorker)
+    DllImportEntry(WasiFinalizer_TryClearPending)
+#endif // TARGET_WASI
 };
 
 const void* QCallResolveDllImport(const char* name)
