@@ -14,7 +14,8 @@ public sealed class PackedSimdTests
     [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(PackedSimd))]
     public static unsafe void PackedSimdIsSupported()
     {
-        MethodInfo methodInfo = typeof(PackedSimd).GetMethod("get_IsSupported");
+        MethodInfo? methodInfo = typeof(PackedSimd).GetProperty(nameof(PackedSimd.IsSupported))?.GetGetMethod();
+        Assert.NotNull(methodInfo);
         Assert.Equal(PackedSimd.IsSupported, methodInfo.Invoke(null, null));
         Assert.Equal(PackedSimd.IsSupported, Vector128.IsHardwareAccelerated);
         Assert.True(PackedSimd.IsSupported);
@@ -811,7 +812,14 @@ public sealed class PackedSimdTests
         var rightShiftLogical = PackedSimd.ShiftRightLogical(v, 2);
         Assert.Equal(Vector128.Create([(nint)64, (-64), 128, (-128)]), leftShift);
         Assert.Equal(Vector128.Create([(nint)4, (-4), 8, (-8)]), rightShiftArith);
-        Assert.Equal(Vector128.Create([(nint)4, 1073741820, 8, 1073741816]), rightShiftLogical);
+        Assert.Equal(
+            Vector128.Create([
+                (nint)4,
+                unchecked((nint)(unchecked((nuint)(nint)(-16)) >> 2)),
+                (nint)8,
+                unchecked((nint)(unchecked((nuint)(nint)(-32)) >> 2))
+            ]),
+            rightShiftLogical);
     }
 
     [Fact]
