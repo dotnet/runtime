@@ -588,24 +588,17 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static sbyte CopySign(sbyte value, sbyte sign)
         {
-            sbyte absValue = value;
+            // signMask is all-bits-set when value and sign differ in sign, in which case value needs to be negated.
+            int signMask = (value ^ sign) >> 31;
+            sbyte result = (sbyte)((value ^ signMask) - signMask);
 
-            if (absValue < 0)
+            if ((sign >= 0) && (result < 0))
             {
-                absValue = (sbyte)(-absValue);
+                // value was sbyte.MinValue and a non-negative result was requested, which is unrepresentable.
+                Math.ThrowNegateTwosCompOverflow();
             }
 
-            if (sign >= 0)
-            {
-                if (absValue < 0)
-                {
-                    Math.ThrowNegateTwosCompOverflow();
-                }
-
-                return absValue;
-            }
-
-            return (sbyte)(-absValue);
+            return result;
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />

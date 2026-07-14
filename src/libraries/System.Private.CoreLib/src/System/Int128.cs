@@ -1209,22 +1209,19 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static Int128 CopySign(Int128 value, Int128 sign)
         {
-            Int128 absValue = value;
+            // signMask is all-bits-set when value and sign differ in sign, in which case value needs to be negated.
+            Int128 signMask = (value ^ sign) >> 127;
 
-            if (IsNegative(absValue))
+            // Branchless conditional negate: (x ^ -1) - (-1) == -x; (x ^ 0) - 0 == x
+            Int128 result = (value ^ signMask) - signMask;
+
+            if (IsPositive(sign) && IsNegative(result))
             {
-                absValue = -absValue;
+                // value was Int128.MinValue and a non-negative result was requested, which is unrepresentable.
+                Math.ThrowNegateTwosCompOverflow();
             }
 
-            if (IsPositive(sign))
-            {
-                if (IsNegative(absValue))
-                {
-                    Math.ThrowNegateTwosCompOverflow();
-                }
-                return absValue;
-            }
-            return -absValue;
+            return result;
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
