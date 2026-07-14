@@ -202,18 +202,50 @@
       <_WasiRelinkCompileFlags Include="-mllvm" />
       <_WasiRelinkCompileFlags Include="-wasm-use-legacy-eh=false" />
       <_WasiRelinkCompileFlags Include="-fno-rtti" />
-      <!-- Target identity the generated callhelpers/callhelpers.hpp compile against. -->
+      <!-- Full CoreCLR-WASI VM define set (from the runtime callhelper compile), so the
+           generated callhelpers/callhelpers.hpp compile against the exact same ABI/struct
+           layout as libcoreclr_static.a. Missing defines here cause EH/interp thunk ABI
+           skew (e.g. an SfiInitWorker crash during managed exception dispatch). -->
       <_WasiRelinkCompileFlags Include="-DGEN_PINVOKE=1" />
-      <_WasiRelinkCompileFlags Include="-DHOST_WASM" />
-      <_WasiRelinkCompileFlags Include="-DHOST_UNIX" />
+      <_WasiRelinkCompileFlags Include="-DCOMPILER_SUPPORTS_W_RESERVED_IDENTIFIER" />
+      <_WasiRelinkCompileFlags Include="-DDEBUGGING_SUPPORTED" />
+      <_WasiRelinkCompileFlags Include="-DDISABLE_CONTRACTS" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_CACHED_INTERFACE_DISPATCH" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_COLLECTIBLE_TYPES" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_CORECLR" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_DBGIPC_TRANSPORT_DI" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_DBGIPC_TRANSPORT_VM" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_DEFAULT_INTERFACES" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_INTERPRETER" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_MULTICOREJIT" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_PAL_ANSI" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_PORTABLE_ENTRYPOINTS" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_PORTABLE_HELPERS" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_READYTORUN" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_REMOTE_PROC_MEM" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_STATICALLY_LINKED" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_SYMDIFF" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_USE_ASM_GC_WRITE_BARRIERS" />
+      <_WasiRelinkCompileFlags Include="-DFEATURE_WEBCIL" />
       <_WasiRelinkCompileFlags Include="-DHOST_32BIT=1" />
+      <_WasiRelinkCompileFlags Include="-DHOST_UNIX" />
+      <_WasiRelinkCompileFlags Include="-DHOST_WASM" />
+      <_WasiRelinkCompileFlags Include="-DTARGET_32BIT" />
+      <_WasiRelinkCompileFlags Include="-DTARGET_UNIX" />
+      <_WasiRelinkCompileFlags Include="-DTARGET_WASI" />
       <_WasiRelinkCompileFlags Include="-DTARGET_WASM" />
       <_WasiRelinkCompileFlags Include="-DTARGET_WASM32" />
-      <_WasiRelinkCompileFlags Include="-DTARGET_WASI" />
-      <_WasiRelinkCompileFlags Include="-DTARGET_UNIX" />
-      <_WasiRelinkCompileFlags Include="-DTARGET_32BIT" />
-      <_WasiRelinkCompileFlags Include="-DFEATURE_INTERPRETER" />
-      <_WasiRelinkCompileFlags Include="-DFEATURE_PORTABLE_ENTRYPOINTS" />
+      <_WasiRelinkCompileFlags Include="-DUNICODE" />
+      <_WasiRelinkCompileFlags Include="-D_UNICODE" />
+      <_WasiRelinkCompileFlags Include="-DURTBLDENV_FRIENDLY=Retail" />
+      <_WasiRelinkCompileFlags Include="-D_FILE_OFFSET_BITS=64" />
+      <_WasiRelinkCompileFlags Include="-D_TIME_BITS=64" />
+      <_WasiRelinkCompileFlags Include="-D_SECURE_SCL=0" />
+      <_WasiRelinkCompileFlags Include="-D_WASI_EMULATED_GETPID" />
+      <_WasiRelinkCompileFlags Include="-D_WASI_EMULATED_MMAN" />
+      <_WasiRelinkCompileFlags Include="-D_WASI_EMULATED_PROCESS_CLOCKS" />
+      <_WasiRelinkCompileFlags Include="-D_WASI_EMULATED_SIGNAL" />
       <_WasiRelinkCompileFlags Include="-include &quot;$(_WasiCoreClrCompatHeader.Replace('\','/'))&quot;" />
       <_WasiRelinkCompileFlags Include="-I&quot;$(_WasiVmWasmIncludeDir.TrimEnd('\/').Replace('\','/'))&quot;" />
       <_WasiRelinkCompileFlags Include="-I&quot;$(_WasiMinipalIncludeRoot.TrimEnd('\/').Replace('\','/'))&quot;" />
@@ -237,8 +269,10 @@
          always linked into the host (invariant is a run-time config + a generator ignore,
          not a host link-time exclusion). -->
     <ItemGroup>
-      <!-- Linked before -lstdc++ -->
-      <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libWasiHost.a" />
+      <!-- Linked before -lstdc++. libWasiHost.a is wrapped in whole-archive below (not
+           here) so its main()/_start entry is pulled in: wasm-ld only includes archive
+           members that satisfy a strong undefined reference, and main is referenced weakly
+           by __main_void, so a plain archive link would leave main undefined. -->
       <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libminipal.a" />
       <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclr_static.a" />
       <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.IO.Compression.Native.a" />
@@ -282,6 +316,10 @@
       <_WasiRelinkLinkFlags Include="-Wl,--initial-memory=134217728" />
       <_WasiRelinkLinkFlags Include="-Wl,--max-memory=4294967296" />
       <_WasiRelinkLinkFlags Include="-Wl,--component-type,&quot;$(_WasiHttpWorldWit.Replace('\','/'))&quot;" />
+      <!-- Host archive first, whole-archive so main()/_start are included. -->
+      <_WasiRelinkLinkFlags Include="-Wl,--whole-archive" />
+      <_WasiRelinkLinkFlags Include="&quot;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libWasiHost.a&quot;" />
+      <_WasiRelinkLinkFlags Include="-Wl,--no-whole-archive" />
       <_WasiRelinkLinkFlags Include="@(_WasiHostLibsPre->'&quot;%(Identity)&quot;')" />
       <_WasiRelinkLinkFlags Include="-lstdc++" />
       <_WasiRelinkLinkFlags Include="@(_WasiHostLibsPost->'&quot;%(Identity)&quot;')" />
