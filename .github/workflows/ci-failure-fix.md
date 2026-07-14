@@ -196,7 +196,7 @@ Apply these fixer-specific bounds on top of the skill's guidance:
 
 | KBE pipeline / area | Fix policy |
 |---|---|
-| Mobile (ios/tvos/maccatalyst/android/wasm/wasi) | Small test/csproj/condition fixes in bounds are fair game. For trimming/AOT reflection failures, do **not** root a type in the test assembly itself via `ILLink.Descriptors.xml`/`TrimmerRootDescriptor` — test assemblies are rooted whole, so this is a no-op; only root a separate owning assembly confirmed from source, else loop in with a comment. |
+| Mobile (ios/tvos/maccatalyst/android/wasm/wasi) | Small test/csproj/condition fixes in bounds are fair game. For trimming/AOT reflection failures, apply the already-rooted caution in Step 5.2 before proposing a descriptor or root. |
 | JIT / GC / PGO stress (codegen) | JIT/GC product fixes are OUT of bounds for any PR — no safe diff is producible, so loop in JIT/GC owners with a comment. Workarounds in unrelated code (e.g. changing library buffer sizes or API call patterns to sidestep a codegen bug) are equally OUT of bounds — go straight to the loop-in comment instead of opening a workaround PR. |
 | `System.Net.*` | In bounds only if it satisfies Step 5.2. |
 | `Microsoft.Extensions.*` | In bounds only if it satisfies Step 5.2. |
@@ -219,7 +219,7 @@ codegen-stress failures. No fix or workaround PR is in bounds for them.
 
 Always try to produce a real candidate change first. Read every file you would modify at `HEAD`, work out the minimal correct change (e.g. wrong expected value in a test, missing `using`, wrong cast, missing `#if`, off-by-one in test setup, a missing platform guard that *enables* correct behavior rather than disabling the test), and stage it. If the change reduces to "do what the source already does", there is nothing to fix -> record `-> skipped: candidate fix already present in source`.
 
-**NativeAOT already-rooted caution.** When the failing leg is a NativeAOT run (e.g. Apple `AllSubsets_NativeAOT`) and the symptom is a type, assembly, or method *missing at run time* (a `FileNotFoundException` for a `*.TestAssembly.dll`, a reflection lookup returning null, a missing logging/DI provider), do **not** propose rooting the test assembly or its members — `[DynamicDependency]`, `.rd.xml`/`ILLink.Descriptors.xml` roots, `TrimmerRootAssembly`, or copying the assembly into the app bundle. The harness already roots test assemblies by default, so the change is a no-op reviewers will reject. Pin a concrete product-side root cause, or treat it as no-producible-diff and route to Branch COMMENT (Step 5.5).
+**Already-rooted test-assembly caution.** For any failing leg, when the symptom is a type, assembly, or method *missing at run time* (a `FileNotFoundException` for a `*.TestAssembly.dll`, a reflection lookup returning null, a missing logging/DI provider), first inspect the harness and project sources for existing roots. If the test assembly or member is already rooted, do **not** propose another `[DynamicDependency]`, `.rd.xml`/`ILLink.Descriptors.xml` root, `TrimmerRootAssembly`, or app-bundle copy regardless of runtime mode — the change is a no-op reviewers will reject. Only root a separate owning assembly when source confirms it is not already rooted. Otherwise pin a concrete product-side root cause, or treat it as no-producible-diff and route to Branch COMMENT (Step 5.5).
 
 Once you have a candidate diff, classify it:
 
