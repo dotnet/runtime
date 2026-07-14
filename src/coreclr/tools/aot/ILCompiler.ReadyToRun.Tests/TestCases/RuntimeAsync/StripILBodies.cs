@@ -6,8 +6,10 @@
 // needed to synthesize the async variant at runtime.
 using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics.X86;
 using System.Threading.Tasks;
+
+using ArmAes = System.Runtime.Intrinsics.Arm.Aes;
+using X86Aes = System.Runtime.Intrinsics.X86.Aes;
 
 public static class StripILBodies
 {
@@ -84,9 +86,9 @@ public static class StripILBodies
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static bool UsesOpportunisticInstructionSet()
+    public static bool UsesRuntimeCheckedInstructionSet()
     {
-        return Aes.IsSupported;
+        return X86Aes.IsSupported || ArmAes.IsSupported;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

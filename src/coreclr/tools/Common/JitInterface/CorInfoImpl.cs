@@ -518,6 +518,7 @@ namespace Internal.JitInterface
 
             // Detect cases where the instruction set support used is a superset of the baseline instruction set specification
             var baselineSupport = _compilation.InstructionSetSupport;
+            bool isFixedInstructionSet = TargetDetails.IsFixedInstructionSetPlatform(_compilation.TypeSystemContext.Target.OperatingSystem);
             bool needPerMethodInstructionSetFixup = false;
             foreach (var instructionSet in _actualInstructionSetSupported)
             {
@@ -528,7 +529,7 @@ namespace Internal.JitInterface
             }
             foreach (var instructionSet in _actualInstructionSetUnsupported)
             {
-                if (!baselineSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
+                if (!isFixedInstructionSet && !baselineSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
                 {
                     needPerMethodInstructionSetFixup = true;
                 }
@@ -538,10 +539,17 @@ namespace Internal.JitInterface
             {
                 TargetArchitecture architecture = _compilation.TypeSystemContext.Target.Architecture;
                 _actualInstructionSetSupported.ExpandInstructionSetByImplication(architecture);
-                _actualInstructionSetUnsupported.ExpandInstructionSetByReverseImplication(architecture);
-                _actualInstructionSetUnsupported.Set64BitInstructionSetVariants(architecture);
 
-                InstructionSetSupport actualSupport = new InstructionSetSupport(_actualInstructionSetSupported, _actualInstructionSetUnsupported, architecture);
+                if (!isFixedInstructionSet)
+                {
+                    _actualInstructionSetUnsupported.ExpandInstructionSetByReverseImplication(architecture);
+                    _actualInstructionSetUnsupported.Set64BitInstructionSetVariants(architecture);
+                }
+
+                InstructionSetSupport actualSupport = new InstructionSetSupport(
+                    _actualInstructionSetSupported,
+                    isFixedInstructionSet ? default : _actualInstructionSetUnsupported,
+                    architecture);
                 var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
                 AddPrecodeFixup(node);
             }

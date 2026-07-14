@@ -459,6 +459,7 @@ public class R2RTestSuites
                 new(nameof(RuntimeAsyncStripILBodiesPreservesTaskReturningIL), [new CrossgenAssembly(stripILBodies)])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
+                    AdditionalArgs = ["--targetarch:x64"],
                     Validate = Validate,
                 },
             ]));
@@ -478,7 +479,7 @@ public class R2RTestSuites
 
             Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "GenericIdentity", out diag), diag);
             Assert.True(R2RAssert.MethodILIsPresent(componentFile, "GenericHolder`1", "MethodOnGenericType", out diag), diag);
-            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "UsesOpportunisticInstructionSet", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "UsesRuntimeCheckedInstructionSet", out diag), diag);
 
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "PlainStrippableMethod", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "ComputeTag", out diag), diag);
@@ -495,11 +496,11 @@ public class R2RTestSuites
     }
 
     [Fact]
-    public void AppleMobileStripILBodiesPreservesILForInterpreterFallback()
+    public void AppleMobileStripILBodiesUsesFixedInstructionSet()
     {
         var stripILBodies = new CompiledAssembly
         {
-            AssemblyName = nameof(AppleMobileStripILBodiesPreservesILForInterpreterFallback),
+            AssemblyName = nameof(AppleMobileStripILBodiesUsesFixedInstructionSet),
             SourceResourceNames =
             [
                 "RuntimeAsync/StripILBodies.cs",
@@ -509,9 +510,9 @@ public class R2RTestSuites
         };
 
         new R2RTestRunner(_output).Run(new R2RTestCase(
-            nameof(AppleMobileStripILBodiesPreservesILForInterpreterFallback),
+            nameof(AppleMobileStripILBodiesUsesFixedInstructionSet),
             [
-                new(nameof(AppleMobileStripILBodiesPreservesILForInterpreterFallback), [new CrossgenAssembly(stripILBodies)])
+                new(nameof(AppleMobileStripILBodiesUsesFixedInstructionSet), [new CrossgenAssembly(stripILBodies)])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
                     AdditionalArgs = ["--targetos:ios", "--targetarch:arm64"],
@@ -523,9 +524,10 @@ public class R2RTestSuites
         {
             string componentFile = Path.Combine(
                 Path.GetDirectoryName(reader.Filename)!,
-                nameof(AppleMobileStripILBodiesPreservesILForInterpreterFallback) + ".dll");
+                nameof(AppleMobileStripILBodiesUsesFixedInstructionSet) + ".dll");
 
-            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "PlainStrippableMethod", out string diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "PlainStrippableMethod", out string diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "UsesRuntimeCheckedInstructionSet", out diag), diag);
         }
     }
 

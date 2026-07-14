@@ -76,18 +76,19 @@ namespace ILCompiler
 
             var logger = new Logger(Console.Out, Get(_command.IsVerbose));
 
+            (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
+                Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
+            bool isFixedInstructionSet = TargetDetails.IsFixedInstructionSetPlatform(targetOS);
+
             // Crossgen2 is partial AOT and its pre-compiled methods can be
             // thrown away at runtime if they mismatch in required ISAs or
             // computed layouts of structs. Thus we want to ensure that usage
             // of Vector<T> is only optimistic and doesn't hard code a dependency
             // that would cause the entire image to be invalidated.
-            bool isVectorTOptimistic = true;
-
-            (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
-                Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
+            bool isVectorTOptimistic = !isFixedInstructionSet;
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
-            if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst or TargetOS.Browser)
+            if (isFixedInstructionSet)
             {
                 // These platforms do not support jitted code, so we want to ensure that we don't
                 // need to fall back to the interpreter for any hardware-intrinsic optimizations.

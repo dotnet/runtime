@@ -383,7 +383,18 @@ namespace ILCompiler
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
             // code if the runtime environment doesn't support the specified instruction set
-            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
+            InstructionSetSupport runtimeInstructionSetSupport = instructionSetSupport;
+            if (TargetDetails.IsFixedInstructionSetPlatform(nodeFactory.Target.OperatingSystem))
+            {
+                runtimeInstructionSetSupport = new InstructionSetSupport(
+                    instructionSetSupport.SupportedFlags,
+                    default,
+                    instructionSetSupport.OptimisticFlags,
+                    instructionSetSupport.NonSpecifiableFlags,
+                    instructionSetSupport.Architecture);
+            }
+
+            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(runtimeInstructionSetSupport);
             ReadyToRunInstructionSetSupportSignature instructionSetSupportSig = new ReadyToRunInstructionSetSupportSignature(instructionSetSupportString);
             _dependencyGraph.AddRoot(new Import(NodeFactory.EagerImports, instructionSetSupportSig), "Baseline instruction set support");
 
@@ -446,7 +457,7 @@ namespace ILCompiler
 
                     HashSet<MethodDesc> compiledMethodDefs = null;
                     HashSet<MethodDesc> methodsWithPerMethodInstructionSetSupportFixup = null;
-                    if (ShouldStripILBodies)
+                    if (_nodeFactory.OptimizationFlags.StripILBodies)
                     {
                         compiledMethodDefs = _nodeFactory.BuildCompiledMethodDefsSet(out methodsWithPerMethodInstructionSetSupportFixup);
                     }
@@ -470,10 +481,6 @@ namespace ILCompiler
                 }
             }
         }
-
-        private bool ShouldStripILBodies =>
-            _nodeFactory.OptimizationFlags.StripILBodies &&
-            _nodeFactory.Target.OperatingSystem is not (TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator);
 
         private void RewriteComponentFile(
             string inputFile,
@@ -503,7 +510,6 @@ namespace ILCompiler
             NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with
             {
                 IsComponentModule = true,
-                StripILBodies = ShouldStripILBodies,
                 CompiledMethodDefs = compiledMethodDefs,
                 MethodsWithPerMethodInstructionSetSupportFixup = methodsWithPerMethodInstructionSetSupportFixup,
             };
