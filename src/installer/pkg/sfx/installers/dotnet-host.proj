@@ -51,6 +51,9 @@
       <FilesToPublish Include="$(MSBuildThisFileDirectory)dnx"
             Destination="$(OutputPath)dnx"
             Condition="'$(TargetsUnix)' == 'true'" />
+      <FilesToPublish Include="$(MSBuildThisFileDirectory)dnx.cmd"
+            Destination="$(OutputPath)dnx.cmd"
+            Condition="'$(TargetsUnix)' != 'true'" />
     </ItemGroup>
 
     <Copy SourceFiles="@(FilesToPublish)"
