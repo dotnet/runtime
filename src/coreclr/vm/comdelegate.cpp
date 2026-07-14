@@ -2620,14 +2620,17 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
 
     // DELEGATE KINDS TABLE
     //
-    //                            _target        _methodPtr            _methodPtrAux
+    //                            _helperObject   _target        _methodPtr            _methodPtrAux                   _extraData
     //
-    // 1- Instance closed         'this' ptr     target method         null
-    // 2- Instance open non-virt  delegate       shuffle thunk         target method
-    // 3- Instance open virtual   delegate       shuffle thunk         Virtual call stub
-    // 4- Static closed           first arg      target method         null
-    // 5- Static closed (retbuf)  first arg      ThisPtrRetBuf precode null
-    // 6- Static open             delegate       shuffle thunk         target method
+    // 1- Instance closed         method info     'this' ptr     target method         null                            method desc cache
+    // 2- Instance open non-virt  method info     delegate       shuffle thunk         target method                   method desc cache
+    // 3- Instance open virtual   method info     delegate       shuffle thunk         Virtual call stub/              method desc
+    //                                         with FEATURE_CACHED_INTERFACE_DISPATCH: CID_VirtualOpenDelegateDispatch
+    // 4- Static closed           method info     first arg      target method         null                            method desc cache
+    // 5- Static closed (retbuf)  method info     first arg      ThisPtrRetBuf precode null                            method desc cache
+    // 6- Static open             method info     delegate       shuffle thunk         target method                   method desc cache
+    // 7- Unmanaged               null            delegate       marshalling stub      unmanaged pointer               DELEGATE_MARKER_UNMANAGEDFPTR
+    // 8- Multicast               invocation list delegate       multicast stub        invoke stub                     invocation count
     //
     // Delegate invoke arg count == target method arg count - 2, 3, 6
     // Delegate invoke arg count == 1 + target method arg count - 1, 4, 5
@@ -2637,6 +2640,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // 3        - CtorVirtualDispatch
     // 4        - CtorClosedStatic
     // 5        - Retbuf static closed form (not differentiated on this fast path; see TODO below)
+    // 7, 8     - Not handled here
     // Collectible delegates use the corresponding CtorCollectible* variants.
     //
     // With collectible types, we need to fill the _helperObject field in with a value that represents the LoaderAllocator of the target method
