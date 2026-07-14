@@ -16,7 +16,9 @@ public interface ITypeHandle : IEquatable<ITypeHandle>
 {
     TargetPointer Address { get; }
     bool IsNull { get; }
-    static ITypeHandle Null { get; } = NullTypeHandle.Instance;
+
+    /// <summary>Sentinel handle representing the absence of a type.</summary>
+    static ITypeHandle Null => NullTypeHandle.Instance;
 }
 
 /// <summary>
