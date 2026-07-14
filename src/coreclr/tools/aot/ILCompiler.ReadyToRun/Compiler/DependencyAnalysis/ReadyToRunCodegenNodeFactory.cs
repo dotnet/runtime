@@ -622,9 +622,13 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc method = compiled.Method.GetTypicalMethodDefinition();
                 set.Add(method);
 
-                if (compiled.Fixups.Any(fixup => fixup is Import { Signature: ReadyToRunInstructionSetSupportSignature }))
+                foreach (var fixup in compiled.Fixups)
                 {
-                    methodsWithPerMethodInstructionSetSupportFixup.Add(method);
+                    if (fixup is Import { Signature: ReadyToRunInstructionSetSupportSignature })
+                    {
+                        methodsWithPerMethodInstructionSetSupportFixup.Add(method);
+                        break;
+                    }
                 }
             }
 
