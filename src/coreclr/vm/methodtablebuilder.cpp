@@ -1822,7 +1822,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
             BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
     }
 
-    if (CheckIfSIMDAndUpdateSize())
+    bool fIsSIMDType = CheckIfSIMDAndUpdateSize();
+    if (fIsSIMDType)
     {
         totalDeclaredFieldSize = bmtFP->NumInstanceFieldBytes;
     }
@@ -1866,7 +1867,28 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     if (IsValueClass())
     {
-        if (bmtFP->NumInstanceFieldBytes != totalDeclaredFieldSize || HasOverlaidField())
+        // A value type is "tightly packed" when a byte-wise compare of two instances equals comparing
+        // every field, i.e. there is no padding anywhere. That needs (1) the declared fields to exactly
+        // cover the instance size with no gaps or overlap ('totalDeclaredFieldSize' sums each field's
+        // full size, so it catches gaps at this level) and (2) every nested value-type field to itself
+        // be tightly packed, else the compare reads padding inside it. Propagating (2) makes the flag
+        // transitive, so callers need not recurse. SIMD types are exempt (size treated as fully covered).
+        bool fIsNotTightlyPacked = (bmtFP->NumInstanceFieldBytes != totalDeclaredFieldSize) || HasOverlaidField();
+
+        if (!fIsNotTightlyPacked && !fIsSIMDType && pByValueClassCache != NULL)
+        {
+            for (DWORD i = 0; i < bmtEnumFields->dwNumInstanceFields; i++)
+            {
+                MethodTable* pFieldMT = pByValueClassCache[i];
+                if (pFieldMT != NULL && pFieldMT->IsNotTightlyPacked())
+                {
+                    fIsNotTightlyPacked = true;
+                    break;
+                }
+            }
+        }
+
+        if (fIsNotTightlyPacked)
             GetHalfBakedClass()->SetIsNotTightlyPacked();
 
 #ifdef FEATURE_HFA
@@ -4516,7 +4538,13 @@ IS_VALUETYPE:
         if (!fIsStatic)
         {
             pFD = &pFieldDescList[dwCurrentDeclaredField]; // lgtm [cpp/upcast-array-pointer-arithmetic] - The call of concern in FixupFieldDescForEnC, initializes this loop invariant to 1, so will never be > 1.
-            *totalDeclaredSize += (1 << dwLog2FieldSize);
+
+            // Accumulate declared field sizes so the type can be flagged NotTightlyPacked when they
+            // don't exactly cover the instance size. A value-type field contributes its full instance
+            // size; dwLog2FieldSize is meaningless for value types (size isn't a power of two).
+            *totalDeclaredSize += fIsByValue
+                ? (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes()
+                : (1 << dwLog2FieldSize);
         }
         else /* (dwMemberAttrs & mdStatic) */
         {
