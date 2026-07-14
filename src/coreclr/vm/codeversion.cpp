@@ -49,7 +49,7 @@ void NativeCodeVersion::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
 
 #else // FEATURE_CODE_VERSIONING
 
-// This is just used as a unique id. Overflow is OK. If we happen to have more than 4+Billion rejits
+// This is just used as a unique id. Overflow is OK. If we happen to have more than 4+Billion code versions
 // and somehow manage to not run out of memory, we'll just have to redefine ReJITID as size_t.
 /* static */
 static ReJITID s_GlobalCodeVersionId = 1;

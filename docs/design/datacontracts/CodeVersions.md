@@ -23,7 +23,7 @@ internal struct NativeCodeVersionHandle
 ```
 
 ```csharp
-internal enum CodeVersionSource : uint
+public enum CodeVersionSource : uint
 {
     Unknown,
     ReJIT,
