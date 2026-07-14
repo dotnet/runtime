@@ -366,7 +366,7 @@ internal sealed class MockCodeVersionsBuilder
         => ILCodeVersioningStateLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)ILCodeVersioningStateLayout.Size, "ILCodeVersioningState"));
 
-    public MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags, bool deoptimized = false, uint source = 1 /* CodeVersionSource.ReJIT */, ulong encVersion = 0, ulong ilAddress = 0)
+public MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags, bool deoptimized = false, uint source = 1 /* CodeVersionSource.ReJIT */, ulong encVersion = 1 /* CorDB_DEFAULT_ENC_FUNCTION_VERSION */, ulong ilAddress = 0)
     {
         MockILCodeVersionNode node = ILCodeVersionNodeLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)ILCodeVersionNodeLayout.Size, "ILCodeVersionNode"));
