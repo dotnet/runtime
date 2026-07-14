@@ -242,6 +242,7 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(QCall, EntryPoint = "ObjectNative_GetHashCodeSlow")]
         private static partial int GetHashCodeSlow(ObjectHandleOnStack o);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetHashCode(object? o)
         {
             if (o is null)
