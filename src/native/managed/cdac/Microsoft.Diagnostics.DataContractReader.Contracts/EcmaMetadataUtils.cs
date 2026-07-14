@@ -124,7 +124,7 @@ public static class EcmaMetadataUtils
     public static bool TryResolveTypeRef(
         ILoader loader,
         IEcmaMetadata ecmaMetadata,
-        ModuleHandle referencingModule,
+        Contracts.ModuleHandle referencingModule,
         uint typeRefToken,
         out TargetPointer targetAssembly,
         out uint targetTypeDef)
@@ -132,7 +132,7 @@ public static class EcmaMetadataUtils
         targetAssembly = TargetPointer.Null;
         targetTypeDef = 0;
 
-        if (!TryGetTypeRefScopeAndName(loader, ecmaMetadata, referencingModule, typeRefToken, out ModuleHandle foundModule, out List<(string Namespace, string Name)> nameChain))
+        if (!TryGetTypeRefScopeAndName(loader, ecmaMetadata, referencingModule, typeRefToken, out Contracts.ModuleHandle foundModule, out List<(string Namespace, string Name)> nameChain))
             return false;
 
         return TrySearchModulesForTypeDef(loader, ecmaMetadata, foundModule, nameChain, out targetAssembly, out targetTypeDef);
@@ -143,9 +143,9 @@ public static class EcmaMetadataUtils
     private static bool TryGetTypeRefScopeAndName(
         ILoader loader,
         IEcmaMetadata ecmaMetadata,
-        ModuleHandle referencingModule,
+        Contracts.ModuleHandle referencingModule,
         uint typeRefToken,
-        out ModuleHandle foundModule,
+        out Contracts.ModuleHandle foundModule,
         out List<(string Namespace, string Name)> nameChain)
     {
         foundModule = default;
@@ -195,7 +195,7 @@ public static class EcmaMetadataUtils
     private static bool TrySearchModulesForTypeDef(
         ILoader loader,
         IEcmaMetadata ecmaMetadata,
-        ModuleHandle module,
+        Contracts.ModuleHandle module,
         List<(string Namespace, string Name)> nameChain,
         out TargetPointer targetAssembly,
         out uint targetTypeDef)
@@ -223,7 +223,7 @@ public static class EcmaMetadataUtils
                 break;
             }
 
-            if (TryFindTopLevelExportedForwarder(loader, reader, module, topLevel.Namespace, topLevel.Name, out ModuleHandle nextModule))
+            if (TryFindTopLevelExportedForwarder(loader, reader, module, topLevel.Namespace, topLevel.Name, out Contracts.ModuleHandle nextModule))
             {
                 module = nextModule;
                 continue;
@@ -251,10 +251,10 @@ public static class EcmaMetadataUtils
     private static bool TryFindTopLevelExportedForwarder(
         ILoader loader,
         MetadataReader reader,
-        ModuleHandle module,
+        Contracts.ModuleHandle module,
         string @namespace,
         string name,
-        out ModuleHandle nextModule)
+        out Contracts.ModuleHandle nextModule)
     {
         foreach (ExportedTypeHandle handle in reader.ExportedTypes)
         {
