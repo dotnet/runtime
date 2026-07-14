@@ -593,19 +593,6 @@ namespace System.Tests
 
             foreach ((float original, Half expected) in data)
             {
-                // WASM on Mono lowers `float.Min` / `float.Max` through `f32.min` / `f32.max`
-                // (and `float.IsNaN(...)` branches through `f32.add`). The WebAssembly spec
-                // permits NaN-payload canonicalization on these ops but doesn't require it --
-                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
-                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
-                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
-                // trip through the software conversion path in that environment. Gated on
-                // Mono specifically since other WASM runtimes don't share this lowering.
-                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
-                // be removed once the conversion path either avoids the canonicalizing ops
-                // or the host engines start preserving NaN payloads.
-                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && float.IsNaN(original))
-                    continue;
                 yield return new object[] { original, expected };
             }
         }
@@ -615,6 +602,21 @@ namespace System.Tests
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)f;
+
+            // The software `float`->`Half` conversion routes the value through `f32.abs`/`f32.min`/
+            // `f32.max`/`f32.add`, and the WebAssembly spec permits (but doesn't require) host engines
+            // to canonicalize NaN payloads on those ops -- the V8 engine used on CI does. The sign is
+            // still carried through the integer ALU, so a canonicalized result is `sign | 0x7E00`.
+            // Accept that as the expected value on WASM. See https://github.com/dotnet/runtime/issues/103347.
+            if (PlatformDetection.IsWasm && Half.IsNaN(expected))
+            {
+                ushort canonical = (ushort)((BitConverter.HalfToUInt16Bits(expected) & 0x8000) | 0x7E00);
+                if (BitConverter.HalfToUInt16Bits(h) == canonical)
+                {
+                    expected = h;
+                }
+            }
+
             AssertExtensions.Equal(expected, h);
         }
 
