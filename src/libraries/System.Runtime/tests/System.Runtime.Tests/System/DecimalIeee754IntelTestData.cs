@@ -23,11 +23,14 @@ namespace System.Tests
     /// output directory (rather than an environment variable naming an arbitrary path) avoids reading a
     /// file from a location an unrelated process could influence and is no worse than shipping it.
     ///
-    /// Each line is whitespace separated as <c>op rnd a b result flags</c>. Only round-to-nearest-even
-    /// (<c>rnd == 0</c>) rows whose operands are bracketed hex bit patterns are consumed; rows using
-    /// decimal-string or named operands (for example <c>QNaN</c> or <c>Infinity</c>), other rounding
-    /// modes, and the trailing IEEE exception-flags column are ignored. Bid128 operands appear both as
-    /// <c>[hi,lo]</c> (arithmetic) and <c>[32hex]</c> (comparison); both encodings are handled.
+    /// Each line is whitespace separated as <c>op rnd a b result flags</c> for binary operations
+    /// (arithmetic, comparison, <c>copySign</c>, and the min/max family) or <c>op rnd a result flags</c>
+    /// for unary operations (<c>abs</c>, <c>negate</c>) and predicates (<c>isNaN</c>, <c>isInf</c>, and
+    /// friends). Only round-to-nearest-even (<c>rnd == 0</c>) rows whose operands are bracketed hex bit
+    /// patterns are consumed; rows using decimal-string or named operands (for example <c>QNaN</c> or
+    /// <c>Infinity</c>), other rounding modes, and the trailing IEEE exception-flags column are ignored.
+    /// Bid128 operands appear both as <c>[hi,lo]</c> (arithmetic) and <c>[32hex]</c> (comparison); both
+    /// encodings are handled.
     /// </remarks>
     public static class DecimalIeee754IntelTestData
     {
@@ -42,6 +45,23 @@ namespace System.Tests
         private static readonly HashSet<string> s_bid32Comparison = new() { "bid32_quiet_equal", "bid32_quiet_not_equal", "bid32_quiet_less", "bid32_quiet_greater", "bid32_quiet_less_equal", "bid32_quiet_greater_equal" };
         private static readonly HashSet<string> s_bid64Comparison = new() { "bid64_quiet_equal", "bid64_quiet_not_equal", "bid64_quiet_less", "bid64_quiet_greater", "bid64_quiet_less_equal", "bid64_quiet_greater_equal" };
         private static readonly HashSet<string> s_bid128Comparison = new() { "bid128_quiet_equal", "bid128_quiet_not_equal", "bid128_quiet_less", "bid128_quiet_greater", "bid128_quiet_less_equal", "bid128_quiet_greater_equal" };
+
+        private static readonly HashSet<string> s_bid32Unary = new() { "bid32_abs", "bid32_negate" };
+        private static readonly HashSet<string> s_bid64Unary = new() { "bid64_abs", "bid64_negate" };
+        private static readonly HashSet<string> s_bid128Unary = new() { "bid128_abs", "bid128_negate" };
+
+        // Only copySign is cross-validated here. Intel's minnum/maxnum/minnum_mag/maxnum_mag implement the
+        // IEEE 754-2008 minNum/maxNum operations, where-as .NET's MinNumber/MaxNumber (and the magnitude
+        // variants) implement the IEEE 754-2019 minimumNumber/maximumNumber operations. These differ on
+        // signed-zero ordering, signaling-NaN quieting, and which cohort member is returned when the two
+        // operands are numerically equal, so the Intel vectors are not a valid oracle for that family.
+        private static readonly HashSet<string> s_bid32BinaryValue = new() { "bid32_copySign" };
+        private static readonly HashSet<string> s_bid64BinaryValue = new() { "bid64_copySign" };
+        private static readonly HashSet<string> s_bid128BinaryValue = new() { "bid128_copySign" };
+
+        private static readonly HashSet<string> s_bid32Predicate = new() { "bid32_isNaN", "bid32_isInf", "bid32_isFinite", "bid32_isSigned", "bid32_isNormal", "bid32_isSubnormal" };
+        private static readonly HashSet<string> s_bid64Predicate = new() { "bid64_isNaN", "bid64_isInf", "bid64_isFinite", "bid64_isSigned", "bid64_isNormal", "bid64_isSubnormal" };
+        private static readonly HashSet<string> s_bid128Predicate = new() { "bid128_isNaN", "bid128_isInf", "bid128_isFinite", "bid128_isSigned", "bid128_isNormal", "bid128_isSubnormal" };
 
         /// <summary>
         /// Gets a value indicating whether the Intel <c>readtest.in</c> reference vectors are available,
@@ -111,6 +131,105 @@ namespace System.Tests
                 if (TryParseBid128(fields[2], out UInt128 left) && TryParseBid128(fields[3], out UInt128 right) && TryParseComparisonResult(fields[4], out bool expected))
                 {
                     yield return new object[] { OperationSuffix(fields[0]), left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32Unary()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Unary))
+            {
+                if (TryParseBid32(fields[2], out uint value) && TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { OperationSuffix(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64Unary()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Unary))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { OperationSuffix(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128Unary()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Unary))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { OperationSuffix(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32BinaryValue()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32BinaryValue))
+            {
+                if (TryParseBid32(fields[2], out uint left) && TryParseBid32(fields[3], out uint right) && TryParseBid32(fields[4], out uint expected))
+                {
+                    yield return new object[] { OperationSuffix(fields[0]), left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64BinaryValue()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64BinaryValue))
+            {
+                if (TryParseBid64(fields[2], out ulong left) && TryParseBid64(fields[3], out ulong right) && TryParseBid64(fields[4], out ulong expected))
+                {
+                    yield return new object[] { OperationSuffix(fields[0]), left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128BinaryValue()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128BinaryValue))
+            {
+                if (TryParseBid128(fields[2], out UInt128 left) && TryParseBid128(fields[3], out UInt128 right) && TryParseBid128(fields[4], out UInt128 expected))
+                {
+                    yield return new object[] { OperationSuffix(fields[0]), left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32Predicate()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Predicate))
+            {
+                if (TryParseBid32(fields[2], out uint value) && TryParseComparisonResult(fields[3], out bool expected))
+                {
+                    yield return new object[] { OperationSuffix(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64Predicate()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Predicate))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && TryParseComparisonResult(fields[3], out bool expected))
+                {
+                    yield return new object[] { OperationSuffix(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128Predicate()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Predicate))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && TryParseComparisonResult(fields[3], out bool expected))
+                {
+                    yield return new object[] { OperationSuffix(fields[0]), value, expected };
                 }
             }
         }
