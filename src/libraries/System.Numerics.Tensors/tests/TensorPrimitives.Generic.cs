@@ -2949,7 +2949,7 @@ namespace System.Numerics.Tensors.Tests
             }
             AssertMatches(expected, destination);
 
-            // Span x, scalar min, scalar max (min > max, both special)
+            // Span x, scalar min, scalar max (signed-zero bounds; +0 and -0 compare equal, so this isn't an unordered-bounds case)
             TensorPrimitives.Clamp<T>(x, positiveZero, negativeZero, destination);
             for (int i = 0; i < length; i++)
             {
