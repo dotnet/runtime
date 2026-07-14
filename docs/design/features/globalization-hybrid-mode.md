@@ -124,7 +124,7 @@ Not covered case:
 
 - Some letters consist of more than one grapheme.
 
-   Apple Native Api does not guarantee that string will be segmented by letters but by graphemes. E.g. in `cs-CZ` and `sk-SK` "ch" is 1 letter, 2 graphemes. The following code returns -1 (not found) on ICU-based platforms and 1 on Apple mobile platforms.
+   Apple Native API does not guarantee that string will be segmented by letters but by graphemes. E.g. in `cs-CZ` and `sk-SK` "ch" is 1 letter, 2 graphemes. The following code returns -1 (not found) on ICU-based platforms and 1 on Apple mobile platforms.
 
    ``` C#
    new CultureInfo("sk-SK").CompareInfo.IndexOf("ch", "h"); // -1 or 1
