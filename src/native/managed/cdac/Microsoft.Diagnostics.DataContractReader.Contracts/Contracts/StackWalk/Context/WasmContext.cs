@@ -7,21 +7,21 @@ using System.Runtime.InteropServices;
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 /// <summary>
-/// Degenerate platform context for CoreCLR on WebAssembly.
+/// Platform context for CoreCLR on WebAssembly.
 /// </summary>
 /// <remarks>
 /// WebAssembly has no native register context: the runtime's <c>DT_CONTEXT</c> is an empty
 /// struct and <c>REGDISPLAY</c> is zeroed (see <c>src/coreclr/debug/inc/dbgtargetcontext.h</c>
-/// and <c>src/coreclr/inc/regdisp.h</c>). Managed execution on WASM is fully interpreted, so a
-/// managed stack walk is a pointer-chase over the interpreter's explicit frame chain
-/// (<c>InterpreterFrame.TopInterpMethodContextFrame</c> -&gt; <c>InterpMethodContextFrame.pParent</c>)
-/// rather than a register-based unwind.
+/// and <c>src/coreclr/inc/regdisp.h</c>). Instead, the context is driven by the managed linear
+/// stack pointer (<c>$sp</c>): ReadyToRun frames are unwound over the linear stack with a
+/// frameSize-based virtual unwind (see <see cref="Wasm.WasmUnwinder"/>) using synthetic virtual
+/// IPs, and interpreter frames are the explicit
+/// <c>InterpreterFrame.TopInterpMethodContextFrame</c> -&gt; <c>InterpMethodContextFrame.pParent</c>
+/// chain. A real stack is a mix of the two.
 ///
-/// This type exists so that <see cref="IPlatformAgnosticContext.GetContextForPlatform"/> resolves
-/// for WASM targets instead of throwing. The instruction/stack/frame pointer slots are synthetic:
-/// they are populated by the interpreter frame-chain walker, not read from a native context blob.
-/// Register-unwind operations (<see cref="Unwind"/>) are intentionally unsupported; the supported
-/// WASM stack walk is <c>IStackWalk.GetInterpretedFrames</c>, which is context-free.
+/// The instruction/stack/frame pointer slots are 32-bit (wasm32): <see cref="StackPointer"/> is
+/// the managed linear stack pointer and <see cref="InstructionPointer"/> is the current virtual IP.
+/// <see cref="Unwind"/> advances the context by one ReadyToRun frame.
 /// </remarks>
 [StructLayout(LayoutKind.Sequential)]
 public struct WasmContext : IPlatformContext
@@ -68,8 +68,23 @@ public struct WasmContext : IPlatformContext
     public uint RawContextFlags { readonly get => 0; set { } }
 
     public void Unwind(Target target)
-        => throw new NotSupportedException(
-            "WASM has no native register context to unwind. Managed frames are enumerated by walking the interpreter frame chain.");
+    {
+        // Advance one ReadyToRun frame over the managed linear stack. When the R2R walk
+        // terminates (an interpreter transition or the stack top), StackPointer becomes null and
+        // the caller falls back to the explicit Frame chain / interpreter frame chain.
+        Wasm.WasmUnwinder unwinder = new(target, new Wasm.WasmR2RInfo(target));
+        TargetPointer sp = StackPointer;
+        if (unwinder.TryUnwindOneFrame(ref sp, out TargetCodePointer ip))
+        {
+            StackPointer = sp;
+            InstructionPointer = ip;
+        }
+        else
+        {
+            StackPointer = TargetPointer.Null;
+            InstructionPointer = TargetCodePointer.Null;
+        }
+    }
 
     // WASM has no hardware single-step flag.
     public void UnsetSingleStepFlag()
