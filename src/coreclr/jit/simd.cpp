@@ -315,7 +315,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                             return TYP_UNDEF;
                         }
 
-                        vectorTHandle = typeHnd;
                         break;
                     }
 

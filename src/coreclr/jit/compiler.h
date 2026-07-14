@@ -10105,14 +10105,6 @@ private:
     // by the hardware.  It is allocated when/if such situations are encountered during Lowering.
     unsigned lvaSIMDInitTempVarNum = BAD_VAR_NUM;
 
-    CORINFO_CLASS_HANDLE vectorTHandle;
-
-    CORINFO_CLASS_HANDLE GetVectorTHandle()
-    {
-        assert(vectorTHandle != nullptr);
-        return vectorTHandle;
-    }
-
     bool isSystemHalfClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
@@ -10260,10 +10252,6 @@ public:
     // Returns:
     //   The size of Vector<T> as resolved in EE metadata.
     //
-    // Notes:
-    //   We rely on a cached value for the handle of Vector<T> set in getBaseTypeAndSizeOfSIMDType
-    //   to query the size. This function may assert if called early in Import before the handle
-    //   has been discovered.
     uint32_t getRuntimeVectorTByteLength()
     {
         uint32_t compileTimeLength = getCompileTimeVectorTByteLength();
@@ -10271,7 +10259,10 @@ public:
         if (compileTimeLength == SIZE_UNKNOWN)
         {
             assert(!IsAot());
-            uint32_t size = info.compCompHnd->getClassSize(GetVectorTHandle());
+            CORINFO_CLASS_HANDLE vectorT = info.compCompHnd->getBuiltinClass(CLASSID_NUMERICS_VECTORT);
+            assert(vectorT != NULL);
+            uint32_t size = info.compCompHnd->getClassSize(vectorT);
+            assert(size > 0);
             return size;
         }
 
