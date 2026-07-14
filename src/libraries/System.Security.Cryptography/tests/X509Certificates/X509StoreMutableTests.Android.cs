@@ -76,6 +76,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         Assert.True(storeCert.HasPrivateKey);
 
                         using RSA rsa = storeCert.GetRSAPrivateKey();
+                        Assert.NotNull(rsa);
                         RSAParameters publicParameters = rsa.ExportParameters(false);
                         Assert.NotNull(publicParameters.Modulus);
                         Assert.NotNull(publicParameters.Exponent);
