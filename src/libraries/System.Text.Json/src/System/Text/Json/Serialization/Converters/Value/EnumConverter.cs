@@ -511,6 +511,23 @@ namespace System.Text.Json.Serialization.Converters
             return new() { Type = JsonSchemaType.Integer };
         }
 
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _)
+        {
+            EnumConverterOptions converterOptions = _converterOptions;
+            bool allowsString = (converterOptions & EnumConverterOptions.AllowStrings) != 0;
+            bool allowsNumber = (converterOptions & EnumConverterOptions.AllowNumbers) != 0;
+
+            Debug.Assert(allowsString || allowsNumber, "EnumConverter must allow strings, numbers, or both.");
+
+            return (allowsString, allowsNumber) switch
+            {
+                (true, true) => JsonValueType.String | JsonValueType.Number,
+                (true, false) => JsonValueType.String,
+                (false, true) => JsonValueType.Number,
+                _ => JsonValueType.Number, // Defensive: at least one must be true; default to numeric.
+            };
+        }
+
         private static EnumFieldInfo[] ResolveEnumFields(JsonNamingPolicy? namingPolicy)
         {
 #if NET
@@ -572,11 +589,13 @@ namespace System.Text.Json.Serialization.Converters
                 name = namingPolicy.ConvertName(name);
             }
 
-            if (string.IsNullOrEmpty(name) || char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]) ||
-                (s_isFlagsEnum && name.Contains(',')))
+            if (name is null ||
+                (name.Length > 0 && (char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]))) ||
+                (s_isFlagsEnum && (name.Length == 0 || name.Contains(','))))
             {
-                // Reject null or empty strings or strings with leading or trailing whitespace.
-                // In the case of flags additionally reject strings containing commas.
+                // Reject null strings or strings with leading or trailing whitespace.
+                // In the case of flags additionally reject empty strings or strings containing commas,
+                // both of which would introduce ambiguity in flag value parsing and formatting.
                 ThrowHelper.ThrowInvalidOperationException_UnsupportedEnumIdentifier(typeof(T), name);
             }
 

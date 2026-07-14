@@ -125,6 +125,9 @@ namespace System.Text.Json.Serialization.Converters
         internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
             GetSchemaForNumericType(JsonSchemaType.Integer, numberHandling);
 
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) =>
+            GetSupportedJsonValueTypesForNumericType(numberHandling);
+
         private static void Format(
             Span<byte> destination,
             Int128 value, out int written)

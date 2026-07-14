@@ -52,6 +52,10 @@ public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle);
 // Determines whether an IL code version has default IL
 public virtual bool HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle);
 
+// Gets the instrumented IL offset mapping for an IL code version, if any.
+// Returns false when the version has no instrumented map.
+public virtual bool TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHandle, out uint mapEntryCount, out TargetPointer mapEntries);
+
 // Gets the optimization tier for a native code version
 public virtual OptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle);
 ```
@@ -87,6 +91,9 @@ Data descriptors used:
 | ILCodeVersionNode | Next | Pointer to the next `ILCodeVersionNode`|
 | ILCodeVersionNode | RejitState | ReJIT state of the node |
 | ILCodeVersionNode | ILAddress | Address of IL corresponding to `ILCodeVersionNode`|
+| ILCodeVersionNode | InstrumentedILMap | Embedded `InstrumentedILOffsetMapping` describing the instrumented IL offset mapping |
+| InstrumentedILOffsetMapping | Count | Number of instrumented IL offset map entries |
+| InstrumentedILOffsetMapping | Map | Pointer to the array of instrumented IL offset map entries |
 | GCCoverageInfo | SavedCode | Pointer to the GCCover saved code copy, if supported |
 
 The flag indicates that the default version of the code for a method desc is active:
@@ -394,5 +401,23 @@ TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, Targe
 bool ICodeVersions.HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle)
 {
     return ilCodeVersionHandle.IsExplicit ? AsNode(ilCodeVersionHandle).ILAddress == TargetPointer.Null : true;
+}
+```
+
+### Getting the instrumented IL offset mapping
+```csharp
+bool ICodeVersions.TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHandle, out uint mapEntryCount, out TargetPointer mapEntries)
+{
+    mapEntryCount = 0;
+    mapEntries = TargetPointer.Null;
+
+    // Synthetic IL code versions have no backing node and therefore no instrumented map.
+    if (!ilCodeVersionHandle.IsExplicit)
+        return false;
+
+    TargetPointer mappingAddress = ilCodeVersionHandle.ILCodeVersionNode + /* ILCodeVersionNode::InstrumentedILMap offset */;
+    mapEntryCount = target.Read<uint>(mappingAddress + /* InstrumentedILOffsetMapping::Count offset */);
+    mapEntries = target.ReadPointer(mappingAddress + /* InstrumentedILOffsetMapping::Map offset */);
+    return true;
 }
 ```

@@ -210,13 +210,12 @@ enum ILStubTypes
     ILSTUB_MULTICASTDELEGATE_INVOKE      = 0x80000004,
     ILSTUB_UNBOXINGILSTUB                = 0x80000005,
     ILSTUB_INSTANTIATINGSTUB             = 0x80000006,
-    ILSTUB_WRAPPERDELEGATE_INVOKE        = 0x80000007,
-    ILSTUB_TAILCALL_STOREARGS            = 0x80000008,
-    ILSTUB_TAILCALL_CALLTARGET           = 0x80000009,
-    ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB  = 0x8000000A,
-    ILSTUB_DELEGATE_INVOKE_METHOD        = 0x8000000B,
-    ILSTUB_DELEGATE_SHUFFLE_THUNK        = 0x8000000C,
-    ILSTUB_ASYNC_RESUME                  = 0x8000000D,
+    ILSTUB_TAILCALL_STOREARGS            = 0x80000007,
+    ILSTUB_TAILCALL_CALLTARGET           = 0x80000008,
+    ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB  = 0x80000009,
+    ILSTUB_DELEGATE_INVOKE_METHOD        = 0x8000000A,
+    ILSTUB_DELEGATE_SHUFFLE_THUNK        = 0x8000000B,
+    ILSTUB_ASYNC_RESUME                  = 0x8000000C,
 };
 
 inline bool SF_IsVarArgStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_CONVSIGASVARARG)); }
@@ -241,7 +240,6 @@ inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsMulticastDelegateStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_MULTICASTDELEGATE_INVOKE); }
 inline bool SF_IsDelegateInvokeMethod  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_DELEGATE_INVOKE_METHOD); }
 
-inline bool SF_IsWrapperDelegateStub    (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_WRAPPERDELEGATE_INVOKE); }
 inline bool SF_IsUnboxingILStub         (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_UNBOXINGILSTUB); }
 inline bool SF_IsInstantiatingStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_INSTANTIATINGSTUB); }
 inline bool SF_IsTailCallStoreArgsStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_STOREARGS); }

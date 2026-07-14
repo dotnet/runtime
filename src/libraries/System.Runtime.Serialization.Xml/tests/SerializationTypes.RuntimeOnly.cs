@@ -836,6 +836,12 @@ namespace SerializationTypes
         }
     }
 
+    public class TypeWithXmlElementMemberAndSibling
+    {
+        public XmlElement Description { get; set; }
+        public string Name { get; set; }
+    }
+
     public class BaseType
     {
         public virtual string Name1 { get; set; }

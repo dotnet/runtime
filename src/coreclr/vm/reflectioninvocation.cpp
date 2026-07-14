@@ -63,7 +63,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_SetValue(FieldDesc* fieldDesc, QCal
     GCPROTECT_BEGIN(gc);
 
     TypeHandle fieldTypeHandle = fieldType.AsTypeHandle();
-    InvokeUtil::SetValidField(fieldTypeHandle.GetVerifierCorElementType(), fieldTypeHandle, fieldDesc, &gc.target, &gc.value, declaringType.AsTypeHandle(), pIsClassInitialized);
+    InvokeUtil::SetValidField(fieldTypeHandle.GetInternalCorElementType(), fieldTypeHandle, fieldDesc, &gc.target, &gc.value, declaringType.AsTypeHandle(), pIsClassInitialized);
 
     GCPROTECT_END();
     END_QCALL;
@@ -1305,6 +1305,13 @@ static void PrepareMethodHelper(MethodDesc * pMD)
 {
     STANDARD_VM_CONTRACT;
 
+    // If a MethodImpl (.override) has remapped this method's vtable slot to a
+    // different method, prepare the method that actually owns the slot's code
+    // (the impl), not the decl. This mirrors getFunctionEntryPoint, which resolves
+    // direct calls the same way.
+    if (pMD->IsVtableSlot())
+        pMD = MethodTable::MapMethodDeclToMethodImpl(pMD);
+
     pMD->EnsureActive();
 
     if (pMD->IsWrapperStub())
@@ -2012,7 +2019,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
 
     MethodTable* pMT = type.AsMethodTable();
 
-    _ASSERTE(pMT->IsValueType() || pMT->IsNullable() || pMT->IsEnum() || pMT->IsTruePrimitive());
+    _ASSERTE(pMT->IsValueType());
 
     *pValueOffset = 0;
 

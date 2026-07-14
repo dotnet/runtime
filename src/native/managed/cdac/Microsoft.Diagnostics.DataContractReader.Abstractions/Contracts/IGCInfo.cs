@@ -51,8 +51,11 @@ public interface IGCInfo : IContract
 
     uint GetCodeLength(IGCInfoHandle handle) => throw new NotImplementedException();
     uint GetStackBaseRegister(IGCInfoHandle handle) => throw new NotImplementedException();
+    uint GetSizeOfStackParameterArea(IGCInfoHandle handle) => throw new NotImplementedException();
+    uint GetCalleePoppedArgumentsSize(IGCInfoHandle handle) => throw new NotImplementedException();
     IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle) => throw new NotImplementedException();
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options) => throw new NotImplementedException();
+    bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset) => throw new NotImplementedException();
 }
 
 public readonly struct GCInfo : IGCInfo

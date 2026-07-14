@@ -1075,7 +1075,6 @@ public:
     void EmitLabel(ILCodeLabel* pLabel);
     void EmitLoadThis ();
     void EmitLoadNullPtr();
-    void EmitArgIteratorCreateAndLoad();
 
     ILCodeLabel* NewCodeLabel();
 

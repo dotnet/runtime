@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
 
+using ILCompiler.ObjectWriter;
+
 namespace R2RDump
 {
     /// <summary>
@@ -907,49 +909,22 @@ namespace R2RDump
 
         private uint ReadU32()
         {
-            uint result = 0;
-            int shift = 0;
-            byte b;
-            do
-            {
-                b = ReadByte();
-                result |= (uint)(b & 0x7F) << shift;
-                shift += 7;
-            } while ((b & 0x80) != 0);
+            uint result = (uint)DwarfHelper.ReadULEB128(_code.AsSpan().Slice(_offset), out int bytesRead);
+            _offset += bytesRead;
             return result;
         }
 
         private int ReadI32()
         {
-            int result = 0;
-            int shift = 0;
-            byte b;
-            do
-            {
-                b = ReadByte();
-                result |= (int)(b & 0x7F) << shift;
-                shift += 7;
-            } while ((b & 0x80) != 0);
-            // Sign extend
-            if (shift < 32 && (b & 0x40) != 0)
-                result |= -(1 << shift);
+            int result = (int)DwarfHelper.ReadSLEB128(_code.AsSpan().Slice(_offset), out int bytesRead);
+            _offset += bytesRead;
             return result;
         }
 
         private long ReadI64()
         {
-            long result = 0;
-            int shift = 0;
-            byte b;
-            do
-            {
-                b = ReadByte();
-                result |= (long)(b & 0x7F) << shift;
-                shift += 7;
-            } while ((b & 0x80) != 0);
-            // Sign extend
-            if (shift < 64 && (b & 0x40) != 0)
-                result |= -(1L << shift);
+            long result = DwarfHelper.ReadSLEB128(_code.AsSpan().Slice(_offset), out int bytesRead);
+            _offset += bytesRead;
             return result;
         }
 

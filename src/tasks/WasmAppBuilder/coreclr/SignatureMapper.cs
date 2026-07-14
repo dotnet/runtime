@@ -24,6 +24,10 @@ internal static class SignatureMapper
         ["System.Runtime.CompilerServices.QCallAssembly"] = 8,
         ["System.Runtime.CompilerServices.QCallTypeHandle"] = 8,
         ["System.GC+GCHeapHardLimitInfo"] = 64,
+        // Used by WBT tests
+        ["WasmAppBuilderTestsPairStruct"] = 8,
+        ["WasmAppBuilderTests.S"] = 8,
+        ["WasmAppBuilderTests.Test+S"] = 8,
     };
 
     internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, out int structSize, int depth = 0)

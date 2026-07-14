@@ -3,33 +3,17 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class MethodTable : IData<MethodTable>
+[CdacType(nameof(DataType.MethodTable))]
+internal sealed partial class MethodTable : IData<MethodTable>
 {
-    static MethodTable IData<MethodTable>.Create(Target target, TargetPointer address) => new MethodTable(target, address);
-    public MethodTable(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.MethodTable);
-
-        MTFlags = target.ReadField<uint>(address, type, nameof(MTFlags));
-        BaseSize = target.ReadField<uint>(address, type, nameof(BaseSize));
-        MTFlags2 = target.ReadField<uint>(address, type, nameof(MTFlags2));
-        EEClassOrCanonMT = target.ReadPointerField(address, type, nameof(EEClassOrCanonMT));
-        Module = target.ReadPointerField(address, type, nameof(Module));
-        ParentMethodTable = target.ReadPointerField(address, type, nameof(ParentMethodTable));
-        NumInterfaces = target.ReadField<ushort>(address, type, nameof(NumInterfaces));
-        NumVirtuals = target.ReadField<ushort>(address, type, nameof(NumVirtuals));
-        PerInstInfo = target.ReadPointerField(address, type, nameof(PerInstInfo));
-        AuxiliaryData = target.ReadPointerField(address, type, nameof(AuxiliaryData));
-    }
-
-    public uint MTFlags { get; init; }
-    public uint BaseSize { get; init; }
-    public uint MTFlags2 { get; init; }
-    public TargetPointer EEClassOrCanonMT { get; init; }
-    public TargetPointer Module { get; init; }
-    public TargetPointer ParentMethodTable { get; init; }
-    public TargetPointer PerInstInfo { get; init; }
-    public ushort NumInterfaces { get; init; }
-    public ushort NumVirtuals { get; init; }
-    public TargetPointer AuxiliaryData { get; init; }
+    [Field] public uint MTFlags { get; }
+    [Field] public uint BaseSize { get; }
+    [Field] public uint MTFlags2 { get; }
+    [Field] public TargetPointer EEClassOrCanonMT { get; }
+    [Field] public TargetPointer Module { get; }
+    [Field] public TargetPointer ParentMethodTable { get; }
+    [Field] public TargetPointer PerInstInfo { get; }
+    [Field] public ushort NumInterfaces { get; }
+    [Field] public ushort NumVirtuals { get; }
+    [Field] public TargetPointer AuxiliaryData { get; }
 }

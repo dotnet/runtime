@@ -27,16 +27,25 @@ record struct ThreadStoreCounts (
 enum ThreadState
 {
     Unknown             = 0x00000000,    // threads are initialized this way
+    SuspensionTrapped   = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code)
+    GCSuspendRedirected = 0x00000004,    // Thread has been redirected to suspension routine
+    DebugSuspendPending = 0x00000008,    // Debugger requested this thread to be suspended
     Hijacked            = 0x00000080,    // Return address has been hijacked
     Background          = 0x00000200,    // Thread is a background thread
     Unstarted           = 0x00000400,    // Thread has never been started
+    CoInitialized       = 0x00002000,    // CoInitialize has been called for this thread
+    InSTA               = 0x00004000,    // Thread hosts an STA
+    InMTA               = 0x00008000,    // Thread is part of the MTA
     Stopped             = 0x00010000,    // Thread has started to shut down
+    DebugSyncSuspended  = 0x00080000,    // Thread has suspended itself at a safe point in response to a debugger suspend request
+    DebugWillSync       = 0x00100000,    // Debugger will wait for this thread to sync
     ThreadPoolWorker    = 0x01000000,    // is this a threadpool worker thread?
     WaitSleepJoin       = 0x02000000,    // Thread is in a Sleep(), Wait(), Join()
     Detached            = unchecked((int)0x80000000), // Thread was detached
 }
 
 record struct ThreadData (
+    TargetPointer ThreadAddress,
     uint Id;
     TargetNUInt OSId;
     ThreadState State;
@@ -51,6 +60,13 @@ record struct ThreadData (
     bool LastThrownObjectIsUnhandled;
     bool HasUnhandledException;
     TargetPointer NextThread;
+    TargetPointer ThreadHandle;
+    bool IsInteropDebuggingHijacked;
+    TargetPointer DebuggerFilterContext;
+    TargetPointer GCFrame;
+    bool IsExceptionInProgress;
+    TargetPointer OSExceptionRecord;
+    TargetPointer OSExceptionContextRecord;
 );
 ```
 
@@ -72,7 +88,6 @@ void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlled
 void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr);
-byte[] GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags);
 ```
 
 ## Version 1
@@ -89,16 +104,15 @@ The contract depends on the following globals
 | `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects |
 | `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | byte | Number of unused slots in noncollectible TLS array |
 | `PtrArrayOffsetToDataArray` | TargetPointer | Offset from PtrArray class address to start of enclosed data array |
-| `SizeOfGenericModeBlock` | uint32 | Size of GenericModeBlock struct |
 
 The contract additionally depends on these data descriptors
 
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
-| `Exception` | `WatsonBuckets` | Pointer to exception Watson buckets |
 | `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested exception info |
 | `ExceptionInfo` | `ThrownObjectHandle` | Pointer to exception object handle |
-| `ExceptionInfo` | `ExceptionWatsonBucketTrackerBuckets` | Pointer to Watson unhandled buckets on non-Unix |
+| `ExceptionInfo` | `ExceptionRecord` | Pointer to the OS `EXCEPTION_RECORD` the OS dispatcher pushed for this exception |
+| `ExceptionInfo` | `ContextRecord` | Pointer to the OS `CONTEXT` the OS dispatcher pushed for this exception |
 | `GCAllocContext` | `Pointer` | GC allocation pointer |
 | `GCAllocContext` | `Limit` | Allocation limit pointer |
 | `GCAllocContext` | `AllocBytes` | Number of bytes allocated on SOH by this context |
@@ -120,6 +134,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `DebuggerControlledThreadState` | Thread state flags controlled by the debugger |
 | `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
 | `Thread` | `Frame` | Pointer to current frame |
+| `Thread` | `GCFrame` | Pointer to the head of the thread's GCFrame chain. |
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |
 | `Thread` | `CachedStackLimit` | Pointer to the limit of the stack |
 | `Thread` | `ExposedObject` | Handle to the managed `Thread` object exposed to the debugger |
@@ -129,9 +144,10 @@ The contract additionally depends on these data descriptors
 | `Thread` | `LinkNext` | Pointer to get next thread |
 | `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
 | `Thread` | `DebuggerFilterContext` | Pointer to the debugger filter context for the thread |
+| `Thread` | `InteropDebuggingHijacked` | Whether the thread has been hijacked for interop debugging |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
 | `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
-| `Thread` | `UEWatsonBucketTrackerBuckets` | Pointer to thread Watson buckets data (optional, Windows only) |
+| `Thread` | `ThreadHandle` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
 | `ThreadLocalData` | `NonCollectibleTlsData` | Count of non-collectible TLS data entries |
 | `ThreadLocalData` | `NonCollectibleTlsArrayData` | Pointer to non-collectible TLS array data |
 | `ThreadLocalData` | `CollectibleTlsData` | Count of collectible TLS data entries |
@@ -143,12 +159,6 @@ The contract additionally depends on these data descriptors
 | `ThreadStore` | `BackgroundCount` | Number of background threads |
 | `ThreadStore` | `PendingCount` | Number of pending threads |
 | `ThreadStore` | `DeadCount` | Number of dead threads |
-
-The contract depends on the following other contracts
-
-| Contract |
-| --- |
-| Object |
 
 ``` csharp
 enum TLSIndexType
@@ -221,10 +231,22 @@ ThreadData GetThreadData(TargetPointer address)
     }
 
     ulong threadLinkoffset = ... // offset from Thread data descriptor
+
+    // The OS-pushed EXCEPTION_RECORD / CONTEXT are reachable through the current
+    // exception tracker (ExInfo). When there is no exception in progress the tracker
+    // pointer is null.
+    bool isExceptionInProgress = exceptionTrackerAddr != TargetPointer.Null;
+    TargetPointer osExceptionRecord = isExceptionInProgress
+        ? target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::ExceptionRecord offset */)
+        : TargetPointer.Null;
+    TargetPointer osExceptionContextRecord = isExceptionInProgress
+        ? target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::ContextRecord offset */)
+        : TargetPointer.Null;
+
     return new ThreadData(
         Id: target.Read<uint>(address + /* Thread::Id offset */),
         OSId: target.ReadNUInt(address + /* Thread::OSId offset */),
-        State: target.Read<uint>(address + /* Thread::State offset */) /* -> convert to contract enum */,
+        State: (ThreadState)(target.Read<uint>(address + /* Thread::State offset */) & /* mask of wrapped ThreadState bits */),
         PreemptiveGCDisabled: (target.Read<uint>(address + /* Thread::PreemptiveGCDisabled offset */) & 0x1) != 0,
         AllocContextPointer: allocContextPointer,
         AllocContextLimit: allocContextLimit,
@@ -232,6 +254,10 @@ ThreadData GetThreadData(TargetPointer address)
         LastThrownObjectHandle : lastThrownObjectHandle,
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
+        GCFrame: target.ReadPointer(address + /* Thread::GCFrame offset */),
+        IsExceptionInProgress: isExceptionInProgress,
+        OSExceptionRecord: osExceptionRecord,
+        OSExceptionContextRecord: osExceptionContextRecord,
     );
 }
 
@@ -297,7 +323,11 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
             if (collectibleCount > indexOffset)
             {
                 TargetPointer collectibleArray = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::CollectibleTlsArrayData offset */);
-                threadLocalStaticBase = target.ReadPointer(collectibleArray + (ulong)(indexOffset * target.PointerSize));
+                // The collectible TLS array slot holds an OBJECTHANDLE; dereference the handle to the object
+                TargetPointer handleSlotAddress = collectibleArray + (ulong)(indexOffset * target.PointerSize);
+                TargetPointer handle = target.ReadPointer(handleSlotAddress);
+                if (handle != TargetPointer.Null && target.TryReadPointer(handle, out TargetPointer obj))
+                    threadLocalStaticBase = obj;
             }
             break;
         case TLSIndexType.DirectOnThreadLocalData:
@@ -335,75 +365,6 @@ TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
     // Return the address of the ThrownObject field as a pseudo-handle.
     // Callers dereference this address to read the exception Object*.
     return exceptionTrackerPtr + /* ExceptionInfo::ThrownObject field offset */;
-}
-
-byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
-{
-    TargetPointer readFrom;
-    TargetPointer exceptionTrackerPtr = _target.ReadPointer(threadPointer + /*Thread::ExceptionTracker offset */);
-    if (exceptionTrackerPtr == TargetPointer.Null)
-        return Array.Empty<byte>();
-    TargetPointer thrownObjectHandle = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ThrownObjectHandle offset */);
-    TargetPointer throwableObjectPtr = target.ReadPointer(thrownObjectHandle);
-    if (throwableObjectPtr != TargetPointer.Null)
-    {
-        TargetPointer watsonBuckets = target.ReadPointer(throwableObjectPtr + /* Exception::WatsonBuckets offset */);
-        if (watsonBuckets != TargetPointer.Null)
-        {
-            readFrom = _target.Contracts.Object.GetArrayData(watsonBuckets, out _, out _, out _);
-        }
-        else
-        {
-            readFrom = /* Has Thread::UEWatsonBucketTrackerBuckets offset */
-                ? target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */)
-                : TargetPointer.Null;
-            if (readFrom == TargetPointer.Null)
-            {
-                readFrom = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ExceptionWatsonBucketTrackerBuckets offset */);
-            }
-            else
-            {
-                return Array.Empty<byte>();
-            }
-        }
-    }
-    else
-    {
-        readFrom = /* Has Thread::UEWatsonBucketTrackerBuckets offset */
-            ? target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */)
-            : TargetPointer.Null;
-    }
-
-    Span<byte> span = new byte[_target.ReadGlobal<uint>("SizeOfGenericModeBlock")];
-    if (readFrom == TargetPointer.Null)
-        return Array.Empty<byte>();
-
-    _target.ReadBuffer(readFrom, span);
-    return span.ToArray();
-}
-
-byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags)
-{
-    // Allocate a context buffer for the target platform
-    IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
-    byte[] bytes = new byte[context.Size];
-
-    TargetPointer filterContext = TargetPointer.Null;
-
-    if (contextSource.HasFlag(ThreadContextSource.Debugger))
-        filterContext = target.ReadPointer(threadPointer + /* Thread::DebuggerFilterContext offset */);
-
-    if (filterContext != TargetPointer.Null)
-    {
-        // Use the filter context directly
-        target.ReadBuffer(filterContext, bytes);
-        return bytes;
-    }
-
-    // Fall back to the OS thread context
-    ulong osId = target.ReadNUInt(threadPointer + /* Thread::OSId offset */);
-    target.GetThreadContext(osId, contextFlags, bytes);
-    return bytes;
 }
 
 ```

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Buffers.Binary;
 using System.Linq;
 using Internal.JitInterface;
 using Internal.Pgo;
@@ -13,7 +14,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, IMethodCodeNodeWithTypeSignature
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
@@ -379,6 +380,46 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Debug.Assert(_debugEHClauseInfos == null);
             _debugEHClauseInfos = debugEHClauseInfos;
+        }
+
+        public FuncletKind[] GetFuncletKinds()
+        {
+            // EH Clause structure contains 6 uint sized fields 
+            const int ClauseSize = 6 * sizeof(uint);
+            const int FlagsFieldOffset = 0 * sizeof(uint);
+
+            if (_ehInfo?.Data is not { Length: > 0 } data)
+                return Array.Empty<FuncletKind>();
+
+            int clauseCount = data.Length / ClauseSize;
+            ArrayBuilder<FuncletKind> funcletKinds = new ArrayBuilder<FuncletKind>(clauseCount);
+            for (int i = 0; i < clauseCount; i++)
+            {
+                int baseOffset = i * ClauseSize;
+                CORINFO_EH_CLAUSE_FLAGS flags = (CORINFO_EH_CLAUSE_FLAGS)BinaryPrimitives.ReadUInt32LittleEndian(
+                    data.AsSpan(baseOffset + FlagsFieldOffset));
+
+                if (flags.HasFlag(CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FINALLY))
+                {
+                    funcletKinds.Add(FuncletKind.Finally);
+                }
+                else if (flags.HasFlag(CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FAULT))
+                {
+                    funcletKinds.Add(FuncletKind.Fault);
+                }
+                else if (flags.HasFlag(CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER))
+                {
+                    // Filters inspire two funclets: a filter funclet and a catch-like handler funclet
+                    funcletKinds.Add(FuncletKind.Filter);
+                    funcletKinds.Add(FuncletKind.CatchOrFilterHandler);
+                }
+                else
+                {
+                    funcletKinds.Add(FuncletKind.CatchOrFilterHandler);
+                }
+            }
+
+            return funcletKinds.ToArray();
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

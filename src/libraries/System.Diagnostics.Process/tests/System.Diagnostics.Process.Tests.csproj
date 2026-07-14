@@ -43,6 +43,8 @@
     <Compile Include="StartAndForget.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="SafeProcessHandleTests.cs" />
+    <Compile Include="StartSuspendedTests.cs" />
+    <Compile Include="ProcessOpenTests.cs" />
     <Compile Include="KillOnParentExitTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

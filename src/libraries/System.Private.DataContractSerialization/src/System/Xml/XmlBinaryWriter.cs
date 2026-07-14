@@ -766,7 +766,7 @@ namespace System.Xml
             }
         }
 
-        public override unsafe void WriteDecimalText(decimal d)
+        public override void WriteDecimalText(decimal d)
         {
             if (BitConverter.IsLittleEndian)
             {
@@ -774,7 +774,7 @@ namespace System.Xml
             }
             else
             {
-                Span<int> bits = stackalloc int[4];
+                Span<int> bits = [0, 0, 0, 0];
                 decimal.TryGetBits(d, bits, out int intsWritten);
                 Debug.Assert(intsWritten == 4);
 
@@ -946,7 +946,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe void WriteDecimalArray(ReadOnlySpan<decimal> items)
+        public void WriteDecimalArray(ReadOnlySpan<decimal> items)
         {
             if (BitConverter.IsLittleEndian)
             {
@@ -954,7 +954,7 @@ namespace System.Xml
             }
             else
             {
-                Span<int> bits = stackalloc int[4];
+                Span<int> bits = [0, 0, 0, 0];
                 WriteArrayInfo(XmlBinaryNodeType.DecimalTextWithEndElement, items.Length);
                 foreach (ref readonly decimal d in items)
                 {

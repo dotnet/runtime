@@ -10,6 +10,8 @@
 
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseBootstrap)' == 'true'" />
+  <Import Project="$(RepoRoot)eng/liveILLink.targets" Condition="'$(UseBootstrap)' == 'true'" />
 
   <PropertyGroup>
     <GCStressDependsOnCoreDisTools>false</GCStressDependsOnCoreDisTools>

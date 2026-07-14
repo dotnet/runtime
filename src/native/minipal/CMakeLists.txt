@@ -1,3 +1,5 @@
+set(CMAKE_INCLUDE_CURRENT_DIR OFF)
+
 include(configure.cmake)
 
 set(SOURCES
