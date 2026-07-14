@@ -17,6 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <CMakeProjectReference Include="../../../Interop/COM/ComWrappers/MockReferenceTrackerRuntime/CMakeLists.txt" />
+    <CMakeProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
   </ItemGroup>
 </Project>
