@@ -25,6 +25,7 @@ namespace System.Text.Json.Schema
         internal const string DefaultPropertyName = "default";
         internal const string MinLengthPropertyName = "minLength";
         internal const string MaxLengthPropertyName = "maxLength";
+        internal const string DeprecatedPropertyName = "deprecated";
 
         public static JsonSchema CreateFalseSchema() => new(false);
         public static JsonSchema CreateTrueSchema() => new(true);
@@ -95,6 +96,9 @@ namespace System.Text.Json.Schema
         public int? MaxLength { get => _maxLength; set { VerifyMutable(); _maxLength = value; } }
         private int? _maxLength;
 
+        public bool Deprecated { get => _deprecated; set { VerifyMutable(); _deprecated = value; } }
+        private bool _deprecated;
+
         public JsonSchemaExporterContext? ExporterContext { get; set; }
 
         public int KeywordCount
@@ -124,6 +128,7 @@ namespace System.Text.Json.Schema
                 Count(HasDefaultValue);
                 Count(MinLength != null);
                 Count(MaxLength != null);
+                Count(Deprecated);
 
                 return count;
 
@@ -253,6 +258,11 @@ namespace System.Text.Json.Schema
             if (MaxLength is int maxLength)
             {
                 objSchema.Add(MaxLengthPropertyName, (JsonNode)maxLength);
+            }
+
+            if (Deprecated)
+            {
+                objSchema.Add(DeprecatedPropertyName, (JsonNode)true);
             }
 
             return CompleteSchema(objSchema);

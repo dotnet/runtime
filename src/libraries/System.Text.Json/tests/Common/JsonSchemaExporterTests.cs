@@ -260,6 +260,23 @@ namespace System.Text.Json.Schema.Tests
             Assert.Equal("Value", memberNameProperty.GetValue(propertyInfo));
         }
 
+        [Fact]
+        public void JsonSchemaExporter_ObsoleteType_GeneratesDeprecatedProperty()
+        {
+#pragma warning disable CS0612 // Type or member is obsolete
+            JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(typeof(MyObsoleteType));
+#pragma warning restore CS0612 // Type or member is obsolete
+            JsonValue value = Assert.IsType<JsonValue>(schema["deprecated"], exactMatch: false);
+            Assert.Equal(JsonValueKind.True, value.GetValueKind());
+
+        }
+
+        [Obsolete]
+        internal sealed class MyObsoleteType
+        {
+            public string? MyString { get; set; }
+        }
+
         record PocoWithProperty(int Value);
 
         [JsonSerializable(typeof(PocoWithProperty))]
