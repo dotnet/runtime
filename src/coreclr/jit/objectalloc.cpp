@@ -428,21 +428,18 @@ void ObjectAllocator::PrepareAnalysis()
     // If we are going to do any conditional escape analysis, determine
     // how much extra BV space we'll need.
     //
-    bool const hasEnumeratorLocals = m_compiler->hasImpEnumeratorGdvLocalMap() || m_compiler->hasIteratorGdvInfoMap();
-
-    if (hasEnumeratorLocals)
+    unsigned enumeratorLocalCount = 0;
+    if (m_compiler->hasImpEnumeratorGdvLocalMap())
     {
-        unsigned enumeratorLocalCount = 0;
-        if (m_compiler->hasImpEnumeratorGdvLocalMap())
-        {
-            enumeratorLocalCount += m_compiler->getImpEnumeratorGdvLocalMap()->GetCount();
-        }
-        if (m_compiler->hasIteratorGdvInfoMap())
-        {
-            enumeratorLocalCount += m_compiler->lvaCount;
-        }
-        assert(enumeratorLocalCount > 0);
+        enumeratorLocalCount += m_compiler->getImpEnumeratorGdvLocalMap()->GetCount();
+    }
+    if (m_compiler->hasIteratorGdvInfoMap() && (m_compiler->getImpIteratorGdvInfoMap()->GetCount() > 0))
+    {
+        enumeratorLocalCount += m_compiler->lvaCount;
+    }
 
+    if (enumeratorLocalCount > 0)
+    {
         // For now, disable conditional escape analysis with OSR
         // since the dominance picture is muddled at this point.
         //

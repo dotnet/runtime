@@ -9018,10 +9018,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
                         }
 
+                        const bool hasEnumeratorGdvLocals =
+                            hasImpEnumeratorGdvLocalMap() && (getImpEnumeratorGdvLocalMap()->GetCount() > 0);
+                        const bool hasIteratorGdvInfo =
+                            hasIteratorGdvInfoMap() && (getImpIteratorGdvInfoMap()->GetCount() > 0);
                         const bool mayNeedIteratorInfo = opts.OptimizationEnabled() &&
                                                          (JitConfig.JitObjectStackAllocation() != 0) &&
                                                          (JitConfig.JitObjectStackAllocationConditionalEscape() != 0) &&
-                                                         (hasImpEnumeratorGdvLocalMap() || hasIteratorGdvInfoMap());
+                                                         (hasEnumeratorGdvLocals || hasIteratorGdvInfo);
                         const bool isEnumerableAndEnumerator =
                             mayNeedIteratorInfo && info.compCompHnd->isEnumerableAndEnumerator(resolvedToken.hClass);
 
