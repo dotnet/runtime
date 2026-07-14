@@ -4513,11 +4513,12 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     assert(simdType == TYP_SIMD16);
 
-    // If two or more of the operands are constant and non-zero, we can materialize them as a vector
-    // constant and insert the remaining non-constant operands into it. This is both fewer nodes and
-    // typically cheaper than a chain of inserts starting from CreateScalarUnsafe. We only consider
-    // non-zero constants because zero lanes are effectively free to produce (for example, insertps
-    // can zero lanes as part of another insert), so materializing them into a constant can regress.
+    // If two or more of the operands are constants that are not all-bits-zero, we can materialize
+    // them as a vector constant and insert the remaining non-constant operands into it. This is both
+    // fewer nodes and typically cheaper than a chain of inserts starting from CreateScalarUnsafe. We
+    // only consider such constants because all-bits-zero lanes are effectively free to produce (for
+    // example, insertps can zero lanes as part of another insert), so materializing them into a
+    // constant can regress.
     if (NonZeroConstantElementCount(&simdVal, cnsMask, simdBaseType) >= 2)
     {
         return LowerHWIntrinsicCreateWithInserts(node, &simdVal, cnsMask);

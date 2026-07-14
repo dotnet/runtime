@@ -13083,7 +13083,7 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types simdType,
 
 //----------------------------------------------------------------------------------------------
 // Lowering::NonZeroConstantElementCount: Counts how many of the constant elements of a partially
-//    constant Vector Create node have a non-zero value.
+//    constant Vector Create node have a bit pattern that is not all-bits-zero.
 //
 //  Arguments:
 //    simdVal      - The constant value, with the constant elements populated and the non-constant
@@ -13092,12 +13092,17 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types simdType,
 //    simdBaseType - The base type of the vector.
 //
 // Returns:
-//    The number of constant elements whose value is non-zero.
+//    The number of constant elements whose bit pattern is not all-bits-zero.
 //
 // Remarks:
-//    Zero-valued constant elements are effectively free to produce (for example, insertps can zero
-//    lanes as part of another insert, and CreateScalarUnsafe zero-extends the upper elements), so
-//    they should not count towards the profitability of materializing a vector constant.
+//    This checks the raw bytes rather than the numeric value on purpose. An all-bits-zero lane is
+//    effectively free to produce (for example, insertps can zero lanes as part of another insert,
+//    and CreateScalarUnsafe zero-extends the upper elements), so such lanes should not count towards
+//    the profitability of materializing a vector constant.
+//
+//    A floating-point -0.0 has its sign bit set, so it is not all-bits-zero and must be counted:
+//    the free zeroing paths would produce +0.0, which is a different value, so a -0.0 lane genuinely
+//    requires a materialized constant. Do not "simplify" this to a numeric == 0 check.
 //
 unsigned Lowering::NonZeroConstantElementCount(const simd_t* simdVal, simdmask_t cnsMask, var_types simdBaseType)
 {
@@ -13113,6 +13118,8 @@ unsigned Lowering::NonZeroConstantElementCount(const simd_t* simdVal, simdmask_t
 
         unsigned base = index * elementSize;
 
+        // Treat the lane as non-zero if any byte is set. This keeps -0.0 (sign bit only) counted,
+        // since the free zeroing paths would otherwise turn it into +0.0.
         for (unsigned i = 0; i < elementSize; i++)
         {
             if (bytes[base + i] != 0)
