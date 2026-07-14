@@ -7,6 +7,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Net.Security;
 using System.Net.Test.Common;
+using System.Security.Authentication.ExtendedProtection;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
@@ -327,6 +328,13 @@ namespace System.Net.Security.Tests
                 }
             }
             while (!ntAuth.IsAuthenticated);
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Windows)]
+        public void ExtendedProtectionPolicy_NotSupportedOnUnix()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => new NegotiateAuthentication(new NegotiateAuthenticationServerOptions { Policy = new ExtendedProtectionPolicy(PolicyEnforcement.Always) }));
         }
     }
 }

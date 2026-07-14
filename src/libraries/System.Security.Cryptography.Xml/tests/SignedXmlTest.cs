@@ -2035,6 +2035,163 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(isValid, signedXml.CheckSignature());
         }
 
+        // Builds a SignedXml document over "<Data>some other text</Data>" wrapped in an
+        // <Object Id="object">, signs it with the supplied HMAC, and returns a verifier-side
+        // SignedXml loaded from the produced XML. When hmacOutputLengthBits is supplied,
+        // ComputeSignature truncates SignatureValue to that bit length. When
+        // overrideSignatureMethodUrl is supplied, the SignatureMethod URL on the produced
+        // signature is replaced with the given value after signing.
+        private static SignedXml BuildHmacSignedXml(
+            HMAC signingHmac,
+            int? hmacOutputLengthBits = null,
+            string overrideSignatureMethodUrl = null)
+        {
+            XmlDocument dataDoc = new XmlDocument();
+            XmlElement dataElement = dataDoc.CreateElement("Data");
+            dataElement.AppendChild(dataDoc.CreateTextNode("some other text"));
+            dataDoc.AppendChild(dataElement);
+
+            SignedXml builder = new SignedXml();
+            builder.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigC14NTransformUrl;
+
+            DataObject dataObject = new DataObject
+            {
+                Id = "object",
+                Data = dataDoc.ChildNodes,
+            };
+            builder.AddObject(dataObject);
+
+            Reference reference = new Reference
+            {
+                Uri = "#object",
+                DigestMethod = SignedXml.XmlDsigSHA256Url,
+            };
+            builder.AddReference(reference);
+
+            if (hmacOutputLengthBits.HasValue)
+            {
+                builder.SignedInfo.SignatureLength =
+                    hmacOutputLengthBits.Value.ToString(CultureInfo.InvariantCulture);
+            }
+
+            builder.ComputeSignature(signingHmac);
+
+            if (overrideSignatureMethodUrl is not null)
+            {
+                builder.SignedInfo.SignatureMethod = overrideSignatureMethodUrl;
+            }
+
+            XmlDocument verifierDoc = new XmlDocument();
+            verifierDoc.AppendChild(verifierDoc.ImportNode(builder.GetXml(), deep: true));
+
+            SignedXml verifier = new SignedXml(verifierDoc);
+            verifier.LoadXml(verifierDoc.DocumentElement);
+            return verifier;
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [InlineData("urn:example:not-a-registered-hmac-url")]
+        [InlineData(SignedXml.XmlDsigEnvelopedSignatureTransformUrl)]
+        [InlineData(SignedXml.XmlDsigC14NTransformUrl)]
+        [InlineData(SignedXml.XmlDsigSHA1Url)]
+        [InlineData(SignedXml.XmlDsigRSASHA1Url)]
+        public void VerifyHMAC_ZeroLength_NonHmacSignatureMethodUrl_Rejects(string signatureMethodUrl)
+        {
+            using HMACSHA256 builderHmac = new HMACSHA256("any-key"u8.ToArray());
+            SignedXml sign = BuildHmacSignedXml(
+                signingHmac: builderHmac,
+                hmacOutputLengthBits: 0,
+                overrideSignatureMethodUrl: signatureMethodUrl);
+
+            Assert.False(sign.CheckSignature(new HMACSHA256("any-key"u8.ToArray())));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void VerifyHMAC_ZeroLength_NullSignatureFormatValidator_DefaultRejects()
+        {
+            using HMACSHA256 builderHmac = new HMACSHA256("secret"u8.ToArray());
+            SignedXml sign = BuildHmacSignedXml(signingHmac: builderHmac, hmacOutputLengthBits: 0);
+            sign.SignatureFormatValidator = null;
+
+            Assert.False(sign.CheckSignature(new HMACSHA256("secret"u8.ToArray())));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void VerifyHMAC_ZeroLength_PermissiveSignatureFormatValidator_DefaultRejects()
+        {
+            using HMACSHA256 builderHmac = new HMACSHA256("secret"u8.ToArray());
+            SignedXml sign = BuildHmacSignedXml(signingHmac: builderHmac, hmacOutputLengthBits: 0);
+            sign.SignatureFormatValidator = _ => true;
+
+            Assert.False(sign.CheckSignature(new HMACSHA256("secret"u8.ToArray())));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void VerifyHMAC_HalfLength_NullSignatureFormatValidator_DefaultRejects()
+        {
+            using HMACSHA256 builderHmac = new HMACSHA256("secret"u8.ToArray());
+            SignedXml sign = BuildHmacSignedXml(signingHmac: builderHmac, hmacOutputLengthBits: 128);
+            sign.SignatureFormatValidator = null;
+
+            Assert.False(sign.CheckSignature(new HMACSHA256("secret"u8.ToArray())));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void VerifyHMAC_ZeroLength_NullSignatureFormatValidator_UnsafeSwitchRestoresInsecureBehavior()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetSwitch(
+                    "Switch.System.Security.Cryptography.Xml.SignedXml.AllowUnsafeTruncatedHmacSignatureVerification",
+                    true);
+
+                using HMACSHA256 builderHmac = new HMACSHA256("secret"u8.ToArray());
+                SignedXml sign = BuildHmacSignedXml(signingHmac: builderHmac, hmacOutputLengthBits: 0);
+                sign.SignatureFormatValidator = null;
+
+                Assert.True(sign.CheckSignature(new HMACSHA256("no clue"u8.ToArray())));
+            }).Dispose();
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void VerifyHMAC_EnvelopedSignature_PostProcessedToZeroLengthNonHmacMethod_Rejects()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<root><data>some other text</data></root>");
+
+            SignedXml signer = new SignedXml(doc);
+            Reference reference = new Reference(uri: "");
+            reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+            reference.DigestMethod = SignedXml.XmlDsigSHA256Url;
+            signer.AddReference(reference);
+            signer.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigC14NTransformUrl;
+
+            using HMACSHA256 signingHmac = new HMACSHA256("secret"u8.ToArray());
+            signer.ComputeSignature(signingHmac);
+
+            doc.DocumentElement.AppendChild(doc.ImportNode(signer.GetXml(), deep: true));
+
+            XmlElement signatureElement = (XmlElement)doc.GetElementsByTagName("Signature", SignedXml.XmlDsigNamespaceUrl)[0];
+            XmlElement signatureMethodElement = (XmlElement)signatureElement.GetElementsByTagName("SignatureMethod", SignedXml.XmlDsigNamespaceUrl)[0];
+            XmlElement signatureValueElement = (XmlElement)signatureElement.GetElementsByTagName("SignatureValue", SignedXml.XmlDsigNamespaceUrl)[0];
+            signatureMethodElement.SetAttribute("Algorithm", "urn:example:not-a-registered-hmac-url");
+            XmlElement hmacOutputLengthElement = doc.CreateElement("HMACOutputLength", SignedXml.XmlDsigNamespaceUrl);
+            hmacOutputLengthElement.InnerText = "0";
+            signatureMethodElement.AppendChild(hmacOutputLengthElement);
+            signatureValueElement.InnerText = string.Empty;
+
+            SignedXml verifier = new SignedXml(doc);
+            verifier.LoadXml(signatureElement);
+
+            Assert.False(verifier.CheckSignature(new HMACSHA256("no clue"u8.ToArray())));
+        }
+
 #if NET // Remove once netfx has been serviced
         [Fact]
         public void SignedXml_EncryptedDataWithInfiniteXslTransform()
