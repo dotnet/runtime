@@ -71,8 +71,7 @@ jobs:
           #   inputs:
           #     buildType: current
           #     artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly
-          #     downloadType: single
-          #     downloadPath: '$(Build.SourcesDirectory)/artifacts'
+          #     targetPath: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
 
           # - task: CopyFiles@2
           #   displayName: Copy multithreading runtime pack

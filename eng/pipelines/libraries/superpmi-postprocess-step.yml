@@ -53,7 +53,7 @@ steps:
       archiveType: $(archiveType)
       tarCompression: $(tarCompression)
       archiveExtension: $(archiveExtension)
-      artifactName: 'SuperPMI_Collection_${{ parameters.SuperPmiCollectionName }}_${{ parameters.SuperPmiCollectionType }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      artifactName: 'SuperPMI_Collection_${{ parameters.SuperPmiCollectionName }}_${{ parameters.SuperPmiCollectionType }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_Attempt$(System.JobAttempt)'
       displayName: 'Upload artifacts SuperPMI ${{ parameters.SuperPmiCollectionName }}-${{ parameters.SuperPmiCollectionType }} collection'
       condition: always()
 
