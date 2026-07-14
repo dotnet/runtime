@@ -45,19 +45,23 @@ namespace ILCompiler.Compiler.Tests
         [InlineData("TwoFields", true)]
         [InlineData("MixedPrimitives", true)]
         [InlineData("ForwardsToOp", true)]
+        [InlineData("NestedField", true)]
+        [InlineData("NestedFieldLast", true)]
+        [InlineData("AllNested", true)]
         [InlineData("FloatField", false)]
         [InlineData("PartialCompare", false)]
         [InlineData("OrCompare", false)]
-        [InlineData("NestedField", false)]
+        [InlineData("WrapsPartial", false)]
+        [InlineData("Padded", false)]
+        [InlineData("WrapsPadded", false)]
         [InlineData("NotEquatable", false)]
         public void TestIsBitwiseEquatable(string typeName, bool expected)
         {
             MetadataType type = GetTestType(typeName);
 
             // This mirrors the decision RuntimeHelpersIntrinsics.EmitIL makes for a value type
-            // that implements IEquatable<T> of self.
-            bool result = ComparerIntrinsics.CanCompareValueTypeBits(type, _objectEquals)
-                && ComparerIntrinsics.IsIEquatableEqualsFieldwise(type);
+            // that implements IEquatable<T> of self: the field-wise scan is self-contained.
+            bool result = ComparerIntrinsics.IsIEquatableEqualsFieldwise(type);
 
             Assert.Equal(expected, result);
         }
@@ -65,7 +69,6 @@ namespace ILCompiler.Compiler.Tests
         [Theory]
         [InlineData("PartialCompare")]
         [InlineData("OrCompare")]
-        [InlineData("NestedField")]
         public void TestFieldwiseScanRejectsNonEquivalentEquals(string typeName)
         {
             // These types are bit-comparable at the field level, so the scan of the actual

@@ -7289,9 +7289,8 @@ static bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
 
 namespace
 {
-    // The subset of IL opcodes the field-wise Equals scanner understands. The scanner only accepts
-    // the exact shapes the C# compiler emits for a field-wise equality comparison, so a small,
-    // literal opcode table is all that is required.
+    // The IL opcodes the field-wise Equals scanner matches. It only accepts the exact shapes the C#
+    // compiler emits for a field-wise comparison, so a small literal table suffices.
     enum ILByte : BYTE
     {
         IL_LDARG_0      = 0x02,
@@ -7299,9 +7298,11 @@ namespace
         IL_LDC_I4_0     = 0x16,
         IL_CALL         = 0x28,
         IL_RET          = 0x2A,
+        IL_BRFALSE_S    = 0x2C,
         IL_BNE_UN_S     = 0x33,
         IL_LDOBJ        = 0x71,
         IL_LDFLD        = 0x7B,
+        IL_LDFLDA       = 0x7C,
         IL_PREFIX1      = 0xFE, // ceq is encoded as 0xFE 0x01
         IL_CEQ_2ND      = 0x01,
     };
@@ -7331,8 +7332,23 @@ namespace
         return MemberLoader::GetMethodDescFromMethodDef(pModule, token, Instantiation(), Instantiation());
     }
 
-    // Interface dispatch on a value type resolves to an unboxing stub, which carries no IL of its
-    // own. Unwrap it to the underlying instance method so the scanner can read its body.
+    // Resolves a method token, including a cross-module MemberRef (a primitive's Equals lives in
+    // CoreLib). Callers only match non-generic methods, so a MethodSpec resolves to its generic
+    // definition -- which never matches -- instead of throwing.
+    MethodDesc* TryResolveMethodToken(Module* pModule, mdToken token)
+    {
+        STANDARD_VM_CONTRACT;
+
+        mdToken kind = TypeFromToken(token);
+        if (kind != mdtMethodDef && kind != mdtMemberRef && kind != mdtMethodSpec)
+            return NULL;
+
+        SigTypeContext typeContext;
+        return MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
+            pModule, token, &typeContext, FALSE /* strictMetadataChecks */, FALSE /* allowInstParam */);
+    }
+
+    // Unwraps an unboxing stub (interface dispatch on a value type) to the instance method that has IL.
     MethodDesc* UnwrapStub(MethodDesc* pMD)
     {
         WRAPPER_NO_CONTRACT;
@@ -7341,22 +7357,104 @@ namespace
         return pMD;
     }
 
-    // Scans the body of a method that is expected to compare every instance field of
-    // 'valueTypeMT' pairwise, ANDing the results, and returns true only if the body is exactly
-    // such a comparison and every comparison is bit-for-bit equivalent to memcmp.
+    // Resolves 'mt's IEquatable<mt>.Equals implementation (unboxing stub unwrapped), or NULL if 'mt'
+    // is not a value type that implements IEquatable of self.
+    MethodDesc* GetIEquatableEqualsImpl(MethodTable* mt)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (mt == NULL || !mt->IsValueType())
+            return NULL;
+
+        TypeHandle th(mt);
+        Instantiation inst(&th, 1);
+        TypeHandle iequatableOfSelf = TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst);
+
+        if (!th.CanCastTo(iequatableOfSelf))
+            return NULL;
+
+        return UnwrapStub(mt->GetMethodDescForInterfaceMethod(
+            iequatableOfSelf, CoreLibBinder::GetMethod(METHOD__IEQUATABLEGENERIC__EQUALS), FALSE /* throwOnConflict */));
+    }
+
+    // Forward declaration: the field-wise scanner recurses into nested value-type fields.
+    bool IsFieldwiseEqualsBitwiseEquivalent(MethodTable* valueTypeMT, MethodDesc* pEqualsMD);
+
+    // Integer-like primitives whose '==' and Equals are both a bit-for-bit compare. Float/double are
+    // excluded: neither form is a memcmp (for '==' NaN != NaN and +0.0 == -0.0; Equals treats all NaNs
+    // and both signed zeros as equal).
+    bool IsBitwiseComparablePrimitive(CorElementType et)
+    {
+        LIMITED_METHOD_CONTRACT;
+        switch (et)
+        {
+            case ELEMENT_TYPE_BOOLEAN:
+            case ELEMENT_TYPE_CHAR:
+            case ELEMENT_TYPE_I1:
+            case ELEMENT_TYPE_U1:
+            case ELEMENT_TYPE_I2:
+            case ELEMENT_TYPE_U2:
+            case ELEMENT_TYPE_I4:
+            case ELEMENT_TYPE_U4:
+            case ELEMENT_TYPE_I8:
+            case ELEMENT_TYPE_U8:
+            case ELEMENT_TYPE_I:
+            case ELEMENT_TYPE_U:
+            case ELEMENT_TYPE_PTR:
+            case ELEMENT_TYPE_FNPTR:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    // Accepts a primitive field compared via 'x.Equals(y)' instead of 'x == y'; for these integer-like
+    // types both lower to the same bit-for-bit compare.
+    bool IsPrimitiveEqualsCall(MethodDesc* pCallee, FieldDesc* pField)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (pCallee == NULL || !IsBitwiseComparablePrimitive(pField->GetFieldType()))
+            return false;
+
+        MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
+        MethodDesc* pFieldEquals = GetIEquatableEqualsImpl(pFieldMT);
+        return pFieldEquals != NULL && pFieldEquals == UnwrapStub(pCallee);
+    }
+
+    // Accepts a nested value-type field compared through its own IEquatable<F>.Equals, but only when
+    // that Equals is itself a provable field-wise compare (its layout is covered by the recursion).
+    bool IsNestedFieldwiseEquatable(MethodDesc* pCallee, FieldDesc* pField)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (pCallee == NULL || pField->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
+            return false;
+
+        MethodTable* pNestedMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
+        if (pNestedMT == NULL)
+            return false;
+
+        MethodDesc* pNestedEquals = GetIEquatableEqualsImpl(pNestedMT);
+        if (pNestedEquals == NULL || pNestedEquals != UnwrapStub(pCallee))
+            return false;
+
+        return IsFieldwiseEqualsBitwiseEquivalent(pNestedMT, pNestedEquals);
+    }
+
+    // Returns true only if 'pEqualsMD' compares every instance field of 'valueTypeMT' exactly once and
+    // ANDs the results, bit-for-bit like memcmp. Combined with the caller's 'tightly packed' guarantee,
+    // that makes the whole comparison a memcmp.
     //
-    // The C# compiler lowers 'this.f0 == other.f0 && this.f1 == other.f1 && ...' to a sequence of
-    // per-field units sharing a single 'return false' tail:
+    // The C# compiler lowers 'this.f0 == other.f0 && ...' to per-field units sharing one 'return false'
+    // tail. Operands are always arg0/arg1. A primitive is compared inline; a nested value type through
+    // its own IEquatable<F>.Equals, which must itself be field-wise (checked recursively):
     //
-    //   non-final field:  ldarg.0; ldfld F; ldarg.1; ldfld F; bne.un.s FALSE
-    //   final     field:  ldarg.0; ldfld F; ldarg.1; ldfld F; ceq; ret
-    //   shared tail:      FALSE: ldc.i4.0; ret
-    //
-    // The two operands are always argument 0 and argument 1 (which are 'this'/'other' for the
-    // instance Equals and the two parameters for op_Equality). Requiring every instance field to be
-    // compared exactly once, together with the caller's 'tightly packed' guarantee, is what makes
-    // the field-wise comparison equivalent to a full memcmp. Only primitive (integer-like) fields
-    // are handled; the tightly-packed guarantee already excludes any struct with a value-type field.
+    //   primitive, non-final:  ldarg.0; ldfld  F; ldarg.1; ldfld F; bne.un.s FALSE
+    //   primitive, final:      ldarg.0; ldfld  F; ldarg.1; ldfld F; ceq; ret
+    //   nested,    non-final:  ldarg.0; ldflda F; ldarg.1; ldfld F; call F::Equals; brfalse.s FALSE
+    //   nested,    final:      ldarg.0; ldflda F; ldarg.1; ldfld F; call F::Equals; ret
+    //   shared tail:           FALSE: ldc.i4.0; ret
     bool ScanFieldwiseEqualsBody(MethodDesc* pEqualsMD, MethodTable* valueTypeMT)
     {
         STANDARD_VM_CONTRACT;
@@ -7390,13 +7488,16 @@ namespace
 
         while (!sawFinalUnit)
         {
-            // Left operand: ldarg.0; ldfld F.
-            if (ip + 6 > codeSize || pIL[ip] != IL_LDARG_0 || pIL[ip + 1] != IL_LDFLD)
+            // Left operand: ldarg.0; ldfld/ldflda F.
+            if (ip + 6 > codeSize || pIL[ip] != IL_LDARG_0)
+                return false;
+            BYTE leftLoad = pIL[ip + 1];
+            if (leftLoad != IL_LDFLD && leftLoad != IL_LDFLDA)
                 return false;
             mdToken leftFieldTok = ReadILToken(pIL + ip + 2);
             ip += 6;
 
-            // Right operand: ldarg.1; ldfld of the same field.
+            // Right operand: ldarg.1; ldfld F.
             if (ip + 6 > codeSize || pIL[ip] != IL_LDARG_1 || pIL[ip + 1] != IL_LDFLD)
                 return false;
             mdToken rightFieldTok = ReadILToken(pIL + ip + 2);
@@ -7421,55 +7522,72 @@ namespace
             }
             compared[numCompared++] = pField;
 
-            // Only integer-like fields are bit-for-bit equivalent to '=='. Float/double are excluded
-            // (NaN != NaN, +0.0 == -0.0), and anything else (including value-type fields) is rejected.
-            switch (pField->GetFieldType())
+            bool nested = leftLoad == IL_LDFLDA;
+            if (!nested)
             {
-                case ELEMENT_TYPE_BOOLEAN:
-                case ELEMENT_TYPE_CHAR:
-                case ELEMENT_TYPE_I1:
-                case ELEMENT_TYPE_U1:
-                case ELEMENT_TYPE_I2:
-                case ELEMENT_TYPE_U2:
-                case ELEMENT_TYPE_I4:
-                case ELEMENT_TYPE_U4:
-                case ELEMENT_TYPE_I8:
-                case ELEMENT_TYPE_U8:
-                case ELEMENT_TYPE_I:
-                case ELEMENT_TYPE_U:
-                case ELEMENT_TYPE_PTR:
-                case ELEMENT_TYPE_FNPTR:
-                    break;
-                default:
+                // Inline '==': only integer-like primitives are memcmp-equivalent.
+                if (!IsBitwiseComparablePrimitive(pField->GetFieldType()))
                     return false;
-            }
 
-            if (ip < codeSize && pIL[ip] == IL_BNE_UN_S)
-            {
-                // Non-final field: branch to the shared 'return false'.
-                if (ip + 2 > codeSize)
+                if (ip < codeSize && pIL[ip] == IL_BNE_UN_S)
+                {
+                    // Non-final field: branch to the shared 'return false'.
+                    if (ip + 2 > codeSize)
+                        return false;
+                    int target = (int)(ip + 2) + (int)(signed char)pIL[ip + 1];
+                    if (falseTarget == -1)
+                        falseTarget = target;
+                    else if (falseTarget != target)
+                        return false;
+                    ip += 2;
+                }
+                else if (ip + 3 <= codeSize && pIL[ip] == IL_PREFIX1 && pIL[ip + 1] == IL_CEQ_2ND && pIL[ip + 2] == IL_RET)
+                {
+                    // Final field: ceq; ret.
+                    ip += 3;
+                    sawFinalUnit = true;
+                }
+                else
+                {
                     return false;
-                int target = (int)(ip + 2) + (int)(signed char)pIL[ip + 1];
-                if (falseTarget == -1)
-                    falseTarget = target;
-                else if (falseTarget != target)
-                    return false;
-                ip += 2;
-            }
-            else if (ip + 3 <= codeSize && pIL[ip] == IL_PREFIX1 && pIL[ip + 1] == IL_CEQ_2ND && pIL[ip + 2] == IL_RET)
-            {
-                // Final field: ceq; ret.
-                ip += 3;
-                sawFinalUnit = true;
+                }
             }
             else
             {
-                return false;
+                // Call form: a primitive's own Equals, or a nested type's field-wise Equals.
+                if (ip + 5 > codeSize || pIL[ip] != IL_CALL)
+                    return false;
+                MethodDesc* pCallee = TryResolveMethodToken(pModule, ReadILToken(pIL + ip + 1));
+                if (!IsPrimitiveEqualsCall(pCallee, pField) && !IsNestedFieldwiseEquatable(pCallee, pField))
+                    return false;
+                ip += 5;
+
+                if (ip < codeSize && pIL[ip] == IL_BRFALSE_S)
+                {
+                    // Non-final field: branch to the shared tail.
+                    if (ip + 2 > codeSize)
+                        return false;
+                    int target = (int)(ip + 2) + (int)(signed char)pIL[ip + 1];
+                    if (falseTarget == -1)
+                        falseTarget = target;
+                    else if (falseTarget != target)
+                        return false;
+                    ip += 2;
+                }
+                else if (ip < codeSize && pIL[ip] == IL_RET)
+                {
+                    // Final field: ret.
+                    ip += 1;
+                    sawFinalUnit = true;
+                }
+                else
+                {
+                    return false;
+                }
             }
         }
 
-        // If there were any branches, the shared tail must be exactly 'ldc.i4.0; ret' and every
-        // branch must target it. A single-field comparison has no branches and no tail.
+        // Any branches must target the shared 'ldc.i4.0; ret' tail; a single-field compare has none.
         if (falseTarget != -1)
         {
             if ((int)ip != falseTarget ||
@@ -7495,12 +7613,10 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        // First pass restrictions to keep the scan simple and unquestionably safe:
-        //  - Must be unmanaged so a byte-wise compare is meaningful.
-        //  - No generics for now (keeps IL token resolution to in-module def tokens).
-        //  - Must be tightly packed (no padding gaps and no overlapping fields), otherwise memcmp
-        //    would compare bytes the field-wise Equals ignores.
-        //  - No inline arrays.
+        // First-pass restrictions that keep the scan simple and unquestionably safe: the type must be
+        // unmanaged (so a byte-wise compare is meaningful), non-generic (so IL tokens stay in-module),
+        // tightly packed (no padding anywhere -- the flag is transitive -- else memcmp inspects bytes
+        // Equals ignores), and not an inline array.
         if (valueTypeMT->ContainsGCPointers() ||
             valueTypeMT->HasInstantiation() ||
             valueTypeMT->IsNotTightlyPacked() ||
@@ -7559,14 +7675,13 @@ bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
 
     if (!typeHandle.CanCastTo(iequatableOfSelf))
     {
-        // The type provides no IEquatable<T> of its own, so bitwise equality is safe as long as the
-        // fields are bit-comparable and there is no object.Equals override with custom semantics.
+        // No IEquatable<T> of its own: bitwise equality is safe if the fields are bit-comparable and
+        // there is no custom object.Equals override.
         return CanCompareBitsOrUseFastGetHashCode(methodTable);
     }
 
-    // The type provides IEquatable<T>.Equals. It can only be treated as bitwise equatable if that
-    // implementation is a plain field-wise comparison equivalent to memcmp. Interface dispatch on a
-    // value type resolves to an unboxing stub, so unwrap it to the underlying instance method.
+    // Has IEquatable<T>.Equals: bitwise only if that Equals is a plain field-wise memcmp equivalent.
+    // UnwrapStub turns the value-type interface dispatch into the underlying instance method.
     MethodDesc* pEqualsMD = UnwrapStub(methodTable->GetMethodDescForInterfaceMethod(
         iequatableOfSelf, CoreLibBinder::GetMethod(METHOD__IEQUATABLEGENERIC__EQUALS), FALSE /* throwOnConflict */));
     if (pEqualsMD == NULL)

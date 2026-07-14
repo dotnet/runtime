@@ -326,20 +326,17 @@ namespace Internal.IL.Stubs
         /// </summary>
         public static bool IsIEquatableEqualsFieldwise(MetadataType type)
         {
-            // Keep token resolution simple by only handling non-generic value types, matching the VM.
-            if (type.HasInstantiation)
+            // The type's layout must be tightly packed (no padding gaps and no overlapping fields) so
+            // that a byte-wise compare never inspects bytes the field-wise Equals ignores. This is
+            // checked at every level of the recursion, matching the CoreCLR VM.
+            if (!IsTightlyPacked(type))
                 return false;
 
-            MetadataType iequatableType = type.Context.SystemModule.GetKnownType("System"u8, "IEquatable`1"u8);
-            MethodDesc equalsInterfaceMethod = iequatableType.MakeInstantiatedType(type).GetMethod("Equals"u8, null);
-            if (equalsInterfaceMethod == null)
+            MethodDesc equalsImpl = GetIEquatableEqualsImplementation(type);
+            if (equalsImpl is not EcmaMethod ecmaImpl)
                 return false;
 
-            MethodDesc equalsImpl = type.ResolveInterfaceMethodToVirtualMethodOnType(equalsInterfaceMethod);
-            if (equalsImpl is not EcmaMethod)
-                return false;
-
-            MethodIL methodIL = EcmaMethodIL.Create((EcmaMethod)equalsImpl);
+            MethodIL methodIL = EcmaMethodIL.Create(ecmaImpl);
 
             // A common pattern forwards `bool Equals(T other) => this == other;` to a user-defined
             // `op_Equality`. Follow that single forward before scanning the field-wise comparison.
@@ -347,6 +344,63 @@ namespace Internal.IL.Stubs
                 methodIL = EcmaMethodIL.Create(forwarded);
 
             return ScanFieldwiseEqualsBody(methodIL, type);
+        }
+
+        private static bool IsTightlyPacked(MetadataType type)
+        {
+            // Mirrors the CoreCLR VM's MethodTable::IsNotTightlyPacked (negated): a byte-wise compare
+            // equals comparing every field only if there is no padding anywhere. That needs the declared
+            // fields to exactly cover the instance size (no gaps, no overlap) and every nested value-type
+            // field to itself be tightly packed. The nested check makes this transitive, like the VM flag.
+            if (type.ContainsGCPointers)
+                return false;
+
+            if (type.IsInlineArray)
+                return false;
+
+            if (type.IsGenericDefinition)
+                return false;
+
+            OverlappingFieldTracker overlappingFieldTracker = new OverlappingFieldTracker(type);
+            int lastFieldEndOffset = 0;
+
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                lastFieldEndOffset = Math.Max(lastFieldEndOffset, field.Offset.AsInt + field.FieldType.GetElementSize().AsInt);
+
+                if (!overlappingFieldTracker.TrackField(field))
+                    return false;
+
+                TypeDesc fieldType = field.FieldType;
+                if (!fieldType.IsPrimitive && !fieldType.IsEnum && !fieldType.IsPointer && !fieldType.IsFunctionPointer)
+                {
+                    // Not a leaf field, so (having excluded GC pointers above) it is a nested value type.
+                    if (fieldType is not MetadataType nestedType || !IsTightlyPacked(nestedType))
+                        return false;
+                }
+            }
+
+            if (overlappingFieldTracker.HasGapsBeforeOffset(lastFieldEndOffset))
+                return false;
+
+            return lastFieldEndOffset == type.InstanceFieldSize.AsInt;
+        }
+
+        private static MethodDesc GetIEquatableEqualsImplementation(MetadataType type)
+        {
+            // Keep token resolution simple by only handling non-generic value types, matching the VM.
+            if (type.HasInstantiation)
+                return null;
+
+            MetadataType iequatableType = type.Context.SystemModule.GetKnownType("System"u8, "IEquatable`1"u8);
+            MethodDesc equalsInterfaceMethod = iequatableType.MakeInstantiatedType(type).GetMethod("Equals"u8, null);
+            if (equalsInterfaceMethod == null)
+                return null;
+
+            return type.ResolveInterfaceMethodToVirtualMethodOnType(equalsInterfaceMethod);
         }
 
         private static MethodDesc TryGetOpEqualityForward(MethodIL methodIL, MetadataType type)
@@ -398,12 +452,17 @@ namespace Internal.IL.Stubs
 
             while (!sawFinalCompare)
             {
-                // Each field comparison loads `ldarg.0; ldfld F; ldarg.1; ldfld F`.
+                // Each field comparison loads the field from both arguments. A primitive compared with
+                // `==` loads both by value (`ldfld`); a primitive compared with its own `Equals`, or a
+                // nested value-type field, loads the left side by address (`ldflda`) for the call.
                 if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.ldarg_0)
                     return false;
-                if (reader.ReadILOpcode() != ILOpcode.ldfld)
+
+                ILOpcode leftLoad = reader.ReadILOpcode();
+                if (leftLoad != ILOpcode.ldfld && leftLoad != ILOpcode.ldflda)
                     return false;
                 FieldDesc leftField = methodIL.GetObject(reader.ReadILToken()) as FieldDesc;
+
                 if (reader.ReadILOpcode() != ILOpcode.ldarg_1)
                     return false;
                 if (reader.ReadILOpcode() != ILOpcode.ldfld)
@@ -417,29 +476,62 @@ namespace Internal.IL.Stubs
                 if (!comparedFields.Add(leftField))
                     return false;
 
-                if (!IsBitwiseComparablePrimitive(leftField.FieldType))
-                    return false;
+                bool nested = leftLoad == ILOpcode.ldflda;
+                if (!nested)
+                {
+                    if (!IsBitwiseComparablePrimitive(leftField.FieldType))
+                        return false;
 
-                ILOpcode compareOpcode = reader.ReadILOpcode();
-                if (compareOpcode == ILOpcode.bne_un_s)
-                {
-                    // Non-final field: `bne.un.s FALSE` jumps to the shared `return false` tail.
-                    int target = reader.ReadBranchDestination(compareOpcode);
-                    if (falseTarget == -1)
-                        falseTarget = target;
-                    else if (falseTarget != target)
+                    ILOpcode compareOpcode = reader.ReadILOpcode();
+                    if (compareOpcode == ILOpcode.bne_un_s)
+                    {
+                        // Non-final field: `bne.un.s FALSE` jumps to the shared `return false` tail.
+                        int target = reader.ReadBranchDestination(compareOpcode);
+                        if (falseTarget == -1)
+                            falseTarget = target;
+                        else if (falseTarget != target)
+                            return false;
+                    }
+                    else if (compareOpcode == ILOpcode.ceq)
+                    {
+                        // Final field: `ceq; ret` produces the result directly.
+                        if (reader.ReadILOpcode() != ILOpcode.ret)
+                            return false;
+                        sawFinalCompare = true;
+                    }
+                    else
+                    {
                         return false;
-                }
-                else if (compareOpcode == ILOpcode.ceq)
-                {
-                    // Final field: `ceq; ret` produces the result directly.
-                    if (reader.ReadILOpcode() != ILOpcode.ret)
-                        return false;
-                    sawFinalCompare = true;
+                    }
                 }
                 else
                 {
-                    return false;
+                    // Call form: a primitive's own Equals, or a nested type's field-wise Equals.
+                    if (reader.ReadILOpcode() != ILOpcode.call)
+                        return false;
+                    MethodDesc callee = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
+                    if (!IsPrimitiveEqualsCall(callee, leftField.FieldType) && !IsNestedFieldwiseEquatable(callee, leftField.FieldType))
+                        return false;
+
+                    ILOpcode compareOpcode = reader.ReadILOpcode();
+                    if (compareOpcode == ILOpcode.brfalse_s)
+                    {
+                        // Non-final field: branch to the shared tail.
+                        int target = reader.ReadBranchDestination(compareOpcode);
+                        if (falseTarget == -1)
+                            falseTarget = target;
+                        else if (falseTarget != target)
+                            return false;
+                    }
+                    else if (compareOpcode == ILOpcode.ret)
+                    {
+                        // Final field: ret.
+                        sawFinalCompare = true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
             }
 
@@ -455,6 +547,30 @@ namespace Internal.IL.Stubs
             }
 
             return !reader.HasNext && comparedFields.Count == instanceFieldCount;
+        }
+
+        private static bool IsNestedFieldwiseEquatable(MethodDesc callee, TypeDesc fieldType)
+        {
+            // The nested field must be compared through the nested type's own IEquatable<F>.Equals, and
+            // that Equals must itself be field-wise. Its layout is validated by CanCompareValueTypeBits.
+            if (callee == null || fieldType is not MetadataType nestedType || !nestedType.IsValueType)
+                return false;
+
+            if (callee != GetIEquatableEqualsImplementation(nestedType))
+                return false;
+
+            return IsIEquatableEqualsFieldwise(nestedType);
+        }
+
+        private static bool IsPrimitiveEqualsCall(MethodDesc callee, TypeDesc fieldType)
+        {
+            // A primitive field compared via 'x.Equals(y)' instead of 'x == y'; for these integer-like
+            // types both lower to the same bit-for-bit compare. Confirm the callee is its IEquatable<F>.Equals.
+            if (callee == null || !IsBitwiseComparablePrimitive(fieldType))
+                return false;
+
+            return fieldType is MetadataType primitiveType
+                && callee == GetIEquatableEqualsImplementation(primitiveType);
         }
 
         private static bool IsBitwiseComparablePrimitive(TypeDesc fieldType)
