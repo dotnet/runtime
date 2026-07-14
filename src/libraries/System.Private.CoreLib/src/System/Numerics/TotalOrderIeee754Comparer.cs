@@ -76,7 +76,7 @@ namespace System.Numerics
                 // This also satisfies totalOrder definition which is +x < +Inf < +sNaN < +qNaN
 
                 // The order of NaNs of same category and same sign is implementation defined,
-                // here we define it as the order of exponent bits to simplify comparison
+                // here we define it as the order of significand bits to simplify comparison
 
                 // Negative values are represented in sign-magnitude, instead of two's complement like integers
                 // Just negating the comparison result when both numbers are negative is enough
