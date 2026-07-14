@@ -643,13 +643,6 @@
 		</type>
 
 	</assembly>
-	<!-- STAThreadAttribute is read by the native runtime (object.c: prepare_thread_to_exec_main)
-	     when launching an entry point via mono_runtime_run_main to set the apartment state.
-	     On single-threaded runtimes this attribute can be trimmed: apartment state is meaningless
-	     there and the native lookup tolerates the type being absent. -->
-	<assembly fullname="System.Private.CoreLib" feature="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" featurevalue="true" featuredefault="true">
-		<type fullname="System.STAThreadAttribute" />
-	</assembly>
 	<assembly fullname="System.Private.CoreLib" feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="true" featuredefault="true">
 		<type fullname="Mono.HotReload.FieldStore" preserve="fields" />
 		<type fullname="Mono.HotReload.InstanceFieldTable">
