@@ -371,14 +371,6 @@ namespace System.Net.Security
                     context = new SafeDeleteSslContext(sslAuthenticationOptions);
                 }
 
-                if (context is SafeDeleteNwContext)
-                {
-                    // Network Framework drives the handshake and shutdown internally;
-                    // there is no synchronous token to emit here.
-                    token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
-                    return token;
-                }
-
                 Debug.Assert(context is SafeDeleteSslContext, "SafeDeleteSslContext expected");
                 SafeDeleteSslContext sslContext = (SafeDeleteSslContext)context;
 
