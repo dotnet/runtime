@@ -207,22 +207,22 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
-        public static unsafe void SizeOf()
+        public static void SizeOf()
         {
-            Assert.Equal(1, Unsafe.SizeOf<sbyte>());
-            Assert.Equal(1, Unsafe.SizeOf<byte>());
-            Assert.Equal(2, Unsafe.SizeOf<short>());
-            Assert.Equal(2, Unsafe.SizeOf<ushort>());
-            Assert.Equal(4, Unsafe.SizeOf<int>());
-            Assert.Equal(4, Unsafe.SizeOf<uint>());
-            Assert.Equal(8, Unsafe.SizeOf<long>());
-            Assert.Equal(8, Unsafe.SizeOf<ulong>());
-            Assert.Equal(4, Unsafe.SizeOf<float>());
-            Assert.Equal(8, Unsafe.SizeOf<double>());
-            Assert.Equal(4, Unsafe.SizeOf<Byte4>());
-            Assert.Equal(8, Unsafe.SizeOf<Byte4Short2>());
-            Assert.Equal(512, Unsafe.SizeOf<Byte512>());
-            Assert.Equal(IntPtr.Size * 2, Unsafe.SizeOf<ReadOnlySpan<char>>());
+            Assert.Equal(1, sizeof(sbyte));
+            Assert.Equal(1, sizeof(byte));
+            Assert.Equal(2, sizeof(short));
+            Assert.Equal(2, sizeof(ushort));
+            Assert.Equal(4, sizeof(int));
+            Assert.Equal(4, sizeof(uint));
+            Assert.Equal(8, sizeof(long));
+            Assert.Equal(8, sizeof(ulong));
+            Assert.Equal(4, sizeof(float));
+            Assert.Equal(8, sizeof(double));
+            Assert.Equal(4, sizeof(Byte4));
+            Assert.Equal(8, sizeof(Byte4Short2));
+            Assert.Equal(512, sizeof(Byte512));
+            Assert.Equal(IntPtr.Size * 2, sizeof(ReadOnlySpan<char>));
         }
 
         [Theory]
