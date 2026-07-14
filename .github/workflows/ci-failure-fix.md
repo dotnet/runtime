@@ -219,6 +219,8 @@ codegen-stress failures. No fix or workaround PR is in bounds for them.
 
 Always try to produce a real candidate change first. Read every file you would modify at `HEAD`, work out the minimal correct change (e.g. wrong expected value in a test, missing `using`, wrong cast, missing `#if`, off-by-one in test setup, a missing platform guard that *enables* correct behavior rather than disabling the test), and stage it. If the change reduces to "do what the source already does", there is nothing to fix -> record `-> skipped: candidate fix already present in source`.
 
+**NativeAOT already-rooted caution.** When the failing leg is a NativeAOT run (e.g. Apple `AllSubsets_NativeAOT`) and the symptom is a type, assembly, or method *missing at run time* (a `FileNotFoundException` for a `*.TestAssembly.dll`, a reflection lookup returning null, a missing logging/DI provider), do **not** propose rooting the test assembly or its members — `[DynamicDependency]`, `.rd.xml`/`ILLink.Descriptors.xml` roots, `TrimmerRootAssembly`, or copying the assembly into the app bundle. The harness already roots test assemblies by default, so the change is a no-op reviewers will reject. Pin a concrete product-side root cause, or treat it as no-producible-diff and route to Branch COMMENT (Step 5.5).
+
 Once you have a candidate diff, classify it:
 
 **Confident (Branch FIX, Step 5.3)** — ALL of:
