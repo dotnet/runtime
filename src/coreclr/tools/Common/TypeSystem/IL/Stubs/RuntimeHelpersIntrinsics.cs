@@ -3,6 +3,7 @@
 
 using System;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -94,10 +95,10 @@ namespace Internal.IL.Stubs
                 return false;
             }
 
-            ReadOnlySpan<byte> ns = type.Namespace;
+            Utf8Span ns = type.Namespace;
             if (ns == "System"u8)
             {
-                ReadOnlySpan<byte> name = type.Name;
+                Utf8Span name = type.Name;
                 return name == "Guid"u8 || name == "Int128"u8 || name == "UInt128"u8;
             }
             return ns == "System.Text"u8 && type.Name == "Rune"u8;
