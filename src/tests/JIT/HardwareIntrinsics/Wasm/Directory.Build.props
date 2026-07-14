@@ -5,6 +5,8 @@
 
   <PropertyGroup>
     <HWITestsWasmOnly>true</HWITestsWasmOnly>
+    <!-- Wasm SIMD support is incomplete, so these tests are disabled for now. -->
+    <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
 </Project>
