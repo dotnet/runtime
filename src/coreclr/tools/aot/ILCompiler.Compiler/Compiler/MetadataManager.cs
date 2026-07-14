@@ -780,6 +780,8 @@ namespace ILCompiler
                     flags |= StackTraceRecordFlags.IsHidden;
                 if ((stackVisibility & MethodStackTraceVisibilityFlags.HasLineNumbers) != 0)
                     flags |= StackTraceRecordFlags.HasLineNumbers;
+                if ((stackVisibility & MethodStackTraceVisibilityFlags.IsAsync) != 0)
+                    flags |= StackTraceRecordFlags.IsAsync;
 
                 if ((stackVisibility & MethodStackTraceVisibilityFlags.HasMetadata) != 0)
                 {
@@ -1351,6 +1353,7 @@ namespace ILCompiler
         None = 0,
         IsHidden = 1,
         HasLineNumbers = 2,
+        IsAsync = 4,
     }
 
     public readonly struct StackTraceRecordData

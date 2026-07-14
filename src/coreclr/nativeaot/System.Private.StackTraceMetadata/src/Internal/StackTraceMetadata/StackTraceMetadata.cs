@@ -50,7 +50,7 @@ namespace Internal.StackTraceMetadata
         /// <summary>
         /// Locate the containing module for a method and try to resolve its name based on start address.
         /// </summary>
-        public static unsafe string GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress, out string owningTypeName, out string genericArgs, out string methodSignature, out bool isStackTraceHidden, out int hashCodeForLineInfo)
+        public static unsafe string GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress, out string owningTypeName, out string genericArgs, out string methodSignature, out bool isStackTraceHidden, out bool isAsync, out int hashCodeForLineInfo)
         {
             IntPtr moduleStartAddress = RuntimeAugments.GetOSModuleFromPointer(methodStartAddress);
             int rva = (int)((byte*)methodStartAddress - (byte*)moduleStartAddress);
@@ -62,6 +62,7 @@ namespace Internal.StackTraceMetadata
                     if (resolver.TryGetStackTraceData(rva, out var data))
                     {
                         isStackTraceHidden = data.IsHidden;
+                        isAsync = data.IsAsync;
                         if (data.OwningType.IsNil)
                         {
                             Debug.Assert(data.Name.IsNil && data.Signature.IsNil);
@@ -80,6 +81,7 @@ namespace Internal.StackTraceMetadata
             }
 
             isStackTraceHidden = false;
+            isAsync = false;
 
             // We haven't found information in the stack trace metadata tables, but maybe reflection will have this
             if (ReflectionExecution.TryGetMethodMetadataFromStartAddress(methodStartAddress,
@@ -331,9 +333,9 @@ namespace Internal.StackTraceMetadata
                 return GetDiagnosticMethodInfoFromStartAddressIfAvailable(methodStartAddress);
             }
 
-            public override string TryGetMethodStackFrameInfo(IntPtr methodStartAddress, int offset, bool needsFileInfo, out string owningType, out string genericArgs, out string methodSignature, out bool isStackTraceHidden, out string fileName, out int lineNumber)
+            public override string TryGetMethodStackFrameInfo(IntPtr methodStartAddress, int offset, bool needsFileInfo, out string owningType, out string genericArgs, out string methodSignature, out bool isStackTraceHidden, out bool isAsync, out string fileName, out int lineNumber)
             {
-                string methodName = GetMethodNameFromStartAddressIfAvailable(methodStartAddress, out owningType, out genericArgs, out methodSignature, out isStackTraceHidden, out int hashCode);
+                string methodName = GetMethodNameFromStartAddressIfAvailable(methodStartAddress, out owningType, out genericArgs, out methodSignature, out isStackTraceHidden, out isAsync, out int hashCode);
 
                 if (needsFileInfo)
                 {
@@ -474,6 +476,7 @@ namespace Internal.StackTraceMetadata
                     {
                         Rva = methodRva,
                         IsHidden = (command & StackTraceDataCommand.IsStackTraceHidden) != 0,
+                        IsAsync = (command & StackTraceDataCommand.IsAsync) != 0,
                         OwningType = currentOwningType,
                         Name = currentName,
                         Signature = currentSignature,
@@ -516,25 +519,36 @@ namespace Internal.StackTraceMetadata
             public struct StackTraceData : IComparable<StackTraceData>
             {
                 private const int IsHiddenFlag = 0x2;
+                private const int IsAsyncFlag = 0x1;
+                private const int FlagsMask = IsHiddenFlag | IsAsyncFlag;
 
-                private readonly int _rvaAndIsHiddenBit;
+                private readonly int _rvaAndFlags;
 
                 public int Rva
                 {
-                    get => _rvaAndIsHiddenBit & ~IsHiddenFlag;
+                    get => _rvaAndFlags & ~FlagsMask;
                     init
                     {
-                        Debug.Assert((value & IsHiddenFlag) == 0);
-                        _rvaAndIsHiddenBit = value | (_rvaAndIsHiddenBit & IsHiddenFlag);
+                        Debug.Assert((value & FlagsMask) == 0);
+                        _rvaAndFlags = value | (_rvaAndFlags & FlagsMask);
                     }
                 }
                 public bool IsHidden
                 {
-                    get => (_rvaAndIsHiddenBit & IsHiddenFlag) != 0;
+                    get => (_rvaAndFlags & IsHiddenFlag) != 0;
                     init
                     {
                         if (value)
-                            _rvaAndIsHiddenBit |= IsHiddenFlag;
+                            _rvaAndFlags |= IsHiddenFlag;
+                    }
+                }
+                public bool IsAsync
+                {
+                    get => (_rvaAndFlags & IsAsyncFlag) != 0;
+                    init
+                    {
+                        if (value)
+                            _rvaAndFlags |= IsAsyncFlag;
                     }
                 }
                 public Handle OwningType { get; init; }
