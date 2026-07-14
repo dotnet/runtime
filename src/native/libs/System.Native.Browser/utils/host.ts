@@ -30,7 +30,7 @@ export function abortPosix(exitCode: number, reason: any, nativeReady: boolean):
         throw reason;
     } catch (error: any) {
         // do not propagate ExitStatus exception
-        if (!error && (typeof error.status === "number" || error instanceof WebAssembly.RuntimeError)) {
+        if (!error || (typeof error.status === "number" || error instanceof WebAssembly.RuntimeError)) {
             return;
         }
         throw error;
