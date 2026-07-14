@@ -121,8 +121,46 @@ internal readonly struct CdacTypeHandle : ITypeHandle
 
     public void GetSystemVAmd64PassStructInRegisterDescriptor(out SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor)
     {
-        throw new NotImplementedException("SystemV AMD64 struct-in-registers is not yet supported by the cDAC.");
+        descriptor = default;
+        descriptor.passedInRegisters = false;
+
+        if (_typeHandle.IsNull)
+            return;
+
+        // Read the runtime-cached classification from the type system; mirrors
+        // SystemVRegDescriptorFromSystemVEightByteRegistersInfo in jitinterface.cpp.
+        // Only populated on UNIX_AMD64_ABI builds.
+        if (!Rts.TryGetSystemVAmd64EightByteClassification(_typeHandle, out SystemVAmd64EightByteClassification info))
+            return;
+
+        descriptor.passedInRegisters = true;
+        descriptor.eightByteCount = 1;
+        descriptor.eightByteClassifications0 = ToSystemVClassificationType(info.First.Classification);
+        descriptor.eightByteSizes0 = info.First.Size;
+        descriptor.eightByteOffsets0 = 0;
+
+        if (info.Second is SystemVAmd64EightByte second)
+        {
+            descriptor.eightByteCount = 2;
+            descriptor.eightByteClassifications1 = ToSystemVClassificationType(second.Classification);
+            descriptor.eightByteSizes1 = second.Size;
+            descriptor.eightByteOffsets1 = SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR.SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
+        }
     }
+
+    private static SystemVClassificationType ToSystemVClassificationType(SystemVAmd64Classification classification)
+        => classification switch
+        {
+            SystemVAmd64Classification.Unknown => SystemVClassificationType.SystemVClassificationTypeUnknown,
+            SystemVAmd64Classification.Struct => SystemVClassificationType.SystemVClassificationTypeStruct,
+            SystemVAmd64Classification.NoClass => SystemVClassificationType.SystemVClassificationTypeNoClass,
+            SystemVAmd64Classification.Memory => SystemVClassificationType.SystemVClassificationTypeMemory,
+            SystemVAmd64Classification.Integer => SystemVClassificationType.SystemVClassificationTypeInteger,
+            SystemVAmd64Classification.IntegerReference => SystemVClassificationType.SystemVClassificationTypeIntegerReference,
+            SystemVAmd64Classification.IntegerByRef => SystemVClassificationType.SystemVClassificationTypeIntegerByRef,
+            SystemVAmd64Classification.SSE => SystemVClassificationType.SystemVClassificationTypeSSE,
+            _ => SystemVClassificationType.SystemVClassificationTypeUnknown,
+        };
 
     public FpStructInRegistersInfo GetFpStructInRegistersInfo(Internal.TypeSystem.TargetArchitecture architecture)
     {

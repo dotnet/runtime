@@ -139,10 +139,15 @@ internal static class DebugInfoHelpers
 
             yield return locType switch
             {
-                VarLocType.VLT_REG or VarLocType.VLT_REG_FP => new DebugVarInfo
+                VarLocType.VLT_REG => new DebugVarInfo
                 {
                     StartOffset = startOffset, EndOffset = endOffset, VarNumber = varNumber, CallReturnValueILOffset = callReturnValueILOffset,
                     Kind = DebugVarLocKind.Register, Register = reader.ReadUInt(),
+                },
+                VarLocType.VLT_REG_FP => new DebugVarInfo
+                {
+                    StartOffset = startOffset, EndOffset = endOffset, VarNumber = varNumber, CallReturnValueILOffset = callReturnValueILOffset,
+                    Kind = DebugVarLocKind.Register, IsFloatingPoint = true, Register = reader.ReadUInt(),
                 },
                 VarLocType.VLT_REG_BYREF => new DebugVarInfo
                 {

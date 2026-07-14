@@ -1786,6 +1786,9 @@ enum CorInfoContinuationFlags
     // If this bit is set the continuation context is a TaskScheduler that
     // we should continue on.
     CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 1 << 2,
+    // If this bit is set this is an await of valueTask.AsTask()
+    // (common pattern when returning a value-task in an async version)
+    CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK = 1 << 3,
 
     // The flags encode where in the continuation various members are stored.
     // If the encoded index is 0, it means no such member is present.
@@ -3190,6 +3193,15 @@ public:
     // Returns the primitive type for passing/returning a Wasm struct by value,
     // or CORINFO_WASM_TYPE_VOID if passing/returning must be by reference.
     virtual CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) = 0;
+
+    // Returns the guaranteed alignment, in bytes, of the data referenced by 'address'.
+    // 'address' is a relocation target such as a static, RVA, or frozen-data blob. The JIT
+    // uses this to decide whether it can emit an alignment-sensitive relocation against the
+    // target (e.g. the Arm64 LDST64 ':lo12:' page-offset fold, which requires the target to
+    // be 8-byte aligned).
+    virtual uint32_t getAddressAlignment(
+            void* address
+            ) = 0;
 };
 
 /*****************************************************************************

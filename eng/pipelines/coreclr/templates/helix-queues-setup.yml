@@ -70,9 +70,9 @@ jobs:
     # Browser wasm
     - ${{ if eq(parameters.platform, 'browser_wasm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:3ef1314b50ac039078f6406d649d5ac72715deccd07bcbfe3dd43fa438be3fbd
+        - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:73db6e433bb7e9ef8546b35688b727f2f559b9ac5fea21c77d56795b74b197b8
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Ubuntu.2604.Amd64)AzureLinux.3.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:3ef1314b50ac039078f6406d649d5ac72715deccd07bcbfe3dd43fa438be3fbd
+        - (Ubuntu.2604.Amd64)AzureLinux.3.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:73db6e433bb7e9ef8546b35688b727f2f559b9ac5fea21c77d56795b74b197b8
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
@@ -91,9 +91,9 @@ jobs:
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:cc5720152b9ddb1df305525253e31936794ffff0d440007bb170ec3bf6a5f7ae
+        - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:541bfc7ad7cead26f1e7dc2eaf587e053758966ce42b63b403db2289d74234d7
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:cc5720152b9ddb1df305525253e31936794ffff0d440007bb170ec3bf6a5f7ae
+        - (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:541bfc7ad7cead26f1e7dc2eaf587e053758966ce42b63b403db2289d74234d7
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:

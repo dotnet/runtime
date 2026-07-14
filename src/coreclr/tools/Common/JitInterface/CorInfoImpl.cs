@@ -897,7 +897,7 @@ namespace Internal.JitInterface
 
             // Varargs are not supported in .NET Core
             if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_VARARG)
-                ThrowHelper.ThrowBadImageFormatException();
+                ThrowHelper.ThrowInvalidProgramException();
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
             if (signature.IsExplicitThis) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS;
@@ -1556,18 +1556,21 @@ namespace Internal.JitInterface
 
             if (requiresInstMethodDescArg)
             {
+#if READYTORUN
                 if (unboxingStub)
                 {
-                    // Bail out for now. We need an unboxing stub that points to an instantiated method.
+                    // We need an unboxing stub that points to an instantiated method but this is not happening in R2R.
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                     return false;
                 }
-#if READYTORUN
+
                 MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
                 info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
-
 #else
-                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(originalImpl));
+                // We could produce a method generic dictionary constant lookup for originalImpl,
+                // but due to IL scanner limitations, we cannot devirtualize shared generic virtual methods right now.
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
 #endif
             }
             else if (requiresInstMethodTableArg)
@@ -1576,7 +1579,6 @@ namespace Internal.JitInterface
                 {
 #if READYTORUN
                     info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
-
 #else
                     info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
 #endif
@@ -4525,6 +4527,17 @@ namespace Internal.JitInterface
             }
         }
 
+        private uint getAddressAlignment(void* address)
+        {
+            if (address != null && HandleToObject(address) is IObjectNodeWithAlignment node)
+            {
+                return (uint)node.GetAlignment(_compilation.NodeFactory);
+            }
+
+            // Null or unknown target: report unaligned so the JIT avoids alignment-sensitive relocations.
+            return 1;
+        }
+
         private uint getExpectedTargetArchitecture()
         {
             TargetArchitecture arch = _compilation.TypeSystemContext.Target.Architecture;
@@ -4695,7 +4708,7 @@ namespace Internal.JitInterface
             }
 
 #if READYTORUN
-            if (this.MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Browser)
+            if (this.MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
             }
