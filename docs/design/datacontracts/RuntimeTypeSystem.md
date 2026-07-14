@@ -116,6 +116,7 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
     public virtual bool IsCollectible(TypeHandle typeHandle);
+    public virtual bool TryFindAncestorWithSameTypeDefinition(TypeHandle type, TypeHandle definingType, out TypeHandle ancestor);
     public virtual bool ContainsGenericVariables(TypeHandle typeHandle);
     public virtual bool HasTypeParam(TypeHandle typeHandle);
 
@@ -977,6 +978,42 @@ Contracts used:
             return false;
         MethodTable typeHandle = _methodTables[typeHandle.Address];
         return typeHandle.Flags.IsCollectible;
+    }
+
+    private bool HasSameTypeDefinition(TypeHandle type, TypeHandle definingType)
+    {
+        if (type.Address == definingType.Address)
+            return true;
+
+        uint typeRid = GetRowId(GetTypeDefToken(type));
+        uint definingTypeRid = GetRowId(GetTypeDefToken(definingType));
+        return typeRid != 0
+            && typeRid == definingTypeRid
+            && GetModule(type) == GetModule(definingType);
+    }
+
+    public bool TryFindAncestorWithSameTypeDefinition(TypeHandle type, TypeHandle definingType, out TypeHandle ancestor)
+    {
+        TypeHandle current = type;
+        TargetPointer previous = TargetPointer.Null;
+        for (int i = 0; i < 1000 && !current.IsNull; i++)
+        {
+            if (HasSameTypeDefinition(current, definingType))
+            {
+                ancestor = current;
+                return true;
+            }
+
+            TargetPointer next = GetParentMethodTable(current);
+            if (next == TargetPointer.Null || next == previous || next == current.Address)
+                break;
+
+            previous = current.Address;
+            current = GetTypeHandle(next);
+        }
+
+        ancestor = default;
+        return false;
     }
 
     public bool ContainsGenericVariables(TypeHandle typeHandle)

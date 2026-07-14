@@ -1074,6 +1074,43 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     public bool IsCollectible(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsCollectible;
+
+    private bool HasSameTypeDefinition(TypeHandle type, TypeHandle definingType)
+    {
+        if (type.Address == definingType.Address)
+            return true;
+
+        uint typeRid = EcmaMetadataUtils.GetRowId(GetTypeDefToken(type));
+        uint definingTypeRid = EcmaMetadataUtils.GetRowId(GetTypeDefToken(definingType));
+        return typeRid != 0
+            && typeRid == definingTypeRid
+            && GetModule(type) == GetModule(definingType);
+    }
+
+    public bool TryFindAncestorWithSameTypeDefinition(TypeHandle type, TypeHandle definingType, out TypeHandle ancestor)
+    {
+        TypeHandle current = type;
+        TargetPointer previous = TargetPointer.Null;
+        for (int i = 0; i < 1000 && !current.IsNull; i++)
+        {
+            if (HasSameTypeDefinition(current, definingType))
+            {
+                ancestor = current;
+                return true;
+            }
+
+            TargetPointer next = GetParentMethodTable(current);
+            if (next == TargetPointer.Null || next == previous || next == current.Address)
+                break;
+
+            previous = current.Address;
+            current = GetTypeHandle(next);
+        }
+
+        ancestor = default;
+        return false;
+    }
+
     public bool HasTypeParam(TypeHandle typeHandle)
     {
         if (typeHandle.IsMethodTable())

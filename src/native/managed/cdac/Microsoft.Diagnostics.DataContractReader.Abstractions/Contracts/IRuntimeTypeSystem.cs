@@ -226,6 +226,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsGenericTypeDefinition(TypeHandle typeHandle) => throw new NotImplementedException();
     bool ContainsGenericVariables(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsCollectible(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool TryFindAncestorWithSameTypeDefinition(TypeHandle type, TypeHandle definingType, out TypeHandle ancestor) => throw new NotImplementedException();
 
     bool HasTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
 

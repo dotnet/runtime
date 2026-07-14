@@ -185,6 +185,89 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void TryFindAncestorWithSameTypeDefinition_MatchesDefinitionAndRejectsInvalidMatches(MockTarget.Architecture arch)
+    {
+        TargetPointer child = default;
+        TargetPointer matchingAncestor = default;
+        TargetPointer definingType = default;
+        TargetPointer unrelatedType = default;
+        TargetPointer differentModuleDefinition = default;
+        TargetPointer zeroRidChild = default;
+        TargetPointer zeroRidDefinition = default;
+        TargetPointer cycleType = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                const ulong Module = 0x1234_0000;
+
+                MockMethodTable AddType(string name, uint rid, ulong parent = 0, ulong module = Module)
+                {
+                    MockEEClass eeClass = rtsBuilder.AddEEClass(name);
+                    MockMethodTable methodTable = rtsBuilder.AddMethodTable(name);
+                    methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                    methodTable.Module = module;
+                    methodTable.MTFlags2 = rid << 8;
+                    methodTable.ParentMethodTable = parent;
+                    eeClass.MethodTable = methodTable.Address;
+                    methodTable.EEClassOrCanonMT = eeClass.Address;
+                    return methodTable;
+                }
+
+                definingType = AddType("Definition", 42).Address;
+                matchingAncestor = AddType("MatchingAncestor", 42, rtsBuilder.SystemObjectMethodTable.Address).Address;
+                child = AddType("Child", 43, matchingAncestor.Value).Address;
+                unrelatedType = AddType("Unrelated", 44).Address;
+                differentModuleDefinition = AddType("DifferentModuleDefinition", 42, module: Module + 1).Address;
+                TargetPointer zeroRidAncestor = AddType("ZeroRidAncestor", 0, rtsBuilder.SystemObjectMethodTable.Address).Address;
+                zeroRidChild = AddType("ZeroRidChild", 45, zeroRidAncestor.Value).Address;
+                zeroRidDefinition = AddType("ZeroRidDefinition", 0).Address;
+                MockMethodTable cycleFirst = AddType("CycleFirst", 46);
+                MockMethodTable cycleSecond = AddType("CycleSecond", 47, cycleFirst.Address);
+                cycleFirst.ParentMethodTable = cycleSecond.Address;
+                cycleType = cycleFirst.Address;
+            });
+
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+        Assert.True(rts.TryFindAncestorWithSameTypeDefinition(
+            rts.GetTypeHandle(child),
+            rts.GetTypeHandle(definingType),
+            out TypeHandle ancestor));
+        Assert.Equal(matchingAncestor, ancestor.Address);
+
+        Assert.True(rts.TryFindAncestorWithSameTypeDefinition(
+            rts.GetTypeHandle(zeroRidDefinition),
+            rts.GetTypeHandle(zeroRidDefinition),
+            out ancestor));
+        Assert.Equal(zeroRidDefinition, ancestor.Address);
+
+        Assert.False(rts.TryFindAncestorWithSameTypeDefinition(
+            rts.GetTypeHandle(child),
+            rts.GetTypeHandle(unrelatedType),
+            out ancestor));
+        Assert.True(ancestor.IsNull);
+
+        Assert.False(rts.TryFindAncestorWithSameTypeDefinition(
+            rts.GetTypeHandle(child),
+            rts.GetTypeHandle(differentModuleDefinition),
+            out ancestor));
+        Assert.True(ancestor.IsNull);
+
+        Assert.False(rts.TryFindAncestorWithSameTypeDefinition(
+            rts.GetTypeHandle(zeroRidChild),
+            rts.GetTypeHandle(zeroRidDefinition),
+            out ancestor));
+        Assert.True(ancestor.IsNull);
+
+        Assert.False(rts.TryFindAncestorWithSameTypeDefinition(
+            rts.GetTypeHandle(cycleType),
+            rts.GetTypeHandle(unrelatedType),
+            out ancestor));
+        Assert.True(ancestor.IsNull);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void MethodTableEEClassInvalidThrows(MockTarget.Architecture arch)
     {
         TargetPointer badMethodTablePtr = default;

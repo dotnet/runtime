@@ -3100,8 +3100,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                         // AcquiresInstMethodTableFromThis: token is some MethodTable*; it may be a
                         // subclass, so walk the parent chain to find the exact declaring class.
                         TypeHandle thFromThis = rts.GetTypeHandle(new TargetPointer(genericsToken));
-                        TypeHandle thMatch = GetMethodTableMatchingParentClass(rts, thFromThis, thRepMt);
-                        if (!thMatch.IsNull)
+                        if (rts.TryFindAncestorWithSameTypeDefinition(thFromThis, thRepMt, out TypeHandle thMatch))
                         {
                             thSpecificClass = thMatch;
                             isExact = true;
@@ -3122,12 +3121,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             }
 
             // Project the specific class onto the method's declaring class to get the class instantiation.
-            TargetPointer specMethodMtPtr = rts.GetMethodTable(pSpecificMethod);
-            TypeHandle thSpecMethodMt = rts.GetTypeHandle(specMethodMtPtr);
-            TypeHandle thMatchingParent = GetMethodTableMatchingParentClass(rts, thSpecificClass, thSpecMethodMt);
-            ReadOnlySpan<TypeHandle> classInst = thMatchingParent.IsNull
-                ? ReadOnlySpan<TypeHandle>.Empty
-                : rts.GetInstantiation(thMatchingParent);
+            TypeHandle thSpecMethodMt = rts.GetTypeHandle(rts.GetMethodTable(pSpecificMethod));
+            ReadOnlySpan<TypeHandle> classInst = rts.TryFindAncestorWithSameTypeDefinition(thSpecificClass, thSpecMethodMt, out TypeHandle thMatchingParent)
+                ? rts.GetInstantiation(thMatchingParent)
+                : ReadOnlySpan<TypeHandle>.Empty;
             ReadOnlySpan<TypeHandle> methodInst = rts.GetGenericMethodInstantiation(pSpecificMethod);
 
             cClassParams = (uint)classInst.Length;
@@ -5763,39 +5760,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             TypeHandleToExpandedTypeInfoImpl(rts, AreValueTypesBoxed.NoValueTypeBoxing, thCanon, pTypeInfo);
         }
-    }
-
-    // True if `a` and `b` share the same non-zero TypeDef RID and Module.
-    // Mirrors native MethodTable::HasSameTypeDefAs.
-    private static bool HasSameTypeDefAs(IRuntimeTypeSystem rts, TypeHandle a, TypeHandle b)
-    {
-        if (a.Address == b.Address)
-            return true;
-        uint ridA = EcmaMetadataUtils.GetRowId(rts.GetTypeDefToken(a));
-        uint ridB = EcmaMetadataUtils.GetRowId(rts.GetTypeDefToken(b));
-        if (ridA == 0 || ridA != ridB)
-            return false;
-        return rts.GetModule(a) == rts.GetModule(b);
-    }
-
-    // Walks the parent chain of `start` and returns the first MethodTable whose TypeDef matches `parent`,
-    // or default if no match is found. The walk is bounded by a hard iteration cap to defend against
-    // cycles observed in corrupt dumps. Mirrors native MethodTable::GetMethodTableMatchingParentClass.
-    private static TypeHandle GetMethodTableMatchingParentClass(IRuntimeTypeSystem rts, TypeHandle start, TypeHandle parent)
-    {
-        TypeHandle current = start;
-        TargetPointer prev = TargetPointer.Null;
-        for (int i = 0; i < 1000 && !current.IsNull; i++)
-        {
-            if (HasSameTypeDefAs(rts, current, parent))
-                return current;
-            TargetPointer next = rts.GetParentMethodTable(current);
-            if (next == TargetPointer.Null || next == prev || next == current.Address)
-                break;
-            prev = current.Address;
-            current = rts.GetTypeHandle(next);
-        }
-        return default;
     }
 
     // Shared core implementation for TypeHandleToExpandedTypeInfo and GetObjectExpandedTypeInfo.
