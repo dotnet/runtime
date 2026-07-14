@@ -1824,7 +1824,8 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Preserve unsigned comparisons involving an index used in a bounds check in their original operand order.
     // This allows range analysis to follow chains such as "index < size <= array.Length".
     if (isUnsignedRelop && (op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) && !vnStore->IsVNConstant(op2VN) &&
-        (vnStore->IsVNCheckedBound(op1VN) || vnStore->IsVNCheckedBound(op2VN)))
+        vnStore->IsVNCheckedBound(op1VN) && !vnStore->IsVNCheckedBoundNeverNegative(op1VN) &&
+        optAssertionHasAssertionsForVN(op2VN))
     {
         AssertionDsc   dsc = AssertionDsc::CreateRelopVN(this, relopFunc, op1VN, op2VN);
         AssertionIndex idx = optAddAssertion(dsc);
@@ -2059,7 +2060,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
         ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
 
-        if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
+        if (vnStore->IsVNCheckedBoundNeverNegative(op1VN) && vnStore->IsVNInt32Constant(op2VN))
         {
             assert(relop->OperIs(GT_EQ, GT_NE));
             return optCreateJtrueAssertions(op1, op2, equals);
@@ -3363,7 +3364,7 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
     {
         // Ignore the CSE flag in Global Assertion Prop for checked bound as those usually
         // unlock more opportunities for BCE.
-        if (optLocalAssertionProp || !vnStore->IsVNCheckedBound(optConservativeNormalVN(tree)))
+        if (optLocalAssertionProp || !vnStore->IsVNCheckedBoundNeverNegative(optConservativeNormalVN(tree)))
         {
             return nullptr;
         }

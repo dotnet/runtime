@@ -1267,8 +1267,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         // rules implicitly assume the VN refers to a length-like (checked-bound-shaped) quantity.
         // Such cases fall through to the general "X <relop> Y" branch below.
         else if ((curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) ||
-                  curAssertion.KindIs(Compiler::OAK_GE_UN, Compiler::OAK_GT_UN, Compiler::OAK_LE_UN,
-                                      Compiler::OAK_LT_UN)) &&
+                  curAssertion.KindIs(Compiler::OAK_LE_UN)) &&
                  curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) &&
                  comp->vnStore->IsVNCheckedBoundNeverNegative(curAssertion.GetOp2().GetVN()))
         {
@@ -1277,7 +1276,9 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             const bool     unsignedRelop =
                 curAssertion.KindIs(Compiler::OAK_GE_UN, Compiler::OAK_GT_UN, Compiler::OAK_LE_UN, Compiler::OAK_LT_UN);
 
-            if (unsignedRelop && ((boundCns != 0) || !curAssertion.GetOp2().IsVNNeverNegative()))
+            if (unsignedRelop &&
+                ((preferredBoundVN == ValueNumStore::NoVN) || (boundVN != preferredBoundVN) || (boundCns != 0) ||
+                 !curAssertion.GetOp2().IsVNNeverNegative()))
             {
                 continue;
             }
@@ -1533,6 +1534,16 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             ValueNum op2VN = curAssertion.GetOp2().GetVN();
 
             cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+            bool useTransitiveUnsignedBound =
+                isUnsigned && canUseCheckedBounds && (preferredBoundVN != ValueNumStore::NoVN) &&
+                ((cmpOper == GT_LT) || (cmpOper == GT_LE)) && comp->vnStore->IsVNCheckedBound(normalLclVN) &&
+                !comp->vnStore->IsVNCheckedBoundNeverNegative(normalLclVN) &&
+                !pRange->UpperLimit().IsConstant();
+
+            if (isUnsigned && !useTransitiveUnsignedBound)
+            {
+                continue;
+            }
 
             ValueNum otherVN;
             if (op1VN == normalLclVN)
@@ -1555,31 +1566,26 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             }
 
             budget--;
-            Range otherRange = GetRangeFromType(comp->vnStore->TypeOfVN(otherVN));
-            bool  hasPreferredSymbolicUpperBound = false;
-
-            if (canUseCheckedBounds && (preferredBoundVN != ValueNumStore::NoVN) &&
-                ((cmpOper == GT_LT) || (cmpOper == GT_LE)))
+            Range otherRange = Limit(Limit::keUnknown);
+            if (useTransitiveUnsignedBound)
             {
+                otherRange = GetRangeFromType(comp->vnStore->TypeOfVN(otherVN));
                 MergeEdgeAssertionsWorker(comp, otherVN, preferredBoundVN, assertions, &otherRange,
                                           canUseCheckedBounds, budget, visited);
-
-                hasPreferredSymbolicUpperBound =
-                    otherRange.UpperLimit().IsBinOpArray() && (otherRange.UpperLimit().vn == preferredBoundVN);
             }
-
-            if (!hasPreferredSymbolicUpperBound)
+            else
             {
                 otherRange = GetRangeFromAssertionsWorker(comp, otherVN, assertions, budget, visited);
             }
 
-            if (!otherRange.IsConstantRange() && !otherRange.UpperLimit().IsBinOpArray())
+            if (useTransitiveUnsignedBound)
             {
-                continue;
+                if (!otherRange.UpperLimit().IsBinOpArray() || (otherRange.UpperLimit().vn != preferredBoundVN))
+                {
+                    continue;
+                }
             }
-
-            if (isUnsigned &&
-                (!otherRange.LowerLimit().IsConstant() || (otherRange.LowerLimit().GetConstant() < 0)))
+            else if (!otherRange.IsConstantRange())
             {
                 continue;
             }
