@@ -84,10 +84,6 @@ public unsafe class StackWalkTests
             [DataType.FramedMethodFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.FramedMethodFrameLayout),
             [DataType.FuncEvalFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.FuncEvalFrameLayout),
             [DataType.DebuggerEval] = TargetTestHelpers.CreateTypeInfo(frameBuilder.DebuggerEvalLayout),
-            [DataType.InterpreterFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.InterpreterFrameLayout),
-            [DataType.InterpMethodContextFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.InterpMethodContextFrameLayout),
-            [DataType.InterpByteCodeStart] = TargetTestHelpers.CreateTypeInfo(frameBuilder.InterpByteCodeStartLayout),
-            [DataType.InterpMethod] = TargetTestHelpers.CreateTypeInfo(frameBuilder.InterpMethodLayout),
         };
 
     [Theory]
@@ -187,75 +183,6 @@ public unsafe class StackWalkTests
 
         Assert.Equal(hijackAddr, frames[8].FrameAddress.Value);
         Assert.Equal(InternalFrameType.None, frames[8].InternalFrameType);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetInterpretedFrames_ExpandsInterpreterFrameChain(MockTarget.Architecture arch)
-    {
-        // A single InterpreterFrame whose InterpMethodContextFrame chain is C -> B -> A
-        // (innermost/deepest first). GetInterpretedFrames must be context-free (no register
-        // context) and yield one InterpretedFrameData per active node, innermost first,
-        // resolving each MethodDesc via StartIp -> InterpByteCodeStart.Method -> InterpMethod.MethodDesc.
-        MockThread? thread = null;
-
-        ulong mdA = 0xAAAA_0000;
-        ulong mdB = 0xBBBB_0000;
-        ulong mdC = 0xCCCC_0000;
-        ulong ipA = 0x1111;
-        ulong ipB = 0x2222;
-        ulong ipC = 0x3333;
-
-        TestPlaceholderTarget target = CreateTarget(
-            arch,
-            threadBuilder => thread = threadBuilder.AddThread(1, 1234),
-            frameBuilder =>
-            {
-                ulong startIpA = frameBuilder.AddInterpretedMethod(mdA);
-                ulong startIpB = frameBuilder.AddInterpretedMethod(mdB);
-                ulong startIpC = frameBuilder.AddInterpretedMethod(mdC);
-
-                // A is the outermost caller (ParentPtr == 0), C is the innermost/top.
-                MockInterpMethodContextFrame frameA = frameBuilder.AddInterpMethodContextFrame(startIpA, parentPtr: 0, ip: ipA);
-                MockInterpMethodContextFrame frameB = frameBuilder.AddInterpMethodContextFrame(startIpB, parentPtr: frameA.Address, ip: ipB);
-                MockInterpMethodContextFrame frameC = frameBuilder.AddInterpMethodContextFrame(startIpC, parentPtr: frameB.Address, ip: ipC);
-
-                ulong interpFrameAddr = frameBuilder.AddInterpreterFrame(frameC.Address).Address;
-                thread!.Frame = frameBuilder.LinkChain(interpFrameAddr);
-            });
-
-        IStackWalk contract = target.Contracts.StackWalk;
-        InterpretedFrameData[] frames = contract.GetInterpretedFrames(new TargetPointer(thread!.Address)).ToArray();
-
-        Assert.Equal(3, frames.Length);
-
-        Assert.Equal(mdC, frames[0].MethodDesc.Value);
-        Assert.Equal(ipC, frames[0].InstructionPointer.Value);
-
-        Assert.Equal(mdB, frames[1].MethodDesc.Value);
-        Assert.Equal(ipB, frames[1].InstructionPointer.Value);
-
-        Assert.Equal(mdA, frames[2].MethodDesc.Value);
-        Assert.Equal(ipA, frames[2].InstructionPointer.Value);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetInterpretedFrames_NoInterpreterFrame_ReturnsNothing(MockTarget.Architecture arch)
-    {
-        MockThread? thread = null;
-        TestPlaceholderTarget target = CreateTarget(
-            arch,
-            threadBuilder => thread = threadBuilder.AddThread(1, 1234),
-            frameBuilder =>
-            {
-                ulong framedMethodAddr = frameBuilder.AddFramedMethodFrame(0x12345000).Address;
-                thread!.Frame = frameBuilder.LinkChain(framedMethodAddr);
-            });
-
-        IStackWalk contract = target.Contracts.StackWalk;
-        InterpretedFrameData[] frames = contract.GetInterpretedFrames(new TargetPointer(thread!.Address)).ToArray();
-        Assert.Empty(frames);
     }
 
     [Theory]

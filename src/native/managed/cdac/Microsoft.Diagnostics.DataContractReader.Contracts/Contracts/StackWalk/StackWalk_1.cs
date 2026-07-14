@@ -1123,27 +1123,6 @@ internal partial class StackWalk_1 : IStackWalk
         }
     }
 
-    IEnumerable<InterpretedFrameData> IStackWalk.GetInterpretedFrames(TargetPointer threadPointer)
-    {
-        ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadPointer);
-        FrameIterator iterator = new FrameIterator(_target, threadData);
-        while (iterator.IsValid())
-        {
-            if (iterator.GetCurrentFrameType() == FrameType.InterpreterFrame)
-            {
-                foreach (TargetPointer contextFramePtr in _frameHelpers.WalkInterpreterFrameChain(iterator.CurrentFrameAddress))
-                {
-                    Data.InterpMethodContextFrame contextFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(contextFramePtr);
-                    yield return new InterpretedFrameData(
-                        contextFramePtr,
-                        _frameHelpers.GetInterpreterMethodDesc(contextFrame),
-                        new TargetCodePointer((ulong)contextFrame.Ip));
-                }
-            }
-            iterator.Next();
-        }
-    }
-
     bool IStackWalk.IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress) => _frameHelpers.IsExceptionHandlingHelperInlinedCallFrame(frameAddress);
 
     DebuggerEvalData IStackWalk.GetDebuggerEvalData(TargetPointer funcEvalFrameAddress)

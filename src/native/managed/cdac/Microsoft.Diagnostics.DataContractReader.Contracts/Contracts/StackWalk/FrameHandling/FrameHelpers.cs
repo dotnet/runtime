@@ -449,22 +449,6 @@ internal sealed class FrameHelpers
         }
     }
 
-    /// <summary>
-    /// Resolves the MethodDesc for an interpreted method from its <see cref="Data.InterpMethodContextFrame"/>,
-    /// following <c>StartIp -&gt; InterpByteCodeStart.Method -&gt; InterpMethod.MethodDesc</c>.
-    /// This is context-free (pure memory reads) and does not require a platform register context.
-    /// Returns <see cref="TargetPointer.Null"/> if the frame has no start IP.
-    /// </summary>
-    public TargetPointer GetInterpreterMethodDesc(Data.InterpMethodContextFrame contextFrame)
-    {
-        if (contextFrame.StartIp == TargetPointer.Null)
-            return TargetPointer.Null;
-
-        Data.InterpByteCodeStart byteCodeStart = _target.ProcessedData.GetOrAdd<Data.InterpByteCodeStart>(contextFrame.StartIp);
-        Data.InterpMethod interpMethod = _target.ProcessedData.GetOrAdd<Data.InterpMethod>(byteCodeStart.Method);
-        return interpMethod.MethodDesc;
-    }
-
     // Matches the Windows CONTEXT_EXCEPTION_ACTIVE flag value. The PAL CONTEXT structures
     // on Linux/macOS use the same bit so a single constant is sufficient across platforms.
     private const uint CONTEXT_EXCEPTION_ACTIVE = 0x8000000;

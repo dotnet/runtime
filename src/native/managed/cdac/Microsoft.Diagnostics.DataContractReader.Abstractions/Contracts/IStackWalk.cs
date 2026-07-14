@@ -76,21 +76,6 @@ public record struct StackFrameData(
     TargetPointer FrameIdentifier,
     InternalFrameType InternalFrameType);
 
-/// <summary>
-/// A single interpreted managed method frame produced by walking the interpreter's
-/// explicit frame chain (<c>InterpreterFrame.TopInterpMethodContextFrame</c> -&gt;
-/// <c>InterpMethodContextFrame.pParent</c>). This enumeration is context-free (pure
-/// memory reads) and therefore usable on targets without a native register context,
-/// such as CoreCLR on WebAssembly.
-/// </summary>
-/// <param name="FrameAddress">Address of the backing <c>InterpMethodContextFrame</c>.</param>
-/// <param name="MethodDesc">MethodDesc of the interpreted method, or <see cref="TargetPointer.Null"/> if unresolved.</param>
-/// <param name="InstructionPointer">Current interpreter instruction pointer within the method.</param>
-public record struct InterpretedFrameData(
-    TargetPointer FrameAddress,
-    TargetPointer MethodDesc,
-    TargetCodePointer InstructionPointer);
-
 public record struct DebuggerEvalData(
     uint MethodToken,
     TargetPointer AssemblyPtr);
@@ -114,15 +99,6 @@ public interface IStackWalk : IContract
     TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetCodePointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer) => throw new NotImplementedException();
-
-    /// <summary>
-    /// Enumerates the interpreted managed method frames for a thread by walking the
-    /// interpreter's explicit frame chain, deepest (most recent) call first. Unlike
-    /// <see cref="CreateStackWalk(ThreadData)"/>, this does not require a platform register
-    /// context and is usable on interpreter-only targets such as CoreCLR on WebAssembly.
-    /// </summary>
-    IEnumerable<InterpretedFrameData> GetInterpretedFrames(TargetPointer threadPointer) => throw new NotImplementedException();
-
     bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress) => throw new NotImplementedException();
     DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress) => throw new NotImplementedException();
     TargetPointer GetRedirectedContextPointer(ThreadData threadData) => throw new NotImplementedException();
