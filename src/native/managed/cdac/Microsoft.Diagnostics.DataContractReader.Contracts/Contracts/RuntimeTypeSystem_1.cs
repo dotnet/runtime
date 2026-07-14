@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Reflection.Metadata;
@@ -104,11 +105,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public bool Equals(TypeKey other)
         {
-            if (ElementType != other.ElementType || Rank != other.Rank || CallConv != other.CallConv || TypeArgs.Length != other.TypeArgs.Length || !TypeHandle.Equals(other.TypeHandle))
+            if (ElementType != other.ElementType || Rank != other.Rank || CallConv != other.CallConv || TypeArgs.Length != other.TypeArgs.Length || !ReferenceEquals(TypeHandle, other.TypeHandle))
                 return false;
             for (int i = 0; i < TypeArgs.Length; i++)
             {
-                if (!TypeArgs[i].Equals(other.TypeArgs[i]))
+                if (!ReferenceEquals(TypeArgs[i], other.TypeArgs[i]))
                     return false;
             }
             return true;
@@ -118,10 +119,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public override int GetHashCode()
         {
-            int hash = HashCode.Combine(TypeHandle.GetHashCode(), (int)ElementType, Rank, (int)CallConv);
+            int hash = HashCode.Combine(RuntimeHelpers.GetHashCode(TypeHandle), (int)ElementType, Rank, (int)CallConv);
             foreach (ITypeHandle th in TypeArgs)
             {
-                hash = HashCode.Combine(hash, th.GetHashCode());
+                hash = HashCode.Combine(hash, RuntimeHelpers.GetHashCode(th));
             }
             return hash;
         }

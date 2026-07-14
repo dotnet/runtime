@@ -91,6 +91,22 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetTypeHandleReturnsCanonicalInstance(MockTarget.Architecture arch)
+    {
+        TargetPointer freeObjectMethodTableAddress = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            builder => freeObjectMethodTableAddress = builder.FreeObjectMethodTableAddress);
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle first = contract.GetTypeHandle(freeObjectMethodTableAddress);
+        ITypeHandle second = contract.GetTypeHandle(freeObjectMethodTableAddress);
+
+        Assert.Same(first, second);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void ValidateSystemObjectMethodTable(MockTarget.Architecture arch)
     {
         TargetPointer systemObjectMethodTablePtr = default;

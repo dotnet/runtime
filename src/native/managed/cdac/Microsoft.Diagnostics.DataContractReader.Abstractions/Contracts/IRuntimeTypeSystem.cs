@@ -12,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 /// An opaque handle to a runtime type, backed by a target-process MethodTable or
 /// TypeDesc address.
 /// </summary>
-public interface ITypeHandle : IEquatable<ITypeHandle>
+public interface ITypeHandle
 {
     TargetPointer Address { get; }
     bool IsNull { get; }
@@ -31,9 +31,6 @@ internal sealed class NullTypeHandle : ITypeHandle
     private NullTypeHandle() { }
     public TargetPointer Address => TargetPointer.Null;
     public bool IsNull => true;
-    public bool Equals(ITypeHandle? other) => other is not null && other.IsNull;
-    public override bool Equals(object? obj) => obj is ITypeHandle th && Equals(th);
-    public override int GetHashCode() => 0;
 }
 
 public enum CorElementType

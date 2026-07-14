@@ -10,8 +10,9 @@ An `ITypeHandle` is the runtime representation of the type information about a v
 Given a `TargetPointer` address, the `RuntimeTypeSystem` contract provides an `ITypeHandle` for querying the details of the type.
 
 ``` csharp
-// An opaque handle to a runtime type, backed by a target-process MethodTable or TypeDesc address.
-interface ITypeHandle : IEquatable<ITypeHandle>
+// An opaque canonical identity for a runtime type. Handles are produced and
+// interned by RuntimeTypeSystem; consumers must not fabricate implementations.
+interface ITypeHandle
 {
     TargetPointer Address { get; }
     bool IsNull { get; }
@@ -20,7 +21,7 @@ interface ITypeHandle : IEquatable<ITypeHandle>
     static ITypeHandle Null { get; }
 }
 
-// A real target-backed handle (a MethodTable* or TypeDesc* address).
+// An internal real target-backed handle (a MethodTable* or TypeDesc* address).
 class TargetTypeHandle : ITypeHandle { /* ... */ }
 
 readonly record struct TypedByRefInfo(TargetPointer Data, TargetPointer TypeHandle);
