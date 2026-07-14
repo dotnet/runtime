@@ -921,7 +921,11 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
 
     BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
     BasicBlock* initBlock = preheader;
-    if ((startSsaDsc->GetBlock() != nullptr) && (startSsaDsc->GetDefNode() != nullptr))
+    // Prefer to initialize the widened IV in the same block as the reaching def
+    // of the narrow IV, but only if the reaching def is not a phi. RBO's jump threading
+    // can leave stale SSA with the once-containing block being unreachable.
+    if ((startSsaDsc->GetBlock() != nullptr) && (startSsaDsc->GetDefNode() != nullptr) &&
+        !startSsaDsc->GetDefNode()->IsPhiDefn())
     {
         initBlock = startSsaDsc->GetBlock();
     }

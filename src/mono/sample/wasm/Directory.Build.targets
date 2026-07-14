@@ -99,10 +99,10 @@
     <Exec WorkingDirectory="bin/publish/wwwroot" Command="v8 $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/publish/wwwroot" Command="node $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/publish/wwwroot" Command="node --experimental-wasm-exnref $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="DebugSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/publish/wwwroot" Command="node --inspect=9222 $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/publish/wwwroot" Command="node --experimental-wasm-exnref --inspect=9222 $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="CheckServe">
     <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />

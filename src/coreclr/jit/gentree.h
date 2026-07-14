@@ -4384,6 +4384,11 @@ struct GenTreeConditional : public GenTreeOp
         assert(cond != nullptr);
     }
 
+    static bool Equals(GenTreeConditional* op1, GenTreeConditional* op2)
+    {
+        return Compare(op1->gtCond, op2->gtCond) && Compare(op1->gtOp1, op2->gtOp1) && Compare(op1->gtOp2, op2->gtOp2);
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeConditional()
         : GenTreeOp()
@@ -4532,6 +4537,11 @@ struct AsyncCallInfo
     // configured and whether it is a task await or custom await. This field
     // records that behavior.
     ::ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+
+    // Is this 'await valueTask.AsTask()'? These come with special semantics as
+    // they no longer transparently forward continuation context handling to an
+    // underlying IValueTaskSource, if present.
+    bool IsValueTaskAsTask = false;
 
     // Tail awaits do not generate suspension points and the JIT instead
     // directly returns the callee's continuation to the caller.
@@ -4793,29 +4803,8 @@ class CallArgs;
 enum class WellKnownArg : unsigned
 {
     None,
-    ThisPointer,
-    VarArgsCookie,
-    InstParam,
-    AsyncContinuation,
-    RetBuffer,
-    PInvokeFrame,
-    ShiftLow,
-    ShiftHigh,
-    VirtualStubCell,
-    PInvokeCookie,
-    PInvokeTarget,
-    R2RIndirectionCell,
-    ValidateIndirectCallTarget,
-    DispatchIndirectCallTarget,
-    SwiftError,
-    SwiftSelf,
-    X86TailCallSpecialArg,
-    StackArrayLocal,
-    RuntimeMethodHandle,
-    AsyncExecutionContext,
-    AsyncSynchronizationContext,
-    WasmShadowStackPointer,
-    WasmPortableEntryPoint
+#define WELL_KNOWN_ARG(name, shortName, isILArg, addedByMorph) name,
+#include "wellknownargs.h"
 };
 
 #ifdef DEBUG
@@ -6793,6 +6782,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     ClassLayout* GetLayout(Compiler* compiler) const;
 
     NamedIntrinsic GetHWIntrinsicId() const;
+
+#ifdef TARGET_WASM
+    GenTree* GetImmOp() const;
+#endif // TARGET_WASM
 
     //---------------------------------------------------------------------------------------
     // ChangeHWIntrinsicId: Change the intrinsic id for this node.

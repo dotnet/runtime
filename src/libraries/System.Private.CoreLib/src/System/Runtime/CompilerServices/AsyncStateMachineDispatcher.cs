@@ -71,6 +71,16 @@ namespace System.Runtime.CompilerServices
             AsyncStateMachineDispatcherInfo* info = AsyncStateMachineDispatcherInfo.t_current;
             AsyncStateMachineDispatcher? activeDispatcher = info != null ? info->Dispatcher : null;
 
+            if (activeDispatcher != null && ReferenceEquals(activeDispatcher.InnerBox, box))
+            {
+                if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
+                {
+                    AsyncProfiler.CreateAsyncContext.Append(activeDispatcher, ref info->AsyncProfilerInfo);
+                }
+
+                return activeDispatcher;
+            }
+
             AsyncStateMachineDispatcher dispatcher = new AsyncStateMachineDispatcher(box);
 
             if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
@@ -177,7 +187,8 @@ namespace System.Runtime.CompilerServices
     internal sealed class AsyncStateMachineDispatcher : Task<VoidTaskResult>, IAsyncStateMachineBox
     {
         private IAsyncStateMachineBox? _inner;
-        private Action? _moveNextAction;
+
+        internal IAsyncStateMachineBox? InnerBox => _inner;
 
         internal IAsyncStateMachineBox? LastContinuation;
 
@@ -225,6 +236,9 @@ namespace System.Runtime.CompilerServices
             info.Dispatcher = this;
             info.AsyncProfilerInfo.CurrentContinuation = inner;
 
+            LastContinuation = null;
+            ReachedLastContinuation = false;
+
             try
             {
                 InstrumentedMoveNext(ref info, inner);
@@ -235,7 +249,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public Action MoveNextAction => _moveNextAction ??= MoveNext;
+        public Action MoveNextAction => (Action)(m_action ??= new Action(MoveNext));
 
         public IAsyncStateMachine GetStateMachineObject()
         {

@@ -31,8 +31,9 @@ Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | `VASigCookie` | `SizeOfArgs` | Total size in bytes of the pushed argument list. Used on x86 to locate the args base. |
-| `VASigCookie` | `SignaturePointer` | Target address of the raw vararg signature blob. |
-| `VASigCookie` | `SignatureLength` | Length in bytes of the raw vararg signature blob. |
+| `VASigCookie` | `Signature` | The raw vararg signature (see `Signature`). |
+| `Signature` | `SignaturePointer` | Target address of the raw signature blob. |
+| `Signature` | `SignatureLength` | Length in bytes of the raw signature blob. |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -104,7 +105,7 @@ void ISignature.GetVarArgSignature(TargetPointer vaSigCookieAddr, out TargetPoin
     TargetPointer vaSigCookie = _target.ReadPointer(vaSigCookieAddr);
     VASigCookie cookie = _target.ProcessedData.GetOrAdd<VASigCookie>(vaSigCookie);
 
-    signatureAddress = cookie.SignaturePointer;
-    signatureLength = cookie.SignatureLength;
+    signatureAddress = cookie.Signature.SignaturePointer;
+    signatureLength = cookie.Signature.SignatureLength;
 }
 ```

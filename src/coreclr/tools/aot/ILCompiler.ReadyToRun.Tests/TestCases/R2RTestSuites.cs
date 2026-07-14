@@ -436,6 +436,8 @@ public class R2RTestSuites
     /// <summary>
     /// #129813 / PR #129884: crossgen2 --strip-il-bodies must preserve the IL of non-async
     /// Task/ValueTask-returning methods, which is needed to compile the runtime-async variant.
+    /// It must also strip a non-async Task-returning method whose async variant has already been
+    /// compiled, since the IL is no longer needed at runtime.
     /// </summary>
     [Fact]
     public void RuntimeAsyncStripILBodiesPreservesTaskReturningIL()
@@ -485,6 +487,9 @@ public class R2RTestSuites
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "AsyncValueTaskMethod", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncTaskMethod", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncValueTaskMethod", out diag), diag);
+
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "SyncTaskWithCompiledAsyncVariant", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "SyncTaskWithCompiledAsyncVariant", out diag), diag);
         }
     }
 
@@ -1599,6 +1604,34 @@ public class R2RTestSuites
 
             // Test7: Static virtual generic method
             Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "ITest7Base.Test7Method", out diag, ["int"]), diag);
+        }
+    }
+
+    [Fact]
+    public void VirtualMethodGenericsGenericLookup()
+    {
+        var genericLookupLib = new CompiledAssembly
+        {
+            AssemblyName = nameof(VirtualMethodGenericsGenericLookup),
+            SourceResourceNames = ["VirtualMethodGenerics/GenericLookup.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(VirtualMethodGenericsGenericLookup),
+            [
+                new(nameof(VirtualMethodGenericsGenericLookup), [new CrossgenAssembly(genericLookupLib)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+
+            // The generic type instantiation is reached only through a GenericLookupSignature
+            // fixup, so its virtual method must still be discovered and compiled.
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "TestA`2<__Canon,int>", "TestMethod", out diag), diag);
         }
     }
 }

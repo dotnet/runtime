@@ -49,6 +49,7 @@ namespace System.Numerics
         /// <summary>Creates a new <see cref="Vector3" /> object whose three elements have the same value.</summary>
         /// <param name="value">The value to assign to all three elements.</param>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3(float value)
         {
             this = Create(value);
@@ -58,6 +59,7 @@ namespace System.Numerics
         /// <param name="value">The vector with two elements.</param>
         /// <param name="z">The additional value to assign to the <see cref="Z" /> field.</param>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3(Vector2 value, float z)
         {
             this = Create(value, z);
@@ -68,6 +70,7 @@ namespace System.Numerics
         /// <param name="y">The value to assign to the <see cref="Y" /> field.</param>
         /// <param name="z">The value to assign to the <see cref="Z" /> field.</param>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3(float x, float y, float z)
         {
             this = Create(x, y, z);
@@ -76,6 +79,7 @@ namespace System.Numerics
         /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 3 elements.</summary>
         /// <param name="values">The span of elements to assign to the vector.</param>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3(ReadOnlySpan<float> values)
         {
             this = Create(values);
@@ -85,6 +89,7 @@ namespace System.Numerics
         public static Vector3 AllBitsSet
         {
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Vector128<float>.AllBitsSet.AsVector3();
         }
 
@@ -92,63 +97,72 @@ namespace System.Numerics
         public static Vector3 E
         {
             [Intrinsic]
-            get => Create(float.E);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128<float>.E.AsVector3();
         }
 
         /// <inheritdoc cref="Vector4.Epsilon" />
         public static Vector3 Epsilon
         {
             [Intrinsic]
-            get => Create(float.Epsilon);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128<float>.Epsilon.AsVector3();
         }
 
         /// <inheritdoc cref="Vector4.NaN" />
         public static Vector3 NaN
         {
             [Intrinsic]
-            get => Create(float.NaN);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128<float>.NaN.AsVector3();
         }
 
         /// <inheritdoc cref="Vector4.NegativeInfinity" />
         public static Vector3 NegativeInfinity
         {
             [Intrinsic]
-            get => Create(float.NegativeInfinity);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128<float>.NegativeInfinity.AsVector3();
         }
 
         /// <inheritdoc cref="Vector4.NegativeZero" />
         public static Vector3 NegativeZero
         {
             [Intrinsic]
-            get => Create(float.NegativeZero);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128<float>.NegativeZero.AsVector3();
         }
 
         /// <inheritdoc cref="Vector4.One" />
         public static Vector3 One
         {
             [Intrinsic]
-            get => Create(1.0f);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128<float>.One.AsVector3();
         }
 
         /// <inheritdoc cref="Vector4.Pi" />
         public static Vector3 Pi
         {
             [Intrinsic]
-            get => Create(float.Pi);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128<float>.Pi.AsVector3();
         }
 
         /// <inheritdoc cref="Vector4.PositiveInfinity" />
         public static Vector3 PositiveInfinity
         {
             [Intrinsic]
-            get => Create(float.PositiveInfinity);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128<float>.PositiveInfinity.AsVector3();
         }
 
         /// <inheritdoc cref="Vector4.Tau" />
         public static Vector3 Tau
         {
             [Intrinsic]
-            get => Create(float.Tau);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128<float>.Tau.AsVector3();
         }
 
         /// <summary>Gets the vector (1,0,0).</summary>
@@ -156,7 +170,8 @@ namespace System.Numerics
         public static Vector3 UnitX
         {
             [Intrinsic]
-            get => CreateScalar(1.0f);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128.CreateScalar(1.0f).AsVector3();
         }
 
         /// <summary>Gets the vector (0,1,0).</summary>
@@ -164,7 +179,8 @@ namespace System.Numerics
         public static Vector3 UnitY
         {
             [Intrinsic]
-            get => Create(0.0f, 1.0f, 0.0f);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128.Create(0.0f, 1.0f, 0.0f, 0.0f).AsVector3();
         }
 
         /// <summary>Gets the vector (0,0,1).</summary>
@@ -172,13 +188,15 @@ namespace System.Numerics
         public static Vector3 UnitZ
         {
             [Intrinsic]
-            get => Create(0.0f, 0.0f, 1.0f);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Vector128.Create(0.0f, 0.0f, 1.0f, 0.0f).AsVector3();
         }
 
         /// <inheritdoc cref="Vector4.Zero" />
         public static Vector3 Zero
         {
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => default;
         }
 
@@ -189,9 +207,11 @@ namespace System.Numerics
         public float this[int index]
         {
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             readonly get => this.GetElement(index);
 
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 this = this.WithElement(index, value);
@@ -239,7 +259,8 @@ namespace System.Numerics
         /// <param name="right">The second vector to compare.</param>
         /// <returns><see langword="true" /> if <paramref name="left" /> and <paramref name="right" /> are not equal; otherwise, <see langword="false" />.</returns>
         [Intrinsic]
-        public static bool operator !=(Vector3 left, Vector3 right) => !(left == right);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(Vector3 left, Vector3 right) => left.AsVector128() != right.AsVector128();
 
         /// <summary>Returns a new vector whose values are the product of each pair of elements in two specified vectors.</summary>
         /// <param name="left">The first vector.</param>
@@ -265,7 +286,8 @@ namespace System.Numerics
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="Vector3.op_Multiply" /> method defines the multiplication operation for <see cref="Vector3" /> objects.</remarks>
         [Intrinsic]
-        public static Vector3 operator *(float left, Vector3 right) => right * left;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 operator *(float left, Vector3 right) => (right.AsVector128Unsafe() * left).AsVector3();
 
         /// <summary>Subtracts the second vector from the first.</summary>
         /// <param name="left">The first vector.</param>
@@ -336,7 +358,8 @@ namespace System.Numerics
         /// <param name="right">The second vector to add.</param>
         /// <returns>The summed vector.</returns>
         [Intrinsic]
-        public static Vector3 Add(Vector3 left, Vector3 right) => left + right;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Add(Vector3 left, Vector3 right) => (left.AsVector128Unsafe() + right.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.All(Vector4, float)" />
         [Intrinsic]
@@ -365,11 +388,13 @@ namespace System.Numerics
 
         /// <inheritdoc cref="Vector4.BitwiseAnd(Vector4, Vector4)" />
         [Intrinsic]
-        public static Vector3 BitwiseAnd(Vector3 left, Vector3 right) => left & right;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 BitwiseAnd(Vector3 left, Vector3 right) => (left.AsVector128Unsafe() & right.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.BitwiseOr(Vector4, Vector4)" />
         [Intrinsic]
-        public static Vector3 BitwiseOr(Vector3 left, Vector3 right) => left | right;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 BitwiseOr(Vector3 left, Vector3 right) => (left.AsVector128Unsafe() | right.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.Clamp(Vector4, Vector4, Vector4)" />
         [Intrinsic]
@@ -409,6 +434,7 @@ namespace System.Numerics
         /// <param name="value">The value to assign to all three elements.</param>
         /// <returns>A new <see cref="Vector3" /> whose three elements have the same value.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Create(float value) => Vector128.Create(value).AsVector3();
 
         /// <summary>Creates a new <see cref="Vector3" /> object from the specified <see cref="Vector2" /> object and a Z and a W component.</summary>
@@ -430,6 +456,7 @@ namespace System.Numerics
         /// <param name="z">The value to assign to the <see cref="Z" /> field.</param>
         /// <returns>A new <see cref="Vector3" /> whose elements have the specified values.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Create(float x, float y, float z) => Vector128.Create(x, y, z, 0).AsVector3();
 
         /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 3 elements.</summary>
@@ -443,19 +470,21 @@ namespace System.Numerics
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
-            return Unsafe.ReadUnaligned<Vector3>(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(values)));
+            return Unsafe.As<float, Vector3>(ref MemoryMarshal.GetReference(values));
         }
 
         /// <summary>Creates a vector with <see cref="X" /> initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
         /// <returns>A new <see cref="Vector3" /> with <see cref="X" /> initialized <paramref name="x" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 CreateScalar(float x) => Vector128.CreateScalar(x).AsVector3();
 
         /// <summary>Creates a vector with <see cref="X" /> initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
         /// <returns>A new <see cref="Vector3" /> with <see cref="X" /> initialized <paramref name="x" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector3();
 
         /// <summary>Computes the cross product of two vectors.</summary>
@@ -463,18 +492,18 @@ namespace System.Numerics
         /// <param name="vector2">The second vector.</param>
         /// <returns>The cross product.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 Cross(Vector3 vector1, Vector3 vector2)
+        public static Vector3 Cross(Vector3 vector1, Vector3 vector2) => Cross(vector1.AsVector128Unsafe(), vector2.AsVector128Unsafe()).AsVector3();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> Cross(Vector128<float> vector1, Vector128<float> vector2)
         {
             // This implementation is based on the DirectX Math Library XMVector3Cross method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
 
-            Vector128<float> v1 = vector1.AsVector128Unsafe();
-            Vector128<float> v2 = vector2.AsVector128Unsafe();
+            Vector128<float> temp1 = Vector128.Shuffle(vector1, Vector128.Create(1, 2, 0, 3)) * Vector128.Shuffle(vector2, Vector128.Create(2, 0, 1, 3));
+            Vector128<float> temp2 = Vector128.Shuffle(vector1, Vector128.Create(2, 0, 1, 3)) * Vector128.Shuffle(vector2, Vector128.Create(1, 2, 0, 3));
 
-            Vector128<float> temp1 = Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 0)) * Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 0));
-            Vector128<float> temp2 = Vector128.Shuffle(v1, Vector128.Create(2, 0, 1, 0)) * Vector128.Shuffle(v2, Vector128.Create(1, 2, 0, 0));
-
-            return (temp1 - temp2).AsVector3();
+            return temp1 - temp2;
         }
 
         /// <inheritdoc cref="Vector4.DegreesToRadians(Vector4)" />
@@ -487,28 +516,32 @@ namespace System.Numerics
         /// <param name="value2">The second point.</param>
         /// <returns>The distance.</returns>
         [Intrinsic]
-        public static float Distance(Vector3 value1, Vector3 value2) => float.Sqrt(DistanceSquared(value1, value2));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Distance(Vector3 value1, Vector3 value2) => Vector128.Distance(value1.AsVector128(), value2.AsVector128());
 
         /// <summary>Returns the Euclidean distance squared between two specified points.</summary>
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
         /// <returns>The distance squared.</returns>
         [Intrinsic]
-        public static float DistanceSquared(Vector3 value1, Vector3 value2) => (value1 - value2).LengthSquared();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float DistanceSquared(Vector3 value1, Vector3 value2) => Vector128.DistanceSquared(value1.AsVector128(), value2.AsVector128());
 
         /// <summary>Divides the first vector by the second.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The vector resulting from the division.</returns>
         [Intrinsic]
-        public static Vector3 Divide(Vector3 left, Vector3 right) => left / right;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Divide(Vector3 left, Vector3 right) => (left.AsVector128Unsafe() / right.AsVector128Unsafe()).AsVector3();
 
         /// <summary>Divides the specified vector by a specified scalar value.</summary>
         /// <param name="left">The vector.</param>
         /// <param name="divisor">The scalar value.</param>
         /// <returns>The vector that results from the division.</returns>
         [Intrinsic]
-        public static Vector3 Divide(Vector3 left, float divisor) => left / divisor;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Divide(Vector3 left, float divisor) => (left.AsVector128Unsafe() / divisor).AsVector3();
 
         /// <summary>Returns the dot product of two vectors.</summary>
         /// <param name="vector1">The first vector.</param>
@@ -530,12 +563,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.EqualsAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EqualsAll(Vector3 left, Vector3 right) => AllWhereAllBitsSet(Equals(left, right));
+        public static bool EqualsAll(Vector3 left, Vector3 right) => Vector128.EqualsAll(left.AsVector128(), right.AsVector128());
 
         /// <inheritdoc cref="Vector4.EqualsAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EqualsAny(Vector3 left, Vector3 right) => AnyWhereAllBitsSet(Equals(left, right));
+        public static bool EqualsAny(Vector3 left, Vector3 right) => Vector128.EqualsAny(Vector128.Equals(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128.Create(-1, -1, -1, 0));
 
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
         [Intrinsic]
@@ -550,12 +583,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.GreaterThanAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanAll(Vector3 left, Vector3 right) => AllWhereAllBitsSet(GreaterThan(left, right));
+        public static bool GreaterThanAll(Vector3 left, Vector3 right) => Vector128.EqualsAll(Vector128.GreaterThan(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128.Create(-1, -1, -1, 0));
 
         /// <inheritdoc cref="Vector4.GreaterThanAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanAny(Vector3 left, Vector3 right) => AnyWhereAllBitsSet(GreaterThan(left, right));
+        public static bool GreaterThanAny(Vector3 left, Vector3 right) => Vector128.EqualsAny(Vector128.GreaterThan(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128.Create(-1, -1, -1, 0));
 
         /// <inheritdoc cref="Vector4.GreaterThanOrEqual(Vector4, Vector4)" />
         [Intrinsic]
@@ -565,12 +598,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.GreaterThanOrEqualAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanOrEqualAll(Vector3 left, Vector3 right) => AllWhereAllBitsSet(GreaterThanOrEqual(left, right));
+        public static bool GreaterThanOrEqualAll(Vector3 left, Vector3 right) => Vector128.EqualsAll(Vector128.GreaterThanOrEqual(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128<int>.AllBitsSet);
 
         /// <inheritdoc cref="Vector4.GreaterThanOrEqualAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanOrEqualAny(Vector3 left, Vector3 right) => AnyWhereAllBitsSet(GreaterThanOrEqual(left, right));
+        public static bool GreaterThanOrEqualAny(Vector3 left, Vector3 right) => Vector128.EqualsAny(Vector128.GreaterThanOrEqual(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128.Create(-1, -1, -1, 0));
 
         /// <inheritdoc cref="Vector4.Hypot(Vector4, Vector4)" />
         [Intrinsic]
@@ -590,67 +623,67 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.IsEvenInteger(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsEvenInteger(Vector3 vector) => Vector128.IsEvenInteger(vector.AsVector128()).AsVector3();
+        public static Vector3 IsEvenInteger(Vector3 vector) => Vector128.IsEvenInteger(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.IsFinite(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsFinite(Vector3 vector) => Vector128.IsFinite(vector.AsVector128()).AsVector3();
+        public static Vector3 IsFinite(Vector3 vector) => Vector128.IsFinite(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.IsInfinity(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsInfinity(Vector3 vector) => Vector128.IsInfinity(vector.AsVector128()).AsVector3();
+        public static Vector3 IsInfinity(Vector3 vector) => Vector128.IsInfinity(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.IsInteger(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsInteger(Vector3 vector) => Vector128.IsInteger(vector.AsVector128()).AsVector3();
+        public static Vector3 IsInteger(Vector3 vector) => Vector128.IsInteger(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.IsNaN(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsNaN(Vector3 vector) => Vector128.IsNaN(vector.AsVector128()).AsVector3();
+        public static Vector3 IsNaN(Vector3 vector) => Vector128.IsNaN(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.IsNegative(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsNegative(Vector3 vector) => Vector128.IsNegative(vector.AsVector128()).AsVector3();
+        public static Vector3 IsNegative(Vector3 vector) => Vector128.IsNegative(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.IsNegativeInfinity(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsNegativeInfinity(Vector3 vector) => Vector128.IsNegativeInfinity(vector.AsVector128()).AsVector3();
+        public static Vector3 IsNegativeInfinity(Vector3 vector) => Vector128.IsNegativeInfinity(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.IsNormal(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsNormal(Vector3 vector) => Vector128.IsNormal(vector.AsVector128()).AsVector3();
+        public static Vector3 IsNormal(Vector3 vector) => Vector128.IsNormal(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.IsOddInteger(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsOddInteger(Vector3 vector) => Vector128.IsOddInteger(vector.AsVector128()).AsVector3();
+        public static Vector3 IsOddInteger(Vector3 vector) => Vector128.IsOddInteger(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.IsPositive(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsPositive(Vector3 vector) => Vector128.IsPositive(vector.AsVector128()).AsVector3();
+        public static Vector3 IsPositive(Vector3 vector) => Vector128.IsPositive(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.IsPositiveInfinity(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsPositiveInfinity(Vector3 vector) => Vector128.IsPositiveInfinity(vector.AsVector128()).AsVector3();
+        public static Vector3 IsPositiveInfinity(Vector3 vector) => Vector128.IsPositiveInfinity(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.IsSubnormal(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsSubnormal(Vector3 vector) => Vector128.IsSubnormal(vector.AsVector128()).AsVector3();
+        public static Vector3 IsSubnormal(Vector3 vector) => Vector128.IsSubnormal(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.IsZero(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 IsZero(Vector3 vector) => Vector128.IsZero(vector.AsVector128()).AsVector3();
+        public static Vector3 IsZero(Vector3 vector) => Vector128.IsZero(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.LastIndexOf(Vector4, float)" />
         [Intrinsic]
@@ -662,10 +695,11 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfWhereAllBitsSet(Vector3 vector) => Vector128.LastIndexOfWhereAllBitsSet(vector);
 
+
         /// <inheritdoc cref="Vector4.Lerp(Vector4, Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 Lerp(Vector3 value1, Vector3 value2, float amount) => Lerp(value1, value2, Create(amount));
+        public static Vector3 Lerp(Vector3 value1, Vector3 value2, float amount) => Vector128.Lerp(value1.AsVector128Unsafe(), value2.AsVector128Unsafe(), Vector128.Create(amount)).AsVector3();
 
         /// <inheritdoc cref="Vector4.Lerp(Vector4, Vector4, Vector4)" />
         [Intrinsic]
@@ -680,12 +714,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LessThanAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanAll(Vector3 left, Vector3 right) => AllWhereAllBitsSet(LessThan(left, right));
+        public static bool LessThanAll(Vector3 left, Vector3 right) => Vector128.EqualsAll(Vector128.LessThan(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128.Create(-1, -1, -1, 0));
 
         /// <inheritdoc cref="Vector4.LessThanAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanAny(Vector3 left, Vector3 right) => AnyWhereAllBitsSet(LessThan(left, right));
+        public static bool LessThanAny(Vector3 left, Vector3 right) => Vector128.EqualsAny(Vector128.LessThan(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128.Create(-1, -1, -1, 0));
 
         /// <inheritdoc cref="Vector4.LessThanOrEqual(Vector4, Vector4)" />
         [Intrinsic]
@@ -695,17 +729,18 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LessThanOrEqualAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanOrEqualAll(Vector3 left, Vector3 right) => AllWhereAllBitsSet(LessThanOrEqual(left, right));
+        public static bool LessThanOrEqualAll(Vector3 left, Vector3 right) => Vector128.EqualsAll(Vector128.LessThanOrEqual(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128<int>.AllBitsSet);
 
         /// <inheritdoc cref="Vector4.LessThanOrEqualAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanOrEqualAny(Vector3 left, Vector3 right) => AnyWhereAllBitsSet(LessThanOrEqual(left, right));
+        public static bool LessThanOrEqualAny(Vector3 left, Vector3 right) => Vector128.EqualsAny(Vector128.LessThanOrEqual(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128.Create(-1, -1, -1, 0));
 
         /// <inheritdoc cref="Vector4.Load(float*)" />
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector3 Load(float* source) => LoadUnsafe(in *source);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector3 Load(float* source) => *(Vector3*)source;
 
         /// <inheritdoc cref="Vector4.LoadAligned(float*)" />
         [Intrinsic]
@@ -717,33 +752,25 @@ namespace System.Numerics
             {
                 ThrowHelper.ThrowAccessViolationException();
             }
-
             return *(Vector3*)source;
         }
 
         /// <inheritdoc cref="Vector4.LoadAlignedNonTemporal(float*)" />
         [Intrinsic]
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector3 LoadAlignedNonTemporal(float* source) => LoadAligned(source);
 
         /// <inheritdoc cref="Vector128.LoadUnsafe{T}(ref readonly T)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 LoadUnsafe(ref readonly float source)
-        {
-            ref readonly byte address = ref Unsafe.As<float, byte>(ref Unsafe.AsRef(in source));
-            return Unsafe.ReadUnaligned<Vector3>(in address);
-        }
+        public static Vector3 LoadUnsafe(ref readonly float source) => Unsafe.As<float, Vector3>(ref Unsafe.AsRef(in source));
 
         /// <inheritdoc cref="Vector4.LoadUnsafe(ref readonly float, nuint)" />
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 LoadUnsafe(ref readonly float source, nuint elementOffset)
-        {
-            ref readonly byte address = ref Unsafe.As<float, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
-            return Unsafe.ReadUnaligned<Vector3>(in address);
-        }
+        public static Vector3 LoadUnsafe(ref readonly float source, nuint elementOffset) => Unsafe.As<float, Vector3>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
 
         /// <inheritdoc cref="Vector4.Log(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -808,21 +835,24 @@ namespace System.Numerics
         /// <param name="right">The second vector.</param>
         /// <returns>The element-wise product vector.</returns>
         [Intrinsic]
-        public static Vector3 Multiply(Vector3 left, Vector3 right) => left * right;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Multiply(Vector3 left, Vector3 right) => (left.AsVector128Unsafe() * right.AsVector128Unsafe()).AsVector3();
 
         /// <summary>Multiplies a vector by a specified scalar.</summary>
         /// <param name="left">The vector to multiply.</param>
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         [Intrinsic]
-        public static Vector3 Multiply(Vector3 left, float right) => left * right;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Multiply(Vector3 left, float right) => (left.AsVector128Unsafe() * right).AsVector3();
 
         /// <summary>Multiplies a scalar value by a specified vector.</summary>
         /// <param name="left">The scaled value.</param>
         /// <param name="right">The vector.</param>
         /// <returns>The scaled vector.</returns>
         [Intrinsic]
-        public static Vector3 Multiply(float left, Vector3 right) => left * right;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Multiply(float left, Vector3 right) => (right.AsVector128Unsafe() * left).AsVector3();
 
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
         [Intrinsic]
@@ -833,7 +863,8 @@ namespace System.Numerics
         /// <param name="value">The vector to negate.</param>
         /// <returns>The negated vector.</returns>
         [Intrinsic]
-        public static Vector3 Negate(Vector3 value) => -value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Negate(Vector3 value) => (-value.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.None(Vector4, float)" />
         [Intrinsic]
@@ -849,11 +880,13 @@ namespace System.Numerics
         /// <param name="value">The vector to normalize.</param>
         /// <returns>The normalized vector.</returns>
         [Intrinsic]
-        public static Vector3 Normalize(Vector3 value) => value / value.Length();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Normalize(Vector3 value) => Vector128.Normalize(value.AsVector128()).AsVector3();
 
         /// <inheritdoc cref="Vector4.OnesComplement(Vector4)" />
         [Intrinsic]
-        public static Vector3 OnesComplement(Vector3 value) => ~value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 OnesComplement(Vector3 value) => (~value.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.RadiansToDegrees(Vector4)" />
         [Intrinsic]
@@ -870,17 +903,21 @@ namespace System.Numerics
             // This implementation is based on the DirectX Math Library XMVector3Reflect method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
 
-            Vector3 tmp = Create(Dot(vector, normal));
-            tmp += tmp;
-            return MultiplyAddEstimate(-tmp, normal, vector);
+            Vector128<float> vVector = vector.AsVector128();
+            Vector128<float> vNormal = normal.AsVector128();
+
+            Vector128<float> tmp = Vector128.Create(Vector128.Dot(vVector, vNormal));
+            return Vector128.MultiplyAddEstimate(-(tmp + tmp), vNormal, vVector).AsVector3();
         }
 
         /// <inheritdoc cref="Vector4.Round(Vector4)" />
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Round(Vector3 vector) => Vector128.Round(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.Round(Vector4, MidpointRounding)" />
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Round(Vector3 vector, MidpointRounding mode) => Vector128.Round(vector.AsVector128Unsafe(), mode).AsVector3();
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -921,7 +958,8 @@ namespace System.Numerics
         /// <param name="right">The second vector.</param>
         /// <returns>The difference vector.</returns>
         [Intrinsic]
-        public static Vector3 Subtract(Vector3 left, Vector3 right) => left - right;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Subtract(Vector3 left, Vector3 right) => (left.AsVector128Unsafe() - right.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.Sum(Vector4)" />
         [Intrinsic]
@@ -933,37 +971,52 @@ namespace System.Numerics
         /// <param name="matrix">The transformation matrix.</param>
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 Transform(Vector3 position, Matrix4x4 matrix) => Vector4.Transform(position, matrix).AsVector3();
+        public static Vector3 Transform(Vector3 position, Matrix4x4 matrix) => Transform(position.AsVector128Unsafe(), in matrix.AsROImpl()).AsVector3();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> Transform(Vector128<float> position, in Matrix4x4.Impl matrix)
+        {
+            // This implementation is based on the DirectX Math Library XMVector3Transform method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
+
+            Vector128<float> result = matrix.X * position.GetElement(0);
+            result = Vector128.MultiplyAddEstimate(matrix.Y, Vector128.Create(position.GetElement(1)), result);
+            result = Vector128.MultiplyAddEstimate(matrix.Z, Vector128.Create(position.GetElement(2)), result);
+            return result + matrix.W;
+        }
 
         /// <summary>Transforms a vector by the specified Quaternion rotation value.</summary>
         /// <param name="value">The vector to rotate.</param>
         /// <param name="rotation">The rotation to apply.</param>
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 Transform(Vector3 value, Quaternion rotation) => Vector4.Transform(value, rotation).AsVector3();
+        public static Vector3 Transform(Vector3 value, Quaternion rotation) => Vector4.Transform(value.AsVector128Unsafe().WithElement(3, 1.0f), rotation.AsVector128()).AsVector3();
 
         /// <summary>Transforms a vector normal by the given 4x4 matrix.</summary>
         /// <param name="normal">The source vector.</param>
         /// <param name="matrix">The matrix.</param>
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 TransformNormal(Vector3 normal, Matrix4x4 matrix)
+        public static Vector3 TransformNormal(Vector3 normal, Matrix4x4 matrix) => TransformNormal(normal.AsVector128Unsafe(), in matrix.AsROImpl()).AsVector3();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> TransformNormal(Vector128<float> normal, in Matrix4x4.Impl matrix)
         {
-            Vector4 result = matrix.X * normal.X;
-
-            result = Vector4.MultiplyAddEstimate(matrix.Y, Vector4.Create(normal.Y), result);
-            result = Vector4.MultiplyAddEstimate(matrix.Z, Vector4.Create(normal.Z), result);
-
-            return result.AsVector3();
+            Vector128<float> result = matrix.X * normal.GetElement(0);
+            result = Vector128.MultiplyAddEstimate(matrix.Y, Vector128.Create(normal.GetElement(1)), result);
+            result = Vector128.MultiplyAddEstimate(matrix.Z, Vector128.Create(normal.GetElement(2)), result);
+            return result;
         }
 
         /// <inheritdoc cref="Vector4.Truncate(Vector4)" />
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Truncate(Vector3 vector) => Vector128.Truncate(vector.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.Xor(Vector4, Vector4)" />
         [Intrinsic]
-        public static Vector3 Xor(Vector3 left, Vector3 right) => left ^ right;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Xor(Vector3 left, Vector3 right) => (left.AsVector128Unsafe() ^ right.AsVector128Unsafe()).AsVector3();
 
         /// <summary>Copies the elements of the vector to a specified array.</summary>
         /// <param name="array">The destination array.</param>
@@ -980,8 +1033,7 @@ namespace System.Numerics
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
-
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[0]), this);
+            Unsafe.As<float, Vector3>(ref array[0]) = this;
         }
 
         /// <summary>Copies the elements of the vector to a specified array starting at a specified index position.</summary>
@@ -1009,7 +1061,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[index]), this);
+            Unsafe.As<float, Vector3>(ref array[index]) = this;
         }
 
         /// <summary>Copies the vector to the given <see cref="Span{T}" />. The length of the destination span must be at least 3.</summary>
@@ -1022,8 +1074,7 @@ namespace System.Numerics
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
-
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
+            Unsafe.As<float, Vector3>(ref MemoryMarshal.GetReference(destination)) = this;
         }
 
         /// <summary>Attempts to copy the vector to the given <see cref="Span{Single}" />. The length of the destination span must be at least 3.</summary>
@@ -1037,7 +1088,7 @@ namespace System.Numerics
                 return false;
             }
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
+            Unsafe.As<float, Vector3>(ref MemoryMarshal.GetReference(destination)) = this;
             return true;
         }
 
@@ -1062,14 +1113,16 @@ namespace System.Numerics
         /// <returns>The vector's length.</returns>
         /// <altmember cref="LengthSquared" />
         [Intrinsic]
-        public readonly float Length() => float.Sqrt(LengthSquared());
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly float Length() => Vector128.Length(this.AsVector128());
 
         /// <summary>Returns the length of the vector squared.</summary>
         /// <returns>The vector's length squared.</returns>
         /// <remarks>This operation offers better performance than a call to the <see cref="Length" /> method.</remarks>
         /// <altmember cref="Length" />
         [Intrinsic]
-        public readonly float LengthSquared() => Dot(this, this);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly float LengthSquared() => Vector128.LengthSquared(this.AsVector128());
 
         /// <summary>Returns the string representation of the current instance using default formatting.</summary>
         /// <returns>The string representation of the current instance.</returns>
@@ -1094,8 +1147,17 @@ namespace System.Numerics
         public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
-
-            return $"<{X.ToString(format, formatProvider)}{separator} {Y.ToString(format, formatProvider)}{separator} {Z.ToString(format, formatProvider)}>";
+            var handler = new DefaultInterpolatedStringHandler(literalLength: 4 + (separator.Length * 2), formattedCount: 3, formatProvider, stackalloc char[512]);
+            handler.AppendLiteral("<");
+            handler.AppendFormatted(X, format);
+            handler.AppendLiteral(separator);
+            handler.AppendLiteral(" ");
+            handler.AppendFormatted(Y, format);
+            handler.AppendLiteral(separator);
+            handler.AppendLiteral(" ");
+            handler.AppendFormatted(Z, format);
+            handler.AppendLiteral(">");
+            return handler.ToStringAndClear();
         }
     }
 }

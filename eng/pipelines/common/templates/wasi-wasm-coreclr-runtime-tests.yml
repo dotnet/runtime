@@ -1,0 +1,68 @@
+parameters:
+  alwaysRun: false
+  isExtraPlatformsBuild: false
+  isWasmOnlyBuild: false
+  platforms: []
+  extraBuildArgs: ''
+
+jobs:
+
+#
+# Build CoreCLR + libraries for WASI and run a subset of src/tests on
+# Helix under wasmtime. Mirrors wasm-runtime-tests.yml (Mono variant),
+# with runtimeFlavor=coreclr and a curated -tree: subset (see the
+# testBuildArgs below).
+#
+# Merged-runner mode; xharness dispatches via helixpublishwitharcade.proj.
+# Reuses the wasi_wasm helix queue (ubuntu-26.04-helix-webassembly-amd64).
+#
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    platforms: ${{ parameters.platforms }}
+    variables:
+      - name: alwaysRunVar
+        value: ${{ parameters.alwaysRun }}
+      - name: timeoutPerTestInMinutes
+        value: 10
+      - name: timeoutPerTestCollectionInMinutes
+        value: 200
+      - name: shouldRunOnDefaultPipelines
+        value: $[
+          or(
+            eq(variables['wasmDarcDependenciesChanged'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true))
+          ]
+    jobParameters:
+      testGroup: innerloop
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      nameSuffix: CoreCLR_WASI_RuntimeTests
+      buildArgs: -s clr+libs+packs -c $(_BuildConfig) ${{ parameters.extraBuildArgs }} /p:TestAssemblies=false
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(variables['alwaysRunVar'], true),
+          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: CoreCLR_WASI_$(_BuildConfig)
+            # Curated test-tree subset -- expand as gates stabilize.
+            testBuildArgs: >-
+              -priority1
+              -tree:JIT/CodeGenBringUpTests
+              -tree:JIT/Generics
+              -tree:JIT/Directed
+              -tree:JIT/opt
+              -tree:JIT/jit64
+              -tree:Loader
+              -tree:Exceptions
+              -tree:reflection
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
