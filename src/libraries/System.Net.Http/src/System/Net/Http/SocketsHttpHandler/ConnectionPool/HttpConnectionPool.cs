@@ -52,6 +52,9 @@ namespace System.Net.Http
         internal uint _lastSeenHttp2MaxHeaderListSize;
         internal uint _lastSeenHttp3MaxHeaderListSize;
 
+        // Same as the above, but for SETTINGS_MAX_CONCURRENT_STREAMS.
+        internal uint _lastSeenHttp2MaxConcurrentStreams = Http2Connection.InitialMaxConcurrentStreams;
+
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
@@ -127,7 +130,9 @@ namespace System.Net.Http
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
 
-                    _http2Enabled = false;
+                    // A CONNECT tunnel to the origin server behaves like a direct connection once established,
+                    // so cleartext HTTP/2 (h2c) can be used over it. HTTP/1.1 WebSockets keep working because
+                    // the WebSocket upgrade request uses HTTP/1.1 and never attempts HTTP/2.
                     _http3Enabled = false;
                     break;
 

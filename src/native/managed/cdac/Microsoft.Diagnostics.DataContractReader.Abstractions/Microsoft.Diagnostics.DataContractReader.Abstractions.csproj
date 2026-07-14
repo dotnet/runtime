@@ -11,4 +11,19 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Pack the cDAC source generator into this transport package as an
+      analyzer asset. Anyone who PackageReferences the Abstractions package
+      (in particular downstream cDAC consumers writing their own [CdacType]
+      partial classes).
+
+      ReferenceOutputAssembly=false because we don't link the generator at
+      runtime; only its compiled output flows in the nupkg.
+    -->
+    <ProjectReference Include="..\gen\Microsoft.Diagnostics.DataContractReader.DataGenerator.csproj"
+                      ReferenceOutputAssembly="false"
+                      PackAsAnalyzer="true" />
+  </ItemGroup>
 </Project>

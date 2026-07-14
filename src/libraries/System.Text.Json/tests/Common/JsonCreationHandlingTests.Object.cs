@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests;
@@ -825,10 +827,11 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public ClassWithRecursiveRequiredProperty? Next { get; set; }
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     [InlineData(typeof(SimpleClass))]
     [InlineData(typeof(SimpleClassWithSmallParametrizedCtor))]
     [InlineData(typeof(SimpleClassWithLargeParametrizedCtor))]
+    [RequiresDynamicCode("Uses Type.MakeGenericType to construct the generic type under test.")]
     public async Task CreationHandlingSetWithAttribute_CanPopulateOrSerialize_Callbacks(Type type)
     {
         Type finalType = typeof(ClassWithWritableProperty<>).MakeGenericType(type);
@@ -879,7 +882,10 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [InlineData(typeof(ClassImplementingInterfaceWithPopulateOnTypeWithInterfaceProperty), null, false)]
     [InlineData(typeof(IInterfaceWithInterfaceProperty), typeof(ClassImplementingInterfaceWithInterfaceProperty), false)]
     [InlineData(typeof(ClassImplementingInterfaceWithInterfaceProperty), null, true)]
-    public async Task CreationHandlingSetWithAttributeOnType_Interfaces(Type typeToDeserialize, Type? typeToCreate, bool shouldPopulate)
+    public async Task CreationHandlingSetWithAttributeOnType_Interfaces(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type typeToDeserialize,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type? typeToCreate,
+        bool shouldPopulate)
     {
         JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
@@ -1169,7 +1175,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Theory]
     [InlineData(typeof(ClassWithParameterizedConstructorWithPopulateProperty))]
     [InlineData(typeof(ClassWithParameterizedConstructorWithPopulateType))]
-    public async Task ClassWithParameterizedCtor_UsingPopulateConfiguration_ThrowsNotSupportedException(Type type)
+    public async Task ClassWithParameterizedCtor_UsingPopulateConfiguration_ThrowsNotSupportedException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
     {
         object instance = Activator.CreateInstance(type, "Jim");
         string json = """{"Username":"Jim","PhoneNumbers":["123456"]}""";

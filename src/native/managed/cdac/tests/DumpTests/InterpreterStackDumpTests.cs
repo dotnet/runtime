@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 

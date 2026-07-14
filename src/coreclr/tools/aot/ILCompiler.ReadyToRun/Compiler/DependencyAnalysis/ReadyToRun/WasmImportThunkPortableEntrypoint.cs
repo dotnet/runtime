@@ -57,14 +57,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private static readonly WasmSignature _genericLookupSignature32Bit = new WasmSignature(
             new WasmFuncType(
-                new WasmResultType(new[] { WasmValueType.I32, WasmValueType.I32 }),
+                new WasmResultType(new[] { WasmValueType.I32, WasmValueType.I32, WasmValueType.I32 }),
                 new WasmResultType(new[] { WasmValueType.I32 })),
-            "iii");
+            "iip");
         private static readonly WasmSignature _genericLookupSignature64Bit = new WasmSignature(
             new WasmFuncType(
-                new WasmResultType(new[] { WasmValueType.I64, WasmValueType.I64 }),
+                new WasmResultType(new[] { WasmValueType.I64, WasmValueType.I64, WasmValueType.I64 }),
                 new WasmResultType(new[] { WasmValueType.I64 })),
-            "lll");
+            "llp");
 
         public override ObjectData GetData(NodeFactory factory, System.Boolean relocsOnly = false)
         {
@@ -83,11 +83,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 MethodDesc method = ((MethodFixupSignature)(_import.Signature)).Method;
+                MethodSignature signature = method.Signature;
+
+                if (method.IsInternalCall && method.OwningType.IsWellKnownType(WellKnownType.String) && method.IsConstructor)
+                {
+                    // Special case for string ctors, which are internal calls but have a managed signature.
+                    signature = WasmLowering.GetStringCtorActualSignature(signature);
+                }
                 // The import thunk always uses managed calling convention ($sp + PE entrypoint)
                 // even if the underlying method is UnmanagedCallersOnly, because the thunk is
                 // called from R2R-generated managed code.
                 WasmLowering.LoweringFlags flags = WasmLowering.GetLoweringFlags(method) & ~WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-                wasmSignature = WasmLowering.GetSignature(method.Signature, flags);
+                wasmSignature = WasmLowering.GetSignature(signature, flags);
             }
             builder.EmitReloc(factory.WasmImportThunk(wasmSignature, HelperId, _import.Table, UseVirtualCall, UseJumpableStub), tableIndexPointerRelocType);
             builder.EmitReloc(_import, RelocType.IMAGE_REL_BASED_ADDR32NB);

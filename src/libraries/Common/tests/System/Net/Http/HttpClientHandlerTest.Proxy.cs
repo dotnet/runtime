@@ -27,6 +27,7 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI HttpHandler does not support proxy")]
         public async Task Dispose_HandlerWithProxy_ProxyNotDisposed()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -655,6 +656,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI HttpHandler does not support proxy")]
         public async Task ProxyTunnelRequest_UserAgentHeaderAdded(bool addUserAgentHeader)
         {
             if (IsWinHttpHandler)

@@ -25,11 +25,8 @@ CordbStackWalk::CordbStackWalk(CordbThread * pCordbThread)
   : CordbBase(pCordbThread->GetProcess(), 0, enumCordbStackWalk),
     m_pCordbThread(pCordbThread),
     m_pSFIHandle(NULL),
-    m_cachedSetContextFlag(SET_CONTEXT_FLAG_ACTIVE_FRAME),
-    m_cachedHR(S_OK),
-    m_fIsOneFrameAhead(false)
+    m_cachedSetContextFlag(SET_CONTEXT_FLAG_ACTIVE_FRAME)
 {
-    m_pCachedFrame.Clear();
 }
 
 void CordbStackWalk::Init()
@@ -136,11 +133,6 @@ void CordbStackWalk::DeleteAll()
         SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
         m_pSFIHandle = NULL;
     }
-
-    // clear out the cached frame
-    m_pCachedFrame.Clear();
-    m_cachedHR = S_OK;
-    m_fIsOneFrameAhead = false;
 }
 
 //---------------------------------------------------------------------------------------
@@ -202,17 +194,8 @@ void CordbStackWalk::RefreshIfNeeded()
     // check if we need to refresh
     if (m_lastSyncFlushCounter != pProcess->m_flushCounter)
     {
-        // Make a local copy of the CONTEXT here.  DeleteAll() will delete the CONTEXT on the cached frame,
-        // and CreateStackWalk() actually uses the CONTEXT buffer we pass to it.
-        DT_CONTEXT ctx;
-        if (m_fIsOneFrameAhead)
-        {
-            ctx = *(m_pCachedFrame->GetContext());
-        }
-        else
-        {
-            ctx = m_context;
-        }
+        // Make a local copy of the CONTEXT here.
+        DT_CONTEXT ctx = m_context;
 
         // clear all the state
         DeleteAll();
@@ -282,48 +265,27 @@ HRESULT CordbStackWalk::GetContext(ULONG32   contextFlags,
                 ThrowWin32(ERROR_INSUFFICIENT_BUFFER);
             }
 
-            // Check if we are one frame ahead.  If so, returned the CONTEXT on the cached frame.
-            if (m_fIsOneFrameAhead)
+            // We have to call the DDI.
+            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
+
+            IDacDbiInterface::FrameType ft;
+            IfFailThrow(pDAC->GetStackWalkCurrentFrameInfo(m_pSFIHandle, NULL, &ft));
+            if (ft == IDacDbiInterface::kInvalid)
             {
-                if (m_pCachedFrame != NULL)
-                {
-                    const DT_CONTEXT * pSrcContext = m_pCachedFrame->GetContext();
-                    _ASSERTE(pSrcContext);
-                    CORDbgCopyThreadContext(pContext, pSrcContext);
-                }
-                else
-                {
-                    // We encountered a problem when we were trying to initialize the CordbNativeFrame.
-                    // However, the problem occurred after we have unwound the current frame.
-                    // What do we do here?  We don't have the CONTEXT anymore.
-                    _ASSERTE(FAILED(m_cachedHR));
-                    ThrowHR(m_cachedHR);
-                }
+                ThrowHR(E_FAIL);
+            }
+            else if (ft == IDacDbiInterface::kAtEndOfStack)
+            {
+                ThrowHR(CORDBG_E_PAST_END_OF_STACK);
+            }
+            else if (ft == IDacDbiInterface::kExplicitFrame)
+            {
+                ThrowHR(CORDBG_E_NO_CONTEXT_FOR_INTERNAL_FRAME);
             }
             else
             {
-                // No easy way out in this case.  We have to call the DDI.
-                IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-
-                IDacDbiInterface::FrameType ft;
-                IfFailThrow(pDAC->GetStackWalkCurrentFrameInfo(m_pSFIHandle, NULL, &ft));
-                if (ft == IDacDbiInterface::kInvalid)
-                {
-                    ThrowHR(E_FAIL);
-                }
-                else if (ft == IDacDbiInterface::kAtEndOfStack)
-                {
-                    ThrowHR(CORDBG_E_PAST_END_OF_STACK);
-                }
-                else if (ft == IDacDbiInterface::kExplicitFrame)
-                {
-                    ThrowHR(CORDBG_E_NO_CONTEXT_FOR_INTERNAL_FRAME);
-                }
-                else
-                {
-                    // We always store the current CONTEXT, so just copy it into the buffer.
-                    CORDbgCopyThreadContext(pContext, &m_context);
-                }
+                // We always store the current CONTEXT, so just copy it into the buffer.
+                CORDbgCopyThreadContext(pContext, &m_context);
             }
         }
     }
@@ -376,11 +338,6 @@ void CordbStackWalk::SetContextWorker(CorDebugSetContextFlag flag, ULONG32 conte
         ThrowWin32(ERROR_INSUFFICIENT_BUFFER);
     }
 
-    // invalidate the cache
-    m_pCachedFrame.Clear();
-    m_cachedHR = S_OK;
-    m_fIsOneFrameAhead = false;
-
     DT_CONTEXT * pSrcContext = reinterpret_cast<DT_CONTEXT *>(context);
 
     // Check the incoming CONTEXT using a temporary CONTEXT buffer before updating our real CONTEXT buffer.
@@ -427,8 +384,8 @@ BOOL CordbStackWalk::UnwindStackFrame()
     IfFailThrow(pDAC->UnwindStackWalkFrame(m_pSFIHandle, &retVal));
 
     // Now that we have unwound, make sure we update the CONTEXT buffer to reflect the current stack frame.
-    // This call is safe regardless of whether the unwind is successful or not.
-    IfFailThrow(pDAC->GetStackWalkCurrentContext(m_pSFIHandle, &m_context));
+    if (retVal)
+        IfFailThrow(pDAC->GetStackWalkCurrentContext(m_pSFIHandle, &m_context));
 
     return retVal;
 } // CordbStackWalk::UnwindStackWalkFrame
@@ -450,40 +407,26 @@ HRESULT CordbStackWalk::Next()
     PUBLIC_REENTRANT_API_BEGIN(this)
     {
         RefreshIfNeeded();
-        if (m_fIsOneFrameAhead)
+
+        IDacDbiInterface * pDAC = GetProcess()->GetDAC();
+        IDacDbiInterface::FrameType ft = IDacDbiInterface::kInvalid;
+
+        IfFailThrow(pDAC->GetStackWalkCurrentFrameInfo(this->m_pSFIHandle, NULL, &ft));
+        if (ft == IDacDbiInterface::kAtEndOfStack)
         {
-            // We have already unwound to the next frame when we materialize the CordbNativeFrame
-            // for the current frame.  So we just need to clear the cache because we are already at
-            // the next frame.
-            if (m_pCachedFrame != NULL)
-            {
-                m_pCachedFrame.Clear();
-            }
-            m_cachedHR = S_OK;
-            m_fIsOneFrameAhead = false;
+            ThrowHR(CORDBG_E_PAST_END_OF_STACK);
+        }
+
+        // update the cached flag to indicate that we have reached an unwind CONTEXT
+        m_cachedSetContextFlag = SET_CONTEXT_FLAG_UNWIND_FRAME;
+
+        if (UnwindStackFrame())
+        {
+            hr = S_OK;
         }
         else
         {
-            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            IDacDbiInterface::FrameType ft = IDacDbiInterface::kInvalid;
-
-            IfFailThrow(pDAC->GetStackWalkCurrentFrameInfo(this->m_pSFIHandle, NULL, &ft));
-            if (ft == IDacDbiInterface::kAtEndOfStack)
-            {
-                ThrowHR(CORDBG_E_PAST_END_OF_STACK);
-            }
-
-            // update the cahced flag to indicate that we have reached an unwind CONTEXT
-            m_cachedSetContextFlag = SET_CONTEXT_FLAG_UNWIND_FRAME;
-
-            if (UnwindStackFrame())
-            {
-                hr = S_OK;
-            }
-            else
-            {
-                hr = CORDBG_S_AT_END_OF_STACK;
-            }
+            hr = CORDBG_S_AT_END_OF_STACK;
         }
     }
     PUBLIC_REENTRANT_API_END(hr);
@@ -525,17 +468,6 @@ HRESULT CordbStackWalk::GetFrame(ICorDebugFrame ** ppFrame)
     }
     PUBLIC_REENTRANT_API_END(hr);
 
-    if (FAILED(hr))
-    {
-        if (m_fIsOneFrameAhead && (m_pCachedFrame == NULL))
-        {
-            // We encountered a problem when we try to materialize a CordbNativeFrame.
-            // Cache the failure HR so that we can return it later if the caller
-            // calls GetFrame() again or GetContext().
-            m_cachedHR = hr;
-        }
-    }
-
     return hr;
 }
 
@@ -556,38 +488,16 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
     RSInitHolder<CordbFrame> pResultFrame(NULL);
 
-    if (m_fIsOneFrameAhead)
-    {
-        if (m_pCachedFrame != NULL)
-        {
-            pResultFrame.Assign(m_pCachedFrame);
-            pResultFrame.TransferOwnershipExternal(ppFrame);
-            return S_OK;
-        }
-        else
-        {
-            // We encountered a problem when we were trying to initialize the CordbNativeFrame.
-            // However, the problem occurred after we have unwound the current frame.
-            // Whatever error code we return, it should be the same one GetContext() returns.
-            _ASSERTE(FAILED(m_cachedHR));
-            ThrowHR(m_cachedHR);
-        }
-    }
-
     IDacDbiInterface * pDAC = NULL;
     Debugger_STRData frameData;
     ZeroMemory(&frameData, sizeof(frameData));
 
-    // Allocate the DT_CONTEXT and DebuggerREGDISPLAY buffers on the dbi stack and
-    // hand their addresses to the DAC via Debugger_STRData. The DAC writes the
-    // populated context/regdisplay through these pointers. See the comment on
-    // Debugger_STRData in dbgipcevents.h for the protocol.
+    // Allocate the DT_CONTEXT buffer on the dbi stack and
+    // hand the address to the DAC via Debugger_STRData. The DAC writes the
+    // populated context through this pointer.
     DT_CONTEXT          frameCtx;
-    DebuggerREGDISPLAY  frameRd;
     ZeroMemory(&frameCtx, sizeof(frameCtx));
-    ZeroMemory(&frameRd,  sizeof(frameRd));
     frameData.ctx = &frameCtx;
-    frameData.rd  = &frameRd;
 
     IDacDbiInterface::FrameType ft = IDacDbiInterface::kInvalid;
 
@@ -631,18 +541,6 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         _ASSERTE(frameData.eType == Debugger_STRData::cMethodFrame);
 
         HRESULT hr = S_OK;
-
-        // In order to find the FramePointer on x86, we need to unwind to the next frame.
-        // Technically, only x86 needs to do this, because the x86 runtime stackwalker doesn't uwnind
-        // one frame ahead of time.  However, we are doing this on all platforms to keep things simple.
-        BOOL fSuccess = UnwindStackFrame();
-        (void)fSuccess; //prevent "unused variable" error from GCC
-        _ASSERTE(fSuccess);
-
-        m_fIsOneFrameAhead = true;
-#if defined(TARGET_X86)
-        IfFailThrow(pDAC->GetFramePointer(m_pSFIHandle, &frameData.fp));
-#endif // TARGET_X86
 
         // currentFuncData contains general information about the method.
         // It has no information about any particular jitted instance of the method.
@@ -690,17 +588,15 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // Create the native frame.
         CordbNativeFrame* pNativeFrame = new CordbNativeFrame(m_pCordbThread,
-                                                              frameData.fp,
+                                                              FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(frameData.fp)),
                                                               pNativeCode,
                                                               (SIZE_T)pJITFuncData->nativeOffset,
-                                                              &frameRd,
                                                               (TADDR)frameData.v.taAmbientESP,
                                                               pCurrentAppDomain,
                                                               &miscFrame,
                                                               &frameCtx);
 
         pResultFrame.Assign(static_cast<CordbFrame *>(pNativeFrame));
-        m_pCachedFrame.Assign(static_cast<CordbFrame *>(pNativeFrame));
 
         // @dbgtodo  dynamic language debugging
         // If we are dealing with a dynamic method (e.g. an IL stub, a LCG method, etc.),
@@ -816,30 +712,17 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
     {
         _ASSERTE(frameData.eType == Debugger_STRData::cRuntimeNativeFrame);
 
-        // In order to find the FramePointer on x86, we need to unwind to the next frame.
-        // Technically, only x86 needs to do this, because the x86 runtime stackwalker doesn't uwnind
-        // one frame ahead of time.  However, we are doing this on all platforms to keep things simple.
-        BOOL fSuccess = UnwindStackFrame();
-        (void)fSuccess; //prevent "unused variable" error from GCC
-        _ASSERTE(fSuccess);
-
-        m_fIsOneFrameAhead = true;
-#if defined(TARGET_X86)
-        IfFailThrow(pDAC->GetFramePointer(m_pSFIHandle, &frameData.fp));
-#endif // TARGET_X86
-
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.
         CordbAppDomain * pCurrentAppDomain = GetProcess()->GetAppDomain();
         _ASSERTE(pCurrentAppDomain != NULL);
 
         CordbRuntimeUnwindableFrame * pRuntimeFrame = new CordbRuntimeUnwindableFrame(m_pCordbThread,
-                                                                                      frameData.fp,
+                                                                                      FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(frameData.fp)),
                                                                                       pCurrentAppDomain,
                                                                                       &frameCtx);
 
         pResultFrame.Assign(static_cast<CordbFrame *>(pRuntimeFrame));
-        m_pCachedFrame.Assign(static_cast<CordbFrame *>(pRuntimeFrame));
 
         STRESS_LOG2(LF_CORDB, LL_INFO1000, "CSW::GFW - runtime unwindable stack frame (%p): 0x%p",
                     this, pRuntimeFrame);
@@ -901,7 +784,7 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
 
     while (true)
     {
-        PCODE diagnosticIP;
+        CORDB_ADDRESS diagnosticIP = 0;
         CORDB_ADDRESS nextContinuation;
         UINT32 state;
 
@@ -914,6 +797,15 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
             &diagnosticIP,
             &nextContinuation,
             &state));
+
+        // Skip continuations with null DiagnosticIP. These are infrastructure
+        // continuations (e.g. RuntimeAsyncTaskContinuation) that have no user code
+        // associated with them and cannot be represented as a debug frame.
+        if (diagnosticIP == 0)
+        {
+            m_continuationAddress = nextContinuation;
+            continue;
+        }
 
         NativeCodeFunctionData codeData;
         VMPTR_Module pModule;
@@ -989,7 +881,7 @@ HRESULT CordbAsyncStackWalk::Next()
         if (m_continuationAddress == 0)
             ThrowHR(CORDBG_E_PAST_END_OF_STACK);
 
-        PCODE diagnosticIP;
+        CORDB_ADDRESS diagnosticIP = 0;
         CORDB_ADDRESS nextContinuation;
         UINT32 state;
         IfFailThrow(m_pProcess->GetDAC()->ParseContinuation(

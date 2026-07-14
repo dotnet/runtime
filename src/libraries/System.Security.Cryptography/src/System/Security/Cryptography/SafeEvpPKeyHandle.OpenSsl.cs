@@ -1,19 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Security.Cryptography
 {
     public sealed partial class SafeEvpPKeyHandle : SafeHandle
     {
         internal static readonly SafeEvpPKeyHandle InvalidHandle = new SafeEvpPKeyHandle();
+        private static readonly Lock s_contextCacheLock = new();
+        // We don't use a ConcurrentDictionary here because ConcurrentDictionary documents that its valueFactory
+        // can execute multiple times for the same key, but only one will win. That would result in a leak in this case,
+        // so use an ordinary dictionary that we will take a full lock on.
+        private static readonly Dictionary<string, IntPtr> s_contextCache = new(StringComparer.Ordinal);
 
         /// <summary>
-        /// In some cases like when a key is loaded from a provider, the key may have an associated data
-        /// we need to keep alive for the lifetime of the key. This field is used to track that data.
+        /// In some cases like when a key is loaded from a provider, the key may have an associated
+        /// process-lifetime context that is needed for operations using the key.
         /// </summary>
         internal IntPtr ExtraHandle { get; private set; }
 
@@ -45,7 +52,7 @@ namespace System.Security.Cryptography
 
         protected override bool ReleaseHandle()
         {
-            Interop.Crypto.EvpPkeyDestroy(handle, ExtraHandle);
+            Interop.Crypto.EvpPkeyDestroy(handle);
             ExtraHandle = IntPtr.Zero;
 
             SetHandle(IntPtr.Zero);
@@ -93,7 +100,7 @@ namespace System.Security.Cryptography
                 // to the new SafeHandle. DangerousAddRef prevents ReleaseHandle
                 // from being called, so handle and ExtraHandle are stable here.
                 safeHandle.SetHandle(handle);
-                // ExtraHandle is upref'd by UpRefEvpPkey
+                // ExtraHandle points to process-lifetime state.
                 safeHandle.ExtraHandle = ExtraHandle;
                 return safeHandle;
             }
@@ -212,7 +219,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Open a named public key using a named <c>OSSL_PROVIDER</c>.
+        ///   Open a named key using a named <c>OSSL_PROVIDER</c>.
         /// </summary>
         /// <param name="providerName">
         ///   The name of the <c>OSSL_PROVIDER</c> to process the key open request.
@@ -228,6 +235,8 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="providerName"/> or <paramref name="keyUri"/> is the empty string.
+        ///   -or-
+        ///   <paramref name="providerName"/> or <paramref name="keyUri"/> contains an embedded null character.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   the key could not be opened via the specified named <c>OSSL_PROVIDER</c>.
@@ -252,15 +261,194 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("windows")]
         public static SafeEvpPKeyHandle OpenKeyFromProvider(string providerName, string keyUri)
         {
-            ArgumentException.ThrowIfNullOrEmpty(providerName);
-            ArgumentException.ThrowIfNullOrEmpty(keyUri);
+            ValidateProviderName(providerName, nameof(providerName));
+            ValidateKeyUri(keyUri);
 
             if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
             }
 
-            return Interop.Crypto.LoadKeyFromProvider(providerName, keyUri);
+            string[] providerNames = [providerName];
+            return OpenKeyFromProviderCore(
+                providerNames,
+                keyUri,
+                propertyQuery: null);
+        }
+
+        /// <summary>
+        ///   Opens a named key using named <c>OSSL_PROVIDER</c>s.
+        /// </summary>
+        /// <param name="providerNames">
+        ///   The names of the <c>OSSL_PROVIDER</c>s to load for the key open request.
+        /// </param>
+        /// <param name="keyUri">
+        ///   The URI assigned by the <c>OSSL_PROVIDER</c> of the key to open.
+        /// </param>
+        /// <param name="propertyQuery">
+        ///   The property query to use for the <c>OSSL_STORE_open_ex</c> operation.
+        /// </param>
+        /// <returns>
+        ///   The opened key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="providerNames"/> or <paramref name="keyUri"/> is <see langword="null" />.
+        ///   -or-
+        ///   <paramref name="providerNames"/> contains a <see langword="null" /> value.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="providerNames"/> contains no entries.
+        ///   -or-
+        ///   <paramref name="providerNames"/> contains an empty string or a string containing an embedded null character.
+        ///   -or-
+        ///   <paramref name="providerNames"/> contains a duplicate entry.
+        ///   -or-
+        ///   <paramref name="propertyQuery"/> contains an embedded null character.
+        ///   -or-
+        ///   <paramref name="keyUri"/> is the empty string or contains an embedded null character.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The key could not be opened via the specified named <c>OSSL_PROVIDER</c>s.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     <paramref name="providerNames" />, <paramref name="keyUri" />, and
+        ///     <paramref name="propertyQuery" /> must be trusted inputs.
+        ///   </para>
+        ///   <para>
+        ///     This operation will fail if OpenSSL cannot successfully load all specified
+        ///     <c>OSSL_PROVIDER</c>s, or if the specified <c>OSSL_PROVIDER</c>s cannot load the named key.
+        ///   </para>
+        ///   <para>
+        ///     The syntax for <paramref name="keyUri"/> is determined by each individual
+        ///     named <c>OSSL_PROVIDER</c>.
+        ///   </para>
+        ///   <para>
+        ///     The <paramref name="propertyQuery"/> value is used only for the
+        ///     <c>OSSL_STORE_open_ex</c> operation.
+        ///   </para>
+        ///   <para>
+        ///     The order in which the providers are loaded is the same order in which the <paramref name="providerNames" />
+        ///     enumerable returns them. When loading multiple providers, it is more efficient to ensure the same order
+        ///     is used consistently. For example, with the providers <c>[a, b]</c>, passing <c>a</c> and <c>b</c> in the
+        ///     same order may be more efficient than doing <c>[a, b]</c> followed by <c>[b, a]</c>.
+        ///   </para>
+        /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
+        public static SafeEvpPKeyHandle OpenKeyFromProvider(
+            IEnumerable<string> providerNames,
+            string keyUri,
+            string? propertyQuery = null)
+        {
+            ArgumentNullException.ThrowIfNull(providerNames);
+            ValidateKeyUri(keyUri);
+            ThrowIfPropertyQueryContainsNullCharacter(propertyQuery);
+
+            if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
+            }
+
+            // Preserve provider order while checking for duplicates.
+            List<string> providersList = new();
+
+            foreach (string provider in providerNames)
+            {
+                ValidateProviderName(provider, nameof(providerNames));
+
+                // The number of providers is expected to be in the single digits. While this Contains then Add is worst
+                // case O(n^2), we expect the inputs to be small. The API also explicitly documents that all inputs
+                // "must be trusted inputs".
+                if (providersList.Contains(provider))
+                {
+                    throw new ArgumentException(SR.InvalidOperation_DuplicateItemNotAllowed, nameof(providerNames));
+                }
+
+                providersList.Add(provider);
+            }
+
+            if (providersList.Count == 0)
+            {
+                throw new ArgumentException(SR.Arg_EmptyCollection, nameof(providerNames));
+            }
+
+            string[] providerNameArray = providersList.ToArray();
+            return OpenKeyFromProviderCore(providerNameArray, keyUri, propertyQuery);
+        }
+
+        private static SafeEvpPKeyHandle OpenKeyFromProviderCore(
+            string[] providerNames,
+            string keyUri,
+            string? propertyQuery)
+        {
+            string cacheKey = CreateProviderCacheKey(providerNames);
+            IntPtr extraHandle;
+
+            lock (s_contextCacheLock)
+            {
+                if (!s_contextCache.TryGetValue(cacheKey, out extraHandle))
+                {
+                    // Allocate capacity before native code creates the process-lifetime context.
+                    s_contextCache.EnsureCapacity(s_contextCache.Count + 1);
+
+                    try
+                    {
+                        extraHandle = IntPtr.Zero;
+                        return Interop.Crypto.LoadKeyFromProvider(providerNames, keyUri, propertyQuery, ref extraHandle);
+                    }
+                    finally
+                    {
+                        // LoadKeyFromProvider may still have given an extraHandle even if it threw an exception because
+                        // the key couldn't be found. We still want to cache the extra handle in that circumstance.
+                        if (extraHandle != IntPtr.Zero)
+                        {
+                            s_contextCache.Add(cacheKey, extraHandle);
+                        }
+                    }
+                }
+            }
+
+            return Interop.Crypto.LoadKeyFromProvider(providerNames, keyUri, propertyQuery, ref extraHandle);
+        }
+
+        private static void ValidateProviderName(string providerName, string paramName)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(providerName, paramName);
+
+            if (providerName.Contains('\0'))
+            {
+                throw new ArgumentException(SR.Argument_InvalidValue, paramName);
+            }
+        }
+
+        private static void ValidateKeyUri(string keyUri)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(keyUri);
+
+            if (keyUri.Contains('\0'))
+            {
+                throw new ArgumentException(SR.Argument_InvalidValue, nameof(keyUri));
+            }
+        }
+
+        private static void ThrowIfPropertyQueryContainsNullCharacter(string? propertyQuery)
+        {
+            if (propertyQuery is not null && propertyQuery.Contains('\0'))
+            {
+                throw new ArgumentException(SR.Argument_InvalidValue, nameof(propertyQuery));
+            }
+        }
+
+        private static string CreateProviderCacheKey(string[] providerNames)
+        {
+            // U+0000 is not valid in provider names, so it's a valid discriminator between provider names. The cache
+            // key is never given to native code; it's only used on the managed side. This way provider sets
+            // [foo, bar] and [fo, obar] are distinct since they result in foo\0bar and fo\0obar, respectively.
+            return string.Join('\0', providerNames);
         }
     }
 }

@@ -21,7 +21,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 {
     int IXCLRDataProcess.Flush()
     {
-        _target.Flush();
+        _target.Flush(FlushScope.All);
 
         // Flush is always propagated — it's cache management, not data retrieval.
         if (_legacyProcess is not null)
@@ -255,7 +255,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         private readonly IRuntimeTypeSystem _rts;
         private readonly ICodeVersions _cv;
         public IEnumerator<MethodDescHandle> Enumerator { get; set; } = Enumerable.Empty<MethodDescHandle>().GetEnumerator();
-        public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
+        public nuint LegacyHandle { get; set; } = 0;
 
         public EnumMethodInstances(Target target, TargetPointer methodDesc, TargetPointer appDomain)
         {
@@ -263,8 +263,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             _mainMethodDesc = methodDesc;
             if (appDomain == TargetPointer.Null)
             {
-                TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-                _appDomain = _target.ReadPointer(appDomainPointer);
+                _appDomain = _target.Contracts.Loader.GetAppDomain();
             }
             else
             {
@@ -469,7 +468,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
             {
                 EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
-                emi.LegacyHandle = handleLocal;
+                emi.LegacyHandle = (nuint)handleLocal;
 
                 hr = emi.Start();
                 if (hr == HResults.S_OK)
@@ -523,7 +522,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             DacComNullableByRef<IXCLRDataMethodInstance> legacyMethodOut = new(isNullRef: false);
             hrLocal = _legacyProcess.EnumMethodInstanceByAddress(&legacyHandle, legacyMethodOut);
             legacyMethod = legacyMethodOut.Interface;
-            emi.LegacyHandle = legacyHandle;
+            emi.LegacyHandle = (nuint)legacyHandle;
         }
 
         try
@@ -582,7 +581,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
         gcHandle.Free();
 
-        if (_legacyProcess != null && emi.LegacyHandle != TargetPointer.Null)
+        if (_legacyProcess != null && emi.LegacyHandle != 0)
         {
             int hrLocal = _legacyProcess.EndEnumMethodInstancesByAddress(emi.LegacyHandle);
             if (hrLocal < 0)
@@ -657,8 +656,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
                 case JitNotificationData jit:
                 {
-                    TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-                    TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+                    TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
                     IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                     MethodDescHandle methodDesc = rts.GetMethodDescHandle(jit.MethodDescAddress);
@@ -719,8 +717,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 {
                     if (notify is IXCLRDataExceptionNotification4 notify4)
                     {
-                        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-                        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+                        TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
                         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                         MethodDescHandle methodDesc = rts.GetMethodDescHandle(exceptionCatcherEnter.MethodDescAddress);
                         notify4.ExceptionCatcherEnter(new ClrDataMethodInstance(_target, methodDesc, appDomain, null), exceptionCatcherEnter.NativeOffset);
@@ -755,12 +752,18 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 hr = HResults.S_OK;
             }
         }
+        else if (StressTestApi.CdacStressApi.IsStressRequest(reqCode))
+        {
+            hr = StressTestApi.CdacStressApi.HandleRequest(_target, reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer);
+        }
         else
         {
             return LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
         }
 #if DEBUG
-        if (_legacyProcess is not null)
+        // Private DACSTRESSPRIV_REQUEST_* opcodes are cDAC-only and must NOT be
+        // forwarded to the legacy DAC.
+        if (_legacyProcess is not null && !StressTestApi.CdacStressApi.IsStressRequest(reqCode))
         {
             byte[] localBuffer = new byte[(int)outBufferSize];
             fixed (byte* localOutBuffer = localBuffer)

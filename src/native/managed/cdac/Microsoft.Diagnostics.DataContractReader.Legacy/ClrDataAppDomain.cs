@@ -12,6 +12,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 {
+    private const uint DefaultAppDomainId = 1;
+
     private readonly Target _target;
     private readonly TargetPointer _appDomain;
     private readonly IXCLRDataAppDomain? _legacyImpl;
@@ -103,7 +105,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
             if (id is null)
                 throw new ArgumentNullException(nameof(id));
 
-            *id = _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
+            *id = DefaultAppDomainId;
         }
         catch (System.Exception ex)
         {

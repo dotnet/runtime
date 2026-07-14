@@ -182,7 +182,27 @@ namespace System.Text.Json.Schema
                 JsonTypeInfo elementTypeInfo = typeInfo.Options.GetTypeInfo(elementConverter.Type!);
                 schema = MapJsonSchemaCore(ref state, elementTypeInfo, customConverter: elementConverter, cacheResult: false);
 
-                if (schema.Enum != null)
+                if (elementConverter.IsIeeeFloatingPointConverter &&
+                    (effectiveNumberHandling & JsonNumberHandling.AllowNamedFloatingPointLiterals) != 0)
+                {
+                    // IEEE floating-point types with AllowNamedFloatingPointLiterals generate an anyOf schema.
+                    // Fold null into the numeric branch to preserve nullability for nullable wrappers.
+                    Debug.Assert(schema.AnyOf is not null, "IEEE floating-point types with AllowNamedFloatingPointLiterals should generate an anyOf schema.");
+
+                    List<JsonSchema> anyOf = schema.AnyOf;
+                    Debug.Assert(anyOf.Exists(b => (b.Type & JsonSchemaType.Number) != 0),
+                        "IEEE floating-point anyOf schema should have a numeric branch.");
+
+                    foreach (JsonSchema branch in anyOf)
+                    {
+                        if ((branch.Type & JsonSchemaType.Number) != 0)
+                        {
+                            branch.Type |= JsonSchemaType.Null;
+                            break;
+                        }
+                    }
+                }
+                else if (schema.Enum != null)
                 {
                     Debug.Assert(elementTypeInfo.Type.IsEnum, "The enum keyword should only be populated by schemas for enum types.");
                     schema.Enum.Add(null); // Append null to the enum array.

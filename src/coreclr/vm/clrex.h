@@ -23,7 +23,7 @@ class PEAssembly;
 enum StackTraceElementFlags
 {
     // Set if this element represents the last frame of the foreign exception stack trace
-    STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001,
+    STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the "ip" field has already been adjusted (decremented)
     STEF_IP_ADJUSTED = 0x0002,
