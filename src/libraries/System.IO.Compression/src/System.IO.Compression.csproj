@@ -65,9 +65,10 @@
     <Compile Include="System\IO\Compression\ZipCompressionMethod.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="System\IO\Compression\ZipEncryptionMethod.cs" />
-    <Compile Include="System\IO\Compression\ZipCryptoStream.cs" />
-    <Compile Include="System\IO\Compression\WinZipAesStream.cs" />
-    <Compile Include="System\IO\Compression\WinZipAesKeyMaterial.cs" />
+    <Compile Include="System\IO\Compression\ZipCryptoStream.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
+    <Compile Include="System\IO\Compression\WinZipAesStream.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
+    <Compile Include="System\IO\Compression\WinZipAesKeyMaterial.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
+    <Compile Include="System\IO\Compression\ZipEncryption.PlatformNotSupported.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser'" />
     <Compile Include="System\IO\Compression\ZipCryptoKeys.cs" />
   </ItemGroup>
 
@@ -111,7 +112,7 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\src\System.Security.Cryptography.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\src\System.Security.Cryptography.csproj" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />

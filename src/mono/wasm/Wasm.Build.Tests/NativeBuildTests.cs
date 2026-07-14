@@ -115,6 +115,8 @@ namespace Wasm.Build.Tests
             Configuration config = Configuration.Debug;
             ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ZipArchiveInteropTest", extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
             BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
+            BuildPaths paths = GetBuildPaths(config, forPublish: false);
+            Assert.DoesNotContain("System_Security_Cryptography", File.ReadAllText(Path.Combine(paths.ObjWasmDir, "driver-gen.c")));
             RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, TestScenario: "ZipArchiveInteropTest"));
             Assert.Collection(
                 result.TestOutput,

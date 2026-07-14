@@ -1054,6 +1054,28 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        public async Task DecryptZipCryptoEntry_ThrowsPlatformNotSupported(bool async)
+        {
+            using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtected_MixedEncryptions.zip"));
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
+
+            try
+            {
+                ZipArchiveEntry entry = archive.GetEntry("hello.txt");
+                Assert.NotNull(entry);
+                Assert.Equal(ZipEncryptionMethod.ZipCrypto, entry.EncryptionMethod);
+
+                await Assert.ThrowsAsync<PlatformNotSupportedException>(() => OpenEntryStream(async, entry, "S3cur3P@ssw0rd"));
+            }
+            finally
+            {
+                await DisposeZipArchive(async, archive);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
         public async Task DecryptEntries_DifferentPasswords(bool async)
         {

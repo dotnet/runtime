@@ -1776,7 +1776,7 @@ namespace System.IO.Compression
 
                         ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                        using (ZipCryptoStream encryptionStream = ZipCryptoStream.Create(
+                        using (Stream encryptionStream = ZipCryptoStream.Create(
                             baseStream: _archive.ArchiveStream,
                             keys: _derivedZipCryptoKeyMaterial.Value,
                             passwordVerifierLow2Bytes: verifierLow2Bytes,
@@ -1807,7 +1807,7 @@ namespace System.IO.Compression
 
                         bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
-                        using (WinZipAesStream encryptionStream = WinZipAesStream.Create(
+                        using (Stream encryptionStream = WinZipAesStream.Create(
                             baseStream: _archive.ArchiveStream,
                             keyMaterial: _derivedAesKeyMaterial.Value,
                             totalStreamSize: -1,

@@ -125,6 +125,6 @@ namespace System.IO.Compression.Tests
     // the tests are correctly skipped instead of failing during type initialization.
     internal static class ZipCryptoStreamTestsSupport
     {
-        public static bool IsSupported => PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsMultithreadingSupported;
+        public static bool IsSupported => !PlatformDetection.IsBrowser && PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsMultithreadingSupported;
     }
 }
