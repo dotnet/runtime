@@ -6880,13 +6880,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                         IteratorGdvInfo gdvInfo;
                                         gdvInfo.m_likelihood      = inlineInfo->likelihood;
                                         gdvInfo.m_enumeratorLocal = lclNum;
+                                        gdvInfo.m_allocationCount = 0;
 
                                         IteratorGdvInfo                        existingInfo;
                                         ClassHandleToIteratorGdvInfoMap* const gdvInfoMap = getImpIteratorGdvInfoMap();
-                                        if (gdvInfoMap->Lookup(likelyClass, &existingInfo) &&
-                                            (existingInfo.m_enumeratorLocal != lclNum))
+                                        if (gdvInfoMap->Lookup(likelyClass, &existingInfo))
                                         {
-                                            gdvInfo.m_enumeratorLocal = BAD_VAR_NUM;
+                                            gdvInfo.m_allocationCount = existingInfo.m_allocationCount;
+                                            if (existingInfo.m_enumeratorLocal != lclNum)
+                                            {
+                                                gdvInfo.m_enumeratorLocal = BAD_VAR_NUM;
+                                            }
                                         }
 
                                         gdvInfoMap->Set(likelyClass, gdvInfo,
@@ -9028,6 +9032,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                          (hasEnumeratorGdvLocals || hasIteratorGdvInfo);
                         const bool isEnumerableAndEnumerator =
                             mayNeedIteratorInfo && info.compCompHnd->isEnumerableAndEnumerator(resolvedToken.hClass);
+                        if (isEnumerableAndEnumerator && hasIteratorGdvInfo)
+                        {
+                            IteratorGdvInfo* const gdvInfo =
+                                getImpIteratorGdvInfoMap()->LookupPointer(resolvedToken.hClass);
+                            if (gdvInfo != nullptr)
+                            {
+                                gdvInfo->m_allocationCount++;
+                            }
+                        }
 
                         // Flag if this allocation happens within a method that uses the static empty
                         // pattern (if we stack allocate this object, we can optimize the empty side away)

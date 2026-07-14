@@ -5105,6 +5105,7 @@ protected:
     {
         unsigned m_enumeratorLocal;
         unsigned m_likelihood;
+        unsigned m_allocationCount;
     };
 
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;

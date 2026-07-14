@@ -433,9 +433,14 @@ void ObjectAllocator::PrepareAnalysis()
     {
         enumeratorLocalCount += m_compiler->getImpEnumeratorGdvLocalMap()->GetCount();
     }
-    if (m_compiler->hasIteratorGdvInfoMap() && (m_compiler->getImpIteratorGdvInfoMap()->GetCount() > 0))
+    if (m_compiler->hasIteratorGdvInfoMap())
     {
-        enumeratorLocalCount += m_compiler->lvaCount;
+        Compiler::ClassHandleToIteratorGdvInfoMap* const gdvInfoMap = m_compiler->getImpIteratorGdvInfoMap();
+        for (const Compiler::IteratorGdvInfo gdvInfo :
+             Compiler::ClassHandleToIteratorGdvInfoMap::ValueIteration(gdvInfoMap))
+        {
+            enumeratorLocalCount += gdvInfo.m_allocationCount;
+        }
     }
 
     if (enumeratorLocalCount > 0)
