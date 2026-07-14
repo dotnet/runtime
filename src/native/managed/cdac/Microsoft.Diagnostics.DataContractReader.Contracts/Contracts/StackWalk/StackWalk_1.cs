@@ -1117,9 +1117,7 @@ internal partial class StackWalk_1 : IStackWalk
         _eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddr, out uint gcVersion);
         IGCInfoHandle gcHandle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
 
-        // x86 register numbering (see X86Context.TryReadRegister / X86GCInfo.GetStackBaseRegister): EBP = 5.
-        const int RegEbp = 5;
-        if (!handle.Context.TryReadRegister(RegEbp, out TargetNUInt ebp))
+        if (!handle.Context.TryReadRegister("ebp", out TargetNUInt ebp))
             return TargetPointer.Null;
 
         return _target.Contracts.GCInfo.GetAmbientSP(gcHandle, relOffset, new TargetPointer(ebp.Value), handle.Context.StackPointer);
@@ -1172,7 +1170,7 @@ internal partial class StackWalk_1 : IStackWalk
             baseAddr = handle.Context.StackPointer;
         }
 
-        TargetPointer contextValue = _target.ReadPointer(new TargetPointer(baseAddr.Value + (ulong)(long)spOffset));
+        TargetPointer contextValue = _target.ReadPointer(new TargetPointer(unchecked(baseAddr.Value + (ulong)(long)spOffset)));
         if (contextValue == TargetPointer.Null)
             return TargetPointer.Null;
 

@@ -459,13 +459,27 @@ public record X86GCInfo : IGCInfoDecoder
     private const ulong SHADOW_SP_BITS = 0x3;
     private const uint INVALID_SYNC_OFFSET = 0;
 
-    // x86 (the InfoHdr GC info format) does not encode a generic instantiation context stack slot;
-    // GetExactGenericArgsToken recovers the token differently. Always report "not present".
+    // On x86 the generic instantiation context (the exact MethodDesc / MethodTable, or the "this"
+    // object) is stored at a fixed EBP-relative slot when the method reports one. The InfoHdr
+    // encodes its presence via the genericsContext flag; the offset is derived from the frame layout.
     bool IGCInfoDecoder.TryGetGenericInstantiationContextStackSlot(out int spOffset, out bool isStackBaseRelative)
     {
-        spOffset = 0;
-        isStackBaseRelative = false;
-        return false;
+        // The param-type-arg slot only exists for EBP-framed methods that report a generics context.
+        if (!Header.GenericsContext || !Header.EbpFrame)
+        {
+            spOffset = 0;
+            isStackBaseRelative = false;
+            return false;
+        }
+
+        uint position = SavedRegsCountExclFP
+                      + (Header.SyncStartOffset != INVALID_SYNC_OFFSET ? 1u : 0u)
+                      + (Header.LocalAlloc ? 1u : 0u)
+                      + 1u;
+
+        spOffset = -(int)(position * (uint)_target.PointerSize);
+        isStackBaseRelative = true;
+        return true;
     }
 
     // See https://github.com/dotnet/runtime/blob/5ad8ae4df419c33fed516bebe59231b21127bc5d/src/coreclr/vm/stackwalk.cpp#L145

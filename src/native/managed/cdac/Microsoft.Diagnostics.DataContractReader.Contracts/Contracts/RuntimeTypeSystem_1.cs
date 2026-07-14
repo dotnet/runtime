@@ -140,19 +140,20 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     [Flags]
-    internal enum AsyncMethodFlags : uint
-    {
-        None = 0,
-        AsyncCall = 0x1,
-        IsAsyncVariant = 0x4,
-        Thunk = 16,
-    }
-
-    [Flags]
     internal enum ILStubType : uint
     {
         StubPInvokeVarArg = 0x4,
         StubCLRToCOMInterop = 0x6,
+    }
+
+    [Flags]
+    internal enum AsyncMethodFlags_1 : uint
+    {
+        None = 0,
+        AsyncCall = 0x1,
+        IsAsyncVariant = 0x4,
+        Thunk = 0x10,
+        ReturnDroppingThunk = 0x20,
     }
 
     // on MethodDescChunk.FlagsAndTokenRange
@@ -1662,7 +1663,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         // Read the AsyncMethodFlags (first field) and check for AsyncCall.
         TargetPointer asyncDataAddr = methodDesc.GetAddressOfAsyncMethodData();
         uint asyncFlags = _target.Read<uint>(asyncDataAddr);
-        return (asyncFlags & (uint)AsyncMethodFlags.AsyncCall) != 0;
+        return (asyncFlags & (uint)AsyncMethodFlags_1.AsyncCall) != 0;
     }
 
     public uint GetMethodToken(MethodDescHandle methodDescHandle)
@@ -1751,7 +1752,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (methodDesc.HasAsyncMethodData)
         {
             Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(methodDesc.GetAddressOfAsyncMethodData());
-            if (((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.IsAsyncVariant))
+            if (((AsyncMethodFlags_1)asyncData.Flags).HasFlag(AsyncMethodFlags_1.IsAsyncVariant))
             {
                 byte[] sig = new byte[asyncData.Signature.SignatureLength];
                 _target.ReadBuffer(asyncData.Signature.SignaturePointer, sig.AsSpan());
@@ -2217,7 +2218,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return AsyncMethodFlags.None;
         }
 
-        return (AsyncMethodFlags)_target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(md.GetAddressOfAsyncMethodData()).Flags;
+        AsyncMethodFlags_1 raw = (AsyncMethodFlags_1)_target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(md.GetAddressOfAsyncMethodData()).Flags;
+        AsyncMethodFlags result = AsyncMethodFlags.None;
+        if (raw.HasFlag(AsyncMethodFlags_1.AsyncCall))
+            result |= AsyncMethodFlags.AsyncCall;
+        if (raw.HasFlag(AsyncMethodFlags_1.IsAsyncVariant))
+            result |= AsyncMethodFlags.IsAsyncVariant;
+        if (raw.HasFlag(AsyncMethodFlags_1.Thunk))
+            result |= AsyncMethodFlags.Thunk;
+        if (raw.HasFlag(AsyncMethodFlags_1.ReturnDroppingThunk))
+            result |= AsyncMethodFlags.ReturnDroppingThunk;
+        return result;
     }
 
     public bool IsWrapperStub(MethodDescHandle methodDescHandle)

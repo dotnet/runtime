@@ -84,7 +84,7 @@ public record struct StackWalkFrameInfo(
     TargetPointer FramePointer,
     bool IsFunclet,
     bool IsFilterFunclet,
-    TargetPointer ParentOrSelfFramePointer,
+    TargetPointer ParentOrSelfFrameMarker,
     bool IsInterrupted,
     bool HasFaulted,
     uint ParentNativeOffset = 0,

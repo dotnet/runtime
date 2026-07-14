@@ -316,7 +316,7 @@ public class MethodDescTests
             int pointerSize = helpers.PointerSize;
             int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
             TargetPointer sigBuffer = methodDescBuilder.AddSignatureBuffer(expectedSig);
-            helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags.IsAsyncVariant);
+            helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags_1.IsAsyncVariant);
             helpers.WritePointer(chunk.Memory.Span.Slice(asyncDataOffset + pointerSize, pointerSize), sigBuffer.Value);
             helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset + pointerSize * 2, sizeof(uint)), (uint)expectedSig.Length);
         });
@@ -663,7 +663,7 @@ public class MethodDescTests
                 md.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
                 asyncThunkMethod = new TargetPointer(md.Address);
                 int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
-                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)AsyncMethodFlags.Thunk);
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags_1.Thunk);
             }
 
             // Async non-thunk method (not diagnostics hidden, has async data but not Thunk flag)
@@ -680,7 +680,7 @@ public class MethodDescTests
                 md.Slot = 1;
                 asyncNonThunkMethod = new TargetPointer(md.Address);
                 int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
-                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)AsyncMethodFlags.None);
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags_1.None);
             }
 
             // Async thunk method with NativeCodeSlot (Thunk only: classified AsyncThunk, verifies offset calculation with preceding slots)
@@ -697,7 +697,7 @@ public class MethodDescTests
                 md.Slot = 2;
                 asyncThunkWithNativeCodeSlotMethod = new TargetPointer(md.Address);
                 int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize + (int)methodDescBuilder.NativeCodeSlotSize;
-                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)AsyncMethodFlags.Thunk);
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags_1.Thunk);
             }
 
             // Async variant thunk method (not diagnostics hidden: thunk that is an async variant and not return-dropping)
@@ -714,7 +714,7 @@ public class MethodDescTests
                 md.Slot = 3;
                 asyncVariantThunkMethod = new TargetPointer(md.Address);
                 int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
-                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)(AsyncMethodFlags.Thunk | AsyncMethodFlags.IsAsyncVariant));
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)(RuntimeTypeSystem_1.AsyncMethodFlags_1.Thunk | RuntimeTypeSystem_1.AsyncMethodFlags_1.IsAsyncVariant));
             }
 
             // Async return-dropping thunk method (diagnostics hidden: return-dropping takes precedence over async variant)
@@ -731,7 +731,7 @@ public class MethodDescTests
                 md.Slot = 4;
                 asyncReturnDroppingThunkMethod = new TargetPointer(md.Address);
                 int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
-                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)(AsyncMethodFlags.Thunk | AsyncMethodFlags.IsAsyncVariant | AsyncMethodFlags.ReturnDroppingThunk));
+                helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)(RuntimeTypeSystem_1.AsyncMethodFlags_1.Thunk | RuntimeTypeSystem_1.AsyncMethodFlags_1.IsAsyncVariant | RuntimeTypeSystem_1.AsyncMethodFlags_1.ReturnDroppingThunk));
             }
         });
 

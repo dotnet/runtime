@@ -620,10 +620,16 @@ bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset)
 bool TryGetGenericInstantiationContextStackSlot(IGCInfoHandle handle,
     out int spOffset, out bool isStackBaseRelative)
 {
-    // Ensure the header is decoded through the generic instantiation context and stack
-    // base register fields. If the method reports no context slot (NO_GENERICS_INST_CONTEXT),
-    // return false. Otherwise return the denormalized signed slot offset and whether it is
-    // relative to the stack base register (present) or SP (absent).
+    // Non-x86 (GcInfoDecoder) decoders: ensure the header is decoded through the generic
+    // instantiation context and stack base register fields. If the method reports no context
+    // slot (NO_GENERICS_INST_CONTEXT), return false. Otherwise return the denormalized signed
+    // slot offset and whether it is relative to the stack base register (present) or SP (absent).
+    //
+    // x86 (InfoHdr) decoder:
+    //   - return false unless the method reports a generics context and uses an EBP frame;
+    //   - otherwise the slot is EBP-relative at
+    //     -(savedRegsCountExclFP + (synchronized ? 1 : 0) + localloc + 1) * sizeof(TADDR),
+    //     so spOffset is that negative value and isStackBaseRelative is true.
 }
 
 TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer fp, TargetPointer sp)

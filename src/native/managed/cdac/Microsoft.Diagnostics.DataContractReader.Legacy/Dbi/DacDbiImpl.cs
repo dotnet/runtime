@@ -1853,6 +1853,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #endif
         try
         {
+            *pRetVal = (int)FrameType.kInvalid;
             GCHandle gcHandle = GCHandle.FromIntPtr((nint)pSFIHandle);
             if (gcHandle.Target is not StackWalkHandleData handleData)
                 throw new ArgumentException("Invalid stack walk handle", nameof(pSFIHandle));
@@ -2082,7 +2083,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             data.v.jitFuncData.vmNativeCodeMethodDescToken = mdPtr.Value;
             data.v.jitFuncData.fIsFilterFrame = frameInfo.IsFilterFunclet ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             data.v.jitFuncData.parentNativeOffset = frameInfo.ParentNativeOffset;
-            data.v.jitFuncData.fpParentOrSelf = frameInfo.ParentOrSelfFramePointer.Value;
+            data.v.jitFuncData.fpParentOrSelf = frameInfo.ParentOrSelfFrameMarker.Value;
             data.v.jitFuncData.isInstantiatedGeneric = HasClassOrMethodInstantiation(rts, md) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             data.v.jitFuncData.justAfterILThrow = (frameInfo.IsInterrupted && !frameInfo.HasFaulted && nativeOffset != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
