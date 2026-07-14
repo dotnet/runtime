@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
 {
-    closed public partial class TlsSession
+    public partial class TlsSession
     {
         // When true, socket-bound I/O delegates ciphertext directly to OpenSSL via
         // SSL_set_fd / SSL_do_handshake / SSL_read / SSL_write, bypassing the

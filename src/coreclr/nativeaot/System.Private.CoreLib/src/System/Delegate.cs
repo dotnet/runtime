@@ -694,7 +694,7 @@ namespace System
             return new Delegate[] { this };
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null)
                 return false;
@@ -749,7 +749,7 @@ namespace System
             return object.ReferenceEquals(_target, d._target);
         }
 
-        public override int GetHashCode()
+        public sealed override int GetHashCode()
         {
             if (_helperObject is Wrapper[] invocationList)
             {

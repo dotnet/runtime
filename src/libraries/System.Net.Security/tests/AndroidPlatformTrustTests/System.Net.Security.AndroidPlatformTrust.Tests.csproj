@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Keep this as a standalone Android-only project: System.Net.Security.Tests.csproj
+         is excluded from Android CI, and these tests need their own network_security_config.xml. -->
+    <TargetFrameworks>$(NetCoreAppCurrent)-android</TargetFrameworks>
+    <ExtractRootCATaskProject>$(MSBuildThisFileDirectory)tasks/ExtractRootCATask.csproj</ExtractRootCATaskProject>
+    <ExtractRootCATaskAssembly>$(ArtifactsBinDir)ExtractRootCATask/$(Configuration)/$(BundledNETCoreAppTargetFramework)/ExtractRootCATask.dll</ExtractRootCATaskAssembly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AndroidPlatformTrustTests.cs" />
+
+    <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
+             Link="Common\System\Net\Configuration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
+             Link="Common\System\Net\Configuration.Certificates.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
+  </ItemGroup>
+
+  <!-- Android network security config setup -->
+  <PropertyGroup>
+    <_NetworkSecurityConfigDir>$(IntermediateOutputPath)network-security-config</_NetworkSecurityConfigDir>
+  </PropertyGroup>
+
+  <Target Name="_PrepareNetworkSecurityConfig"
+          BeforeTargets="_AndroidGenerateAppBundle"
+          DependsOnTargets="CopyFilesToOutputDirectory;_BuildExtractRootCATask">
+    <PropertyGroup>
+      <!-- Extract root CA from PKCS#7 bundle (contains root) -->
+      <_CaCertP7bPath>$(OutputPath)TestData/contoso.com.p7b</_CaCertP7bPath>
+      <_CaCertDerPath>$(_NetworkSecurityConfigDir)/res/raw/test_ca.der</_CaCertDerPath>
+      <_FinalNetworkSecurityConfigPath>$(_NetworkSecurityConfigDir)/network_security_config.xml</_FinalNetworkSecurityConfigPath>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_NetworkSecurityConfigDir)/res/raw" />
+
+    <!-- Extract root CA from PKCS#7 bundle and write as DER -->
+    <System.Net.Security.Tests.AndroidPlatformTrust.ExtractRootCA P7bPath="$(_CaCertP7bPath)"
+                                                                 OutputPath="$(_CaCertDerPath)" />
+
+    <!-- Copy network_security_config.xml to the intermediate directory -->
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)network_security_config.xml"
+          DestinationFiles="$(_FinalNetworkSecurityConfigPath)" />
+
+    <Message Importance="High" Text="Prepared network security config at $(_FinalNetworkSecurityConfigPath)" />
+  </Target>
+
+  <PropertyGroup>
+    <NetworkSecurityConfig>$(IntermediateOutputPath)network-security-config/network_security_config.xml</NetworkSecurityConfig>
+    <NetworkSecurityConfigResourcesDir>$(IntermediateOutputPath)network-security-config/res</NetworkSecurityConfigResourcesDir>
+  </PropertyGroup>
+
+  <Target Name="_BuildExtractRootCATask">
+    <MSBuild Projects="$(ExtractRootCATaskProject)"
+             Targets="Restore;Build"
+             Properties="Configuration=$(Configuration);TargetFramework=$(BundledNETCoreAppTargetFramework)" />
+  </Target>
+
+  <UsingTask TaskName="System.Net.Security.Tests.AndroidPlatformTrust.ExtractRootCA"
+             AssemblyFile="$(ExtractRootCATaskAssembly)"
+             Runtime="NET"
+             TaskFactory="TaskHostFactory" />
+
+</Project>

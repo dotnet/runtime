@@ -44,7 +44,7 @@ namespace System.Net.Security
     /// </para>
     /// </remarks>
     [Experimental(Experimentals.LowLevelTlsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-    closed public partial class TlsSession : IDisposable
+    public abstract partial class TlsSession : IDisposable
     {
         // Matches StreamSizes.Default on Unix; conservative upper bound for a
         // single TLS record's plaintext payload.
@@ -342,7 +342,7 @@ namespace System.Net.Security
             }
 
             ProtocolToken alertToken = default;
-            SslPolicyErrors sslPolicyErrors;
+            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
             bool ok;
             try
             {
@@ -360,7 +360,7 @@ namespace System.Net.Security
                     chain,
                     trust: null,
                     ref alertToken,
-                    out sslPolicyErrors,
+                    ref sslPolicyErrors,
                     out _);
             }
             finally

@@ -11,7 +11,7 @@ namespace System
 {
     internal unsafe partial class Number
     {
-        private static ReadOnlySpan<double> Pow10DoubleTable =>
+        internal static ReadOnlySpan<double> Pow10DoubleTable =>
         [
             1e0,    // 10^0
             1e1,    // 10^1

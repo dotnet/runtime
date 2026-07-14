@@ -1073,9 +1073,10 @@ internal static partial class Interop
                 try
                 {
                     ProtocolToken alertToken = default;
+                    SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
                     SslAuthenticationOptions.VerifyRemoteCertificateCallback? validator = options.RemoteCertificateValidator;
                     Debug.Assert(validator is not null, "Expected SslAuthenticationOptions.RemoteCertificateValidator to be set by SslStream or TlsSession");
-                    if (validator!(certificate, chain, options.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+                    if (validator!(certificate, chain, options.CertificateContext?.Trust, ref alertToken, ref sslPolicyErrors, out X509ChainStatusFlags chainStatus))
                     {
                         Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK);
                         return 1;

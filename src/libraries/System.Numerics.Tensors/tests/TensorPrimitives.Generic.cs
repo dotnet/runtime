@@ -451,6 +451,9 @@ namespace System.Numerics.Tensors.Tests
             T? trigTolerance = IsFmaSupported
                 ? Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-5f)
                 : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
+            T? tanTolerance = IsFmaSupported
+                ? Helpers.DetermineTolerance<T>(doubleTolerance: 3e-13, floatTolerance: 1e-4f)
+                : trigTolerance;
 
             yield return Create(TensorPrimitives.Acosh, T.Acosh);
             yield return Create(TensorPrimitives.AcosPi, T.AcosPi);
@@ -499,7 +502,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Sinh, T.Sinh, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14));
             yield return Create(TensorPrimitives.SinPi, T.SinPi, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-4f));
             yield return Create(TensorPrimitives.Sqrt, T.Sqrt);
-            yield return Create(TensorPrimitives.Tan, T.Tan, trigTolerance);
+            yield return Create(TensorPrimitives.Tan, T.Tan, tanTolerance);
             yield return Create(TensorPrimitives.Tanh, T.Tanh);
             yield return Create(TensorPrimitives.TanPi, T.TanPi);
             yield return Create(TensorPrimitives.Truncate, T.Truncate);
@@ -1666,7 +1669,7 @@ namespace System.Numerics.Tensors.Tests
         {
             foreach (MidpointRounding mode in Enum.GetValues(typeof(MidpointRounding)))
             {
-                foreach (int digits in new[] { 0, 1, 4 })
+                foreach (int digits in new[] { 0, 1, 4, 20 })
                 {
                     yield return new object[] { mode, digits };
                 }

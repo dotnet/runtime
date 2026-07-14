@@ -312,7 +312,7 @@ namespace System.Net.Security
             X509Chain? chain,
             SslCertificateTrust? trust,
             ref ProtocolToken alertToken,
-            out SslPolicyErrors sslPolicyErrors,
+            ref SslPolicyErrors sslPolicyErrors,
             out X509ChainStatusFlags chainStatus);
 
         internal VerifyRemoteCertificateCallback? RemoteCertificateValidator { get; set; }

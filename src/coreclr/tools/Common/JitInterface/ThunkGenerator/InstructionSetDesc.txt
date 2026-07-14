@@ -26,7 +26,7 @@
 ; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numeric values definitions would be R2R format breaking change.
 
 ; The ISA definitions should also be mapped to `hwintrinsicIsaRangeArray` in hwintrinsic.cpp.
-; NEXT_AVAILABLE_R2R_BIT = 93
+; NEXT_AVAILABLE_R2R_BIT = 94
 
 ; Definition of X86 instruction sets
 definearch         ,X86   ,32Bit                ,X64, X64, X86
@@ -232,6 +232,7 @@ instructionset     ,ARM64 ,Sm4                   ,           ,87 ,Sm4           
 instructionset     ,ARM64 ,SveAes                ,           ,88 ,SveAes                ,sve_aes
 instructionset     ,ARM64 ,SveSha3               ,           ,89 ,SveSha3               ,sve_sha3
 instructionset     ,ARM64 ,SveSm4                ,           ,90 ,SveSm4                ,sve_sm4
+instructionset     ,ARM64 ,                      ,Cssc       ,93 ,Cssc                  ,cssc
 
 instructionset64bit,ARM64 ,ArmBase
 instructionset64bit,ARM64 ,AdvSimd
@@ -299,9 +300,16 @@ instructionsetgroup  ,armv8.3-a                  ,ARM64    ,armv8.2-a rcpc
 instructionsetgroup  ,armv8.4-a                  ,ARM64    ,armv8.3-a dotprod rcpc2
 instructionsetgroup  ,armv8.5-a                  ,ARM64    ,armv8.4-a
 instructionsetgroup  ,armv8.6-a                  ,ARM64    ,armv8.5-a
+instructionsetgroup  ,armv8.7-a                  ,ARM64    ,armv8.6-a
+instructionsetgroup  ,armv8.8-a                  ,ARM64    ,armv8.7-a
+instructionsetgroup  ,armv8.9-a                  ,ARM64    ,armv8.8-a cssc
 
 ; Technically, apple-m1 is v8.5+
 instructionsetgroup  ,apple-m1                   ,ARM64    ,armv8.5-a
+instructionsetgroup  ,apple-m2                   ,ARM64    ,armv8.6-a
+instructionsetgroup  ,apple-m3                   ,ARM64    ,armv8.6-a
+instructionsetgroup  ,apple-m4                   ,ARM64    ,armv8.7-a
+instructionsetgroup  ,apple-m5                   ,ARM64    ,armv8.9-a
 
 
 ; Definition of Wasm instruction sets
