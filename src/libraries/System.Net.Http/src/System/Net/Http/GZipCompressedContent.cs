@@ -28,6 +28,7 @@ namespace System.Net.Http
         public GZipCompressedContent(HttpContent content, CompressionLevel compressionLevel = CompressionLevel.Optimal)
         {
             ArgumentNullException.ThrowIfNull(content);
+            CompressedContentCore.ValidateCompressionLevel(compressionLevel, nameof(compressionLevel));
 
             _compressionLevel = compressionLevel;
             _core = new CompressedContentCore(content, CreateCompressionStream);

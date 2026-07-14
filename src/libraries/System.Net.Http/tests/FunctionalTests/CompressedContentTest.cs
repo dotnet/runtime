@@ -1,56 +1,68 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class CompressedContentTest
+    // GZip is supported on every platform (including browser/wasi), so the gzip tests and the shared
+    // helpers live in this file, which is compiled for all targets. Brotli and Zstandard are not
+    // supported on browser/wasi; their tests live in CompressedContentTest.NonBrowser.cs, which is
+    // excluded from those builds.
+    public partial class CompressedContentTest
     {
         [Fact]
-        public void Ctor_NullContent_ThrowsArgumentNullException()
+        public void GZip_Ctor_NullContent_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("content", () => new GZipCompressedContent(null));
             AssertExtensions.Throws<ArgumentNullException>("content", () => new GZipCompressedContent(null, new ZLibCompressionOptions()));
             AssertExtensions.Throws<ArgumentNullException>("content", () => new GZipCompressedContent(null, CompressionLevel.SmallestSize));
-            AssertExtensions.Throws<ArgumentNullException>("content", () => new BrotliCompressedContent(null));
-            AssertExtensions.Throws<ArgumentNullException>("content", () => new BrotliCompressedContent(null, new BrotliCompressionOptions()));
-            AssertExtensions.Throws<ArgumentNullException>("content", () => new BrotliCompressedContent(null, CompressionLevel.SmallestSize));
-            AssertExtensions.Throws<ArgumentNullException>("content", () => new ZstandardCompressedContent(null));
-            AssertExtensions.Throws<ArgumentNullException>("content", () => new ZstandardCompressedContent(null, new ZstandardCompressionOptions()));
-            AssertExtensions.Throws<ArgumentNullException>("content", () => new ZstandardCompressedContent(null, CompressionLevel.SmallestSize));
         }
 
         [Fact]
-        public void Ctor_NullOptions_ThrowsArgumentNullException()
+        public void GZip_Ctor_NullOptions_ThrowsArgumentNullException()
         {
             var inner = new ByteArrayContent(Array.Empty<byte>());
             AssertExtensions.Throws<ArgumentNullException>("compressionOptions", () => new GZipCompressedContent(inner, null));
-            AssertExtensions.Throws<ArgumentNullException>("compressionOptions", () => new BrotliCompressedContent(inner, null));
-            AssertExtensions.Throws<ArgumentNullException>("compressionOptions", () => new ZstandardCompressedContent(inner, null));
         }
 
         [Theory]
-        [InlineData("gzip")]
-        [InlineData("br")]
-        [InlineData("zstd")]
-        public void Ctor_SetsContentEncodingHeader(string encoding)
+        [InlineData((CompressionLevel)(-1))]
+        [InlineData((CompressionLevel)4)]
+        [InlineData((CompressionLevel)99)]
+        public void GZip_Ctor_InvalidCompressionLevel_ThrowsArgumentOutOfRangeException(CompressionLevel compressionLevel)
         {
-            HttpContent content = CreateContent(encoding, new ByteArrayContent(Array.Empty<byte>()));
+            var inner = new ByteArrayContent(Array.Empty<byte>());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("compressionLevel", () => new GZipCompressedContent(inner, compressionLevel));
+        }
 
-            Assert.Equal(new[] { encoding }, content.Headers.ContentEncoding);
+        [Theory]
+        [InlineData(CompressionLevel.Optimal)]
+        [InlineData(CompressionLevel.Fastest)]
+        [InlineData(CompressionLevel.NoCompression)]
+        [InlineData(CompressionLevel.SmallestSize)]
+        public void GZip_Ctor_ValidCompressionLevel_DoesNotThrow(CompressionLevel compressionLevel)
+        {
+            var inner = new ByteArrayContent(Array.Empty<byte>());
+            _ = new GZipCompressedContent(inner, compressionLevel);
         }
 
         [Fact]
-        public void Ctor_RemovesContentLength()
+        public void GZip_Ctor_SetsContentEncodingHeader()
+        {
+            var content = new GZipCompressedContent(new ByteArrayContent(Array.Empty<byte>()));
+
+            Assert.Equal(new[] { "gzip" }, content.Headers.ContentEncoding);
+        }
+
+        [Fact]
+        public void GZip_Ctor_RemovesContentLength()
         {
             var inner = new ByteArrayContent(new byte[10]);
             Assert.Equal(10, inner.Headers.ContentLength);
@@ -61,7 +73,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void Ctor_CopiesInnerContentHeaders()
+        public void GZip_Ctor_CopiesInnerContentHeaders()
         {
             var inner = new ByteArrayContent(Array.Empty<byte>());
             inner.Headers.ContentType = new MediaTypeHeaderValue("application/json");
@@ -72,16 +84,16 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void Ctor_NestedContent_StacksContentEncoding()
+        public void GZip_Ctor_NestedContent_StacksContentEncoding()
         {
             var inner = new GZipCompressedContent(new ByteArrayContent(Array.Empty<byte>()));
-            var outer = new BrotliCompressedContent(inner);
+            var outer = new GZipCompressedContent(inner);
 
-            Assert.Equal(new[] { "gzip", "br" }, outer.Headers.ContentEncoding);
+            Assert.Equal(new[] { "gzip", "gzip" }, outer.Headers.ContentEncoding);
         }
 
         [Fact]
-        public void Dispose_DisposesInnerContent()
+        public void GZip_Dispose_DisposesInnerContent()
         {
             var inner = new MockContent();
             var content = new GZipCompressedContent(inner);
@@ -92,68 +104,53 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(RoundTripData))]
-        public async Task SerializeToStream_RoundTrips_MatchesOriginal(string encoding, bool async)
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task GZip_SerializeToStream_RoundTrips_MatchesOriginal(bool async)
         {
             byte[] original = Encoding.UTF8.GetBytes("The quick brown fox jumps over the lazy dog. " + new string('a', 1024));
-            HttpContent content = CreateContent(encoding, new ByteArrayContent(original));
+            var content = new GZipCompressedContent(new ByteArrayContent(original));
 
             byte[] compressed = await SerializeAsync(content, async);
-            byte[] decompressed = Decompress(compressed, encoding);
 
-            Assert.Equal(original, decompressed);
+            Assert.Equal(original, DecompressGZip(compressed));
         }
 
         [Fact]
-        public async Task SerializeToStream_WithOptions_RoundTrips()
+        public async Task GZip_SerializeToStream_WithOptions_RoundTrips()
         {
             byte[] original = Encoding.UTF8.GetBytes(new string('a', 4096));
 
             var gzip = new GZipCompressedContent(new ByteArrayContent(original), new ZLibCompressionOptions { CompressionLevel = 5 });
-            Assert.Equal(original, Decompress(await SerializeAsync(gzip, async: true), "gzip"));
 
-            if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi())
-            {
-                var brotli = new BrotliCompressedContent(new ByteArrayContent(original), new BrotliCompressionOptions { Quality = 5 });
-                Assert.Equal(original, Decompress(await SerializeAsync(brotli, async: true), "br"));
-
-                var zstd = new ZstandardCompressedContent(new ByteArrayContent(original), new ZstandardCompressionOptions { Quality = 5 });
-                Assert.Equal(original, Decompress(await SerializeAsync(zstd, async: true), "zstd"));
-            }
+            Assert.Equal(original, DecompressGZip(await SerializeAsync(gzip, async: true)));
         }
 
-        [Theory]
-        [MemberData(nameof(Encodings))]
-        public async Task SerializeToStream_WithCompressionLevel_RoundTrips(string encoding)
+        [Fact]
+        public async Task GZip_SerializeToStream_WithCompressionLevel_RoundTrips()
         {
             byte[] original = Encoding.UTF8.GetBytes(new string('a', 4096));
-            HttpContent content = encoding switch
-            {
-                "gzip" => new GZipCompressedContent(new ByteArrayContent(original), CompressionLevel.SmallestSize),
-                "br" => new BrotliCompressedContent(new ByteArrayContent(original), CompressionLevel.SmallestSize),
-                "zstd" => new ZstandardCompressedContent(new ByteArrayContent(original), CompressionLevel.SmallestSize),
-                _ => throw new ArgumentOutOfRangeException(nameof(encoding))
-            };
 
-            Assert.Equal(original, Decompress(await SerializeAsync(content, async: true), encoding));
+            var content = new GZipCompressedContent(new ByteArrayContent(original), CompressionLevel.SmallestSize);
+
+            Assert.Equal(original, DecompressGZip(await SerializeAsync(content, async: true)));
         }
 
-        [Theory]
-        [MemberData(nameof(Encodings))]
-        public async Task SerializeToStream_RepeatableInnerContent_CanSerializeMultipleTimes(string encoding)
+        [Fact]
+        public async Task GZip_SerializeToStream_RepeatableInnerContent_CanSerializeMultipleTimes()
         {
             byte[] original = Encoding.UTF8.GetBytes("The quick brown fox jumps over the lazy dog. " + new string('a', 512));
-            HttpContent content = CreateContent(encoding, new ByteArrayContent(original));
+            var content = new GZipCompressedContent(new ByteArrayContent(original));
 
             byte[] first = await SerializeAsync(content, async: true);
             byte[] second = await SerializeAsync(content, async: false);
 
-            Assert.Equal(original, Decompress(first, encoding));
-            Assert.Equal(original, Decompress(second, encoding));
+            Assert.Equal(original, DecompressGZip(first));
+            Assert.Equal(original, DecompressGZip(second));
         }
 
         [Fact]
-        public void SerializeToStream_NonRepeatableInnerContent_SecondCallThrows()
+        public void GZip_SerializeToStream_NonRepeatableInnerContent_SecondCallThrows()
         {
             var inner = new StreamContent(new NonSeekableStream(Encoding.UTF8.GetBytes("data")));
             var content = new GZipCompressedContent(inner);
@@ -163,41 +160,6 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.Throws<InvalidOperationException>(() => content.CopyTo(ms, null, default));
         }
-
-        public static IEnumerable<object[]> RoundTripData()
-        {
-            foreach (bool async in new[] { true, false })
-            {
-                yield return new object[] { "gzip", async };
-
-                // BrotliStream and ZstandardStream are not supported on browser/wasi.
-                if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi())
-                {
-                    yield return new object[] { "br", async };
-                    yield return new object[] { "zstd", async };
-                }
-            }
-        }
-
-        public static IEnumerable<object[]> Encodings()
-        {
-            yield return new object[] { "gzip" };
-
-            // BrotliStream and ZstandardStream are not supported on browser/wasi.
-            if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi())
-            {
-                yield return new object[] { "br" };
-                yield return new object[] { "zstd" };
-            }
-        }
-
-        private static HttpContent CreateContent(string encoding, HttpContent inner) => encoding switch
-        {
-            "gzip" => new GZipCompressedContent(inner),
-            "br" => new BrotliCompressedContent(inner),
-            "zstd" => new ZstandardCompressedContent(inner),
-            _ => throw new ArgumentOutOfRangeException(nameof(encoding))
-        };
 
         private static async Task<byte[]> SerializeAsync(HttpContent content, bool async)
         {
@@ -215,17 +177,10 @@ namespace System.Net.Http.Functional.Tests
             return ms.ToArray();
         }
 
-        private static byte[] Decompress(byte[] compressed, string encoding)
+        private static byte[] DecompressGZip(byte[] compressed)
         {
             using var source = new MemoryStream(compressed);
-            using Stream decompressor = encoding switch
-            {
-                "gzip" => new GZipStream(source, CompressionMode.Decompress),
-                "br" => new BrotliStream(source, CompressionMode.Decompress),
-                "zstd" => new ZstandardStream(source, CompressionMode.Decompress),
-                _ => throw new ArgumentOutOfRangeException(nameof(encoding))
-            };
-
+            using var decompressor = new GZipStream(source, CompressionMode.Decompress);
             using var result = new MemoryStream();
             decompressor.CopyTo(result);
             return result.ToArray();

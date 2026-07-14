@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.IO.Compression;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,14 +24,24 @@ namespace System.Net.Http
             _createCompressionStream = createCompressionStream;
         }
 
+        public static void ValidateCompressionLevel(CompressionLevel compressionLevel, string paramName)
+        {
+            // Validate up front so an invalid enum value fails fast at construction time rather than
+            // deferring the exception to the serialization path when the request is being sent.
+            if (compressionLevel is < CompressionLevel.Optimal or > CompressionLevel.SmallestSize)
+            {
+                throw new ArgumentOutOfRangeException(paramName);
+            }
+        }
+
         public static void InitializeHeaders(HttpContent target, HttpContent source, string encoding)
         {
             // Copy headers from the original content.
             target.Headers.AddHeaders(source.Headers);
 
             // Append our encoding to the Content-Encoding header (supports stacking per HTTP spec).
-            // The common case is that the inner content has no Content-Encoding, so take the
-            // allocation-free fast path and only materialize the collection when we need to stack.
+            // The 99% case is that the inner content has no Content-Encoding, so take the fast path
+            // that allocates less and only materialize the collection when we actually need to stack.
             if (target.Headers.Contains(KnownHeaders.ContentEncoding.Descriptor))
             {
                 target.Headers.ContentEncoding.Add(encoding);
