@@ -23,13 +23,14 @@ using TlsSecurityContext = System.Net.Security.SafeDeleteSslContext;
 namespace System.Net.Security
 {
     /// <summary>
-    /// Non-blocking TLS state machine wrapper around the existing
-    /// <see cref="SslStreamPal"/>. The caller owns I/O and drives ciphertext
-    /// in and out via byte spans. Supported on Linux/FreeBSD (OpenSSL) and
-    /// Windows (SChannel). Provides <see cref="TlsBufferSession.Handshake"/>,
-    /// <see cref="TlsBufferSession.Write"/>, <see cref="TlsBufferSession.Read"/>, and a pending-output queue.
+    /// Non-blocking TLS state machine that drives handshake and record
+    /// processing from caller-supplied byte spans.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// Support is provided by the underlying platform, such as SChannel on Windows
+    /// and OpenSSL on Linux.
+    /// </para>
     /// <para>
     /// The session never performs any I/O. The caller drives ciphertext in/out
     /// via byte spans. Any ciphertext the TLS layer needs to send (handshake
@@ -96,7 +97,6 @@ namespace System.Net.Security
         // ActiveCredentialsRef() and never touch the shared TlsContext.CredentialsHandle.
         // Disposed when the session is disposed.
         private SafeFreeCredentials? _sessionCredentialsHandle;
-
         // Session-local view of the CertificateContext. Initialized from _options at
         // SetContext time and every mutation (SetClientCertificateContext, the
         // server-side selector path) routes through SessionCertificateContext so parallel
@@ -110,25 +110,6 @@ namespace System.Net.Security
         // directly.
         private SslStreamCertificateContext? _sessionCertificateContext;
         private bool _ownsSessionCertificateContext;
-
-        private SslStreamCertificateContext? SessionCertificateContext => _sessionCertificateContext;
-
-        private void SetSessionCertificateContext(SslStreamCertificateContext? context, bool takeOwnership)
-        {
-            if (_ownsSessionCertificateContext && _sessionCertificateContext is not null && !ReferenceEquals(_sessionCertificateContext, context))
-            {
-                _sessionCertificateContext.ReleaseResources();
-            }
-
-            _sessionCertificateContext = context;
-            _ownsSessionCertificateContext = takeOwnership && context is not null;
-
-            // Mirror onto the per-session cloned options bag so the PAL (which reads
-            // _options.CertificateContext directly) sees the effective value. Also flip
-            // the bag's own ownership bit off — session now owns the disposal decision.
-            _options.CertificateContext = context;
-            _options.OwnsCertificateContext = false;
-        }
         private bool _disposed;
         private SslConnectionInfo _connectionInfo;
         private X509Certificate2? _remoteCertificate;
@@ -167,9 +148,29 @@ namespace System.Net.Security
 
         internal SafeSocketHandle? SocketHandle => _socketHandle;
 
+        private SslStreamCertificateContext? SessionCertificateContext => _sessionCertificateContext;
+
+        private void SetSessionCertificateContext(SslStreamCertificateContext? context, bool takeOwnership)
+        {
+            if (_ownsSessionCertificateContext && _sessionCertificateContext is not null && !ReferenceEquals(_sessionCertificateContext, context))
+            {
+                _sessionCertificateContext.ReleaseResources();
+            }
+
+            _sessionCertificateContext = context;
+            _ownsSessionCertificateContext = takeOwnership && context is not null;
+
+            // Mirror onto the per-session cloned options bag so the PAL (which reads
+            // _options.CertificateContext directly) sees the effective value. Also flip
+            // the bag's own ownership bit off — session now owns the disposal decision.
+            _options.CertificateContext = context;
+            _options.OwnsCertificateContext = false;
+        }
+
         private void InitializeFromContext(TlsContext context)
         {
             Debug.Assert(_context is null);
+            Debug.Assert(context is not null);
             _context = context;
             _ownsOptions = !context.ShareOptions;
             _options = context.CreateSessionOptions();
@@ -622,19 +623,19 @@ namespace System.Net.Security
 
             if (!_context!.IsServer)
             {
-                throw new InvalidOperationException("SetContext can only be called on a server-side session.");
+                throw new InvalidOperationException(SR.net_tlssession_setcontext_server_only);
             }
             if (!context.IsServer)
             {
-                throw new ArgumentException("TlsContext must be server-side.", nameof(context));
+                throw new ArgumentException(SR.net_tlssession_context_must_be_server, nameof(context));
             }
             if (_hasServerOptions)
             {
-                throw new InvalidOperationException("Server options were already supplied when the TlsContext was created.");
+                throw new InvalidOperationException(SR.net_tlssession_server_options_already_supplied);
             }
             if (_clientHelloInfo is null)
             {
-                throw new InvalidOperationException("SetContext can only be called after Handshake returned NeedsTlsContext.");
+                throw new InvalidOperationException(SR.net_tlssession_setcontext_needs_context_first);
             }
 
             // Ask the supplied context for a session-options bag — this allocates its
@@ -695,7 +696,7 @@ namespace System.Net.Security
 
             if (_context!.IsServer)
             {
-                throw new InvalidOperationException("SetClientCertificateContext can only be called on a client-side session.");
+                throw new InvalidOperationException(SR.net_tlssession_setclientcert_client_only);
             }
             SetSessionCertificateContext(context, takeOwnership: false);
 
@@ -857,7 +858,7 @@ namespace System.Net.Security
                     return TlsOperationStatus.Complete;
                 }
 
-                throw new InvalidOperationException("Handshake has already completed.");
+                throw new InvalidOperationException(SR.net_tlssession_handshake_already_complete);
             }
 
             // Drain pending first; do not consume new input while output is owed.
@@ -1150,7 +1151,7 @@ namespace System.Net.Security
 
             if (!_isHandshakeComplete)
             {
-                throw new InvalidOperationException("Handshake has not yet completed.");
+                throw new InvalidOperationException(SR.net_tlssession_handshake_not_complete);
             }
 
             if (_pendingBuffer.ActiveLength > 0)
@@ -1220,7 +1221,7 @@ namespace System.Net.Security
 
             if (!_isHandshakeComplete)
             {
-                throw new InvalidOperationException("Handshake has not yet completed.");
+                throw new InvalidOperationException(SR.net_tlssession_handshake_not_complete);
             }
 
             if (_pendingBuffer.ActiveLength > 0)
@@ -1408,12 +1409,12 @@ namespace System.Net.Security
 #else
             if (!_context!.IsServer)
             {
-                throw new InvalidOperationException("RequestClientCertificate can only be invoked on a server session.");
+                throw new InvalidOperationException(SR.net_tlssession_request_client_cert_server_only);
             }
 
             if (!_isHandshakeComplete || _securityContext == null || _securityContext.IsInvalid)
             {
-                throw new InvalidOperationException("Handshake has not yet completed.");
+                throw new InvalidOperationException(SR.net_tlssession_handshake_not_complete);
             }
 
             if (_pendingBuffer.ActiveLength == 0)
@@ -1895,7 +1896,7 @@ namespace System.Net.Security
         {
             if (_socketHandle is null)
             {
-                throw new InvalidOperationException("Session is not socket-bound.");
+                throw new InvalidOperationException(SR.net_tlssession_not_socket_bound);
             }
         }
 
@@ -2053,7 +2054,7 @@ namespace System.Net.Security
 
             if (!_isHandshakeComplete)
             {
-                throw new InvalidOperationException("Handshake has not yet completed.");
+                throw new InvalidOperationException(SR.net_tlssession_handshake_not_complete);
             }
 
             TlsOperationStatus? fast = null;
@@ -2132,7 +2133,7 @@ namespace System.Net.Security
 
             if (!_isHandshakeComplete)
             {
-                throw new InvalidOperationException("Handshake has not yet completed.");
+                throw new InvalidOperationException(SR.net_tlssession_handshake_not_complete);
             }
 
             TlsOperationStatus? fast = null;

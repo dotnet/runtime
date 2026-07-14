@@ -33,7 +33,8 @@ namespace System.Net.Security
             // deferred SetContext), each session resolves its own cert after the
             // ClientHello, so a shared SSL_CTX would carry no cert. Fall back to the
             // per-session allocation path in AllocateSslHandle.
-            if (_options.IsServer && _options.CertificateContext is null)
+            SslAuthenticationOptions options = Options;
+            if (options.IsServer && options.CertificateContext is null)
             {
                 return;
             }

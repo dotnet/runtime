@@ -738,9 +738,9 @@ namespace System.Net.Security
         public System.Net.Security.TlsOperationStatus Handshake(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public System.Net.Security.TlsOperationStatus Write(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public System.Net.Security.TlsOperationStatus Read(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
-        public System.Net.Security.TlsOperationStatus Shutdown(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
-        public System.Net.Security.TlsOperationStatus DrainPendingOutput(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
-        public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus Shutdown(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus DrainPendingOutput(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class TlsSocketSession : System.Net.Security.TlsSession

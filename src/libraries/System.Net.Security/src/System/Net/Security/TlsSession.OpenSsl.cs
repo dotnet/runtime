@@ -4,7 +4,6 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Security.Authentication;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
@@ -229,7 +228,7 @@ namespace System.Net.Security
                 result = TlsOperationStatus.Complete;
                 return;
             }
-            result = MapSslError(err, "SSL_do_handshake");
+            result = MapSslError(err, SR.net_ssl_handshake_failed_error);
         }
 
         partial void TryFastRead(Span<byte> buffer, ref int bytesRead, ref TlsOperationStatus? result)
@@ -253,7 +252,7 @@ namespace System.Net.Security
                 result = TlsOperationStatus.Complete;
                 return;
             }
-            result = MapSslError(err, "SSL_read");
+            result = MapSslError(err, SR.net_ssl_decrypt_failed);
         }
 
         partial void TryFastWrite(ReadOnlySpan<byte> buffer, ref int bytesWritten, ref TlsOperationStatus? result)
@@ -277,7 +276,7 @@ namespace System.Net.Security
                 result = TlsOperationStatus.Complete;
                 return;
             }
-            result = MapSslError(err, "SSL_write");
+            result = MapSslError(err, SR.net_ssl_encrypt_failed);
         }
 
         private SafeSslHandle EnsureFdSslHandle()
@@ -291,17 +290,20 @@ namespace System.Net.Security
             return handle;
         }
 
-        private static TlsOperationStatus MapSslError(Interop.Ssl.SslErrorCode error, string op)
+        // Translates a non-progress SslErrorCode into either a status the caller
+        // can act on (NeedMoreData / DestinationTooSmall / Closed) or, for a real
+        // failure, an SslException whose message includes the OpenSSL error-queue
+        // reason (formatted via SR-backed template). The template is picked per
+        // operation so exceptions surface consistently with SslStream's OpenSSL
+        // error handling.
+        private static TlsOperationStatus MapSslError(Interop.Ssl.SslErrorCode error, string sslErrorTemplate)
         {
             return error switch
             {
                 Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ => TlsOperationStatus.NeedMoreData,
                 Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE => TlsOperationStatus.DestinationTooSmall,
                 Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN => TlsOperationStatus.Closed,
-                // For SSL_ERROR_SSL the OpenSSL error queue holds the real cause; surface it as the inner exception.
-                // CreateOpenSslCryptographicException reads and clears the queue.
-                Interop.Ssl.SslErrorCode.SSL_ERROR_SSL => throw new AuthenticationException($"OpenSSL {op} failed: {error}", Interop.Crypto.CreateOpenSslCryptographicException()),
-                _ => throw new AuthenticationException($"OpenSSL {op} failed: {error}"),
+                _ => throw Interop.OpenSsl.CreateSslException(sslErrorTemplate),
             };
         }
     }

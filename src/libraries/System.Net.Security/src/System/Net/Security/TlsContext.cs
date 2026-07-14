@@ -13,14 +13,18 @@ namespace System.Net.Security
     /// determined by which factory is used.
     /// </summary>
     /// <remarks>
-    /// Holds the resolved options bag. Multi-connection sharing / session
-    /// cache reuse is not yet wired through; each <see cref="TlsSession"/>
-    /// gets its own native context allocated lazily on the first handshake call.
+    /// Holds the resolved options bag. Session caches are reused on supported
+    /// platforms; each <see cref="TlsSession"/> gets its own native context
+    /// allocated lazily on the first handshake call.
     /// </remarks>
     [Experimental(Experimentals.LowLevelTlsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed partial class TlsContext : IDisposable
     {
-        private readonly SslAuthenticationOptions _options;
+        // Non-readonly so Dispose can null it out; keeping the reference alive would
+        // otherwise pin the (potentially large) options bag until TlsContext itself
+        // is collected. In wedge mode the bag is owned by SslStream and Dispose
+        // only forgets it; in owned mode Dispose also disposes the bag itself.
+        private SslAuthenticationOptions? _options;
         // True when this context wraps an SslStream-owned options bag (wedge mode):
         // sessions share the same bag by reference and TlsContext does not dispose it,
         // does not allocate its own native context, and defers cred-handle lifetime to
@@ -42,13 +46,13 @@ namespace System.Net.Security
             _templateHasServerOptions = templateHasServerOptions;
         }
 
-        internal SslAuthenticationOptions Options => _options;
+        internal SslAuthenticationOptions Options => _options ?? throw new ObjectDisposedException(nameof(TlsContext));
 
         // Internal accessor for the obsolete EncryptionPolicy carried in options. Not exposed
         // publicly: a brand-new type should not re-publish a SYSLIB0040-obsolete concept. The
         // setting is honored at handshake time via the options bag; internal consumers that
         // need to introspect it (e.g. SslStream when re-platformed on TlsSession) read it here.
-        internal EncryptionPolicy EncryptionPolicy => _options.EncryptionPolicy;
+        internal EncryptionPolicy EncryptionPolicy => Options.EncryptionPolicy;
 
         // True when sessions should reuse the context's options bag directly (wedge mode).
         // False when each session must take a private clone before mutating any field.
@@ -66,7 +70,8 @@ namespace System.Net.Security
         // onto the returned bag so the PAL can reuse it across sessions.
         internal SslAuthenticationOptions CreateSessionOptions()
         {
-            SslAuthenticationOptions sessionOptions = _isWedge ? _options : _options.Clone();
+            SslAuthenticationOptions options = Options;
+            SslAuthenticationOptions sessionOptions = _isWedge ? options : options.Clone();
             sessionOptions.ForceSyncPal = true;
             AttachSharedNativeContext(sessionOptions);
             return sessionOptions;
@@ -80,7 +85,7 @@ namespace System.Net.Security
         // Platform hook: lets the OpenSSL partial dispose the owned SSL_CTX. No-op elsewhere.
         partial void DisposeNativeContext();
 
-        internal bool IsServer => _options.IsServer;
+        internal bool IsServer => Options.IsServer;
 
         /// <summary>
         /// Creates a server-side TLS context.
@@ -95,6 +100,8 @@ namespace System.Net.Security
         /// invoke <see cref="TlsSession.SetContext"/> before continuing the
         /// handshake. Useful for SNI-based options selection that involves I/O.
         /// </param>
+        /// <returns>A new server-side <see cref="TlsContext"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
         public static TlsContext CreateServer(SslServerAuthenticationOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
@@ -119,6 +126,9 @@ namespace System.Net.Security
         /// <summary>
         /// Creates a client-side TLS context.
         /// </summary>
+        /// <param name="options">The client authentication options.</param>
+        /// <returns>A new client-side <see cref="TlsContext"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
         /// <remarks>
         /// Peer certificate validation always runs outside the TLS state machine: after the
         /// handshake reaches the point at which the peer cert is available, <see cref="TlsBufferSession.Handshake"/>
@@ -147,6 +157,11 @@ namespace System.Net.Security
 
         public void Dispose()
         {
+            if (_options is null)
+            {
+                return;
+            }
+
             if (!_isWedge)
             {
                 CredentialsHandle?.Dispose();
@@ -154,6 +169,11 @@ namespace System.Net.Security
                 DisposeNativeContext();
                 _options.Dispose();
             }
+
+            // In wedge mode the options bag is owned by SslStream and we must not
+            // dispose it; but we do drop the reference so a disposed TlsContext no
+            // longer keeps the (possibly large) bag alive.
+            _options = null;
         }
     }
 }

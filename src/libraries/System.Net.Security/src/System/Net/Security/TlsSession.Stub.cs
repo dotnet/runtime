@@ -78,13 +78,13 @@ namespace System.Net.Security
         public TlsOperationStatus Read(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public TlsOperationStatus Shutdown(Span<byte> ciphertext, out int bytesWritten) =>
+        public TlsOperationStatus Shutdown(Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public TlsOperationStatus DrainPendingOutput(Span<byte> ciphertext, out int bytesWritten) =>
+        public TlsOperationStatus DrainPendingOutput(Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public TlsOperationStatus RequestClientCertificate(Span<byte> ciphertext, out int bytesWritten) =>
+        public TlsOperationStatus RequestClientCertificate(Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
     }
 

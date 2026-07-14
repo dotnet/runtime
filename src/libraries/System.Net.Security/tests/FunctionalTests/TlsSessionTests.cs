@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 using TestCertificates = System.Net.Test.Common.Configuration.Certificates;
 
@@ -173,7 +174,7 @@ namespace System.Net.Security.Tests
             {
                 // Legacy SecureTransport server-side session cache / ticket issuance is not wired up,
                 // so resumption never measurably shrinks the second handshake.
-                return;
+                throw new SkipTestException("Legacy SecureTransport server-side session cache / ticket issuance is not wired up on macOS.");
             }
 
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
