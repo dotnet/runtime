@@ -1097,18 +1097,18 @@ public:
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
 
     // Returns true if the VN is known or likely to appear as the conservative value number
-    // of an argument to a GT_BOUNDS_CHECK node.
+    // of the length argument to a GT_BOUNDS_CHECK node.
     bool IsVNCheckedBound(ValueNum vn);
 
-    // Returns true if the VN is a checked bound that is known to be non-negative.
-    bool IsVNCheckedBoundNeverNegative(ValueNum vn);
+    // Returns true if the VN appears as the index argument to a GT_BOUNDS_CHECK node.
+    bool IsVNCheckedBoundIndex(ValueNum vn);
 
     // Returns true if the VN is known to be a cast to ulong
     bool IsVNCastToULong(ValueNum vn, ValueNum* castedOp);
 
     // Record that a VN is known to appear as the conservative value number of an argument
     // to a GT_BOUNDS_CHECK node.
-    void SetVNIsCheckedBound(ValueNum vn, bool isNeverNegative);
+    void SetVNIsCheckedBound(ValueNum vn, bool isIndex = false);
 
     // Information about the individual components of a value number representing an unsigned
     // comparison of some value against a checked bound VN.
@@ -1661,8 +1661,9 @@ private:
     // Returns true if "sel(map, ind)" is a member of "m_fixedPointMapSels".
     bool SelectIsBeingEvaluatedRecursively(ValueNum map, ValueNum ind);
 
-    // This maps value numbers flagged as bounds check arguments to whether they are known non-negative.
+    // These are the value numbers flagged as length and index arguments to bounds checks.
     CheckedBoundVNSet m_checkedBoundVNs;
+    CheckedBoundVNSet m_checkedBoundIndexVNs;
 
     // This is a map from "chunk number" to the attributes of the chunk.
     JitExpandArrayStack<Chunk*> m_chunks;

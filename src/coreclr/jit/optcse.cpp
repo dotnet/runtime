@@ -5314,9 +5314,7 @@ void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, co
         m_compiler->vnStore->IsVNCheckedBound(oldConservativeVN) &&
         !m_compiler->vnStore->IsVNConstant(ssaDsc->m_vnPair.GetConservative()))
     {
-        m_compiler->vnStore->SetVNIsCheckedBound(
-            ssaDsc->m_vnPair.GetConservative(),
-            m_compiler->vnStore->IsVNCheckedBoundNeverNegative(oldConservativeVN));
+        m_compiler->vnStore->SetVNIsCheckedBound(ssaDsc->m_vnPair.GetConservative());
     }
 }
 
