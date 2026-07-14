@@ -1990,18 +1990,17 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     // If the loop is already bottom-tested (has an exiting BBJ_COND latch that is not the IV test)
     // and no induction variable was recognized, only invert when the block that would be duplicated
-    // (condBlock) contains a call or a memory load whose address has no loop-varying local. Classify
+    // (condBlock) contains a call or an indirection whose address has no loop-varying local. Classify
     // condBlock here and record the locals appearing in its indirection address expressions; the
-    // size-check walk below flags whether any of them is assigned in the loop (making the load
+    // size-check walk below flags whether any of them is assigned in the loop (making the indirection
     // loop-variant).
-    const bool checkBenefit = sawExitingCondLatch && (ivTestBlock == nullptr) &&
-                              (JitConfig.JitLoopInversionRequireBenefitForBottomTested() != 0);
-    bool         condHasCall    = false;
-    bool         condHasIndir   = false;
-    bool         condAddrStored = false;
+    const bool   bottomTestedNoIV = sawExitingCondLatch && (ivTestBlock == nullptr);
+    bool         condHasCall      = false;
+    bool         condHasIndir     = false;
+    bool         condAddrStored   = false;
     BitVecTraits condTraits(lvaCount, this);
     BitVec       condIndirAddrLocals = BitVecOps::UninitVal();
-    if (checkBenefit)
+    if (bottomTestedNoIV)
     {
         assert(analyzedIteration);
 
@@ -2030,7 +2029,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
             void CollectLocals(GenTree* tree)
             {
-                if (tree->OperIsLocal())
+                if (tree->OperIsAnyLocal())
                 {
                     BitVecOps::AddElemD(m_traits, *m_addrLocals, tree->AsLclVarCommon()->GetLclNum());
                 }
@@ -2145,8 +2144,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
                     *boundsCheckFlag = true;
                 }
                 // Note whether any local appearing in the condition's indirection addresses is stored
-                // in the loop (making that load loop-variant).
-                if (checkBenefit && !condHasCall && tree->OperIsLocalStore() &&
+                // in the loop (making that indirection loop-variant).
+                if (bottomTestedNoIV && !condHasCall && tree->OperIsLocalStore() &&
                     BitVecOps::IsMember(&condTraits, condIndirAddrLocals, tree->AsLclVarCommon()->GetLclNum()))
                 {
                     condAddrStored = true;
@@ -2184,7 +2183,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     // Skip the inversion unless the duplicated test carries a benefit: a call, or an indirection off
     // an address with no loop-varying local. condAddrStored is left conservatively false if the size
     // walk above was skipped or aborted early, keeping the inversion.
-    if (checkBenefit)
+    if (bottomTestedNoIV)
     {
         const bool keepInverting = condHasCall || (condHasIndir && !condAddrStored);
         if (!keepInverting)
