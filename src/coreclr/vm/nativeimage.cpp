@@ -213,15 +213,13 @@ namespace
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }
 
-        // Read the image details before detaching the layout from the holder; Detach()
-        // clears the holder, so the member accesses must be sequenced before it.
-        TADDR imageBase = (TADDR)peLoadedImage->GetBase();
-        uint32_t imageSize = peLoadedImage->GetVirtualSize();
-        return new ReadyToRunLoadedImage(
-            imageBase,
-            imageSize,
-            peLoadedImage.Detach(),
+        ReadyToRunLoadedImage* r2rImg = new ReadyToRunLoadedImage(
+            (TADDR)peLoadedImage->GetBase(),
+            peLoadedImage->GetVirtualSize(),
+            peLoadedImage,
             [](void* img) { delete (PEImageLayout*)img; });
+        peLoadedImage.Detach();
+        return r2rImg;
     }
 }
 
