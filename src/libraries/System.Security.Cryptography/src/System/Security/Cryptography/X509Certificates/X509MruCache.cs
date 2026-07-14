@@ -272,22 +272,27 @@ namespace System.Security.Cryptography.X509Certificates
 
         private sealed class GCWatcher
         {
-            private readonly X509MruCache<T> _owner;
+            private readonly WeakReference<X509MruCache<T>> _ownerRef;
 
             internal GCWatcher(X509MruCache<T> owner)
             {
-                _owner = owner;
+                _ownerRef = new WeakReference<X509MruCache<T>>(owner);
             }
 
             ~GCWatcher()
             {
+                if (!_ownerRef.TryGetTarget(out X509MruCache<T>? owner))
+                {
+                    return;
+                }
+
                 GC.ReRegisterForFinalize(this);
 
                 if (GC.GetGeneration(this) == GC.MaxGeneration)
                 {
                     try
                     {
-                        _owner.PruneForGC();
+                        owner.PruneForGC();
                     }
                     catch
                     {

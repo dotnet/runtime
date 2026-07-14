@@ -320,15 +320,31 @@ namespace System.Security.Cryptography.X509Certificates
                     }
 
                     int hashCode = GetHashCode(uri);
+                    CachedRequest updatedResponse = new CachedRequest(downloadTask);
 
                     lock (_lock)
                     {
-                        AddOrUpdate(
+                        CachedRequest newValue = AddOrUpdate(
                             hashCode,
                             uri,
-                            new CachedRequest(downloadTask),
+                            updatedResponse,
                             evicted: out _,
                             replaced: out _);
+
+                        // If the clock rolls back more than the refresh interval,
+                        // AddOrUpdate may decide to keep the pre-refresh value.
+                        //
+                        // Since temporal physics says that this download is, in fact, "newer",
+                        // forcibly remove the old value and add the new one again.
+                        //
+                        // That's not the same as saying updatedResponse has to be the new value,
+                        // it's possible that during the Refresh operation the original value was
+                        // removed, and some other value was added in its place.
+                        if (ReferenceEquals(newValue, node.Value))
+                        {
+                            Remove(hashCode, uri);
+                            AddOrUpdate(hashCode, uri, updatedResponse, evicted: out _, replaced: out _);
+                        }
                     }
 
                     success = true;
@@ -363,8 +379,21 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            private protected override bool OnConflictTakeNew(Node current, CachedRequest newValue) =>
-                newValue.CacheTime > current.Value.CacheTime;
+            private protected override bool OnConflictTakeNew(Node current, CachedRequest newValue)
+            {
+                // It shouldn't be the case that we try to overwrite a finished task with a new one,
+                // but if it does happen, keep whichever task is done (assuming it finished successfully).
+
+                bool currentUsable = current.Value.DownloadTask.IsCompletedSuccessfully && current.Value.DownloadTask.Result is not null;
+                bool newUsable = newValue.DownloadTask.IsCompletedSuccessfully && newValue.DownloadTask.Result is not null;
+
+                if (currentUsable == newUsable)
+                {
+                    return newValue.CacheTime > current.Value.CacheTime;
+                }
+
+                return newUsable;
+            }
 
             private protected override void Pruned(Node? prunedNode, int countStart, int countEnd)
             {
