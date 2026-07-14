@@ -321,6 +321,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     int hashCode = GetHashCode(uri);
                     CachedRequest updatedResponse = new CachedRequest(downloadTask);
+                    CachedRequest current = node.Value;
 
                     lock (_lock)
                     {
@@ -340,7 +341,7 @@ namespace System.Security.Cryptography.X509Certificates
                         // That's not the same as saying updatedResponse has to be the new value,
                         // it's possible that during the Refresh operation the original value was
                         // removed, and some other value was added in its place.
-                        if (ReferenceEquals(newValue, node.Value))
+                        if (ReferenceEquals(newValue, current))
                         {
                             Remove(hashCode, uri);
                             AddOrUpdate(hashCode, uri, updatedResponse, evicted: out _, replaced: out _);
