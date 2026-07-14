@@ -19,8 +19,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 ///
 /// This type exists so that <see cref="IPlatformAgnosticContext.GetContextForPlatform"/> resolves
 /// for WASM targets instead of throwing. The instruction/stack/frame pointer slots are synthetic:
-/// they are populated by the interpreter frame-chain walker, not read from a native context blob
-/// (hence <see cref="Size"/> is 0). Register-unwind operations are intentionally unsupported.
+/// they are populated by the interpreter frame-chain walker, not read from a native context blob.
+/// Register-unwind operations (<see cref="Unwind"/>) are intentionally unsupported; the supported
+/// WASM stack walk is <c>IStackWalk.GetInterpretedFrames</c>, which is context-free.
 /// </remarks>
 [StructLayout(LayoutKind.Sequential)]
 public struct WasmContext : IPlatformContext
@@ -31,8 +32,11 @@ public struct WasmContext : IPlatformContext
     private uint _stackPointer;
     private uint _framePointer;
 
-    // WASM has no native register-context blob to read from the target.
-    public readonly uint Size => 0;
+    // The synthetic context holds three 32-bit slots (IP/SP/FP). WASM has no native
+    // register-context blob to read from the target; these slots are populated by the
+    // interpreter frame-chain walker. Size matches the serialized struct so that
+    // ContextHolder.GetBytes() and Size stay consistent.
+    public readonly uint Size => 3 * sizeof(uint);
 
     public readonly uint ContextControlFlags => 0;
 
