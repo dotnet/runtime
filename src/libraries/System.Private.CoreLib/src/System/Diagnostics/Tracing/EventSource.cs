@@ -2703,6 +2703,14 @@ namespace System.Diagnostics.Tracing
                     foreach (int eventID in m_eventData.Keys)
                         EnableEventForDispatcher(commandArgs.dispatcher, commandArgs.eventProviderType, eventID, IsEnabledByDefault(eventID, commandArgs.enable, commandArgs.level, commandArgs.matchAnyKeyword));
 
+                    // interpret perEventSourceSessionId's sign: a non-negative value indicates a session
+                    // is being enabled, while a negative value (or 0 with enable=false) means disabled.
+                    // Compute this before updating m_level/m_matchAnyKeyword so we can distinguish between
+                    // a new session starting (expand filter) and a session stopping (replace filter).
+                    bool bSessionEnable = (commandArgs.perEventSourceSessionId >= 0);
+                    if (commandArgs.perEventSourceSessionId == 0 && !commandArgs.enable)
+                        bSessionEnable = false;
+
                     if (commandArgs.enable)
                     {
                         if (!m_eventSourceEnabled)
@@ -2711,9 +2719,9 @@ namespace System.Diagnostics.Tracing
                             m_level = commandArgs.level;
                             m_matchAnyKeyword = commandArgs.matchAnyKeyword;
                         }
-                        else
+                        else if (bSessionEnable)
                         {
-                            // Already enabled, make it the most verbose of the existing and new filter
+                            // A new session is being added; expand the filter to cover the new session.
                             if (commandArgs.level > m_level)
                                 m_level = commandArgs.level;
                             if (commandArgs.matchAnyKeyword == 0)
@@ -2721,13 +2729,14 @@ namespace System.Diagnostics.Tracing
                             else if (m_matchAnyKeyword != 0)
                                 m_matchAnyKeyword = unchecked(m_matchAnyKeyword | commandArgs.matchAnyKeyword);
                         }
+                        else
+                        {
+                            // A session is stopping but other sessions remain active; update the filter to
+                            // the recomputed values which now reflect only the remaining sessions.
+                            m_level = commandArgs.level;
+                            m_matchAnyKeyword = commandArgs.matchAnyKeyword;
+                        }
                     }
-
-                    // interpret perEventSourceSessionId's sign, and adjust perEventSourceSessionId to
-                    // represent 0-based positive values
-                    bool bSessionEnable = (commandArgs.perEventSourceSessionId >= 0);
-                    if (commandArgs.perEventSourceSessionId == 0 && !commandArgs.enable)
-                        bSessionEnable = false;
 
                     if (commandArgs.listener == null)
                     {
