@@ -1106,6 +1106,61 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.DoesNotContain("b", children, StringComparer.OrdinalIgnoreCase);
         }
 
+        [Fact]
+        public void GetChildren_EarlierKeysSurvive_ProviderReturningLazySelfReferentialKeys()
+        {
+            // A provider may return a lazy sequence built from earlierKeys (for example earlierKeys.Concat(ownKeys)).
+            // Aggregation must materialize that result before it replaces the accumulated keys, otherwise the earlier
+            // providers' keys are read after being cleared and are lost.
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string> { { "First", "1" } })
+                .Add(new DuplicateChildKeysSource())
+                .Build();
+
+            string[] children = config.GetChildren().Select(c => c.Key).ToArray();
+
+            // The earlier provider's key must survive the lazy provider's result, and the duplicate is collapsed.
+            Assert.Contains("First", children, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains("Dup", children, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(2, children.Length);
+        }
+
+        [Fact]
+        public void GetChildren_ChainedRoot_InnerProviderCannotDropOuterKeys()
+        {
+            // A provider inside a chained configuration root only sees the chained root's own keys, never the outer
+            // providers' keys, so it cannot filter out a child contributed by an earlier outer provider.
+            IConfigurationRoot inner = new ConfigurationBuilder()
+                .Add(new FilteringChildKeysSource("b"))
+                .Build();
+
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string> { { "a", "1" }, { "b", "2" }, { "c", "3" } })
+                .AddConfiguration(inner)
+                .Build();
+
+            string[] children = config.GetChildren().Select(c => c.Key).ToArray();
+
+            Assert.Equal(new[] { "a", "b", "c" }, children, StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void GetChildren_ChainedRootWithNoProviders_KeepsOuterKeys()
+        {
+            // Chaining a configuration root that has no providers must not discard the keys contributed by the outer
+            // providers.
+            IConfigurationRoot empty = new ConfigurationBuilder().Build();
+
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string> { { "A", "1" }, { "B", "2" } })
+                .AddConfiguration(empty)
+                .Build();
+
+            string[] children = config.GetChildren().Select(c => c.Key).ToArray();
+
+            Assert.Equal(new[] { "A", "B" }, children, StringComparer.OrdinalIgnoreCase);
+        }
+
         private static string[] ExpectedImmediateChildren(Dictionary<string, string> data, string parentPath)
         {
             var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
