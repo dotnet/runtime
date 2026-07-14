@@ -126,6 +126,7 @@ private:
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
 #ifdef TARGET_XARCH
     void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* cnsVec);
+    void ContainHWIntrinsicOperand(GenTreeHWIntrinsic* parentNode, GenTree* childNode);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 
@@ -361,7 +362,7 @@ private:
         GenTree*     index            = nullptr;
         GenTree*     value            = nullptr;
         uint32_t     scale            = 1;
-        int          offset           = 0;
+        ssize_t      offset           = 0;
         unsigned     accessSize       = 0;
         unsigned     lclNum           = BAD_VAR_NUM;
         GenTreeFlags storeFlags       = GTF_EMPTY;

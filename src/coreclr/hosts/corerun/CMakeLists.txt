@@ -36,9 +36,11 @@ if(CLR_CMAKE_HOST_WIN32)
         target_link_options(corerun PRIVATE "/CETCOMPAT")
     endif()
 else()
-    target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
-    # Required to expose symbols for global symbol discovery
-    target_link_libraries(corerun PRIVATE -rdynamic)
+    if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+        target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
+        # Required to expose symbols for global symbol discovery
+        target_link_libraries(corerun PRIVATE -rdynamic)
+    endif()
 
     # Android implements pthread natively.
     # WASM, linking against pthreads indicates Node.js workers are
@@ -111,9 +113,19 @@ else()
                 -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web
                 -lexports.js
-                -Wl,--export=__stack_pointer
-                -Wl,--export=__coreclr_wasm_rtlrestorecontext_tag
                 -Wl,--error-limit=0)
+        elseif (CLR_CMAKE_TARGET_WASI)
+            # wasm-component-ld wraps wasi:io@0.2.x imports into the WASI
+            # component-model; the default lld produces a plain core module
+            # the component-host can't instantiate. Absolute path is
+            # required because clang only recognizes well-known linker
+            # names (lld/bfd/gold/etc.) by short name.
+            get_filename_component(_wasi_sdk_bin "${CMAKE_C_COMPILER}" DIRECTORY)
+            target_link_options(corerun PRIVATE
+                "-fuse-ld=${_wasi_sdk_bin}/wasm-component-ld"
+                -Wl,-z,stack-size=8388608
+                -Wl,--initial-memory=134217728
+                -Wl,--max-memory=4294967296)
         endif()
 
         if (CORERUN_IN_BROWSER)

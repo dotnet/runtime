@@ -717,7 +717,6 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetClrWatsonBuckets(ClrDataAddress thread, void* pGenericModeBlock)
     {
         int hr = HResults.S_OK;
-        Contracts.IThread threadContract = _target.Contracts.Thread;
         byte[] buckets = Array.Empty<byte>();
         try
         {
@@ -727,7 +726,7 @@ public sealed unsafe partial class SOSDacImpl
             if (thread == 0 || pGenericModeBlock == null)
                 throw new ArgumentException();
 
-            buckets = threadContract.GetWatsonBuckets(thread.ToTargetPointer(_target));
+            buckets = _target.Contracts.WindowsErrorReporting.GetWatsonBuckets(thread.ToTargetPointer(_target));
             if (buckets.Length != 0)
             {
                 var dest = new Span<byte>(pGenericModeBlock, buckets.Length);
@@ -1636,7 +1635,7 @@ public sealed unsafe partial class SOSDacImpl
                     Type = h.Type,
                     StrongReference = h.StrongReference ? 1 : 0,
                     RefCount = h.RefCount,
-                    JupiterRefCount = h.JupiterRefCount,
+                    JupiterRefCount = 0,
                     IsPegged = h.IsPegged ? 1 : 0,
                 };
             }
@@ -1743,6 +1742,12 @@ public sealed unsafe partial class SOSDacImpl
                     Heap = regions[i].Heap,
                 };
             }
+        }
+
+        public SOSMemoryEnum(SOSMemoryRegion[] regions, ISOSMemoryEnum? legacyMemoryEnum = null)
+        {
+            _regions = regions;
+            _legacyMemoryEnum = legacyMemoryEnum;
         }
 
         int ISOSMemoryEnum.Next(uint count, SOSMemoryRegion[] memRegions, uint* pNeeded)
@@ -4303,7 +4308,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ThreadData threadData = contract.GetThreadData(thread.ToTargetPointer(_target));
             data->corThreadId = (int)threadData.Id;
             data->osThreadId = (int)threadData.OSId.Value;
-            data->state = 0; // Set to 0, nobody uses this
+            data->state = (int)threadData.State;
             data->preemptiveGCDisabled = (uint)(threadData.PreemptiveGCDisabled ? 1 : 0);
             data->allocContextPtr = threadData.AllocContextPointer.ToClrDataAddress(_target);
             data->allocContextLimit = threadData.AllocContextLimit.ToClrDataAddress(_target);
@@ -4335,7 +4340,12 @@ public sealed unsafe partial class SOSDacImpl
             {
                 Debug.Assert(data->corThreadId == dataLocal.corThreadId, $"cDAC: {data->corThreadId}, DAC: {dataLocal.corThreadId}");
                 Debug.Assert(data->osThreadId == dataLocal.osThreadId, $"cDAC: {data->osThreadId}, DAC: {dataLocal.osThreadId}");
-                Debug.Assert(data->state == dataLocal.state, $"cDAC: {data->state}, DAC: {dataLocal.state}");
+                // The cDAC exposes only the subset of Thread::m_State bits wrapped by the
+                // ThreadState contract enum; mask the legacy raw state the same way before comparing.
+                int wrappedStateMask = 0;
+                foreach (Contracts.ThreadState stateFlag in Enum.GetValues<Contracts.ThreadState>())
+                    wrappedStateMask |= (int)stateFlag;
+                Debug.Assert(data->state == (dataLocal.state & wrappedStateMask), $"cDAC: {data->state}, DAC: {dataLocal.state & wrappedStateMask}");
                 Debug.Assert(data->preemptiveGCDisabled == dataLocal.preemptiveGCDisabled, $"cDAC: {data->preemptiveGCDisabled}, DAC: {dataLocal.preemptiveGCDisabled}");
                 Debug.Assert(data->allocContextPtr == dataLocal.allocContextPtr, $"cDAC: {data->allocContextPtr:x}, DAC: {dataLocal.allocContextPtr:x}");
                 Debug.Assert(data->allocContextLimit == dataLocal.allocContextLimit, $"cDAC: {data->allocContextLimit:x}, DAC: {dataLocal.allocContextLimit:x}");
@@ -7321,24 +7331,39 @@ public sealed unsafe partial class SOSDacImpl
             if (!stressLogContract.HasStressLog())
                 return HResults.S_FALSE;
 
+            TargetPointer address = threadStressLogAddress.ToTargetPointer(_target);
+            IEnumerable<Contracts.StressMsgData> messages = stressLogContract.GetStressMessages(address);
+            ppEnum.Interface = new SOSStressLogMsgEnum(_target, messages);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface17.GetStressLogMemoryRanges(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
+            if (!stressLogContract.HasStressLog())
+                return HResults.S_FALSE;
+
             Contracts.StressLogData logData = stressLogContract.GetStressLogData();
 
-            // Find the matching thread
-            Contracts.ThreadStressLogData? matchedThread = null;
-            foreach (var thread in stressLogContract.GetThreadStressLogs(logData.Logs))
-            {
-                if (thread.Address == threadStressLogAddress.ToTargetPointer(_target))
+            SOSMemoryRegion[] regions = stressLogContract.GetStressLogMemoryRanges(logData)
+                .Select(r => new SOSMemoryRegion
                 {
-                    matchedThread = thread;
-                    break;
-                }
-            }
-
-            if (matchedThread is null)
-                return HResults.E_INVALIDARG;
-
-            IEnumerable<Contracts.StressMsgData> messages = stressLogContract.GetStressMessages(matchedThread.Value);
-            ppEnum.Interface = new SOSStressLogMsgEnum(_target, messages);
+                    Start = r.Start.ToClrDataAddress(_target),
+                    Size = (ClrDataAddress)r.Size,
+                    ExtraData = default,
+                    Heap = 0,
+                })
+                .ToArray();
+            ppEnum.Interface = new SOSMemoryEnum(regions);
         }
         catch (System.Exception ex)
         {

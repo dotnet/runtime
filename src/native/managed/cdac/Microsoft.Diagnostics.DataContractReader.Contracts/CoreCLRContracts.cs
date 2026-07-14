@@ -40,6 +40,7 @@ public static class CoreCLRContracts
         registry.Register<IStressLog>("c2", static t => new StressLog_2(t));
 
         registry.Register<IThread>("c1", static t => new Thread_1(t));
+        registry.Register<IWindowsErrorReporting>("c1", static t => new WindowsErrorReporting_1(t));
 
         registry.Register<IRuntimeTypeSystem>("c1", static t => new RuntimeTypeSystem_1(t));
 

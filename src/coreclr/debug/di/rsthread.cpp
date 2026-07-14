@@ -1413,13 +1413,13 @@ HRESULT CordbThread::FindFrame(ICorDebugFrame ** ppFrame, FramePointer fp)
 
 
 
-#if defined(CROSS_COMPILE) && (defined(TARGET_ARM64) || defined(TARGET_ARM))
+#if defined(CROSS_COMPILE) && (defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64))
 extern "C" double FPFillR8(void* pFillSlot)
 {
     _ASSERTE(!"nyi for platform");
     return 0;
 }
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 extern "C" double FPFillR8(void* pFillSlot);
 #endif
 
@@ -1518,24 +1518,22 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
     m_floatStackTop = floatStackTop;
 } // CordbThread::Get32bitFPRegisters
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 // CordbThread::Get64bitFPRegisters
 // Converts the values in the floating point register area of the context to real number values. See
-// code:CordbThread::LoadFloatState for more details.
+// code:CordbThread::LoadFloatState for more details. The size of FPRegister64 is per-architecture and
+// determines the stride between consecutive registers in the context (8 bytes on Arm/RISC-V64, 16 on
+// Amd64/Arm64, and 32 on LoongArch64, whose FPR64/LSX/LASX slot holds the scalar value in its first
+// 64 bits); FPFillR8 reads that scalar value.
 // Arguments:
-//     input:  pFPRegisterBase - starting address of the floating point register storage of the CONTEXT
-//             registerSize    - the size of a floating point register
-//             start           - the index into m_floatValues where we start initializing. For amd64, we start
-//                               at the beginning, but for ia64, the first two registers have fixed values,
-//                               so we start at two.
-//             nRegisters      - the number of registers to be initialized
+//     input:  rgContextFPRegisters - starting address of the floating point register storage of the CONTEXT
+//             start                - the index into m_floatValues where we start initializing
+//             nRegisters           - the number of registers to be initialized
 //     output: none (initializes m_floatValues)
 
 void CordbThread::Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int start, int nRegisters)
 {
-    // make sure no one has changed the type definition for 64-bit FP registers
-    _ASSERTE(sizeof(FPRegister64) == 16);
     // We convert and copy all the fp registers.
     for (int reg = start; reg < nRegisters; reg++)
     {
@@ -1580,6 +1578,10 @@ void CordbThread::LoadFloatState()
     Get64bitFPRegisters((FPRegister64*) &(tempContext.V), 0, 32);
 #elif defined (TARGET_ARM)
     Get64bitFPRegisters((FPRegister64*) &(tempContext.D), 0, 32);
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    // The size of FPRegister64 selects the per-register stride in the context: a single 64-bit slot
+    // on RISC-V64, and a four-slot FPR64/LSX/LASX group on LoongArch64 (scalar value in the first slot).
+    Get64bitFPRegisters((FPRegister64*) &(tempContext.F), 0, 32);
 #else
     _ASSERTE(!"nyi for platform");
 #endif // !TARGET_X86
@@ -2284,7 +2286,7 @@ void CordbThread::GetActiveInternalFramesCallback(const Debugger_STRData * pFram
 
     // Create a CordbInternalFrame.
     CordbInternalFrame * pInternalFrame = new CordbInternalFrame(pThis,
-                                                                 pFrameData->fp,
+                                                                 FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(pFrameData->fp)),
                                                                  pAppDomain,
                                                                  pFrameData);
 
@@ -5431,7 +5433,7 @@ CordbMiscFrame::CordbMiscFrame()
 CordbMiscFrame::CordbMiscFrame(Debugger_JITFuncData * pJITFuncData)
 {
     this->parentIP       = (SIZE_T)pJITFuncData->parentNativeOffset;
-    this->fpParentOrSelf = pJITFuncData->fpParentOrSelf;
+    this->fpParentOrSelf = FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(pJITFuncData->fpParentOrSelf));
     this->fIsFilterFunclet = (pJITFuncData->fIsFilterFrame == TRUE);
 }
 
