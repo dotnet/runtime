@@ -2756,10 +2756,10 @@ namespace System.Numerics.Tensors.Tests
 
         public static IEnumerable<object[]> Clamp_UnorderedBounds_Lengths()
         {
-            // Small lengths (below the vector width) go through the scalar code path, while larger lengths
-            // (a whole multiple of every supported vector width) go through the vectorized path. Both must
-            // produce identical, non-throwing Min(Max(x, min), max) results even when min > max, matching
-            // the behavior of Vector128/256/512.Clamp (which follow HLSL and do not validate min <= max).
+            // These lengths intentionally span the scalar-only, scalar-remainder, and fully vectorized regions
+            // of the implementation. All of them must produce identical, non-throwing Min(Max(x, min), max)
+            // results even when min > max, matching the behavior of Vector128/256/512.Clamp (which follow HLSL
+            // and do not validate min <= max).
             foreach (int length in new[] { 1, 2, 3, 8, 128 })
             {
                 yield return new object[] { length };
@@ -2904,9 +2904,9 @@ namespace System.Numerics.Tensors.Tests
         {
             // NaN and signed zeros are the exact class of values where a scalar-vs-vector mismatch would
             // hide, so verify both code paths agree with the scalar Min(Max(x, min), max) formula for them.
-            // This parity only applies to vector-accelerated floating-point types; the others (e.g. Half,
-            // NFloat) run entirely through the scalar path and defer to T.Clamp, which throws on the
-            // unordered bounds that this test's tiled pool intentionally produces.
+            // This parity only applies to vector-accelerated floating-point types; the rest are skipped
+            // because they defer to T.Clamp, which throws on the unordered bounds this test's tiled pool
+            // intentionally produces.
             if (!IsFloatingPoint || !Vector128<T>.IsSupported)
             {
                 return;

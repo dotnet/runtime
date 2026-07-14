@@ -21,6 +21,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <exception cref="ArgumentException"><paramref name="min"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <exception cref="ArgumentException"><paramref name="max"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException">An element-wise <paramref name="min" /> is greater than <paramref name="max" /> and <typeparamref name="T" /> is not a vectorizable type.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />[i], <paramref name="min" />[i]), <paramref name="max" />[i])</c>.
@@ -49,6 +50,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <exception cref="ArgumentException"><paramref name="min"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException">An element-wise <paramref name="min" /> is greater than <paramref name="max" /> and <typeparamref name="T" /> is not a vectorizable type.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />[i], <paramref name="min" />[i]), <paramref name="max" />)</c>.
@@ -77,6 +79,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <exception cref="ArgumentException"><paramref name="max"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException">An element-wise <paramref name="min" /> is greater than <paramref name="max" /> and <typeparamref name="T" /> is not a vectorizable type.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />[i], <paramref name="min" />), <paramref name="max" />[i])</c>.
@@ -105,6 +108,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="min"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <exception cref="ArgumentException"><paramref name="max"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException">An element-wise <paramref name="min" /> is greater than <paramref name="max" /> and <typeparamref name="T" /> is not a vectorizable type.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />, <paramref name="min" />[i]), <paramref name="max" />[i])</c>.
@@ -131,6 +135,7 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" /> and <typeparamref name="T" /> is not a vectorizable type.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />[i], <paramref name="min" />), <paramref name="max" />)</c>.
@@ -157,6 +162,7 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="min"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException">An element-wise <paramref name="min" /> is greater than <paramref name="max" /> and <typeparamref name="T" /> is not a vectorizable type.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />, <paramref name="min" />[i]), <paramref name="max" />)</c>.
@@ -183,6 +189,7 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="max"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException">An element-wise <paramref name="min" /> is greater than <paramref name="max" /> and <typeparamref name="T" /> is not a vectorizable type.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />, <paramref name="min" />), <paramref name="max" />[i])</c>.
