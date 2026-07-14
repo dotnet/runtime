@@ -4,8 +4,6 @@
 using System;
 
 #pragma warning disable 649  // field is never assigned to
-#pragma warning disable 660  // defines operator == but not Equals
-#pragma warning disable 661  // defines operator == but not GetHashCode
 
 namespace BitwiseEquatable
 {

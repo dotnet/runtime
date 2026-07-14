@@ -453,6 +453,9 @@ namespace Internal.IL.Stubs
 
             while (!sawFinalCompare)
             {
+                if (!reader.HasNext)
+                    return false;
+
                 // Optional records lead-in: `call EqualityComparer<F>::get_Default` before the operands.
                 MethodDesc getDefault = null;
                 bool records = false;
