@@ -18,6 +18,11 @@ jobs:
 # with the WasmTestOnWasmtime scenario and the wasi_wasm helix queue.
 # See https://github.com/dotnet/runtime/issues/130129.
 #
+# Bring-up leg: smoke-only and non-gating (rolling alwaysRun). It is expected to remain
+# red until the CoreCLR-WASI cold portable-entry-point signature-mismatch fix lands
+# (https://github.com/dotnet/runtime/issues/130634); any test that formats an exception
+# message or hits cold globalization/reflection traps in the interpreter until then.
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
