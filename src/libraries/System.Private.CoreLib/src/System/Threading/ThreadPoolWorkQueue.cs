@@ -451,6 +451,48 @@ namespace System.Threading
             RefreshLoggingEnabled();
         }
 
+        private void AssignWorkItemQueue(ThreadPoolWorkQueueThreadLocals tl)
+        {
+            Debug.Assert(s_assignableWorkItemQueueCount > 0);
+
+            _queueAssignmentLock.Acquire();
+
+            // Determine the first queue that has not yet been assigned to the limit of worker threads
+            int queueIndex = -1;
+            int minCount = int.MaxValue;
+            int minCountQueueIndex = 0;
+            for (int i = 0; i < s_assignableWorkItemQueueCount; i++)
+            {
+                int count = _assignedWorkItemQueueThreadCounts[i];
+                Debug.Assert(count >= 0);
+                if (count < ProcessorsPerAssignableWorkItemQueue)
+                {
+                    queueIndex = i;
+                    _assignedWorkItemQueueThreadCounts[queueIndex] = count + 1;
+                    break;
+                }
+
+                if (count < minCount)
+                {
+                    minCount = count;
+                    minCountQueueIndex = i;
+                }
+            }
+
+            if (queueIndex < 0)
+            {
+                // All queues have been fully assigned. Choose the queue that has been assigned to the least number of worker
+                // threads.
+                queueIndex = minCountQueueIndex;
+                _assignedWorkItemQueueThreadCounts[queueIndex]++;
+            }
+
+            _queueAssignmentLock.Release();
+
+            tl.queueIndex = queueIndex;
+            tl.assignedGlobalWorkItemQueue = _assignableWorkItemQueues[queueIndex];
+        }
+
         private void TryReassignWorkItemQueue(ThreadPoolWorkQueueThreadLocals tl)
         {
             Debug.Assert(s_assignableWorkItemQueueCount > 0);
@@ -856,10 +898,21 @@ namespace System.Threading
         {
             ThreadPoolWorkQueue workQueue = ThreadPool.s_workQueue;
             ThreadPoolWorkQueueThreadLocals tl = workQueue.GetOrCreateThreadLocals();
+
+            if (s_assignableWorkItemQueueCount > 0)
+            {
+                workQueue.AssignWorkItemQueue(tl);
+            }
+
             bool missedSteal = false;
             object? workItem = workQueue.Dequeue(tl, ref missedSteal);
             if (workItem == null)
             {
+                if (s_assignableWorkItemQueueCount > 0)
+                {
+                    workQueue.UnassignWorkItemQueue(tl);
+                }
+
                 // Missing a steal means there may be an item that we were unable to get.
                 // Effectively, we failed to fulfill our promise to check the queues for work.
                 // We need to make sure someone will do another pass.
