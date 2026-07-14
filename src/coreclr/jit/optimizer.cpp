@@ -2189,7 +2189,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         if (!keepInverting)
         {
             JITDUMP("No loop-inversion for " FMT_LP "; already bottom-tested with no recognized IV and no "
-                    "hoistable/call benefit in the duplicated condition\n",
+                    "call or non-loop-varying indirection in the duplicated condition\n",
                     loop->GetIndex());
             return false;
         }
