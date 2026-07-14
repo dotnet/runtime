@@ -310,7 +310,7 @@ public interface IRuntimeTypeSystem : IContract
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef) => throw new NotImplementedException();
     TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
-    TargetPointer GetFieldDescNext(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    bool TryGetFieldDescNext(TargetPointer fieldDescPointer, out TargetPointer nextFieldDesc) => throw new NotImplementedException();
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
     TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();

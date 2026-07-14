@@ -1146,7 +1146,9 @@ public sealed unsafe partial class SOSDacImpl
             data->bIsThreadLocal = rtsContract.IsFieldDescThreadStatic(fieldDescTargetPtr) ? 1 : 0;
             data->bIsContextLocal = 0;
             data->bIsStatic = rtsContract.IsFieldDescStatic(fieldDescTargetPtr) ? 1 : 0;
-            data->NextField = rtsContract.GetFieldDescNext(fieldDescTargetPtr).ToClrDataAddress(_target);
+            data->NextField = rtsContract.TryGetFieldDescNext(fieldDescTargetPtr, out TargetPointer nextFieldDesc)
+                ? nextFieldDesc.ToClrDataAddress(_target)
+                : 0;
         }
         catch (System.Exception ex)
         {
@@ -1171,7 +1173,10 @@ public sealed unsafe partial class SOSDacImpl
                 Debug.Assert(data->bIsThreadLocal == dataLocal.bIsThreadLocal, $"cDAC: {data->bIsThreadLocal}, DAC: {dataLocal.bIsThreadLocal}");
                 Debug.Assert(data->bIsContextLocal == dataLocal.bIsContextLocal, $"cDAC: {data->bIsContextLocal}, DAC: {dataLocal.bIsContextLocal}");
                 Debug.Assert(data->bIsStatic == dataLocal.bIsStatic, $"cDAC: {data->bIsStatic}, DAC: {dataLocal.bIsStatic}");
-                Debug.Assert(data->NextField == dataLocal.NextField, $"cDAC: {data->NextField:x}, DAC: {dataLocal.NextField:x}");
+                // For the last field in a type, the legacy DAC returns a pointer one element past the end of
+                // the FieldDesc array (not a valid FieldDesc), whereas the cDAC's TryGetFieldDescNext reports
+                // no next field, which we surface as 0. Tolerate that intentional difference.
+                Debug.Assert(data->NextField == dataLocal.NextField || data->NextField == 0, $"cDAC: {data->NextField:x}, DAC: {dataLocal.NextField:x}");
             }
         }
 #endif

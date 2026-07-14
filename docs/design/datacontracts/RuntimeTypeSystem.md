@@ -314,7 +314,7 @@ bool IsFieldDescRVA(TargetPointer fieldDescPointer);
 CorElementType GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef);
 TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer);
-TargetPointer GetFieldDescNext(TargetPointer fieldDescPointer);
+bool TryGetFieldDescNext(TargetPointer fieldDescPointer, out TargetPointer nextFieldDesc);
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
 TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true);
 ```
@@ -2321,10 +2321,24 @@ TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
     // (e.g. uncached constructed instantiation).
 }
 
-TargetPointer GetFieldDescNext(TargetPointer fieldDescPointer)
+bool TryGetFieldDescNext(TargetPointer fieldDescPointer, out TargetPointer nextFieldDesc)
 {
-    // The FieldDescs of a type form a contiguous array, so the next one is one FieldDesc-size along.
-    return fieldDescPointer + /* sizeof(FieldDesc) */;
+    // The FieldDescs of a type form a contiguous array with no terminator. Advance one FieldDesc-size
+    // along, but first bounds-check: locate the enclosing type (via the FieldDesc's enclosing
+    // MethodTable) and, if `fieldDescPointer` is the last FieldDesc in that type's list, report that
+    // there is no next FieldDesc by returning false.
+    TargetPointer enclosingMT = GetMTOfEnclosingClass(fieldDescPointer);
+    TypeHandle typeHandle = GetTypeHandle(enclosingMT);
+    // The field list holds the type's own instance fields (total instance fields minus the parent's)
+    // followed by its static fields; see GetFieldDescList.
+    TargetPointer lastFieldDesc = /* address of the final FieldDesc in typeHandle's list */;
+    if (fieldDescPointer == lastFieldDesc)
+    {
+        nextFieldDesc = TargetPointer.Null;
+        return false;
+    }
+    nextFieldDesc = fieldDescPointer + /* sizeof(FieldDesc) */;
+    return true;
 }
 ```
 
