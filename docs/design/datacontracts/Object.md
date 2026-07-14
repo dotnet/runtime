@@ -66,10 +66,11 @@ Data descriptors used:
 | `SyncTableEntry` | `SyncBlock` | `SyncBlock` corresponding to the entry |
 | `ObjectHeader` | `SyncBlockValue` | Sync block value from the object header |
 | `SyncBlock` | `HashCode` | Hash code stored in the sync block |
+| `Delegate` | `HelperObject` | Invocation list for multicast, MethodInfo otherwise |
 | `Delegate` | `Target` | Bound `this` reference for closed delegates |
 | `Delegate` | `MethodPtr` | Primary method pointer |
 | `Delegate` | `MethodPtrAux` | Auxiliary method pointer |
-| `Delegate` | `InvocationCount` | Invocation count (non-zero for multicast/wrapper/unmanaged/special delegates) |
+| `Delegate` | `ExtraData` | Invocation count for multicast, UnmanagedMarker for unmanaged, MethodDesc otherwise |
 | `ContinuationObject` | `Next` | Pointer to the next continuation in the linked list |
 | `ContinuationObject` | `ResumeInfo` | Pointer to the `ResumeInfo` for this suspension point (may be null) |
 | `ContinuationObject` | `State` | State index identifying the suspension point within the resumed method |

@@ -59,7 +59,7 @@ public:
     static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
     static MethodDesc* GetMethodDesc(OBJECTREF obj);
-    static MethodDesc* GetCachedMethodDesc(DELEGATEREF delegate);
+    static MethodDesc* GetMethodDescForOpenVirtualDelegate(DELEGATEREF delegate);
 
     static BOOL HasSingleTarget(DELEGATEREF delegate);
 

@@ -3395,7 +3395,7 @@ SWITCH_OPCODE:
 
                         if (isOpenVirtual)
                         {
-                            targetMethod = COMDelegate::GetCachedMethodDesc(*delegateObj);
+                            targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
                             OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF);
                             NULL_CHECK(*pThisArg);
                             targetMethod = CallWithSEHWrapper(

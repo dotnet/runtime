@@ -9,7 +9,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
-using System.Threading;
 
 namespace System
 {
@@ -45,12 +44,14 @@ namespace System
 
         private bool IsUnmanagedFunctionPtr => _extraData == UnmanagedMarker;
 
+        private bool IsClosed => _methodPtrAux == 0;
+
         public partial bool HasSingleTarget => _helperObject is null || _helperObject.GetType() != typeof(object[]);
 
         public object? Target =>
             TryGetInvocations(out ReadOnlySpan<object> invocations)
                 ? ((Delegate)invocations[^1]).Target
-                : _methodPtrAux != 0 ? null : _target;
+                : IsClosed ? _target : null;
 
         private unsafe MethodDesc* MethodDesc
         {
@@ -185,10 +186,10 @@ namespace System
             Delegate other = Unsafe.As<Delegate>(obj);
 
             // Check closed delegates first
-            if (_methodPtrAux == 0)
+            if (IsClosed)
             {
                 // different delegate kind
-                if (other._methodPtrAux != 0)
+                if (!other.IsClosed)
                     return false;
 
                 // different instances
@@ -201,7 +202,7 @@ namespace System
             else
             {
                 // different delegate kinds
-                if (other._methodPtrAux == 0)
+                if (other.IsClosed)
                     return false;
 
                 // multicast
@@ -226,9 +227,13 @@ namespace System
                            _methodPtrAux == other._methodPtrAux;
                 }
 
+                // Under cached interface dispatch we might see the shared CID_VirtualOpenDelegateDispatch stub.
+                // Fallback to desc comparison in such case for correctness.
+#if !FEATURE_CACHED_INTERFACE_DISPATCH
                 // both delegates are open
                 if (_methodPtrAux == other._methodPtrAux)
                     return true;
+#endif
             }
 
             // It's possible that the method pointer was JITted in one delegate but not the other.
@@ -256,12 +261,9 @@ namespace System
             }
 #endif
 
-            if (IsUnmanagedFunctionPtr)
-            {
-                return HashCode.Combine((nuint)methodTable, _methodPtrAux);
-            }
-            int hashCode = HashCode.Combine((nuint)methodTable, (nuint)MethodDesc);
-            if (_methodPtrAux == 0 && _target != null)
+            nuint targetMethod = IsUnmanagedFunctionPtr ? (nuint)_methodPtrAux : (nuint)MethodDesc;
+            int hashCode = HashCode.Combine((nuint)methodTable, targetMethod);
+            if (IsClosed)
             {
                 hashCode += RuntimeHelpers.GetHashCode(_target) * 33;
             }
@@ -291,7 +293,7 @@ namespace System
                 bool isStatic = (RuntimeMethodHandle.GetAttributes(method) & MethodAttributes.Static) != 0;
                 if (!isStatic)
                 {
-                    if (_methodPtrAux == 0)
+                    if (IsClosed)
                     {
                         // The target may be of a derived type that doesn't have visibility onto the
                         // target method. We don't want to call RuntimeType.GetMethodBase below with that

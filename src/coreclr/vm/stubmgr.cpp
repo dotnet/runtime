@@ -463,7 +463,7 @@ BOOL StubManager::CheckIsStub_Worker(PCODE stubStartAddress)
     EX_TRY
 #endif
     {
-		SUPPORTS_DAC;
+        SUPPORTS_DAC;
 
 #ifndef DACCESS_COMPILE
         // Use CheckIsStub_Internal may AV. That's ok.
@@ -1219,8 +1219,7 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
         // - Instance open non-virt
         // - Instance open virtual
         // - Static closed
-        // - Static opened
-        // - Instance open virtual
+        // - Static open
         // - Unmanaged FtnPtr
         // if _methodPtrAux is 0 the target is in _methodPtr, otherwise the target is _methodPtrAux
 

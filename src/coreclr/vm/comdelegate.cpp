@@ -1832,7 +1832,7 @@ MethodDesc* COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     return pMethodHandle;
 }
 
-MethodDesc* COMDelegate::GetCachedMethodDesc(DELEGATEREF delegate)
+MethodDesc* COMDelegate::GetMethodDescForOpenVirtualDelegate(DELEGATEREF delegate)
 {
     CONTRACTL
     {

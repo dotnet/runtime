@@ -1475,7 +1475,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
         _ASSERTE(!"Throw returned");
     }
 
-    MethodDesc *pTargetMD = COMDelegate::GetCachedMethodDesc((DELEGATEREF)delegateObj);
+    MethodDesc *pTargetMD = COMDelegate::GetMethodDescForOpenVirtualDelegate((DELEGATEREF)delegateObj);
     pSDFrame->SetFunction(pTargetMD);
 
     pSDFrame->Push(CURRENT_THREAD);
