@@ -337,13 +337,13 @@ namespace System.Runtime.Serialization.Json
             switch ((data[0], data[1]))
             {
                 // Detect known BOM's
-                case(0xFF, 0xFE):
+                case (0xFF, 0xFE):
                     bomLength = 2;
                     return SupportedEncoding.UTF16LE;
-                case(0xFE, 0xFF):
+                case (0xFE, 0xFF):
                     bomLength = 2;
                     return SupportedEncoding.UTF16BE;
-                case(0xEF, 0xBB):
+                case (0xEF, 0xBB):
                     if (data.Length >= 3 && data[2] == 0xBF) {
                         bomLength = 3;
                         return SupportedEncoding.UTF16LE;
