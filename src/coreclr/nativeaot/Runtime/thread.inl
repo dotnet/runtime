@@ -203,8 +203,7 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame* pFrame
     // We will allow threads in DoNotTriggerGc mode to do reverse PInvoke regardless of their coop state.
     if (IsDoNotTriggerGcSet())
     {
-        // We expect this scenario only when EE is stopped.
-        ASSERT(ThreadStore::IsTrapThreadsRequested());
+        ASSERT(IsGCSpecial());
         // no need to do anything
         return true;
     }
