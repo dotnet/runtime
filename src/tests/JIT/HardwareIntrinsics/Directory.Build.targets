@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HWITestsWasmOnly)' == 'true'">
-    <!-- Wasm-specific intrinsics (e.g. PackedSimd) are only supported on the browser-wasm target. -->
+    <!-- Wasm-specific intrinsics (e.g. PackedSimd) are only supported when targeting the Wasm architecture. -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'wasm'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
