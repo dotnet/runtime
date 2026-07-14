@@ -20,4 +20,4 @@ set "SDK_PATH=%~dp0sdk\%SDK_VERSION%\dotnet.dll"
 
 "%DOTNET%" exec "%SDK_PATH%" dnx %*
 
-endlocal
+endlocal & exit /b %ERRORLEVEL%
