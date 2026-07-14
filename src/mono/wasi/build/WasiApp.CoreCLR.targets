@@ -1,0 +1,73 @@
+<Project>
+  <!--
+    CoreCLR-WASI app-builder targets. Sibling of the Mono WasiApp.targets, mirroring
+    the browser split (BrowserWasmApp.targets vs BrowserWasmApp.CoreCLR.targets).
+
+    Unlike Mono - which relinks dotnet.wasm per-app with wasi-sdk clang - CoreCLR-WASI
+    ships a prebuilt corerun host in the runtime pack and loads managed assemblies
+    from the wasmtime filesystem. So there is no per-app native relink: we reuse the
+    shared WASI bundling (WasiAppBuilder + runtimeconfig + run script) with
+    WasmBuildNative disabled, and only swap the native host asset.
+
+    TODO (CI validation, #130129): the exact native-asset set (host filename, coreclr
+    native libraries, icu) must be confirmed against the built CoreCLR wasi-wasm runtime
+    pack layout. Validated locally against the wasi-wasm runtime pack (2026-07): the host
+    is named "corerun" and runs under wasmtime with -W exceptions=y.
+  -->
+  <!-- Reuse the shared WASI bundling machinery. The Mono-only clang-link targets in
+       WasiApp.targets are gated behind WasmBuildNative and therefore stay inert.
+       Imported first so the CoreCLR overrides below win over its unconditional
+       WasmAppRuntimeFlavor=Mono default. -->
+  <Import Project="$(MSBuildThisFileDirectory)WasiApp.targets" />
+
+  <PropertyGroup>
+    <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
+    <UseMonoRuntime>false</UseMonoRuntime>
+    <!-- corerun is prebuilt; never relink the runtime per-app. -->
+    <WasmBuildNative>false</WasmBuildNative>
+    <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
+    <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
+  </PropertyGroup>
+
+  <!-- Override the same-named target imported above so we do NOT bundle Mono's
+       dotnet.wasm. For the CoreCLR bring-up we run invariant-globalization, so no ICU
+       data is bundled; corerun is placed into managed/ by _WasiCopyCoreRunToManaged. -->
+  <Target Name="_GetWasiGenerateAppBundleDependencies">
+    <ItemGroup Condition="'$(InvariantGlobalization)' == 'true' or '$(WasmSingleFileBundle)' == 'true'">
+      <ReferenceCopyLocalPaths Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmSingleFileBundle)' != 'true'">
+      <WasmIcuDataFileNames Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"
+                            Condition="Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat')" />
+      <WasmNativeAsset Include="@(WasmIcuDataFileNames)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- CoreCLR-WASI never relinks with emcc/wasi-sdk, so the Mono emcc property blob
+       (native/src/wasm-props.json) is not shipped in the CoreCLR runtime pack. Override
+       _ReadWasmProps (pulled in via PrepareInputsForWasmBuildDependsOn) to a no-op so the
+       build does not fail looking for that file. -->
+  <Target Name="_ReadWasmProps" />
+
+  <!-- corerun resolves the entry assembly relative to its own directory and locates the
+       runtime via CORE_ROOT, so it must sit in managed/ next to the framework assemblies
+       (mirrors the CoreCLR-WASI runtime-test layout: corerun lives in CORE_ROOT). The run
+       command in eng/testing/tests.wasi.targets uses "managed/corerun" with CORE_ROOT=/managed.
+       System.Private.CoreLib.dll ships in the pack's native/ dir (not lib/), so it is not
+       bundled by WasiAppBuilder and must be copied alongside corerun. Validated locally
+       against the wasi-wasm runtime pack under wasmtime. -->
+  <Target Name="_WasiCopyCoreRunToManaged"
+          AfterTargets="_WasiGenerateAppBundle"
+          Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)corerun')"
+           Text="CoreCLR-WASI host 'corerun' not found in the runtime pack native dir: $(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
+    <ItemGroup>
+      <_WasiCoreCLRHostFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)corerun" />
+      <_WasiCoreCLRHostFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_WasiCoreCLRHostFiles)"
+          DestinationFolder="$(WasmAppDir)managed"
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>

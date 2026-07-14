@@ -1,0 +1,77 @@
+parameters:
+  alwaysRun: false
+  extraBuildArgs: ''
+  extraHelixArguments: ''
+  isExtraPlatformsBuild: false
+  isWasmOnlyBuild: false
+  nameSuffix: ''
+  platforms: []
+  scenarios: ['WasmTestOnWasmtime']
+  shouldContinueOnError: false
+  shouldRunSmokeOnly: false
+
+jobs:
+
+#
+# Build CoreCLR libraries for WASI and run the library tests on wasmtime via Helix.
+# Mirrors wasm-coreclr-library-tests.yml (the browser-CoreCLR LibraryTestsCoreCLR leg),
+# with the WasmTestOnWasmtime scenario and the wasi_wasm helix queue.
+# See https://github.com/dotnet/runtime/issues/130129.
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    variables:
+      - name: alwaysRunVar
+        value: ${{ parameters.alwaysRun }}
+      - name: shouldRunOnDefaultPipelines
+        value: $[
+          or(
+            eq(variables['wasmDarcDependenciesChanged'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true))
+          ]
+      # run smoke tests only if:
+      # - explicitly requested
+      # - libraries or illink changed and no wasm specific changes
+      - name: shouldRunSmokeOnlyVar
+        value: $[
+          or(
+            eq('${{ parameters.shouldRunSmokeOnly }}', 'true'),
+            and(
+              eq('${{ parameters.shouldRunSmokeOnly }}', 'onLibrariesAndIllinkChanges'),
+              ne(variables['wasmDarcDependenciesChanged'], true),
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true)
+              )
+            )
+          )
+          ]
+      - name: _wasmRunSmokeTestsOnlyArg
+        value: /p:RunSmokeTestsOnly=$(shouldRunSmokeOnlyVar)
+
+    jobParameters:
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: LibraryTestsCoreCLR_WASI${{ parameters.nameSuffix }}
+      buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_wasmRunSmokeTestsOnlyArg) /maxcpucount:1 ${{ parameters.extraBuildArgs }}
+      timeoutInMinutes: 240
+      condition: >-
+        or(
+          eq(variables['alwaysRunVar'], true),
+          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+      # extra steps, run tests
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: CoreCLR_WASI_$(_BuildConfig)
+            extraHelixArguments: $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArguments }}
+            scenarios: ${{ parameters.scenarios }}

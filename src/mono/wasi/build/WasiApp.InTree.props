@@ -1,6 +1,21 @@
 <Project>
   <!-- This depends on the root Directory.Build.props imported this file -->
   <Import Project="$(MSBuildThisFileDirectory)WasiApp.props" />
+
+  <!-- Mirror of src/mono/browser/build/WasmApp.InTree.props: select the runtime
+       flavor. CoreCLR-WASI ships a prebuilt corerun.wasm host, so unlike Mono it
+       does not relink the runtime per-app. -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <UseMonoRuntime>false</UseMonoRuntime>
+    <!-- Default to invariant globalization for the CoreCLR-WASI bring-up, matching the
+         CoreCLR-WASI runtime tests (see src/tests/Common/CLRTest.Execute.Bash.targets).
+         TODO (#130129): flip to full ICU once icu data loading is validated on wasi. -->
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+    <UseMonoRuntime>true</UseMonoRuntime>
+  </PropertyGroup>
+
   <PropertyGroup>
     <Platform>AnyCPU</Platform>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
@@ -10,7 +25,7 @@
     <TrimMode>full</TrimMode>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'CoreCLR'">
     <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a"/>
     <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-stub-static.a" />
     <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-stub-static.a" />

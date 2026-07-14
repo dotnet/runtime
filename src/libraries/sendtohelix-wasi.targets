@@ -32,6 +32,9 @@
 
   <PropertyGroup>
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'WasmTestOnWasmtime'">true</IsRunningLibraryTests>
+    <!-- Distinguish CoreCLR-WASI work items from Mono ones sharing the wasi_wasm queue
+         (mirror of the browser -CLR-ST- prefix in sendtohelix-browser.targets). -->
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">$(Scenario)-CLR-ST-</WorkItemPrefix>
     <WasiEngine Condition="'$(Scenario)' == 'WasmTestOnWasmtime' or '$(Scenario)' == 'BuildWasmApps' or '$(Scenario)' == ''">wasmtime</WasiEngine>
     <NeedsWasmtime Condition="'$(WasiEngine)' == 'wasmtime'">true</NeedsWasmtime>
 
@@ -124,12 +127,20 @@
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.wasi-wasm" />
 
       <HelixCorrelationPayload Include="$(WasiBuildTargetsDir)"       Destination="build/wasm" />
+    </ItemGroup>
+
+    <!-- Mono-only build tooling (AOT compiler, cross, Mono targets tasks). A CoreCLR
+         build does not produce these, and CoreCLR-WASI library tests run the prebuilt
+         corerun.wasm bundle rather than relinking, so they are not needed. -->
+    <ItemGroup Condition="'$(RuntimeFlavor)' != 'CoreCLR'">
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"       Destination="build/wasm-shared" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"         Destination="build/WasmAppBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"        Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"           Destination="build/cross" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"       Destination="build/MonoTargetsTasks" />
+    </ItemGroup>
 
+    <ItemGroup>
       <HelixCorrelationPayload Include="$(_ShippingPackagesPath)"     Destination="built-nugets" Condition="'$(NeedsBuiltNugets)' == 'true'" />
       <HelixCorrelationPayload Include="$(WasiSdkDirForHelixPayload)" Destination="build/wasi-sdk" Condition="'$(NeedsWasiSdk)' == 'true'" />
     </ItemGroup>
