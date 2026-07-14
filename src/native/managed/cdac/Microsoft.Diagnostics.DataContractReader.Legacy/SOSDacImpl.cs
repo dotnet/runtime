@@ -1687,8 +1687,7 @@ public sealed unsafe partial class SOSDacImpl
                         Debug.Assert(handles[i].StrongReference == handlesLocal[i].StrongReference, $"cDAC: {handles[i].StrongReference}, DAC: {handlesLocal[i].StrongReference}");
                         Debug.Assert(handles[i].RefCount == handlesLocal[i].RefCount, $"cDAC: {handles[i].RefCount}, DAC: {handlesLocal[i].RefCount}");
                         Debug.Assert(handles[i].JupiterRefCount == handlesLocal[i].JupiterRefCount, $"cDAC: {handles[i].JupiterRefCount}, DAC: {handlesLocal[i].JupiterRefCount}");
-                        Debug.Assert(handles[i].IsPegged == 0, $"cDAC IsPegged must be 0, actual: {handles[i].IsPegged}");
-                        Debug.Assert(handlesLocal[i].IsPegged == 0, $"DAC IsPegged must be 0, actual: {handlesLocal[i].IsPegged}");
+                        Debug.Assert(handles[i].IsPegged == handlesLocal[i].IsPegged, $"cDAC: {handles[i].IsPegged}, DAC: {handlesLocal[i].IsPegged}");
                     }
                 }
             }
