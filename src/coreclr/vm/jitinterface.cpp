@@ -7287,23 +7287,294 @@ static bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     return true;
 }
 
+namespace
+{
+    // The subset of IL opcodes the field-wise Equals scanner understands. The scanner only accepts
+    // the exact shapes the C# compiler emits for a field-wise equality comparison, so a small,
+    // literal opcode table is all that is required.
+    enum ILByte : BYTE
+    {
+        IL_LDARG_0      = 0x02,
+        IL_LDARG_1      = 0x03,
+        IL_LDC_I4_0     = 0x16,
+        IL_CALL         = 0x28,
+        IL_RET          = 0x2A,
+        IL_BNE_UN_S     = 0x33,
+        IL_LDOBJ        = 0x71,
+        IL_LDFLD        = 0x7B,
+        IL_PREFIX1      = 0xFE, // ceq is encoded as 0xFE 0x01
+        IL_CEQ_2ND      = 0x01,
+    };
+
+    mdToken ReadILToken(const BYTE* pIL)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (mdToken)(pIL[0] | (pIL[1] << 8) | (pIL[2] << 16) | (pIL[3] << 24));
+    }
+
+    // Resolves an in-module FieldDef token. Returns NULL for anything else (e.g. a MemberRef,
+    // which only arises for generic or cross-module references we deliberately don't handle yet).
+    FieldDesc* TryResolveInModuleFieldDef(Module* pModule, mdToken token)
+    {
+        STANDARD_VM_CONTRACT;
+        if (TypeFromToken(token) != mdtFieldDef)
+            return NULL;
+        return pModule->LookupFieldDef(token);
+    }
+
+    // Resolves an in-module MethodDef token. Returns NULL for anything else.
+    MethodDesc* TryResolveInModuleMethodDef(Module* pModule, mdToken token)
+    {
+        STANDARD_VM_CONTRACT;
+        if (TypeFromToken(token) != mdtMethodDef)
+            return NULL;
+        return MemberLoader::GetMethodDescFromMethodDef(pModule, token, Instantiation(), Instantiation());
+    }
+
+    // Interface dispatch on a value type resolves to an unboxing stub, which carries no IL of its
+    // own. Unwrap it to the underlying instance method so the scanner can read its body.
+    MethodDesc* UnwrapStub(MethodDesc* pMD)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (pMD != NULL && pMD->IsWrapperStub())
+            return pMD->GetWrappedMethodDesc();
+        return pMD;
+    }
+
+    // Scans the body of a method that is expected to compare every instance field of
+    // 'valueTypeMT' pairwise, ANDing the results, and returns true only if the body is exactly
+    // such a comparison and every comparison is bit-for-bit equivalent to memcmp.
+    //
+    // The C# compiler lowers 'this.f0 == other.f0 && this.f1 == other.f1 && ...' to a sequence of
+    // per-field units sharing a single 'return false' tail:
+    //
+    //   non-final field:  ldarg.0; ldfld F; ldarg.1; ldfld F; bne.un.s FALSE
+    //   final     field:  ldarg.0; ldfld F; ldarg.1; ldfld F; ceq; ret
+    //   shared tail:      FALSE: ldc.i4.0; ret
+    //
+    // The two operands are always argument 0 and argument 1 (which are 'this'/'other' for the
+    // instance Equals and the two parameters for op_Equality). Requiring every instance field to be
+    // compared exactly once, together with the caller's 'tightly packed' guarantee, is what makes
+    // the field-wise comparison equivalent to a full memcmp. Only primitive (integer-like) fields
+    // are handled; the tightly-packed guarantee already excludes any struct with a value-type field.
+    bool ScanFieldwiseEqualsBody(MethodDesc* pEqualsMD, MethodTable* valueTypeMT)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (!pEqualsMD->MayHaveILHeader())
+            return false;
+
+        COR_ILMETHOD* pILMethod = pEqualsMD->GetILHeader();
+        if (pILMethod == NULL)
+            return false;
+
+        COR_ILMETHOD_DECODER header(pILMethod);
+        const BYTE* pIL = header.Code;
+        if (pIL == NULL)
+            return false;
+
+        const unsigned codeSize = header.GetCodeSize();
+        Module* pModule = pEqualsMD->GetModule();
+
+        // Track which instance fields have been compared so we can require full coverage.
+        const DWORD fieldCount = valueTypeMT->GetNumInstanceFields();
+        if (fieldCount == 0)
+            return false;
+
+        NewArrayHolder<FieldDesc*> compared(new FieldDesc*[fieldCount]);
+        DWORD numCompared = 0;
+
+        unsigned ip = 0;
+        int falseTarget = -1; // shared 'return false' offset, discovered from the first branch
+        bool sawFinalUnit = false;
+
+        while (!sawFinalUnit)
+        {
+            // Left operand: ldarg.0; ldfld F.
+            if (ip + 6 > codeSize || pIL[ip] != IL_LDARG_0 || pIL[ip + 1] != IL_LDFLD)
+                return false;
+            mdToken leftFieldTok = ReadILToken(pIL + ip + 2);
+            ip += 6;
+
+            // Right operand: ldarg.1; ldfld of the same field.
+            if (ip + 6 > codeSize || pIL[ip] != IL_LDARG_1 || pIL[ip + 1] != IL_LDFLD)
+                return false;
+            mdToken rightFieldTok = ReadILToken(pIL + ip + 2);
+            ip += 6;
+
+            if (leftFieldTok != rightFieldTok)
+                return false;
+
+            FieldDesc* pField = TryResolveInModuleFieldDef(pModule, leftFieldTok);
+            if (pField == NULL ||
+                pField->IsStatic() ||
+                pField->GetApproxEnclosingMethodTable() != valueTypeMT)
+            {
+                return false;
+            }
+
+            // Each field must be compared exactly once.
+            for (DWORD i = 0; i < numCompared; i++)
+            {
+                if (compared[i] == pField)
+                    return false;
+            }
+            compared[numCompared++] = pField;
+
+            // Only integer-like fields are bit-for-bit equivalent to '=='. Float/double are excluded
+            // (NaN != NaN, +0.0 == -0.0), and anything else (including value-type fields) is rejected.
+            switch (pField->GetFieldType())
+            {
+                case ELEMENT_TYPE_BOOLEAN:
+                case ELEMENT_TYPE_CHAR:
+                case ELEMENT_TYPE_I1:
+                case ELEMENT_TYPE_U1:
+                case ELEMENT_TYPE_I2:
+                case ELEMENT_TYPE_U2:
+                case ELEMENT_TYPE_I4:
+                case ELEMENT_TYPE_U4:
+                case ELEMENT_TYPE_I8:
+                case ELEMENT_TYPE_U8:
+                case ELEMENT_TYPE_I:
+                case ELEMENT_TYPE_U:
+                case ELEMENT_TYPE_PTR:
+                case ELEMENT_TYPE_FNPTR:
+                    break;
+                default:
+                    return false;
+            }
+
+            if (ip < codeSize && pIL[ip] == IL_BNE_UN_S)
+            {
+                // Non-final field: branch to the shared 'return false'.
+                if (ip + 2 > codeSize)
+                    return false;
+                int target = (int)(ip + 2) + (int)(signed char)pIL[ip + 1];
+                if (falseTarget == -1)
+                    falseTarget = target;
+                else if (falseTarget != target)
+                    return false;
+                ip += 2;
+            }
+            else if (ip + 3 <= codeSize && pIL[ip] == IL_PREFIX1 && pIL[ip + 1] == IL_CEQ_2ND && pIL[ip + 2] == IL_RET)
+            {
+                // Final field: ceq; ret.
+                ip += 3;
+                sawFinalUnit = true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        // If there were any branches, the shared tail must be exactly 'ldc.i4.0; ret' and every
+        // branch must target it. A single-field comparison has no branches and no tail.
+        if (falseTarget != -1)
+        {
+            if ((int)ip != falseTarget ||
+                ip + 2 != codeSize ||
+                pIL[ip] != IL_LDC_I4_0 ||
+                pIL[ip + 1] != IL_RET)
+            {
+                return false;
+            }
+        }
+        else if (ip != codeSize)
+        {
+            return false;
+        }
+
+        // Every instance field must have been compared.
+        return numCompared == fieldCount;
+    }
+
+    // Determines whether 'valueTypeMT's IEquatable<T>.Equals implementation is a plain field-wise
+    // comparison that is equivalent to memcmp. 'pEqualsMD' is that Equals method.
+    bool IsFieldwiseEqualsBitwiseEquivalent(MethodTable* valueTypeMT, MethodDesc* pEqualsMD)
+    {
+        STANDARD_VM_CONTRACT;
+
+        // First pass restrictions to keep the scan simple and unquestionably safe:
+        //  - Must be unmanaged so a byte-wise compare is meaningful.
+        //  - No generics for now (keeps IL token resolution to in-module def tokens).
+        //  - Must be tightly packed (no padding gaps and no overlapping fields), otherwise memcmp
+        //    would compare bytes the field-wise Equals ignores.
+        //  - No inline arrays.
+        if (valueTypeMT->ContainsGCPointers() ||
+            valueTypeMT->HasInstantiation() ||
+            valueTypeMT->IsNotTightlyPacked() ||
+            valueTypeMT->GetClass()->IsInlineArray())
+        {
+            return false;
+        }
+
+        // Follow the extremely common 'Equals(T other) => this == other' forward into op_Equality:
+        //   ldarg.0; ldobj T; ldarg.1; call op_Equality; ret
+        MethodDesc* pScanMD = pEqualsMD;
+        if (pEqualsMD->MayHaveILHeader())
+        {
+            COR_ILMETHOD* pILMethod = pEqualsMD->GetILHeader();
+            if (pILMethod != NULL)
+            {
+                COR_ILMETHOD_DECODER header(pILMethod);
+                const BYTE* pIL = header.Code;
+                const unsigned codeSize = header.GetCodeSize();
+
+                // 02 71 <T:4> 03 28 <op_Equality:4> 2A
+                if (pIL != NULL && codeSize == 13 &&
+                    pIL[0] == IL_LDARG_0 &&
+                    pIL[1] == IL_LDOBJ && ReadILToken(pIL + 2) == valueTypeMT->GetCl() &&
+                    pIL[6] == IL_LDARG_1 &&
+                    pIL[7] == IL_CALL &&
+                    pIL[12] == IL_RET)
+                {
+                    MethodDesc* pOpEquality = TryResolveInModuleMethodDef(pEqualsMD->GetModule(), ReadILToken(pIL + 8));
+                    if (pOpEquality != NULL &&
+                        pOpEquality->IsStatic() &&
+                        pOpEquality->GetMethodTable() == valueTypeMT &&
+                        strcmp(pOpEquality->GetName(), "op_Equality") == 0)
+                    {
+                        pScanMD = pOpEquality;
+                    }
+                }
+            }
+        }
+
+        return ScanFieldwiseEqualsBody(pScanMD, valueTypeMT);
+    }
+}
+
 bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
 {
-    if (!methodTable->IsValueType() ||
-        !CanCompareBitsOrUseFastGetHashCode(methodTable))
+    STANDARD_VM_CONTRACT;
+
+    if (!methodTable->IsValueType())
     {
         return false;
     }
 
-    // CanCompareBitsOrUseFastGetHashCode checks for an object.Equals override.
-    // We also need to check for an IEquatable<T> implementation.
     Instantiation inst(&typeHandle, 1);
-    if (typeHandle.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
+    TypeHandle iequatableOfSelf = TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst);
+
+    if (!typeHandle.CanCastTo(iequatableOfSelf))
+    {
+        // The type provides no IEquatable<T> of its own, so bitwise equality is safe as long as the
+        // fields are bit-comparable and there is no object.Equals override with custom semantics.
+        return CanCompareBitsOrUseFastGetHashCode(methodTable);
+    }
+
+    // The type provides IEquatable<T>.Equals. It can only be treated as bitwise equatable if that
+    // implementation is a plain field-wise comparison equivalent to memcmp. Interface dispatch on a
+    // value type resolves to an unboxing stub, so unwrap it to the underlying instance method.
+    MethodDesc* pEqualsMD = UnwrapStub(methodTable->GetMethodDescForInterfaceMethod(
+        iequatableOfSelf, CoreLibBinder::GetMethod(METHOD__IEQUATABLEGENERIC__EQUALS), FALSE /* throwOnConflict */));
+    if (pEqualsMD == NULL)
     {
         return false;
     }
 
-    return true;
+    return IsFieldwiseEqualsBitwiseEquivalent(methodTable, pEqualsMD);
 }
 
 static bool getILIntrinsicImplementationForRuntimeHelpers(

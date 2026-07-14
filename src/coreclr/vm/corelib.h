@@ -1301,6 +1301,7 @@ DEFINE_CLASS(ICOMPARABLEGENERIC,    System,                 IComparable`1)
 DEFINE_METHOD(ICOMPARABLEGENERIC,   COMPARE_TO,             CompareTo,                  NoSig)
 
 DEFINE_CLASS(IEQUATABLEGENERIC,     System,                 IEquatable`1)
+DEFINE_METHOD(IEQUATABLEGENERIC,    EQUALS,                 Equals,                     NoSig)
 
 DEFINE_CLASS_U(Reflection,             LoaderAllocator,          LoaderAllocatorObject)
 DEFINE_FIELD_U(m_slots,                  LoaderAllocatorObject,      m_pSlots)

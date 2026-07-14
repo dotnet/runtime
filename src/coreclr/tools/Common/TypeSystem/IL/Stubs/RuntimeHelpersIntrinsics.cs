@@ -73,6 +73,15 @@ namespace Internal.IL.Stubs
                                         mdType.FindVirtualFunctionTargetMethodOnObjectType(objectEquals).OwningType != mdType &&
                                         ComparerIntrinsics.CanCompareValueTypeBits(mdType, objectEquals);
                                 }
+                                else if (equatable.HasValue && equatable.Value)
+                                {
+                                    // Value type that implements IEquatable<T> of self. It is still bitwise-equatable
+                                    // if its fields are memcmp-comparable and its Equals is a plain field-wise comparison.
+                                    MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null);
+                                    result =
+                                        ComparerIntrinsics.CanCompareValueTypeBits(mdType, objectEquals) &&
+                                        ComparerIntrinsics.IsIEquatableEqualsFieldwise(mdType);
+                                }
                             }
                         }
                         break;

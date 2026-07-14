@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -315,6 +316,156 @@ namespace Internal.IL.Stubs
                 result = false;
 
             return result;
+        }
+
+        /// <summary>
+        /// Determines whether a value type's <see cref="System.IEquatable{T}"/> implementation of self is a
+        /// plain field-wise comparison that is equivalent to a bitwise (memcmp) comparison. This lets a type
+        /// that implements IEquatable&lt;T&gt; still be reported as bitwise-equatable when its Equals does
+        /// nothing more than compare every field with ==.
+        /// </summary>
+        public static bool IsIEquatableEqualsFieldwise(MetadataType type)
+        {
+            // Keep token resolution simple by only handling non-generic value types, matching the VM.
+            if (type.HasInstantiation)
+                return false;
+
+            MetadataType iequatableType = type.Context.SystemModule.GetKnownType("System"u8, "IEquatable`1"u8);
+            MethodDesc equalsInterfaceMethod = iequatableType.MakeInstantiatedType(type).GetMethod("Equals"u8, null);
+            if (equalsInterfaceMethod == null)
+                return false;
+
+            MethodDesc equalsImpl = type.ResolveInterfaceMethodToVirtualMethodOnType(equalsInterfaceMethod);
+            if (equalsImpl is not EcmaMethod)
+                return false;
+
+            MethodIL methodIL = EcmaMethodIL.Create((EcmaMethod)equalsImpl);
+
+            // A common pattern forwards `bool Equals(T other) => this == other;` to a user-defined
+            // `op_Equality`. Follow that single forward before scanning the field-wise comparison.
+            if (TryGetOpEqualityForward(methodIL, type) is EcmaMethod forwarded)
+                methodIL = EcmaMethodIL.Create(forwarded);
+
+            return ScanFieldwiseEqualsBody(methodIL, type);
+        }
+
+        private static MethodDesc TryGetOpEqualityForward(MethodIL methodIL, MetadataType type)
+        {
+            // ldarg.0; ldobj T; ldarg.1; call op_Equality; ret
+            ILReader reader = new ILReader(methodIL.GetILBytes());
+
+            if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.ldarg_0)
+                return null;
+            if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.ldobj)
+                return null;
+            if (methodIL.GetObject(reader.ReadILToken()) as TypeDesc != type)
+                return null;
+            if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.ldarg_1)
+                return null;
+            if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.call)
+                return null;
+            MethodDesc callee = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
+            if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.ret)
+                return null;
+            if (reader.HasNext)
+                return null;
+
+            if (callee == null || !callee.Signature.IsStatic || callee.OwningType != type || callee.Name != "op_Equality"u8)
+                return null;
+
+            return callee;
+        }
+
+        private static bool ScanFieldwiseEqualsBody(MethodIL methodIL, MetadataType type)
+        {
+            // Verifies the body is a plain field-wise equality: every instance field is compared exactly once
+            // with `==` and the results are ANDed together, which is equivalent to a bitwise (memcmp) comparison.
+            int instanceFieldCount = 0;
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (!field.IsStatic)
+                    instanceFieldCount++;
+            }
+
+            if (instanceFieldCount == 0)
+                return false;
+
+            HashSet<FieldDesc> comparedFields = new HashSet<FieldDesc>();
+            ILReader reader = new ILReader(methodIL.GetILBytes());
+
+            int falseTarget = -1;
+            bool sawFinalCompare = false;
+
+            while (!sawFinalCompare)
+            {
+                // Each field comparison loads `ldarg.0; ldfld F; ldarg.1; ldfld F`.
+                if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.ldarg_0)
+                    return false;
+                if (reader.ReadILOpcode() != ILOpcode.ldfld)
+                    return false;
+                FieldDesc leftField = methodIL.GetObject(reader.ReadILToken()) as FieldDesc;
+                if (reader.ReadILOpcode() != ILOpcode.ldarg_1)
+                    return false;
+                if (reader.ReadILOpcode() != ILOpcode.ldfld)
+                    return false;
+                FieldDesc rightField = methodIL.GetObject(reader.ReadILToken()) as FieldDesc;
+
+                if (leftField == null || leftField != rightField || leftField.IsStatic || leftField.OwningType != type)
+                    return false;
+
+                // Each field must be compared exactly once.
+                if (!comparedFields.Add(leftField))
+                    return false;
+
+                if (!IsBitwiseComparablePrimitive(leftField.FieldType))
+                    return false;
+
+                ILOpcode compareOpcode = reader.ReadILOpcode();
+                if (compareOpcode == ILOpcode.bne_un_s)
+                {
+                    // Non-final field: `bne.un.s FALSE` jumps to the shared `return false` tail.
+                    int target = reader.ReadBranchDestination(compareOpcode);
+                    if (falseTarget == -1)
+                        falseTarget = target;
+                    else if (falseTarget != target)
+                        return false;
+                }
+                else if (compareOpcode == ILOpcode.ceq)
+                {
+                    // Final field: `ceq; ret` produces the result directly.
+                    if (reader.ReadILOpcode() != ILOpcode.ret)
+                        return false;
+                    sawFinalCompare = true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            if (falseTarget != -1)
+            {
+                // Shared tail for a mismatch: `ldc.i4.0; ret`.
+                if (reader.Offset != falseTarget)
+                    return false;
+                if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.ldc_i4_0)
+                    return false;
+                if (reader.ReadILOpcode() != ILOpcode.ret)
+                    return false;
+            }
+
+            return !reader.HasNext && comparedFields.Count == instanceFieldCount;
+        }
+
+        private static bool IsBitwiseComparablePrimitive(TypeDesc fieldType)
+        {
+            if (fieldType.IsPrimitive || fieldType.IsEnum || fieldType.IsPointer || fieldType.IsFunctionPointer)
+            {
+                TypeFlags category = fieldType.UnderlyingType.Category;
+                return category != TypeFlags.Single && category != TypeFlags.Double;
+            }
+
+            return false;
         }
 
         private struct OverlappingFieldTracker
