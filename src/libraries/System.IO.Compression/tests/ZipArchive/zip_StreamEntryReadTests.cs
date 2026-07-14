@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -278,6 +279,291 @@ namespace System.IO.Compression.Tests
             Assert.True(foundUnencrypted);
         }
 
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "ZIP encryption is not supported on browser.")]
+        [InlineData(ZipEncryptionMethod.ZipCrypto, true)]
+        [InlineData(ZipEncryptionMethod.ZipCrypto, false)]
+        [InlineData(ZipEncryptionMethod.Aes128, true)]
+        [InlineData(ZipEncryptionMethod.Aes128, false)]
+        [InlineData(ZipEncryptionMethod.Aes192, true)]
+        [InlineData(ZipEncryptionMethod.Aes192, false)]
+        [InlineData(ZipEncryptionMethod.Aes256, true)]
+        [InlineData(ZipEncryptionMethod.Aes256, false)]
+        public async Task EncryptedEntry_ReportsMetadata(ZipEncryptionMethod method, bool async)
+        {
+            // A seekable write stores the real compressed size in the local header for every encryption
+            // method (ZipCrypto keeps a trailing data descriptor, AES does not), so the entry can be read
+            // forward-only either way.
+            byte[] zipBytes = CreateZipWithEncryptedEntry(method, seekable: true, s_smallContent);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            ZipArchiveEntry? entry = await GetNextEntry(reader, async);
+
+            Assert.NotNull(entry);
+            Assert.Equal("secret.bin", entry.FullName);
+            Assert.True(entry.IsEncrypted);
+            Assert.Equal(method, entry.EncryptionMethod);
+            Assert.False(IsDirectory(entry));
+            Assert.True(entry.CompressedLength > 0);
+
+            ZipArchiveEntry? end = await GetNextEntry(reader, async);
+            Assert.Null(end);
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "ZIP encryption is not supported on browser.")]
+        [InlineData(ZipEncryptionMethod.ZipCrypto, true)]
+        [InlineData(ZipEncryptionMethod.ZipCrypto, false)]
+        [InlineData(ZipEncryptionMethod.Aes256, true)]
+        [InlineData(ZipEncryptionMethod.Aes256, false)]
+        public async Task EncryptedEntry_CanAdvancePastToNextEntry(ZipEncryptionMethod method, bool async)
+        {
+            // Encryption written to a seekable stream carries the compressed size in the local header, so
+            // the reader can drain past the encrypted entry (and skip a ZipCrypto data descriptor) without
+            // a password to reach the following plain entry.
+            byte[] zipBytes = CreateZipWithEncryptedThenPlainEntry(method);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            ZipArchiveEntry? encrypted = await GetNextEntry(reader, async);
+            Assert.NotNull(encrypted);
+            Assert.True(encrypted.IsEncrypted);
+
+            ZipArchiveEntry? plain = await GetNextEntry(reader, async);
+            Assert.NotNull(plain);
+            Assert.False(plain.IsEncrypted);
+            Assert.Equal("plain.bin", plain.FullName);
+
+            byte[] data = await ReadStreamFully(plain.Open(), async);
+            Assert.Equal(s_mediumContent, data);
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "ZIP encryption is not supported on browser.")]
+        [InlineData(ZipEncryptionMethod.ZipCrypto, true)]
+        [InlineData(ZipEncryptionMethod.ZipCrypto, false)]
+        [InlineData(ZipEncryptionMethod.Aes128, true)]
+        [InlineData(ZipEncryptionMethod.Aes128, false)]
+        [InlineData(ZipEncryptionMethod.Aes192, true)]
+        [InlineData(ZipEncryptionMethod.Aes192, false)]
+        [InlineData(ZipEncryptionMethod.Aes256, true)]
+        [InlineData(ZipEncryptionMethod.Aes256, false)]
+        public async Task EncryptedEntry_OpenWithPassword_ReturnsDecryptedData(ZipEncryptionMethod method, bool async)
+        {
+            byte[] zipBytes = CreateZipWithEncryptedEntry(method, seekable: true, s_mediumContent);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            ZipArchiveEntry? entry = await GetNextEntry(reader, async);
+            Assert.NotNull(entry);
+            Assert.True(entry.IsEncrypted);
+
+            using Stream dataStream = await OpenEntry(entry, EncryptionPassword, async);
+            byte[] decrypted = await ReadStreamFully(dataStream, async);
+            Assert.Equal(s_mediumContent, decrypted);
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "ZIP encryption is not supported on browser.")]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task EncryptedEntry_OpenWithoutPassword_Throws(bool async)
+        {
+            byte[] zipBytes = CreateZipWithEncryptedEntry(ZipEncryptionMethod.Aes256, seekable: true, s_smallContent);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            ZipArchiveEntry? entry = await GetNextEntry(reader, async);
+            Assert.NotNull(entry);
+            Assert.True(entry.IsEncrypted);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => entry.OpenAsync());
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => entry.Open());
+            }
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "ZIP encryption is not supported on browser.")]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task EncryptedEntry_OpenWithWrongPassword_Throws(bool async)
+        {
+            byte[] zipBytes = CreateZipWithEncryptedEntry(ZipEncryptionMethod.Aes256, seekable: true, s_smallContent);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            ZipArchiveEntry? entry = await GetNextEntry(reader, async);
+            Assert.NotNull(entry);
+            Assert.True(entry.IsEncrypted);
+
+            // A wrong password is rejected by the AES password verifier when the stream is opened.
+            await Assert.ThrowsAsync<InvalidDataException>(async () =>
+            {
+                using Stream dataStream = await OpenEntry(entry, "wrong-password", async);
+                await ReadStreamFully(dataStream, async);
+            });
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "ZIP encryption is not supported on browser.")]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task EncryptedEntry_StreamedUnknownSize_ThrowsNotSupported(bool async)
+        {
+            // A ZipCrypto entry written to a non-seekable stream stores a zero compressed size in its
+            // local header (the real size lives in the trailing data descriptor), so the forward reader
+            // cannot determine the entry boundary and must throw rather than read past the entry.
+            byte[] zipBytes = CreateZipWithEncryptedEntry(ZipEncryptionMethod.ZipCrypto, seekable: false, s_smallContent);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<NotSupportedException>(() => reader.GetNextEntryAsync().AsTask());
+            }
+            else
+            {
+                Assert.Throws<NotSupportedException>(() => reader.GetNextEntry());
+            }
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "ZIP encryption is not supported on browser.")]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task EncryptedEntry_ExternalArchive_DecryptsForwardOnly(bool async)
+        {
+            // A real archive (produced by another tool) storing both a ZipCrypto entry (hello.txt) and an
+            // AES-256 entry (goodbye.txt) with the compressed size in each local header (no data descriptor),
+            // so both can be decrypted while reading forward-only.
+            const string password = "S3cur3P@ssw0rd";
+            using Stream fileStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtected_MixedEncryptions.zip"));
+            byte[] archiveBytes = ((MemoryStream)fileStream).ToArray();
+
+            using MemoryStream archiveStream = new(archiveBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            var decryptedContents = new Dictionary<string, string>();
+            var methods = new Dictionary<string, ZipEncryptionMethod>();
+
+            ZipArchiveEntry? entry;
+            while ((entry = await GetNextEntry(reader, async)) is not null)
+            {
+                Assert.True(entry.IsEncrypted);
+
+                methods[entry.FullName] = entry.EncryptionMethod;
+
+                using Stream dataStream = await OpenEntry(entry, password, async);
+                byte[] data = await ReadStreamFully(dataStream, async);
+                decryptedContents[entry.FullName] = Encoding.UTF8.GetString(data).TrimEnd();
+            }
+
+            Assert.Equal(ZipEncryptionMethod.ZipCrypto, methods["hello.txt"]);
+            Assert.Equal(ZipEncryptionMethod.Aes256, methods["goodbye.txt"]);
+            Assert.Equal("Hello", decryptedContents["hello.txt"]);
+            Assert.Equal("Goodbye", decryptedContents["goodbye.txt"]);
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "ZIP encryption is not supported on browser.")]
+        [InlineData(ZipEncryptionMethod.ZipCrypto, true)]
+        [InlineData(ZipEncryptionMethod.ZipCrypto, false)]
+        [InlineData(ZipEncryptionMethod.Aes256, true)]
+        [InlineData(ZipEncryptionMethod.Aes256, false)]
+        public async Task EncryptedEntry_CopyData_SkipsDataDescriptor_AndAdvances(ZipEncryptionMethod method, bool async)
+        {
+            // With copyData, the reader buffers the (still-encrypted) bytes and must consume any trailing
+            // data descriptor (ZipCrypto always has one) so the following entry is found. The buffered copy
+            // remains decryptable after the reader advances.
+            byte[] zipBytes = CreateZipWithEncryptedThenPlainEntry(method);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            ZipArchiveEntry? encrypted = await GetNextEntry(reader, async, copyData: true);
+            Assert.NotNull(encrypted);
+            Assert.True(encrypted.IsEncrypted);
+
+            // If the trailing data descriptor were not skipped, the reader would be misaligned here.
+            ZipArchiveEntry? plain = await GetNextEntry(reader, async);
+            Assert.NotNull(plain);
+            Assert.Equal("plain.bin", plain.FullName);
+            Assert.Equal(s_mediumContent, await ReadStreamFully(plain.Open(), async));
+
+            // The buffered encrypted entry is still decryptable after advancing.
+            using Stream decrypted = await OpenEntry(encrypted, EncryptionPassword, async);
+            Assert.Equal(s_smallContent, await ReadStreamFully(decrypted, async));
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "ZIP encryption is not supported on browser.")]
+        [InlineData(ZipEncryptionMethod.ZipCrypto, true)]
+        [InlineData(ZipEncryptionMethod.ZipCrypto, false)]
+        [InlineData(ZipEncryptionMethod.Aes256, true)]
+        [InlineData(ZipEncryptionMethod.Aes256, false)]
+        public async Task EncryptedEntry_PartialRead_ThenGetNextEntry_AdvancesCorrectly(ZipEncryptionMethod method, bool async)
+        {
+            byte[] zipBytes = CreateZipWithEncryptedThenPlainEntry(method);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            ZipArchiveEntry? encrypted = await GetNextEntry(reader, async);
+            Assert.NotNull(encrypted);
+            Assert.True(encrypted.IsEncrypted);
+
+            // Decrypt and read only a few bytes, then advance: the reader must drain the rest of the
+            // partially-consumed encrypted stream and skip any trailing descriptor.
+            using (Stream dataStream = await OpenEntry(encrypted, EncryptionPassword, async))
+            {
+                byte[] partial = new byte[4];
+                await ReadStream(dataStream, partial, async);
+            }
+
+            ZipArchiveEntry? plain = await GetNextEntry(reader, async);
+            Assert.NotNull(plain);
+            Assert.Equal("plain.bin", plain.FullName);
+            Assert.Equal(s_mediumContent, await ReadStreamFully(plain.Open(), async));
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "ZIP encryption is not supported on browser.")]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task EncryptedEntry_OpenWithoutPassword_ThenRetryWithPassword_Succeeds(bool async)
+        {
+            // A failed open that reads no bytes (missing password) must not consume the single-use stream,
+            // so a subsequent open with the correct password still succeeds.
+            byte[] zipBytes = CreateZipWithEncryptedEntry(ZipEncryptionMethod.Aes256, seekable: true, s_mediumContent);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            ZipArchiveEntry? entry = await GetNextEntry(reader, async);
+            Assert.NotNull(entry);
+            Assert.True(entry.IsEncrypted);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => entry.OpenAsync());
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => entry.Open());
+            }
+
+            using Stream dataStream = await OpenEntry(entry, EncryptionPassword, async);
+            byte[] decrypted = await ReadStreamFully(dataStream, async);
+            Assert.Equal(s_mediumContent, decrypted);
+        }
+
         [Fact]
         public async Task AsyncCancellation_ThrowsOperationCanceled()
         {
@@ -495,6 +781,9 @@ namespace System.IO.Compression.Tests
         private static async ValueTask<Stream> OpenEntry(ZipArchiveEntry entry, FileAccess access, bool async) =>
             async ? await entry.OpenAsync(access) : entry.Open(access);
 
+        private static async ValueTask<Stream> OpenEntry(ZipArchiveEntry entry, string password, bool async) =>
+            async ? await entry.OpenAsync(password) : entry.Open(password);
+
         private static bool IsDirectory(ZipArchiveEntry entry) =>
             entry.FullName.Length > 0 && (entry.FullName[^1] is '/' or '\\');
 
@@ -538,6 +827,44 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry entry = archive.CreateEntry(name, level);
             using Stream stream = entry.Open();
             stream.Write(contents);
+        }
+
+        private const string EncryptionPassword = "forward-read-secret";
+
+        private static byte[] CreateZipWithEncryptedEntry(ZipEncryptionMethod method, bool seekable, byte[] contents)
+        {
+            MemoryStream ms = new();
+
+            Stream writeStream = seekable
+                ? ms
+                : new WrappedStream(ms, canRead: true, canWrite: true, canSeek: false);
+
+            using (ZipArchive archive = new(writeStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                ZipArchiveEntry entry = archive.CreateEntry("secret.bin", CompressionLevel.Optimal, EncryptionPassword.AsSpan(), method);
+                using Stream stream = entry.Open();
+                stream.Write(contents);
+            }
+
+            return ms.ToArray();
+        }
+
+        private static byte[] CreateZipWithEncryptedThenPlainEntry(ZipEncryptionMethod method)
+        {
+            MemoryStream ms = new();
+
+            using (ZipArchive archive = new(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                ZipArchiveEntry encrypted = archive.CreateEntry("encrypted.bin", CompressionLevel.Optimal, EncryptionPassword.AsSpan(), method);
+                using (Stream stream = encrypted.Open())
+                {
+                    stream.Write(s_smallContent);
+                }
+
+                AddEntry(archive, "plain.bin", s_mediumContent, CompressionLevel.Optimal);
+            }
+
+            return ms.ToArray();
         }
 
         private static async Task<byte[]> ReadStreamFully(Stream stream, bool async)

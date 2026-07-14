@@ -34,6 +34,8 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
 {
     private const ushort DataDescriptorBitFlag = 0x8;
     private const ushort UnicodeFileNameBitFlag = 0x800;
+    private const ushort EncryptionBitFlag = 0x1;
+    private const ushort StrongEncryptionBitFlag = 0x40;
 
     private bool _isDisposed;
     private readonly bool _leaveOpen;
@@ -149,11 +151,13 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         ParseLocalFileHeader(headerBytes, dynamicBuffer,
             out string fullName, out byte[] fullNameBytes, out ushort versionNeeded, out ushort generalPurposeBitFlags,
             out ushort compressionMethod, out DateTimeOffset lastModified, out uint crc32,
-            out long compressedSize, out long uncompressedSize, out bool hasDataDescriptor);
+            out long compressedSize, out long uncompressedSize, out bool hasDataDescriptor,
+            out ZipEncryptionMethod encryptionMethod, out ushort realCompressionMethod, out ushort aeVersion);
 
-        bool isEncrypted = (generalPurposeBitFlags & 1) != 0;
+        bool isEncrypted = (generalPurposeBitFlags & EncryptionBitFlag) != 0;
 
         ZipCompressionMethod method = (ZipCompressionMethod)compressionMethod;
+        ZipCompressionMethod realMethod = (ZipCompressionMethod)realCompressionMethod;
 
         Stream? dataStream = CreateDataStream(
             method, compressedSize, uncompressedSize,
@@ -170,12 +174,20 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         }
 
         ZipArchiveEntry entry = new(
-            fullName, fullNameBytes, method, lastModified, crc32,
-            compressedSize, uncompressedSize, generalPurposeBitFlags, versionNeeded, dataStream);
+            fullName, fullNameBytes, realMethod, lastModified, crc32,
+            compressedSize, uncompressedSize, generalPurposeBitFlags, versionNeeded, dataStream,
+            encryptionMethod, method, aeVersion);
 
-        if (copyData && hasDataDescriptor && crcStream is not null)
+        if (copyData && hasDataDescriptor)
         {
-            ReadDataDescriptor(entry, crcStream);
+            if (crcStream is not null)
+            {
+                ReadDataDescriptor(entry, crcStream);
+            }
+            else if (isEncrypted)
+            {
+                SkipDataDescriptor();
+            }
         }
 
         // Dispose the original decompression/CRC stream after copying (and after
@@ -258,10 +270,12 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         ParseLocalFileHeader(headerBytes, dynamicBuffer,
             out string fullName, out byte[] fullNameBytes, out ushort versionNeeded, out ushort generalPurposeBitFlags,
             out ushort compressionMethod, out DateTimeOffset lastModified, out uint crc32,
-            out long compressedSize, out long uncompressedSize, out bool hasDataDescriptor);
+            out long compressedSize, out long uncompressedSize, out bool hasDataDescriptor,
+            out ZipEncryptionMethod encryptionMethod, out ushort realCompressionMethod, out ushort aeVersion);
 
         ZipCompressionMethod method = (ZipCompressionMethod)compressionMethod;
-        bool isEncrypted = (generalPurposeBitFlags & 1) != 0;
+        ZipCompressionMethod realMethod = (ZipCompressionMethod)realCompressionMethod;
+        bool isEncrypted = (generalPurposeBitFlags & EncryptionBitFlag) != 0;
 
         Stream? dataStream = CreateDataStream(
             method, compressedSize, uncompressedSize, crc32,
@@ -278,12 +292,20 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         }
 
         ZipArchiveEntry entry = new(
-            fullName, fullNameBytes, method, lastModified, crc32,
-            compressedSize, uncompressedSize, generalPurposeBitFlags, versionNeeded, dataStream);
+            fullName, fullNameBytes, realMethod, lastModified, crc32,
+            compressedSize, uncompressedSize, generalPurposeBitFlags, versionNeeded, dataStream,
+            encryptionMethod, method, aeVersion);
 
-        if (copyData && hasDataDescriptor && crcStream is not null)
+        if (copyData && hasDataDescriptor)
         {
-            await ReadDataDescriptorAsync(entry, crcStream, cancellationToken).ConfigureAwait(false);
+            if (crcStream is not null)
+            {
+                await ReadDataDescriptorAsync(entry, crcStream, cancellationToken).ConfigureAwait(false);
+            }
+            else if (isEncrypted)
+            {
+                await SkipDataDescriptorAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
 
         // Dispose the original decompression/CRC stream after copying (and after
@@ -317,14 +339,14 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
             return null;
         }
 
-        // Encrypted entries cannot be decompressed without decryption.
-        // When the compressed size is known (no data descriptor), return a bounded
-        // stream so the reader can drain past the encrypted bytes and find the next
-        // local file header. When a data descriptor is present the compressed size
-        // is unknown, so we cannot determine the entry boundary.
+        // Encrypted entries cannot be decompressed without decryption, which requires a password that
+        // is not available until the entry is opened. As long as the compressed size is known (present
+        // in the local header), the raw bytes can still be bounded so the reader can drain past them and
+        // decrypt them later. Only when the compressed size is unknown (a streamed data-descriptor entry
+        // whose local header stores a zero size) can the entry boundary not be determined.
         if (isEncrypted)
         {
-            if (hasDataDescriptor)
+            if (compressedSize == 0)
             {
                 throw new NotSupportedException(SR.ZipStreamEncryptedDataDescriptorNotSupported);
             }
@@ -390,9 +412,18 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
 
         DrainStream(entry.ForwardDataStream);
 
-        if (entry.HasDataDescriptor && entry.ForwardDataStream is CrcValidatingReadStream crcStream)
+        if (entry.HasDataDescriptor)
         {
-            ReadDataDescriptor(entry, crcStream);
+            if (entry.ForwardDataStream is CrcValidatingReadStream crcStream)
+            {
+                ReadDataDescriptor(entry, crcStream);
+            }
+            else
+            {
+                // Encrypted entries expose a raw bounded stream with no CRC tracking, so the trailing
+                // data descriptor is skipped without validation to reach the next local file header.
+                SkipDataDescriptor();
+            }
         }
 
         // The forward-only stream is invalidated once the reader advances, so dispose it here to
@@ -412,9 +443,18 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
 
         await DrainStreamAsync(entry.ForwardDataStream, cancellationToken).ConfigureAwait(false);
 
-        if (entry.HasDataDescriptor && entry.ForwardDataStream is CrcValidatingReadStream crcStream)
+        if (entry.HasDataDescriptor)
         {
-            await ReadDataDescriptorAsync(entry, crcStream, cancellationToken).ConfigureAwait(false);
+            if (entry.ForwardDataStream is CrcValidatingReadStream crcStream)
+            {
+                await ReadDataDescriptorAsync(entry, crcStream, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                // Encrypted entries expose a raw bounded stream with no CRC tracking, so the trailing
+                // data descriptor is skipped without validation to reach the next local file header.
+                await SkipDataDescriptorAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
 
         // The forward-only stream is invalidated once the reader advances, so dispose it here to
@@ -468,7 +508,10 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         out uint crc32,
         out long compressedSize,
         out long uncompressedSize,
-        out bool hasDataDescriptor)
+        out bool hasDataDescriptor,
+        out ZipEncryptionMethod encryptionMethod,
+        out ushort realCompressionMethod,
+        out ushort aeVersion)
     {
         versionNeeded = BinaryPrimitives.ReadUInt16LittleEndian(headerBytes[ZipLocalFileHeader.FieldLocations.VersionNeededToExtract..]);
         generalPurposeBitFlags = BinaryPrimitives.ReadUInt16LittleEndian(headerBytes[ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags..]);
@@ -490,13 +533,18 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         fullNameBytes = dynamicBuffer[..filenameLength].ToArray();
         fullName = encoding.GetString(dynamicBuffer[..filenameLength]);
 
+        ReadOnlySpan<byte> extraField = dynamicBuffer.Slice(filenameLength, extraFieldLength);
+
+        ResolveEncryption(generalPurposeBitFlags, compressionMethod, extraField,
+            out encryptionMethod, out realCompressionMethod, out aeVersion);
+
         bool compressedSizeInZip64 = compressedSizeSmall == ZipHelper.Mask32Bit;
         bool uncompressedSizeInZip64 = uncompressedSizeSmall == ZipHelper.Mask32Bit;
 
         if (compressedSizeInZip64 || uncompressedSizeInZip64)
         {
             Zip64ExtraField zip64 = Zip64ExtraField.GetJustZip64Block(
-                dynamicBuffer.Slice(filenameLength, extraFieldLength),
+                extraField,
                 readUncompressedSize: uncompressedSizeInZip64,
                 readCompressedSize: compressedSizeInZip64,
                 readLocalHeaderOffset: false,
@@ -513,7 +561,62 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         }
     }
 
+    // Determines the entry's encryption method from the general-purpose bit flag and, for WinZip AES
+    // entries, the local extra field (0x9901). The AES extra field also carries the *real* compression
+    // method (the local header stores 99 for AES) and the AE version, both required to decrypt and
+    // decompress the entry through the standard ZipArchiveEntry.Open(password) pipeline.
+    private static void ResolveEncryption(
+        ushort generalPurposeBitFlags,
+        ushort compressionMethod,
+        ReadOnlySpan<byte> extraField,
+        out ZipEncryptionMethod encryptionMethod,
+        out ushort realCompressionMethod,
+        out ushort aeVersion)
+    {
+        realCompressionMethod = compressionMethod;
+        aeVersion = 0;
+
+        if ((generalPurposeBitFlags & EncryptionBitFlag) == 0)
+        {
+            encryptionMethod = ZipEncryptionMethod.None;
+            return;
+        }
+
+        if (compressionMethod == ZipArchiveEntry.WinZipAesMethod &&
+            WinZipAesExtraField.TryGetFromRawExtraFieldData(extraField, out WinZipAesExtraField aesField))
+        {
+            realCompressionMethod = aesField.CompressionMethod;
+            aeVersion = aesField.VendorVersion;
+            encryptionMethod = aesField.AesStrength switch
+            {
+                1 => ZipEncryptionMethod.Aes128,
+                2 => ZipEncryptionMethod.Aes192,
+                3 => ZipEncryptionMethod.Aes256,
+                _ => throw new InvalidDataException(SR.InvalidAesStrength)
+            };
+            return;
+        }
+
+        // Encrypted but not AES: the strong-encryption flag marks an unsupported scheme; otherwise ZipCrypto.
+        encryptionMethod = (generalPurposeBitFlags & StrongEncryptionBitFlag) != 0
+            ? ZipEncryptionMethod.Unknown
+            : ZipEncryptionMethod.ZipCrypto;
+    }
+
     private void ReadDataDescriptor(ZipArchiveEntry entry, CrcValidatingReadStream crcStream)
+    {
+        (byte[] buffer, int offset, bool isZip64) = ReadDataDescriptorCore();
+        ParseDataDescriptor(buffer, offset, isZip64, entry, crcStream);
+    }
+
+    // Advances the archive stream past a trailing data descriptor without parsing or validating it.
+    // Used for encrypted entries whose data was drained raw (no CRC stream to validate against).
+    private void SkipDataDescriptor() => ReadDataDescriptorCore();
+
+    // Reads a trailing data descriptor into a buffer and leaves the archive stream positioned at the
+    // start of the next record. Returns the buffer along with the payload offset (past an optional
+    // signature) and whether the descriptor uses 64-bit sizes.
+    private (byte[] buffer, int offset, bool isZip64) ReadDataDescriptorCore()
     {
         byte[] buffer = new byte[28]; // Max: sig(4) + crc(4) + sizes64(16) + peek(4)
 
@@ -540,11 +643,20 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         int overRead = 20 - sizesBytes;
         _archiveStream.Seek(-overRead, SeekOrigin.Current);
 
-        ParseDataDescriptor(buffer, offset, isZip64, entry, crcStream);
+        return (buffer, offset, isZip64);
     }
 
     private async ValueTask ReadDataDescriptorAsync(
         ZipArchiveEntry entry, CrcValidatingReadStream crcStream, CancellationToken cancellationToken)
+    {
+        (byte[] buffer, int offset, bool isZip64) = await ReadDataDescriptorCoreAsync(cancellationToken).ConfigureAwait(false);
+        ParseDataDescriptor(buffer, offset, isZip64, entry, crcStream);
+    }
+
+    private async ValueTask SkipDataDescriptorAsync(CancellationToken cancellationToken) =>
+        await ReadDataDescriptorCoreAsync(cancellationToken).ConfigureAwait(false);
+
+    private async ValueTask<(byte[] buffer, int offset, bool isZip64)> ReadDataDescriptorCoreAsync(CancellationToken cancellationToken)
     {
         byte[] buffer = new byte[28]; // Max: sig(4) + crc(4) + sizes64(16) + peek(4)
 
@@ -571,7 +683,7 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         int overRead = 20 - sizesBytes;
         _archiveStream.Seek(-overRead, SeekOrigin.Current);
 
-        ParseDataDescriptor(buffer, offset, isZip64, entry, crcStream);
+        return (buffer, offset, isZip64);
     }
 
     /// <summary>

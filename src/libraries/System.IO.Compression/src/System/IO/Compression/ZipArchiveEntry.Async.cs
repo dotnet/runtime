@@ -25,7 +25,7 @@ public partial class ZipArchiveEntry
 
         if (_isForwardReadEntry)
         {
-            return Task.FromResult<Stream>(OpenForwardReadMode());
+            return OpenForwardReadModeAsync(default, cancellationToken);
         }
 
         ThrowIfInvalidArchive();
@@ -62,7 +62,7 @@ public partial class ZipArchiveEntry
                 throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
             }
 
-            return Task.FromResult<Stream>(OpenForwardReadMode());
+            return OpenForwardReadModeAsync(default, cancellationToken);
         }
 
         ThrowIfInvalidArchive();
@@ -100,7 +100,7 @@ public partial class ZipArchiveEntry
                 throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
             }
 
-            return Task.FromResult<Stream>(OpenForwardReadMode());
+            return OpenForwardReadModeAsync(password, cancellationToken);
         }
 
         ThrowIfInvalidArchive();
@@ -134,7 +134,7 @@ public partial class ZipArchiveEntry
 
         if (_isForwardReadEntry)
         {
-            return Task.FromResult<Stream>(OpenForwardReadMode());
+            return OpenForwardReadModeAsync(password, cancellationToken);
         }
 
         ThrowIfInvalidArchive();
@@ -176,6 +176,92 @@ public partial class ZipArchiveEntry
                         ? OpenInUpdateModeWithPasswordAsync(loadExistingContent: true, password, cancellationToken)
                         : CastToStreamAsync(OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken)),
                 };
+        }
+    }
+
+    // Async counterpart of OpenForwardReadMode. Non-encrypted entries complete synchronously; encrypted
+    // entries read the encryption header (AES salt / ZipCrypto header) asynchronously from the raw stream.
+    private Task<Stream> OpenForwardReadModeAsync(ReadOnlySpan<char> password, CancellationToken cancellationToken)
+    {
+        if (_forwardDataStream is null)
+        {
+            return Task.FromResult<Stream>(Stream.Null);
+        }
+
+        if (_forwardStreamOpened)
+        {
+            throw new InvalidOperationException(SR.ZipStreamEntryAlreadyConsumed);
+        }
+
+        if (!IsEncrypted)
+        {
+            _forwardStreamOpened = true;
+            return Task.FromResult<Stream>(_forwardDataStream);
+        }
+
+        // Validate before marking the single-use stream consumed so that an attempt which reads no
+        // bytes (missing password or unsupported scheme) can be retried with a valid password.
+        if (Encryption == ZipEncryptionMethod.Unknown)
+        {
+            throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+        }
+
+        if (password.IsEmpty)
+        {
+            throw new InvalidDataException(SR.PasswordRequired);
+        }
+
+        _forwardStreamOpened = true;
+
+        Stream rawStream = _forwardDataStream;
+
+        if (IsAesEncrypted)
+        {
+            if (OperatingSystem.IsBrowser())
+            {
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            }
+
+            int keySizeBits = GetAesKeySizeBits(Encryption);
+            // The salt must be read from the stream before the key can be derived, so the password
+            // has to cross the async boundary; copy it out of the span into a local array.
+            return OpenForwardAesAsyncCore(rawStream, password.ToArray(), keySizeBits, cancellationToken);
+        }
+
+        if (IsZipCryptoEncrypted)
+        {
+            byte expectedCheckByte = CalculateZipCryptoCheckByte();
+            ZipCryptoKeys keyMaterial = ZipCryptoStream.CreateKey(password);
+            return OpenForwardZipCryptoAsyncCore(rawStream, keyMaterial, expectedCheckByte, cancellationToken);
+        }
+
+        throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+
+        async Task<Stream> OpenForwardAesAsyncCore(Stream stream, char[] pwd, int keySizeBits, CancellationToken ct)
+        {
+            int saltSize = WinZipAesStream.GetSaltSize(keySizeBits);
+            byte[] salt = new byte[saltSize];
+            await stream.ReadExactlyAsync(salt, ct).ConfigureAwait(false);
+
+            WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(pwd, salt, keySizeBits);
+            Stream decrypted = await WinZipAesStream.CreateAsync(
+                baseStream: stream,
+                keyMaterial: keyMaterial,
+                totalStreamSize: _compressedSize,
+                encrypting: false,
+                // The forward reader owns the raw stream and drains/disposes it when it advances,
+                // so the decryption stream must not dispose it on the caller's behalf.
+                leaveOpen: true,
+                saltAlreadyRead: true,
+                cancellationToken: ct).ConfigureAwait(false);
+
+            return BuildDecompressionPipeline(decrypted);
+        }
+
+        async Task<Stream> OpenForwardZipCryptoAsyncCore(Stream stream, ZipCryptoKeys keyMaterial, byte checkByte, CancellationToken ct)
+        {
+            Stream decrypted = await ZipCryptoStream.CreateAsync(stream, keyMaterial, checkByte, encrypting: false, ct, leaveOpen: true).ConfigureAwait(false);
+            return BuildDecompressionPipeline(decrypted);
         }
     }
 
