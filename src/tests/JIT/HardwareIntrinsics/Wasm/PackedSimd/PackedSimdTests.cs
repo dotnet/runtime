@@ -529,7 +529,6 @@ public sealed class PackedSimdTests
     {
         var intVector = Vector128.Create(1, 2, 3, 4);
         var floatVector = Vector128.Create(1.5f, 2.5f, 3.5f, 4.5f);
-        var doubleVector = Vector128.Create(1.5, 2.5);
 
         var intToFloat = PackedSimd.ConvertToSingle(intVector);
         var floatToDouble = PackedSimd.ConvertToDoubleLower(floatVector);
@@ -622,7 +621,6 @@ public sealed class PackedSimdTests
     {
         var bytes = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
         var shorts = Vector128.Create((short)-1, 2, -3, 4, 5, 6, -7, 8);
-        var ints = Vector128.Create(-1, 2, -3, 4);
 
         var absBytes = PackedSimd.Abs(bytes);
         var absShorts = PackedSimd.Abs(shorts);
@@ -830,7 +828,14 @@ public sealed class PackedSimdTests
         var leftShift = PackedSimd.ShiftLeft(v, 2);
         var rightShiftLogical = PackedSimd.ShiftRightLogical(v, 2);
         Assert.Equal(Vector128.Create([(nuint)64, unchecked((nuint)(-64)), (nuint)128, unchecked((nuint)(-128))]), leftShift);
-        Assert.Equal(Vector128.Create([(nuint)4, (nuint)1073741820, (nuint)8, (nuint)1073741816]), rightShiftLogical);
+        Assert.Equal(
+            Vector128.Create([
+                (nuint)16 >> 2,
+                unchecked((nuint)(-16)) >> 2,
+                (nuint)32 >> 2,
+                unchecked((nuint)(-32)) >> 2
+            ]),
+            rightShiftLogical);
     }
 
     [Fact]
