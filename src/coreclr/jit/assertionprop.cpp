@@ -4296,10 +4296,34 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
     //
     BitVecTraits traits(fgBBNumMax + 1, this);
     BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+    BitVec       actualPreds   = BitVecOps::MakeEmpty(&traits);
+
+    // Given an ssaDef and its block, we must consider two edge cases:
+    //  1) ssaDef->GetBlock()->PredBlocks() contains blocks that do not exist in AsPhi()->Uses()
+    //  2) AsPhi()->Uses() contains blocks that do not exist in ssaDef->GetBlock()->PredBlocks()
+    //
+    // We conservatively terminate the walk if either mismatch occurs.
+    //
+    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
+    {
+        BitVecOps::AddElemD(&traits, actualPreds, pred->bbNum);
+    }
 
     for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
     {
-        GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
+        GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
+
+        if (!BitVecOps::IsMember(&traits, actualPreds, phiArg->gtPredBB->bbNum))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": phi-pred " FMT_BB " not a block pred\n",
+                    ssaDef->GetBlock()->bbNum, phiArg->gtPredBB->bbNum);
+
+            // We probably can just ignore this phi-pred if we know for sure phiArg->gtPredBB never reaches
+            // the ssaDef's block. For now, conservatively fail the phi inference in this case.
+            // Alternatively, we can request optRepeat here.
+            return AssertVisit::Abort;
+        }
+
         const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
         ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
@@ -4312,6 +4336,8 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
 
     // Verify the set of phi-preds covers the set of block preds
     //
+    // We can just do BitVecOps::Equal(&traits, visitedBlocks, actualPreds), but
+    // re-iterating the preds is cheaper.
     for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
     {
         if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
@@ -5876,15 +5902,36 @@ ASSERT_VALRET_TP Compiler::optGetVnMappedAssertions(ValueNum vn)
 //
 ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const BasicBlock* blockPred) const
 {
-    if ((blockPred->KindIs(BBJ_COND) && blockPred->TrueTargetIs(block)))
+    assert(block != nullptr);
+    if (blockPred->KindIs(BBJ_COND))
     {
-        if (bbJtrueAssertionOut != nullptr)
+        if (blockPred->TrueTargetIs(block))
         {
-            return bbJtrueAssertionOut[blockPred->bbNum];
+            if (bbJtrueAssertionOut != nullptr)
+            {
+                return bbJtrueAssertionOut[blockPred->bbNum];
+            }
+            return BitVecOps::MakeEmpty(apTraits);
         }
-        return BitVecOps::MakeEmpty(apTraits);
+
+        // If block is not the false target either, the edge doesn't exist
+        // (e.g. a stale PHI arg pred after edge redirection by RBO).
+        // Return empty to avoid using assertions from an unrelated edge.
+        if (!blockPred->FalseTargetIs(block))
+        {
+            return BitVecOps::MakeEmpty(apTraits);
+        }
+        return blockPred->bbAssertionOut;
     }
-    return blockPred->bbAssertionOut;
+
+    for (BasicBlock* const pred : block->PredBlocks())
+    {
+        if (pred == blockPred)
+        {
+            return blockPred->bbAssertionOut;
+        }
+    }
+    return BitVecOps::MakeEmpty(apTraits);
 }
 
 /*****************************************************************************
