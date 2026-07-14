@@ -352,20 +352,35 @@ namespace System.Security.Cryptography
         ///     so any valid value will always fit.
         ///   </para>
         /// </remarks>
-        protected virtual int DecryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
+        protected virtual unsafe int DecryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            return DecryptKeyWrapPaddedCore(
+                source,
+                destination,
+                this,
+                static (instance, source, destination) => instance.DecryptEcb(source, destination, PaddingMode.None));
+        }
+
+        private protected int DecryptKeyWrapPaddedCore<TState>(
+            ReadOnlySpan<byte> source,
+            Span<byte> destination,
+            TState state,
+            Func<TState, ReadOnlySpan<byte>, Span<byte>, int> decryptEcb)
         {
             ulong iv;
 
             if (source.Length == 16)
             {
                 Span<byte> decrypt = stackalloc byte[16];
-                DecryptEcb(source, decrypt, PaddingMode.None);
+                int written = decryptEcb(state, source, decrypt);
+                Debug.Assert(written == decrypt.Length);
+
                 iv = BinaryPrimitives.ReadUInt64BigEndian(decrypt);
                 decrypt.Slice(8).CopyTo(destination);
             }
             else
             {
-                iv = Rfc3394Unwrap(source, destination);
+                iv = Rfc3394Unwrap(source, destination, state, decryptEcb);
             }
 
             uint len = (uint)iv;
@@ -406,7 +421,19 @@ namespace System.Security.Cryptography
         ///     <see cref="GetKeyWrapPaddedLength"/> for the given input.
         ///   </para>
         /// </remarks>
-        protected virtual void EncryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
+        protected virtual unsafe void EncryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            EncryptKeyWrapPaddedCore(
+                source,
+                destination,
+                this,
+                static (instance, source, destination) => instance.EncryptEcb(source, destination, PaddingMode.None));
+        }
+        private protected void EncryptKeyWrapPaddedCore<TState>(
+            ReadOnlySpan<byte> source,
+            Span<byte> destination,
+            TState state,
+            Func<TState, ReadOnlySpan<byte>, Span<byte>, int> encryptEcb)
         {
             Debug.Assert(destination.Length == GetKeyWrapPaddedLength(source.Length));
 
@@ -423,14 +450,20 @@ namespace System.Security.Cryptography
                 keyPart.Clear();
                 source.CopyTo(keyPart);
 
-                EncryptEcb(buf, destination, PaddingMode.None);
-
-                // Clear out the copy we made of the key.
-                CryptographicOperations.ZeroMemory(keyPart);
+                try
+                {
+                    int written = encryptEcb(state, buf, destination);
+                    Debug.Assert(written == buf.Length);
+                }
+                finally
+                {
+                    // Clear out the copy we made of the key.
+                    CryptographicOperations.ZeroMemory(keyPart);
+                }
             }
             else if (source.Length % 8 == 0)
             {
-                Rfc3394Wrap(iv, source, destination);
+                Rfc3394Wrap(iv, source, destination, state, encryptEcb);
             }
             else
             {
@@ -442,12 +475,17 @@ namespace System.Security.Cryptography
                     source.CopyTo(lease.Span);
                     lease.Span.Slice(source.Length).Clear();
 
-                    Rfc3394Wrap(iv, lease.Span, destination);
+                    Rfc3394Wrap(iv, lease.Span, destination, state, encryptEcb);
                 }
             }
         }
 
-        private void Rfc3394Wrap(ulong iv, ReadOnlySpan<byte> source, Span<byte> destination)
+        private void Rfc3394Wrap<TState>(
+            ulong iv,
+            ReadOnlySpan<byte> source,
+            Span<byte> destination,
+            TState state,
+            Func<TState, ReadOnlySpan<byte>, Span<byte>, int> encryptEcb)
         {
             Debug.Assert(source.Length % 8 == 0);
             Debug.Assert(source.Length >= 16);
@@ -468,7 +506,8 @@ namespace System.Security.Cryptography
                 for (uint i = 0; i < source.Length; i += 8, t++, R = R.Slice(8))
                 {
                     R.Slice(0, 8).CopyTo(B.Slice(8));
-                    EncryptEcb(B, B, PaddingMode.None);
+                    int written = encryptEcb(state, B, B);
+                    Debug.Assert(written == B.Length);
 
                     uint al = BinaryPrimitives.ReadUInt32BigEndian(ALo);
                     al ^= t;
@@ -481,7 +520,11 @@ namespace System.Security.Cryptography
             A.CopyTo(destination);
         }
 
-        private ulong Rfc3394Unwrap(ReadOnlySpan<byte> source, Span<byte> destination)
+        private ulong Rfc3394Unwrap<TState>(
+            ReadOnlySpan<byte> source,
+            Span<byte> destination,
+            TState state,
+            Func<TState, ReadOnlySpan<byte>, Span<byte>, int> decryptEcb)
         {
             Span<byte> B = stackalloc byte[16];
             Span<byte> A = B.Slice(0, 8);
@@ -503,7 +546,9 @@ namespace System.Security.Cryptography
                     BinaryPrimitives.WriteUInt32BigEndian(ALo, al);
 
                     R.Slice(0, 8).CopyTo(B.Slice(8));
-                    DecryptEcb(B, B, PaddingMode.None);
+                    int written = decryptEcb(state, B, B);
+                    Debug.Assert(written == B.Length);
+
                     B.Slice(8).CopyTo(R);
                 }
             }

@@ -34,6 +34,18 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
         return handle.GetStackBaseRegister();
     }
 
+    uint IGCInfo.GetSizeOfStackParameterArea(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetSizeOfStackParameterArea();
+    }
+
+    uint IGCInfo.GetCalleePoppedArgumentsSize(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetCalleePoppedArgumentsSize();
+    }
+
     IReadOnlyList<InterruptibleRange> IGCInfo.GetInterruptibleRanges(IGCInfoHandle gcInfoHandle)
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
@@ -44,6 +56,12 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
         return handle.EnumerateLiveSlots(instructionOffset, options);
+    }
+
+    bool IGCInfo.IsGcSafe(IGCInfoHandle gcInfoHandle, uint instructionOffset)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.IsGcSafe(instructionOffset);
     }
 
     private static IGCInfoDecoder AssertCorrectHandle(IGCInfoHandle gcInfoHandle)

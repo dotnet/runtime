@@ -68,7 +68,6 @@ public struct TypeNameBuilder
         ILoader loader = target.Contracts.Loader;
         string methodName;
         TypeHandle th = default;
-        Contracts.ModuleHandle module = default;
 
         bool isNoMetadataMethod = runtimeTypeSystem.IsNoMetadataMethod(method, out methodName);
         if (isNoMetadataMethod)
@@ -120,10 +119,14 @@ public struct TypeNameBuilder
         }
         else
         {
-            module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th));
-            MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
-            MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
-            stringBuilder.Append(reader.GetString(methodDef.Name));
+            uint rowId = EcmaMetadataUtils.GetRowId(runtimeTypeSystem.GetMethodToken(method));
+            if (rowId != 0)
+            {
+                Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th));
+                MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
+                MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)rowId));
+                stringBuilder.Append(reader.GetString(methodDef.Name));
+            }
         }
 
         ReadOnlySpan<TypeHandle> genericMethodInstantiation = runtimeTypeSystem.GetGenericMethodInstantiation(method);
@@ -132,19 +135,12 @@ public struct TypeNameBuilder
             AppendInst(target, stringBuilder, genericMethodInstantiation, format);
         }
 
-        if (format.HasFlag(TypeNameFormat.FormatSignature))
+        if (format.HasFlag(TypeNameFormat.FormatSignature) &&
+            runtimeTypeSystem.TryGetMethodSignature(method, out ReadOnlySpan<byte> signature))
         {
-            ReadOnlySpan<byte> signature;
-            MetadataReader? reader = default;
-            if (!runtimeTypeSystem.IsStoredSigMethodDesc(method, out signature))
-            {
-                reader = target.Contracts.EcmaMetadata.GetMetadata(module);
-                if (reader is not null)
-                {
-                    MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
-                    signature = reader.GetBlobBytes(methodDef.Signature);
-                }
-            }
+            Contracts.ModuleHandle methodModule = loader.GetModuleHandleFromModulePtr(
+                runtimeTypeSystem.GetModule(runtimeTypeSystem.GetTypeHandle(runtimeTypeSystem.GetMethodTable(method))));
+            MetadataReader? reader = target.Contracts.EcmaMetadata.GetMetadata(methodModule);
 
             ReadOnlySpan<TypeHandle> typeInstantiationSigFormat = default;
             if (!th.IsNull)
@@ -245,7 +241,7 @@ public struct TypeNameBuilder
                 tnb.AddName(reader.GetString(genericParam.Name));
                 format &= ~TypeNameFormat.FormatAssembly;
             }
-            else if (typeSystemContract.IsFunctionPointer(typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv))
+            else if (typeSystemContract.IsFunctionPointer(typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv))
             {
                 if (format.HasFlag(TypeNameFormat.FormatNamespace))
                 {
@@ -261,7 +257,7 @@ public struct TypeNameBuilder
                         AppendType(tnb.Target, stringBuilder, retAndArgTypes[i], format);
                     }
 
-                    if ((callConv & 0x7) == 0x5) // Is this the VARARG calling convention?
+                    if (((byte)callConv & 0x7) == 0x5) // Is this the VARARG calling convention?
                     {
                         if (retAndArgTypes.Length > 2)
                         {
@@ -284,7 +280,7 @@ public struct TypeNameBuilder
                 Contracts.ModuleHandle moduleHandle = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(typeSystemContract.GetModule(typeHandle));
                 if (MetadataTokens.EntityHandle((int)typeDefToken).IsNil)
                 {
-                    if (typeSystemContract.IsContinuation(typeHandle))
+                    if (typeSystemContract.IsContinuationWithoutMetadata(typeHandle))
                     {
                         AppendContinuationName(ref tnb, typeSystemContract, typeHandle);
                     }

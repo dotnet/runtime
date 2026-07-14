@@ -131,7 +131,7 @@ namespace System.Reflection
 
         public override string ImageRuntimeVersion => GetInfo(AssemblyInfoKind.ImageRuntimeVersion)!;
 
-        public override string Location => GetInfo(AssemblyInfoKind.Location)!;
+        public override string Location => AssemblyLoadContext.ResolveAssemblyLocation(this, GetInfo(AssemblyInfoKind.Location)!);
 
         // TODO: consider a dedicated icall instead
         public override bool IsCollectible => AssemblyLoadContext.GetLoadContext((Assembly)this)!.IsCollectible;

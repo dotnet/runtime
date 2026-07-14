@@ -604,7 +604,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         {
                             DSA dsa = DSA.Create();
 
-                            if (Dsa.Tests.DSASignVerify.SupportsFips186_3)
+                            if (Dsa.Tests.DefaultDSAProvider.Instance.SupportsFips186_3)
                             {
                                 dsa.ImportParameters(Dsa.Tests.DSATestData.GetDSA2048Params());
                             }

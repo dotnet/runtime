@@ -420,6 +420,13 @@ public sealed partial class QuicStream
         // No need to call anything since we already have a result, most likely an exception.
         if (valueTask.IsCompleted)
         {
+            // The writing side is closed, this write operation will not happen. Let the caller know.
+            if (valueTask.IsCompletedSuccessfully)
+            {
+                // Clean up and reset the value task just for posterity since it's nop in this state.
+                valueTask.GetAwaiter().GetResult();
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.net_writecompleted_invalidcall)));
+            }
             return valueTask;
         }
 

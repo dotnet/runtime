@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Text.Encodings.Web;
 using System.Text.Unicode;
 
 namespace System.Text.Json
@@ -302,9 +301,9 @@ namespace System.Text.Json
 
         internal delegate T WriteCallback<T>(ReadOnlySpan<byte> serializedValue);
 
-        internal static T WriteString<T>(ReadOnlySpan<byte> utf8Value, WriteCallback<T> writeCallback)
+        internal static unsafe T WriteString<T>(ReadOnlySpan<byte> utf8Value, WriteCallback<T> writeCallback)
         {
-            int firstByteToEscape = JsonWriterHelper.NeedsEscaping(utf8Value, JavaScriptEncoder.Default);
+            int firstByteToEscape = JsonWriterHelper.NeedsEscaping(utf8Value, encoder: null);
 
             if (firstByteToEscape == -1)
             {
@@ -353,7 +352,7 @@ namespace System.Text.Json
                     }
 
                     escapedValue[0] = JsonConstants.Quote;
-                    JsonWriterHelper.EscapeString(utf8Value, escapedValue.Slice(1), firstByteToEscape, JavaScriptEncoder.Default, out int written);
+                    JsonWriterHelper.EscapeString(utf8Value, escapedValue.Slice(1), firstByteToEscape, encoder: null, out int written);
                     escapedValue[1 + written] = JsonConstants.Quote;
 
                     return writeCallback(escapedValue.Slice(0, written + 2));

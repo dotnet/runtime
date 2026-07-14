@@ -148,6 +148,9 @@ namespace System.Diagnostics.Tracing
         private TimeSpan _pollingInterval;
         private TimeSpan _nextPollingOffset;
 
+        // Accessed only from OnTimer, which runs only on the single s_pollingThread.
+        private DiagnosticCounter[] _onTimerCounters = [];
+
         private void EnableTimer(float pollingIntervalInSeconds)
         {
             Debug.Assert(pollingIntervalInSeconds > 0);
@@ -232,21 +235,29 @@ namespace System.Diagnostics.Tracing
                 TimeSpan nowOffset;
                 TimeSpan elapsed;
                 TimeSpan pollingInterval;
-                DiagnosticCounter[] counters;
+                int counterCount;
                 lock (s_counterGroupLock)
                 {
                     nowOffset = Stopwatch.GetElapsedTime(_baseTimestamp);
                     elapsed = nowOffset - _timeSinceCollectionStarted;
                     pollingInterval = _pollingInterval;
-                    counters = new DiagnosticCounter[_counters.Count];
-                    _counters.CopyTo(counters);
+
+                    // Safe to reuse _onTimerCounters: OnTimer is the only reader/writer,
+                    // and runs only on the single s_pollingThread (see PollForValues).
+                    counterCount = _counters.Count;
+                    if (_onTimerCounters.Length < counterCount)
+                    {
+                        _onTimerCounters = new DiagnosticCounter[counterCount];
+                    }
+
+                    _counters.CopyTo(_onTimerCounters);
                 }
 
                 // MUST keep out of the scope of s_counterGroupLock because this will cause WritePayload
                 // callback can be re-entrant to CounterGroup (i.e. it's possible it calls back into EnableTimer()
                 // above, since WritePayload callback can contain user code that can invoke EventSource constructor
                 // and lead to a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
-                foreach (DiagnosticCounter counter in counters)
+                foreach (DiagnosticCounter counter in _onTimerCounters.AsSpan(0, counterCount))
                 {
                     // NOTE: It is still possible for a race condition to occur here. An example is if the session
                     // that subscribed to these batch of counters was disabled and it was immediately enabled in
@@ -259,6 +270,8 @@ namespace System.Diagnostics.Tracing
                     // be an actual issue.
                     counter.WritePayload((float)elapsed.TotalSeconds, (int)pollingInterval.TotalMilliseconds);
                 }
+
+                Array.Clear(_onTimerCounters);
 
                 lock (s_counterGroupLock)
                 {

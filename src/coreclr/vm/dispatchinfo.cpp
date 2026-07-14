@@ -963,9 +963,9 @@ DispatchMemberInfo* DispatchInfo::FindMember(DISPID DispID)
     if ((DispID == DISPID_UNKNOWN) || (DispID == -2))
         RETURN NULL;
 
-    // Lookup in the hashtable to find member with the specified DISPID. Note: this hash is unsynchronized, but Gethash
+    // Lookup in the hashtable to find member with the specified DISPID. Note: this hash is unsynchronized, but LookupValueByUniqueKey
     // doesn't require synchronization.
-    UPTR Data = (UPTR)m_DispIDToMemberInfoMap.Gethash(DispID2HashKey(DispID));
+    UPTR Data = (UPTR)m_DispIDToMemberInfoMap.LookupValueByUniqueKey(DispID2HashKey(DispID));
     if (Data != -1)
     {
         // We have found the member, so ensure it is initialized and return it.
@@ -2968,8 +2968,8 @@ DISPID DispatchInfo::GenerateDispID()
     }
     CONTRACTL_END;
 
-    // Find the next unused DISPID. Note, the hash is unsynchronized, but Gethash doesn't require synchronization.
-    for (; (UPTR)m_DispIDToMemberInfoMap.Gethash(DispID2HashKey(m_CurrentDispID)) != -1; m_CurrentDispID++);
+    // Find the next unused DISPID. Note, the hash is unsynchronized, but LookupValueByUniqueKey doesn't require synchronization.
+    for (; (UPTR)m_DispIDToMemberInfoMap.LookupValueByUniqueKey(DispID2HashKey(m_CurrentDispID)) != -1; m_CurrentDispID++);
     return m_CurrentDispID++;
 }
 

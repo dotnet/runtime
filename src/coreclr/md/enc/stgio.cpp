@@ -287,7 +287,7 @@ HRESULT StgIO::Open(                    // Return code.
                 return (PostError(CLDB_E_NO_DATA));
 
             // Data will come from the file.
-            m_hFile = hFile.Extract();
+            m_hFile = hFile.Detach();
 
             m_iType = STGIO_HFILE;
         }

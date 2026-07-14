@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetTypesWithNonNullablePropertyGetter))]
-        public async Task WriteNullFromNotNullablePropertyGetter_EnforcedNullability_ThrowsJsonException(Type type, string propertyName)
+        public async Task WriteNullFromNotNullablePropertyGetter_EnforcedNullability_ThrowsJsonException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string propertyName)
         {
             object value = Activator.CreateInstance(type)!;
 
@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetTypesWithNonNullablePropertyGetter))]
-        public async Task WriteNullFromNotNullablePropertyGetter_IgnoredNullability_Succeeds(Type type, string _)
+        public async Task WriteNullFromNotNullablePropertyGetter_IgnoredNullability_Succeeds([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string _)
         {
             object value = Activator.CreateInstance(type)!;
             string json = await Serializer.SerializeWrapper(value, type, s_optionsWithIgnoredNullability);
@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetTypesWithNonNullablePropertyGetter))]
-        public async Task WriteNullFromNotNullablePropertyGetter_EnforcedNullability_DisabledFlag_Succeeds(Type type, string propertyName)
+        public async Task WriteNullFromNotNullablePropertyGetter_EnforcedNullability_DisabledFlag_Succeeds([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string propertyName)
         {
             object value = Activator.CreateInstance(type)!;
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type, s_optionsWithEnforcedNullability, mutable: true);
@@ -80,7 +80,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetTypesWithNullablePropertyGetter))]
-        public async Task WriteNullFromNullablePropertyGetter_EnforcedNullability_Succeeds(Type type, string _)
+        public async Task WriteNullFromNullablePropertyGetter_EnforcedNullability_Succeeds([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string _)
         {
             object value = Activator.CreateInstance(type)!;
             string json = await Serializer.SerializeWrapper(value, type, s_optionsWithEnforcedNullability);
@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetTypesWithNullablePropertyGetter))]
-        public async Task WriteNullFromNullablePropertyGetter_IgnoredNullability_Succeeds(Type type, string _)
+        public async Task WriteNullFromNullablePropertyGetter_IgnoredNullability_Succeeds([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string _)
         {
             object value = Activator.CreateInstance(type)!;
             string json = await Serializer.SerializeWrapper(value, type, s_optionsWithIgnoredNullability);
@@ -98,7 +98,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetTypesWithNullablePropertyGetter))]
-        public async Task WriteNullFromNullablePropertyGetter_EnforcedNullability_EnabledFlag_ThrowsJsonException(Type type, string propertyName)
+        public async Task WriteNullFromNullablePropertyGetter_EnforcedNullability_EnabledFlag_ThrowsJsonException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string propertyName)
         {
             object value = Activator.CreateInstance(type)!;
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type, s_optionsWithEnforcedNullability, mutable: true);

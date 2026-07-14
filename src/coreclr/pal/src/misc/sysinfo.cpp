@@ -26,6 +26,7 @@ Revision History:
 #include <unistd.h>
 #include <minipal/utils.h>
 #include <minipal/ospagesize.h>
+#include <minipal/cpucount.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <sys/types.h>
@@ -157,10 +158,10 @@ PAL_GetLogicalCpuCountFromOS()
     {
 #if HAVE_SCHED_GETAFFINITY
 
-        int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+        int configuredCpuCount = minipal_get_cpu_max_possible_count();
         if (configuredCpuCount == -1)
         {
-            // In the unlikely event that sysconf(_SC_NPROCESSORS_CONF) fails, just assume a reasonable default maximum number of CPUs to avoid failing.
+            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing.
             configuredCpuCount = CPU_SETSIZE;
         }
 

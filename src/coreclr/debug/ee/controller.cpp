@@ -1457,7 +1457,7 @@ bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
     _ASSERTE(g_patches != NULL);
 
     CORDB_ADDRESS_TYPE *addr = (CORDB_ADDRESS_TYPE *)
-                               CodeRegionInfo::GetCodeRegionInfo(NULL, NULL, startAddr).OffsetToAddress(patch->offset);
+                               CodeRegionInfo::GetCodeRegionInfo(info, pMD, startAddr).OffsetToAddress(patch->offset);
     g_patches->BindPatch(patch, addr);
 
     LOG((LF_CORDB, LL_INFO10000, "DC::BP:Binding patch at %p (off:0x%zx)\n", addr, patch->offset));
@@ -4176,9 +4176,9 @@ void DebuggerController::DispatchMethodEnter(void * pIP, FramePointer fp)
     {
         if (p->m_fEnableMethodEnter)
         {
+            ++count;
             if ((p->GetThread() == NULL) || (p->GetThread() == pThread))
             {
-                ++count;
                 p->TriggerMethodEnter(pThread, dji, (const BYTE *) pIP, fp);
             }
         }

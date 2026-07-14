@@ -121,10 +121,27 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
+    [Fact]
+    public async Task BufferedAssetsTest()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(
+            config,
+            aot: false,
+            TestAsset.WasmBasicTestApp,
+            "ModuleConfigTests_BufferedAssetsTest",
+            extraProperties: "<WasmEmitSymbolMap>true</WasmEmitSymbolMap>");
+        PublishProject(info, config, new PublishOptions(AssertAppBundle: false));
+        await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "BufferedAssetsTest"
+        ));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [TestCategory("native")]
+    [TestCategory("native-mono")]
     public void SymbolMapFileEmitted(bool isPublish)
         => SymbolMapFileEmittedCore(emitSymbolMap: true, isPublish);
 

@@ -30,6 +30,39 @@ struct Agnostic_CORINFO_SIG_INFO
     DWORD     token;
 };
 
+struct Agnostic_CORINFO_CONST_LOOKUP
+{
+    DWORD     accessType;
+    DWORDLONG handle; // actually a union of two pointer sized things
+};
+
+struct Agnostic_CORINFO_LOOKUP_KIND
+{
+    DWORD needsRuntimeLookup;
+    DWORD runtimeLookupKind;
+};
+
+struct Agnostic_CORINFO_RUNTIME_LOOKUP
+{
+    DWORDLONG                     signature;
+    DWORD                         helper;
+    DWORD                         indirections;
+    DWORD                         testForNull;
+    WORD                          sizeOffset;
+    DWORDLONG                     offsets[CORINFO_MAXINDIRECTIONS];
+    DWORD                         indirectFirstOffset;
+    DWORD                         indirectSecondOffset;
+    Agnostic_CORINFO_CONST_LOOKUP helperEntryPoint;
+};
+
+struct Agnostic_CORINFO_LOOKUP
+{
+    Agnostic_CORINFO_LOOKUP_KIND    lookupKind;
+    Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup; // This and constLookup actually a union, but with different
+                                                   // layouts.. :-| copy the right one based on lookupKinds value
+    Agnostic_CORINFO_CONST_LOOKUP constLookup;
+};
+
 struct Agnostic_CORINFO_METHOD_INFO
 {
     DWORDLONG                 ftn;
@@ -185,7 +218,6 @@ struct Agnostic_CORINFO_EE_INFO
     DWORD offsetOfGCState;
     DWORD offsetOfDelegateInstance;
     DWORD offsetOfDelegateFirstTarget;
-    DWORD offsetOfWrapperDelegateIndirectCell;
     DWORD sizeOfReversePInvokeFrame;
     DWORD osPageSize;
     DWORD maxUncheckedOffsetForNullObject;
@@ -207,6 +239,12 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG restoreContextsOnSuspensionMethHnd;
     DWORDLONG finishSuspensionNoContinuationContextMethHnd;
     DWORDLONG finishSuspensionWithContinuationContextMethHnd;
+};
+
+struct Agnostic_GetAwaitReturnCallResult
+{
+    DWORDLONG methodHnd;
+    Agnostic_CORINFO_LOOKUP instArg;
 };
 
 struct Agnostic_GetOSRInfo
@@ -266,43 +304,10 @@ struct Agnostic_CORINFO_HELPER_DESC
     Agnostic_CORINFO_HELPER_ARG args[CORINFO_ACCESS_ALLOWED_MAX_ARGS];
 };
 
-struct Agnostic_CORINFO_CONST_LOOKUP
-{
-    DWORD     accessType;
-    DWORDLONG handle; // actually a union of two pointer sized things
-};
-
 struct Agnostic_GetHelperFtn
 {
     Agnostic_CORINFO_CONST_LOOKUP helperLookup;
     DWORDLONG                     helperMethod;
-};
-
-struct Agnostic_CORINFO_LOOKUP_KIND
-{
-    DWORD needsRuntimeLookup;
-    DWORD runtimeLookupKind;
-};
-
-struct Agnostic_CORINFO_RUNTIME_LOOKUP
-{
-    DWORDLONG                     signature;
-    DWORD                         helper;
-    DWORD                         indirections;
-    DWORD                         testForNull;
-    WORD                          sizeOffset;
-    DWORDLONG                     offsets[CORINFO_MAXINDIRECTIONS];
-    DWORD                         indirectFirstOffset;
-    DWORD                         indirectSecondOffset;
-    Agnostic_CORINFO_CONST_LOOKUP helperEntryPoint;
-};
-
-struct Agnostic_CORINFO_LOOKUP
-{
-    Agnostic_CORINFO_LOOKUP_KIND    lookupKind;
-    Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup; // This and constLookup actually a union, but with different
-                                                   // layouts.. :-| copy the right one based on lookupKinds value
-    Agnostic_CORINFO_CONST_LOOKUP constLookup;
 };
 
 struct Agnostic_CORINFO_FIELD_INFO
@@ -369,7 +374,6 @@ struct Agnostic_CORINFO_CALL_INFO
     DWORD                         exactContextNeedsRuntimeLookup;
     Agnostic_CORINFO_LOOKUP       stubLookup; // first view of union.  others are matching or subordinate
     Agnostic_CORINFO_CONST_LOOKUP instParamLookup;
-    DWORD                         wrapperDelegateInvoke;
     DWORD                         exceptionCode;
 };
 
@@ -687,19 +691,11 @@ struct Agnostic_ResolveVirtualMethodResult
 {
     bool                            returnValue;
     DWORDLONG                       devirtualizedMethod;
-    bool                            isInstantiatingStub;
-    bool                            needsMethodContext;
-    DWORDLONG                       exactContext;
+    DWORDLONG                       tokenLookupContext;
     DWORD                           detail;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
-};
-
-struct Agnostic_GetInstantiatedEntryResult
-{
-    DWORDLONG                       methodHandle;
-    DWORDLONG                       classHandle;
-    DWORDLONG                       result;
+    Agnostic_CORINFO_LOOKUP         instParamLookup;
 };
 
 struct ResolveTokenValue
