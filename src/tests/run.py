@@ -1639,6 +1639,8 @@ def print_active_issue_summary(tests, show_details=False):
         issues[url].append((test["name"], runner))
 
     if not issues:
+        print("ActiveIssue Summary (0 issues, 0 tests):")
+        print("")
         return issues
 
     issue_titles = _fetch_issue_titles(issues) if show_details else {}
