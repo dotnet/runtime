@@ -161,10 +161,11 @@ namespace System
                 methodTable = null;
             }
 #endif
+            nint methodTableValue = (nint)methodTable;
             if (_methodPtrAux == IntPtr.Zero)
-                return RuntimeHelpers.GetHashCode(_target) * 33 + ((nuint)methodTable).GetHashCode();
+                return RuntimeHelpers.GetHashCode(_target) * 33 + methodTableValue.GetHashCode();
             else
-                return ((nuint)methodTable).GetHashCode();
+                return methodTableValue.GetHashCode();
         }
 
         protected virtual MethodInfo GetMethodImpl()
