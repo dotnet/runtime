@@ -3560,7 +3560,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
         // Avoid sharing in some tier 0 cases to, potentially, avoid boxing in Enum.HasFlag.
         if (shareBoxedTemps && varTypeIsIntegral(exprToBox) && !lvaHaveManyLocals() &&
-            (info.compCompHnd->isEnum(pResolvedToken->hClass, nullptr) != TypeCompareState::Must))
+            (info.compCompHnd->isEnum(pResolvedToken->hClass, nullptr) == TypeCompareState::Must))
         {
             shareBoxedTemps = false;
         }
