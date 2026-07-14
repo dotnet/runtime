@@ -62,6 +62,10 @@ namespace System.Numerics
             {
                 return CompareIntegerSemantic(BitConverter.HalfToInt16Bits((Half)(object)x!), BitConverter.HalfToInt16Bits((Half)(object)y!));
             }
+            else if (typeof(T) == typeof(BFloat16))
+            {
+                return CompareIntegerSemantic(BitConverter.BFloat16ToInt16Bits((BFloat16)(object)x!), BitConverter.BFloat16ToInt16Bits((BFloat16)(object)y!));
+            }
             else
             {
                 return CompareGeneric(x, y);
