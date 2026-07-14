@@ -50,11 +50,44 @@ IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructio
 
 // Returns true if the instruction offset is a GC-safe point.
 bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset);
-bool TryGetGenericInstantiationContextStackSlot(IGCInfoHandle handle, out int spOffset, out bool isStackBaseRelative);
+
+// Returns the storage location of the exact generic context at an instruction offset.
+bool TryGetGenericContextStorage(
+    IGCInfoHandle handle,
+    GenericContextLoc contextKind,
+    uint instructionOffset,
+    out GenericContextStorage storage);
+
 TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer fp, TargetPointer sp);
 ```
 
 ```csharp
+public enum GenericContextStorageKind
+{
+    Register,                    // The register value is the context value
+    StackPointerRelative,        // Memory at SP + Offset
+    RegisterRelative,            // Memory at the named register + Offset
+    InterpreterArgumentRelative, // Memory at the interpreter argument base + Offset
+}
+
+public readonly record struct GenericContextStorage
+{
+    public GenericContextStorage(
+        GenericContextStorageKind kind,
+        uint registerNumber,
+        int offset);
+
+    public GenericContextStorage(
+        GenericContextStorageKind kind,
+        string registerName,
+        int offset);
+
+    public GenericContextStorageKind Kind { get; }
+    public string RegisterName { get; }
+    public uint RegisterNumber { get; }
+    public int Offset { get; }
+}
+
 // Describes a code region where the GC can safely interrupt execution.
 public readonly record struct InterruptibleRange(
     uint StartOffset,   // Start of the interruptible region (byte offset from method start)
@@ -617,19 +650,31 @@ bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset)
     // in the safe point table.
 }
 
-bool TryGetGenericInstantiationContextStackSlot(IGCInfoHandle handle,
-    out int spOffset, out bool isStackBaseRelative)
+bool TryGetGenericContextStorage(IGCInfoHandle handle,
+    GenericContextLoc contextKind, uint instructionOffset,
+    out GenericContextStorage storage)
 {
-    // Non-x86 (GcInfoDecoder) decoders: ensure the header is decoded through the generic
-    // instantiation context and stack base register fields. If the method reports no context
-    // slot (NO_GENERICS_INST_CONTEXT), return false. Otherwise return the denormalized signed
-    // slot offset and whether it is relative to the stack base register (present) or SP (absent).
+    // Non-x86 JIT GC info: ensure the header is decoded through the generic instantiation
+    // context and stack base register fields. If the method reports no context slot
+    // (NO_GENERICS_INST_CONTEXT), return false. Otherwise return the denormalized signed
+    // slot as RegisterRelative with the decoded stack-base register number when a
+    // stack base register is present, or StackPointerRelative otherwise.
+    //
+    // Interpreter GC info:
+    //   - ThisPtr is InterpreterArgumentRelative at offset zero, matching
+    //     InterpreterCodeManager::GetInstance's dereference of frame->pStack;
+    //   - explicit MethodDesc / MethodTable contexts use the decoded generic context offset
+    //     relative to the same interpreter argument base.
     //
     // x86 (InfoHdr) decoder:
-    //   - return false unless the method reports a generics context and uses an EBP frame;
-    //   - otherwise the slot is EBP-relative at
-    //     -(savedRegsCountExclFP + (synchronized ? 1 : 0) + localloc + 1) * sizeof(TADDR),
-    //     so spOffset is that negative value and isStackBaseRelative is true.
+    //   - return false in the prolog or an epilog;
+    //   - explicit MethodDesc / MethodTable contexts are RegisterRelative to EBP at
+    //     -(savedRegsCountExclFP + (synchronized ? 1 : 0) + localloc + 1) * sizeof(TADDR);
+    //   - for ThisPtr, replay the argument/register transition stream at instructionOffset.
+    //     If thisPtrResult identifies a register, return Register storage with
+    //     that register's numeric identifier;
+    //   - otherwise use the first untracked slot, relative to EBP for EBP frames or to
+    //     SP plus the decoded pushed-argument depth for ESP frames.
 }
 
 TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer fp, TargetPointer sp)

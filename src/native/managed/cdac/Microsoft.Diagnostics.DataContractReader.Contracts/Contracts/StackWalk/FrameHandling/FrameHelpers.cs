@@ -451,7 +451,7 @@ internal sealed class FrameHelpers
 
     // Matches the Windows CONTEXT_EXCEPTION_ACTIVE flag value. The PAL CONTEXT structures
     // on Linux/macOS use the same bit so a single constant is sufficient across platforms.
-    private const uint CONTEXT_EXCEPTION_ACTIVE = 0x8000000;
+    internal const uint ContextExceptionActive = 0x08000000;
 
     /// <summary>
     /// Mirrors native <c>InterpreterFrame::SetContextToInterpMethodContextFrame</c> (frames.cpp).
@@ -472,7 +472,7 @@ internal sealed class FrameHelpers
 
         uint flags = context.FullContextFlags;
         if (interpreterFrame.IsFaulting)
-            flags |= CONTEXT_EXCEPTION_ACTIVE;
+            flags |= ContextExceptionActive;
         context.RawContextFlags = flags;
     }
 

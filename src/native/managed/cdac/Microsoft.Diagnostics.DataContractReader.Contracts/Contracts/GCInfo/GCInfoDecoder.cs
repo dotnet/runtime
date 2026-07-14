@@ -518,18 +518,43 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         return _stackBaseRegister;
     }
 
-    public bool TryGetGenericInstantiationContextStackSlot(out int spOffset, out bool isStackBaseRelative)
+    public bool TryGetGenericContextStorage(GenericContextLoc contextKind, uint instructionOffset, out GenericContextStorage storage)
     {
+        if (TTraits.IsInterpreter && contextKind == GenericContextLoc.ThisPtr)
+        {
+            storage = new GenericContextStorage(GenericContextStorageKind.InterpreterArgumentRelative, registerNumber: 0, offset: 0);
+            return true;
+        }
+
         EnsureDecodedTo(DecodePoints.ReversePInvoke);
         if (_genericsInstContextStackSlot == TTraits.NO_GENERICS_INST_CONTEXT)
         {
-            spOffset = 0;
-            isStackBaseRelative = false;
+            storage = default;
             return false;
         }
 
-        spOffset = _genericsInstContextStackSlot;
-        isStackBaseRelative = _stackBaseRegister != TTraits.NO_STACK_BASE_REGISTER;
+        if (TTraits.IsInterpreter)
+        {
+            storage = new GenericContextStorage(
+                GenericContextStorageKind.InterpreterArgumentRelative,
+                registerNumber: 0,
+                _genericsInstContextStackSlot);
+        }
+        else if (_stackBaseRegister != TTraits.NO_STACK_BASE_REGISTER)
+        {
+            storage = new GenericContextStorage(
+                GenericContextStorageKind.RegisterRelative,
+                _stackBaseRegister,
+                _genericsInstContextStackSlot);
+        }
+        else
+        {
+            storage = new GenericContextStorage(
+                GenericContextStorageKind.StackPointerRelative,
+                registerNumber: 0,
+                _genericsInstContextStackSlot);
+        }
+
         return true;
     }
 

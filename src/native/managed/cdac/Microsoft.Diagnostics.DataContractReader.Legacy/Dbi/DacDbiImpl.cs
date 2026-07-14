@@ -2055,9 +2055,16 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             data.v.taAmbientESP = frameInfo.AmbientSP.Value;
 
             GenericContextLoc genericContextLoc = rts.GetGenericContextLoc(md);
-            data.v.exactGenericArgsToken = _target.Contracts.StackWalk.GetExactGenericArgsToken(handle).Value;
             if (genericContextLoc != GenericContextLoc.None)
             {
+                try
+                {
+                    data.v.exactGenericArgsToken = _target.Contracts.StackWalk.GetExactGenericArgsToken(handle).Value;
+                }
+                catch (VirtualReadException)
+                {
+
+                }
                 data.v.dwExactGenericArgsTokenIndex = genericContextLoc == GenericContextLoc.ThisPtr ? 0u : unchecked((uint)IlNum.TYPECTXT_ILNUM);
             }
             else
@@ -2065,15 +2072,22 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 data.v.dwExactGenericArgsTokenIndex = unchecked((uint)IlNum.MAX_ILNUM);
             }
 
-            ResolveStubFrameAssemblyAndToken(mdPtr, out TargetPointer vmAssembly, out uint funcMetadataToken);
-            data.v.funcData.funcMetadataToken = funcMetadataToken;
+            data.v.funcData.funcMetadataToken = rts.GetMethodToken(md);
+            TargetPointer vmAssembly = ResolveMethodAssembly(rts, md);
             data.v.funcData.vmAssembly = vmAssembly.Value;
 
             TargetCodePointer controlPC = _target.Contracts.StackWalk.GetInstructionPointer(handle);
             ulong nativeOffset = 0;
             if (eman.GetCodeBlockHandle(controlPC) is CodeBlockHandle cbh)
             {
-                data.v.jitFuncData.nativeStartAddressPtr = eman.GetStartAddress(cbh).Value;
+                try
+                {
+                    data.v.jitFuncData.nativeStartAddressPtr = eman.GetStartAddress(cbh).Value;
+                }
+                catch (VirtualReadException)
+                {
+
+                }
                 nativeOffset = eman.GetRelativeOffset(cbh).Value;
             }
             data.v.jitFuncData.nativeHotSize = 0;
@@ -2249,18 +2263,22 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
         funcMetadataToken = rts.GetMethodToken(mdHandle);
+        vmAssembly = ResolveMethodAssembly(rts, mdHandle);
+    }
 
+    private TargetPointer ResolveMethodAssembly(IRuntimeTypeSystem rts, MethodDescHandle mdHandle)
+    {
         TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
         if (mtPtr == TargetPointer.Null)
-            return;
+            return TargetPointer.Null;
         TypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
         TargetPointer modulePtr = rts.GetModule(typeHandle);
         if (modulePtr == TargetPointer.Null)
-            return;
+            return TargetPointer.Null;
 
         ILoader loader = _target.Contracts.Loader;
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-        vmAssembly = loader.GetAssembly(moduleHandle);
+        return loader.GetAssembly(moduleHandle);
     }
 
     private static CorDebugInternalFrameType ToCorDebugInternalFrameType(Contracts.InternalFrameType frameType)

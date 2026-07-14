@@ -190,9 +190,13 @@ internal partial class StackWalk_1 : IStackWalk
                           || (matchedType is FrameType.HijackFrame && !isX86);
             matchedIsInterrupted = matchedType is FrameType.FaultingExceptionFrame
                                                 or FrameType.SoftwareExceptionFrame;
-            matchedHasFaulted = matchedType is FrameType.FaultingExceptionFrame;
+            matchedHasFaulted = matchedType is FrameType.FaultingExceptionFrame
+                && HasFaultedContext(context);
         }
     }
+
+    internal static bool HasFaultedContext(IPlatformAgnosticContext context)
+        => (context.RawContextFlags & FrameHelpers.ContextExceptionActive) != 0;
 
     IEnumerable<IStackDataFrameHandle> IStackWalk.CreateStackWalk(ThreadData threadData, byte[] contextBuffer, bool isFirst)
     {
@@ -948,8 +952,10 @@ internal partial class StackWalk_1 : IStackWalk
                                                       or FrameType.SoftwareExceptionFrame)
                     {
                         handle.IsInterrupted = true;
-                        handle.HasFaulted = handle.LastProcessedFrameType is FrameType.FaultingExceptionFrame;
+                        handle.HasFaulted = handle.LastProcessedFrameType is FrameType.FaultingExceptionFrame
+                            && HasFaultedContext(handle.Context);
                     }
+
                     handle.LastProcessedFrameType = null;
 
                     if (CheckForSkippedFrames(handle))
@@ -1152,25 +1158,17 @@ internal partial class StackWalk_1 : IStackWalk
         if (!IsManaged(handle.Context.InstructionPointer, out CodeBlockHandle? cbh))
             return TargetPointer.Null;
 
+        uint instructionOffset = (uint)_eman.GetRelativeOffset(cbh.Value).Value;
         _eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddr, out uint gcVersion);
-        IGCInfoHandle gcHandle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
-        if (!_target.Contracts.GCInfo.TryGetGenericInstantiationContextStackSlot(gcHandle, out int spOffset, out bool isStackBaseRelative))
+        IGCInfo gcInfo = _target.Contracts.GCInfo;
+        IGCInfoHandle gcHandle = IsInterpreterCode(handle.Context.InstructionPointer)
+            ? gcInfo.DecodeInterpreterGCInfo(gcInfoAddr, gcVersion)
+            : gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
+
+        if (!gcInfo.TryGetGenericContextStorage(gcHandle, ctxLoc, instructionOffset, out GenericContextStorage storage))
             return TargetPointer.Null;
 
-        TargetPointer baseAddr;
-        if (isStackBaseRelative)
-        {
-            uint stackBaseRegister = _target.Contracts.GCInfo.GetStackBaseRegister(gcHandle);
-            if (!handle.Context.TryReadRegister((int)stackBaseRegister, out TargetNUInt baseReg))
-                return TargetPointer.Null;
-            baseAddr = new TargetPointer(baseReg.Value);
-        }
-        else
-        {
-            baseAddr = handle.Context.StackPointer;
-        }
-
-        TargetPointer contextValue = _target.ReadPointer(new TargetPointer(unchecked(baseAddr.Value + (ulong)(long)spOffset)));
+        TargetPointer contextValue = ReadGenericContextStorage(handle.Context, storage);
         if (contextValue == TargetPointer.Null)
             return TargetPointer.Null;
 
@@ -1179,6 +1177,39 @@ internal partial class StackWalk_1 : IStackWalk
         return ctxLoc == GenericContextLoc.ThisPtr
             ? _target.Contracts.Object.GetMethodTableAddress(contextValue)
             : contextValue;
+    }
+
+    private TargetPointer ReadGenericContextStorage(IPlatformAgnosticContext context, GenericContextStorage storage)
+    {
+        switch (storage.Kind)
+        {
+            case GenericContextStorageKind.Register:
+                return TryReadRegister(context, storage, out TargetNUInt registerValue)
+                    ? new TargetPointer(registerValue.Value)
+                    : TargetPointer.Null;
+
+            case GenericContextStorageKind.StackPointerRelative:
+                return ReadPointerRelativeTo(context.StackPointer, storage.Offset);
+
+            case GenericContextStorageKind.RegisterRelative:
+                if (!TryReadRegister(context, storage, out TargetNUInt baseRegister))
+                    return TargetPointer.Null;
+                return ReadPointerRelativeTo(new TargetPointer(baseRegister.Value), storage.Offset);
+
+            case GenericContextStorageKind.InterpreterArgumentRelative:
+                return ReadPointerRelativeTo(context.FramePointer, storage.Offset);
+
+            default:
+                throw new InvalidOperationException($"Unsupported generic context storage kind {storage.Kind}");
+        }
+
+        TargetPointer ReadPointerRelativeTo(TargetPointer baseAddress, int offset)
+            => _target.ReadPointer(new TargetPointer(unchecked(baseAddress.Value + (ulong)(long)offset)));
+
+        static bool TryReadRegister(IPlatformAgnosticContext context, GenericContextStorage storage, out TargetNUInt value)
+            => storage.RegisterName.Length != 0
+                ? context.TryReadRegister(storage.RegisterName, out value)
+                : context.TryReadRegister((int)storage.RegisterNumber, out value);
     }
 
     private TargetPointer ComputeFramePointer(StackDataFrameHandle handle)
@@ -1212,9 +1243,7 @@ internal partial class StackWalk_1 : IStackWalk
             uint stackParameterSize = 0;
             if (IsManaged(handle.Context.InstructionPointer, out CodeBlockHandle? cbh))
             {
-                _eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddr, out uint gcVersion);
-                IGCInfoHandle gcHandle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
-                stackParameterSize = _target.Contracts.GCInfo.GetCalleePoppedArgumentsSize(gcHandle);
+                stackParameterSize = _eman.GetStackParameterSize(cbh.Value);
             }
 
             return new TargetPointer(unwoundEsp - stackParameterSize - pointerSize);

@@ -19,6 +19,6 @@ internal interface IGCInfoDecoder : IGCInfoHandle
     IReadOnlyList<InterruptibleRange> GetInterruptibleRanges();
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(uint instructionOffset, GcSlotEnumerationOptions options);
     bool IsGcSafe(uint instructionOffset);
-    bool TryGetGenericInstantiationContextStackSlot(out int spOffset, out bool isStackBaseRelative);
+    bool TryGetGenericContextStorage(GenericContextLoc contextKind, uint instructionOffset, out GenericContextStorage storage);
     TargetPointer GetAmbientSP(uint codeOffset, TargetPointer fp, TargetPointer sp);
 }
