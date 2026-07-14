@@ -4384,6 +4384,11 @@ struct GenTreeConditional : public GenTreeOp
         assert(cond != nullptr);
     }
 
+    static bool Equals(GenTreeConditional* op1, GenTreeConditional* op2)
+    {
+        return Compare(op1->gtCond, op2->gtCond) && Compare(op1->gtOp1, op2->gtOp1) && Compare(op1->gtOp2, op2->gtOp2);
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeConditional()
         : GenTreeOp()
@@ -6772,6 +6777,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     ClassLayout* GetLayout(Compiler* compiler) const;
 
     NamedIntrinsic GetHWIntrinsicId() const;
+
+#ifdef TARGET_WASM
+    GenTree* GetImmOp() const;
+#endif // TARGET_WASM
 
     //---------------------------------------------------------------------------------------
     // ChangeHWIntrinsicId: Change the intrinsic id for this node.
