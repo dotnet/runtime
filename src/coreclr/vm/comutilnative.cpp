@@ -1775,9 +1775,17 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
         return mt->CanCompareBitsOrUseFastGetHashCode();
     }
 
+    if (mt->GetClass()->IsInlineArray())
+    {
+        // Inline arrays must always throw from ValueType.Equals/GetHashCode, which only happens on the
+        // QCALL entry point. Return false without caching so the managed fast path keeps routing there
+        // instead of reading a cached 'false' (e.g. primed by an enclosing type's field recursion) that
+        // would silently skip the throw.
+        return FALSE;
+    }
+
     if (mt->ContainsGCPointers()
-        || mt->IsNotTightlyPacked()
-        || mt->GetClass()->IsInlineArray())
+        || mt->IsNotTightlyPacked())
     {
         mt->SetHasCheckedCanCompareBitsOrUseFastGetHashCode();
         return FALSE;
