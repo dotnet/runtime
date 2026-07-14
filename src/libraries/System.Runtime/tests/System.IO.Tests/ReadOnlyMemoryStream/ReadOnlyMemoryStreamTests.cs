@@ -35,15 +35,12 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void GetBuffer_Throws_TryGetBuffer_ReturnsFalse()
+        public void WriteThrowsNotSupported()
         {
             var stream = new ReadOnlyMemoryStream(new byte[] { 1, 2, 3 });
 
-            Assert.Throws<UnauthorizedAccessException>(() => stream.GetBuffer());
-            Assert.False(stream.TryGetBuffer(out ArraySegment<byte> segment));
-            Assert.Null(segment.Array);
-            Assert.Equal(0, segment.Offset);
-            Assert.Equal(0, segment.Count);
+            Assert.Throws<NotSupportedException>(() => stream.Write(new byte[1], 0, 1));
+            Assert.Throws<NotSupportedException>(() => stream.SetLength(1));
         }
     }
 }

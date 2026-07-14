@@ -7,48 +7,77 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>
-    /// Provides a seekable, read-only <see cref="MemoryStream"/> over a <see cref="ReadOnlyMemory{Byte}"/>.
+    /// Provides a seekable, read-only <see cref="Stream"/> over a <see cref="ReadOnlyMemory{Byte}"/>.
     /// </summary>
     /// <remarks>
-    /// <para>The stream cannot be written to. <see cref="MemoryStream.CanWrite"/> always returns <see langword="false"/>.</para>
-    /// <para><see cref="MemoryStream.GetBuffer"/> throws and <see cref="MemoryStream.TryGetBuffer"/> returns <see langword="false"/>.</para>
+    /// <para>The stream cannot be written to. <see cref="CanWrite"/> always returns <see langword="false"/>.</para>
     /// </remarks>
-    public sealed class ReadOnlyMemoryStream : MemoryStream
+    public sealed class ReadOnlyMemoryStream : Stream
     {
         private ReadOnlyMemory<byte> _memory;
+        private int _position;
+        private bool _isOpen;
+        private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ReadOnlyMemoryStream"/> class over the specified <see cref="ReadOnlyMemory{Byte}"/>.
         /// </summary>
         /// <param name="source">The <see cref="ReadOnlyMemory{Byte}"/> to wrap.</param>
-        public ReadOnlyMemoryStream(ReadOnlyMemory<byte> source) : base()
+        public ReadOnlyMemoryStream(ReadOnlyMemory<byte> source)
         {
-            _writable = false;
             _memory = source;
-            _length = source.Length;
+            _isOpen = true;
         }
 
         /// <inheritdoc/>
-        public override int Capacity
+        public override bool CanRead => _isOpen;
+
+        /// <inheritdoc/>
+        public override bool CanSeek => _isOpen;
+
+        /// <inheritdoc/>
+        public override bool CanWrite => false;
+
+        /// <inheritdoc/>
+        public override long Length
         {
             get
             {
                 EnsureNotClosed();
                 return _memory.Length;
             }
-            set => throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
         }
 
         /// <inheritdoc/>
-        public override byte[] GetBuffer() =>
-            throw new UnauthorizedAccessException(SR.UnauthorizedAccess_MemStreamBuffer);
-
-        /// <inheritdoc/>
-        public override bool TryGetBuffer(out ArraySegment<byte> buffer)
+        public override long Position
         {
-            buffer = default;
-            return false;
+            get
+            {
+                EnsureNotClosed();
+                return _position;
+            }
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                EnsureNotClosed();
+
+                if (value > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamPosition, int.MaxValue));
+                }
+
+                _position = (int)value;
+            }
         }
+
+        /// <inheritdoc/>
+        public override void Flush()
+        {
+        }
+
+        /// <inheritdoc/>
+        public override Task FlushAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) : Task.CompletedTask;
 
         /// <inheritdoc/>
         public override int ReadByte()
@@ -122,6 +151,34 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            EnsureNotClosed();
+
+            int loc = origin switch
+            {
+                SeekOrigin.Begin => 0,
+                SeekOrigin.Current => _position,
+                SeekOrigin.End => _memory.Length,
+                _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin)
+            };
+
+            if (offset > int.MaxValue - loc)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ArgumentOutOfRange_StreamPosition, int.MaxValue));
+            }
+
+            int tempPosition = unchecked(loc + (int)offset);
+            if (unchecked(loc + offset) < 0 || tempPosition < 0)
+            {
+                throw new IOException(SR.IO_SeekBeforeBegin);
+            }
+
+            _position = tempPosition;
+            return _position;
+        }
+
+        /// <inheritdoc/>
         public override void CopyTo(Stream destination, int bufferSize)
         {
             ValidateCopyToArguments(destination, bufferSize);
@@ -157,32 +214,17 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
-        public override byte[] ToArray()
-        {
-            EnsureNotClosed();
-            if (_memory.Length == 0)
-            {
-                return Array.Empty<byte>();
-            }
-
-            byte[] copy = GC.AllocateUninitializedArray<byte>(_memory.Length);
-            _memory.Span.CopyTo(copy);
-            return copy;
-        }
+        public override void SetLength(long value) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
-        public override void WriteTo(Stream stream)
-        {
-            ArgumentNullException.ThrowIfNull(stream);
-            EnsureNotClosed();
-
-            stream.Write(_memory.Span);
-        }
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
+            _isOpen = false;
             _memory = default;
+            _lastReadTask = default;
             base.Dispose(disposing);
         }
 
