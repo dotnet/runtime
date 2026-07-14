@@ -2147,18 +2147,37 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             }
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 #if defined(TARGET_POWERPC64)
-            if (arg.NewAbiInfo.HasAnyFloatingRegisterSegment() && !arg.NewAbiInfo.HasAnyStackSegment())
+            // Check if this is an HFA struct - handle all HFA structs (register, stack, or split)
+            // to ensure they are decomposed into individual float fields
+            var_types hfaType = TYP_UNDEF;
+            unsigned hfaSlots = 0;
+            if (argLayout != nullptr && IsPpc64leHfaLikeStruct(comp, argLayout->GetClassHandle(), &hfaType, &hfaSlots))
             {
-                // Struct passed according to hardware floating-point calling convention (HFA)
-                // Only handle pure register cases here; split cases are handled by normal struct logic
+                // This is an HFA struct - keep it as TYP_STRUCT so it gets decomposed into FIELD_LIST
+                // This applies to:
+                // - Pure register HFAs (all fields in FPRs)
+                // - Split HFAs (some fields in FPRs, some on stack)
+                // - Pure stack HFAs (all fields on stack)
+                assert(howToPassStruct == Compiler::SPK_ByValue || howToPassStruct == Compiler::SPK_PrimitiveType);
+                if (arg.NewAbiInfo.NumSegments > 1 || arg.NewAbiInfo.HasAnyStackSegment())
+                {
+                    // Multi-segment or has stack: keep as TYP_STRUCT for FIELD_LIST decomposition
+                    structBaseType = TYP_STRUCT;
+                }
+                else
+                {
+                    // Single register segment: use the register type
+                    assert(arg.NewAbiInfo.NumSegments == 1);
+                    assert(arg.NewAbiInfo.Segment(0).IsPassedInRegister());
+                    structBaseType = arg.NewAbiInfo.Segment(0).GetRegisterType();
+                }
+            }
+            else if (arg.NewAbiInfo.HasAnyFloatingRegisterSegment() && !arg.NewAbiInfo.HasAnyStackSegment())
+            {
+                // Non-HFA struct passed in float registers (shouldn't happen, but keep for safety)
                 assert(howToPassStruct == Compiler::SPK_ByValue || howToPassStruct == Compiler::SPK_PrimitiveType);
                 if (arg.NewAbiInfo.NumSegments > 1)
                 {
-                    // On PPC64LE, "getPrimitiveTypeForStruct" will incorrectly return "TYP_FLOAT"
-                    // for HFA structs like "struct { float, float }", and retyping to a primitive here
-                    // will cause the multi-reg morphing to not kick in (the struct needs to be passed
-                    // in multiple FP registers). Here we just keep "structBaseType" as "TYP_STRUCT".
-                    // TODO-PPC64LE: fix "getPrimitiveTypeForStruct".
                     structBaseType = TYP_STRUCT;
                 }
                 else
@@ -3165,8 +3184,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
 #if defined(TARGET_POWERPC64)
         // Check if this is an HFA struct - if so, all fields should use the HFA element type
+        // This applies to all HFA structs regardless of whether they're passed in registers or on stack
         var_types hfaElementType = TYP_UNDEF;
-        if (layout != nullptr && arg->NewAbiInfo.HasAnyFloatingRegisterSegment())
+        if (layout != nullptr)
         {
             CORINFO_CLASS_HANDLE classHnd = layout->GetClassHandle();
             var_types hfaType;
