@@ -11,7 +11,51 @@ permissions:
   contents: read
 
 jobs:
+  pat_pool:
+    runs-on: ubuntu-latest
+    environment: copilot-pat-pool
+    permissions: {}
+    outputs:
+      pat_number: ${{ steps.select-pat-number.outputs.copilot_pat_number }}
+    steps:
+      - name: Select writable Copilot token
+        id: select-pat-number
+        env:
+          COPILOT_PAT_0: ${{ secrets.COPILOT_PAT_0 }}
+          COPILOT_PAT_1: ${{ secrets.COPILOT_PAT_1 }}
+          COPILOT_PAT_2: ${{ secrets.COPILOT_PAT_2 }}
+          COPILOT_PAT_3: ${{ secrets.COPILOT_PAT_3 }}
+          COPILOT_PAT_4: ${{ secrets.COPILOT_PAT_4 }}
+          COPILOT_PAT_5: ${{ secrets.COPILOT_PAT_5 }}
+          COPILOT_PAT_6: ${{ secrets.COPILOT_PAT_6 }}
+          COPILOT_PAT_7: ${{ secrets.COPILOT_PAT_7 }}
+          COPILOT_PAT_8: ${{ secrets.COPILOT_PAT_8 }}
+          COPILOT_PAT_9: ${{ secrets.COPILOT_PAT_9 }}
+        run: |
+          for i in $(seq 0 9); do
+            var="COPILOT_PAT_${i}"
+            if [ -n "${!var}" ]; then
+              response="$RUNNER_TEMP/copilot-pat-${i}.json"
+              if ! status=$(curl --silent --write-out '%{http_code}' \
+                --header "Authorization: Bearer ${!var}" \
+                --header "Accept: application/vnd.github+json" \
+                --output "$response" \
+                https://api.github.com/repos/dotnet/runtime); then
+                status=000
+              fi
+              if [ "$status" = 200 ] && jq -e '.permissions.push == true' "$response" > /dev/null; then
+                echo "copilot_pat_number=${i}" >> "$GITHUB_OUTPUT"
+                rm -f "$response"
+                exit 0
+              fi
+              rm -f "$response"
+            fi
+          done
+          echo "::error::No writable Copilot PAT is available."
+          exit 1
+
   probe:
+    needs: pat_pool
     if: github.repository == 'dotnet/runtime' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     environment: copilot-pat-pool
@@ -23,7 +67,21 @@ jobs:
       - name: Probe eval reporting permissions
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
-          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          github-token: >-
+            ${{
+              case(
+                needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0,
+                needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1,
+                needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2,
+                needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3,
+                needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4,
+                needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5,
+                needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6,
+                needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7,
+                needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8,
+                needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9,
+                secrets.COPILOT_GITHUB_TOKEN)
+            }}
           script: |
             const { owner, repo } = context.repo;
             const pull_number = context.payload.pull_request.number;
