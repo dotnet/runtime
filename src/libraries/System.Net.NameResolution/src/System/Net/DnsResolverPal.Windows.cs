@@ -287,9 +287,35 @@ namespace System.Net
         // 22000+). See https://dblohm7.ca/blog/2022/05/06/dnsqueryex-needs-love/.
         private static readonly bool s_asyncSyncCompletionBug = !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
 
-        private static bool IsLocalhostName(string name) =>
-            string.Equals(name, "localhost", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(name, "localhost.", StringComparison.OrdinalIgnoreCase);
+        // Cache the local hostname to avoid a native gethostname call on every query.
+        // null means the lookup failed at startup; we treat that as "use synchronous path" (safe fallback).
+        private static readonly Lazy<string?> s_hostName = new Lazy<string?>(() =>
+        {
+            try { return NameResolutionPal.GetHostName(); }
+            catch (SocketException) { return null; }
+        });
+
+        private static bool IsSynchronouslyCompletingQueryName(string name)
+        {
+            if (IPAddress.IsValid(name))
+            {
+                return true;
+            }
+
+            ReadOnlySpan<char> normalizedName = name.AsSpan().TrimEnd('.');
+
+            if (normalizedName.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                normalizedName.Equals("loopback", StringComparison.OrdinalIgnoreCase) ||
+                normalizedName.Equals("..DnsServers", StringComparison.OrdinalIgnoreCase) ||
+                normalizedName.Equals("..localmachine", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            string? hostName = s_hostName.Value;
+            // If hostname lookup failed, use the synchronous path as a safe fallback.
+            return hostName is null || normalizedName.Equals(hostName, StringComparison.OrdinalIgnoreCase);
+        }
 
         private static Task<DnsQueryRawResult> DnsQueryEx(IPEndPoint[] servers, bool async, string name, ushort queryType, CancellationToken cancellationToken)
         {
@@ -300,10 +326,11 @@ namespace System.Net
 
             if (async && s_asyncSyncCompletionBug)
             {
-                // On affected Windows versions "localhost" always trips the synchronous-completion
-                // bug, so resolve it on the synchronous path up front and route every other
-                // asynchronous query through a wrapper that retries synchronously if it hits the bug.
-                if (IsLocalhostName(name))
+                // On affected Windows versions a small set of special names always trips the
+                // synchronous-completion bug, so resolve them on the synchronous path up front and
+                // route every other asynchronous query through a wrapper that retries synchronously
+                // if it hits the bug.
+                if (IsSynchronouslyCompletingQueryName(name))
                 {
                     async = false;
                 }

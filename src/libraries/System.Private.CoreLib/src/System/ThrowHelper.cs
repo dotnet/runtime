@@ -249,12 +249,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentOutOfRange_RoundingDigits_MathF(string name)
-        {
-            throw new ArgumentOutOfRangeException(name, SR.ArgumentOutOfRange_RoundingDigits_MathF);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRange_Range<T>(string parameterName, T value, T minInclusive, T maxInclusive)
         {
             throw new ArgumentOutOfRangeException(parameterName, value, SR.Format(SR.ArgumentOutOfRange_Range, minInclusive, maxInclusive));
