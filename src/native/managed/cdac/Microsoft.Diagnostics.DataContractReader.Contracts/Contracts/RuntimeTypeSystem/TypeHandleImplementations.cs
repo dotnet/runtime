@@ -19,7 +19,7 @@ public sealed class TargetTypeHandle : ITypeHandle, IEquatable<TargetTypeHandle>
     public bool IsNull => Address == 0;
 
     public bool Equals(ITypeHandle? other)
-        => other is TargetTypeHandle t && Address == t.Address;
+        => other is not null && Address == other.Address;
     public bool Equals(TargetTypeHandle? other)
         => other is not null && Address == other.Address;
     public override bool Equals(object? obj)

@@ -62,7 +62,7 @@ internal static class Emitter
         // The class advertises a managed identity (ITypeHandle) when HasTypeHandle is set.
         if (model.HasTypeHandle)
         {
-            sb.AppendLine($"    public static {ITypeHandleType} ITypeHandle({Target} target)");
+            sb.AppendLine($"    public static {ITypeHandleType} TypeHandle({Target} target)");
             sb.AppendLine($"        => TypeNameResolver.GetTypeHandle(target, _typeNames);");
             sb.AppendLine();
         }

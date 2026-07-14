@@ -21,10 +21,10 @@ bool TryGetTypeInfo(string fullyQualifiedName, out Target.TypeInfo info);
 // Throws InvalidOperationException if the type cannot be resolved.
 Target.TypeInfo GetTypeInfo(string fullyQualifiedName);
 
-// Return true and populate `typeHandle` with the runtime TypeHandle for the type,
+// Return true and populate `typeHandle` with the runtime ITypeHandle for the type,
 // or false if the type cannot be resolved.
-bool TryGetTypeHandle(string fullyQualifiedName, out TypeHandle typeHandle);
-TypeHandle GetTypeHandle(string fullyQualifiedName);
+bool TryGetTypeHandle(string fullyQualifiedName, out ITypeHandle typeHandle);
+ITypeHandle GetTypeHandle(string fullyQualifiedName);
 
 // Return true and populate `address` with the address of the named static field,
 // or false if the type / field cannot be resolved or its statics storage has not
@@ -68,7 +68,7 @@ they read in their own `### Managed types used` section.
 ``` csharp
 // Type resolution: parse the fully-qualified name, walk System.Private.CoreLib's
 // metadata to locate the TypeDef, then map TypeDef -> MethodTable via the loader.
-bool TryResolveType(string managedFqName, out TypeHandle th, out MetadataReader mdReader, out TypeDefinition typeDef)
+bool TryResolveType(string managedFqName, out ITypeHandle th, out MetadataReader mdReader, out TypeDefinition typeDef)
 {
     ILoader loader = target.Contracts.Loader;
     TargetPointer systemAssembly = loader.GetSystemAssembly();
@@ -96,14 +96,14 @@ bool TryResolveType(string managedFqName, out TypeHandle th, out MetadataReader 
     return true;
 }
 
-bool TryGetTypeHandle(string fqn, out TypeHandle th)
+bool TryGetTypeHandle(string fqn, out ITypeHandle th)
 {
     return TryResolveType(fqn, out th, out _, out _);
 }
 
 bool TryGetTypeInfo(string fqn, out Target.TypeInfo info)
 {
-    if (!TryResolveType(fqn, out TypeHandle th, out MetadataReader mdReader, out TypeDefinition typeDef))
+    if (!TryResolveType(fqn, out ITypeHandle th, out MetadataReader mdReader, out TypeDefinition typeDef))
         return false;
 
     IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
@@ -147,7 +147,7 @@ bool TryGetStaticFieldAddress(string fqn, string fieldName, out TargetPointer ad
     // cannot dereference a small offset-from-zero when the class has not been
     // initialized.
     TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fdAddr);
-    TypeHandle ctx = rts.GetTypeHandle(enclosingMT);
+    ITypeHandle ctx = rts.GetTypeHandle(enclosingMT);
     CorElementType et = rts.GetFieldDescType(fdAddr);
     bool isGC = et is CorElementType.Class or CorElementType.ValueType;
     TargetPointer @base = isGC
@@ -174,7 +174,7 @@ bool TryGetThreadStaticFieldAddress(string fqn, string fieldName, TargetPointer 
     // thread so callers cannot dereference a small offset-from-zero when this
     // thread has not initialized thread-static storage for the type.
     TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fdAddr);
-    TypeHandle ctx = rts.GetTypeHandle(enclosingMT);
+    ITypeHandle ctx = rts.GetTypeHandle(enclosingMT);
     CorElementType et = rts.GetFieldDescType(fdAddr);
     bool isGC = et is CorElementType.Class or CorElementType.ValueType;
     TargetPointer @base = isGC
@@ -189,7 +189,7 @@ bool TryGetThreadStaticFieldAddress(string fqn, string fieldName, TargetPointer 
 
 bool TryGetFieldDesc(string fqn, string fieldName, out TargetPointer fdAddr)
 {
-    if (!TryResolveType(fqn, out TypeHandle th, out _, out _))
+    if (!TryResolveType(fqn, out ITypeHandle th, out _, out _))
     {
         fdAddr = TargetPointer.Null;
         return false;

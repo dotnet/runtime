@@ -144,7 +144,7 @@ internal struct ComWrappers_1 : IComWrappers
     public bool IsComWrappersRCW(TargetPointer rcw)
     {
         TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(rcw);
-        return mt == Data.NativeObjectWrapper.ITypeHandle(_target).Address;
+        return mt == Data.NativeObjectWrapper.TypeHandle(_target).Address;
     }
 
     public TargetPointer GetComWrappersRCWForObject(TargetPointer obj)
