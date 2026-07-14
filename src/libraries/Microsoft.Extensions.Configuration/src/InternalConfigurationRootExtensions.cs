@@ -66,14 +66,14 @@ namespace Microsoft.Extensions.Configuration
         /// <see cref="ChainedConfigurationProvider"/> read the keys of a chained <see cref="IConfigurationRoot"/>
         /// without allocating a section per child.
         /// </summary>
-        internal static IEnumerable<string> GetChildKeysImplementation(this IConfigurationRoot root, string? path, SortedChildKeys? seed = null)
+        internal static IEnumerable<string> GetChildKeysImplementation(this IConfigurationRoot root, string? path)
         {
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
-            return (IEnumerable<string>?)AggregateChildKeys(providers, path, seed) ?? Array.Empty<string>();
+            return (IEnumerable<string>?)AggregateChildKeys(providers, path) ?? Array.Empty<string>();
         }
 
-        private static SortedChildKeys? AggregateChildKeys(IEnumerable<IConfigurationProvider> providers, string? path, SortedChildKeys? seed = null)
+        private static SortedChildKeys? AggregateChildKeys(IEnumerable<IConfigurationProvider> providers, string? path)
         {
             if (providers is List<IConfigurationProvider> list)
             {
@@ -83,18 +83,17 @@ namespace Microsoft.Extensions.Configuration
                     return null;
                 }
 
-                SortedChildKeys accumulator = seed ?? new SortedChildKeys();
+                SortedChildKeys accumulator = new SortedChildKeys();
                 for (int i = 0; i < count; i++)
                 {
                     ProcessProvider(list[i], accumulator, path);
                 }
 
                 return accumulator;
-
             }
             else
             {
-                SortedChildKeys accumulator = seed ?? new SortedChildKeys();
+                SortedChildKeys accumulator = new SortedChildKeys();
                 foreach (IConfigurationProvider provider in providers)
                 {
                     ProcessProvider(provider, accumulator, path);

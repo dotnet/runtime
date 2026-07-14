@@ -95,7 +95,11 @@ namespace Microsoft.Extensions.Configuration
             SortedChildKeys accumulator = earlierKeys is SortedChildKeys existing ? existing : new(earlierKeys);
             if (_config is IConfigurationRoot root)
             {
-                return root.GetChildKeysImplementation(parentPath, accumulator);
+                // Aggregate the chained root's own child keys from an empty seed, then merge them into the outer
+                // accumulator. Providers inside the chained root therefore never observe the outer providers' keys and
+                // cannot filter, reorder, or drop them, preserving the chaining boundary that existed before.
+                accumulator.UnionWith(root.GetChildKeysImplementation(parentPath));
+                return accumulator;
             }
 
             IConfiguration section = parentPath == null ? _config : _config.GetSection(parentPath);

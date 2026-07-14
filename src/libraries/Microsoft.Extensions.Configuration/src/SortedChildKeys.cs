@@ -23,6 +23,10 @@ namespace Microsoft.Extensions.Configuration
 #endif
         private bool _sorted = true;
 
+        // Scratch buffer, lazily created and reused across Overwrite calls, used to drain a lazy foreign result
+        // before this accumulator's own storage is cleared (see Overwrite).
+        private List<string>? _overwriteBuffer;
+
         internal SortedChildKeys()
         {
 #if NET
@@ -89,6 +93,24 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="keys">The keys to replace the current contents with.</param>
         internal void Overwrite(IEnumerable<string> keys)
         {
+            // A provider that does not recognize this accumulator may return a lazy sequence that reads it as it is
+            // enumerated (for example, earlierKeys.Concat(ownKeys)). Draining that after clearing our storage would
+            // observe the cleared contents and drop the earlier keys, and draining it while mutating our storage would
+            // invalidate the in-flight enumerator. So a lazy result is first copied into a reused scratch buffer,
+            // decoupling it from our storage; a result that is already a materialized collection is independent of us
+            // and is used as-is.
+            if (keys is not ICollection<string>)
+            {
+                List<string> buffer = _overwriteBuffer ??= new List<string>();
+                buffer.Clear();
+                foreach (string key in keys)
+                {
+                    buffer.Add(key);
+                }
+
+                keys = buffer;
+            }
+
             _set.Clear();
             _list.Clear();
 
