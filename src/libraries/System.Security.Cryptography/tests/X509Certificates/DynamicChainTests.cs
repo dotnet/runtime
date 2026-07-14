@@ -537,10 +537,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             TestNameConstrainedChain(nameConstraints, builder, (bool result, X509Chain chain) => {
                 Assert.False(result, "chain.Build");
-                X509ChainStatusFlags expected = PlatformDetection.IsAndroid
-                    ? X509ChainStatusFlags.InvalidNameConstraints
-                    : PlatformNameConstraints(X509ChainStatusFlags.HasNotPermittedNameConstraint);
-                Assert.Equal(expected, chain.AllStatusFlags());
+                Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.HasNotPermittedNameConstraint), chain.AllStatusFlags());
             });
         }
 
@@ -563,10 +560,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             TestNameConstrainedChain(nameConstraints, builder, (bool result, X509Chain chain) => {
                 Assert.False(result, "chain.Build");
-                X509ChainStatusFlags expected = PlatformDetection.IsAndroid
-                    ? X509ChainStatusFlags.InvalidNameConstraints
-                    : PlatformNameConstraints(X509ChainStatusFlags.HasExcludedNameConstraint);
-                Assert.Equal(expected, chain.AllStatusFlags());
+                Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.HasExcludedNameConstraint), chain.AllStatusFlags());
             });
         }
 
@@ -1187,9 +1181,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
             else if (OperatingSystem.IsAndroid())
             {
-                // Android always validates name constraints as part of building a path
-                // so violations comes back as PartialChain with no elements.
-                flags = X509ChainStatusFlags.PartialChain;
+                // Android always validates name constraints as part of building a path,
+                // but reports DNS violations as InvalidNameConstraints and other unsupported
+                // forms as PartialChain with no elements.
+                flags = flags switch
+                {
+                    X509ChainStatusFlags.HasExcludedNameConstraint or X509ChainStatusFlags.HasNotPermittedNameConstraint =>
+                        X509ChainStatusFlags.InvalidNameConstraints,
+                    _ => X509ChainStatusFlags.PartialChain,
+                };
             }
 
             return flags;
