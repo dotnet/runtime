@@ -356,12 +356,6 @@ namespace System
             }
         }
 
-        internal object GetTargetForSingleCastInstanceDelegate()
-        {
-            Debug.Assert(HasSingleTarget && Target == _target && _target != null);
-            return _target;
-        }
-
         // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed.
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.CreateDelegate(type, firstArgument, method, throwOnBindFailure);
 
@@ -778,7 +772,7 @@ namespace System
             return hash;
         }
 
-        public bool HasSingleTarget => _helperObject is not Wrapper[];
+        public partial bool HasSingleTarget => _helperObject is not Wrapper[];
 
         // Used by delegate invocation list enumerator
         internal Delegate? TryGetAt(int index)
