@@ -131,7 +131,6 @@ public class TestSummary
     public int PassedTests { get; private set; } = 0;
     public int FailedTests { get; private set; } = 0;
     public int SkippedTests { get; private set; } = 0;
-    public int ActiveIssueSkippedTests { get; private set; } = 0;
     public int TotalTests { get; private set; } = 0;
 
     private readonly List<TestResult> _testResults = new();
@@ -214,10 +213,6 @@ public class TestSummary
     {
         SkippedTests++;
         TotalTests++;
-        if (!string.IsNullOrEmpty(reason) && reason.StartsWith("ActiveIssue:"))
-        {
-            ActiveIssueSkippedTests++;
-        }
         var result = new TestResult(name, containingTypeName, methodName, duration, null, reason, null);
         _testResults.Add(result);
 
@@ -245,7 +240,6 @@ public class TestSummary
     passed=""{PassedTests}""
     failed=""{FailedTests}""
     skipped=""{SkippedTests}""
-    active-issue-skipped=""{ActiveIssueSkippedTests}""
     errors=""0"">");
 
         resultsFile.AppendLine($@"
@@ -256,7 +250,6 @@ public class TestSummary
     passed=""{PassedTests}""
     failed=""{FailedTests}""
     skipped=""{SkippedTests}""
-    active-issue-skipped=""{ActiveIssueSkippedTests}""
     errors=""0""
 >");
 
