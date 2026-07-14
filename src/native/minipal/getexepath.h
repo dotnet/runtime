@@ -18,6 +18,7 @@
 #elif defined(__OpenBSD__)
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/sysctl.h>
 #elif defined(_WIN32)
 #include <windows.h>
