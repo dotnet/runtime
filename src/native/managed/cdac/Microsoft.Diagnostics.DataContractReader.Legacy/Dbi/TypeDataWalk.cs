@@ -215,15 +215,14 @@ internal unsafe ref struct TypeDataWalk
         ILoader loader = _target.Contracts.Loader;
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
-        ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
         TargetPointer mt;
         switch ((EcmaMetadataUtils.TokenType)(metadataToken & EcmaMetadataUtils.TokenTypeMask))
         {
             case EcmaMetadataUtils.TokenType.mdtTypeDef:
-                mt = loader.GetModuleLookupMapElement(lookupTables.TypeDefToMethodTable, metadataToken, out _);
+                mt = loader.GetModuleLookupMapElement(moduleHandle, ModuleLookupMapKind.TypeDefToMethodTable, metadataToken, out _);
                 break;
             case EcmaMetadataUtils.TokenType.mdtTypeRef:
-                mt = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, metadataToken, out _);
+                mt = loader.GetModuleLookupMapElement(moduleHandle, ModuleLookupMapKind.TypeRefToMethodTable, metadataToken, out _);
                 break;
             default:
                 return default;

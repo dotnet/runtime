@@ -44,15 +44,16 @@ public enum AssemblyIterationFlags
     IncludeCollected = 0x00000080, // Include all collectible assemblies that have been collected
 }
 
-record struct ModuleLookupTables(
-    TargetPointer FieldDefToDesc,
-    TargetPointer ManifestModuleReferences,
-    TargetPointer MemberRefToDesc,
-    TargetPointer MethodDefToDesc,
-    TargetPointer TypeDefToMethodTable,
-    TargetPointer TypeRefToMethodTable,
-    TargetPointer MethodDefToILCodeVersioningState,
-    uint TableDataOffset);
+enum ModuleLookupMapKind
+{
+    FieldDefToDesc,
+    ManifestModuleReferences,
+    MemberRefToDesc,
+    MethodDefToDesc,
+    TypeDefToMethodTable,
+    TypeRefToMethodTable,
+    MethodDefToILCodeVersioningState,
+}
 
 readonly struct LoaderHeapBlockData
 {
@@ -104,9 +105,9 @@ bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageS
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
-ModuleLookupTables GetLookupTables(ModuleHandle handle);
-TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
-IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table);
+TargetPointer GetModuleLookupMapBase(ModuleHandle module, ModuleLookupMapKind kind);
+TargetPointer GetModuleLookupMapElement(ModuleHandle module, ModuleLookupMapKind kind, uint token, out TargetNUInt flags);
+IEnumerable<(TargetPointer Value, uint Token)> EnumerateModuleLookupMap(ModuleHandle module, ModuleLookupMapKind kind);
 bool IsCollectible(ModuleHandle handle);
 bool IsDynamic(ModuleHandle handle);
 bool IsModuleMapped(ModuleHandle handle);
@@ -698,25 +699,38 @@ TargetPointer ILoader.GetAssemblyLoadContext(ModuleHandle handle)
     return objectHandle.Object;
 }
 
-ModuleLookupTables GetLookupTables(ModuleHandle handle)
+TargetPointer GetModuleLookupMap(ModuleHandle module, ModuleLookupMapKind kind)
 {
-    uint tableDataOffset = (uint)/* ModuleLookupMap::TableData offset */;
-    return new ModuleLookupTables(
-        FieldDefToDescMap: target.ReadPointer(handle.Address + /* Module::FieldDefToDescMap */),
-        ManifestModuleReferencesMap: target.ReadPointer(handle.Address + /* Module::ManifestModuleReferencesMap */),
-        MemberRefToDescMap: target.ReadPointer(handle.Address + /* Module::MemberRefToDescMap */),
-        MethodDefToDescMap: target.ReadPointer(handle.Address + /* Module::MethodDefToDescMap */),
-        TypeDefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */),
-        TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */),
-        MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
-        Module::MethodDefToILCodeVersioningState */),
-        TableDataOffset: tableDataOffset);
+    return kind switch
+    {
+        FieldDefToDesc => target.ReadPointer(module.Address + /* Module::FieldDefToDescMap offset */),
+        ManifestModuleReferences => target.ReadPointer(module.Address + /* Module::ManifestModuleReferencesMap offset */),
+        MemberRefToDesc => target.ReadPointer(module.Address + /* Module::MemberRefToDescMap offset */),
+        MethodDefToDesc => target.ReadPointer(module.Address + /* Module::MethodDefToDescMap offset */),
+        TypeDefToMethodTable => target.ReadPointer(module.Address + /* Module::TypeDefToMethodTableMap offset */),
+        TypeRefToMethodTable => target.ReadPointer(module.Address + /* Module::TypeRefToMethodTableMap offset */),
+        MethodDefToILCodeVersioningState => target.ReadPointer(module.Address + /* Module::MethodDefToILCodeVersioningStateMap offset */),
+    };
 }
 
-TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
+TargetPointer GetModuleLookupMapBase(ModuleHandle module, ModuleLookupMapKind kind)
+{
+    TargetPointer table = GetModuleLookupMap(module, kind);
+    return table == TargetPointer.Null
+        ? TargetPointer.Null
+        : target.ReadPointer(table + /* ModuleLookupMap::TableData offset */);
+}
+
+uint CreateModuleLookupMapToken(ModuleLookupMapKind kind, uint rid)
+{
+    // Combine rid with the metadata table prefix implied by kind.
+}
+
+TargetPointer GetModuleLookupMapElement(ModuleHandle module, ModuleLookupMapKind kind, uint token, out TargetNUInt flags)
 {
     uint rid = /* get row id from token*/ (token);
     flags = new TargetNUInt(0);
+    TargetPointer table = GetModuleLookupMap(module, kind);
     if (table == TargetPointer.Null)
         return TargetPointer.Null;
     uint index = rid;
@@ -725,25 +739,29 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
     TargetNUInt supportedFlagsMask = target.ReadNUInt(table + /* ModuleLookupMap::SupportedFlagsMask */);
     do
     {
-        if (index < target.Read<uint>(table + /*ModuleLookupMap::Count*/))
+        uint count = target.Read<uint>(table + /*ModuleLookupMap::Count*/);
+        if (index < count)
         {
-            TargetPointer entryAddress = target.ReadPointer(lookupMap + /*ModuleLookupMap::TableData*/) + (ulong)(index * target.PointerSize);
+            TargetPointer entryAddress = target.ReadPointer(table + /*ModuleLookupMap::TableData*/) + (ulong)(index * target.PointerSize);
             TargetPointer rawValue = target.ReadPointer(entryAddress);
             flags = rawValue & supportedFlagsMask;
             return rawValue & ~(supportedFlagsMask.Value);
         }
         else
         {
-            table = target.ReadPointer(lookupMap + /*ModuleLookupMap::Next*/);
-            index -= target.Read<uint>(lookupMap + /*ModuleLookupMap::Count*/);
+            index -= count;
+            table = target.ReadPointer(table + /*ModuleLookupMap::Next*/);
         }
     } while (table != TargetPointer.Null);
     return TargetPointer.Null;
 }
 
-IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table)
+IEnumerable<(TargetPointer Value, uint Token)> EnumerateModuleLookupMap(ModuleHandle module, ModuleLookupMapKind kind)
 {
-    Data.ModuleLookupMap lookupMap = new Data.ModuleLookupMap(table);
+    TargetPointer table = GetModuleLookupMap(module, kind);
+    if (table == TargetPointer.Null)
+        yield break;
+
     // have to read lookupMap an extra time upfront because only the first map
     // has valid supportedFlagsMask
     TargetNUInt supportedFlagsMask = target.ReadNUInt(table + /* ModuleLookupMap::SupportedFlagsMask */);
@@ -757,7 +775,7 @@ IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table)
             TargetPointer rawValue = target.ReadPointer(entryAddress);
             ulong maskedValue = rawValue & ~(supportedFlagsMask.Value);
             if (maskedValue != 0)
-                yield return (new TargetPointer(maskedValue), index);
+                yield return (new TargetPointer(maskedValue), CreateModuleLookupMapToken(kind, index));
             index++;
         }
         else

@@ -2411,14 +2411,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (md is null)
             return TargetPointer.Null;
 
-        TargetPointer fieldDefToDescMap = loader.GetLookupTables(moduleHandle).FieldDefToDesc;
         foreach (FieldDefinitionHandle fieldDefHandle in md.GetTypeDefinition(typeDefHandle).GetFields())
         {
             FieldDefinition fieldDef = md.GetFieldDefinition(fieldDefHandle);
             if (md.GetString(fieldDef.Name) == fieldName)
             {
                 uint fieldDefToken = (uint)MetadataTokens.GetToken(fieldDefHandle);
-                TargetPointer fieldDescPtr = loader.GetModuleLookupMapElement(fieldDefToDescMap, fieldDefToken, out _);
+                TargetPointer fieldDescPtr = loader.GetModuleLookupMapElement(
+                    moduleHandle,
+                    ModuleLookupMapKind.FieldDefToDesc,
+                    fieldDefToken,
+                    out _);
                 return fieldDescPtr;
             }
         }

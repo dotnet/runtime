@@ -2556,20 +2556,19 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ILoader loader = _target.Contracts.Loader;
             TargetPointer module = moduleAddr.ToTargetPointer(_target);
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
-            Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
             switch ((EcmaMetadataUtils.TokenType)(token & EcmaMetadataUtils.TokenTypeMask))
             {
                 case EcmaMetadataUtils.TokenType.mdtFieldDef:
-                    *methodDesc = loader.GetModuleLookupMapElement(lookupTables.FieldDefToDesc, token, out var _).ToClrDataAddress(_target);
+                    *methodDesc = loader.GetModuleLookupMapElement(moduleHandle, ModuleLookupMapKind.FieldDefToDesc, token, out var _).ToClrDataAddress(_target);
                     break;
                 case EcmaMetadataUtils.TokenType.mdtMethodDef:
-                    *methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, token, out var _).ToClrDataAddress(_target);
+                    *methodDesc = loader.GetModuleLookupMapElement(moduleHandle, ModuleLookupMapKind.MethodDefToDesc, token, out var _).ToClrDataAddress(_target);
                     break;
                 case EcmaMetadataUtils.TokenType.mdtTypeDef:
-                    *methodDesc = loader.GetModuleLookupMapElement(lookupTables.TypeDefToMethodTable, token, out var _).ToClrDataAddress(_target);
+                    *methodDesc = loader.GetModuleLookupMapElement(moduleHandle, ModuleLookupMapKind.TypeDefToMethodTable, token, out var _).ToClrDataAddress(_target);
                     break;
                 case EcmaMetadataUtils.TokenType.mdtTypeRef:
-                    *methodDesc = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, token, out var _).ToClrDataAddress(_target);
+                    *methodDesc = loader.GetModuleLookupMapElement(moduleHandle, ModuleLookupMapKind.TypeRefToMethodTable, token, out var _).ToClrDataAddress(_target);
                     break;
                 default:
                     throw new ArgumentException();
@@ -3149,18 +3148,12 @@ public sealed unsafe partial class SOSDacImpl
 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle).ToClrDataAddress(_target);
 
-            Contracts.ModuleLookupTables tables = contract.GetLookupTables(handle);
-            data->FieldDefToDescMap = ReadMapBase(_target, tables.FieldDefToDesc, tables.TableDataOffset);
-            data->ManifestModuleReferencesMap = ReadMapBase(_target, tables.ManifestModuleReferences, tables.TableDataOffset);
-            data->MemberRefToDescMap = ReadMapBase(_target, tables.MemberRefToDesc, tables.TableDataOffset);
-            data->MethodDefToDescMap = ReadMapBase(_target, tables.MethodDefToDesc, tables.TableDataOffset);
-            data->TypeDefToMethodTableMap = ReadMapBase(_target, tables.TypeDefToMethodTable, tables.TableDataOffset);
-            data->TypeRefToMethodTableMap = ReadMapBase(_target, tables.TypeRefToMethodTable, tables.TableDataOffset);
-
-            static ClrDataAddress ReadMapBase(Target target, TargetPointer table, uint offset)
-                => table == TargetPointer.Null
-                    ? default
-                    : target.ReadPointer(table + offset).ToClrDataAddress(target);
+            data->FieldDefToDescMap = contract.GetModuleLookupMapBase(handle, ModuleLookupMapKind.FieldDefToDesc).ToClrDataAddress(_target);
+            data->ManifestModuleReferencesMap = contract.GetModuleLookupMapBase(handle, ModuleLookupMapKind.ManifestModuleReferences).ToClrDataAddress(_target);
+            data->MemberRefToDescMap = contract.GetModuleLookupMapBase(handle, ModuleLookupMapKind.MemberRefToDesc).ToClrDataAddress(_target);
+            data->MethodDefToDescMap = contract.GetModuleLookupMapBase(handle, ModuleLookupMapKind.MethodDefToDesc).ToClrDataAddress(_target);
+            data->TypeDefToMethodTableMap = contract.GetModuleLookupMapBase(handle, ModuleLookupMapKind.TypeDefToMethodTable).ToClrDataAddress(_target);
+            data->TypeRefToMethodTableMap = contract.GetModuleLookupMapBase(handle, ModuleLookupMapKind.TypeRefToMethodTable).ToClrDataAddress(_target);
 
             // Always 0 - .NET no longer has these concepts
             data->dwModuleID = 0;
@@ -4826,22 +4819,21 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ILoader loader = _target.Contracts.Loader;
             TargetPointer moduleAddrPtr = moduleAddr.ToTargetPointer(_target);
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(moduleAddrPtr);
-            Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
             switch (mmt)
             {
                 case ModuleMapType.TYPEDEFTOMETHODTABLE:
-                    elements = loader.EnumerateModuleLookupMap(lookupTables.TypeDefToMethodTable);
+                    elements = loader.EnumerateModuleLookupMap(moduleHandle, ModuleLookupMapKind.TypeDefToMethodTable);
                     break;
                 case ModuleMapType.TYPEREFTOMETHODTABLE:
-                    elements = loader.EnumerateModuleLookupMap(lookupTables.TypeRefToMethodTable);
+                    elements = loader.EnumerateModuleLookupMap(moduleHandle, ModuleLookupMapKind.TypeRefToMethodTable);
                     break;
                 default:
                     throw new ArgumentException();
             }
-            foreach ((TargetPointer element, uint index) in elements)
+            foreach ((TargetPointer element, uint metadataToken) in elements)
             {
                 // Call the callback with each element
-                pCallback(index, element.ToClrDataAddress(_target).Value, token);
+                pCallback(EcmaMetadataUtils.GetRowId(metadataToken), element.ToClrDataAddress(_target).Value, token);
             }
         }
         catch (System.Exception ex)
@@ -5641,7 +5633,7 @@ public sealed unsafe partial class SOSDacImpl
             TargetPointer modulePtr = mod.ToTargetPointer(_target);
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
             // iterate through typedef to method table map
-            foreach ((TargetPointer ptr, _) in loader.EnumerateModuleLookupMap(loader.GetLookupTables(moduleHandle).TypeDefToMethodTable))
+            foreach ((TargetPointer ptr, _) in loader.EnumerateModuleLookupMap(moduleHandle, ModuleLookupMapKind.TypeDefToMethodTable))
             {
                 if (*pcMethodDescs >= cMethodDescs)
                     break;

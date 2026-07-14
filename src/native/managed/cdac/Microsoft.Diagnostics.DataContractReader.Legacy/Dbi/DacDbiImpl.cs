@@ -244,8 +244,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 Contracts.IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
 
                 // The TypeRef is already cached in the referencing module's TypeRef->MethodTable map
-                Contracts.ModuleLookupTables tables = loader.GetLookupTables(referencingModule);
-                TargetPointer methodTable = loader.GetModuleLookupMapElement(tables.TypeRefToMethodTable, typeToken, out _);
+                TargetPointer methodTable = loader.GetModuleLookupMapElement(
+                    referencingModule,
+                    ModuleLookupMapKind.TypeRefToMethodTable,
+                    typeToken,
+                    out _);
                 if (methodTable != TargetPointer.Null)
                 {
                     Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
@@ -1386,8 +1389,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle scopeModule = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmScope));
-            Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(scopeModule);
-            TargetPointer referencedModule = loader.GetModuleLookupMapElement(lookupTables.ManifestModuleReferences, tkAssemblyRef, out _);
+            TargetPointer referencedModule = loader.GetModuleLookupMapElement(
+                scopeModule,
+                ModuleLookupMapKind.ManifestModuleReferences,
+                tkAssemblyRef,
+                out _);
             if (referencedModule != TargetPointer.Null)
             {
                 Contracts.ModuleHandle referencedModuleHandle = loader.GetModuleHandleFromModulePtr(referencedModule);
@@ -2333,8 +2339,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if ((methodDef.ImplAttributes & MethodImplAttributes.CodeTypeMask) != MethodImplAttributes.IL)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_FUNCTION_NOT_IL)!;
 
-            ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
-            TargetPointer methodDescPtr = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, functionToken, out _);
+            TargetPointer methodDescPtr = loader.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.MethodDefToDesc,
+                functionToken,
+                out _);
             if (methodDescPtr != TargetPointer.Null)
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
@@ -2832,14 +2841,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.ILoader loader = _target.Contracts.Loader;
             TargetPointer module = new TargetPointer(vmModule);
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
-            Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
             switch ((EcmaMetadataUtils.TokenType)(metadataToken & EcmaMetadataUtils.TokenTypeMask))
             {
                 case EcmaMetadataUtils.TokenType.mdtTypeDef:
-                    *pRetVal = loader.GetModuleLookupMapElement(lookupTables.TypeDefToMethodTable, metadataToken, out var _).Value;
+                    *pRetVal = loader.GetModuleLookupMapElement(moduleHandle, ModuleLookupMapKind.TypeDefToMethodTable, metadataToken, out var _).Value;
                     break;
                 case EcmaMetadataUtils.TokenType.mdtTypeRef:
-                    *pRetVal = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, metadataToken, out var _).Value;
+                    *pRetVal = loader.GetModuleLookupMapElement(moduleHandle, ModuleLookupMapKind.TypeRefToMethodTable, metadataToken, out var _).Value;
                     break;
                 default:
                     throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
@@ -3271,8 +3279,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             _ = LookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
-            Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
-            TargetPointer fieldDescPointer = loader.GetModuleLookupMapElement(lookupTables.FieldDefToDesc, fldToken, out _);
+            TargetPointer fieldDescPointer = loader.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.FieldDefToDesc,
+                fldToken,
+                out _);
             if (fieldDescPointer == TargetPointer.Null || mrts.DoesEnCFieldDescNeedFixup(fieldDescPointer))
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_ENC_HANGING_FIELD)!;
 
@@ -3364,15 +3375,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         ILoader loader = _target.Contracts.Loader;
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
-        ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
         TargetPointer mt;
         switch ((EcmaMetadataUtils.TokenType)(metadataToken & EcmaMetadataUtils.TokenTypeMask))
         {
             case EcmaMetadataUtils.TokenType.mdtTypeDef:
-                mt = loader.GetModuleLookupMapElement(lookupTables.TypeDefToMethodTable, metadataToken, out _);
+                mt = loader.GetModuleLookupMapElement(moduleHandle, ModuleLookupMapKind.TypeDefToMethodTable, metadataToken, out _);
                 break;
             case EcmaMetadataUtils.TokenType.mdtTypeRef:
-                mt = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, metadataToken, out _);
+                mt = loader.GetModuleLookupMapElement(moduleHandle, ModuleLookupMapKind.TypeRefToMethodTable, metadataToken, out _);
                 break;
             default:
                 return default;
@@ -5049,8 +5059,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 ILoader loader = _target.Contracts.Loader;
                 Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
-                ModuleLookupTables lookupTables = loader.GetLookupTables(module);
-                TargetPointer methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out _);
+                TargetPointer methodDesc = loader.GetModuleLookupMapElement(
+                    module,
+                    ModuleLookupMapKind.MethodDefToDesc,
+                    methodTk,
+                    out _);
 
                 if (methodDesc != TargetPointer.Null)
                 {
@@ -5155,12 +5168,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
-            ModuleLookupTables lookupTables = loader.GetLookupTables(module);
             TargetPointer methodDesc = TargetPointer.Null;
 
             if ((EcmaMetadataUtils.TokenType)(methodTk & EcmaMetadataUtils.TokenTypeMask) != EcmaMetadataUtils.TokenType.mdtMethodDef)
                 throw new ArgumentException("methodTk must be a MethodDef token.", nameof(methodTk));
-            methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out _);
+            methodDesc = loader.GetModuleLookupMapElement(
+                module,
+                ModuleLookupMapKind.MethodDefToDesc,
+                methodTk,
+                out _);
 
             if (methodDesc != TargetPointer.Null)
             {
