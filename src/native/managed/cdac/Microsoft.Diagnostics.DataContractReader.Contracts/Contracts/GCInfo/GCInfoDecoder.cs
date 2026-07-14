@@ -785,8 +785,9 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                     }
                     else if (currentState == 0 && activeSlots.TryGetValue(slotIndex, out uint beginOffset))
                     {
-                        // Slot just died
-                        EmitSlotLifetime(slotIndex, beginOffset, DenormInterruptibleOffset(absNormOffset), lifetimes);
+                        // Slot just died. It was live up to prevNormOffset and is dead in
+                        // [prevNormOffset, absNormOffset), so the death boundary is prevNormOffset.
+                        EmitSlotLifetime(slotIndex, beginOffset, DenormInterruptibleOffset(prevNormOffset), lifetimes);
                         activeSlots.Remove(slotIndex);
                     }
                     currentState ^= 1;
