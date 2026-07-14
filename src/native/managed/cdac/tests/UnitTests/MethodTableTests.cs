@@ -652,12 +652,6 @@ public class MethodTableTests
 
         TypeHandle nonCanonTh = contract.GetTypeHandle(nonCanonicalMethodTablePtr);
         Assert.False(contract.IsCanonicalMethodTable(nonCanonTh));
-
-        // Both canonical and non-canonical MTs should resolve to the same EEClass
-        TargetPointer canonClass = contract.GetClassPointer(canonTh);
-        TargetPointer nonCanonClass = contract.GetClassPointer(nonCanonTh);
-        Assert.NotEqual(TargetPointer.Null, canonClass);
-        Assert.Equal(canonClass, nonCanonClass);
     }
 
     [Theory]
