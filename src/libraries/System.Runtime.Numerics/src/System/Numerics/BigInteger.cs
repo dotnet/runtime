@@ -2064,6 +2064,8 @@ namespace System.Numerics
         // produced and rounding a single time at `precision` bits is sufficient.
         private static double ConvertToDouble(BigInteger value, int precision)
         {
+            Debug.Assert(precision is > 0 and <= 53);
+
             int sign = value._sign;
             nuint[]? bits = value._bits;
 
