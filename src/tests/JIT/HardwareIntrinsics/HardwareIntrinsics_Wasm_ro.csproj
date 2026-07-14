@@ -4,6 +4,10 @@
 
     <!-- Wasm-specific intrinsics are only supported when targeting the Wasm architecture. -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'wasm'">true</CLRTestTargetUnsupported>
+
+    <!-- Wasm SIMD support is incomplete, so these tests are disabled by default for now.
+         Set EnableWasmHWIntrinsicsTests=true to opt back in once support is ready. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableWasmHWIntrinsicsTests)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <ItemGroup>
