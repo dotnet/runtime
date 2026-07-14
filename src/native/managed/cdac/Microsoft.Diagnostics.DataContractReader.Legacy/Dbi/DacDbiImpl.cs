@@ -5919,7 +5919,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 // Registers with no CONTEXT slot (float / SIMD) read as zero.
                 string? name = MapToCdacName(arch, regs[i]);
-                pValues[i] = (name is not null && ctx.TryReadRegister(name, out TargetNUInt v)) ? v.Value : 0;
+                pValues[i] = (name is not null && ctx.TryReadRegister(name, out TargetNUInt v)) ? (nuint)v.Value : 0;
             }
         }
         catch (System.Exception ex)
