@@ -188,12 +188,18 @@
        affects GenAPI's resolution, not the compilation reference set. -->
   <Target Name="AddImplementationAssembliesToGenAPIResolutionPath"
           AfterTargets="ResolveAssemblyReferences"
-          Condition="'$(RuntimeFlavor)' != 'Mono' and '$(GenAPILibPath)' == '' and Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')">
+          Condition="'$(RuntimeFlavor)' != 'Mono' and '$(GenAPILibPath)' == '' and (Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll') or Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll'))">
+    <PropertyGroup>
+      <!-- CoreLib normally sits directly under CoreCLRArtifactsPath, but a crossgen'd build places the IL (metadata)
+           copy GenAPI needs under an 'IL' subdirectory, matching the fallback in liveBuilds.targets. -->
+      <_genAPICoreLibDir Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')">$(CoreCLRArtifactsPath)</_genAPICoreLibDir>
+      <_genAPICoreLibDir Condition="'$(_genAPICoreLibDir)' == '' and Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll')">$(CoreCLRArtifactsPath)IL/</_genAPICoreLibDir>
+    </PropertyGroup>
     <ItemGroup>
       <_genAPIReferencePathDirectory Include="@(ReferencePath->'%(RootDir)%(Directory)'->Distinct())" />
     </ItemGroup>
     <PropertyGroup>
-      <GenAPILibPath>@(_genAPIReferencePathDirectory);$(CoreCLRArtifactsPath);$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</GenAPILibPath>
+      <GenAPILibPath>@(_genAPIReferencePathDirectory);$(_genAPICoreLibDir);$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</GenAPILibPath>
     </PropertyGroup>
   </Target>
 
