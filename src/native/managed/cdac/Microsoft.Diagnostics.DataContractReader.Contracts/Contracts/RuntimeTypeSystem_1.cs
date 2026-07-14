@@ -2220,13 +2220,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         AsyncMethodFlags_1 raw = (AsyncMethodFlags_1)_target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(md.GetAddressOfAsyncMethodData()).Flags;
         AsyncMethodFlags result = AsyncMethodFlags.None;
-        if (raw.HasFlag(AsyncMethodFlags_1.AsyncCall))
+        if ((raw & AsyncMethodFlags_1.AsyncCall) != 0)
             result |= AsyncMethodFlags.AsyncCall;
-        if (raw.HasFlag(AsyncMethodFlags_1.IsAsyncVariant))
+        if ((raw & AsyncMethodFlags_1.IsAsyncVariant) != 0)
             result |= AsyncMethodFlags.IsAsyncVariant;
-        if (raw.HasFlag(AsyncMethodFlags_1.Thunk))
+        if ((raw & AsyncMethodFlags_1.Thunk) != 0)
             result |= AsyncMethodFlags.Thunk;
-        if (raw.HasFlag(AsyncMethodFlags_1.ReturnDroppingThunk))
+        if ((raw & AsyncMethodFlags_1.ReturnDroppingThunk) != 0)
             result |= AsyncMethodFlags.ReturnDroppingThunk;
         return result;
     }
