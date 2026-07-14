@@ -718,8 +718,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     ImmutableArray<ISymbol> members = current.GetMembers();
                     foreach (ISymbol member in members)
                     {
-                        if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property && !IsUnsupportedType(property.Type))
+                        if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property)
                         {
+                            if (IsUnsupportedType(property.Type))
+                            {
+                                if (ContainsErrorType(property.Type))
+                                {
+                                    RecordDiagnostic(DiagnosticDescriptors.PropertyNotSupported, typeParseInfo.BinderInvocation?.Location, [property.Name, typeParseInfo.FullName]);
+                                }
+
+                                continue;
+                            }
+
                             string propertyName = property.Name;
 
                             if (property.IsOverride || properties?.ContainsKey(propertyName) is true)

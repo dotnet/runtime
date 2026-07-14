@@ -6,9 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -264,17 +262,11 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 references: commonReferences.Concat([transitiveDependencyReference]),
                 options: compilationOptions);
 
-            byte[] modelAssemblyImage = CreateAssemblyImage(modelCompilation);
-            string testDir = Path.Combine(Path.GetTempPath(), $"ConfigBindingGen_{Guid.NewGuid():N}");
-            Directory.CreateDirectory(testDir);
-
-            string transitiveDependencyPath = Path.Combine(testDir, "TransitiveDependency.dll");
-            string modelAssemblyPath = Path.Combine(testDir, "UnresolvableModel.dll");
-            File.WriteAllBytes(transitiveDependencyPath, transitiveDependencyImage);
-            File.WriteAllBytes(modelAssemblyPath, modelAssemblyImage);
-
-            Assembly transitiveDependencyAssembly = Assembly.LoadFrom(transitiveDependencyPath);
-            Assembly modelAssembly = Assembly.LoadFrom(modelAssemblyPath);
+            // Reference the model as an in-memory metadata reference and omit the transitive dependency, so the
+            // generator sees the affected member types as unresolved error symbols. Using a metadata reference
+            // (rather than writing the assemblies to disk and using Assembly.LoadFrom) avoids locking files and
+            // leaking a temp directory on every run.
+            MetadataReference modelReference = MetadataReference.CreateFromImage(CreateAssemblyImage(modelCompilation));
 
             string source = """
                 using Microsoft.Extensions.Configuration;
@@ -290,39 +282,29 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 }
                 """;
 
-            List<Assembly> assemblyReferences = new(s_compilationAssemblyRefs)
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, metadataReferences: [modelReference]);
+
+            result.ValidateDiagnostics(ExpectedDiagnostics.None);
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Contains("Value", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("ValueTypeMessage", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("HttpRequestMessage", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("CredentialDescription", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("WrappedMessage", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("TupleMessage", result.GeneratedSource.Value.SourceText.ToString());
+
+            // Each skipped member surfaces a SYSLIB1101 warning so the incomplete binding is not silent.
+            foreach (string skippedProperty in new[] { "ValueTypeMessage", "HttpRequestMessage", "CredentialDescription", "WrappedMessage", "TupleMessage" })
             {
-                modelAssembly
-            };
-
-            try
-            {
-                ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: assemblyReferences);
-
-                result.ValidateDiagnostics(ExpectedDiagnostics.None);
-                Assert.NotNull(result.GeneratedSource);
-                Assert.Contains("Value", result.GeneratedSource.Value.SourceText.ToString());
-                Assert.DoesNotContain("ValueTypeMessage", result.GeneratedSource.Value.SourceText.ToString());
-                Assert.DoesNotContain("HttpRequestMessage", result.GeneratedSource.Value.SourceText.ToString());
-                Assert.DoesNotContain("CredentialDescription", result.GeneratedSource.Value.SourceText.ToString());
-                Assert.DoesNotContain("WrappedMessage", result.GeneratedSource.Value.SourceText.ToString());
-                Assert.DoesNotContain("TupleMessage", result.GeneratedSource.Value.SourceText.ToString());
-
-                GC.KeepAlive(transitiveDependencyAssembly);
+                Assert.Contains(result.Diagnostics, diagnostic =>
+                    diagnostic.Id == "SYSLIB1101" &&
+                    diagnostic.Severity == DiagnosticSeverity.Warning &&
+                    diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains($"'{skippedProperty}'"));
             }
-            finally
-            {
-                try
-                {
-                    Directory.Delete(testDir, recursive: true);
-                }
-                catch (IOException)
-                {
-                }
-                catch (UnauthorizedAccessException)
-                {
-                }
-            }
+
+            // The bindable member must still bind without a diagnostic.
+            Assert.DoesNotContain(result.Diagnostics, diagnostic =>
+                diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains("'Value'"));
         }
 
         [Fact]
