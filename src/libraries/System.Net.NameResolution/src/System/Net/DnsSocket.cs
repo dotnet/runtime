@@ -62,8 +62,6 @@ namespace System.Net
         private readonly Action<int> _setReceiveTimeout;
         private readonly Action _dispose;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075",
-            Justification = "The Socket members accessed here are preserved by the DynamicDependency attribute.")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties,
             "System.Net.Sockets.Socket", "System.Net.Sockets")]
         private static SocketReflection CreateReflection()
