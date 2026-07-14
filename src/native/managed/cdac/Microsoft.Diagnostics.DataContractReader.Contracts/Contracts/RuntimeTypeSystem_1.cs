@@ -144,6 +144,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         None = 0,
         AsyncCall = 0x1,
+        IsAsyncVariant = 0x4,
         Thunk = 16,
     }
 
@@ -553,7 +554,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public uint GetComponentSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.ComponentSize;
 
-    public TargetPointer GetClassPointer(TypeHandle typeHandle)
+    private TargetPointer GetClassPointer(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
             return TargetPointer.Null;
@@ -570,6 +571,37 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             default:
                 throw new InvalidOperationException();
         }
+    }
+
+    public bool TryGetSystemVAmd64EightByteClassification(TypeHandle typeHandle, out SystemVAmd64EightByteClassification classification)
+    {
+        classification = default;
+
+        TargetPointer eeClassPtr = GetClassPointer(typeHandle);
+        if (eeClassPtr == TargetPointer.Null)
+            return false;
+
+        Data.EEClass eeClass = _target.ProcessedData.GetOrAdd<Data.EEClass>(eeClassPtr);
+        if (eeClass.OptionalFields == TargetPointer.Null)
+            return false;
+
+        Data.EEClassOptionalFields optFields = _target.ProcessedData.GetOrAdd<Data.EEClassOptionalFields>(eeClass.OptionalFields);
+        if (optFields.EightByteRegistersInfo is not Data.SystemVEightByteRegistersInfo info || info.NumEightBytes == 0)
+            return false;
+
+        // The underlying data only stores two eightbyte slots
+        // (CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS). Treat a corrupted / out-of-range
+        // count as "no classification" so consumers can't read beyond the two stored slots.
+        if (info.NumEightBytes > 2)
+            return false;
+
+        SystemVAmd64EightByte first = new((SystemVAmd64Classification)info.EightByteClassification0, info.EightByteSize0);
+        SystemVAmd64EightByte? second = info.NumEightBytes > 1
+            ? new SystemVAmd64EightByte((SystemVAmd64Classification)info.EightByteClassification1, info.EightByteSize1)
+            : null;
+
+        classification = new SystemVAmd64EightByteClassification(first, second);
+        return true;
     }
 
     // only called on validated method tables, so we don't need to re-validate the EEClass
@@ -1699,7 +1731,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return true;
     }
 
-    public bool IsStoredSigMethodDesc(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
+    private bool IsStoredSigMethodDesc(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
@@ -1716,6 +1748,49 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         signature = AsStoredSigMethodDesc(methodDesc).Signature;
+        return true;
+    }
+
+    public bool TryGetMethodSignature(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
+    {
+        if (IsStoredSigMethodDesc(methodDescHandle, out signature))
+        {
+            return true;
+        }
+
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.HasAsyncMethodData)
+        {
+            Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(methodDesc.GetAddressOfAsyncMethodData());
+            if (((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.IsAsyncVariant))
+            {
+                byte[] sig = new byte[asyncData.Signature.SignatureLength];
+                _target.ReadBuffer(asyncData.Signature.SignaturePointer, sig.AsSpan());
+                signature = sig;
+                return true;
+            }
+        }
+
+        uint token = methodDesc.Token;
+        if (EcmaMetadataUtils.GetRowId(token) == 0)
+        {
+            signature = default;
+            return false;
+        }
+
+        TargetPointer modulePtr = GetOrCreateMethodTable(methodDesc).Module;
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (mdReader is null)
+        {
+            signature = default;
+            return false;
+        }
+
+        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token));
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+        signature = mdReader.GetBlobBytes(methodDef.Signature);
         return true;
     }
 
@@ -2243,13 +2318,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     uint IRuntimeTypeSystem.GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef)
     {
         Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
-        if (fieldDesc.DWord2 == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetBigRVA))
+        // DWord2 packs the 27-bit offset (low bits) with the 5-bit field type (high bits), so the offset
+        // must be masked out before comparing against the big-RVA sentinel. The native runtime compares the
+        // FieldDesc's m_dwOffset bitfield directly (see FieldDesc::GetOffset in src/coreclr/vm/field.h).
+        uint offset = fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
+        if (offset == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetBigRVA))
         {
             if (fieldDef is null)
                 throw new ArgumentNullException(nameof(fieldDef), "Field definition is required for big RVA fields");
             return (uint)fieldDef.Value.GetRelativeVirtualAddress();
         }
-        return fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
+        return offset;
     }
 
     TypeHandle IRuntimeTypeSystem.GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
