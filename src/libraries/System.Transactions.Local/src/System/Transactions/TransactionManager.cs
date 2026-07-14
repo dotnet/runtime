@@ -320,16 +320,19 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.set_DefaultTimeout");
                 }
 
-                Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(value).Ticks);
-                if (Interlocked.Read(ref s_defaultTimeoutTicks) != value.Ticks)
+                TimeSpan validatedTimeout = ValidateTimeout(value);
+                lock (ClassSyncObject)
+                {
+                    Interlocked.Exchange(ref s_defaultTimeoutTicks, validatedTimeout.Ticks);
+                    s_defaultTimeoutValidated = true;
+                }
+                if (validatedTimeout != value)
                 {
                     if (etwLog.IsEnabled())
                     {
                         etwLog.ConfiguredDefaultTimeoutAdjusted();
                     }
                 }
-
-                s_defaultTimeoutValidated = true;
 
                 if (etwLog.IsEnabled())
                 {
@@ -370,17 +373,21 @@ namespace System.Transactions
 
                 ArgumentOutOfRangeException.ThrowIfLessThan(value, TimeSpan.Zero);
 
-                s_cachedMaxTimeout = true;
-                s_maximumTimeout = value;
-                LazyInitializer.EnsureInitialized(ref s_defaultTimeoutTicks, ref s_defaultTimeoutValidated, ref s_classSyncObject, () => DefaultSettingsSection.Timeout.Ticks);
-
-                long defaultTimeoutTicks = Interlocked.Read(ref s_defaultTimeoutTicks);
-                Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(new TimeSpan(defaultTimeoutTicks)).Ticks);
-                if (Interlocked.Read(ref s_defaultTimeoutTicks) != defaultTimeoutTicks)
+                lock (ClassSyncObject)
                 {
-                    if (etwLog.IsEnabled())
+                    s_maximumTimeout = value;
+                    s_cachedMaxTimeout = true;
+                    LazyInitializer.EnsureInitialized(ref s_defaultTimeoutTicks, ref s_defaultTimeoutValidated, ref s_classSyncObject, () => DefaultSettingsSection.Timeout.Ticks);
+
+                    long defaultTimeoutTicks = Interlocked.Read(ref s_defaultTimeoutTicks);
+                    long validatedDefaultTicks = ValidateTimeout(new TimeSpan(defaultTimeoutTicks)).Ticks;
+                    if (validatedDefaultTicks != defaultTimeoutTicks)
                     {
-                        etwLog.ConfiguredDefaultTimeoutAdjusted();
+                        Interlocked.Exchange(ref s_defaultTimeoutTicks, validatedDefaultTicks);
+                        if (etwLog.IsEnabled())
+                        {
+                            etwLog.ConfiguredDefaultTimeoutAdjusted();
+                        }
                     }
                 }
 
