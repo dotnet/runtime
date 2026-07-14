@@ -27,6 +27,21 @@ jobs:
       pull-requests: read
       statuses: write
     steps:
+      - name: Set pending status
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data: pr } = await github.rest.pulls.get({
+              owner, repo, pull_number: context.issue.number,
+            });
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha: pr.head.sha, state: 'pending',
+              context: 'ci-workflow-eval',
+              target_url: `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              description: 'CI workflow eval is running',
+            });
+
       - name: Acknowledge the command
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -47,15 +62,6 @@ jobs:
             }}
           script: |
             const { owner, repo } = context.repo;
-            const { data: pr } = await github.rest.pulls.get({
-              owner, repo, pull_number: context.issue.number,
-            });
-            await github.rest.repos.createCommitStatus({
-              owner, repo, sha: pr.head.sha, state: 'pending',
-              context: 'ci-workflow-eval',
-              target_url: `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
-              description: 'CI workflow eval is running',
-            });
             await github.rest.reactions.createForIssueComment({
               owner, repo, comment_id: context.payload.comment.id, content: 'eyes',
             });
@@ -361,10 +367,8 @@ jobs:
       - name: Post the report
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          EVAL_RESULT: ${{ needs.eval.result }}
           GUARD_RUN: ${{ needs.eval.outputs.guard_run }}
           GUARD_REASON: ${{ needs.eval.outputs.guard_reason }}
-          HEAD_SHA: ${{ needs.eval.outputs.head_sha }}
         with:
           github-token: >-
             ${{
@@ -386,14 +390,13 @@ jobs:
             const path = require('path');
             const marker = '<!-- ci-workflow-eval -->';
             let body;
-            let reportUnavailable = false;
             if (process.env.GUARD_RUN === 'true') {
               const header = '> [!NOTE]\n> AI/Copilot-generated eval report (Vally), triggered by a maintainer eval command.\n\n';
               let report = '_eval report unavailable_';
               try {
                 report = fs.readFileSync(path.join(process.env.RUNNER_TEMP, 'vally', 'report.md'), 'utf8');
               } catch {
-                reportUnavailable = true;
+                core.warning('The eval report artifact is unavailable.');
               }
               body = `${marker}\n${header}${report}`;
             } else {
@@ -401,11 +404,38 @@ jobs:
             }
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+      - name: Set final status
+        if: always()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          EVAL_RESULT: ${{ needs.eval.result }}
+          GUARD_RUN: ${{ needs.eval.outputs.guard_run }}
+          HEAD_SHA: ${{ needs.eval.outputs.head_sha }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            let report = '';
+            let reportUnavailable = false;
+            try {
+              report = fs.readFileSync(path.join(process.env.RUNNER_TEMP, 'vally', 'report.md'), 'utf8');
+            } catch {
+              reportUnavailable = true;
+            }
+            const { owner, repo } = context.repo;
             const evalResult = process.env.EVAL_RESULT;
-            const authenticationFailed = body.includes('Authentication failed');
+            const authenticationFailed = report.includes('Authentication failed');
             const passed = process.env.GUARD_RUN === 'true' &&
               evalResult === 'success' &&
-              !body.includes('❌ failed') &&
+              !report.includes('❌ failed') &&
               !reportUnavailable;
             const failed = process.env.GUARD_RUN === 'true' &&
               evalResult === 'failure' &&
@@ -420,10 +450,3 @@ jobs:
                 failed ? 'One or more selected evals failed' :
                 'CI workflow eval could not complete',
             });
-            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
-            const existing = comments.find(c => c.body && c.body.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
-            } else {
-              await github.rest.issues.createComment({ owner, repo, issue_number, body });
-            }

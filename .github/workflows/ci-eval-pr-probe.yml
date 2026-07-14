@@ -64,7 +64,7 @@ jobs:
       pull-requests: read
       statuses: write
     steps:
-      - name: Probe eval reporting permissions
+      - name: Probe eval comment permissions
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: >-
@@ -91,12 +91,6 @@ jobs:
               '> [!NOTE]\n' +
               '> The CI workflow eval reporting probe created this comment, reaction, and PR-head status.\n\n' +
               `Probe run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
-            await github.rest.repos.createCommitStatus({
-              owner, repo, sha, state: 'pending',
-              context: 'ci-workflow-eval-pr-probe',
-              target_url: `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
-              description: 'Testing eval report permissions',
-            });
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner, repo, issue_number: pull_number, per_page: 100,
             });
@@ -111,6 +105,14 @@ jobs:
             await github.rest.reactions.createForIssueComment({
               owner, repo, comment_id: comment.data.id, content: 'eyes',
             });
+
+      - name: Probe eval status permissions
+        if: always()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.payload.pull_request.head.sha;
             await github.rest.repos.createCommitStatus({
               owner, repo, sha, state: 'success',
               context: 'ci-workflow-eval-pr-probe',
