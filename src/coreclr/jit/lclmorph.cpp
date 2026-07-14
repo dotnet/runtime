@@ -1717,15 +1717,19 @@ private:
                     {
                         // Handle the Vector3 field of case 2
                         assert(genTypeSize(varDsc) == 16);
-                        hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector128_AsVector3,
+                        hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector_AsVector3,
                                                                        TYP_FLOAT, 16);
                         break;
                     }
 
-                    case TYP_SIMD8:
-#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH)
                     case TYP_SIMD16:
                     case TYP_SIMD32:
+#elif defined(TARGET_ARM64)
+                    case TYP_SIMD8:
+#else
+#error Unsupported platform
 #endif
                     {
                         // Handle case 3
@@ -1744,6 +1748,8 @@ private:
 
                         break;
                     }
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
                     default:
                         unreached();
                 }
@@ -1780,9 +1786,8 @@ private:
                         // simdLclNode[3] as the new value. This gives us a new TYP_SIMD16 with all elements in the
                         // right spots
 
-                        elementNode =
-                            m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, elementNode,
-                                                                 NI_Vector128_AsVector128Unsafe, TYP_FLOAT, 12);
+                        elementNode = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, elementNode,
+                                                                           NI_Vector_AsVector128Unsafe, TYP_FLOAT, 12);
 
                         GenTree* indexNode1 = m_compiler->gtNewIconNode(3, TYP_INT);
                         simdLclNode =
@@ -1794,10 +1799,14 @@ private:
                         break;
                     }
 
-                    case TYP_SIMD8:
-#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH)
                     case TYP_SIMD16:
                     case TYP_SIMD32:
+#elif defined(TARGET_ARM64)
+                    case TYP_SIMD8:
+#else
+#error Unsupported platform
 #endif
                     {
                         // Handle case 3
@@ -1813,9 +1822,9 @@ private:
                             hwiNode = m_compiler->gtNewSimdWithUpperNode(varDsc->TypeGet(), simdLclNode, elementNode,
                                                                          TYP_FLOAT, genTypeSize(varDsc));
                         }
-
                         break;
                     }
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
                     default:
                         unreached();
@@ -1867,12 +1876,13 @@ private:
                 indir->AsLclFld()->SetLayout(layout);
                 lclNode = indir->AsLclVarCommon();
 
+                // The general invariant in the compiler is that whoever creates a LCL_FLD node after
+                // local morph must mark the associated local DNER. We break this invariant for STRUCT fields, to
+                // allow global morph to transform these into enregisterable LCL_VARs, applying DNER otherwise.
                 if (!indir->TypeIs(TYP_STRUCT))
                 {
-                    // The general invariant in the compiler is that whoever creates a LCL_FLD node after local morph
-                    // must mark the associated local DNER. We break this invariant here, for STRUCT fields, to allow
-                    // global morph to transform these into enregisterable LCL_VARs, applying DNER otherwise.
-                    m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+                    // MorphLocalField reduces to promoted field if possible and marks the local DNER otherwise.
+                    MorphLocalField(lclNode, user);
                 }
                 break;
 
@@ -1950,6 +1960,11 @@ private:
             {
                 return IndirTransform::LclFld;
             }
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Handle once GetElement and WithElement are supported
+            return IndirTransform::LclFld;
+#endif
 
 #ifdef FEATURE_HW_INTRINSICS
             if (varTypeIsSIMD(varDsc))

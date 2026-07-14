@@ -254,9 +254,15 @@ namespace System.Text.Tests
         public static IEnumerable<object[]> Append_Decimal_TestData()
         {
             yield return new object[] { "Hello", (double)0, "Hello0" };
-            yield return new object[] { "Hello", 1.23, "Hello1.23" };
-            yield return new object[] { "", -4.56, "-4.56" };
+
+            // Use inexact doubles so the appended text exercises the correctly-rounded (double -> decimal)
+            // conversion. The expected string is derived from parsing the full base-10 expansion of the value.
+            yield return new object[] { "Hello", 1.23, "Hello" + ParseDecimalExpansion(1.23).ToString(CultureInfo.InvariantCulture) };
+            yield return new object[] { "", -4.56, ParseDecimalExpansion(-4.56).ToString(CultureInfo.InvariantCulture) };
         }
+
+        private static decimal ParseDecimalExpansion(double value) =>
+            decimal.Parse(value.ToString("G99", CultureInfo.InvariantCulture), NumberStyles.Float, CultureInfo.InvariantCulture);
 
         [Fact]
         public static void Test_Append_Decimal()
@@ -1567,8 +1573,11 @@ namespace System.Text.Tests
         public static IEnumerable<object[]> Test_Insert_Decimal_TestData()
         {
             yield return new object[] { "Hello", 0, (double)0, "0Hello" };
-            yield return new object[] { "Hello", 3, 1.23, "Hel1.23lo" };
-            yield return new object[] { "Hello", 5, -4.56, "Hello-4.56" };
+
+            // Use inexact doubles so the inserted text exercises the correctly-rounded (double -> decimal)
+            // conversion. The expected string is derived from parsing the full base-10 expansion of the value.
+            yield return new object[] { "Hello", 3, 1.23, "Hel" + ParseDecimalExpansion(1.23).ToString(CultureInfo.InvariantCulture) + "lo" };
+            yield return new object[] { "Hello", 5, -4.56, "Hello" + ParseDecimalExpansion(-4.56).ToString(CultureInfo.InvariantCulture) };
         }
 
         [Fact]

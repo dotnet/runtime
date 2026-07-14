@@ -787,6 +787,10 @@ public:
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     CorInfoReloc repGetRelocTypeHint(void* target);
 
+    void recGetAddressAlignment(void* address, uint32_t result);
+    void dmpGetAddressAlignment(DWORDLONG key, DWORD value);
+    uint32_t repGetAddressAlignment(void* address);
+
     void recGetExpectedTargetArchitecture(DWORD result);
     void dmpGetExpectedTargetArchitecture(DWORD key, DWORD result);
     DWORD repGetExpectedTargetArchitecture();
@@ -1214,6 +1218,7 @@ enum mcPackets
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
     Packet_GetAwaitReturnCall = 238,
+    Packet_GetAddressAlignment = 239,
 };
 
 void SetDebugDumpVariables();

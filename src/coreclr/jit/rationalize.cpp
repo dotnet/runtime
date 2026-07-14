@@ -373,14 +373,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 #endif // TARGET_XARCH
 
 #if !defined(TARGET_WASM)
-#if defined(TARGET_ARM64)
-        case NI_Vector64_CreateGeometricSequence:
-#endif // TARGET_ARM64
-        case NI_Vector128_CreateGeometricSequence:
-#if defined(TARGET_XARCH)
-        case NI_Vector256_CreateGeometricSequence:
-        case NI_Vector512_CreateGeometricSequence:
-#endif // TARGET_XARCH
+        case NI_Vector_CreateGeometricSequence:
         {
             assert(operandCount == 2);
 
@@ -417,40 +410,17 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
         }
 #endif // !TARGET_WASM
 
-        case NI_Vector128_Shuffle:
-        case NI_Vector128_ShuffleNative:
-        case NI_Vector128_ShuffleNativeFallback:
-#if defined(TARGET_XARCH)
-        case NI_Vector256_Shuffle:
-        case NI_Vector256_ShuffleNative:
-        case NI_Vector256_ShuffleNativeFallback:
-        case NI_Vector512_Shuffle:
-        case NI_Vector512_ShuffleNative:
-        case NI_Vector512_ShuffleNativeFallback:
-#elif defined(TARGET_ARM64)
-        case NI_Vector64_Shuffle:
-        case NI_Vector64_ShuffleNative:
-        case NI_Vector64_ShuffleNativeFallback:
-#endif
+        case NI_Vector_Shuffle:
+        case NI_Vector_ShuffleNative:
+        case NI_Vector_ShuffleNativeFallback:
         {
             assert(operandCount == 2);
-#if defined(TARGET_XARCH)
-            assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
-#else
-            assert((simdSize == 8) || (simdSize == 16));
-#endif
             assert(((*use)->gtFlags & GTF_REVERSE_OPS) == 0); // gtNewSimdShuffleNode with reverse ops is not supported
 
             GenTree* op1 = operands[0];
             GenTree* op2 = operands[1];
 
-            bool isShuffleNative = intrinsicId != NI_Vector128_Shuffle;
-#if defined(TARGET_XARCH)
-            isShuffleNative =
-                isShuffleNative && (intrinsicId != NI_Vector256_Shuffle) && (intrinsicId != NI_Vector512_Shuffle);
-#elif defined(TARGET_ARM64)
-            isShuffleNative = isShuffleNative && (intrinsicId != NI_Vector64_Shuffle);
-#endif
+            bool isShuffleNative = intrinsicId != NI_Vector_Shuffle;
 
             // Check if the required intrinsics to emit are available.
             if (!m_compiler->IsValidForShuffle(op2, simdSize, simdBaseType, nullptr, isShuffleNative))
@@ -463,11 +433,15 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
         }
 
 #if defined(TARGET_XARCH)
-        case NI_Vector128_ExtractMostSignificantBits:
+        case NI_Vector_ExtractMostSignificantBits:
         {
-            // We want to keep this as is, because we'll rewrite it in post-order
-            assert(varTypeIsShort(simdBaseType));
-            return;
+            if (simdSize == 16)
+            {
+                // We want to keep this as is, because we'll rewrite it in post-order
+                assert(varTypeIsShort(simdBaseType));
+                return;
+            }
+            FALLTHROUGH;
         }
 #endif // TARGET_XARCH
 
@@ -639,12 +613,7 @@ void Rationalizer::RewriteHWIntrinsic(GenTree** use, Compiler::GenTreeStack& par
         }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_ARM64)
-        case NI_Vector64_ExtractMostSignificantBits:
-#elif defined(TARGET_XARCH)
-        case NI_Vector256_ExtractMostSignificantBits:
-#endif
-        case NI_Vector128_ExtractMostSignificantBits:
+        case NI_Vector_ExtractMostSignificantBits:
         {
             RewriteHWIntrinsicExtractMsb(use, parents);
             break;
@@ -1560,17 +1529,8 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
         op1 = tmp;
     }
 
-    if (simdSize == 8)
-    {
-        intrinsic = NI_Vector64_ToScalar;
-    }
-    else
-    {
-        intrinsic = NI_Vector128_ToScalar;
-    }
-
     node->gtType = genActualType(simdBaseType);
-    node->ChangeHWIntrinsicId(intrinsic);
+    node->ChangeHWIntrinsicId(NI_Vector_ToScalar);
     node->SetSimdSize(8);
     node->SetSimdBaseType(simdBaseType);
     node->Op(1) = op1;

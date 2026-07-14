@@ -755,7 +755,7 @@ HRESULT GCHeap::Initialize()
 
         GCToEEInterface::DiagUpdateGenerationBounds();
 
-#if defined(STRESS_REGIONS) && defined(FEATURE_BASICFREEZE)
+#ifdef STRESS_REGIONS
 #ifdef MULTIPLE_HEAPS
         gc_heap* hp = gc_heap::g_heaps[0];
 #else
@@ -790,7 +790,7 @@ HRESULT GCHeap::Initialize()
                 break;
             }
         }
-#endif //STRESS_REGIONS && FEATURE_BASICFREEZE
+#endif //STRESS_REGIONS
     }
 
     return hr;
@@ -894,7 +894,6 @@ void GCHeap::SetYieldProcessorScalingFactor (float scalingFactor)
 unsigned int GCHeap::WhichGeneration (Object* object)
 {
     uint8_t* o = (uint8_t*)object;
-#ifdef FEATURE_BASICFREEZE
     if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)))
     {
         return INT32_MAX;
@@ -907,7 +906,6 @@ unsigned int GCHeap::WhichGeneration (Object* object)
         return INT32_MAX;
     }
 #endif
-#endif //FEATURE_BASICFREEZE
     gc_heap* hp = gc_heap::heap_of (o);
     unsigned int g = hp->object_gennum (o);
     dprintf (3, ("%zx is in gen %d", (size_t)object, g));
@@ -997,7 +995,7 @@ unsigned int GCHeap::GetGenerationWithRange (Object* object, uint8_t** ppStart, 
 bool GCHeap::IsEphemeral (Object* object)
 {
     uint8_t* o = (uint8_t*)object;
-#if defined(FEATURE_BASICFREEZE) && defined(USE_REGIONS)
+#ifdef USE_REGIONS
     if (!is_in_heap_range (o))
     {
         // Objects in frozen segments are not ephemeral
@@ -1016,12 +1014,6 @@ Object * GCHeap::NextObj (Object * object)
 #ifdef VERIFY_HEAP
     uint8_t* o = (uint8_t*)object;
 
-#ifndef FEATURE_BASICFREEZE
-    if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)))
-    {
-        return NULL;
-    }
-#endif //!FEATURE_BASICFREEZE
 
     heap_segment * hs = gc_heap::find_segment (o, FALSE);
     if (!hs)
@@ -1082,10 +1074,6 @@ Object * GCHeap::NextObj (Object * object)
 bool GCHeap::IsHeapPointer (void* vpObject, bool small_heap_only)
 {
     uint8_t* object = (uint8_t*) vpObject;
-#ifndef FEATURE_BASICFREEZE
-    if (!((object < g_gc_highest_address) && (object >= g_gc_lowest_address)))
-        return FALSE;
-#endif //!FEATURE_BASICFREEZE
 
     heap_segment * hs = gc_heap::find_segment (object, small_heap_only);
     return !!hs;

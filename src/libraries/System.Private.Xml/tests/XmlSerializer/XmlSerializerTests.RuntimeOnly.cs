@@ -3769,4 +3769,57 @@ public static partial class XmlSerializerTests
             }
         }
     }
+
+    [Fact]
+    public static void Xml_TypeWithArrayLikeChoiceElement()
+    {
+        // Exercises an [XmlChoiceIdentifier] member where one of the choice element types is
+        // itself an array, so that element's mapping is an ArrayMapping. Deserializing such a
+        // value drives the reflection-based reader's array-reading path while the owning member
+        // carries a choice identifier.
+        var value = new TypeWithArrayLikeChoiceElement()
+        {
+            ManyChoices = new object[] { "hello", new int[] { 1, 2, 3 } },
+            ChoiceArray = new ArrayLikeChoice[] { ArrayLikeChoice.Word, ArrayLikeChoice.Numbers }
+        };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithArrayLikeChoiceElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Word>hello</Word>\r\n  <Numbers>\r\n    <int>1</int>\r\n    <int>2</int>\r\n    <int>3</int>\r\n  </Numbers>\r\n</TypeWithArrayLikeChoiceElement>"));
+
+        Assert.NotNull(actual);
+        Assert.NotNull(actual.ManyChoices);
+        Assert.Equal(2, actual.ManyChoices.Length);
+        Assert.Equal("hello", actual.ManyChoices[0]);
+        int[] numbers = Assert.IsType<int[]>(actual.ManyChoices[1]);
+        Assert.Equal(new int[] { 1, 2, 3 }, numbers);
+
+        // The [XmlIgnore] choice array is populated during deserialization to mirror, per item,
+        // which element each value was read from.
+        Assert.Equal(new ArrayLikeChoice[] { ArrayLikeChoice.Word, ArrayLikeChoice.Numbers }, actual.ChoiceArray);
+    }
+}
+
+// These types must be declared at the top level rather than nested inside XmlSerializerTests.
+// The serializer matches an [XmlChoiceIdentifier] value by comparing the choice enum's
+// TypeDesc.FullName against the runtime choiceSource.GetType().FullName. TypeDesc normalizes
+// nested-type names by replacing '+' with '.' (see Types.cs), so a nested enum's TypeDesc name
+// ("XmlSerializerTests.ArrayLikeChoice") would never equal its reflection FullName
+// ("XmlSerializerTests+ArrayLikeChoice"), and the choice would fail to match.
+public class TypeWithArrayLikeChoiceElement
+{
+    // One of the choice element types (Numbers) is an array, so its element mapping is an
+    // ArrayMapping. Each item in ManyChoices is matched to an item in ChoiceArray.
+    [XmlChoiceIdentifier(nameof(ChoiceArray))]
+    [XmlElement("Word", typeof(string))]
+    [XmlElement("Numbers", typeof(int[]))]
+    public object[] ManyChoices;
+
+    [XmlIgnore]
+    public ArrayLikeChoice[] ChoiceArray;
+}
+
+public enum ArrayLikeChoice
+{
+    None,
+    Word,
+    Numbers
 }

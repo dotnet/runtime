@@ -777,7 +777,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public void ConstructingFromOptionsKeepsReference()
         {
-            JsonStringEnumConverter converter = new();
+            JsonConverter converter = new JsonStringEnumConverter<JsonIgnoreCondition>();
             JsonSerializerOptions options = new()
             {
                 PropertyNameCaseInsensitive = true,

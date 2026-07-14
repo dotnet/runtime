@@ -360,7 +360,10 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
     insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE;
 
 #ifdef DEBUG
-    checkRMWRegisters(intrinEmbMask, targetReg);
+    if (isRMW)
+    {
+        checkRMWRegisters(intrinEmbMask, targetReg);
+    }
 #endif
 
     // Setup instruction options and handle special cases.
@@ -894,10 +897,27 @@ void CodeGen::checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg)
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    const HWIntrinsic intrin(node);
+    const HWIntrinsic      intrin(node);
+    CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrin.id);
 
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
-    assert(m_compiler->compIsaSupportedDebugOnly(HWIntrinsicInfo::lookupIsa(intrin.id)));
+
+    if (isa == InstructionSet_Vector)
+    {
+        if (node->GetSimdSize() == 8)
+        {
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector64));
+        }
+        else
+        {
+            assert((node->GetSimdSize() == 12) || (node->GetSimdSize() == 16));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector128));
+        }
+    }
+    else
+    {
+        assert(m_compiler->compIsaSupportedDebugOnly(isa));
+    }
 
     regNumber targetReg = node->GetRegNum();
 
@@ -1406,7 +1426,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // fmov (scalar) zeros the upper bits and is not safe to use
                 assert(!intrin.op3->isContainedFltOrDblImmed());
 
-                assert(targetReg != op3Reg);
+                // The mov above copies op1 into targetReg and the ins below then reads op3. That is
+                // only unsafe when targetReg == op3Reg but targetReg != op1Reg, as the mov would then
+                // clobber op3 before it is read. LSRA marks op3 delayFree, so a distinct op3 can never
+                // share the def register; targetReg == op3Reg is only reachable when op3 aliases op1
+                // (e.g. Vector.Create(x, ..., x, ...) after a floating-point CreateScalarUnsafe is
+                // elided into a bare scalar), in which case the mov is skipped and op3 is preserved.
+                assert((targetReg != op3Reg) || (targetReg == op1Reg));
 
                 HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 
@@ -1643,8 +1669,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector64_CreateScalarUnsafe:
-            case NI_Vector128_CreateScalarUnsafe:
+            case NI_Vector_CreateScalarUnsafe:
                 if (intrin.op1->isContainedFltOrDblImmed())
                 {
                     // fmov reg, #imm8
@@ -1858,18 +1883,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector64_ToVector128:
+            case NI_Vector_ToVector128:
                 GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ false);
                 break;
 
-            case NI_Vector64_ToVector128Unsafe:
-            case NI_Vector128_AsVector128Unsafe:
-            case NI_Vector128_GetLower:
+            case NI_Vector_ToVector128Unsafe:
+            case NI_Vector_AsVector128Unsafe:
+            case NI_Vector_GetLower:
                 GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ true);
                 break;
 
-            case NI_Vector64_GetElement:
-            case NI_Vector128_GetElement:
+            case NI_Vector_GetElement:
             {
                 assert(intrin.numOperands == 2);
                 assert(!intrin.op1->isContained());
@@ -1904,14 +1928,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector128_GetUpper:
+            case NI_Vector_GetUpper:
             {
                 const int byteIndex = 8;
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op1Reg, byteIndex, INS_OPTS_16B);
                 break;
             }
 
-            case NI_Vector128_AsVector3:
+            case NI_Vector_AsVector3:
             {
                 // AsVector3 can be a no-op when it's already in the right register, otherwise
                 // we just need to move the value over. Vector3 operations will themselves mask
@@ -1922,8 +1946,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector64_ToScalar:
-            case NI_Vector128_ToScalar:
+            case NI_Vector_ToScalar:
             {
                 if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg)))
                 {
