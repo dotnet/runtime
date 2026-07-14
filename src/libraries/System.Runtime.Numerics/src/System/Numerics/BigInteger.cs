@@ -2056,11 +2056,11 @@ namespace System.Numerics
 
         // Converts a big integer to an IEEE 754 double whose significand is rounded to `precision`
         // significant bits using round-to-nearest, ties-to-even. For `precision` == 53 this is the
-        // correctly rounded double. For a narrower target (24 for float, 11 for Half, 8 for BFloat16)
-        // the result is a double that already lies exactly on that target's grid, so the subsequent
-        // narrowing cast is exact and no double rounding can occur. This relies on every bits[]-backed
-        // magnitude being at least 2^31, which is comfortably within the normal range of every target,
-        // so a target subnormal (which would need more significand bits than the target holds) is never
+        // correctly rounded double. For a narrower target (24 for float, 8 for BFloat16) the result is
+        // a double that already lies exactly on that target's grid, so the subsequent narrowing cast
+        // is exact and no double rounding can occur. This relies on every bits[]-backed magnitude
+        // being at least 2^31, which is comfortably within the normal range of every target, so a
+        // target subnormal (which would need more significand bits than the target holds) is never
         // produced and rounding a single time at `precision` bits is sufficient.
         private static double ConvertToDouble(BigInteger value, int precision)
         {
@@ -2198,10 +2198,18 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> converted to <see cref="Half" /> value.</returns>
         public static explicit operator Half(BigInteger value)
         {
-            // Every bits[]-backed magnitude exceeds Half's finite range and overflows to infinity, so
-            // there is no narrow fast path to take. Rounding directly at Half's 11-bit significand
-            // produces that infinity correctly via the narrowing cast.
-            return (Half)ConvertToDouble(value, precision: 11);
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return (Half)sign;
+            }
+
+            // Every bits[]-backed magnitude is at least 2^31, which is far outside Half's finite
+            // range, so the result is always an infinity carrying the value's sign. There is no
+            // finite Half to round to, so skip the limb scan entirely.
+            return sign < 0 ? Half.NegativeInfinity : Half.PositiveInfinity;
         }
 
         /// <summary>Explicitly converts a big integer to a <see cref="BFloat16" /> value.</summary>
