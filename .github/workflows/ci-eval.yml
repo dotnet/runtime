@@ -1,0 +1,328 @@
+name: ci-workflow-eval
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-workflow-eval-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  acknowledge:
+    if: >-
+      github.repository == 'dotnet/runtime' &&
+      github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER","MEMBER"]'), github.event.comment.author_association) &&
+      (
+        github.event.comment.body == '/ci-scan eval' || startsWith(github.event.comment.body, '/ci-scan eval ') ||
+        github.event.comment.body == '/ci-fix eval' || startsWith(github.event.comment.body, '/ci-fix eval ') ||
+        github.event.comment.body == '/ci-feedback eval' || startsWith(github.event.comment.body, '/ci-feedback eval ') ||
+        github.event.comment.body == '/ci-eval' || startsWith(github.event.comment.body, '/ci-eval ')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Acknowledge the command
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              comment_id: context.payload.comment.id, content: 'eyes',
+            });
+
+  pat_pool:
+    if: >-
+      github.repository == 'dotnet/runtime' &&
+      github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER","MEMBER"]'), github.event.comment.author_association) &&
+      (
+        github.event.comment.body == '/ci-scan eval' || startsWith(github.event.comment.body, '/ci-scan eval ') ||
+        github.event.comment.body == '/ci-fix eval' || startsWith(github.event.comment.body, '/ci-fix eval ') ||
+        github.event.comment.body == '/ci-feedback eval' || startsWith(github.event.comment.body, '/ci-feedback eval ') ||
+        github.event.comment.body == '/ci-eval' || startsWith(github.event.comment.body, '/ci-eval ')
+      )
+    runs-on: ubuntu-latest
+    environment: copilot-pat-pool
+    permissions: {}
+    outputs:
+      pat_number: ${{ steps.select-pat-number.outputs.copilot_pat_number }}
+    steps:
+      - name: Select Copilot token from pool
+        id: select-pat-number
+        env:
+          COPILOT_PAT_0: ${{ secrets.COPILOT_PAT_0 }}
+          COPILOT_PAT_1: ${{ secrets.COPILOT_PAT_1 }}
+          COPILOT_PAT_2: ${{ secrets.COPILOT_PAT_2 }}
+          COPILOT_PAT_3: ${{ secrets.COPILOT_PAT_3 }}
+          COPILOT_PAT_4: ${{ secrets.COPILOT_PAT_4 }}
+          COPILOT_PAT_5: ${{ secrets.COPILOT_PAT_5 }}
+          COPILOT_PAT_6: ${{ secrets.COPILOT_PAT_6 }}
+          COPILOT_PAT_7: ${{ secrets.COPILOT_PAT_7 }}
+          COPILOT_PAT_8: ${{ secrets.COPILOT_PAT_8 }}
+          COPILOT_PAT_9: ${{ secrets.COPILOT_PAT_9 }}
+        run: |
+          PAT_NUMBERS=()
+          for i in $(seq 0 9); do
+            var="COPILOT_PAT_${i}"
+            if [ -n "${!var}" ]; then
+              PAT_NUMBERS+=("${i}")
+            fi
+          done
+          if [ ${#PAT_NUMBERS[@]} -eq 0 ]; then
+            echo "::notice::No PAT pool entries set — falling back to COPILOT_GITHUB_TOKEN."
+            exit 0
+          fi
+          PAT_INDEX=$(( RANDOM % ${#PAT_NUMBERS[@]} ))
+          PAT_NUMBER="${PAT_NUMBERS[$PAT_INDEX]}"
+          echo "Selected COPILOT_PAT_${PAT_NUMBER} from a pool of ${#PAT_NUMBERS[@]}."
+          echo "copilot_pat_number=${PAT_NUMBER}" >> "$GITHUB_OUTPUT"
+
+  eval:
+    needs: pat_pool
+    if: >-
+      github.repository == 'dotnet/runtime' &&
+      github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER","MEMBER"]'), github.event.comment.author_association) &&
+      (
+        github.event.comment.body == '/ci-scan eval' || startsWith(github.event.comment.body, '/ci-scan eval ') ||
+        github.event.comment.body == '/ci-fix eval' || startsWith(github.event.comment.body, '/ci-fix eval ') ||
+        github.event.comment.body == '/ci-feedback eval' || startsWith(github.event.comment.body, '/ci-feedback eval ') ||
+        github.event.comment.body == '/ci-eval' || startsWith(github.event.comment.body, '/ci-eval ')
+      )
+    runs-on: ubuntu-latest
+    environment: copilot-pat-pool
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      guard_run: ${{ steps.guard.outputs.run }}
+      guard_reason: ${{ steps.guard.outputs.reason }}
+    steps:
+      - name: Select the spec(s) from the command
+        id: sel
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          base=.github/workflows/evals
+          case "$COMMENT_BODY" in
+            "/ci-scan eval"|"/ci-scan eval "*)         specs="$base/ci-failure-scan.eval.yaml" ;;
+            "/ci-fix eval"|"/ci-fix eval "*)           specs="$base/ci-failure-fix.eval.yaml" ;;
+            "/ci-feedback eval"|"/ci-feedback eval "*) specs="$base/ci-failure-scan-feedback.eval.yaml" ;;
+            "/ci-eval"|"/ci-eval "*)                   specs="$base/ci-failure-scan.eval.yaml $base/ci-failure-fix.eval.yaml $base/ci-failure-scan-feedback.eval.yaml" ;;
+            *)                                         specs="" ;;
+          esac
+          echo "specs=$specs" >> "$GITHUB_OUTPUT"
+
+      - name: Guard on fork and token
+        id: guard
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          COPILOT_GITHUB_TOKEN: >-
+            ${{
+              needs.pat_pool.outputs.pat_number == '0' && secrets.COPILOT_PAT_0 ||
+              needs.pat_pool.outputs.pat_number == '1' && secrets.COPILOT_PAT_1 ||
+              needs.pat_pool.outputs.pat_number == '2' && secrets.COPILOT_PAT_2 ||
+              needs.pat_pool.outputs.pat_number == '3' && secrets.COPILOT_PAT_3 ||
+              needs.pat_pool.outputs.pat_number == '4' && secrets.COPILOT_PAT_4 ||
+              needs.pat_pool.outputs.pat_number == '5' && secrets.COPILOT_PAT_5 ||
+              needs.pat_pool.outputs.pat_number == '6' && secrets.COPILOT_PAT_6 ||
+              needs.pat_pool.outputs.pat_number == '7' && secrets.COPILOT_PAT_7 ||
+              needs.pat_pool.outputs.pat_number == '8' && secrets.COPILOT_PAT_8 ||
+              needs.pat_pool.outputs.pat_number == '9' && secrets.COPILOT_PAT_9 ||
+              secrets.COPILOT_GITHUB_TOKEN
+            }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data: pr } = await github.rest.pulls.get({
+              owner, repo, pull_number: context.issue.number,
+            });
+            const headRepo = pr.head.repo ? pr.head.repo.full_name : null;
+            const base = `${owner}/${repo}`;
+            if (headRepo !== base) {
+              core.setOutput('run', 'false');
+              core.setOutput('reason',
+                `Refusing to run: the PR head \`${headRepo || 'unknown'}\` is a fork. ` +
+                `This eval checks out and runs untrusted PR content with a Copilot token, ` +
+                `so it is restricted to branches on \`${base}\`.`);
+              return;
+            }
+            if (!process.env.COPILOT_GITHUB_TOKEN) {
+              core.setOutput('run', 'false');
+              core.setOutput('reason',
+                'Skipped: no Copilot token available (COPILOT_PAT_* / COPILOT_GITHUB_TOKEN).');
+              return;
+            }
+            core.setOutput('run', 'true');
+
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: steps.guard.outputs.run == 'true'
+        with:
+          persist-credentials: false
+
+      - name: Preserve the trusted eval specs
+        if: steps.guard.outputs.run == 'true'
+        env:
+          SPECS: ${{ steps.sel.outputs.specs }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/trusted-evals"
+          for spec in $SPECS; do
+            cp "$spec" "$RUNNER_TEMP/trusted-evals/$(basename "$spec")"
+          done
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        if: steps.guard.outputs.run == 'true'
+        with:
+          node-version: "22"
+      - name: Install the Vally CLI
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/trusted-evals-tooling"
+          cp .github/workflows/evals/package.json .github/workflows/evals/package-lock.json \
+            "$RUNNER_TEMP/trusted-evals-tooling/"
+          npm ci --prefix "$RUNNER_TEMP/trusted-evals-tooling" \
+            --registry=https://registry.npmjs.org --replace-registry-host=never
+          echo "$RUNNER_TEMP/trusted-evals-tooling/node_modules/.bin" >> "$GITHUB_PATH"
+
+      - name: Check out the PR head
+        if: steps.guard.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr checkout ${{ github.event.issue.number }}
+
+      - name: Restore the trusted eval specs
+        if: steps.guard.outputs.run == 'true'
+        env:
+          SPECS: ${{ steps.sel.outputs.specs }}
+        run: |
+          for spec in $SPECS; do
+            rm -f -- "$spec"
+            cp -- "$RUNNER_TEMP/trusted-evals/$(basename "$spec")" "$spec"
+          done
+
+      - name: Lint the selected spec(s)
+        if: steps.guard.outputs.run == 'true'
+        env:
+          SPECS: ${{ steps.sel.outputs.specs }}
+        run: |
+          for spec in $SPECS; do
+            vally lint --eval-spec "$spec" --strict
+          done
+
+      - name: Run the eval(s)
+        if: steps.guard.outputs.run == 'true'
+        id: run
+        env:
+          COPILOT_GITHUB_TOKEN: >-
+            ${{
+              needs.pat_pool.outputs.pat_number == '0' && secrets.COPILOT_PAT_0 ||
+              needs.pat_pool.outputs.pat_number == '1' && secrets.COPILOT_PAT_1 ||
+              needs.pat_pool.outputs.pat_number == '2' && secrets.COPILOT_PAT_2 ||
+              needs.pat_pool.outputs.pat_number == '3' && secrets.COPILOT_PAT_3 ||
+              needs.pat_pool.outputs.pat_number == '4' && secrets.COPILOT_PAT_4 ||
+              needs.pat_pool.outputs.pat_number == '5' && secrets.COPILOT_PAT_5 ||
+              needs.pat_pool.outputs.pat_number == '6' && secrets.COPILOT_PAT_6 ||
+              needs.pat_pool.outputs.pat_number == '7' && secrets.COPILOT_PAT_7 ||
+              needs.pat_pool.outputs.pat_number == '8' && secrets.COPILOT_PAT_8 ||
+              needs.pat_pool.outputs.pat_number == '9' && secrets.COPILOT_PAT_9 ||
+              secrets.COPILOT_GITHUB_TOKEN
+            }}
+          GH_TOKEN: ${{ github.token }}
+          SPECS: ${{ steps.sel.outputs.specs }}
+        run: |
+          workdir="$RUNNER_TEMP/vally"
+          mkdir -p "$workdir"
+          report="$workdir/report.md"
+          : > "$report"
+          rc=0
+          for spec in $SPECS; do
+            name="$(basename "$spec" .eval.yaml)"
+            echo "## $name" >> "$report"
+            if vally eval --eval-spec "$spec" --skill-dir .github/workflows \
+                 --workspace "$workdir/ws-$name" --output-dir "$workdir/out-$name" > "$workdir/log-$name.txt" 2>&1; then
+              echo "✅ passed" >> "$report"
+            else
+              rc=1
+              echo "❌ failed" >> "$report"
+            fi
+            shopt -s nullglob
+            results=("$workdir/out-$name"/*/eval-results.md)
+            if [ ${#results[@]} -eq 1 ]; then
+              { echo; echo '<details><summary>details</summary>'; echo; cat "${results[0]}"; echo; echo '</details>'; } >> "$report"
+            elif [ ${#results[@]} -gt 1 ]; then
+              echo "_details omitted: unexpected result files_" >> "$report"
+            fi
+            echo >> "$report"
+          done
+          exit $rc
+
+      - name: Upload the report
+        if: always() && steps.guard.outputs.run == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-workflow-eval-report
+          path: ${{ runner.temp }}/vally/report.md
+          if-no-files-found: ignore
+          retention-days: 1
+
+  report:
+    needs: [pat_pool, eval]
+    if: >-
+      always() &&
+      needs.pat_pool.result != 'skipped' &&
+      github.repository == 'dotnet/runtime' &&
+      github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER","MEMBER"]'), github.event.comment.author_association) &&
+      (
+        github.event.comment.body == '/ci-scan eval' || startsWith(github.event.comment.body, '/ci-scan eval ') ||
+        github.event.comment.body == '/ci-fix eval' || startsWith(github.event.comment.body, '/ci-fix eval ') ||
+        github.event.comment.body == '/ci-feedback eval' || startsWith(github.event.comment.body, '/ci-feedback eval ') ||
+        github.event.comment.body == '/ci-eval' || startsWith(github.event.comment.body, '/ci-eval ')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Download the report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true
+        with:
+          name: ci-workflow-eval-report
+          path: ${{ runner.temp }}/vally
+
+      - name: Post the report
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          GUARD_RUN: ${{ needs.eval.outputs.guard_run }}
+          GUARD_REASON: ${{ needs.eval.outputs.guard_reason }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const marker = '<!-- ci-workflow-eval -->';
+            let body;
+            if (process.env.GUARD_RUN === 'true') {
+              const header = '> [!NOTE]\n> AI/Copilot-generated eval report (Vally), triggered by a maintainer eval command.\n\n';
+              let report = '_eval report unavailable_';
+              try { report = fs.readFileSync(path.join(process.env.RUNNER_TEMP, 'vally', 'report.md'), 'utf8'); } catch {}
+              body = `${marker}\n${header}${report}`;
+            } else {
+              body = `${marker}\n${process.env.GUARD_REASON || '_eval skipped_'}`;
+            }
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

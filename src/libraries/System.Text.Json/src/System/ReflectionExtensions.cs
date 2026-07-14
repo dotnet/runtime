@@ -104,17 +104,59 @@ namespace System.Text.Json.Reflection
 #if NET
             return ctorInfo.Invoke(BindingFlags.DoNotWrapExceptions, null, parameters, null);
 #else
-            object? result = null;
             try
             {
-                result = ctorInfo.Invoke(parameters);
+                return ctorInfo.Invoke(parameters);
             }
-            catch (TargetInvocationException ex)
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
             {
                 ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw; // unreachable
             }
+#endif
+        }
 
-            return result;
+        /// <summary>
+        /// Invokes <paramref name="methodInfo"/> without wrapping any exception thrown by the
+        /// target method in a <see cref="TargetInvocationException"/>. This matches the behavior of
+        /// the Reflection.Emit-based accessor, which emits direct calls into user code.
+        /// </summary>
+        public static object? InvokeNoWrapExceptions(this MethodInfo methodInfo, object? obj, object?[]? parameters)
+        {
+#if NET
+            return methodInfo.Invoke(obj, BindingFlags.DoNotWrapExceptions, binder: null, parameters, culture: null);
+#else
+            try
+            {
+                return methodInfo.Invoke(obj, parameters);
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw; // unreachable
+            }
+#endif
+        }
+
+        /// <summary>
+        /// Invokes <paramref name="constructorInfo"/> without wrapping any exception thrown by the
+        /// constructor in a <see cref="TargetInvocationException"/>. This matches the behavior of
+        /// the Reflection.Emit-based accessor, which emits direct calls into user code.
+        /// </summary>
+        public static object InvokeNoWrapExceptions(this ConstructorInfo constructorInfo, object?[]? parameters)
+        {
+#if NET
+            return constructorInfo.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters, culture: null);
+#else
+            try
+            {
+                return constructorInfo.Invoke(parameters);
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw; // unreachable
+            }
 #endif
         }
 
