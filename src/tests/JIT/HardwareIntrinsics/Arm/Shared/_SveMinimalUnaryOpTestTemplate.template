@@ -89,13 +89,13 @@ namespace {Namespace}
             {
                 int sizeOfinArray1 = inArray1.Length * sizeof({Op1BaseType});
                 int sizeOfoutArray = outArray.Length * sizeof({RetBaseType});
-                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
+                if ((alignment != 64 && alignment != 16 && alignment != 8))
                 {
                     throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}, sizeOfoutArray: {sizeOfoutArray}");
                 }
 
-                this.inArray1 = new byte[alignment * 2];
-                this.outArray = new byte[alignment * 2];
+                this.inArray1 = new byte[alignment + sizeOfinArray1];
+                this.outArray = new byte[alignment + sizeOfoutArray];
 
                 this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
                 this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
@@ -169,6 +169,13 @@ namespace {Namespace}
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)sizeof({RetVectorType}<{RetBaseType}>));
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
+
+            if (LargestVectorSize < Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() ||
+                 LargestVectorSize < Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>())
+            {
+                throw new ArgumentException("Invalid value of alignment");
+            }
+
             _dataTable = new DataTable(_data1, new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
