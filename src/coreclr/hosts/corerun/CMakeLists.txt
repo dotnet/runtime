@@ -13,6 +13,14 @@ endif()
 # Required to expose symbols for global symbol discovery.
 set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
 
+if (CLR_CMAKE_HOST_APPLE)
+    # Prevent exporting symbols from corerun. This is necessary to avoid a problem with
+    # local typeinfo for standard C++ EH types like std::bad_alloc, std::out_of_range etc.
+    # being exposed for binding for external shared libraries and causing mismatch in
+    # catch type matching.
+    add_link_options(LINKER:-no_exported_symbols)
+endif()
+
 add_executable_clr(corerun
   corerun.cpp
   dotenv.cpp
