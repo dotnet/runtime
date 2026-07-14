@@ -983,10 +983,10 @@ public unsafe partial interface IDacDbiInterface
     int GetTargetContextSize(ContextSizeFlags flags, uint* pSize);
 
     [PreserveSig]
-    int WriteRegistersToContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, ulong* values);
+    int WriteRegistersToContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, nuint* values);
 
     [PreserveSig]
-    int ReadRegistersFromContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, ulong* pValues);
+    int ReadRegistersFromContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, nuint* pValues);
 
     [PreserveSig]
     int GetAvailableRegistersMask(Interop.BOOL fActive, Interop.BOOL fQuickUnwind, uint regCount, byte* pAvailable);

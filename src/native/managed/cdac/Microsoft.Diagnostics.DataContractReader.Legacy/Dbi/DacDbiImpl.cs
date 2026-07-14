@@ -5849,7 +5849,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int WriteRegistersToContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, ulong* values)
+    public int WriteRegistersToContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, nuint* values)
     {
         int hr = HResults.S_OK;
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
@@ -5898,7 +5898,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int ReadRegistersFromContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, ulong* pValues)
+    public int ReadRegistersFromContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, nuint* pValues)
     {
         int hr = HResults.S_OK;
         try
@@ -5929,9 +5929,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null)
         {
-            ulong[] valuesLocal = new ulong[nRegs];
+            nuint[] valuesLocal = new nuint[nRegs];
             int hrLocal;
-            fixed (ulong* pValuesLocal = valuesLocal)
+            fixed (nuint* pValuesLocal = valuesLocal)
                 hrLocal = _legacy.ReadRegistersFromContext(ctxBuf, cb, regs, nRegs, pValuesLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
