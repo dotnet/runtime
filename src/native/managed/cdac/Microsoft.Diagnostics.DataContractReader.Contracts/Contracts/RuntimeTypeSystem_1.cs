@@ -32,12 +32,27 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Dictionary<TargetPointer, MethodTable> _methodTables = new();
     private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
     private readonly Dictionary<TypeKey, ITypeHandle> _typeHandles = new();
+    // Interns TargetTypeHandle instances per address so repeated GetTypeHandle calls
+    // (a hot entrypoint for signature decoding, object/type inspection, etc.) don't
+    // allocate a new handle each time.
+    private readonly Dictionary<TargetPointer, TargetTypeHandle> _targetTypeHandles = new();
 
     public void Flush(FlushScope scope)
     {
         _methodTables.Clear();
         _methodDescs.Clear();
         _typeHandles.Clear();
+        _targetTypeHandles.Clear();
+    }
+
+    private TargetTypeHandle GetOrCreateTargetTypeHandle(TargetPointer address)
+    {
+        if (!_targetTypeHandles.TryGetValue(address, out TargetTypeHandle? handle))
+        {
+            handle = new TargetTypeHandle(address);
+            _targetTypeHandles[address] = handle;
+        }
+        return handle;
     }
 
     internal struct MethodTable
@@ -477,14 +492,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         // if we already validated this address, return a handle
         if (_methodTables.ContainsKey(typeHandlePointer))
         {
-            return new TargetTypeHandle(typeHandlePointer);
+            return GetOrCreateTargetTypeHandle(typeHandlePointer);
         }
 
         // Check for a TypeDesc
         if (addressLowBits == TypeHandleBits.TypeDesc)
         {
             // This is a TypeDesc
-            return new TargetTypeHandle(typeHandlePointer);
+            return GetOrCreateTargetTypeHandle(typeHandlePointer);
         }
 
         TargetPointer methodTablePointer = typeHandlePointer;
@@ -495,7 +510,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             // we already cached the data, we must have validated the address, create the representation struct for our use
             MethodTable trustedMethodTable = new MethodTable(methodTableData);
             _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTable);
-            return new TargetTypeHandle(methodTablePointer);
+            return GetOrCreateTargetTypeHandle(methodTablePointer);
         }
 
         // If it's the free object method table, we trust it to be valid
@@ -504,7 +519,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             Data.MethodTable freeObjectMethodTableData = _target.ProcessedData.GetOrAdd<Data.MethodTable>(methodTablePointer);
             MethodTable trustedMethodTable = new MethodTable(freeObjectMethodTableData);
             _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTable);
-            return new TargetTypeHandle(methodTablePointer);
+            return GetOrCreateTargetTypeHandle(methodTablePointer);
         }
 
         // Otherwse, get ready to validate
@@ -516,7 +531,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         Data.MethodTable trustedMethodTableData = _target.ProcessedData.GetOrAdd<Data.MethodTable>(methodTablePointer);
         MethodTable trustedMethodTableF = new MethodTable(trustedMethodTableData);
         _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTableF);
-        return new TargetTypeHandle(methodTablePointer);
+        return GetOrCreateTargetTypeHandle(methodTablePointer);
     }
     public TargetPointer GetModule(ITypeHandle typeHandle)
     {
