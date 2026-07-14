@@ -42,11 +42,6 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Stdcall(CALLBACKPROC
     return pCallbackProc(m, n, o);
 }
 
-extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Stdcall(CALLBACKPROC_STDCALL pCallbackProc, int m, int n, int o)
-{
-    return pCallbackProc(m, n, o);
-}
-
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Cdecl(CALLBACKPROC_CDECL pCallbackProc, int m, int n, int o)
 {
     return pCallbackProc(m, n, o);

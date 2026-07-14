@@ -90,7 +90,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
 
     private static int MixSum(int m, int n, int o)
     {
-         return (2 * m) + (3 * n) + (5 * o);
+        return (2 * m) + (3 * n) + (5 * o);
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
