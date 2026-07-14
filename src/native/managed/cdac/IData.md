@@ -145,9 +145,11 @@ instance is created, not lazily.
 Because reads are deferred, constructing an instance no longer proves the
 whole structure is readable. Every generated type with instance members
 implements `IReadableData.EnsureAllFieldsRead()`, which touches every
-field to force a full eager read. A caller that needs to validate
-readability up front can invoke it inside a
-`try`/`catch (VirtualReadException)`:
+field to force a full eager read. Materializing a field can throw either
+lazy-read exception: `InvalidOperationException` if a required field is
+missing from the descriptor, or `VirtualReadException` if the field's
+target memory cannot be read. A caller catches whichever it cares about --
+for example, to validate that the target memory is readable:
 
 ```csharp
 T data = target.ProcessedData.GetOrAdd<T>(address);
@@ -163,7 +165,10 @@ catch (VirtualReadException)
 ```
 
 This is how `RuntimeTypeSystem` validation confirms a candidate
-`MethodTable` / `EEClass` is fully readable before trusting it.
+`MethodTable` / `EEClass` is fully readable before trusting it. Its
+descriptor fields are always present, so only `VirtualReadException` is
+relevant there; a caller that also needs to tolerate a missing descriptor
+field would additionally catch `InvalidOperationException`.
 
 ## Attribute surface
 
