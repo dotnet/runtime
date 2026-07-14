@@ -4593,7 +4593,7 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
                 if (BitVecOps::IsMember(&traits, visitedBlocks, a->m_block->bbID))
                 {
                     JITDUMP("Allowing alloc temp V%02u %s in " FMT_BB " not dominated by %s " FMT_BB
-                            " because it lies between alloc and def\n",
+                            " because it lies in the cloned fast path region\n",
                             a->m_lclNum, a->m_isDef ? "def" : "use", a->m_block->bbNum, domCheckBlockName,
                             domCheckBlock->bbNum);
                     continue;
