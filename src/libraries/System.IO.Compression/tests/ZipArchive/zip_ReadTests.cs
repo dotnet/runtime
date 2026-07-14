@@ -1055,23 +1055,21 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
         [PlatformSpecific(TestPlatforms.Browser)]
-        public async Task DecryptZipCryptoEntry_ThrowsPlatformNotSupported(bool async)
+        public async Task DecryptZipCryptoEntry_Browser(bool async)
         {
+            const string Password = "S3cur3P@ssw0rd";
             using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtected_MixedEncryptions.zip"));
             ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
 
-            try
-            {
-                ZipArchiveEntry entry = archive.GetEntry("hello.txt");
-                Assert.NotNull(entry);
-                Assert.Equal(ZipEncryptionMethod.ZipCrypto, entry.EncryptionMethod);
+            ZipArchiveEntry entry = archive.GetEntry("hello.txt");
+            Assert.NotNull(entry);
+            Assert.Equal(ZipEncryptionMethod.ZipCrypto, entry.EncryptionMethod);
 
-                await Assert.ThrowsAsync<PlatformNotSupportedException>(() => OpenEntryStream(async, entry, "S3cur3P@ssw0rd"));
-            }
-            finally
-            {
-                await DisposeZipArchive(async, archive);
-            }
+            using Stream entryStream = await OpenEntryStream(async, entry, Password);
+            using StreamReader reader = new(entryStream);
+            Assert.Equal("Hello", reader.ReadToEnd().TrimEnd());
+
+            await DisposeZipArchive(async, archive);
         }
 
         [Theory]

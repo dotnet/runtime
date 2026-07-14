@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -138,7 +137,7 @@ namespace System.IO.Compression
             }
             finally
             {
-                CryptographicOperations.ZeroMemory(passwordBytes);
+                Array.Clear(passwordBytes);
                 ArrayPool<byte>.Shared.Return(passwordBytes);
             }
 
@@ -150,7 +149,9 @@ namespace System.IO.Compression
             Debug.Assert(header.Length == 12);
 
             // bytes 0..9 random
-            RandomNumberGenerator.Fill(header.Slice(0, 10));
+            Span<byte> randomBytes = stackalloc byte[16];
+            Guid.NewGuid().TryWriteBytes(randomBytes);
+            randomBytes.Slice(0, 10).CopyTo(header);
 
             // bytes 10..11 verifier
             if (_crc32ForHeader.HasValue)
