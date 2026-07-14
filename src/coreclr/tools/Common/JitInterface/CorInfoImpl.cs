@@ -1556,18 +1556,21 @@ namespace Internal.JitInterface
 
             if (requiresInstMethodDescArg)
             {
+#if READYTORUN
                 if (unboxingStub)
                 {
-                    // Bail out for now. We need an unboxing stub that points to an instantiated method.
+                    // We need an unboxing stub that points to an instantiated method but this is not happening in R2R.
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                     return false;
                 }
-#if READYTORUN
+
                 MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
                 info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
-
 #else
-                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(originalImpl));
+                // We could produce a method generic dictionary constant lookup for originalImpl,
+                // but due to IL scanner limitations, we cannot devirtualize shared generic virtual methods right now.
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
 #endif
             }
             else if (requiresInstMethodTableArg)
@@ -1576,7 +1579,6 @@ namespace Internal.JitInterface
                 {
 #if READYTORUN
                     info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
-
 #else
                     info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
 #endif
