@@ -111,13 +111,13 @@ jobs:
                 --header "Authorization: Bearer $token" \
                 --header "Accept: application/vnd.github+json" \
                 --output "$response" \
-                https://api.github.com/repos/dotnet/runtime); then
+                https://api.github.com/user); then
                 status=000
               fi
-              if [ "$status" = 200 ] && jq -e '.permissions.push == true' "$response" > /dev/null; then
+              if [ "$status" = 200 ]; then
                 PAT_NUMBERS+=("${i}")
               else
-                echo "::warning::Ignoring COPILOT_PAT_${i}: authentication or repository write check failed (HTTP ${status})."
+                echo "::warning::Ignoring COPILOT_PAT_${i}: authentication check failed (HTTP ${status})."
               fi
               rm -f "$response"
             fi
@@ -129,15 +129,14 @@ jobs:
                 --header "Authorization: Bearer $COPILOT_GITHUB_TOKEN" \
                 --header "Accept: application/vnd.github+json" \
                 --output "$response" \
-                https://api.github.com/repos/dotnet/runtime) &&
-              [ "$status" = 200 ] &&
-              jq -e '.permissions.push == true' "$response" > /dev/null; then
+                https://api.github.com/user) &&
+              [ "$status" = 200 ]; then
               echo "::notice::No valid PAT pool entries found — using COPILOT_GITHUB_TOKEN."
               rm -f "$response"
               exit 0
             fi
             rm -f "$response"
-            echo "::error::No writable Copilot token is available."
+            echo "::error::No valid Copilot token is available."
             exit 1
           fi
           PAT_INDEX=$(( RANDOM % ${#PAT_NUMBERS[@]} ))
