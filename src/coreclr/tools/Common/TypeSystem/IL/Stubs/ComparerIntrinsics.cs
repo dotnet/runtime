@@ -575,7 +575,7 @@ namespace Internal.IL.Stubs
         private static bool IsNestedFieldwiseEquatable(MethodDesc callee, TypeDesc fieldType)
         {
             // The nested field must be compared through the nested type's own IEquatable<F>.Equals, and
-            // that Equals must itself be field-wise. Its layout is validated by CanCompareValueTypeBits.
+            // that Equals must itself be field-wise (its layout is validated by IsIEquatableEqualsFieldwise).
             if (callee == null || fieldType is not MetadataType nestedType || !nestedType.IsValueType)
                 return false;
 

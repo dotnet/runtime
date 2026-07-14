@@ -7311,7 +7311,7 @@ namespace
     mdToken ReadILToken(const BYTE* pIL)
     {
         LIMITED_METHOD_CONTRACT;
-        return (mdToken)(pIL[0] | (pIL[1] << 8) | (pIL[2] << 16) | (pIL[3] << 24));
+        return (mdToken)((uint32_t)pIL[0] | ((uint32_t)pIL[1] << 8) | ((uint32_t)pIL[2] << 16) | ((uint32_t)pIL[3] << 24));
     }
 
     // Resolves an in-module FieldDef token. Returns NULL for anything else (e.g. a MemberRef,
