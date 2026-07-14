@@ -21,9 +21,9 @@
        for WBT, and debugger tests -->
   <Import Project="$(MSBuildThisFileDirectory)wasi-provisioning.targets" />
 
-  <!-- CoreCLR-WASI: the runtime pack ships a prebuilt corerun host (see
-       WasiApp.CoreCLR.targets). Default to invariant globalization for bring-up,
-       matching the CoreCLR-WASI runtime tests. -->
+  <!-- CoreCLR-WASI: WasiApp.CoreCLR.targets relinks the corerun host per-app (so
+       library/test reverse P/Invoke thunks are covered). Default to invariant
+       globalization for bring-up, matching the CoreCLR-WASI runtime tests. -->
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
   </PropertyGroup>
@@ -31,10 +31,10 @@
   <PropertyGroup>
     <_AppArgs Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_AppArgs>
     <!-- Mono launches dotnet.wasm with the entry assembly name; CoreCLR launches the
-         prebuilt corerun host with the managed entry assembly (.dll). corerun resolves
-         the entry assembly relative to its own directory and finds the runtime via
-         CORE_ROOT, so it is bundled into managed/ alongside the framework (see
-         WasiApp.CoreCLR.targets). Validated locally against the wasi-wasm runtime pack. -->
+         per-app relinked corerun host with the managed entry assembly (.dll). corerun is
+         relinked into managed/ alongside the framework and finds the runtime via CORE_ROOT
+         (see WasiApp.CoreCLR.targets). Validated locally: discovers + runs the full
+         System.Runtime.Tests suite under wasmtime. -->
     <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true' and '$(RuntimeFlavor)' != 'CoreCLR'">dotnet.wasm WasmTestRunner</_AppArgs>
     <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">managed/corerun managed/WasmTestRunner.dll</_AppArgs>
 

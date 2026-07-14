@@ -18,12 +18,12 @@ jobs:
 # with the WasmTestOnWasmtime scenario and the wasi_wasm helix queue.
 # See https://github.com/dotnet/runtime/issues/130129.
 #
-# Bring-up leg: smoke-only and non-gating (rolling alwaysRun). It stays red until the
-# per-app native relink lands (so a test's own [UnmanagedCallersOnly] reverse thunks are
-# generated + linked into corerun); see https://github.com/dotnet/runtime/issues/130129.
-# With the relink + the nested-type thunk-key fix (dotnet/runtime#130739), the interpreter
-# runs the suite. #130634 (cold portable-entry-point publication) only affects a future
-# R2R-enabled leg, not this pure-interpreter smoke.
+# Bring-up leg: smoke-only and non-gating (rolling alwaysRun). WasiApp.CoreCLR.targets
+# performs a per-app native relink so a test's own [UnmanagedCallersOnly] reverse thunks
+# are generated + linked into corerun; with that relink + the nested-type thunk-key fix
+# (dotnet/runtime#130739) the interpreter discovers and runs the suite (validated locally:
+# 9930 System.Runtime.Tests cases). #130634 (cold portable-entry-point publication) only
+# affects a future R2R-enabled leg, not this pure-interpreter smoke.
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
