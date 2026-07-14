@@ -25,7 +25,13 @@ namespace Wasm.Build.NativeRebuild.Tests
         [MemberData(nameof(NativeBuildData))]
         public async Task ReferenceNewAssembly(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_tasks");     
+            // Reference a dedicated first-party library that the default app does not use, so it is
+            // trimmed away on the first build and only enters the AOT module set once the swapped
+            // entry point references it. Relying on a specific BCL assembly being absent from the
+            // closure is fragile (it has silently regressed as the base app's dependencies grew).
+            string extraItems = @"<ProjectReference Include=""..\Library\Library.csproj"" />";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_tasks", extraItems: extraItems);
+            ReplaceFile(Path.Combine("..", "Library", "Library.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "NativeRebuildReferencedLibrary.cs"));
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, nativeRelink, invariant);
 
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);

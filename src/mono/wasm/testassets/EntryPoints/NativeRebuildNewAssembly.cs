@@ -1,17 +1,10 @@
-using System;
-using System.Security.Cryptography;
-using System.Text;
+// Reference a dedicated first-party library ("Library") that is not part of
+// the WasmBasicTestApp's default assembly closure. This guarantees the rebuild
+// pulls in a genuinely new AOT module, regardless of which BCL assemblies the
+// base app happens to root.
+using NativeRebuildReferencedLibrary;
+
 public class Test
 {
-    public static int Main()
-    {
-        string input = "Hello, world!";
-        using (SHA256 sha256 = SHA256.Create())
-        {
-            byte[] inputBytes = Encoding.UTF8.GetBytes(input);
-            byte[] hashBytes = sha256.ComputeHash(inputBytes);
-            Console.WriteLine($"Hash of {input}: {Convert.ToBase64String(hashBytes)}");
-        }
-        return 42;
-    }
+    public static int Main() => NewlyReferencedType.GetValue();
 }
