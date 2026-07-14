@@ -1017,6 +1017,29 @@ bool GenTree::NeedsConsecutiveRegisters() const
 }
 #endif
 
+#ifdef TARGET_WASM
+//-----------------------------------------------------------------------------------
+// GetImmOp: Get the single immediate operand of this hardware intrinsic node.
+//
+// Return Value:
+//     The immediate operand.
+//
+// Notes:
+//     Wasm SIMD intrinsics have at most one immediate operand.
+//
+GenTree* GenTreeHWIntrinsic::GetImmOp() const
+{
+    int imm1Pos = -1;
+    int imm2Pos = -1;
+    HWIntrinsicInfo::GetImmOpsPositions(GetHWIntrinsicId(), &imm1Pos, &imm2Pos);
+
+    // We only expect one immediate operand for Wasm SIMD
+    assert(imm1Pos >= 0 && imm2Pos < 0);
+
+    return Op(imm1Pos);
+}
+#endif // TARGET_WASM
+
 #if HAS_FIXED_REGISTER_SET
 //---------------------------------------------------------------
 // gtGetContainedRegMask: Get the reg mask of the node including
