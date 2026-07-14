@@ -7,9 +7,25 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: >-
+    ${{
+      github.repository == 'dotnet/runtime' &&
+      github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER","MEMBER"]'), github.event.comment.author_association) &&
+      (
+        github.event.comment.body == '/ci-scan eval' || startsWith(github.event.comment.body, '/ci-scan eval ') ||
+        github.event.comment.body == '/ci-fix eval' || startsWith(github.event.comment.body, '/ci-fix eval ') ||
+        github.event.comment.body == '/ci-feedback eval' || startsWith(github.event.comment.body, '/ci-feedback eval ') ||
+        github.event.comment.body == '/ci-eval' || startsWith(github.event.comment.body, '/ci-eval ')
+      ) &&
+      format('ci-workflow-eval-{0}', github.event.issue.number) ||
+      format('ci-workflow-eval-ignored-{0}', github.run_id)
+    }}
+  cancel-in-progress: true
+
 jobs:
   acknowledge:
-    needs: pat_pool
     if: >-
       github.repository == 'dotnet/runtime' &&
       github.event.issue.pull_request &&
@@ -21,10 +37,9 @@ jobs:
         github.event.comment.body == '/ci-eval' || startsWith(github.event.comment.body, '/ci-eval ')
       )
     runs-on: ubuntu-latest
-    environment: copilot-pat-pool
     permissions:
       issues: write
-      pull-requests: read
+      pull-requests: write
       statuses: write
     steps:
       - name: Set pending status
@@ -45,21 +60,6 @@ jobs:
       - name: Acknowledge the command
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
-          github-token: >-
-            ${{
-              case(
-                needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0,
-                needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1,
-                needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2,
-                needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3,
-                needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4,
-                needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5,
-                needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6,
-                needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7,
-                needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8,
-                needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9,
-                secrets.COPILOT_GITHUB_TOKEN)
-            }}
           script: |
             const { owner, repo } = context.repo;
             await github.rest.reactions.createForIssueComment({
@@ -99,12 +99,16 @@ jobs:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
         run: |
           PAT_NUMBERS=()
-          for i in $(seq 0 9); do
-            var="COPILOT_PAT_${i}"
-            if [ -n "${!var}" ]; then
+          PAT_VALUES=(
+            "$COPILOT_PAT_0" "$COPILOT_PAT_1" "$COPILOT_PAT_2" "$COPILOT_PAT_3" "$COPILOT_PAT_4"
+            "$COPILOT_PAT_5" "$COPILOT_PAT_6" "$COPILOT_PAT_7" "$COPILOT_PAT_8" "$COPILOT_PAT_9"
+          )
+          for i in {0..9}; do
+            token="${PAT_VALUES[$i]}"
+            if [ -n "$token" ]; then
               response="$RUNNER_TEMP/copilot-pat-${i}.json"
               if ! status=$(curl --silent --write-out '%{http_code}' \
-                --header "Authorization: Bearer ${!var}" \
+                --header "Authorization: Bearer $token" \
                 --header "Accept: application/vnd.github+json" \
                 --output "$response" \
                 https://api.github.com/repos/dotnet/runtime); then
@@ -156,9 +160,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: copilot-pat-pool
     timeout-minutes: 120
-    concurrency:
-      group: ci-workflow-eval-${{ github.event.issue.number }}
-      cancel-in-progress: true
     permissions:
       contents: read
       issues: read
@@ -351,10 +352,9 @@ jobs:
         github.event.comment.body == '/ci-eval' || startsWith(github.event.comment.body, '/ci-eval ')
       )
     runs-on: ubuntu-latest
-    environment: copilot-pat-pool
     permissions:
       issues: write
-      pull-requests: read
+      pull-requests: write
       statuses: write
     steps:
       - name: Download the report
@@ -370,21 +370,6 @@ jobs:
           GUARD_RUN: ${{ needs.eval.outputs.guard_run }}
           GUARD_REASON: ${{ needs.eval.outputs.guard_reason }}
         with:
-          github-token: >-
-            ${{
-              case(
-                needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0,
-                needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1,
-                needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2,
-                needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3,
-                needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4,
-                needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5,
-                needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6,
-                needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7,
-                needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8,
-                needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9,
-                secrets.COPILOT_GITHUB_TOKEN)
-            }}
           script: |
             const fs = require('fs');
             const path = require('path');
@@ -433,6 +418,13 @@ jobs:
             const { owner, repo } = context.repo;
             const evalResult = process.env.EVAL_RESULT;
             const authenticationFailed = report.includes('Authentication failed');
+            let headSha = process.env.HEAD_SHA;
+            if (!headSha) {
+              const { data: pr } = await github.rest.pulls.get({
+                owner, repo, pull_number: context.issue.number,
+              });
+              headSha = pr.head.sha;
+            }
             const passed = process.env.GUARD_RUN === 'true' &&
               evalResult === 'success' &&
               !report.includes('❌ failed') &&
@@ -442,7 +434,7 @@ jobs:
               !authenticationFailed &&
               !reportUnavailable;
             await github.rest.repos.createCommitStatus({
-              owner, repo, sha: process.env.HEAD_SHA,
+              owner, repo, sha: headSha,
               state: passed ? 'success' : failed ? 'failure' : 'error',
               context: 'ci-workflow-eval',
               target_url: `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
