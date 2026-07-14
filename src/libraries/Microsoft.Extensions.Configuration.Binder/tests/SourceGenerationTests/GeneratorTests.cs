@@ -336,6 +336,73 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(emittedAssemblyImage);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("IReadOnlyList")]
+        [InlineData("IReadOnlyCollection")]
+        [InlineData("IReadOnlySet")]
+        [InlineData("IEnumerable")]
+        public async Task ReadOnlyCollectionConstructorParameterIsBindable(string collectionType)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        Options options = config.Get<Options>();
+                    }
+                }
+
+                public record Options(string Name, {{collectionType}}<string> Values);
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // Ensure the generated code can be compiled. The collection type is only reachable through a
+            // read-only property, so its BindCore helper must still be generated for the constructor parameter.
+            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
+            Assert.NotNull(emittedAssemblyImage);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task ComplexReadOnlyListConstructorParameterIsBindable()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        Options options = config.Get<Options>();
+                    }
+                }
+
+                public class Child
+                {
+                    public string Value { get; set; }
+                }
+
+                public record Options(string Name, IReadOnlyList<Child> Items);
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
+            Assert.NotNull(emittedAssemblyImage);
+        }
+
         [Fact]
         public async Task BindingToCollectionOnlyTest()
         {

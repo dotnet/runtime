@@ -173,7 +173,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 {
                                     foreach (PropertySpec property in objectSpec.Properties!)
                                     {
-                                        if (!_typeIndex.ShouldBindTo(property))
+                                        // Skip types reachable only through non-bindable properties, unless the
+                                        // property backs a constructor parameter. Constructor parameters are always
+                                        // bound in the Initialize method, so their types must still be registered.
+                                        if (!_typeIndex.ShouldBindTo(property) && property.MatchingCtorParam is null)
                                         {
                                             continue;
                                         }
