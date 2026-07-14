@@ -163,7 +163,7 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
 
     auto GetIntCmpOpName = [&](const char* suffix) -> const char* {
         static const char* const intCmpOpNames[] = {
-            "eq", "lt", "le", "neq", "false", "ge", "gt", "true",
+            "eq", "lt", "le", "false", "neq", "ge", "gt", "true",
         };
 
         uint8_t control = static_cast<uint8_t>(emit->emitGetInsSC(id));
