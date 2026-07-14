@@ -163,6 +163,8 @@
       <_ApplePropertyNames Include="UseRuntimeComponents" />
       <_ApplePropertyNames Include="_NetCoreAppToolCurrent" />
       <_ApplePropertyNames Include="DynamicCodeSupport" />
+      <_ApplePropertyNames Include="EventSourceSupport" />
+      <_ApplePropertyNames Include="_SuppressNativeLibEventSourceWarning" />
 
       <!-- Globalization properties -->
       <_ApplePropertyNames Include="HybridGlobalization" />

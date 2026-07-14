@@ -14,7 +14,6 @@ namespace System.Net.Primitives.Functional.Tests
     {
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50571", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91762", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsAppleMobile))]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(IPAddress).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
