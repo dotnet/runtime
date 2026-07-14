@@ -93,5 +93,5 @@ steps:
     displayName: Publish SuperPMI logs
     inputs:
       targetPath: ${{ parameters.SpmiLogsLocation }}
-      artifactName: 'SuperPMI_Logs_${{ parameters.SuperPmiCollectionName }}_${{ parameters.SuperPmiCollectionType }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      artifactName: 'SuperPMI_Logs_${{ parameters.SuperPmiCollectionName }}_${{ parameters.SuperPmiCollectionType }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_Attempt$(System.JobAttempt)'
     condition: always()
