@@ -84,7 +84,11 @@ namespace System.IO
             }
         }
 
-        private ThrowOnReadsScope GuardAgainstReads()
+        [DoesNotReturn]
+        private static void ThrowAsyncIOInProgress() =>
+            throw new InvalidOperationException(SR.InvalidOperation_AsyncIOInProgress);
+
+        private ThrowOnReadsScope GuardAgainstOtherReads()
         {
             return new ThrowOnReadsScope(this);
         }
@@ -95,16 +99,12 @@ namespace System.IO
 
             public ThrowOnReadsScope(StreamReader reader)
             {
+                reader._asyncIOInProgress = true;
                 _reader = reader;
-                _reader._asyncIOInProgress = true;
             }
 
             public void Dispose() => _reader._asyncIOInProgress = false;
         }
-
-        [DoesNotReturn]
-        private static void ThrowAsyncIOInProgress() =>
-            throw new InvalidOperationException(SR.InvalidOperation_AsyncIOInProgress);
 
         // StreamReader by default will ignore illegal UTF8 characters. We don't want to
         // throw here because we want to be able to read ill-formed data without choking.
@@ -921,7 +921,7 @@ namespace System.IO
 
         private async Task<string?> ReadLineAsyncInternal(CancellationToken cancellationToken)
         {
-            using ThrowOnReadsScope _ = GuardAgainstReads();
+            using ThrowOnReadsScope _ = GuardAgainstOtherReads();
 
             if (_charPos == _charLen && (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) == 0)
             {
@@ -1048,7 +1048,7 @@ namespace System.IO
 
         private async Task<string> ReadToEndAsyncInternal(CancellationToken cancellationToken)
         {
-            using ThrowOnReadsScope _ = GuardAgainstReads();
+            using ThrowOnReadsScope _ = GuardAgainstOtherReads();
 
             // Call ReadBuffer, then pull data out of charBuffer.
             StringBuilder sb = new StringBuilder(_charLen - _charPos);
@@ -1087,6 +1087,12 @@ namespace System.IO
             CheckAsyncTaskInProgress();
 
             return ReadAsyncInternalWithGuard(new Memory<char>(buffer, index, count), CancellationToken.None);
+
+            async Task<int> ReadAsyncInternalWithGuard(Memory<char> buffer, CancellationToken cancellationToken)
+            {
+                using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+                return await ReadAsyncInternal(buffer, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default)
@@ -1106,12 +1112,6 @@ namespace System.IO
             }
 
             return ReadAsyncInternal(buffer, cancellationToken);
-        }
-
-        private async Task<int> ReadAsyncInternalWithGuard(Memory<char> buffer, CancellationToken cancellationToken)
-        {
-            using ThrowOnReadsScope _ = GuardAgainstReads();
-            return await ReadAsyncInternal(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         internal override async ValueTask<int> ReadAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken)
@@ -1301,12 +1301,12 @@ namespace System.IO
             CheckAsyncTaskInProgress();
 
             return ReadBlockAsyncWithGuard(buffer, index, count);
-        }
 
-        private async Task<int> ReadBlockAsyncWithGuard(char[] buffer, int index, int count)
-        {
-            using ThrowOnReadsScope _ = GuardAgainstReads();
-            return await base.ReadBlockAsync(buffer, index, count).ConfigureAwait(false);
+            async Task<int> ReadBlockAsyncWithGuard(char[] buffer, int index, int count)
+            {
+                using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+                return await base.ReadBlockAsync(buffer, index, count).ConfigureAwait(false);
+            }
         }
 
         public override ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default)
@@ -1327,12 +1327,12 @@ namespace System.IO
             }
 
             return ReadBlockAsyncInternalWithGuard(buffer, cancellationToken);
-        }
 
-        private async ValueTask<int> ReadBlockAsyncInternalWithGuard(Memory<char> buffer, CancellationToken token)
-        {
-            using ThrowOnReadsScope _ = GuardAgainstReads();
-            return await ReadBlockAsyncInternal(buffer, token).ConfigureAwait(false);
+            async ValueTask<int> ReadBlockAsyncInternalWithGuard(Memory<char> buffer, CancellationToken token)
+            {
+                using ThrowOnReadsScope _ = GuardAgainstOtherReads();
+                return await ReadBlockAsyncInternal(buffer, token).ConfigureAwait(false);
+            }
         }
 
         private async ValueTask<int> ReadBufferAsync(CancellationToken cancellationToken)
