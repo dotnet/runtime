@@ -70,9 +70,15 @@ namespace System.Net
                 return false;
             }
 
-            // The path on the server may be case-sensitive, so compare the path portion of the
-            // prefix case-sensitively (scheme, host, and port are already matched above).
-            return uri.AbsolutePath.AsSpan(0, UriPrefixLength).Equals(uriPrefix.AbsolutePath.AsSpan(0, UriPrefixLength), StringComparison.Ordinal);
+            // Compare the path prefix including the trailing '/' delimiter (UriPrefixLength points at
+            // the last '/' in the prefix path). Including that delimiter ensures the prefix only matches
+            // at a path-segment boundary, so a prefix such as "/admin/" does not incorrectly match a
+            // sibling path like "/administrator/...".
+            //
+            // The path on the server may be case-sensitive, so the path portion is compared
+            // case-sensitively (scheme, host, and port are already matched above).
+            int compareLength = UriPrefixLength + 1;
+            return uri.AbsolutePath.AsSpan(0, compareLength).Equals(uriPrefix.AbsolutePath.AsSpan(0, compareLength), StringComparison.Ordinal);
         }
 
         public override int GetHashCode() =>
