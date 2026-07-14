@@ -887,7 +887,20 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, T_UINT32, NumImportSections, cdac_data<ReadyToRu
 CDAC_TYPE_FIELD(ReadyToRunInfo, TYPE(HashMap), EntryPointToMethodDescMap, cdac_data<ReadyToRunInfo>::EntryPointToMethodDescMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, LoadedImageBase, cdac_data<ReadyToRunInfo>::LoadedImageBase)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, Composite, cdac_data<ReadyToRunInfo>::Composite)
+#ifdef TARGET_WASM
+CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, MinVirtualIP, cdac_data<ReadyToRunInfo>::MinVirtualIP)
+#endif // TARGET_WASM
 CDAC_TYPE_END(ReadyToRunInfo)
+
+#ifdef TARGET_WASM
+CDAC_TYPE_BEGIN(FunctionTableIndexRangeSection)
+CDAC_TYPE_INDETERMINATE(FunctionTableIndexRangeSection)
+CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_UINT32, MinFunctionTableIndex, cdac_data<FunctionTableIndexRangeSection>::MinFunctionTableIndex)
+CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_UINT32, NumRuntimeFunctions, cdac_data<FunctionTableIndexRangeSection>::NumRuntimeFunctions)
+CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_POINTER, R2RModule, cdac_data<FunctionTableIndexRangeSection>::R2RModule)
+CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_POINTER, Next, cdac_data<FunctionTableIndexRangeSection>::Next)
+CDAC_TYPE_END(FunctionTableIndexRangeSection)
+#endif // TARGET_WASM
 
 CDAC_TYPE_BEGIN(ReadyToRunHeader)
 CDAC_TYPE_INDETERMINATE(ReadyToRunHeader)
@@ -1716,6 +1729,9 @@ CDAC_GLOBAL(StressLogEnabled, T_UINT8, 0)
 #endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerAddress)
+#ifdef TARGET_WASM
+CDAC_GLOBAL_POINTER(FunctionTableIndexRangeList, cdac_data<ExecutionManager>::FunctionTableIndexRangeListAddress)
+#endif // TARGET_WASM
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 #ifdef PROFILING_SUPPORTED
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)

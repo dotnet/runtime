@@ -2728,7 +2728,21 @@ struct cdac_data<ExecutionManager>
 {
     static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
     static constexpr PTR_EEJitManager* EEJitManagerAddress = &ExecutionManager::m_pEEJitManager;
+#ifdef TARGET_WASM
+    static constexpr FunctionTableIndexRangeSection** FunctionTableIndexRangeListAddress = &ExecutionManager::s_pFunctionTableIndexRangeList;
+#endif // TARGET_WASM
 };
+
+#ifdef TARGET_WASM
+template<>
+struct cdac_data<FunctionTableIndexRangeSection>
+{
+    static constexpr size_t MinFunctionTableIndex = offsetof(FunctionTableIndexRangeSection, minFunctionTableIndex);
+    static constexpr size_t NumRuntimeFunctions = offsetof(FunctionTableIndexRangeSection, numRuntimeFunctions);
+    static constexpr size_t R2RModule = offsetof(FunctionTableIndexRangeSection, pR2RModule);
+    static constexpr size_t Next = offsetof(FunctionTableIndexRangeSection, pNext);
+};
+#endif // TARGET_WASM
 #endif
 
 inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)
