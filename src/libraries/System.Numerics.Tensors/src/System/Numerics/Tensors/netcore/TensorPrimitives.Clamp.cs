@@ -205,9 +205,11 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
 
-            // Follows the same behavior as Vector128/256/512.Clamp, which do not validate that min <= max
-            // and instead compute Min(Max(x, min), max) (matching HLSL) when the bounds are unordered.
-            public static T Invoke(T x, T min, T max) => T.Min(T.Max(x, min), max);
+            // When T is vector accelerated, the scalar remainder must match the vectorized Vector128/256/512.Clamp
+            // path, which follows HLSL and computes Min(Max(x, min), max) without validating that min <= max. When T
+            // is not vector accelerated, every element flows through this scalar path, so we defer to T.Clamp, which
+            // throws when min > max.
+            public static T Invoke(T x, T min, T max) => Vector128<T>.IsSupported ? T.Min(T.Max(x, min), max) : T.Clamp(x, min, max);
 
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> min, Vector128<T> max) => Vector128.Clamp(x, min, max);
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> min, Vector256<T> max) => Vector256.Clamp(x, min, max);
@@ -220,7 +222,7 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
 
-            public static T Invoke(T min, T max, T x) => T.Min(T.Max(x, min), max);
+            public static T Invoke(T min, T max, T x) => Vector128<T>.IsSupported ? T.Min(T.Max(x, min), max) : T.Clamp(x, min, max);
 
             public static Vector128<T> Invoke(Vector128<T> min, Vector128<T> max, Vector128<T> x) => Vector128.Clamp(x, min, max);
             public static Vector256<T> Invoke(Vector256<T> min, Vector256<T> max, Vector256<T> x) => Vector256.Clamp(x, min, max);
@@ -233,7 +235,7 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
 
-            public static T Invoke(T max, T x, T min) => T.Min(T.Max(x, min), max);
+            public static T Invoke(T max, T x, T min) => Vector128<T>.IsSupported ? T.Min(T.Max(x, min), max) : T.Clamp(x, min, max);
 
             public static Vector128<T> Invoke(Vector128<T> max, Vector128<T> x, Vector128<T> min) => Vector128.Clamp(x, min, max);
             public static Vector256<T> Invoke(Vector256<T> max, Vector256<T> x, Vector256<T> min) => Vector256.Clamp(x, min, max);
