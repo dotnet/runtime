@@ -127,43 +127,40 @@ internal readonly struct CdacTypeHandle : ITypeHandle
         if (_typeHandle.IsNull)
             return;
 
-        // Read the runtime-cached classification from EEClassOptionalFields;
-        // mirrors SystemVRegDescriptorFromSystemVEightByteRegistersInfo in
-        // jitinterface.cpp. Field only populated on UNIX_AMD64_ABI builds.
-        TargetPointer eeClassPtr = Rts.GetClassPointer(_typeHandle);
-        if (eeClassPtr == TargetPointer.Null)
-            return;
-
-        Data.EEClass eeClass = _target.ProcessedData.GetOrAdd<Data.EEClass>(eeClassPtr);
-        if (eeClass.OptionalFields == TargetPointer.Null)
-            return;
-
-        Data.EEClassOptionalFields optFields = _target.ProcessedData.GetOrAdd<Data.EEClassOptionalFields>(eeClass.OptionalFields);
-        if (optFields.EightByteRegistersInfo is not Data.SystemVEightByteRegistersInfo info)
-            return;
-
-        if (info.NumEightBytes == 0)
-            return;
-
-        // Runtime contract: at most CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS (2)
-        // eightbytes. Treat a corrupted / out-of-range count as "not passed in
-        // registers" so downstream loops keyed off eightByteCount can't overrun.
-        if (info.NumEightBytes > 2)
+        // Read the runtime-cached classification from the type system; mirrors
+        // SystemVRegDescriptorFromSystemVEightByteRegistersInfo in jitinterface.cpp.
+        // Only populated on UNIX_AMD64_ABI builds.
+        if (!Rts.TryGetSystemVAmd64EightByteClassification(_typeHandle, out SystemVAmd64EightByteClassification info))
             return;
 
         descriptor.passedInRegisters = true;
-        descriptor.eightByteCount = info.NumEightBytes;
-        descriptor.eightByteClassifications0 = (SystemVClassificationType)info.EightByteClassification0;
-        descriptor.eightByteSizes0 = info.EightByteSize0;
+        descriptor.eightByteCount = 1;
+        descriptor.eightByteClassifications0 = ToSystemVClassificationType(info.First.Classification);
+        descriptor.eightByteSizes0 = info.First.Size;
         descriptor.eightByteOffsets0 = 0;
 
-        if (info.NumEightBytes > 1)
+        if (info.Second is SystemVAmd64EightByte second)
         {
-            descriptor.eightByteClassifications1 = (SystemVClassificationType)info.EightByteClassification1;
-            descriptor.eightByteSizes1 = info.EightByteSize1;
+            descriptor.eightByteCount = 2;
+            descriptor.eightByteClassifications1 = ToSystemVClassificationType(second.Classification);
+            descriptor.eightByteSizes1 = second.Size;
             descriptor.eightByteOffsets1 = SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR.SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
         }
     }
+
+    private static SystemVClassificationType ToSystemVClassificationType(SystemVAmd64Classification classification)
+        => classification switch
+        {
+            SystemVAmd64Classification.Unknown => SystemVClassificationType.SystemVClassificationTypeUnknown,
+            SystemVAmd64Classification.Struct => SystemVClassificationType.SystemVClassificationTypeStruct,
+            SystemVAmd64Classification.NoClass => SystemVClassificationType.SystemVClassificationTypeNoClass,
+            SystemVAmd64Classification.Memory => SystemVClassificationType.SystemVClassificationTypeMemory,
+            SystemVAmd64Classification.Integer => SystemVClassificationType.SystemVClassificationTypeInteger,
+            SystemVAmd64Classification.IntegerReference => SystemVClassificationType.SystemVClassificationTypeIntegerReference,
+            SystemVAmd64Classification.IntegerByRef => SystemVClassificationType.SystemVClassificationTypeIntegerByRef,
+            SystemVAmd64Classification.SSE => SystemVClassificationType.SystemVClassificationTypeSSE,
+            _ => SystemVClassificationType.SystemVClassificationTypeUnknown,
+        };
 
     public FpStructInRegistersInfo GetFpStructInRegistersInfo(Internal.TypeSystem.TargetArchitecture architecture)
     {

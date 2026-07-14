@@ -631,7 +631,8 @@ namespace ILCompiler
 
         public override void GetDependenciesForOverridingMethod(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc decl, MethodDesc impl)
         {
-            Debug.Assert(decl.IsVirtual && MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(decl) == decl);
+            Debug.Assert(decl.IsVirtual
+                && MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(decl.GetMethodDefinition()) == decl.GetMethodDefinition());
 
             // If a virtual method slot is a target of a delegate, all implementations become reflection visible
             // to support Delegate.GetMethodInfo().

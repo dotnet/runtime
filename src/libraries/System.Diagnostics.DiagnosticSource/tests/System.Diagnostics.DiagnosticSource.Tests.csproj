@@ -79,6 +79,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitOperationsPolyfills.cs" Link="Common\Polyfills\BitOperationsPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\DoublePolyfills.cs" Link="Common\Polyfills\DoublePolyfills.cs" />
   </ItemGroup>
 
