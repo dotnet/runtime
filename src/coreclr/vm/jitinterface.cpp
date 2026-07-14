@@ -12508,7 +12508,11 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "IsSurrogate",
        "AddByteOffset",
        "IndexOfAnyChar",
-       "NullRef"
+       "NullRef",
+       "AllCharsInUInt64AreAscii",
+       "BulkMoveWithWriteBarrier",
+       "CheckAsyncTaskInProgress",
+       "CheckFileCall"
 
 
     };
