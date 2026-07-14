@@ -103,7 +103,8 @@ MetadataReader? GetMetadata(ModuleHandle handle)
         case AvailableMetadataType.ReadWrite:
         {
             // From the ModuleHandle, walk Module -> PEAssembly -> MDInternalRW -> CLiteWeightStgdbRW -> CMiniMdRW.
-            // Read the schema and whether every variable-width column is 4 bytes, which selects the #JTD "minimal delta" marker when reserializing.
+            // Read the schema and whether every variable-width column is 4 bytes.
+            // See [link](https://github.com/dotnet/runtime/blob/1b945942604aa94b4717243b6d301a17b7ae41f1/src/libraries/System.Reflection.Metadata/src/System/Reflection/Metadata/MetadataReader.cs#L166).
             // Each heap and each entry of the Tables array is a storage pool; read its head segment with the
             // StgPool descriptor and walk the rest of the chain as bare StgPoolSeg via NextSegment, concatenating every segment's
             // data into a contiguous buffer. The resulting heaps and per-table record blobs,
