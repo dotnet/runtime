@@ -159,7 +159,12 @@ public class AppleAppBuilderTask : Task
     public bool InvariantGlobalization { get; set; }
 
     /// <summary>
-    /// Forces the runtime to use hybrid(icu files + native functions) mode
+    /// Emits the legacy <c>HYBRID_GLOBALIZATION</c> preprocessor define in the generated native Xcode project
+    /// for compatibility with direct or out-of-tree native source consumers.
+    /// On Apple mobile platforms, the runtime primarily uses Apple-native APIs and links system <c>icucore</c>
+    /// for remaining ICU-backed operations; no app-local ICU data file is loaded.
+    /// Invariant mode still takes precedence when
+    /// <see cref="InvariantGlobalization"/> is set.
     /// </summary>
     public bool HybridGlobalization { get; set; }
 

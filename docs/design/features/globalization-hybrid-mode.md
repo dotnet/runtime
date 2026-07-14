@@ -1,6 +1,6 @@
 # Hybrid Globalization
 
-Originally, internalization data is loaded from ICU data files. In `HybridGlobalization` mode we are leveraging the platform-native internationalization APIs, where it is possible, to allow for loading smaller ICU data files. We still need to rely on ICU files because for a bunch of globalization data no API equivalent is available. For some existing equivalents, the behavior does not fully match the original. The differences you can expect after switching on the mode are listed in this document. Expected size savings can be found under each platform section below.
+`HybridGlobalization` mode uses platform-native internationalization APIs where possible. On Apple mobile platforms (iOS/tvOS/MacCatalyst), Hybrid is always active: the runtime primarily uses Foundation/NSLocale APIs and links against the system `icucore` library for remaining ICU-backed operations, including IDN mapping; no app-local ICU data file is loaded. Invariant mode takes precedence over Hybrid on all platforms.
 
 Hybrid has lower priority than Invariant. To switch on the mode set the property in the build file:
 ```
@@ -13,7 +13,7 @@ Hybrid mode does not use ICU data for some functions connected with globalizatio
 
 ### Apple platforms
 
-For Apple platforms (iOS/tvOS/maccatalyst) we are using native apis instead of ICU data.
+On Apple mobile platforms (iOS/tvOS/MacCatalyst), Hybrid globalization is always enabled. The runtime primarily uses Apple-native APIs and links against the system `icucore` library for remaining ICU-backed operations, including IDN mapping; no app-local ICU data file (`icudt*.dat`) is bundled or loaded. Invariant mode (`InvariantGlobalization=true`) takes precedence.
 
 ## String comparison
 
