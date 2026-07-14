@@ -54,9 +54,13 @@
        runtime via CORE_ROOT, so it must sit in managed/ next to the framework assemblies
        (mirrors the CoreCLR-WASI runtime-test layout: corerun lives in CORE_ROOT). The run
        command in eng/testing/tests.wasi.targets uses "managed/corerun" with CORE_ROOT=/managed.
-       System.Private.CoreLib.dll ships in the pack's native/ dir (not lib/), so it is not
-       bundled by WasiAppBuilder and must be copied alongside corerun. Validated locally
-       against the wasi-wasm runtime pack under wasmtime. -->
+
+       The SDK does not resolve a CoreCLR runtime pack for the wasi-wasm RID, so the
+       self-contained publish does not copy the framework assemblies (System.Runtime.dll,
+       System.Collections.dll, ...) - only the app's own closure lands in the bundle. Copy
+       the framework from the runtime pack's lib dir, plus corerun and System.Private.CoreLib.dll
+       (which ship in the pack's native/ dir), into managed/. Validated locally against the
+       wasi-wasm runtime pack under wasmtime. See https://github.com/dotnet/runtime/issues/130129. -->
   <Target Name="_WasiCopyCoreRunToManaged"
           AfterTargets="_WasiGenerateAppBundle"
           Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
@@ -65,9 +69,16 @@
     <ItemGroup>
       <_WasiCoreCLRHostFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)corerun" />
       <_WasiCoreCLRHostFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll" />
+      <!-- Framework assemblies from the runtime pack (implementation, not ref). -->
+      <_WasiCoreCLRFrameworkFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)\*.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(_WasiCoreCLRHostFiles)"
           DestinationFolder="$(WasmAppDir)managed"
+          SkipUnchangedFiles="true" />
+    <!-- Do not overwrite an assembly the app already published (its version is authoritative). -->
+    <Copy SourceFiles="@(_WasiCoreCLRFrameworkFiles)"
+          DestinationFiles="@(_WasiCoreCLRFrameworkFiles->'$(WasmAppDir)managed\%(FileName)%(Extension)')"
+          Condition="!Exists('$(WasmAppDir)managed\%(_WasiCoreCLRFrameworkFiles.FileName)%(_WasiCoreCLRFrameworkFiles.Extension)')"
           SkipUnchangedFiles="true" />
   </Target>
 </Project>

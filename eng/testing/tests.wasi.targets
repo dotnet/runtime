@@ -36,7 +36,7 @@
          CORE_ROOT, so it is bundled into managed/ alongside the framework (see
          WasiApp.CoreCLR.targets). Validated locally against the wasi-wasm runtime pack. -->
     <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true' and '$(RuntimeFlavor)' != 'CoreCLR'">dotnet.wasm WasmTestRunner</_AppArgs>
-    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">managed/corerun WasmTestRunner.dll</_AppArgs>
+    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">managed/corerun managed/WasmTestRunner.dll</_AppArgs>
 
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmSingleFileBundle)' != 'true'">$(_AppArgs) managed/$(AssemblyName).dll</_AppArgs>
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmSingleFileBundle)' == 'true'">$(_AppArgs) $(AssemblyName).dll</_AppArgs>
