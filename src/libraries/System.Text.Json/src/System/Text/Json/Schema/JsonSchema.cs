@@ -96,8 +96,8 @@ namespace System.Text.Json.Schema
         public int? MaxLength { get => _maxLength; set { VerifyMutable(); _maxLength = value; } }
         private int? _maxLength;
 
-        public bool Deprecated { get => _deprecated; set { VerifyMutable(); _deprecated = value; } }
-        private bool _deprecated;
+        public bool? Deprecated { get => _deprecated; set { VerifyMutable(); _deprecated = value; } }
+        private bool? _deprecated;
 
         public JsonSchemaExporterContext? ExporterContext { get; set; }
 
@@ -128,7 +128,7 @@ namespace System.Text.Json.Schema
                 Count(HasDefaultValue);
                 Count(MinLength != null);
                 Count(MaxLength != null);
-                Count(Deprecated);
+                Count(Deprecated != null);
 
                 return count;
 
@@ -260,9 +260,9 @@ namespace System.Text.Json.Schema
                 objSchema.Add(MaxLengthPropertyName, (JsonNode)maxLength);
             }
 
-            if (Deprecated)
+            if (Deprecated is { } deprecated)
             {
-                objSchema.Add(DeprecatedPropertyName, (JsonNode)true);
+                objSchema.Add(DeprecatedPropertyName, (JsonNode)deprecated);
             }
 
             return CompleteSchema(objSchema);

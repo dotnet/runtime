@@ -423,7 +423,8 @@ namespace System.Text.Json.Schema
 
             JsonSchema CompleteSchema(ref GenerationState state, JsonSchema schema)
             {
-                if (typeInfo.Type.IsDefined(typeof(ObsoleteAttribute), inherit: true))
+                if (typeInfo.Type.IsDefined(typeof(ObsoleteAttribute), inherit: true) ||
+                    propertyInfo?.AttributeProvider?.IsDefined(typeof(ObsoleteAttribute), inherit: true) == true)
                 {
                     JsonSchema.EnsureMutable(ref schema);
                     schema.Deprecated = true;
