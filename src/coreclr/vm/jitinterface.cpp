@@ -7300,6 +7300,7 @@ namespace
         IL_RET          = 0x2A,
         IL_BRFALSE_S    = 0x2C,
         IL_BNE_UN_S     = 0x33,
+        IL_CALLVIRT     = 0x6F,
         IL_LDOBJ        = 0x71,
         IL_LDFLD        = 0x7B,
         IL_LDFLDA       = 0x7C,
@@ -7442,18 +7443,66 @@ namespace
         return IsFieldwiseEqualsBitwiseEquivalent(pNestedMT, pNestedEquals);
     }
 
+    // True if 'pMD' is 'EqualityComparer<fieldTh>::name' with the expected static-ness. Records call
+    // through this base type: 'get_Default' (static) and the abstract 'Equals' (instance).
+    bool IsEqualityComparerMethod(MethodDesc* pMD, TypeHandle fieldTh, const char* name, bool isStatic)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (pMD == NULL)
+            return false;
+
+        MethodTable* pMT = pMD->GetMethodTable();
+        if (pMT == NULL || !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__EQUALITY_COMPARER)))
+            return false;
+
+        Instantiation inst = pMT->GetInstantiation();
+        if (inst.GetNumArgs() != 1 || inst[0] != fieldTh)
+            return false;
+
+        return (pMD->IsStatic() != FALSE) == isStatic && strcmp(pMD->GetName(), name) == 0;
+    }
+
+    // Accepts a field compared via 'EqualityComparer<F>.Default.Equals(this.F, other.F)' (what Roslyn
+    // emits for record structs), but only when Default.Equals is itself a memcmp: F must be a
+    // bit-comparable primitive or a nested value type that is itself provably field-wise.
+    bool IsEqualityComparerDefaultEquals(MethodDesc* pGetDefault, MethodDesc* pEquals, FieldDesc* pField)
+    {
+        STANDARD_VM_CONTRACT;
+
+        TypeHandle fieldTh = pField->GetFieldTypeHandleThrowing();
+        if (!IsEqualityComparerMethod(pGetDefault, fieldTh, "get_Default", true /* isStatic */) ||
+            !IsEqualityComparerMethod(pEquals, fieldTh, "Equals", false /* isStatic */))
+        {
+            return false;
+        }
+
+        if (IsBitwiseComparablePrimitive(pField->GetFieldType()))
+            return true;
+
+        if (pField->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
+            return false;
+
+        MethodTable* pNestedMT = fieldTh.GetMethodTable();
+        MethodDesc* pNestedEquals = GetIEquatableEqualsImpl(pNestedMT);
+        return pNestedEquals != NULL && IsFieldwiseEqualsBitwiseEquivalent(pNestedMT, pNestedEquals);
+    }
+
     // Returns true only if 'pEqualsMD' compares every instance field of 'valueTypeMT' exactly once and
     // ANDs the results, bit-for-bit like memcmp. Combined with the caller's 'tightly packed' guarantee,
     // that makes the whole comparison a memcmp.
     //
     // The C# compiler lowers 'this.f0 == other.f0 && ...' to per-field units sharing one 'return false'
     // tail. Operands are always arg0/arg1. A primitive is compared inline; a nested value type through
-    // its own IEquatable<F>.Equals, which must itself be field-wise (checked recursively):
+    // its own IEquatable<F>.Equals; a record struct field through EqualityComparer<F>.Default.Equals.
+    // Every call-form callee must itself be field-wise (checked recursively):
     //
     //   primitive, non-final:  ldarg.0; ldfld  F; ldarg.1; ldfld F; bne.un.s FALSE
     //   primitive, final:      ldarg.0; ldfld  F; ldarg.1; ldfld F; ceq; ret
     //   nested,    non-final:  ldarg.0; ldflda F; ldarg.1; ldfld F; call F::Equals; brfalse.s FALSE
     //   nested,    final:      ldarg.0; ldflda F; ldarg.1; ldfld F; call F::Equals; ret
+    //   record,    non-final:  call EqualityComparer<F>::get_Default; ldarg.0; ldfld F; ldarg.1; ldfld F; callvirt Equals; brfalse.s FALSE
+    //   record,    final:      call EqualityComparer<F>::get_Default; ldarg.0; ldfld F; ldarg.1; ldfld F; callvirt Equals; ret
     //   shared tail:           FALSE: ldc.i4.0; ret
     bool ScanFieldwiseEqualsBody(MethodDesc* pEqualsMD, MethodTable* valueTypeMT)
     {
@@ -7488,11 +7537,24 @@ namespace
 
         while (!sawFinalUnit)
         {
-            // Left operand: ldarg.0; ldfld/ldflda F.
+            // Optional records lead-in: 'call EqualityComparer<F>::get_Default' before the operands.
+            mdToken getDefaultTok = mdTokenNil;
+            bool records = false;
+            if (ip + 5 <= codeSize && pIL[ip] == IL_CALL)
+            {
+                getDefaultTok = ReadILToken(pIL + ip + 1);
+                records = true;
+                ip += 5;
+            }
+
+            // Left operand: ldarg.0; ldfld/ldflda F. Records and inline '==' load by value; the
+            // '.Equals' call form loads by address.
             if (ip + 6 > codeSize || pIL[ip] != IL_LDARG_0)
                 return false;
             BYTE leftLoad = pIL[ip + 1];
             if (leftLoad != IL_LDFLD && leftLoad != IL_LDFLDA)
+                return false;
+            if (records && leftLoad != IL_LDFLD)
                 return false;
             mdToken leftFieldTok = ReadILToken(pIL + ip + 2);
             ip += 6;
@@ -7522,8 +7584,7 @@ namespace
             }
             compared[numCompared++] = pField;
 
-            bool nested = leftLoad == IL_LDFLDA;
-            if (!nested)
+            if (!records && leftLoad == IL_LDFLD)
             {
                 // Inline '==': only integer-like primitives are memcmp-equivalent.
                 if (!IsBitwiseComparablePrimitive(pField->GetFieldType()))
@@ -7551,39 +7612,51 @@ namespace
                 {
                     return false;
                 }
+
+                continue;
+            }
+
+            if (records)
+            {
+                // callvirt EqualityComparer<F>::Equals(!0, !0).
+                if (ip + 5 > codeSize || pIL[ip] != IL_CALLVIRT)
+                    return false;
+                MethodDesc* pGetDefault = TryResolveMethodToken(pModule, getDefaultTok);
+                MethodDesc* pEquals = TryResolveMethodToken(pModule, ReadILToken(pIL + ip + 1));
+                if (!IsEqualityComparerDefaultEquals(pGetDefault, pEquals, pField))
+                    return false;
             }
             else
             {
-                // Call form: a primitive's own Equals, or a nested type's field-wise Equals.
+                // '.Equals' call form: a primitive's own Equals, or a nested type's field-wise Equals.
                 if (ip + 5 > codeSize || pIL[ip] != IL_CALL)
                     return false;
                 MethodDesc* pCallee = TryResolveMethodToken(pModule, ReadILToken(pIL + ip + 1));
                 if (!IsPrimitiveEqualsCall(pCallee, pField) && !IsNestedFieldwiseEquatable(pCallee, pField))
                     return false;
-                ip += 5;
+            }
+            ip += 5;
 
-                if (ip < codeSize && pIL[ip] == IL_BRFALSE_S)
-                {
-                    // Non-final field: branch to the shared tail.
-                    if (ip + 2 > codeSize)
-                        return false;
-                    int target = (int)(ip + 2) + (int)(signed char)pIL[ip + 1];
-                    if (falseTarget == -1)
-                        falseTarget = target;
-                    else if (falseTarget != target)
-                        return false;
-                    ip += 2;
-                }
-                else if (ip < codeSize && pIL[ip] == IL_RET)
-                {
-                    // Final field: ret.
-                    ip += 1;
-                    sawFinalUnit = true;
-                }
-                else
-                {
+            // The Equals call already yields a bool: brfalse.s to the shared tail, or ret if final.
+            if (ip < codeSize && pIL[ip] == IL_BRFALSE_S)
+            {
+                if (ip + 2 > codeSize)
                     return false;
-                }
+                int target = (int)(ip + 2) + (int)(signed char)pIL[ip + 1];
+                if (falseTarget == -1)
+                    falseTarget = target;
+                else if (falseTarget != target)
+                    return false;
+                ip += 2;
+            }
+            else if (ip < codeSize && pIL[ip] == IL_RET)
+            {
+                ip += 1;
+                sawFinalUnit = true;
+            }
+            else
+            {
+                return false;
             }
         }
 
