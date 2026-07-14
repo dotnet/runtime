@@ -245,11 +245,18 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     CSharpSyntaxTree.ParseText("""
                         namespace UnresolvableModel;
 
+                        public sealed class Wrapper<T>
+                        {
+                            public int Count { get; set; }
+                        }
+
                         public sealed class DstsOptions
                         {
                             public MissingTypes.ValueTypeMessage? ValueTypeMessage { get; set; }
                             public MissingTypes.HttpRequestMessage? HttpRequestMessage { get; set; }
                             public MissingTypes.CredentialDescription? CredentialDescription { get; set; }
+                            public Wrapper<MissingTypes.HttpRequestMessage>? WrappedMessage { get; set; }
+                            public System.Tuple<int, MissingTypes.CredentialDescription>? TupleMessage { get; set; }
                             public int Value { get; set; }
                         }
                         """)
@@ -298,6 +305,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 Assert.DoesNotContain("ValueTypeMessage", result.GeneratedSource.Value.SourceText.ToString());
                 Assert.DoesNotContain("HttpRequestMessage", result.GeneratedSource.Value.SourceText.ToString());
                 Assert.DoesNotContain("CredentialDescription", result.GeneratedSource.Value.SourceText.ToString());
+                Assert.DoesNotContain("WrappedMessage", result.GeneratedSource.Value.SourceText.ToString());
+                Assert.DoesNotContain("TupleMessage", result.GeneratedSource.Value.SourceText.ToString());
 
                 GC.KeepAlive(transitiveDependencyAssembly);
             }

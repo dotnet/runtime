@@ -556,7 +556,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private bool IsUnsupportedType(ITypeSymbol type, HashSet<ITypeSymbol>? visitedTypes = null)
             {
-                if (type.TypeKind is TypeKind.Error)
+                if (ContainsErrorType(type))
                 {
                     return true;
                 }
@@ -564,11 +564,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
                 {
                     type = ((INamedTypeSymbol)type).TypeArguments[0]; // extract the T from a Nullable<T>
-
-                    if (type.TypeKind is TypeKind.Error)
-                    {
-                        return true;
-                    }
                 }
 
                 if (SymbolEqualityComparer.Default.Equals(_typeSymbols.IntPtr, type)  ||
@@ -893,6 +888,36 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 return SymbolEqualityComparer.Default.Equals(type, @interface);
+            }
+
+            // A member type is unsupported when it, a nested array element, or a generic type argument is an
+            // error symbol — i.e. an unresolved or ambiguous metadata type from a reference that isn't available
+            // to the current compilation. Emitting binding code that names such a type produces uncompilable
+            // output (missing/ambiguous type errors), so callers skip these members instead.
+            private static bool ContainsErrorType(ITypeSymbol type)
+            {
+                if (type.TypeKind is TypeKind.Error)
+                {
+                    return true;
+                }
+
+                if (type is IArrayTypeSymbol arrayType)
+                {
+                    return ContainsErrorType(arrayType.ElementType);
+                }
+
+                if (type is INamedTypeSymbol { IsGenericType: true } genericType)
+                {
+                    foreach (ITypeSymbol typeArgument in genericType.TypeArguments)
+                    {
+                        if (ContainsErrorType(typeArgument))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
             }
 
             private static bool ContainsGenericParameters(ITypeSymbol type)
