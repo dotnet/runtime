@@ -73,6 +73,12 @@ TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle);
 // Walks the Thread's explicit (capital "F") Frame chain and yields a StackFrameData per Frame.
 IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer);
 
+// Enumerates the interpreted managed method frames for a thread by walking the
+// interpreter's explicit InterpMethodContextFrame chain (deepest call first).
+// Context-free (pure memory reads); usable on interpreter-only targets such as
+// CoreCLR on WebAssembly, which have no native register context.
+IEnumerable<InterpretedFrameData> GetInterpretedFrames(TargetPointer threadPointer);
+
 // Returns true if the Frame at the given address is an InlinedCallFrame
 // installed by the new EH helpers (Datum tagged with ExceptionHandlingHelper).
 bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress);
@@ -237,6 +243,22 @@ InterpreterFrame
 This produces three frames in order: C, B, A (innermost to outermost).
 
 When the stack walk starts with an explicit context in interpreted code (e.g., from a debugger breakpoint), the interpreted frames are already yielded from the initial context as frameless frames. When the walker subsequently encounters the corresponding `InterpreterFrame`, it skips expanding it to prevent the same frames from being walked twice.
+
+#### Context-free interpreted frame enumeration (`GetInterpretedFrames`)
+
+`GetInterpretedFrames(threadPointer)` enumerates only the interpreted managed method
+frames for a thread without constructing or unwinding a platform register context. It
+walks the Thread's explicit Frame chain and, for each `InterpreterFrame`, applies the
+same `InterpMethodContextFrame` chain walk and head resolution described above
+(`ResolveTopInterpMethodContextFrame` -> `ParentPtr` chain, active frames only), resolving
+each frame's `MethodDesc` via `InterpMethodContextFrame.StartIp` -> `InterpByteCodeStart.Method`
+-> `InterpMethod.MethodDesc`.
+
+Because it relies only on memory reads over the interpreter's explicit frame chain — not on
+`CONTEXT`/`REGDISPLAY` or native unwind info — it is usable on interpreter-only targets that
+have no native register context, such as CoreCLR on WebAssembly (whose `DT_CONTEXT` is empty).
+It does not report JIT-compiled managed frames or explicit `Frame` transitions; on a
+fully-interpreted target the interpreted frames are the entire managed stack.
 
 
 #### Simple Example

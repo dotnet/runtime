@@ -150,6 +150,73 @@ internal sealed class MockResumableFrame : MockFrame
     }
 }
 
+internal sealed class MockInterpreterFrame : MockFrame
+{
+    private const string TopInterpMethodContextFrameFieldName = "TopInterpMethodContextFrame";
+    private const string IsFaultingFieldName = "IsFaulting";
+
+    public static Layout<MockInterpreterFrame> CreateLayout(Layout<MockFrame> baseLayout)
+        => new SequentialLayoutBuilder("InterpreterFrame", baseLayout.Architecture, baseLayout)
+            .AddPointerField(TopInterpMethodContextFrameFieldName)
+            .AddByteField(IsFaultingFieldName)
+            .Build<MockInterpreterFrame>();
+
+    public ulong TopInterpMethodContextFrame
+    {
+        get => ReadPointerField(TopInterpMethodContextFrameFieldName);
+        set => WritePointerField(TopInterpMethodContextFrameFieldName, value);
+    }
+}
+
+internal sealed class MockInterpMethodContextFrame : TypedView
+{
+    // Field order mirrors src/coreclr/vm/interpexec.h InterpMethodContextFrame.
+    private const string StartIpFieldName = "StartIp";
+    private const string ParentPtrFieldName = "ParentPtr";
+    private const string IpFieldName = "Ip";
+    private const string NextPtrFieldName = "NextPtr";
+    private const string StackFieldName = "Stack";
+
+    public static Layout<MockInterpMethodContextFrame> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("InterpMethodContextFrame", architecture)
+            .AddPointerField(StartIpFieldName)
+            .AddPointerField(ParentPtrFieldName)
+            .AddPointerField(IpFieldName)
+            .AddPointerField(NextPtrFieldName)
+            .AddPointerField(StackFieldName)
+            .Build<MockInterpMethodContextFrame>();
+
+    public ulong StartIp { get => ReadPointerField(StartIpFieldName); set => WritePointerField(StartIpFieldName, value); }
+    public ulong ParentPtr { get => ReadPointerField(ParentPtrFieldName); set => WritePointerField(ParentPtrFieldName, value); }
+    public ulong Ip { get => ReadPointerField(IpFieldName); set => WritePointerField(IpFieldName, value); }
+    public ulong NextPtr { get => ReadPointerField(NextPtrFieldName); set => WritePointerField(NextPtrFieldName, value); }
+    public ulong Stack { get => ReadPointerField(StackFieldName); set => WritePointerField(StackFieldName, value); }
+}
+
+internal sealed class MockInterpByteCodeStart : TypedView
+{
+    private const string MethodFieldName = "Method";
+
+    public static Layout<MockInterpByteCodeStart> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("InterpByteCodeStart", architecture)
+            .AddPointerField(MethodFieldName)
+            .Build<MockInterpByteCodeStart>();
+
+    public ulong Method { get => ReadPointerField(MethodFieldName); set => WritePointerField(MethodFieldName, value); }
+}
+
+internal sealed class MockInterpMethod : TypedView
+{
+    private const string MethodDescFieldName = "MethodDesc";
+
+    public static Layout<MockInterpMethod> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("InterpMethod", architecture)
+            .AddPointerField(MethodDescFieldName)
+            .Build<MockInterpMethod>();
+
+    public ulong MethodDesc { get => ReadPointerField(MethodDescFieldName); set => WritePointerField(MethodDescFieldName, value); }
+}
+
 /// <summary>
 /// Helper for building a Frame chain in the mock target memory. The Frame chain is
 /// terminated with the FRAME_TOP sentinel (~0 sized to the target pointer width).
@@ -188,6 +255,10 @@ internal sealed class MockFrameBuilder
     public Layout<MockFuncEvalFrame> FuncEvalFrameLayout { get; }
     public Layout<MockDebuggerEval> DebuggerEvalLayout { get; }
     public Layout<MockResumableFrame> ResumableFrameLayout { get; }
+    public Layout<MockInterpreterFrame> InterpreterFrameLayout { get; }
+    public Layout<MockInterpMethodContextFrame> InterpMethodContextFrameLayout { get; }
+    public Layout<MockInterpByteCodeStart> InterpByteCodeStartLayout { get; }
+    public Layout<MockInterpMethod> InterpMethodLayout { get; }
 
     public MockFrameBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
@@ -207,6 +278,10 @@ internal sealed class MockFrameBuilder
         FuncEvalFrameLayout = MockFuncEvalFrame.CreateLayout(FrameLayout);
         DebuggerEvalLayout = MockDebuggerEval.CreateLayout(_helpers.Arch);
         ResumableFrameLayout = MockResumableFrame.CreateLayout(FrameLayout);
+        InterpreterFrameLayout = MockInterpreterFrame.CreateLayout(FrameLayout);
+        InterpMethodContextFrameLayout = MockInterpMethodContextFrame.CreateLayout(_helpers.Arch);
+        InterpByteCodeStartLayout = MockInterpByteCodeStart.CreateLayout(_helpers.Arch);
+        InterpMethodLayout = MockInterpMethod.CreateLayout(_helpers.Arch);
     }
 
     public ulong FrameTopTerminator => _terminator;
@@ -283,7 +358,50 @@ internal sealed class MockFrameBuilder
     }
 
     /// <summary>
-    /// Builds a singly-linked frame chain from <paramref name="frames"/> (head first)
+    /// Allocates an InterpreterFrame whose TopInterpMethodContextFrame points at the given
+    /// InterpMethodContextFrame address (the hint used to seed the interpreter chain walk).
+    /// </summary>
+    public MockInterpreterFrame AddInterpreterFrame(ulong topInterpMethodContextFrame)
+    {
+        MockInterpreterFrame frame = InterpreterFrameLayout.Create(_allocator.Allocate((ulong)InterpreterFrameLayout.Size, "InterpreterFrame"));
+        frame.Identifier = InterpreterFrameIdentifierValue;
+        frame.Next = _terminator;
+        frame.TopInterpMethodContextFrame = topInterpMethodContextFrame;
+        return frame;
+    }
+
+    /// <summary>
+    /// Allocates an InterpMethodContextFrame node. An active frame has a non-null <paramref name="ip"/>;
+    /// <paramref name="parentPtr"/> points at the caller's node (0 for the outermost frame).
+    /// </summary>
+    public MockInterpMethodContextFrame AddInterpMethodContextFrame(ulong startIp, ulong parentPtr, ulong ip)
+    {
+        MockInterpMethodContextFrame frame = InterpMethodContextFrameLayout.Create(_allocator.Allocate((ulong)InterpMethodContextFrameLayout.Size, "InterpMethodContextFrame"));
+        frame.StartIp = startIp;
+        frame.ParentPtr = parentPtr;
+        frame.Ip = ip;
+        frame.NextPtr = 0;
+        frame.Stack = 0;
+        return frame;
+    }
+
+    /// <summary>
+    /// Allocates the InterpMethod + InterpByteCodeStart pair for an interpreted method and
+    /// returns the InterpByteCodeStart address, i.e. the value to use as an
+    /// InterpMethodContextFrame's StartIp (StartIp -> InterpByteCodeStart.Method -> InterpMethod.MethodDesc).
+    /// </summary>
+    public ulong AddInterpretedMethod(ulong methodDesc)
+    {
+        MockInterpMethod interpMethod = InterpMethodLayout.Create(_allocator.Allocate((ulong)InterpMethodLayout.Size, "InterpMethod"));
+        interpMethod.MethodDesc = methodDesc;
+
+        MockInterpByteCodeStart byteCodeStart = InterpByteCodeStartLayout.Create(_allocator.Allocate((ulong)InterpByteCodeStartLayout.Size, "InterpByteCodeStart"));
+        byteCodeStart.Method = interpMethod.Address;
+        return byteCodeStart.Address;
+    }
+
+    /// <summary>
+    /// Builds a singly-linked frame chain from <paramref name="frameAddresses"/> (head first)
     /// by writing each frame's Next pointer to the address of the following frame and
     /// terminating the last with FRAME_TOP. Returns the head address (or the terminator
     /// for an empty chain).
