@@ -1068,6 +1068,9 @@ extends:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          # This pipeline builds the CoreCLR browser-wasm runtime (nameSuffix: CoreCLR),
+          # so stage its runtime pack for the wasm-tools workload install.
+          includeCoreClrRuntimePack: true
 
       # Wasm runtime tests
       - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
