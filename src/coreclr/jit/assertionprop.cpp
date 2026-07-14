@@ -1665,7 +1665,9 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex)
         AssertionDsc reversed = candidateAssertion.Reverse();
         optMapComplementary(optAddAssertion(reversed), assertionIndex);
     }
-    else if (candidateAssertion.KindIs(OAK_LT_UN, OAK_LE_UN) && candidateAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS))
+    else if (candidateAssertion.KindIs(OAK_LT_UN, OAK_LE_UN) &&
+             candidateAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS) &&
+             vnStore->IsVNCheckedBoundNeverNegative(candidateAssertion.GetOp2().GetVN()))
     {
         // Assertions such as "X > checkedBndVN" aren't very useful.
         return;
@@ -1768,8 +1770,27 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
+    // Loop condition like "(uint)i < (uint)bnd" or equivalent
+    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
+    ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
+    if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
+    {
+        ValueNum idxVN = vnStore->VNNormalValue(unsignedCompareBnd.vnIdx);
+        ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
+
+        AssertionDsc   dsc   = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
+        AssertionIndex index = optAddAssertion(dsc);
+        if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
+        {
+            // By default JTRUE generated assertions hold on the "jump" edge. We have i >= bnd but we're really
+            // after i < bnd so we need to change the assertion edge to "next".
+            return AssertionInfo::ForNextEdge(index);
+        }
+        return index;
+    }
+
     // "CheckedBnd <relop> X"
-    if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op1VN))
+    if (vnStore->IsVNCheckedBoundNeverNegative(op1VN))
     {
         // For equality relops where the non-bound side is a constant (e.g. "len != 0"), the
         // LCLVAR-based equality assertion created below by optAssertionGenJtrue is strictly more
@@ -1788,7 +1809,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     }
 
     // "X <relop> CheckedBnd"
-    if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op2VN))
+    if (vnStore->IsVNCheckedBoundNeverNegative(op2VN))
     {
         // Symmetric guard: leave constant-vs-CheckedBound equality assertions to the LCLVAR path.
         if (!(isEqualityRelop && vnStore->IsVNConstant(op1VN)))
@@ -1798,6 +1819,17 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
             optCreateComplementaryAssertion(idx);
             return idx;
         }
+    }
+
+    // Preserve unsigned comparisons involving an index used in a bounds check in their original operand order.
+    // This allows range analysis to follow chains such as "index < size <= array.Length".
+    if (isUnsignedRelop && (op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) && !vnStore->IsVNConstant(op2VN) &&
+        (vnStore->IsVNCheckedBound(op1VN) || vnStore->IsVNCheckedBound(op2VN)))
+    {
+        AssertionDsc   dsc = AssertionDsc::CreateRelopVN(this, relopFunc, op1VN, op2VN);
+        AssertionIndex idx = optAddAssertion(dsc);
+        optCreateComplementaryAssertion(idx);
+        return idx;
     }
 
     // The remaining "(CheckedBnd + CNS) <relop> X" cases are only useful when the
@@ -1829,25 +1861,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
-    }
-
-    // Loop condition like "(uint)i < (uint)bnd" or equivalent
-    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
-    ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
-    if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
-    {
-        ValueNum idxVN = vnStore->VNNormalValue(unsignedCompareBnd.vnIdx);
-        ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
-
-        AssertionDsc   dsc   = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
-        AssertionIndex index = optAddAssertion(dsc);
-        if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
-        {
-            // By default JTRUE generated assertions hold on the "jump" edge. We have i >= bnd but we're really
-            // after i < bnd so we need to change the assertion edge to "next".
-            return AssertionInfo::ForNextEdge(index);
-        }
-        return index;
     }
 
     // Create "X relop CNS" assertion (both signed and unsigned relops)

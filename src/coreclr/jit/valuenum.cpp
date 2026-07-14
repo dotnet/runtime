@@ -7592,7 +7592,8 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
             ValueNum vnBound  = funcApp.GetArg(1);
             ValueNum vnIdx    = funcApp.GetArg(0);
             ValueNum vnCastOp = NoVN;
-            if (IsVNCheckedBound(vnBound) || (IsVNCastToULong(vnBound, &vnCastOp) && IsVNCheckedBound(vnCastOp)))
+            if (IsVNCheckedBoundNeverNegative(vnBound) ||
+                (IsVNCastToULong(vnBound, &vnCastOp) && IsVNCheckedBoundNeverNegative(vnCastOp)))
             {
                 info->vnIdx   = vnIdx;
                 info->cmpOper = funcApp.GetFunc();
@@ -7600,7 +7601,7 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
                 return true;
             }
             // We care about (uint)len < constant and its negation "(uint)len >= constant"
-            else if (IsVNPositiveInt32Constant(vnBound) && IsVNCheckedBound(vnIdx))
+            else if (IsVNPositiveInt32Constant(vnBound) && IsVNCheckedBoundNeverNegative(vnIdx))
             {
                 // Change constant < len into (uint)len >= (constant - 1)
                 // to make consuming this simpler (and likewise for it's negation).
@@ -7620,7 +7621,8 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
             ValueNum vnBound  = funcApp.GetArg(0);
             ValueNum vnIdx    = funcApp.GetArg(1);
             ValueNum vnCastOp = NoVN;
-            if (IsVNCheckedBound(vnBound) || (IsVNCastToULong(vnBound, &vnCastOp) && IsVNCheckedBound(vnCastOp)))
+            if (IsVNCheckedBoundNeverNegative(vnBound) ||
+                (IsVNCastToULong(vnBound, &vnCastOp) && IsVNCheckedBoundNeverNegative(vnCastOp)))
             {
                 info->vnIdx = vnIdx;
                 // Let's keep a consistent operand order - it's always i < len, never len > i
@@ -7629,7 +7631,7 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
                 return true;
             }
             // Look for constant > (uint)len and its negation "constant <= (uint)len"
-            else if (IsVNPositiveInt32Constant(vnBound) && IsVNCheckedBound(vnIdx))
+            else if (IsVNPositiveInt32Constant(vnBound) && IsVNCheckedBoundNeverNegative(vnIdx))
             {
                 // Change constant <= (uint)len to (constant - 1) < (uint)len
                 // to make consuming this simpler (and likewise for it's negation).
@@ -7664,8 +7666,8 @@ bool ValueNumStore::IsVNCheckedBoundAddConst(ValueNum vn, ValueNum* checkedBndVN
 {
     int       cns;
     VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp) && (funcApp.FuncIs(VNF_ADD, VNF_SUB)) && IsVNCheckedBound(funcApp.GetArg(0)) &&
-        IsVNIntegralConstant(funcApp.GetArg(1), &cns))
+    if (GetVNFunc(vn, &funcApp) && (funcApp.FuncIs(VNF_ADD, VNF_SUB)) &&
+        IsVNCheckedBoundNeverNegative(funcApp.GetArg(0)) && IsVNIntegralConstant(funcApp.GetArg(1), &cns))
     {
         // Normalize "checkedBndVN - cns" into "checkedBndVN + (-cns)" to make it easier for the caller to handle
         // both cases.
@@ -7764,11 +7766,10 @@ bool ValueNumStore::IsVNArrLen(ValueNum vn)
 
 bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
 {
-    bool dummy;
-    if (m_checkedBoundVNs.TryGetValue(vn, &dummy))
+    bool isNeverNegative;
+    if (m_checkedBoundVNs.TryGetValue(vn, &isNeverNegative))
     {
-        // This VN appeared as the conservative VN of the length argument of some
-        // GT_BOUNDS_CHECK node.
+        // This VN appeared as the conservative VN of an argument of some GT_BOUNDS_CHECK node.
         return true;
     }
     if (IsVNArrLen(vn))
@@ -7783,6 +7784,17 @@ bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
     }
 
     return false;
+}
+
+bool ValueNumStore::IsVNCheckedBoundNeverNegative(ValueNum vn)
+{
+    bool isNeverNegative;
+    if (m_checkedBoundVNs.TryGetValue(vn, &isNeverNegative))
+    {
+        return isNeverNegative;
+    }
+
+    return IsVNArrLen(vn);
 }
 
 //----------------------------------------------------------------------------------
@@ -7812,14 +7824,21 @@ bool ValueNumStore::IsVNCastToULong(ValueNum vn, ValueNum* castedOp)
     return false;
 }
 
-void ValueNumStore::SetVNIsCheckedBound(ValueNum vn)
+void ValueNumStore::SetVNIsCheckedBound(ValueNum vn, bool isNeverNegative)
 {
-    // This is meant to flag VNs for lengths that aren't known at compile time, so we can
+    // This is meant to flag VNs for bounds check operands that aren't known at compile time, so we can
     // form and propagate assertions about them.  Ensure that callers filter out constant
     // VNs since they're not what we're looking to flag, and assertion prop can reason
     // directly about constants.
     assert(!IsVNConstant(vn));
-    m_checkedBoundVNs.AddOrUpdate(vn, true);
+
+    bool wasNeverNegative;
+    if (m_checkedBoundVNs.TryGetValue(vn, &wasNeverNegative))
+    {
+        isNeverNegative |= wasNeverNegative;
+    }
+
+    m_checkedBoundVNs.AddOrUpdate(vn, isNeverNegative);
 }
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -13446,13 +13465,20 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // next add the bounds check exception set for the current tree node
                         fgValueNumberAddExceptionSet(tree);
 
-                        // Record non-constant value numbers that are used as the length argument to bounds checks, so
-                        // that assertion prop will know that comparisons against them are worth analyzing.
+                        // Record non-constant value numbers that are used as arguments to bounds checks, so that
+                        // assertion prop will know that comparisons against them are worth analyzing.
+                        ValueNum indexVN =
+                            vnStore->VNNormalValue(tree->AsBoundsChk()->GetIndex()->gtVNPair.GetConservative());
+                        if ((indexVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(indexVN))
+                        {
+                            vnStore->SetVNIsCheckedBound(indexVN, false);
+                        }
+
                         ValueNum lengthVN =
                             vnStore->VNNormalValue(tree->AsBoundsChk()->GetArrayLength()->gtVNPair.GetConservative());
                         if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
                         {
-                            vnStore->SetVNIsCheckedBound(lengthVN);
+                            vnStore->SetVNIsCheckedBound(lengthVN, true);
                         }
                     }
                     break;

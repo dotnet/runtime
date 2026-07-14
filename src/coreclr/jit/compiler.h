@@ -9080,7 +9080,7 @@ public:
             dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn                = checkedBndVN;
             dsc.m_op2.m_icon.m_iconVal    = cns;
-            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNNeverNegative(checkedBndVN);
+            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNCheckedBoundNeverNegative(checkedBndVN);
             return dsc;
         }
 

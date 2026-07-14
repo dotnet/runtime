@@ -148,7 +148,7 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
     JITDUMP("\n");
 #endif
 
-    if ((arrSize <= 0) && !vnStore->IsVNCheckedBound(uLimitVN))
+    if ((arrSize <= 0) && !vnStore->IsVNCheckedBoundNeverNegative(uLimitVN))
     {
         // If we don't know the array size and the upper limit is not known, then bail.
         return false;
@@ -1266,12 +1266,21 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         // that it never flows into a keBinOpArray Limit, whose Range::IsValid / Range::Widen
         // rules implicitly assume the VN refers to a length-like (checked-bound-shaped) quantity.
         // Such cases fall through to the general "X <relop> Y" branch below.
-        else if (curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) &&
+        else if ((curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) ||
+                  curAssertion.KindIs(Compiler::OAK_GE_UN, Compiler::OAK_GT_UN, Compiler::OAK_LE_UN,
+                                      Compiler::OAK_LT_UN)) &&
                  curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) &&
-                 comp->vnStore->IsVNCheckedBound(curAssertion.GetOp2().GetVN()))
+                 comp->vnStore->IsVNCheckedBoundNeverNegative(curAssertion.GetOp2().GetVN()))
         {
             const ValueNum boundVN  = curAssertion.GetOp2().GetVN();
             const int      boundCns = curAssertion.GetOp2().GetCns();
+            const bool     unsignedRelop =
+                curAssertion.KindIs(Compiler::OAK_GE_UN, Compiler::OAK_GT_UN, Compiler::OAK_LE_UN, Compiler::OAK_LT_UN);
+
+            if (unsignedRelop && ((boundCns != 0) || !curAssertion.GetOp2().IsVNNeverNegative()))
+            {
+                continue;
+            }
 
             // Check whether normalLclVN VN-equals the op2 expression "(boundVN + boundCns)":
             //  - trivially, when boundCns is 0 and normalLclVN == boundVN, or
@@ -1314,7 +1323,8 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                     limit = Limit(Limit::keConstant, comp->vnStore->ConstantValue<int>(curAssertion.GetOp1().GetVN()));
                 }
                 // Otherwise, report it as "normalLclVN <relop> some-other-checked-bound (op1.vn)".
-                else if (canUseCheckedBounds && comp->vnStore->IsVNCheckedBound(curAssertion.GetOp1().GetVN()))
+                else if (canUseCheckedBounds &&
+                         comp->vnStore->IsVNCheckedBoundNeverNegative(curAssertion.GetOp1().GetVN()))
                 {
                     // Since we are swapping the operands, we also need to swap the comparison operator
                     cmpOper =
@@ -1330,7 +1340,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             {
                 continue;
             }
-            assert(!isUnsigned);
+            assert(isUnsigned == unsignedRelop);
         }
         // Current assertion is of the form "i <relop> cns"
         else if (curAssertion.IsRelop() && curAssertion.GetOp2().KindIs(Compiler::O2K_CONST_INT) &&
@@ -1392,7 +1402,7 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         else if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_EQUAL, Compiler::OAK_NOT_EQUAL) &&
                  (curAssertion.GetOp1().GetVN() == normalLclVN) &&
                  curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) && (curAssertion.GetOp2().GetCns() == 0) &&
-                 comp->vnStore->IsVNCheckedBound(curAssertion.GetOp2().GetVN()))
+                 comp->vnStore->IsVNCheckedBoundNeverNegative(curAssertion.GetOp2().GetVN()))
         {
             const ValueNum boundVN = curAssertion.GetOp2().GetVN();
 
@@ -1523,10 +1533,6 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             ValueNum op2VN = curAssertion.GetOp2().GetVN();
 
             cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
-            if (isUnsigned)
-            {
-                continue;
-            }
 
             ValueNum otherVN;
             if (op1VN == normalLclVN)
@@ -1549,32 +1555,57 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             }
 
             budget--;
-            Range otherRange = GetRangeFromAssertionsWorker(comp, otherVN, assertions, budget, visited);
-            if (!otherRange.IsConstantRange())
+            Range otherRange = GetRangeFromType(comp->vnStore->TypeOfVN(otherVN));
+            bool  hasPreferredSymbolicUpperBound = false;
+
+            if (canUseCheckedBounds && (preferredBoundVN != ValueNumStore::NoVN) &&
+                ((cmpOper == GT_LT) || (cmpOper == GT_LE)))
+            {
+                MergeEdgeAssertionsWorker(comp, otherVN, preferredBoundVN, assertions, &otherRange,
+                                          canUseCheckedBounds, budget, visited);
+
+                hasPreferredSymbolicUpperBound =
+                    otherRange.UpperLimit().IsBinOpArray() && (otherRange.UpperLimit().vn == preferredBoundVN);
+            }
+
+            if (!hasPreferredSymbolicUpperBound)
+            {
+                otherRange = GetRangeFromAssertionsWorker(comp, otherVN, assertions, budget, visited);
+            }
+
+            if (!otherRange.IsConstantRange() && !otherRange.UpperLimit().IsBinOpArray())
             {
                 continue;
             }
 
-            // Derive a constant limit for normalLclVN from the constant range of otherVN.
+            if (isUnsigned &&
+                (!otherRange.LowerLimit().IsConstant() || (otherRange.LowerLimit().GetConstant() < 0)))
+            {
+                continue;
+            }
+
+            // Derive a limit for normalLclVN from the range of otherVN.
             // We use the most useful bound for each direction of the comparison.
-            int derivedLimit;
             switch (cmpOper)
             {
                 case GT_LT:
                 case GT_LE:
                     // normalLclVN < otherVN (or <=)  =>  normalLclVN <(=) otherVN.UpperLimit
-                    derivedLimit = otherRange.UpperLimit().GetConstant();
+                    limit = otherRange.UpperLimit();
                     break;
                 case GT_GT:
                 case GT_GE:
                     // normalLclVN > otherVN (or >=)  =>  normalLclVN >(=) otherVN.LowerLimit
-                    derivedLimit = otherRange.LowerLimit().GetConstant();
+                    if (!otherRange.LowerLimit().IsConstant())
+                    {
+                        continue;
+                    }
+                    limit = otherRange.LowerLimit();
                     break;
 
                 default:
                     continue;
             }
-            limit = Limit(Limit::keConstant, derivedLimit);
         }
         // Current assertion is not supported, ignore it
         else
