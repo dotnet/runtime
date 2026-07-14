@@ -3769,12 +3769,7 @@ ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_ty
     if (fieldType == TYP_STRUCT)
     {
         structSize = m_compiler->info.compCompHnd->getClassSize(structHnd);
-
-        // We have to normalize here since there is no CorInfoType for vectors...
-        if (m_compiler->structSizeMightRepresentSIMDType(structSize))
-        {
-            fieldType = m_compiler->impNormStructType(structHnd);
-        }
+        fieldType  = m_compiler->impNormStructType(structHnd);
     }
 
     *pFieldType = fieldType;
