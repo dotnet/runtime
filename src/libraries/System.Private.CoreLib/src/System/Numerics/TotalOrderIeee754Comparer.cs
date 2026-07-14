@@ -113,17 +113,45 @@ namespace System.Numerics
                 }
                 else if (x == y)
                 {
-                    if (T.IsZero(x)) // only zeros are equal to zeros
+                    static unsafe int CompareExponent(T x, T y)
                     {
-                        // IEEE 754 numbers are either positive or negative. Skip check for the opposite.
+                        int xExponentBits = x!.GetExponentShortestBitLength();
+                        int yExponentBits = y!.GetExponentShortestBitLength();
 
-                        if (T.IsNegative(x))
+                        if (xExponentBits == yExponentBits)
                         {
-                            return T.IsNegative(y) ? 0 : -1;
+                            // Prevent stack overflow for huge numbers
+                            const int StackAllocThreshold = 256;
+
+                            int xExponentLength = x.GetExponentByteCount();
+                            int yExponentLength = y.GetExponentByteCount();
+
+                            Span<byte> significandX = (uint)xExponentLength <= StackAllocThreshold ? stackalloc byte[xExponentLength] : new byte[xExponentLength];
+                            Span<byte> significandY = (uint)yExponentLength <= StackAllocThreshold ? stackalloc byte[yExponentLength] : new byte[yExponentLength];
+
+                            x.WriteExponentBigEndian(significandX);
+                            y.WriteExponentBigEndian(significandY);
+
+                            return significandX.SequenceCompareTo(significandY);
                         }
                         else
                         {
-                            return T.IsPositive(y) ? 0 : 1;
+                            return xExponentBits.CompareTo(yExponentBits);
+                        }
+                    }
+
+                    if (T.IsZero(x)) // only zeros are equal to zeros
+                    {
+                        // IEEE 754 numbers are either positive or negative. Skip check for the opposite.
+                        // Decimals can have zeros with different exponents.
+
+                        if (T.IsNegative(x))
+                        {
+                            return T.IsNegative(y) ? -CompareExponent(x, y) : -1;
+                        }
+                        else
+                        {
+                            return T.IsPositive(y) ? CompareExponent(x, y) : 1;
                         }
                     }
                     else
@@ -131,8 +159,8 @@ namespace System.Numerics
                         // Equivalant values are compared by their exponent parts,
                         // and the value with smaller exponent is considered closer to zero.
 
-                        // This only applies to IEEE 754 decimals. Consider to add support if decimals are added into .NET.
-                        return 0;
+                        // This only applies to IEEE 754 decimals.
+                        return T.IsNegative(x) ? CompareExponent(x, y) : -CompareExponent(x, y);
                     }
                 }
                 else
@@ -224,6 +252,8 @@ namespace System.Numerics
         /// <returns>A hash code for the specified number.</returns>
         public int GetHashCode([DisallowNull] T obj)
         {
+            // GetHashCode contract requires comparison equality => hash code equality
+            // Given totalOrder equality guarantees normal value equality, thus satisfies hash code equality
             ArgumentNullException.ThrowIfNull(obj);
             return obj.GetHashCode();
         }
