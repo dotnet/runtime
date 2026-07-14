@@ -327,7 +327,7 @@ namespace System.Runtime.Serialization.Json
         {
             bomLength = 0;
 
-            // Not enough characters for a BON
+            // Not enough characters for a BOM
             if (data.Length < 2)
             {
                 // A single-byte (or empty) JSON document is necessarily UTF-8.
@@ -336,7 +336,7 @@ namespace System.Runtime.Serialization.Json
 
             switch ((data[0], data[1]))
             {
-                // Detect known BOM's
+                // Detect known BOMs
                 case (0xFF, 0xFE):
                     bomLength = 2;
                     return SupportedEncoding.UTF16LE;
@@ -344,9 +344,10 @@ namespace System.Runtime.Serialization.Json
                     bomLength = 2;
                     return SupportedEncoding.UTF16BE;
                 case (0xEF, 0xBB):
-                    if (data.Length >= 3 && data[2] == 0xBF) {
+                    if (data.Length >= 3 && data[2] == 0xBF)
+                    {
                         bomLength = 3;
-                        return SupportedEncoding.UTF16LE;
+                        return SupportedEncoding.UTF8;
                     }
                     break;
 
