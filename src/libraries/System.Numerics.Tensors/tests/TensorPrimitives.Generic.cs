@@ -2725,6 +2725,11 @@ namespace System.Numerics.Tensors.Tests
         protected override T ConvertFromSingle(float f) => T.CreateTruncating(f);
         protected override bool IsFloatingPoint => typeof(T) == typeof(Half) || base.IsFloatingPoint;
 
+        // TensorPrimitives vectorizes Clamp for every Vector128<T>-supported type, plus Half via its
+        // Half-as-Int16 path, so those types follow the non-throwing Min(Max(x, min), max) semantics while
+        // every other T defers to T.Clamp (which throws on unordered bounds).
+        private static bool IsClampVectorized => Vector128<T>.IsSupported || typeof(T) == typeof(Half);
+
         protected override T NextRandom()
         {
             T value = default;
@@ -2757,10 +2762,11 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<object[]> Clamp_UnorderedBounds_Lengths()
         {
             // These lengths intentionally span the scalar-only, scalar-remainder, and fully vectorized regions
-            // of the implementation. All of them must produce identical, non-throwing Min(Max(x, min), max)
-            // results even when min > max, matching the behavior of Vector128/256/512.Clamp (which follow HLSL
-            // and do not validate min <= max).
-            foreach (int length in new[] { 1, 2, 3, 8, 128 })
+            // of the implementation. 129 in particular forces a non-zero scalar remainder after the vectorized
+            // loop for every supported vector width. All of them must produce identical, non-throwing
+            // Min(Max(x, min), max) results even when min > max, matching the behavior of Vector128/256/512.Clamp
+            // (which follow HLSL and do not validate min <= max).
+            foreach (int length in new[] { 1, 2, 3, 8, 128, 129 })
             {
                 yield return new object[] { length };
             }
@@ -2770,11 +2776,11 @@ namespace System.Numerics.Tensors.Tests
         [MemberData(nameof(Clamp_UnorderedBounds_Lengths))]
         public void Clamp_UnorderedBoundsMatchScalarSemantics(int length)
         {
-            // Only vector-accelerated types are guaranteed not to throw on unordered bounds: the scalar
-            // remainder must agree with the vectorized region. Types without vector acceleration run
-            // entirely through the scalar path and defer to T.Clamp (which throws when min > max); that
-            // behavior is covered by Clamp_UnorderedScalarBounds_ThrowsWhenNotVectorAccelerated.
-            if (!Vector128<T>.IsSupported)
+            // Only vectorizable types are guaranteed not to throw on unordered bounds: the scalar remainder must
+            // agree with the vectorized region. Types that aren't vectorized run entirely through the scalar path
+            // and defer to T.Clamp (which throws when min > max); that behavior is covered by
+            // Clamp_UnorderedScalarBounds_ThrowsWhenNotVectorAccelerated.
+            if (!IsClampVectorized)
             {
                 return;
             }
@@ -2904,10 +2910,10 @@ namespace System.Numerics.Tensors.Tests
         {
             // NaN and signed zeros are the exact class of values where a scalar-vs-vector mismatch would
             // hide, so verify both code paths agree with the scalar Min(Max(x, min), max) formula for them.
-            // This parity only applies to vector-accelerated floating-point types; the rest are skipped
-            // because they defer to T.Clamp, which throws on the unordered bounds this test's tiled pool
+            // This parity only applies to vectorizable floating-point types; the rest are skipped because
+            // they defer to T.Clamp, which throws on the unordered bounds this test's tiled pool
             // intentionally produces.
-            if (!IsFloatingPoint || !Vector128<T>.IsSupported)
+            if (!IsFloatingPoint || !IsClampVectorized)
             {
                 return;
             }
@@ -2985,10 +2991,10 @@ namespace System.Numerics.Tensors.Tests
         [InlineData(3)]
         public void Clamp_UnorderedScalarBounds_ThrowsWhenNotVectorAccelerated(int length)
         {
-            // Types without vector acceleration flow entirely through the scalar path, which defers to
-            // T.Clamp and therefore throws when min > max. The lengths here stay below every vectorized
-            // threshold (including the Half-as-Int16 reinterpret path) so no element is silently clamped.
-            if (Vector128<T>.IsSupported)
+            // Types that aren't vectorized flow entirely through the scalar path, which defers to T.Clamp and
+            // therefore throws when min > max. Vectorizable types (including Half via its Half-as-Int16 path)
+            // never throw, so they're excluded here and covered by Clamp_UnorderedBoundsMatchScalarSemantics.
+            if (IsClampVectorized)
             {
                 return;
             }
