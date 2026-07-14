@@ -89,7 +89,7 @@ namespace Internal.IL.Stubs
 
         private static bool IsKnownBitwiseEquatableType(MetadataType type)
         {
-            if (type.Module != type.Context.SystemModule)   
+            if (type.Module != type.Context.SystemModule)
             {
                 return false;
             }
