@@ -89,17 +89,18 @@ namespace Internal.IL.Stubs
 
         private static bool IsKnownBitwiseEquatableType(MetadataType type)
         {
-            if (type.Module != type.Context.SystemModule)
-                return false;
-
-            if (type.Namespace == "System"u8)
+            if (type.Module != type.Context.SystemModule)   
             {
-                return type.Name == "Guid"u8 ||
-                    type.Name == "Int128"u8 ||
-                    type.Name == "UInt128"u8;
+                return false;
             }
 
-            return type.Namespace == "System.Text"u8 && type.Name == "Rune"u8;
+            ReadOnlySpan<byte> ns = type.Namespace;
+            if (ns == "System"u8)
+            {
+                ReadOnlySpan<byte> name = type.Name;
+                return name == "Guid"u8 || name == "Int128"u8 || name == "UInt128"u8;
+            }
+            return ns == "System.Text"u8 && type.Name == "Rune"u8;
         }
     }
 }
