@@ -6778,6 +6778,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     NamedIntrinsic GetHWIntrinsicId() const;
 
+#ifdef TARGET_WASM
+    GenTree* GetImmOp() const;
+#endif // TARGET_WASM
+
     //---------------------------------------------------------------------------------------
     // ChangeHWIntrinsicId: Change the intrinsic id for this node.
     //
