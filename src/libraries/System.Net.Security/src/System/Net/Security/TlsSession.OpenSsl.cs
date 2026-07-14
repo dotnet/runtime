@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
 {
-    public abstract partial class TlsSession
+    closed public partial class TlsSession
     {
         // When true, socket-bound I/O delegates ciphertext directly to OpenSSL via
         // SSL_set_fd / SSL_do_handshake / SSL_read / SSL_write, bypassing the
@@ -23,7 +23,7 @@ namespace System.Net.Security
         // then activates fd-mode with the peeked bytes replayed via the socket BIO.
         private SafeSocketHandle? _pendingFdSocket;
 
-        // Socket-replay BIO populated by TryPeekClientHello via BioReadTlsFrame. Holds
+        // Socket-replay BIO populated by TryPeekClientHello via BioPeekTlsFrame. Holds
         // the ClientHello record buffered off the fd; the same BIO becomes the SSL's
         // read BIO once OnServerContextSet transfers ownership to _options.PreallocatedReadBio.
         // Freed by OnDispose if the session is disposed before that handoff runs.
@@ -74,7 +74,7 @@ namespace System.Net.Security
                 // BIO to the options bag; SafeSslHandle.Create adopts it as the read
                 // BIO. No managed byte[] copy, no ReplayPrefix. We keep _peekBio
                 // referenced after transfer so GetClientHelloBytes can span the
-                // retained peek buffer via BioGetPrefix; the SafeBioHandle stays
+                // retained peek buffer via BioGetReplayPrefix; the SafeBioHandle stays
                 // valid (SSL* is the real owner, our reference DangerousReleases
                 // the parent on session Dispose()).
                 _options.PreallocatedReadBio = _peekBio;
@@ -103,7 +103,7 @@ namespace System.Net.Security
         // Native ClientHello peek for the deferred socket-bound flow AND the always-capture
         // path (server session with options up front + CaptureClientHello switch on).
         // Creates a socket-replay BIO on the fd, buffers a full TLS record via
-        // BioReadTlsFrame, parses via TlsFrameHelper, and populates ClientHelloInfo /
+        // BioPeekTlsFrame, parses via TlsFrameHelper, and populates ClientHelloInfo /
         // TargetHostName from the SNI extension. In the deferred flow returns
         // NeedsServerOptions so the caller resolves via SetContext; in the capture
         // flow transfers the peek BIO to the pending SSL* and falls through to fd-mode.
@@ -138,7 +138,7 @@ namespace System.Net.Security
 
             unsafe
             {
-                int rc = Interop.Ssl.BioReadTlsFrame(_peekBio, out byte* framePtr, out int frameLen);
+                int rc = Interop.Ssl.BioPeekTlsFrame(_peekBio, out byte* framePtr, out int frameLen);
                 if (rc == 0)
                 {
                     // Need more bytes off the socket. Caller polls SelectRead and retries.
@@ -207,7 +207,7 @@ namespace System.Net.Security
 
             unsafe
             {
-                if (Interop.Ssl.BioGetPrefix(_peekBio, out byte* ptr, out int len) == 1 && len > 0)
+                if (Interop.Ssl.BioGetReplayPrefix(_peekBio, out byte* ptr, out int len) == 1 && len > 0)
                 {
                     bytes = new ReadOnlySpan<byte>(ptr, len);
                 }
@@ -298,6 +298,9 @@ namespace System.Net.Security
                 Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ => TlsOperationStatus.NeedMoreData,
                 Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE => TlsOperationStatus.DestinationTooSmall,
                 Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN => TlsOperationStatus.Closed,
+                // For SSL_ERROR_SSL the OpenSSL error queue holds the real cause; surface it as the inner exception.
+                // CreateOpenSslCryptographicException reads and clears the queue.
+                Interop.Ssl.SslErrorCode.SSL_ERROR_SSL => throw new AuthenticationException($"OpenSSL {op} failed: {error}", Interop.Crypto.CreateOpenSslCryptographicException()),
                 _ => throw new AuthenticationException($"OpenSSL {op} failed: {error}"),
             };
         }

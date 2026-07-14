@@ -121,11 +121,11 @@ Returns:
    0  = need more data (fd would block); caller polls SelectRead and retries.
   -1  = error (invalid args, EOF, oversized record, or recv failure).
 */
-PALEXPORT int32_t CryptoNative_BioReadTlsFrame(BIO* bio, uint8_t** outPtr, int32_t* outLen);
+PALEXPORT int32_t CryptoNative_BioPeekTlsFrame(BIO* bio, uint8_t** outPtr, int32_t* outLen);
 
 /*
 Returns a pointer + length to the socket-replay BIO's peek buffer (the ClientHello
-bytes captured by CryptoNative_BioReadTlsFrame). The buffer remains valid until
+bytes captured by CryptoNative_BioPeekTlsFrame). The buffer remains valid until
 the BIO is destroyed, even after OpenSSL has consumed it during the handshake.
 
 Returns:
@@ -133,5 +133,5 @@ Returns:
    0  = no captured prefix (never peeked, or created without one).
   -1  = error (invalid args).
 */
-PALEXPORT int32_t CryptoNative_BioGetPrefix(BIO* bio, uint8_t** outPtr, int32_t* outLen);
+PALEXPORT int32_t CryptoNative_BioGetReplayPrefix(BIO* bio, uint8_t** outPtr, int32_t* outLen);
 

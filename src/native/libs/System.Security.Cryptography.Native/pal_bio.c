@@ -545,7 +545,7 @@ static int SocketReplayBioRead(BIO* bio, char* buf, int len)
         ctx->prefixPos += toCopy;
 
         // The prefix buffer is retained for the BIO's lifetime so managed code can
-        // observe the original ClientHello bytes via CryptoNative_BioGetPrefix.
+        // observe the original ClientHello bytes via CryptoNative_BioGetReplayPrefix.
         // It's freed when the BIO is destroyed (SocketReplayBioDestroy). Once drained,
         // subsequent reads fall through to recv() below.
         return toCopy;
@@ -759,7 +759,7 @@ BIO* CryptoNative_BioNewSocketReplay(intptr_t fd, const void* prefix, int32_t pr
 // Preconditions: BIO is a socket-replay BIO created via BioNewSocketReplay with
 // no prefix (empty peek buffer). Calling this after SocketReplayBioRead has begun
 // draining the buffer produces undefined framing.
-int32_t CryptoNative_BioReadTlsFrame(BIO* bio, uint8_t** outPtr, int32_t* outLen)
+int32_t CryptoNative_BioPeekTlsFrame(BIO* bio, uint8_t** outPtr, int32_t* outLen)
 {
     ERR_clear_error();
 
@@ -853,7 +853,7 @@ int32_t CryptoNative_BioReadTlsFrame(BIO* bio, uint8_t** outPtr, int32_t* outLen
 }
 
 // Returns the socket-replay BIO's peek buffer (the bytes captured by
-// BioReadTlsFrame). The buffer stays valid until the BIO is freed, even after
+// BioPeekTlsFrame). The buffer stays valid until the BIO is freed, even after
 // OpenSSL has drained it during handshake — SocketReplayBioRead advances an
 // internal read cursor without releasing the underlying allocation.
 //
@@ -861,7 +861,7 @@ int32_t CryptoNative_BioReadTlsFrame(BIO* bio, uint8_t** outPtr, int32_t* outLen
 //   1  = pointer + length valid; *outPtr / *outLen wrap the internal buffer.
 //   0  = BIO has no captured prefix (never peeked, or created without one).
 //  -1  = error (invalid args).
-int32_t CryptoNative_BioGetPrefix(BIO* bio, uint8_t** outPtr, int32_t* outLen)
+int32_t CryptoNative_BioGetReplayPrefix(BIO* bio, uint8_t** outPtr, int32_t* outLen)
 {
     if (bio == NULL || outPtr == NULL || outLen == NULL)
     {

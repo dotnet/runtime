@@ -44,7 +44,7 @@ namespace System.Net.Security
     /// </para>
     /// </remarks>
     [Experimental(Experimentals.LowLevelTlsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-    public abstract partial class TlsSession : IDisposable
+    closed public partial class TlsSession : IDisposable
     {
         // Matches StreamSizes.Default on Unix; conservative upper bound for a
         // single TLS record's plaintext payload.
@@ -335,7 +335,7 @@ namespace System.Net.Security
             // Build a fresh X509Chain locally and seed it with the peer-sent intermediates.
             // The chain instance is never exposed to TlsSession callers; once validation is
             // recorded it is disposed in SetRemoteCertificateValidationResult below.
-            X509Chain chain = new X509Chain();
+            using X509Chain chain = new X509Chain();
             if (_externalRemoteCertificates is { Count: > 0 } intermediates)
             {
                 chain.ChainPolicy.ExtraStore.AddRange(intermediates);
@@ -365,7 +365,15 @@ namespace System.Net.Security
             }
             finally
             {
-                chain.Dispose();
+                // Dispose the certificates that chain.Build() populated into ChainElements so
+                // they don't linger until GC. Mirrors SslStream.VerifyRemoteCertificate's cleanup
+                // when no user callback is provided. ExtraStore entries were supplied by the caller
+                // in _externalRemoteCertificates and are intentionally left alone.
+                int elementsCount = chain.ChainElements.Count;
+                for (int i = 0; i < elementsCount; i++)
+                {
+                    chain.ChainElements[i].Certificate.Dispose();
+                }
             }
 
             // A user RemoteCertificateValidationCallback can reject an otherwise-clean chain

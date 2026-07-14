@@ -196,17 +196,17 @@ internal static partial class Interop
         // The returned pointer is valid until the BIO is destroyed or SocketReplayBioRead
         // starts consuming the buffer (i.e. once SSL_do_handshake runs against this BIO).
         // Callers must span-wrap and parse before creating the SSL* that owns the BIO.
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioReadTlsFrame")]
-        internal static unsafe partial int BioReadTlsFrame(SafeBioHandle bio, out byte* framePtr, out int frameLen);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioPeekTlsFrame")]
+        internal static unsafe partial int BioPeekTlsFrame(SafeBioHandle bio, out byte* framePtr, out int frameLen);
 
         // Returns the socket-replay BIO's retained peek buffer (bytes captured by
-        // BioReadTlsFrame). Valid until the BIO is destroyed, even after OpenSSL has
+        // BioPeekTlsFrame). Valid until the BIO is destroyed, even after OpenSSL has
         // drained it during handshake.
         //   1  = prefix present; prefixPtr / prefixLen wrap the internal buffer.
         //   0  = BIO has no captured prefix.
         //  -1  = error (invalid args).
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGetPrefix")]
-        internal static unsafe partial int BioGetPrefix(SafeBioHandle bio, out byte* prefixPtr, out int prefixLen);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGetReplayPrefix")]
+        internal static unsafe partial int BioGetReplayPrefix(SafeBioHandle bio, out byte* prefixPtr, out int prefixLen);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGetWriteResult")]
         internal static partial void BioGetWriteResult(SafeBioHandle bio, out int writtenToWindow, out int spillLen);
@@ -547,7 +547,7 @@ namespace Microsoft.Win32.SafeHandles
             if (usePreallocatedBio)
             {
                 // Deferred-server flow (native pre-fetch): the caller populated a
-                // socket-replay BIO via BioReadTlsFrame; adopt it as the read BIO
+                // socket-replay BIO via BioPeekTlsFrame; adopt it as the read BIO
                 // and create a peer write BIO for OpenSSL's outbound records.
                 // Clear the field so ownership transfer happens exactly once.
                 readBio = preallocatedReadBio;
