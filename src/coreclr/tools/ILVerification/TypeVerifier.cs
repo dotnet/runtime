@@ -61,11 +61,8 @@ namespace Internal.TypeVerifier
             {
                 TypeDesc resolvedBaseType = _module.GetType(baseType);
                 
-                // Arrays, pointers, and generic variables are valid TypeSpec forms in other
-                // metadata and IL token contexts, so GetType must continue to resolve them. A
-                // BaseType TypeSpec is narrower: it has to name a constructed generic class.
-                if ((baseType.Kind == HandleKind.TypeSpecification && !resolvedBaseType.HasInstantiation) ||
-                    resolvedBaseType.IsValueType ||
+
+                if (resolvedBaseType.IsValueType ||
                     resolvedBaseType.IsInterface ||
                     !resolvedBaseType.IsDefType)
                 {
