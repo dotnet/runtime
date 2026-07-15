@@ -44,6 +44,8 @@ namespace System
         /// <summary>Represents the number zero (0).</summary>
         private const uint Zero = 0;
 
+        static bool IEquatable<uint>.IsBitwiseEquatable => true;
+
         /// <summary>Produces the full product of two unsigned 32-bit numbers.</summary>
         /// <param name="left">The first number to multiply.</param>
         /// <param name="right">The second number to multiply.</param>

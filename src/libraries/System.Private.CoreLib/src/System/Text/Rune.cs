@@ -68,6 +68,8 @@ namespace System.Text
 
         private readonly uint _value;
 
+        static bool IEquatable<Rune>.IsBitwiseEquatable => true;
+
         /// <summary>
         /// Creates a <see cref="Rune"/> from the provided UTF-16 code unit.
         /// </summary>

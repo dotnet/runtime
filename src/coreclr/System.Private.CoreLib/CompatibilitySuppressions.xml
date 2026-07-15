@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
@@ -24,6 +24,18 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.String.TrimStart(System.ReadOnlySpan{System.Char})</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.IEquatable`1.get_IsBitwiseEquatable</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.IEquatable`1.get_IsBitwiseIEquatable</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>

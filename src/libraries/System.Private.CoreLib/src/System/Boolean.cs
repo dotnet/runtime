@@ -57,6 +57,8 @@ namespace System
         //
         public static readonly string FalseString = FalseLiteral;
 
+        static bool IEquatable<bool>.IsBitwiseEquatable => true;
+
         //
         // Overridden Instance Methods
         //

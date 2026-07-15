@@ -3551,6 +3551,7 @@ namespace System
     public partial interface IEquatable<T> where T : allows ref struct
     {
         bool Equals(T? other);
+        virtual static bool IsBitwiseIEquatable { get { throw null; } }
     }
     public partial interface IFormatProvider
     {

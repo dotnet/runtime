@@ -46,6 +46,8 @@ namespace System
         // The minimum character value.
         public const char MinValue = (char)0x00;
 
+        static bool IEquatable<char>.IsBitwiseEquatable => true;
+
         private const byte IsWhiteSpaceFlag = 0x80;
         private const byte IsUpperCaseLetterFlag = 0x40;
         private const byte IsLowerCaseLetterFlag = 0x20;

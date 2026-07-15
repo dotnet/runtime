@@ -44,6 +44,8 @@ namespace System
         /// <summary>Represents the number zero (0).</summary>
         private const ushort Zero = 0;
 
+        static bool IEquatable<ushort>.IsBitwiseEquatable => true;
+
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
         // Returns a value less than zero if this  object

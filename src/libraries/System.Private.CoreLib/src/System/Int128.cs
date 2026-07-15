@@ -31,6 +31,8 @@ namespace System
         private readonly ulong _upper;
 #endif
 
+        static bool IEquatable<Int128>.IsBitwiseEquatable => true;
+
         /// <summary>Initializes a new instance of the <see cref="Int128" /> struct.</summary>
         /// <param name="upper">The upper 64-bits of the 128-bit value.</param>
         /// <param name="lower">The lower 64-bits of the 128-bit value.</param>

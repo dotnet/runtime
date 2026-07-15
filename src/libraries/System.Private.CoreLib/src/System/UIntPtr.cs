@@ -40,6 +40,8 @@ namespace System
         [Intrinsic]
         public static readonly nuint Zero;
 
+        static bool IEquatable<nuint>.IsBitwiseEquatable => true;
+
         [NonVersionable]
         public UIntPtr(uint value)
         {

@@ -9,5 +9,10 @@ namespace System
         /// <param name="other">An object to compare with this object.</param>
         /// <returns><c>true</c> if the current object is equal to the <paramref name="other" /> parameter; otherwise, <c>false</c>.</returns>
         bool Equals(T? other);
+
+        /// <summary>
+        /// Indicates whether the current type is bitwise equatable.
+        /// </summary>
+        static virtual bool IsBitwiseEquatable => false;
     }
 }

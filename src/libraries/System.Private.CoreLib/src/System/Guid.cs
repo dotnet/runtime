@@ -44,6 +44,8 @@ namespace System
         /// <remarks>This returns the value: FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF</remarks>
         public static Guid AllBitsSet => new Guid(uint.MaxValue, ushort.MaxValue, ushort.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue);
 
+        static bool IEquatable<Guid>.IsBitwiseEquatable => true;
+
         private readonly int _a;   // Do not rename (binary serialization)
         private readonly short _b; // Do not rename (binary serialization)
         private readonly short _c; // Do not rename (binary serialization)

@@ -47,6 +47,8 @@ namespace System
         /// <summary>Represents the number negative one (-1).</summary>
         private const int NegativeOne = -1;
 
+        static bool IEquatable<int>.IsBitwiseEquatable => true;
+
         /// <summary>Produces the full product of two 32-bit numbers.</summary>
         /// <param name="left">The first number to multiply.</param>
         /// <param name="right">The second number to multiply.</param>

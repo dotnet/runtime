@@ -47,6 +47,8 @@ namespace System
         /// <summary>Represents the number negative one (-1).</summary>
         private const short NegativeOne = -1;
 
+        static bool IEquatable<short>.IsBitwiseEquatable => true;
+
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
         // Returns a value less than zero if this  object

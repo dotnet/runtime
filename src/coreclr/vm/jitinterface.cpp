@@ -22,6 +22,7 @@
 #include "float.h"      // for isnan
 #include "dbginterface.h"
 #include "dllimport.h"
+#include "ilstubresolver.h"
 #include "callconvbuilder.hpp"
 #include "gcheaputilities.h"
 #include "comdelegate.h"
@@ -7330,31 +7331,37 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
         static const BYTE returnTrue[] = { CEE_LDC_I4_1, CEE_RET };
         static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
 
-        // Ideally we could detect automatically whether a type is trivially equatable
-        // (i.e., its operator == could be implemented via memcmp). The best we can do
-        // for now is hardcode a list of known supported types and then also include anything
-        // that doesn't provide its own object.Equals override / IEquatable<T> implementation.
-        // n.b. This doesn't imply that the type's CompareTo method can be memcmp-implemented,
-        // as a method like CompareTo may need to take a type's signedness into account.
+        TypeHandle iEquatableType = TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst);
+        if (typeHandle.CanCastTo(iEquatableType))
+        {
+            MethodDesc* interfaceMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                CoreLibBinder::GetMethod(METHOD__IEQUATABLEGENERIC__GET_IS_BITWISE_EQUATABLE),
+                iEquatableType.AsMethodTable(),
+                FALSE,
+                Instantiation(),
+                FALSE,
+                TRUE);
 
-        if (methodTable == CoreLibBinder::GetClass(CLASS__BOOLEAN)
-            || methodTable == CoreLibBinder::GetClass(CLASS__BYTE)
-            || methodTable == CoreLibBinder::GetClass(CLASS__SBYTE)
-            || methodTable == CoreLibBinder::GetClass(CLASS__CHAR)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT16)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT16)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT32)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT32)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT64)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT64)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT128)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT128)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
-            || methodTable == CoreLibBinder::GetClass(CLASS__GUID)
-            || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
-            || methodTable->IsEnum()
-            || IsBitwiseEquatable(typeHandle, methodTable))
+            NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+            ilResolver->SetStubMethodDesc(ftn);
+
+            SigTypeContext genericContext;
+            SigTypeContext::InitTypeContext(ftn, &genericContext);
+
+            ILStubLinker sl(ftn->GetModule(), ftn->GetSignature(), &genericContext, ftn, ILSTUB_LINKER_FLAG_NONE);
+
+            ILCodeStream* code = sl.NewCodeStream(ILStubLinker::kDispatch);
+            code->EmitCONSTRAINED(code->GetToken(typeHandle));
+            code->EmitCALL(code->GetToken(interfaceMethod), 0, 1);
+            code->EmitRET();
+
+            cxt.Header = ilResolver->FinalizeILStub(&sl, CORJIT_FLAGS());
+            cxt.TransientResolver = ilResolver.Extract();
+            getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
+            *localSig = SigPointer(cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig);
+            return true;
+        }
+        else if (methodTable->IsEnum() || IsBitwiseEquatable(typeHandle, methodTable))
         {
             methInfo->ILCode = const_cast<BYTE*>(returnTrue);
         }
