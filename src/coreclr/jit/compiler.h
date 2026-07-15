@@ -5105,12 +5105,13 @@ protected:
     {
         unsigned m_enumeratorLocal;
         unsigned m_likelihood;
-        unsigned m_allocationCount;
     };
 
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> VarToUnsignedMap;
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, InferredGdvEntry> VarToLikelyClassMap;
+    typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, unsigned>
+        ClassHandleToUnsignedMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, IteratorGdvInfo>
         ClassHandleToIteratorGdvInfoMap;
 
@@ -5156,6 +5157,20 @@ protected:
         }
 
         return compiler->impIteratorGdvInfoMap;
+    }
+
+    ClassHandleToUnsignedMap* impAllocationClassCountMap = nullptr;
+    bool hasAllocationClassCountMap() { return impInlineRoot()->impAllocationClassCountMap != nullptr; }
+    ClassHandleToUnsignedMap* getImpAllocationClassCountMap()
+    {
+        Compiler* compiler = impInlineRoot();
+        if (compiler->impAllocationClassCountMap == nullptr)
+        {
+            CompAllocator alloc(compiler->getAllocator(CMK_Generic));
+            compiler->impAllocationClassCountMap = new (alloc) ClassHandleToUnsignedMap(alloc);
+        }
+
+        return compiler->impAllocationClassCountMap;
     }
 
     VarToUnsignedMap* impGetEnumeratorReceiverToEnumeratorMap = nullptr;

@@ -433,13 +433,17 @@ void ObjectAllocator::PrepareAnalysis()
     {
         enumeratorLocalCount += m_compiler->getImpEnumeratorGdvLocalMap()->GetCount();
     }
-    if (m_compiler->hasIteratorGdvInfoMap())
+    if (m_compiler->hasIteratorGdvInfoMap() && m_compiler->hasAllocationClassCountMap())
     {
-        Compiler::ClassHandleToIteratorGdvInfoMap* const gdvInfoMap = m_compiler->getImpIteratorGdvInfoMap();
-        for (const Compiler::IteratorGdvInfo gdvInfo :
-             Compiler::ClassHandleToIteratorGdvInfoMap::ValueIteration(gdvInfoMap))
+        Compiler::ClassHandleToIteratorGdvInfoMap* const gdvInfoMap  = m_compiler->getImpIteratorGdvInfoMap();
+        Compiler::ClassHandleToUnsignedMap* const allocationCountMap = m_compiler->getImpAllocationClassCountMap();
+        for (CORINFO_CLASS_HANDLE const clsHnd : Compiler::ClassHandleToIteratorGdvInfoMap::KeyIteration(gdvInfoMap))
         {
-            enumeratorLocalCount += gdvInfo.m_allocationCount;
+            unsigned allocationCount = 0;
+            if (allocationCountMap->Lookup(clsHnd, &allocationCount))
+            {
+                enumeratorLocalCount += allocationCount;
+            }
         }
     }
 

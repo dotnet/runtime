@@ -6880,13 +6880,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                         IteratorGdvInfo gdvInfo;
                                         gdvInfo.m_likelihood      = inlineInfo->likelihood;
                                         gdvInfo.m_enumeratorLocal = lclNum;
-                                        gdvInfo.m_allocationCount = 0;
 
                                         IteratorGdvInfo                        existingInfo;
                                         ClassHandleToIteratorGdvInfoMap* const gdvInfoMap = getImpIteratorGdvInfoMap();
                                         if (gdvInfoMap->Lookup(likelyClass, &existingInfo))
                                         {
-                                            gdvInfo.m_allocationCount = existingInfo.m_allocationCount;
                                             if (existingInfo.m_enumeratorLocal != lclNum)
                                             {
                                                 gdvInfo.m_enumeratorLocal = BAD_VAR_NUM;
@@ -9026,21 +9024,22 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             hasImpEnumeratorGdvLocalMap() && (getImpEnumeratorGdvLocalMap()->GetCount() > 0);
                         const bool hasIteratorGdvInfo =
                             hasIteratorGdvInfoMap() && (getImpIteratorGdvInfoMap()->GetCount() > 0);
+                        if (opts.OptimizationEnabled() && (JitConfig.JitObjectStackAllocation() != 0) &&
+                            (JitConfig.JitObjectStackAllocationConditionalEscape() != 0))
+                        {
+                            ClassHandleToUnsignedMap* const allocClassCountMap = getImpAllocationClassCountMap();
+                            unsigned                        allocationCount    = 0;
+                            allocClassCountMap->Lookup(resolvedToken.hClass, &allocationCount);
+                            allocClassCountMap->Set(resolvedToken.hClass, allocationCount + 1,
+                                                    ClassHandleToUnsignedMap::Overwrite);
+                        }
+
                         const bool mayNeedIteratorInfo = opts.OptimizationEnabled() &&
                                                          (JitConfig.JitObjectStackAllocation() != 0) &&
                                                          (JitConfig.JitObjectStackAllocationConditionalEscape() != 0) &&
                                                          (hasEnumeratorGdvLocals || hasIteratorGdvInfo);
                         const bool isEnumerableAndEnumerator =
                             mayNeedIteratorInfo && info.compCompHnd->isEnumerableAndEnumerator(resolvedToken.hClass);
-                        if (isEnumerableAndEnumerator && hasIteratorGdvInfo)
-                        {
-                            IteratorGdvInfo* const gdvInfo =
-                                getImpIteratorGdvInfoMap()->LookupPointer(resolvedToken.hClass);
-                            if (gdvInfo != nullptr)
-                            {
-                                gdvInfo->m_allocationCount++;
-                            }
-                        }
 
                         // Flag if this allocation happens within a method that uses the static empty
                         // pattern (if we stack allocate this object, we can optimize the empty side away)
