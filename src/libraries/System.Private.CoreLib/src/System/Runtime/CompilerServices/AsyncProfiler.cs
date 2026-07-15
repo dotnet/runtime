@@ -1139,6 +1139,34 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        // Routes the synchronous Activity.Current change-point (raised on the mutating thread from
+        // Activity.CurrentChanged) into the same per-thread buffer the async change-points use, so both share
+        // one ordered, delta-timestamped stream and one dedup (context.TraceIdChanged).
+        //
+        // Gated purely on the buffer's own config, exactly like the async change-points: if the trace-id keyword
+        // is not active in this context's config, the change-point is dropped rather than routed through a
+        // second, standalone transport.
+        internal static void EmitSyncTraceIdChanged(ReadOnlySpan<byte> traceId)
+        {
+            AsyncThreadContext context = AsyncThreadContext.Get();
+
+            // CurrentChanged is raised only from Activity.Start/Stop/set_Current, none of which run inside an
+            // async-profiler emit window, so this entry is non-reentrant like the async hooks; Acquire asserts it.
+            AsyncThreadContext.Acquire(context);
+
+            // Run the same config (metadata, manifest, baseline reset) the async hooks do, so a lone synchronous
+            // change-point is self-describing and the shared last-seen is reset on (re)enable.
+            SyncPoint.Check(context);
+
+            if (IsEnabled.TraceIdChangedEvent(context.ActiveEventKeywords))
+            {
+                long currentTimestamp = Stopwatch.GetTimestamp();
+                ResumeAsyncContext.WriteTraceIdChanged(context, currentTimestamp, traceId);
+            }
+
+            AsyncThreadContext.Release(context);
+        }
+
         internal static partial class SuspendAsyncContext
         {
             public static void Suspend(AsyncStateMachineDispatcher dispatcher, ref Info info)
@@ -1404,6 +1432,14 @@ namespace System.Runtime.CompilerServices
 
                 // Reset the last-seen so the next change-point re-declares the id: a reset means a late-joining
                 // session or a recycled thread, and the parser must not trust a value from before the reset.
+                //
+                // Late attach is forward-only for both producers: a session that enables while activities are
+                // already in flight learns a thread's current trace only at that thread's next sampling point
+                // (an async create/suspend hook, or an Activity.CurrentChanged edge) - the reset forces that next
+                // observation to emit even when the id is unchanged. There is no rundown that replays already-open
+                // traces at enable time, because Activity.Current is a per-thread AsyncLocal that cannot be
+                // snapshot cross-thread; a thread that neither runs async work nor changes Activity.Current after
+                // enable stays undeclared until its next transition.
                 context.ResetLastTraceId();
 
                 // Metadata (clock sync + manifest) is required to decode any buffered event, including a lone

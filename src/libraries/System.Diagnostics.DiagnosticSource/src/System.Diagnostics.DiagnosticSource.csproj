@@ -104,6 +104,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Diagnostics\Activity.AsyncProfiler.netcoreapp.cs" />
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netcoreapp.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.netcoreapp.cs" />
     <Compile Include="System\Diagnostics\ActivityLink.netcoreapp.cs" />

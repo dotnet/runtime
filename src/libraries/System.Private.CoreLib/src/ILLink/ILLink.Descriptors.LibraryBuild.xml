@@ -39,5 +39,9 @@
       <method name="LoadAssemblyAndGetFunctionPointer" />
       <method name="GetFunctionPointer" />
     </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncProfilerTraceIdKeyword">
+      <!-- Called by System.Diagnostics.DiagnosticSource (Activity) via UnsafeAccessor -->
+      <method name="Register" />
+    </type>
   </assembly>
 </linker>

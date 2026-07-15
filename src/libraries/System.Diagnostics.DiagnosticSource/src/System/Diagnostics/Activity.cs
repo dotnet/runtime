@@ -939,22 +939,6 @@ namespace System.Diagnostics
             }
         }
 
-        // Copies the current Activity's 16-byte trace id into <paramref name="traceId"/>. The trace id is a
-        // W3C concept, so this returns false (leaving the span untouched) when there is no current Activity or
-        // it is not in the W3C id format. Called from System.Private.CoreLib via UnsafeAccessor; CoreLib cannot
-        // reference this assembly directly (it is the one referencing CoreLib), so the reader lives here.
-        internal static bool TryGetCurrentTraceId(Span<byte> traceId)
-        {
-            Activity? activity = Current;
-            if (activity is null || activity.IdFormat != ActivityIdFormat.W3C)
-            {
-                return false;
-            }
-
-            activity.TraceId.CopyTo(traceId);
-            return true;
-        }
-
         /// <summary>
         /// True if the <see cref="ActivityTraceFlags.RandomTraceId"/> flag is set.
         /// </summary>

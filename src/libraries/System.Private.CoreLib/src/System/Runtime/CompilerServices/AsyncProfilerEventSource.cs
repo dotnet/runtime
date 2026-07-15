@@ -103,6 +103,27 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        // --------------------------------------------------------------------------------------------
+        // Synchronous trace-id timeline
+        //
+        // The synchronous change-points (Activity.Current transitions) are produced in
+        // System.Diagnostics.DiagnosticSource and reach CoreLib through UnsafeAccessor:
+        //   * AsyncProfilerTraceIdKeyword.Register - installs the CurrentChanged (un)subscribe callback.
+        //   * EmitCurrentTraceIdChanged - called from the CurrentChanged handler; routes the change-point to
+        //     the per-thread buffer, the same transport the async change-points use.
+        // --------------------------------------------------------------------------------------------
+
+        [NonEvent]
+        internal static void EmitCurrentTraceIdChanged(ReadOnlySpan<byte> traceId)
+        {
+            if (!AsyncProfilerTraceIdKeyword.Enabled)
+            {
+                return;
+            }
+
+            AsyncProfiler.EmitSyncTraceIdChanged(traceId);
+        }
+
         /// <summary>
         /// Get callbacks when the ETW sends us commands
         /// </summary>
@@ -126,6 +147,39 @@ namespace System.Runtime.CompilerServices
             }
 
             AsyncProfiler.Config.Update(m_level, keywords);
+
+            // Publish the trace-id keyword transition so DiagnosticSource can (un)subscribe
+            // Activity.CurrentChanged. Use IsEnabled (the aggregate across all sessions), not this one
+            // command's mask, so an unrelated enable/disable does not spuriously toggle the subscription.
+            AsyncProfilerTraceIdKeyword.Set(IsEnabled(EventLevel.Informational, Keywords.TraceIdChanged));
+        }
+    }
+
+    // Carries the trace-id keyword's on/off state and the DiagnosticSource-side CurrentChanged subscription
+    // toggle. Kept separate from AsyncProfilerEventSource so that registering the bridge on first use of
+    // Activity does not construct the event source; the source is built only when a session enables it.
+    internal static class AsyncProfilerTraceIdKeyword
+    {
+        private static bool s_enabled;
+        private static Action<bool>? s_subscriber;
+
+        // True while any session has the trace-id keyword enabled. Read on the synchronous emit path as a
+        // cheap guard against a keyword-off race between a CurrentChanged transition and its emit.
+        internal static bool Enabled => Volatile.Read(ref s_enabled);
+
+        // Installs the CurrentChanged (un)subscribe callback on first use of Activity, then syncs it to the
+        // current state so a keyword enabled before Activity was first used still subscribes.
+        internal static void Register(Action<bool> callback)
+        {
+            s_subscriber = callback;
+            callback(Volatile.Read(ref s_enabled));
+        }
+
+        // Drives the subscription from OnEventCommand so change-points flow only while the keyword is enabled.
+        internal static void Set(bool enabled)
+        {
+            Volatile.Write(ref s_enabled, enabled);
+            s_subscriber?.Invoke(enabled);
         }
     }
 }
