@@ -4,7 +4,6 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
@@ -23,13 +22,13 @@ namespace Internal.Runtime
                 var pDispatchCellRegion = (DispatchCell*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.InterfaceDispatchCellRegion, out int length);
                 if ((byte*)pCell >= (byte*)pDispatchCellRegion && (byte*)pCell < (byte*)pDispatchCellRegion + length)
                 {
-                    return ResolveStaticInterfaceDispatch(typeManager, pObject, (nint)(pCell - pDispatchCellRegion));
+                    return ResolveStaticInterfaceDispatch(typeManager, pObject, (nuint)(pCell - pDispatchCellRegion), (uint)(length / sizeof(DispatchCell)));
                 }
 
                 pDispatchCellRegion = (DispatchCell*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GvmDispatchCellRegion, out length);
                 if ((byte*)pCell >= (byte*)pDispatchCellRegion && (byte*)pCell < (byte*)pDispatchCellRegion + length)
                 {
-                    return ResolveGvmDispatch(typeManager, pObject, (nint)(pCell - pDispatchCellRegion));
+                    return ResolveGvmDispatch(typeManager, pObject, (nuint)(pCell - pDispatchCellRegion), (uint)(length / sizeof(DispatchCell)));
                 }
             }
 
@@ -51,85 +50,144 @@ namespace Internal.Runtime
             return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, (MethodTable*)pDynamicInterfaceCell->InterfaceType, (ushort)pDynamicInterfaceCell->Slot);
         }
 
-        private static unsafe IntPtr ResolveStaticInterfaceDispatch(TypeManagerHandle typeManager, object pObject, nint cellIndex)
+        private static unsafe IntPtr ResolveStaticInterfaceDispatch(TypeManagerHandle typeManager, object pObject, nuint cellIndex, uint cellCount)
         {
-            IntPtr pDispatchCellInfoRegion = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.InterfaceDispatchCellInfoRegion, out _);
-            if (MethodTable.SupportsRelativePointers)
+            if (cellIndex >= cellCount)
+                throw new BadImageFormatException();
+
+            byte* pInfo = (byte*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.InterfaceDispatchCellInfoRegion, out int length);
+            int pointerSize = MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint);
+            int descriptorSize = pointerSize + sizeof(ushort);
+            byte* pointerTable;
+            byte* slotTable;
+            uint descriptorIndex;
+
+            if ((ulong)length == (ulong)cellCount * (uint)descriptorSize)
             {
-                var dispatchCellInfo = &((RelativeInterfaceDispatchInfo*)pDispatchCellInfoRegion)[cellIndex];
-                return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, dispatchCellInfo->InterfaceType, (ushort)dispatchCellInfo->Slot);
+                pointerTable = pInfo;
+                slotTable = pInfo + (nuint)cellCount * (uint)pointerSize;
+                descriptorIndex = checked((uint)cellIndex);
             }
             else
             {
-                var dispatchCellInfo = &((InterfaceDispatchInfo*)pDispatchCellInfoRegion)[cellIndex];
-                return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, dispatchCellInfo->InterfaceType, (ushort)dispatchCellInfo->Slot);
+                GetDictionaryTables(pInfo, length, cellCount, pointerSize, descriptorSize, cellIndex,
+                    out descriptorIndex, out uint descriptorCount, out pointerTable);
+                slotTable = pointerTable + (nuint)descriptorCount * (uint)pointerSize;
             }
+
+            MethodTable* interfaceType = ReadMethodTable(pointerTable + (nuint)descriptorIndex * (uint)pointerSize);
+            ushort slot = *(ushort*)(slotTable + (nuint)descriptorIndex * sizeof(ushort));
+            return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, interfaceType, slot);
         }
 
-        private static unsafe IntPtr ResolveGvmDispatch(TypeManagerHandle typeManager, object pObject, nint cellIndex)
+        private static unsafe IntPtr ResolveGvmDispatch(TypeManagerHandle typeManager, object pObject, nuint cellIndex, uint cellCount)
         {
-            IntPtr pDispatchCellInfoRegion = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GvmDispatchCellInfoRegion, out _);
-            if (MethodTable.SupportsRelativePointers)
+            if (cellIndex >= cellCount)
+                throw new BadImageFormatException();
+
+            byte* pInfo = (byte*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GvmDispatchCellInfoRegion, out int length);
+            int pointerSize = MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint);
+            int descriptorSize = 2 * pointerSize + sizeof(int);
+            byte* owningTypeTable;
+            byte* instantiationTable;
+            byte* flagsAndTokenTable;
+            uint descriptorIndex;
+
+            if ((ulong)length == (ulong)cellCount * (uint)descriptorSize)
             {
-                var dispatchCellInfo = &((RelativeGvmDispatchInfo*)pDispatchCellInfoRegion)[cellIndex];
-                return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
-                    new RuntimeTypeHandle(pObject.GetMethodTable()), new RuntimeTypeHandle(dispatchCellInfo->OwningType), dispatchCellInfo->Handle, dispatchCellInfo->IsAsyncVariant, dispatchCellInfo->Instantiation, isMethodInstantiationDataRelative: true);
+                owningTypeTable = pInfo;
+                instantiationTable = pInfo + (nuint)cellCount * (uint)pointerSize;
+                flagsAndTokenTable = instantiationTable + (nuint)cellCount * (uint)pointerSize;
+                descriptorIndex = checked((uint)cellIndex);
             }
             else
             {
-                var dispatchCellInfo = &((GvmDispatchInfo*)pDispatchCellInfoRegion)[cellIndex];
-                return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
-                    new RuntimeTypeHandle(pObject.GetMethodTable()), new RuntimeTypeHandle(dispatchCellInfo->OwningType), dispatchCellInfo->Handle, dispatchCellInfo->IsAsyncVariant, dispatchCellInfo->Instantiation, isMethodInstantiationDataRelative: false);
+                GetDictionaryTables(pInfo, length, cellCount, pointerSize, descriptorSize, cellIndex,
+                    out descriptorIndex, out uint descriptorCount, out owningTypeTable);
+                instantiationTable = owningTypeTable + (nuint)descriptorCount * (uint)pointerSize;
+                flagsAndTokenTable = instantiationTable + (nuint)descriptorCount * (uint)pointerSize;
             }
+
+            MethodTable* owningType = ReadMethodTable(owningTypeTable + (nuint)descriptorIndex * (uint)pointerSize);
+            void* instantiation = ReadPointer(instantiationTable + (nuint)descriptorIndex * (uint)pointerSize);
+            int flagsAndToken = *(int*)(flagsAndTokenTable + (nuint)descriptorIndex * sizeof(int));
+
+            return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
+                new RuntimeTypeHandle(pObject.GetMethodTable()),
+                new RuntimeTypeHandle(owningType),
+                new MethodHandle(flagsAndToken & ~GvmDispatchCellFlags.IsAsyncVariant),
+                (flagsAndToken & GvmDispatchCellFlags.IsAsyncVariant) != 0,
+                instantiation,
+                isMethodInstantiationDataRelative: MethodTable.SupportsRelativePointers);
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct RelativeInterfaceDispatchInfo
+        private static unsafe void GetDictionaryTables(
+            byte* pInfo,
+            int length,
+            uint cellCount,
+            int pointerSize,
+            int descriptorSize,
+            nuint cellIndex,
+            out uint descriptorIndex,
+            out uint descriptorCount,
+            out byte* pointerTable)
         {
-            private int _interfaceTypeRelPtr;
-            public int Slot;
+            // Dictionary format:
+            // uint descriptorCount; index[cellCount]; padding; descriptor field arrays.
+            if (length < sizeof(uint))
+                throw new BadImageFormatException();
 
-            public unsafe MethodTable* InterfaceType
-                => (MethodTable*)((byte*)Unsafe.AsPointer(ref _interfaceTypeRelPtr) + _interfaceTypeRelPtr);
+            descriptorCount = *(uint*)pInfo;
+            if (descriptorCount == 0)
+                throw new BadImageFormatException();
+
+            int indexSize = GetIndexSize(descriptorCount);
+            ulong pointerTableOffset = AlignUp(sizeof(uint) + (ulong)cellCount * (uint)indexSize, (uint)pointerSize);
+            ulong expectedLength = pointerTableOffset + (ulong)descriptorCount * (uint)descriptorSize;
+            if ((ulong)length != expectedLength || cellIndex >= cellCount)
+                throw new BadImageFormatException();
+
+            byte* pIndex = pInfo + sizeof(uint) + cellIndex * (uint)indexSize;
+            descriptorIndex = indexSize switch
+            {
+                sizeof(byte) => *pIndex,
+                sizeof(ushort) => *(ushort*)pIndex,
+                _ => *(uint*)pIndex,
+            };
+
+            if (descriptorIndex >= descriptorCount)
+                throw new BadImageFormatException();
+
+            pointerTable = pInfo + pointerTableOffset;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct InterfaceDispatchInfo
+        private static int GetIndexSize(uint descriptorCount)
         {
-            public unsafe MethodTable* InterfaceType;
-            private nint _slot;
+            if (descriptorCount <= 1 << 8)
+                return sizeof(byte);
 
-            public int Slot => (int)_slot;
+            if (descriptorCount <= 1 << 16)
+                return sizeof(ushort);
+
+            return sizeof(uint);
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct RelativeGvmDispatchInfo
+        private static ulong AlignUp(ulong value, uint alignment)
         {
-            private int _owningTypeRelPtr;
-            private int _compositionRelPtr;
-            private int _flagsAndToken;
-
-            public unsafe MethodTable* OwningType
-                => (MethodTable*)((byte*)Unsafe.AsPointer(ref _owningTypeRelPtr) + _owningTypeRelPtr);
-
-            public unsafe void* Instantiation
-                => (byte*)Unsafe.AsPointer(ref _compositionRelPtr) + _compositionRelPtr;
-
-            public MethodHandle Handle => new MethodHandle(_flagsAndToken & ~GvmDispatchCellFlags.IsAsyncVariant);
-
-            public bool IsAsyncVariant => (_flagsAndToken & GvmDispatchCellFlags.IsAsyncVariant) != 0;
+            return (value + alignment - 1) & ~(alignment - 1);
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct GvmDispatchInfo
+        private static unsafe MethodTable* ReadMethodTable(byte* address)
         {
-            public unsafe MethodTable* OwningType;
-            public unsafe void* Instantiation;
-            private nint _flagsAndToken;
+            return (MethodTable*)ReadPointer(address);
+        }
 
-            public MethodHandle Handle => new MethodHandle((int)_flagsAndToken & ~GvmDispatchCellFlags.IsAsyncVariant);
+        private static unsafe void* ReadPointer(byte* address)
+        {
+            if (MethodTable.SupportsRelativePointers)
+                return address + *(int*)address;
 
-            public bool IsAsyncVariant => ((int)_flagsAndToken & GvmDispatchCellFlags.IsAsyncVariant) != 0;
+            return *(void**)address;
         }
     }
 }

@@ -25,38 +25,84 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, Array.Empty<ISymbolDefinitionNode>());
 
+            var cells = new List<DispatchCellNode>();
+            foreach (DispatchCellNode node in new SortedSet<DispatchCellNode>(factory.MetadataManager.GetDispatchCells(), new DispatchCellComparer()))
+            {
+                if (node.TargetMethod.HasInstantiation)
+                    continue;
+
+                node.InitializeOffset(checked(cells.Count * node.Size));
+                cells.Add(node);
+            }
+
+            var descriptorIndices = new Dictionary<MethodDesc, int>();
+            var descriptors = new List<MethodDesc>();
+            var cellDescriptorIndices = new int[cells.Count];
+
+            for (int i = 0; i < cells.Count; i++)
+            {
+                MethodDesc targetMethod = cells[i].TargetMethod;
+                if (!descriptorIndices.TryGetValue(targetMethod, out int descriptorIndex))
+                {
+                    descriptorIndex = descriptors.Count;
+                    descriptorIndices.Add(targetMethod, descriptorIndex);
+                    descriptors.Add(targetMethod);
+                }
+
+                cellDescriptorIndices[i] = descriptorIndex;
+            }
+
             var builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
 
             builder.RequireInitialAlignment(factory.Target.PointerSize);
 
-            int currentDispatchCellOffset = 0;
-            foreach (DispatchCellNode node in new SortedSet<DispatchCellNode>(factory.MetadataManager.GetDispatchCells(), new DispatchCellComparer()))
+            int pointerSize = factory.Target.SupportsRelativePointers ? sizeof(int) : factory.Target.PointerSize;
+            int descriptorSize = checked(pointerSize + sizeof(ushort));
+            int directSize = checked(cells.Count * descriptorSize);
+            int dictionarySize = DispatchCellInfoEncoding.GetDictionarySize(cells.Count, descriptors.Count, pointerSize, descriptorSize);
+
+            if (dictionarySize < directSize)
             {
-                MethodDesc targetMethod = node.TargetMethod;
-                if (targetMethod.HasInstantiation)
-                    continue;
+                builder.EmitUInt(checked((uint)descriptors.Count));
 
-                int targetSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
+                int indexSize = DispatchCellInfoEncoding.GetIndexSize(descriptors.Count);
+                foreach (int descriptorIndex in cellDescriptorIndices)
+                    DispatchCellInfoEncoding.EmitIndex(ref builder, descriptorIndex, indexSize);
 
-                node.InitializeOffset(currentDispatchCellOffset);
+                builder.PadAlignment(pointerSize);
 
-                IEETypeNode interfaceType = GetInterfaceTypeNode(factory, targetMethod);
-                if (factory.Target.SupportsRelativePointers)
-                {
-                    builder.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32);
-                    builder.EmitInt(targetSlot);
-                }
-                else
-                {
-                    builder.EmitPointerReloc(interfaceType);
-                    builder.EmitNaturalInt(targetSlot);
-                }
+                foreach (MethodDesc targetMethod in descriptors)
+                    EmitInterfaceType(ref builder, factory, targetMethod);
 
-                currentDispatchCellOffset += node.Size;
+                foreach (MethodDesc targetMethod in descriptors)
+                    EmitSlot(ref builder, factory, targetMethod);
+            }
+            else
+            {
+                foreach (DispatchCellNode cell in cells)
+                    EmitInterfaceType(ref builder, factory, cell.TargetMethod);
+
+                foreach (DispatchCellNode cell in cells)
+                    EmitSlot(ref builder, factory, cell.TargetMethod);
             }
 
             return builder.ToObjectData();
+        }
+
+        private static void EmitInterfaceType(ref ObjectDataBuilder builder, NodeFactory factory, MethodDesc targetMethod)
+        {
+            IEETypeNode interfaceType = GetInterfaceTypeNode(factory, targetMethod);
+            if (factory.Target.SupportsRelativePointers)
+                builder.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32);
+            else
+                builder.EmitPointerReloc(interfaceType);
+        }
+
+        private static void EmitSlot(ref ObjectDataBuilder builder, NodeFactory factory, MethodDesc targetMethod)
+        {
+            int targetSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
+            builder.EmitUShort(checked((ushort)targetSlot));
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
