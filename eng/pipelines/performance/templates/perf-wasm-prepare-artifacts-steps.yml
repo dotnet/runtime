@@ -30,22 +30,12 @@ steps:
     - script: cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging
       displayName: "Stage ref pack directory"
 
-  # These artifacts are consumed by the dotnet/performance repo, which still downloads
-  # them with DownloadBuildArtifacts@0. That task cannot read Pipeline Artifacts
-  # ("Unsupported artifact type: PipelineArtifact"), so they must be published as legacy
-  # Build Artifacts (not via the migrated upload-artifact-step.yml) until the
-  # performance-repo consumer is migrated to DownloadPipelineArtifact@2.
-  - task: ArchiveFiles@2
-    displayName: 'Archive Browser Wasm Artifacts (tar.gz)'
-    inputs:
-      rootFolderOrFile:  '$(Build.SourcesDirectory)/artifacts/staging'
-      archiveFile:       '$(Build.StagingDirectory)/${{ parameters.artifactName }}.tar.gz'
-      archiveType:       tar
-      tarCompression:    gz
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+      rootFolder: '$(Build.SourcesDirectory)/artifacts/staging'
       includeRootFolder: true
-
-  - task: PublishBuildArtifacts@1
-    displayName: 'Publish Browser Wasm Artifacts'
-    inputs:
-      PathtoPublish: '$(Build.StagingDirectory)/${{ parameters.artifactName }}.tar.gz'
-      ArtifactName:  ${{ parameters.artifactName }}
+      displayName: Browser Wasm Artifacts
+      artifactName: ${{ parameters.artifactName }}
+      archiveType: tar
+      tarCompression: gz
+      archiveExtension: '.tar.gz'
