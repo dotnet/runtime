@@ -761,7 +761,7 @@ bool isPrefetch(instruction ins)
 
 void emitDispMask(const instrDesc* id, regNumber reg) const;
 void emitDispReloc(ssize_t value) const;
-void emitDispAddrMode(instrDesc* id, bool noDetail = false) const;
+void emitDispAddrMode(instrDesc* id) const;
 void emitDispShift(instruction ins, int cnt = 0) const;
 
 const char* emitXMMregName(unsigned reg) const;
@@ -1062,8 +1062,6 @@ void emitIns_C_I(instruction          ins,
                  int                  offs,
                  int                  val,
                  insOpts              instOptions = INS_OPTS_NONE);
-
-void emitIns_IJ(emitAttr attr, regNumber reg, unsigned base);
 
 void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
 void emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg);

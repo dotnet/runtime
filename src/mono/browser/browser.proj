@@ -230,6 +230,7 @@
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=0" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <_EmccLinkFlags Include="-s GROWABLE_ARRAYBUFFERS=0" />
       <!-- for jiterpreter -->
       <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=0" />
