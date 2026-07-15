@@ -2746,7 +2746,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
         [Fact]
-        public async Task ShouldEvictConnection_ThroughHttpsProxyTunnel_ReportsOriginAndRequestVersion()
+        public async Task ConnectTunnel_EndToEnd_ConnectionIdFlowsThroughCallbacksAndEviction()
         {
             if (UseVersion == HttpVersion.Version30)
             {
@@ -2761,6 +2761,13 @@ namespace System.Net.Http.Functional.Tests
             var evictionObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             SocketsHttpConnectionEvictionContext capturedContext = null;
 
+            // A CONNECT tunnel uses two connections: the transport to the proxy (the "tunnel", always HTTP/1.1 for the
+            // CONNECT) and a distinct connection layered over it that actually serves the request (the "inner"
+            // connection, e.g. HTTP/2). Capture each callback's connection id to verify how they flow end to end.
+            long connectCallbackId = -1;
+            var plaintextInvocations = new List<(Version Version, long ConnectionId)>();
+            long? requestConnectionId = null;
+
             using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();
 
             using HttpClientHandler handler = CreateHttpClientHandler();
@@ -2768,6 +2775,25 @@ namespace System.Net.Http.Functional.Tests
             socketsHandler.PooledConnectionLifetime = Timeout.InfiniteTimeSpan;
             socketsHandler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(4);
             handler.Proxy = new WebProxy(proxyServer.Uri);
+            socketsHandler.ConnectCallback = async (context, ct) =>
+            {
+                // The only transport a ConnectCallback establishes here is the tunnel to the proxy.
+                if (connectCallbackId == -1)
+                {
+                    connectCallbackId = context.ConnectionId;
+                }
+                var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                await socket.ConnectAsync(context.DnsEndPoint, ct);
+                return new NetworkStream(socket, ownsSocket: true);
+            };
+            socketsHandler.PlaintextStreamFilter = (context, _) =>
+            {
+                lock (plaintextInvocations)
+                {
+                    plaintextInvocations.Add((context.NegotiatedHttpVersion, context.ConnectionId));
+                }
+                return ValueTask.FromResult(context.PlaintextStream);
+            };
             socketsHandler.ShouldEvictConnection = (context, _) =>
             {
                 capturedContext ??= context;
@@ -2784,11 +2810,30 @@ namespace System.Net.Http.Functional.Tests
                     using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
                     {
                         Assert.True(response.IsSuccessStatusCode);
+                        requestConnectionId = request.ConnectionId;
                     }
 
                     await evictionObserved.Task.WaitAsync(TestHelper.PassingTestTimeout);
 
+                    // The ConnectCallback saw the tunnel's transport connection to the proxy.
+                    Assert.NotEqual(-1, connectCallbackId);
+
+                    // The plaintext filter runs once per hop: first on the HTTP/1.1 CONNECT connection (the tunnel), then
+                    // on the connection negotiated with the origin over it (the inner connection, at the request version).
+                    Assert.Equal(2, plaintextInvocations.Count);
+                    Assert.Equal(HttpVersion.Version11, plaintextInvocations[0].Version);
+                    Assert.Equal(UseVersion, plaintextInvocations[1].Version);
+
+                    // The first filter hop and the ConnectCallback observe the same (tunnel) connection id...
+                    Assert.Equal(connectCallbackId, plaintextInvocations[0].ConnectionId);
+                    // ...while the second filter hop, the request, and the eviction context all observe the distinct
+                    // inner connection id that actually served the request.
+                    Assert.NotNull(requestConnectionId);
+                    Assert.Equal(requestConnectionId.Value, plaintextInvocations[1].ConnectionId);
+                    Assert.NotEqual(connectCallbackId, requestConnectionId.Value);
+
                     Assert.NotNull(capturedContext);
+                    Assert.Equal(requestConnectionId.Value, capturedContext.ConnectionId);
                     // The CONNECT tunnel to the proxy is always HTTP/1, but the reported version is the end-to-end
                     // request version, and the DnsEndPoint is the tunneled origin (not the proxy).
                     Assert.Equal(UseVersion, capturedContext.HttpVersion);
@@ -3178,6 +3223,100 @@ namespace System.Net.Http.Functional.Tests
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestHeaderAsync();
+                    });
+                });
+        }
+
+        [Fact]
+        public async Task ConnectionId_ForwardingProxy_MatchesConnectCallbackId()
+        {
+            using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();
+
+            long connectCallbackId = -1;
+
+            using var handler = new SocketsHttpHandler
+            {
+                Proxy = new WebProxy(proxyServer.Uri),
+            };
+            handler.ConnectCallback = async (context, ct) =>
+            {
+                // A plain (forwarding) proxy uses a single connection that targets the proxy itself and also serves
+                // the request, so the id observed here is the one that ends up on the request.
+                connectCallbackId = context.ConnectionId;
+                var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                await socket.ConnectAsync(context.DnsEndPoint, ct);
+                return new NetworkStream(socket, ownsSocket: true);
+            };
+
+            using HttpClient client = new HttpClient(handler);
+
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                Assert.Null(request.ConnectionId);
+
+                Task<HttpResponseMessage> requestTask = client.SendAsync(request);
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: "hello");
+                });
+                using HttpResponseMessage response = await requestTask;
+
+                // The connection to the proxy is the one the ConnectCallback established and the one that serves the
+                // request, so the id reported on the request is exactly the one observable in the ConnectCallback.
+                Assert.NotEqual(-1, connectCallbackId);
+                Assert.NotNull(request.ConnectionId);
+                Assert.Equal(connectCallbackId, request.ConnectionId.Value);
+            });
+        }
+
+        [Fact]
+        public async Task ConnectionId_HttpsProxyTunnel_RequestReportsTunneledConnectionNotProxyTransport()
+        {
+            long connectCallbackId = -1;
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async proxyUri =>
+                {
+                    using var handler = new SocketsHttpHandler
+                    {
+                        Proxy = new WebProxy(proxyUri),
+                    };
+                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                    handler.ConnectCallback = async (context, ct) =>
+                    {
+                        // For an HTTPS origin the proxy hop is a CONNECT tunnel: the ConnectCallback establishes the
+                        // transport to the proxy, which carries the tunneled connection that actually serves the request.
+                        connectCallbackId = context.ConnectionId;
+                        var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                        await socket.ConnectAsync(context.DnsEndPoint, ct);
+                        return new NetworkStream(socket, ownsSocket: true);
+                    };
+
+                    using HttpClient client = new HttpClient(handler);
+
+                    using var request = new HttpRequestMessage(HttpMethod.Get, "https://foo.bar/");
+                    Assert.Null(request.ConnectionId);
+
+                    using HttpResponseMessage response = await client.SendAsync(request);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                    // The transport the ConnectCallback established is the CONNECT tunnel to the proxy; the request is
+                    // served by a distinct connection layered over that tunnel, so the request reports a different id.
+                    Assert.NotEqual(-1, connectCallbackId);
+                    Assert.NotNull(request.ConnectionId);
+                    Assert.NotEqual(connectCallbackId, request.ConnectionId.Value);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        // Read the plaintext CONNECT request and answer 200 to open the tunnel, then negotiate TLS
+                        // with the client over the tunnel and serve the actual request.
+                        await connection.ReadRequestHeaderAndSendResponseAsync();
+                        await using LoopbackServer.Connection sslConnection = await LoopbackServer.Connection.CreateAsync(
+                            null, connection.Stream, new LoopbackServer.Options { UseSsl = true });
+                        await sslConnection.ReadRequestHeaderAndSendResponseAsync();
                     });
                 });
         }
@@ -4741,6 +4880,54 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(useSsl ? "https" : "http", schemeHeader.Value);
                     }
                 }, options: options);
+        }
+
+        [Fact]
+        public async Task PlaintextStreamFilter_HttpsProxyTunnel_RunsPerHopWithDistinctConnectionIds()
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                return; // HTTP/3 (QUIC) cannot be tunneled through an HTTP CONNECT proxy.
+            }
+
+            var invocations = new List<(Version Version, long ConnectionId)>();
+
+            using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();
+
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
+            var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+            handler.Proxy = new WebProxy(proxyServer.Uri);
+            socketsHandler.PlaintextStreamFilter = (context, token) =>
+            {
+                lock (invocations)
+                {
+                    invocations.Add((context.NegotiatedHttpVersion, context.ConnectionId));
+                }
+                return ValueTask.FromResult(context.PlaintextStream);
+            };
+
+            using HttpClient client = CreateHttpClient(handler);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                    using HttpResponseMessage response = await client.SendAsync(TestAsync, request);
+                    Assert.True(response.IsSuccessStatusCode);
+
+                    // The filter runs once per hop, each hop being a distinct connection: first the HTTP/1.1 CONNECT
+                    // connection to the proxy, then the connection negotiated with the origin over the tunnel (e.g.
+                    // HTTP/2). Only the latter serves the request, so only its id ends up on the request.
+                    Assert.Equal(2, invocations.Count);
+                    Assert.Equal(HttpVersion.Version11, invocations[0].Version);
+                    Assert.Equal(UseVersion, invocations[1].Version);
+                    Assert.NotEqual(invocations[0].ConnectionId, invocations[1].ConnectionId);
+                    Assert.NotNull(request.ConnectionId);
+                    Assert.Equal(request.ConnectionId.Value, invocations[1].ConnectionId);
+                },
+                server => server.HandleRequestAsync(),
+                // HTTPS origin forces an HTTP/1 CONNECT tunnel through the proxy.
+                options: new GenericLoopbackOptions() { UseSsl = true });
         }
 
         [Theory]

@@ -123,14 +123,26 @@ namespace System.Net.Http
         public HttpRequestOptions Options => _options ??= new HttpRequestOptions();
 
         /// <summary>
-        /// Gets or sets the identifier of the connection that this request was most recently sent on, or <see langword="null"/>
-        /// if it has not been sent over a <see cref="SocketsHttpHandler"/> connection.
+        /// Gets or sets the identifier of the connection that this request was most recently sent on. The value is not
+        /// guaranteed to be set: it remains <see langword="null"/> when the request was not handled by a connection, for
+        /// example because it timed out before a connection could be obtained.
         /// </summary>
         /// <remarks>
-        /// The value matches the connection id reported through EventSource telemetry, and the id surfaced to
-        /// <see cref="SocketsHttpHandler.ConnectCallback"/> and <see cref="SocketsHttpHandler.ShouldEvictConnection"/>,
-        /// allowing a caller to correlate a request with the connection that served it. When a request is sent over
-        /// multiple connections (for example after a redirect or a retry), the value reflects the most recent attempt.
+        /// When the request is sent through a <see cref="SocketsHttpHandler"/>, the value matches the connection id
+        /// reported through EventSource telemetry and the id passed to
+        /// <see cref="SocketsHttpHandler.ShouldEvictConnection"/> for the connection that served the request, allowing
+        /// a caller to correlate a request with that connection. It also matches the id surfaced to a custom
+        /// <see cref="SocketsHttpHandler.ConnectCallback"/>, except when the request is served over an HTTP CONNECT
+        /// proxy tunnel: there the callback observes the tunnel's underlying transport connection to the proxy, whose
+        /// id differs from this one (which identifies the tunneled connection that carried the request). Both ids remain
+        /// observable through a <see cref="SocketsHttpHandler.PlaintextStreamFilter"/>, which runs once per hop and
+        /// reports the transport connection's id for the CONNECT hop and this id for the tunneled hop. When a request
+        /// is sent over multiple connections (for example after a redirect or a retry), the value reflects the most
+        /// recent attempt.
+        /// <para>
+        /// These correlations apply only when the request is handled by <see cref="SocketsHttpHandler"/>. Another
+        /// <see cref="HttpMessageHandler"/> may never set this value, or may assign it a different meaning.
+        /// </para>
         /// <para>
         /// This property is intended to be read after the request has been sent. Assigning a value before the request
         /// is sent has no effect on how the request is handled: it does not request or influence the use of a particular

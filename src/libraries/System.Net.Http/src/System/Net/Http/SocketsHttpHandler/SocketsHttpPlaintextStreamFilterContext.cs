@@ -42,12 +42,16 @@ namespace System.Net.Http
 
         /// <summary>
         /// The identifier of the connection whose stream is being filtered. This matches the connection id reported
-        /// through <see cref="EventSource"/> telemetry, the <see cref="SocketsHttpConnectionContext.ConnectionId"/>
-        /// surfaced to <see cref="SocketsHttpHandler.ConnectCallback"/>, the
+        /// through <see cref="EventSource"/> telemetry for that connection. For a direct connection it also matches the
+        /// <see cref="SocketsHttpConnectionContext.ConnectionId"/> surfaced to
+        /// <see cref="SocketsHttpHandler.ConnectCallback"/>, the
         /// <see cref="SocketsHttpConnectionEvictionContext.ConnectionId"/> passed to
         /// <see cref="SocketsHttpHandler.ShouldEvictConnection"/>, and the <see cref="HttpRequestMessage.ConnectionId"/>
-        /// stamped on requests sent over the connection. It can be used to associate caller state with the connection
-        /// and to correlate it with the requests it serves.
+        /// stamped on requests sent over the connection. For an HTTP CONNECT proxy tunnel the filter runs once per hop:
+        /// on the CONNECT hop this is the transport connection's id (the one the ConnectCallback observed), and on the
+        /// tunneled hop it is the tunneled connection's id (the one passed to ShouldEvictConnection and stamped on
+        /// requests). It can be used to associate caller state with the connection and to correlate it with the
+        /// requests it serves.
         /// </summary>
         [Experimental(Experimentals.SocketsHttpHandlerExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public long ConnectionId => _connectionId;
