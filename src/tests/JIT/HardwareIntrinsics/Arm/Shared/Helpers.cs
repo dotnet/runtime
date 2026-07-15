@@ -8531,8 +8531,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long BitwiseRotateLeftBy1AndXor(long op1, long op2)
             => op1 ^ unchecked((long)RotateLeft1((ulong)op2));
 
+        // SM4 encoding functions
         public static class Sm4
         {
+            // SM4 substitution box used by the non-linear Tau transform.
             private static readonly byte[] SBox =
             {
                 0xd6,0x90,0xe9,0xfe,0xcc,0xe1,0x3d,0xb7,0x16,0xb6,0x14,0xc2,0x28,0xfb,0x2c,0x05,
@@ -8555,6 +8557,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             private static uint Tau(uint x)
             {
+                // Apply the SM4 S-box independently to each byte of the 32-bit word.
                 return (uint)(SBox[x & 0xff]
                     | (SBox[(x >> 8) & 0xff] << 8)
                     | (SBox[(x >> 16) & 0xff] << 16)
@@ -8565,6 +8568,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 uint[] result = new uint[data.Length];
 
+                // SM4E processes four 32-bit words at a time and applies four rounds.
                 for (int s = 0; s < data.Length; s += 4)
                 {
                     uint x0 = data[s + 0];
@@ -8576,6 +8580,7 @@ namespace JIT.HardwareIntrinsics.Arm
                     {
                         uint t = x1 ^ x2 ^ x3 ^ roundKeys[s + i];
                         t = Tau(t);
+                        // Encryption linear transform: L(B) = B ^ rotl(B,2) ^ rotl(B,10) ^ rotl(B,18) ^ rotl(B,24).
                         t ^= BitOperations.RotateLeft(t, 2)
                            ^ BitOperations.RotateLeft(t, 10)
                            ^ BitOperations.RotateLeft(t, 18)
@@ -8601,6 +8606,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 uint[] result = new uint[key.Length];
 
+                // SM4EKEY uses the same four-word recurrence with the key-schedule linear transform.
                 for (int s = 0; s < key.Length; s += 4)
                 {
                     uint k0 = key[s + 0];
@@ -8612,6 +8618,7 @@ namespace JIT.HardwareIntrinsics.Arm
                     {
                         uint t = k1 ^ k2 ^ k3 ^ constants[s + i];
                         t = Tau(t);
+                        // Key-schedule linear transform: L'(B) = B ^ rotl(B,13) ^ rotl(B,23).
                         t ^= BitOperations.RotateLeft(t, 13)
                            ^ BitOperations.RotateLeft(t, 23);
                         t ^= k0;
