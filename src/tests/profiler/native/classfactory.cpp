@@ -3,6 +3,7 @@
 
 #include "classfactory.h"
 #include "eltprofiler/slowpatheltprofiler.h"
+#include "elttransitions/elttransitions.h"
 #include "enumthreadsprofiler/enumthreadsprofiler.h"
 #include "eventpipeprofiler/eventpipereadingprofiler.h"
 #include "eventpipeprofiler/eventpipewritingprofiler.h"
@@ -112,6 +113,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == SlowPathELTProfiler::GetClsid())
     {
         profiler = new SlowPathELTProfiler();
+    }
+    else if (clsid == EltTransitions::GetClsid())
+    {
+        profiler = new EltTransitions();
     }
     else if (clsid == GCProfiler::GetClsid())
     {

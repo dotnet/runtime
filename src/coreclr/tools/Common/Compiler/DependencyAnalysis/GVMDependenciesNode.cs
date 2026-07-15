@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
             Debug.Assert(method.HasInstantiation);
             Debug.Assert(method.IsVirtual);
-            Debug.Assert(MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method) == method);
+            Debug.Assert(MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method.GetMethodDefinition()) == method.GetMethodDefinition());
 
             _method = method;
         }
@@ -55,6 +55,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 yield return new DependencyListEntry(factory.TypeGVMEntries(_method.OwningType.GetTypeDefinition()), "Resolution metadata");
             }
+            yield return new DependencyListEntry(factory.AnalysisCharacteristic("GenericVirtualMethodsPresent"), "Runtime GVM resolution needed");
 #endif
         }
 

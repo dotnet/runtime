@@ -3,6 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
@@ -10,6 +14,7 @@ using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
+using ModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -537,6 +542,272 @@ public unsafe class DacDbiImplTests
         Assert.Equal(0UL, targetBuffer.pAddress);
         Assert.Equal(0u, targetBuffer.cbSize);
         Assert.Equal(SymbolFormat.None, symbolFormat);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ResolveTypeReference_TypeDef_PassesThrough(MockTarget.Architecture arch)
+    {
+        // A token that is already an mdtTypeDef resolves to (referencing module's assembly, same token).
+        ulong assemblyAddr = 0;
+        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, _) =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            assemblyAddr = module.Assembly;
+        });
+
+        uint typeDefToken = (uint)EcmaMetadataUtils.TokenType.mdtTypeDef | 0x000002;
+        DacDbiTypeRefData input = new() { vmAssembly = assemblyAddr, typeToken = typeDefToken };
+        DacDbiTypeRefData output = default;
+        int hr = dacDbi.ResolveTypeReference(&input, &output);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(assemblyAddr, output.vmAssembly);
+        Assert.Equal(typeDefToken, output.typeToken);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ResolveTypeReference_TypeRef_NotCached_ReturnsClassNotLoaded(MockTarget.Architecture arch)
+    {
+        const ulong refAsmPtr = 0x100, refManifest = 0x9001;
+        ModuleHandle refHandle = Mod(0x1000);
+
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
+        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
+        SetupTypeRefCacheMiss(loader);
+
+        Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
+        ecma.Setup(e => e.GetMetadata(refHandle)).Returns((MetadataReader?)null);
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
+
+        DacDbiTypeRefData input = new() { vmAssembly = refAsmPtr, typeToken = MdtTypeRef | 3 };
+        DacDbiTypeRefData output = default;
+        int hr = dacDbi.ResolveTypeReference(&input, &output);
+
+        Assert.Equal(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED, hr);
+    }
+
+    private const uint MdtTypeRef = (uint)EcmaMetadataUtils.TokenType.mdtTypeRef;
+    private const uint MdtAssemblyRef = (uint)EcmaMetadataUtils.TokenType.mdtAssemblyRef;
+
+    private static TargetPointer Ptr(ulong value) => new TargetPointer(value);
+    private static ModuleHandle Mod(ulong address) => new ModuleHandle(new TargetPointer(address));
+
+    private static (MetadataReader Reader, MetadataReaderProvider Provider) BuildMetadata(Action<MetadataBuilder> configure)
+    {
+        MetadataBuilder mb = new();
+        mb.AddModule(0, mb.GetOrAddString("M"), mb.GetOrAddGuid(Guid.NewGuid()), default, default);
+        mb.AddAssembly(mb.GetOrAddString("Asm"), new Version(1, 0, 0, 0), default, default, default, AssemblyHashAlgorithm.Sha1);
+
+        // TypeDef row 1 must be the <Module> pseudo-type per ECMA-335.
+        mb.AddTypeDefinition(default, default, mb.GetOrAddString("<Module>"), default,
+            MetadataTokens.FieldDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
+
+        configure(mb);
+
+        BlobBuilder blob = new();
+        new MetadataRootBuilder(mb).Serialize(blob, 0, 0);
+        MetadataReaderProvider provider = MetadataReaderProvider.FromMetadataImage(ImmutableArray.Create(blob.ToArray()));
+        return (provider.GetMetadataReader(), provider);
+    }
+
+    private static TypeDefinitionHandle AddTypeDef(MetadataBuilder mb, string @namespace, string name)
+        => mb.AddTypeDefinition(
+            TypeAttributes.Public | TypeAttributes.Class,
+            @namespace is null ? default : mb.GetOrAddString(@namespace),
+            mb.GetOrAddString(name),
+            default,
+            MetadataTokens.FieldDefinitionHandle(1),
+            MetadataTokens.MethodDefinitionHandle(1));
+
+    private static ModuleLookupTables Tables(ulong manifestModuleReferences)
+        => new ModuleLookupTables(
+            FieldDefToDesc: TargetPointer.Null,
+            ManifestModuleReferences: Ptr(manifestModuleReferences),
+            MemberRefToDesc: TargetPointer.Null,
+            MethodDefToDesc: TargetPointer.Null,
+            TypeDefToMethodTable: TargetPointer.Null,
+            TypeRefToMethodTable: TargetPointer.Null,
+            MethodDefToILCodeVersioningState: TargetPointer.Null,
+            TableDataOffset: 0);
+
+    private static void SetupLookupMap(Mock<ILoader> loader, ulong table, uint token, ulong result)
+    {
+        TargetNUInt flags = default;
+        loader.Setup(l => l.GetModuleLookupMapElement(Ptr(table), token, out flags)).Returns(Ptr(result));
+    }
+
+    private static void SetupTypeRefCacheMiss(Mock<ILoader> loader)
+    {
+        // The referencing module's TypeRef->MethodTable cache is empty (TypeRefToMethodTable == Null),
+        // so every Tier 1 lookup on the Null table misses.
+        TargetNUInt flags = default;
+        loader.Setup(l => l.GetModuleLookupMapElement(TargetPointer.Null, It.IsAny<uint>(), out flags)).Returns(TargetPointer.Null);
+    }
+
+    private static DacDbiImpl CreateDacDbiWithMockContracts(MockTarget.Architecture arch, Mock<ILoader> loader, Mock<IEcmaMetadata> ecma)
+    {
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(loader)
+            .AddMockContract(ecma)
+            .Build();
+        return new DacDbiImpl(target, legacyObj: null);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ResolveTypeReference_TypeRef_AssemblyRefScope_ResolvesToTypeDef(MockTarget.Architecture arch)
+    {
+        // Referencing module: AssemblyRef "Target" (rid 1) and TypeRef "NS.Foo" scoped to it.
+        var (refReader, refProvider) = BuildMetadata(mb =>
+        {
+            AssemblyReferenceHandle asmRef = mb.AddAssemblyReference(mb.GetOrAddString("Target"), new Version(1, 0, 0, 0), default, default, default, default);
+            mb.AddTypeReference(asmRef, mb.GetOrAddString("NS"), mb.GetOrAddString("Foo"));
+        });
+
+        // Target module: TypeDef "NS.Foo" (row 2 -> token 0x02000002).
+        var (targetReader, targetProvider) = BuildMetadata(mb => AddTypeDef(mb, "NS", "Foo"));
+
+        const ulong refAsmPtr = 0x100, targetAsmPtr = 0x200, refManifest = 0x9001, targetModPtr = 0x4000;
+        ModuleHandle refHandle = Mod(0x1000), targetHandle = Mod(0x2000);
+
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
+        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
+        SetupTypeRefCacheMiss(loader);
+        SetupLookupMap(loader, refManifest, MdtAssemblyRef | 1, targetModPtr);
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(targetModPtr))).Returns(targetHandle);
+        loader.Setup(l => l.GetAssembly(targetHandle)).Returns(Ptr(targetAsmPtr));
+
+        Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
+        ecma.Setup(e => e.GetMetadata(refHandle)).Returns(refReader);
+        ecma.Setup(e => e.GetMetadata(targetHandle)).Returns(targetReader);
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
+
+        DacDbiTypeRefData input = new() { vmAssembly = refAsmPtr, typeToken = MdtTypeRef | 1 };
+        DacDbiTypeRefData output = default;
+        int hr = dacDbi.ResolveTypeReference(&input, &output);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(targetAsmPtr, output.vmAssembly);
+        Assert.Equal(0x02000002u, output.typeToken);
+
+        System.GC.KeepAlive(refProvider);
+        System.GC.KeepAlive(targetProvider);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ResolveTypeReference_TypeRef_TypeForwarder_FollowsExportedType(MockTarget.Architecture arch)
+    {
+        // Referencing module: AssemblyRef "A" and TypeRef "NS.Bar" scoped to A.
+        var (refReader, refProvider) = BuildMetadata(mb =>
+        {
+            AssemblyReferenceHandle asmRefA = mb.AddAssemblyReference(mb.GetOrAddString("A"), new Version(1, 0, 0, 0), default, default, default, default);
+            mb.AddTypeReference(asmRefA, mb.GetOrAddString("NS"), mb.GetOrAddString("Bar"));
+        });
+
+        // Module A: forwards "NS.Bar" to AssemblyRef "B" via an ExportedType (no TypeDef).
+        var (readerA, providerA) = BuildMetadata(mb =>
+        {
+            AssemblyReferenceHandle asmRefB = mb.AddAssemblyReference(mb.GetOrAddString("B"), new Version(1, 0, 0, 0), default, default, default, default);
+            mb.AddExportedType(TypeAttributes.Public, mb.GetOrAddString("NS"), mb.GetOrAddString("Bar"), asmRefB, 0);
+        });
+
+        // Module B: defines TypeDef "NS.Bar" (row 2 -> token 0x02000002).
+        var (readerB, providerB) = BuildMetadata(mb => AddTypeDef(mb, "NS", "Bar"));
+
+        const ulong refAsmPtr = 0x100, asmBPtr = 0x300;
+        const ulong refManifest = 0x9001, manifestA = 0x9002, modAPtr = 0x4000, modBPtr = 0x5000;
+        ModuleHandle refHandle = Mod(0x1000), handleA = Mod(0x2000), handleB = Mod(0x3000);
+
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
+        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
+        loader.Setup(l => l.GetLookupTables(handleA)).Returns(Tables(manifestA));
+        SetupTypeRefCacheMiss(loader);
+        SetupLookupMap(loader, refManifest, MdtAssemblyRef | 1, modAPtr);
+        SetupLookupMap(loader, manifestA, MdtAssemblyRef | 1, modBPtr);
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(modAPtr))).Returns(handleA);
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(modBPtr))).Returns(handleB);
+        loader.Setup(l => l.GetAssembly(handleB)).Returns(Ptr(asmBPtr));
+
+        Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
+        ecma.Setup(e => e.GetMetadata(refHandle)).Returns(refReader);
+        ecma.Setup(e => e.GetMetadata(handleA)).Returns(readerA);
+        ecma.Setup(e => e.GetMetadata(handleB)).Returns(readerB);
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
+
+        DacDbiTypeRefData input = new() { vmAssembly = refAsmPtr, typeToken = MdtTypeRef | 1 };
+        DacDbiTypeRefData output = default;
+        int hr = dacDbi.ResolveTypeReference(&input, &output);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(asmBPtr, output.vmAssembly);
+        Assert.Equal(0x02000002u, output.typeToken);
+
+        System.GC.KeepAlive(refProvider);
+        System.GC.KeepAlive(providerA);
+        System.GC.KeepAlive(providerB);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ResolveTypeReference_TypeRef_NestedType_ResolvesNestedTypeDef(MockTarget.Architecture arch)
+    {
+        // Referencing module: AssemblyRef "T", TypeRef "NS.Outer" scoped to T, and TypeRef "Inner"
+        // whose scope is the "NS.Outer" TypeRef (nested reference).
+        TypeReferenceHandle innerRefHandle = default;
+        var (refReader, refProvider) = BuildMetadata(mb =>
+        {
+            AssemblyReferenceHandle asmRefT = mb.AddAssemblyReference(mb.GetOrAddString("T"), new Version(1, 0, 0, 0), default, default, default, default);
+            TypeReferenceHandle outerRef = mb.AddTypeReference(asmRefT, mb.GetOrAddString("NS"), mb.GetOrAddString("Outer"));
+            innerRefHandle = mb.AddTypeReference(outerRef, default, mb.GetOrAddString("Inner"));
+        });
+
+        // Target module: TypeDef "NS.Outer" (row 2) with nested TypeDef "Inner" (row 3 -> 0x02000003).
+        var (targetReader, targetProvider) = BuildMetadata(mb =>
+        {
+            TypeDefinitionHandle outer = AddTypeDef(mb, "NS", "Outer");
+            TypeDefinitionHandle inner = mb.AddTypeDefinition(
+                TypeAttributes.NestedPublic | TypeAttributes.Class, default, mb.GetOrAddString("Inner"), default,
+                MetadataTokens.FieldDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
+            mb.AddNestedType(inner, outer);
+        });
+
+        const ulong refAsmPtr = 0x100, targetAsmPtr = 0x200, refManifest = 0x9001, targetModPtr = 0x4000;
+        ModuleHandle refHandle = Mod(0x1000), targetHandle = Mod(0x2000);
+        uint innerToken = (uint)MetadataTokens.GetToken(innerRefHandle);
+
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
+        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
+        SetupTypeRefCacheMiss(loader);
+        SetupLookupMap(loader, refManifest, MdtAssemblyRef | 1, targetModPtr);
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(targetModPtr))).Returns(targetHandle);
+        loader.Setup(l => l.GetAssembly(targetHandle)).Returns(Ptr(targetAsmPtr));
+
+        Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
+        ecma.Setup(e => e.GetMetadata(refHandle)).Returns(refReader);
+        ecma.Setup(e => e.GetMetadata(targetHandle)).Returns(targetReader);
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
+
+        DacDbiTypeRefData input = new() { vmAssembly = refAsmPtr, typeToken = innerToken };
+        DacDbiTypeRefData output = default;
+        int hr = dacDbi.ResolveTypeReference(&input, &output);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(targetAsmPtr, output.vmAssembly);
+        Assert.Equal(0x02000003u, output.typeToken);
+
+        System.GC.KeepAlive(refProvider);
+        System.GC.KeepAlive(targetProvider);
     }
 
     public static IEnumerable<object[]> TargetArchitectures()

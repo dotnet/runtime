@@ -575,7 +575,7 @@ struct HWIntrinsicInfo
     static void lookupImmBounds(
         NamedIntrinsic intrinsic, int simdSize, var_types baseType, int immNumber, int* lowerBound, int* upperBound);
 #elif defined(TARGET_WASM)
-    static int lookupImmUpperBound(NamedIntrinsic intrinsic, var_types baseType);
+    static int lookupImmUpperBound(NamedIntrinsic intrinsic, unsigned int simdSize, var_types baseType);
 #else
 #error Unsupported platform
 #endif
@@ -1305,7 +1305,51 @@ struct HWIntrinsicInfo
             }
         }
     }
-#endif // TARGET_ARM64
+#elif defined(TARGET_WASM)
+    //------------------------------------------------------------------------------------------------
+    // GetImmOpPositions: Get the positions of the immediate operands in the signature of an intrinsic
+    // with an immediate.
+    //
+    // Arguments:
+    //   id - The intrinsic ID
+    //   imm1Pos - The position of the first immediate operand
+    //   imm2Pos - The position of the second immediate operand
+    //
+    // Notes:
+    //   imm1Pos and imm2Pos are initialized to -1.
+    static void GetImmOpsPositions(NamedIntrinsic id, int* imm1Pos, int* imm2Pos)
+    {
+        *imm1Pos = -1;
+        *imm2Pos = -1;
+
+        switch (id)
+        {
+            case NI_PackedSimd_ExtractScalar:
+            {
+                // (v128, lane_imm)
+                *imm1Pos = 2;
+                break;
+            }
+            case NI_PackedSimd_ReplaceScalar:
+            {
+                // (v128, lane_imm, value)
+                *imm1Pos = 2;
+                break;
+            }
+            case NI_PackedSimd_StoreSelectedScalar:
+            case NI_PackedSimd_LoadScalarAndInsert:
+            {
+                // (scalar_addr, v128, lane_imm)
+                *imm1Pos = 3;
+                break;
+            }
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+#endif // TARGET_ARM64 || TARGET_WASM
 };
 
 #ifdef TARGET_ARM64
@@ -1420,12 +1464,12 @@ struct HWIntrinsic final
         , op3(nullptr)
         , numOperands(0)
         , baseType(TYP_UNDEF)
+        , m_node(node)
     {
         assert(node != nullptr);
 
         id       = node->GetHWIntrinsicId();
         category = HWIntrinsicInfo::lookupCategory(id);
-
         assert(HWIntrinsicInfo::RequiresCodegen(id));
 
         InitializeOperands(node);
@@ -1440,6 +1484,24 @@ struct HWIntrinsic final
         return isTableDrivenCategory && isTableDrivenFlag;
     }
 
+    inline bool needsJumpTableFallback() const
+    {
+        return !m_node->GetImmOp()->IsCnsIntOrI();
+    }
+
+    uint8_t GetImmediateLaneOperand() const
+    {
+        assert(category == HW_Category_IMM || category == HW_Category_MemoryLoad ||
+               category == HW_Category_MemoryStore);
+
+        GenTree* immOp = m_node->GetImmOp();
+        assert(immOp->IsCnsIntOrI());
+        ssize_t lane = immOp->AsIntCon()->IconValue();
+        assert(FitsIn<uint8_t>(lane));
+
+        return static_cast<uint8_t>(lane);
+    }
+
     NamedIntrinsic      id;
     HWIntrinsicCategory category;
     GenTree*            op1;
@@ -1449,7 +1511,8 @@ struct HWIntrinsic final
     var_types           baseType;
 
 private:
-    void InitializeOperands(const GenTreeHWIntrinsic* node)
+    const GenTreeHWIntrinsic* m_node;
+    void                      InitializeOperands(const GenTreeHWIntrinsic* node)
     {
         numOperands = node->GetOperandCount();
 

@@ -3174,22 +3174,14 @@ DacDbiInterfaceImpl::DelegateType DacDbiInterfaceImpl::GetDelegateType(VMPTR_Obj
 
     DelegateType delegateType = DelegateType::kUnknownDelegateType;
     PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
-    INT_PTR invocationCount = pDelObj->GetInvocationCount();
 
-    if (invocationCount == 0)
+    INT_PTR extraData = pDelObj->GetExtraData();
+    OBJECTREF helperObject = pDelObj->GetHelperObject();
+    if (((helperObject == NULL) || !helperObject->GetMethodTable()->IsArray()) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
-        // If this delegate points to a static function or this is a open virtual delegate, this should be non-null
-        // This does not handle open virtual delegates correctly.
+        // If this delegate is open, this should be non-null
         TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
-        if (targetMethodPtr == (TADDR)NULL)
-        {
-            // Static extension methods, other closed static delegates, and instance delegates fall into this category.
-            delegateType = DelegateType::kClosedDelegate;
-        }
-        else
-        {
-            delegateType = DelegateType::kOpenDelegate;
-        }
+        delegateType = targetMethodPtr == (TADDR)NULL ? DelegateType::kClosedDelegate : DelegateType::kOpenDelegate;
     }
     return delegateType;
 }
@@ -7169,7 +7161,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAssemblyFromModule(VMPTR_Modul
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ParseContinuation(
     CORDB_ADDRESS continuationAddress,
-    OUT PCODE* pDiagnosticIP,
+    OUT CORDB_ADDRESS* pDiagnosticIP,
     OUT CORDB_ADDRESS* pNextContinuation,
     OUT UINT32* pState)
 {
@@ -7193,6 +7185,10 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ParseContinuation(
     PTR_ResumeInfo pResumeInfo = nullptr;
     UINT32 state = 0;
     int numFound = 0;
+
+    *pDiagnosticIP = 0;
+    *pNextContinuation = 0;
+    *pState = 0;
 
     ApproxFieldDescIterator continuationFieldIter(pContinuationMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *continuationField = continuationFieldIter.Next(); continuationField != NULL && numFound < 3; continuationField = continuationFieldIter.Next())
@@ -7220,7 +7216,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ParseContinuation(
         return E_FAIL;
     }
 
-    *pDiagnosticIP = pResumeInfo->pDiagnosticIP;
+    *pDiagnosticIP = static_cast<CORDB_ADDRESS>(pResumeInfo->pDiagnosticIP);
     *pNextContinuation = static_cast<CORDB_ADDRESS>(dac_cast<TADDR>(OBJECTREFToObject(pNext)));
     *pState = state;
 
