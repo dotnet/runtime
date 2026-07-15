@@ -52,7 +52,7 @@ internal static partial class Interop
                     {
                         if (Interop.procfs.TryParseMountInfoLine(line, out Interop.procfs.ParsedMount mount))
                         {
-                            mountPoints.Add(mount.MountPoint.ToString());
+                            mountPoints.Add(Interop.procfs.DecodeMountInfoPath(mount.MountPoint));
                         }
                     }
 

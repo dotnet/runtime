@@ -29,28 +29,30 @@ internal static partial class Interop
                     {
                         if (TryParseMountInfoLine(line, out ParsedMount mount))
                         {
-                            if (mount.MountPoint.Length < currentBestLength)
+                            string mountPoint = DecodeMountInfoPath(mount.MountPoint);
+
+                            if (mountPoint.Length < currentBestLength)
                             {
                                 continue;
                             }
 
-                            if (!path.StartsWith(mount.MountPoint))
+                            if (!path.StartsWith(mountPoint, StringComparison.Ordinal))
                             {
                                 continue;
                             }
 
-                            if (mount.MountPoint.Length == path.Length)
+                            if (mountPoint.Length == path.Length)
                             {
                                 currentFormat = mount.FileSystemType;
                                 break;
                             }
 
-                            if (mount.MountPoint.Length > 1 && path[mount.MountPoint.Length] != '/')
+                            if (mountPoint.Length > 1 && path[mountPoint.Length] != '/')
                             {
                                 continue;
                             }
 
-                            currentBestLength = mount.MountPoint.Length;
+                            currentBestLength = mountPoint.Length;
                             currentFormat = mount.FileSystemType;
                         }
                     }

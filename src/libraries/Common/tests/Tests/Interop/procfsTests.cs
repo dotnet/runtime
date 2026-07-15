@@ -79,5 +79,17 @@ namespace Common.Tests
             Assert.Equal(expectedFileSystemType, result.FileSystemType);
             Assert.Equal(expectedSuperOptions, result.SuperOptions);
         }
+
+        [Theory]
+        [InlineData("/run/media/user/DISC\\0403", "/run/media/user/DISC 3")]
+        [InlineData("/path\\011with\\012special\\134characters", "/path\twith\nspecial\\characters")]
+        [InlineData("/multiple\\040\\040spaces", "/multiple  spaces")]
+        [InlineData("/unknown\\041escape", "/unknown\\041escape")]
+        [InlineData("/malformed\\04", "/malformed\\04")]
+        [InlineData("/trailing\\", "/trailing\\")]
+        public void DecodeMountInfoPath(string encodedPath, string expectedPath)
+        {
+            Assert.Equal(expectedPath, Interop.procfs.DecodeMountInfoPath(encodedPath));
+        }
     }
 }

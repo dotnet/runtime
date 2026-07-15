@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Text;
 
 internal static partial class Interop
 {
@@ -87,6 +88,44 @@ internal static partial class Interop
                 SuperOptions = superOptions
             };
             return true;
+        }
+
+        internal static string DecodeMountInfoPath(ReadOnlySpan<char> path)
+        {
+            int backslashIndex = path.IndexOf('\\');
+            if (backslashIndex < 0)
+            {
+                return path.ToString();
+            }
+
+            StringBuilder decodedPath = new(path.Length);
+            decodedPath.Append(path.Slice(0, backslashIndex));
+
+            for (int i = backslashIndex; i < path.Length; i++)
+            {
+                char decodedCharacter = i + 3 < path.Length
+                    ? path.Slice(i, 4) switch
+                    {
+                        "\\040" => ' ',
+                        "\\011" => '\t',
+                        "\\012" => '\n',
+                        "\\134" => '\\',
+                        _ => '\0'
+                    }
+                    : '\0';
+
+                if (decodedCharacter != '\0')
+                {
+                    decodedPath.Append(decodedCharacter);
+                    i += 3;
+                }
+                else
+                {
+                    decodedPath.Append(path[i]);
+                }
+            }
+
+            return decodedPath.ToString();
         }
     }
 }
