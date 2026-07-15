@@ -6,6 +6,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using ComWrappersTests.Common;
 
 ComWrappers.RegisterForTrackerSupport(TrackerComWrappers.Instance);
 
@@ -115,22 +116,5 @@ sealed class TrackerComWrappers : ComWrappers
 
     protected override void ReleaseObjects(IEnumerable objects)
     {
-    }
-}
-
-static class MockReferenceTrackerRuntime
-{
-    [DllImport(nameof(MockReferenceTrackerRuntime), EntryPoint = "CreateTrackerObject_Unsafe")]
-    private static extern IntPtr CreateTrackerObjectUnsafe(IntPtr outer, out IntPtr inner);
-
-    public static IntPtr CreateTrackerObject()
-    {
-        IntPtr result = CreateTrackerObjectUnsafe(IntPtr.Zero, out IntPtr inner);
-        if (inner != IntPtr.Zero)
-        {
-            Marshal.Release(inner);
-        }
-
-        return result;
     }
 }
