@@ -7409,13 +7409,34 @@ namespace
         }
     }
 
+    // A field is memcmp-comparable if it is a bit-comparable primitive or an enum (always integer-backed).
+    // FieldDesc::GetFieldType() reports ELEMENT_TYPE_VALUETYPE for enums, so resolve the underlying type
+    // explicitly -- this keeps the VM in parity with the managed IsBitwiseComparablePrimitive.
+    bool IsBitwiseComparableField(FieldDesc* pField)
+    {
+        STANDARD_VM_CONTRACT;
+
+        CorElementType et = pField->GetFieldType();
+        if (IsBitwiseComparablePrimitive(et))
+            return true;
+
+        if (et == ELEMENT_TYPE_VALUETYPE)
+        {
+            MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
+            if (pFieldMT != NULL && pFieldMT->IsEnum())
+                return IsBitwiseComparablePrimitive(pFieldMT->GetInternalCorElementType());
+        }
+
+        return false;
+    }
+
     // Accepts a primitive field compared via 'x.Equals(y)' instead of 'x == y'; for these integer-like
     // types both lower to the same bit-for-bit compare.
     bool IsPrimitiveEqualsCall(MethodDesc* pCallee, FieldDesc* pField)
     {
         STANDARD_VM_CONTRACT;
 
-        if (pCallee == NULL || !IsBitwiseComparablePrimitive(pField->GetFieldType()))
+        if (pCallee == NULL || !IsBitwiseComparableField(pField))
             return false;
 
         MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
@@ -7477,7 +7498,7 @@ namespace
             return false;
         }
 
-        if (IsBitwiseComparablePrimitive(pField->GetFieldType()))
+        if (IsBitwiseComparableField(pField))
             return true;
 
         if (pField->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
@@ -7586,8 +7607,8 @@ namespace
 
             if (!records && leftLoad == IL_LDFLD)
             {
-                // Inline '==': only integer-like primitives are memcmp-equivalent.
-                if (!IsBitwiseComparablePrimitive(pField->GetFieldType()))
+                // Inline '==': only integer-like primitives (and enums) are memcmp-equivalent.
+                if (!IsBitwiseComparableField(pField))
                     return false;
 
                 if (ip < codeSize && pIL[ip] == IL_BNE_UN_S)

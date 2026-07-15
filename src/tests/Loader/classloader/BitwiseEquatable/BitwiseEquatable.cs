@@ -63,6 +63,10 @@ namespace BitwiseEquatableTests
         [InlineData(typeof(RecMixed), true)]
         [InlineData(typeof(RecPadded), false)]
         [InlineData(typeof(RecFloat), false)]
+        // Enum fields are integer-backed, so they compare bitwise like their underlying primitive.
+        [InlineData(typeof(EnumPair), true)]
+        [InlineData(typeof(EnumAndInt), true)]
+        [InlineData(typeof(RecEnum), true)]
         public static void IsBitwiseEquatable_MatchesExpected(Type type, bool expected)
         {
             Assert.Equal(expected, IsBitwiseEquatable(type));
@@ -94,6 +98,26 @@ namespace BitwiseEquatableTests
     public record struct RecMixed(long A, int B, short C, short D);
     public record struct RecPadded(int X, byte Y);
     public record struct RecFloat(float X, int Y);
+    public record struct RecEnum(ColorInt A, ColorInt B);
+
+    // Int-backed enum: two fields pack to 8 bytes with no padding.
+    public enum ColorInt { A, B, C }
+
+    public readonly struct EnumPair : IEquatable<EnumPair>
+    {
+        public readonly ColorInt First; public readonly ColorInt Second;
+        public bool Equals(EnumPair o) => First == o.First && Second == o.Second;
+        public override bool Equals(object o) => o is EnumPair p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public readonly struct EnumAndInt : IEquatable<EnumAndInt>
+    {
+        public readonly int X; public readonly ColorInt E;
+        public bool Equals(EnumAndInt o) => X == o.X && E == o.E;
+        public override bool Equals(object o) => o is EnumAndInt p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
 
     public readonly struct Point : IEquatable<Point>
     {
