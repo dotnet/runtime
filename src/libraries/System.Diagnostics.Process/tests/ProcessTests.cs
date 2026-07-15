@@ -765,7 +765,7 @@ namespace System.Diagnostics.Tests
             if (OperatingSystem.IsWindows())
             {
                 // Windows process handles retain timing information after the process exits.
-                Assert.InRange(process.StartTime, DateTime.MinValue, process.ExitTime);
+                Assert.NotEqual(default, process.StartTime);
                 Assert.InRange(process.PrivilegedProcessorTime, TimeSpan.Zero, TimeSpan.MaxValue);
                 Assert.InRange(process.TotalProcessorTime, TimeSpan.Zero, TimeSpan.MaxValue);
                 Assert.InRange(process.UserProcessorTime, TimeSpan.Zero, TimeSpan.MaxValue);

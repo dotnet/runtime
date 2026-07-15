@@ -190,11 +190,11 @@ namespace System.Diagnostics
         /// <summary>Gets the time the associated process was started.</summary>
         /// <remarks>
         /// On Windows, this property can be read after the process exits.
-        /// On Unix, accessing this property caches its value. A cached value can be read after the process exits,
-        /// but the first access after exit throws <see cref="InvalidOperationException"/>.
+        /// On Unix, this property caches its value on first access. A cached value can be read after the process exits,
+        /// but accessing an uncached value after the process has been reaped may throw <see cref="InvalidOperationException"/>.
         /// </remarks>
         /// <exception cref="InvalidOperationException">
-        /// No process is associated with this object, or the process exited on Unix before the property was accessed.
+        /// No process is associated with this object, or on Unix the value was not cached before the process was reaped.
         /// </exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
@@ -212,7 +212,10 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the time that the associated process exited.</summary>
-        /// <exception cref="InvalidOperationException">The process has not exited.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// No process is associated with this object, the process has not exited,
+        /// or there is no process handle available.
+        /// </exception>
         public DateTime ExitTime
         {
             get
