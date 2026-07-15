@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Threading;
 
 namespace System.Net.Http
 {
@@ -15,15 +14,19 @@ namespace System.Net.Http
         internal static Version DefaultRequestVersion => HttpVersion.Version11;
         internal static HttpVersionPolicy DefaultVersionPolicy => HttpVersionPolicy.RequestVersionOrLower;
 
-        private const int MessageNotYetSent = 0;
-        private const int MessageAlreadySent = 1;
-        private const int PropagatorStateInjectedByDiagnosticsHandler = 2;
-        private const int MessageDisposed = 4;
-        private const int AuthDisabled = 8;
+        [Flags]
+        private enum MessageFlags
+        {
+            AlreadySent = 1,
+            PropagatorStateInjectedByDiagnosticsHandler = 2,
+            Disposed = 4,
+            AuthDisabled = 8,
+            ConnectionIdSet = 16,
+        }
 
-        // Track whether the message has been sent.
-        // The message shouldn't be sent again if this field is equal to MessageAlreadySent.
-        private int _sendStatus = MessageNotYetSent;
+        private MessageFlags _flags;
+
+        private long _connectionId;
 
         private HttpMethod _method;
         private Uri? _requestUri;
@@ -151,7 +154,23 @@ namespace System.Net.Http
         /// </para>
         /// </remarks>
         [Experimental(Experimentals.SocketsHttpHandlerExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-        public long? ConnectionId { get; set; }
+        public long? ConnectionId
+        {
+            // ConnectionIdSet is stored separately to avoid the extra bytes needed for a nullable 'long?' field.
+            get => _flags.HasFlag(MessageFlags.ConnectionIdSet) ? _connectionId : null;
+            set
+            {
+                if (value is null)
+                {
+                    _flags &= ~MessageFlags.ConnectionIdSet;
+                }
+                else
+                {
+                    _connectionId = value.Value;
+                    _flags |= MessageFlags.ConnectionIdSet;
+                }
+            }
+        }
 
         public HttpRequestMessage()
             : this(HttpMethod.Get, (Uri?)null)
@@ -206,25 +225,30 @@ namespace System.Net.Http
             return sb.ToString();
         }
 
-        internal bool MarkAsSent() => Interlocked.CompareExchange(ref _sendStatus, MessageAlreadySent, MessageNotYetSent) == MessageNotYetSent;
+        internal bool MarkAsSent()
+        {
+            MessageFlags previousFlags = _flags;
+            _flags = previousFlags | MessageFlags.AlreadySent;
+            return !previousFlags.HasFlag(MessageFlags.AlreadySent);
+        }
 
-        internal bool WasSentByHttpClient() => (_sendStatus & MessageAlreadySent) != 0;
+        internal bool WasSentByHttpClient() => _flags.HasFlag(MessageFlags.AlreadySent);
 
-        internal void MarkPropagatorStateInjectedByDiagnosticsHandler() => _sendStatus |= PropagatorStateInjectedByDiagnosticsHandler;
+        internal void MarkPropagatorStateInjectedByDiagnosticsHandler() => _flags |= MessageFlags.PropagatorStateInjectedByDiagnosticsHandler;
 
-        internal bool WasPropagatorStateInjectedByDiagnosticsHandler() => (_sendStatus & PropagatorStateInjectedByDiagnosticsHandler) != 0;
+        internal bool WasPropagatorStateInjectedByDiagnosticsHandler() => _flags.HasFlag(MessageFlags.PropagatorStateInjectedByDiagnosticsHandler);
 
-        internal void DisableAuth() => _sendStatus |= AuthDisabled;
+        internal void DisableAuth() => _flags |= MessageFlags.AuthDisabled;
 
-        internal bool IsAuthDisabled() => (_sendStatus & AuthDisabled) != 0;
+        internal bool IsAuthDisabled() => _flags.HasFlag(MessageFlags.AuthDisabled);
 
         private bool Disposed
         {
-            get => (_sendStatus & MessageDisposed) != 0;
+            get => _flags.HasFlag(MessageFlags.Disposed);
             set
             {
                 Debug.Assert(value);
-                _sendStatus |= MessageDisposed;
+                _flags |= MessageFlags.Disposed;
             }
         }
 
