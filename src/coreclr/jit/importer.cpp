@@ -5530,8 +5530,12 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
                     const unsigned fromClassAttribs = info.compCompHnd->getClassAttribs(fromClass);
                     if ((fromClassAttribs & nonClassTypeAttribs) == 0)
                     {
-                        castMustFail =
-                            info.compCompHnd->compareTypesForCast(toClass, fromClass) == TypeCompareState::MustNot;
+                        const TypeCompareState reverseCastResult =
+                            info.compCompHnd->compareTypesForCast(toClass, fromClass);
+                        if (reverseCastResult == TypeCompareState::MustNot)
+                        {
+                            castMustFail = true;
+                        }
                     }
                 }
             }
