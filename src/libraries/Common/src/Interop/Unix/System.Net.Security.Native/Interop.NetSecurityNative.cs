@@ -163,17 +163,6 @@ internal static partial class Interop
             out Status minorStatus,
             SafeGssCredHandle acceptorCredHandle,
             ref SafeGssContextHandle acceptContextHandle,
-            ref byte inputBytes,
-            int inputLength,
-            ref GssBuffer token,
-            out uint retFlags,
-            [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
-
-        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_AcceptSecContextEx")]
-        private static partial Status AcceptSecContext(
-            out Status minorStatus,
-            SafeGssCredHandle acceptorCredHandle,
-            ref SafeGssContextHandle acceptContextHandle,
             IntPtr cbt,
             int cbtSize,
             ref byte inputBytes,
@@ -181,26 +170,6 @@ internal static partial class Interop
             ref GssBuffer token,
             out uint retFlags,
             [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
-
-        internal static Status AcceptSecContext(
-            out Status minorStatus,
-            SafeGssCredHandle acceptorCredHandle,
-            ref SafeGssContextHandle acceptContextHandle,
-            ReadOnlySpan<byte> inputBytes,
-            ref GssBuffer token,
-            out uint retFlags,
-            out bool isNtlmUsed)
-        {
-            return AcceptSecContext(
-                out minorStatus,
-                acceptorCredHandle,
-                ref acceptContextHandle,
-                ref MemoryMarshal.GetReference(inputBytes),
-                inputBytes.Length,
-                ref token,
-                out retFlags,
-                out isNtlmUsed);
-        }
 
         internal static Status AcceptSecContext(
             out Status minorStatus,

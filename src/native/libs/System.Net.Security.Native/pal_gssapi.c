@@ -405,34 +405,13 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
 uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
                                             GssCredId* acceptorCredHandle,
                                             GssCtxId** contextHandle,
+                                            void* cbt,
+                                            int32_t cbtSize,
                                             uint8_t* inputBytes,
                                             uint32_t inputLength,
                                             PAL_GssBuffer* outBuffer,
                                             uint32_t* retFlags,
                                             int32_t* isNtlmUsed)
-{
-    return NetSecurityNative_AcceptSecContextEx(minorStatus,
-                                                acceptorCredHandle,
-                                                contextHandle,
-                                                NULL,
-                                                0,
-                                                inputBytes,
-                                                inputLength,
-                                                outBuffer,
-                                                retFlags,
-                                                isNtlmUsed);
-}
-
-uint32_t NetSecurityNative_AcceptSecContextEx(uint32_t* minorStatus,
-                                              GssCredId* acceptorCredHandle,
-                                              GssCtxId** contextHandle,
-                                              void* cbt,
-                                              int32_t cbtSize,
-                                              uint8_t* inputBytes,
-                                              uint32_t inputLength,
-                                              PAL_GssBuffer* outBuffer,
-                                              uint32_t* retFlags,
-                                              int32_t* isNtlmUsed)
 {
     assert(minorStatus != NULL);
     assert(acceptorCredHandle != NULL);

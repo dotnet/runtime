@@ -721,6 +721,8 @@ namespace System.Net
                         status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
                                                                             credentialsHandle,
                                                                             ref contextHandle,
+                                                                            IntPtr.Zero,
+                                                                            0,
                                                                             incomingBlob,
                                                                             ref token,
                                                                             out outputFlags,

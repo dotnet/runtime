@@ -9,7 +9,6 @@
 static const Entry s_securityNative[] =
 {
     DllImportEntry(NetSecurityNative_AcceptSecContext)
-    DllImportEntry(NetSecurityNative_AcceptSecContextEx)
     DllImportEntry(NetSecurityNative_AcquireAcceptorCred)
     DllImportEntry(NetSecurityNative_DeleteSecContext)
     DllImportEntry(NetSecurityNative_DisplayMajorStatus)
