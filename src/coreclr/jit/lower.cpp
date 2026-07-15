@@ -4859,7 +4859,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     // These architectures have no status/flag register.
     return false;
-#endif
+#else
 
     JITDUMP("Lowering condition:\n");
     DISPTREERANGE(BlockRange(), condition);
@@ -4976,6 +4976,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
     }
 
     return false;
+#endif
 }
 
 //----------------------------------------------------------------------------------------------
