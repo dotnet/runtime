@@ -37,16 +37,10 @@
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
-    <ProjectReference Include="EquatableAssets\EquatableAssets.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="DependencyGraphTests.cs" />
-    <Compile Include="BitwiseEquatableTests.cs" />
     <Compile Include="DevirtualizationTests.cs" />
     <Compile Include="SwiftLoweringTests.cs" />
   </ItemGroup>

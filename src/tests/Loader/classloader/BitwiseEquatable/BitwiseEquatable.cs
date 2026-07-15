@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -15,71 +13,63 @@ namespace BitwiseEquatableTests
 {
     public static class BitwiseEquatable
     {
-        private static readonly MethodInfo s_isBitwiseEquatable =
-            typeof(RuntimeHelpers).GetMethod("IsBitwiseEquatable", BindingFlags.Static | BindingFlags.NonPublic)!;
+        // Call the internal RuntimeHelpers.IsBitwiseEquatable<T> directly via UnsafeAccessor so the
+        // intrinsic is exercised as the JIT/AOT compiler expands it, rather than through reflection
+        // (which wouldn't hit the intrinsic path and doesn't work under NativeAOT).
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "IsBitwiseEquatable")]
+        private static extern bool IsBitwiseEquatable<T>([UnsafeAccessorType("System.Runtime.CompilerServices.RuntimeHelpers")] object o);
 
-        private static bool IsBitwiseEquatable(Type t) =>
-            (bool)s_isBitwiseEquatable.MakeGenericMethod(t).Invoke(null, null)!;
+        private static void Check<T>(bool expected) => Assert.Equal(expected, IsBitwiseEquatable<T>(null!));
 
-        // typeof() of a test-local type can't be used in [InlineData] here: this project is compiled
-        // into a merged test assembly that references each test via an extern alias, and the generated
-        // runner can't alias the inlined typeof argument. [MemberData] keeps those typeofs in this
-        // assembly, so the cases stay data-driven.
-        public static IEnumerable<object[]> Cases()
+        [Fact]
+        public static void IsBitwiseEquatable_MatchesExpected()
         {
             // Primitives: '==' and Equals lower to the same bit-for-bit compare.
-            yield return new object[] { typeof(int), true };
-            yield return new object[] { typeof(Int128), true };
-            yield return new object[] { typeof(UInt128), true };
+            Check<int>(true);
+            Check<Int128>(true);
+            Check<UInt128>(true);
             // A SIMD/Unsafe-backed body isn't a recognized field-wise shape, but Guid is a known
             // bitwise-equatable type special-cased by the runtime (matching NativeAOT), so it stays true.
-            yield return new object[] { typeof(Guid), true };
+            Check<Guid>(true);
             // Plain field-wise IEquatable<T>.Equals.
-            yield return new object[] { typeof(Point), true };
-            yield return new object[] { typeof(ThreeFields), true };
-            yield return new object[] { typeof(OneField), true };
+            Check<Point>(true);
+            Check<ThreeFields>(true);
+            Check<OneField>(true);
             // 'Equals(other) => this == other' forwarding into a field-wise op_Equality.
-            yield return new object[] { typeof(ForwardsToOp), true };
+            Check<ForwardsToOp>(true);
             // Nested value-type fields compared through their own field-wise IEquatable<T>.Equals.
-            yield return new object[] { typeof(Nested), true };
-            yield return new object[] { typeof(NestedLast), true };
-            yield return new object[] { typeof(AllNested), true };
+            Check<Nested>(true);
+            Check<NestedLast>(true);
+            Check<AllNested>(true);
             // Nested type's Equals ignores a field, or is internally padded.
-            yield return new object[] { typeof(WrapsPartial), false };
-            yield return new object[] { typeof(WrapsPadded), false };
+            Check<WrapsPartial>(false);
+            Check<WrapsPadded>(false);
             // No IEquatable<T> at all: legacy path still accepts safe blittable fields.
-            yield return new object[] { typeof(PlainNoEquatable), true };
+            Check<PlainNoEquatable>(true);
             // float/double are never bitwise (NaN and signed-zero semantics differ from memcmp).
-            yield return new object[] { typeof(HasFloat), false };
+            Check<HasFloat>(false);
             // Equals ignores a field, does custom logic, or forwards to a non-op_Equality helper.
-            yield return new object[] { typeof(IgnoresField), false };
-            yield return new object[] { typeof(CustomLogic), false };
-            yield return new object[] { typeof(CallsHelper), false };
+            Check<IgnoresField>(false);
+            Check<CustomLogic>(false);
+            Check<CallsHelper>(false);
             // Explicit padding means memcmp inspects bytes Equals does not.
-            yield return new object[] { typeof(WithPadding), false };
+            Check<WithPadding>(false);
             // Overrides object.Equals only; no IEquatable<T>.
-            yield return new object[] { typeof(OverriddenOnly), false };
+            Check<OverriddenOnly>(false);
             // Primitive fields compared via '.Equals' rather than '=='.
-            yield return new object[] { typeof(PrimEquals), true };
-            yield return new object[] { typeof(MixedEquals), true };
-            yield return new object[] { typeof(FloatEquals), false };
+            Check<PrimEquals>(true);
+            Check<MixedEquals>(true);
+            Check<FloatEquals>(false);
             // Record structs: Roslyn emits EqualityComparer<F>.Default.Equals(this.F, other.F) per field.
-            yield return new object[] { typeof(RecTwo), true };
-            yield return new object[] { typeof(RecNested), true };
-            yield return new object[] { typeof(RecMixed), true };
-            yield return new object[] { typeof(RecPadded), false };
-            yield return new object[] { typeof(RecFloat), false };
+            Check<RecTwo>(true);
+            Check<RecNested>(true);
+            Check<RecMixed>(true);
+            Check<RecPadded>(false);
+            Check<RecFloat>(false);
             // Enum fields are integer-backed, so they compare bitwise like their underlying primitive.
-            yield return new object[] { typeof(EnumPair), true };
-            yield return new object[] { typeof(EnumAndInt), true };
-            yield return new object[] { typeof(RecEnum), true };
-        }
-
-        [Theory]
-        [MemberData(nameof(Cases))]
-        public static void IsBitwiseEquatable_MatchesExpected(Type type, bool expected)
-        {
-            Assert.Equal(expected, IsBitwiseEquatable(type));
+            Check<EnumPair>(true);
+            Check<EnumAndInt>(true);
+            Check<RecEnum>(true);
         }
 
         // The following structs have no Equals/GetHashCode override, so ValueType.Equals/GetHashCode go
