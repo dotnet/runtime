@@ -161,7 +161,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>10.0.0-preview-20251006.1</MicrosoftPrivateIntellisenseVersion>
     <!-- MsQuic -->
-    <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.18</MicrosoftNativeQuicMsQuicSchannelVersion>
+    <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.9</MicrosoftNativeQuicMsQuicSchannelVersion>
     <SystemNetMsQuicTransportVersion>9.0.0-alpha.1.24167.3</SystemNetMsQuicTransportVersion>
     <!-- emscripten / Node -->
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftDotNetApiCompatTaskPackageVersion)</MicrosoftNETRuntimeEmscriptenVersion>
@@ -177,11 +177,11 @@
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- sdk version, for testing workloads -->
     <!-- WiX 5+ dependencies for MSI generation -->
-    <MicrosoftWixVersion>5.0.2-dotnet.2811440</MicrosoftWixVersion>
-    <MicrosoftWixToolsetUIWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetUIWixextVersion>
-    <MicrosoftWixToolsetDependencyWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetDependencyWixextVersion>
-    <MicrosoftWixToolsetUtilWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetUtilWixextVersion>
-    <MicrosoftWixToolsetBalWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetBalWixextVersion>
-    <MicrosoftWixToolsetHeatVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetHeatVersion>
+    <MicrosoftWixVersion>5.0.2-dotnet.3009129</MicrosoftWixVersion>
+    <MicrosoftWixToolsetUIWixextVersion>5.0.2-dotnet.3009129</MicrosoftWixToolsetUIWixextVersion>
+    <MicrosoftWixToolsetDependencyWixextVersion>5.0.2-dotnet.3009129</MicrosoftWixToolsetDependencyWixextVersion>
+    <MicrosoftWixToolsetUtilWixextVersion>5.0.2-dotnet.3009129</MicrosoftWixToolsetUtilWixextVersion>
+    <MicrosoftWixToolsetBalWixextVersion>5.0.2-dotnet.3009129</MicrosoftWixToolsetBalWixextVersion>
+    <MicrosoftWixToolsetHeatVersion>5.0.2-dotnet.3009129</MicrosoftWixToolsetHeatVersion>
   </PropertyGroup>
 </Project>
