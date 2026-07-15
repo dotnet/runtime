@@ -85,11 +85,11 @@ namespace System.Net.Security
             private static bool s_initialized;
 
             private readonly SslStream _sslStream;
-            private GCHandle? _handle;
+            private GCHandle<JavaProxy> _handle;
 
             public IntPtr Handle
-                => _handle is GCHandle handle
-                    ? GCHandle.ToIntPtr(handle)
+                => _handle.IsAllocated
+                    ? GCHandle<JavaProxy>.ToIntPtr(_handle)
                     : throw new ObjectDisposedException(nameof(JavaProxy));
 
             public Exception? ValidationException { get; private set; }
@@ -101,13 +101,12 @@ namespace System.Net.Security
                 RegisterCallbacks();
 
                 _sslStream = sslStream;
-                _handle = GCHandle.Alloc(this);
+                _handle = new GCHandle<JavaProxy>(this);
             }
 
             public void Dispose()
             {
-                _handle?.Free();
-                _handle = null;
+                _handle.Dispose();
             }
 
             private static unsafe void RegisterCallbacks()
@@ -128,23 +127,14 @@ namespace System.Net.Security
 
                 try
                 {
-                    proxy = (JavaProxy?)GCHandle.FromIntPtr(sslStreamProxyHandle).Target;
-                    if (proxy is null)
-                    {
-                        return false;
-                    }
-
+                    proxy = GCHandle<JavaProxy>.FromIntPtr(sslStreamProxyHandle).Target;
                     Debug.Assert(proxy.ValidationResult is null);
                     proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate(platformValidationError);
                     return proxy.ValidationResult.IsValid;
                 }
                 catch (Exception exception)
                 {
-                    if (proxy is not null)
-                    {
-                        proxy.ValidationException = exception;
-                    }
-
+                    proxy?.ValidationException = exception;
                     return false;
                 }
             }
@@ -159,12 +149,7 @@ namespace System.Net.Security
 
                 try
                 {
-                    proxy = (JavaProxy?)GCHandle.FromIntPtr(sslStreamProxyHandle).Target;
-                    if (proxy is null)
-                    {
-                        return IntPtr.Zero;
-                    }
-
+                    proxy = GCHandle<JavaProxy>.FromIntPtr(sslStreamProxyHandle).Target;
                     Debug.Assert(proxy.CertificateSelectionException is null);
                     string[] issuers = new string[acceptableIssuerCount];
                     for (int i = 0; i < issuers.Length; i++)
@@ -176,11 +161,7 @@ namespace System.Net.Security
                 }
                 catch (Exception exception)
                 {
-                    if (proxy is not null)
-                    {
-                        proxy.CertificateSelectionException = exception;
-                    }
-
+                    proxy?.CertificateSelectionException = exception;
                     return IntPtr.Zero;
                 }
             }
