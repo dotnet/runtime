@@ -755,7 +755,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 TargetPointer mtAddr = rts.GetMethodTable(mdh);
                 ITypeHandle declaringType = rts.GetTypeHandle(mtAddr);
-                var typeInst = rts.GetInstantiation(declaringType);
+                ImmutableArray<ITypeHandle> typeInst = rts.GetInstantiation(declaringType);
                 return ResolveGenericParam(rts, typeInst[index]);
             }
             catch (System.Exception) { return ((uint)ClrDataValueFlag.DEFAULT, -1); }

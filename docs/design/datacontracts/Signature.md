@@ -8,8 +8,8 @@ The runtime extends the standard ECMA-335 element type encoding with values that
 
 | Encoding | Value | Layout following the tag |
 | --- | --- | --- |
-| `ELEMENT_TYPE_INTERNAL` | `0x21` | a target-sized pointer to a runtime `ITypeHandle` |
-| `ELEMENT_TYPE_CMOD_INTERNAL` | `0x22` | one byte (`1` = required, `0` = optional), then a target-sized pointer to a runtime `ITypeHandle` |
+| `ELEMENT_TYPE_INTERNAL` | `0x21` | a target-sized pointer to a runtime `TypeHandle` |
+| `ELEMENT_TYPE_CMOD_INTERNAL` | `0x22` | one byte (`1` = required, `0` = optional), then a target-sized pointer to a runtime `TypeHandle` |
 
 These tags are used in signatures generated internally by the runtime that are not persisted to a managed image. They are defined alongside the standard ECMA-335 element types in `src/coreclr/inc/corhdr.h`. Their literal values are part of this contract -- changing them is a breaking change.
 
@@ -51,10 +51,10 @@ Contracts used:
 Constants:
 | Constant Name | Meaning | Value |
 | --- | --- | --- |
-| `ELEMENT_TYPE_INTERNAL` | runtime-internal element type tag for an internal `ITypeHandle` | `0x21` |
+| `ELEMENT_TYPE_INTERNAL` | runtime-internal element type tag for an internal `TypeHandle` | `0x21` |
 | `ELEMENT_TYPE_CMOD_INTERNAL` | runtime-internal element type tag for an internal modified type | `0x22` |
 
-Decoding a signature follows the ECMA-335 §II.23.2 grammar. For all standard element types, decoding behaves identically to `System.Reflection.Metadata.SignatureDecoder<TType, TGenericContext>`. When the decoder encounters one of the runtime-internal tags above, it reads the target-sized pointer (and optional `required` byte for `ELEMENT_TYPE_CMOD_INTERNAL`) from the signature blob and resolves it to a runtime `ITypeHandle`.
+Decoding a signature follows the ECMA-335 §II.23.2 grammar. For all standard element types, decoding behaves identically to `System.Reflection.Metadata.SignatureDecoder<TType, TGenericContext>`. When the decoder encounters one of the runtime-internal tags above, it reads the target-sized pointer to a runtime `TypeHandle` (and optional `required` byte for `ELEMENT_TYPE_CMOD_INTERNAL`) from the signature blob and resolves it to a cDAC `ITypeHandle`.
 
 The decoder is implemented as `RuntimeSignatureDecoder<TType, TGenericContext>` -- a clone of SRM's `SignatureDecoder<TType, TGenericContext>` with added support for the runtime-internal element types. The clone takes an additional `Target` so internal-type pointers can be sized for the target architecture. Provider implementations implement `IRuntimeSignatureTypeProvider<TType, TGenericContext>` -- a superset of `System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext>` -- adding methods for the runtime-internal element types:
 
@@ -63,7 +63,7 @@ TType GetInternalType(TargetPointer typeHandlePointer);
 TType GetInternalModifiedType(TargetPointer typeHandlePointer, TType unmodifiedType, bool isRequired);
 ```
 
-The contract's provider resolves these pointers through `RuntimeTypeSystem.GetTypeHandle`. Standard ECMA-335 element types resolve through `RuntimeTypeSystem.GetPrimitiveType` and `RuntimeTypeSystem.GetConstructedType`. Generic type parameters (`VAR`) and generic method parameters (`MVAR`) resolve via `RuntimeTypeSystem.GetInstantiation` and `RuntimeTypeSystem.GetGenericMethodInstantiation` respectively, using a `ITypeHandle` (for generic types) or `MethodDescHandle` (for generic methods) generic context. `GetTypeFromDefinition` and `GetTypeFromReference` resolve tokens via the module's `TypeDefToMethodTableMap` / `TypeRefToMethodTableMap`; cross-module references and `GetTypeFromSpecification` are not currently implemented.
+The contract's provider resolves these pointers through `RuntimeTypeSystem.GetTypeHandle`. Standard ECMA-335 element types resolve through `RuntimeTypeSystem.GetPrimitiveType` and `RuntimeTypeSystem.GetConstructedType`. Generic type parameters (`VAR`) and generic method parameters (`MVAR`) resolve via `RuntimeTypeSystem.GetInstantiation` and `RuntimeTypeSystem.GetGenericMethodInstantiation` respectively, using an `ITypeHandle` (for generic types) or `MethodDescHandle` (for generic methods) generic context. `GetTypeFromDefinition` and `GetTypeFromReference` resolve tokens via the module's `TypeDefToMethodTableMap` / `TypeRefToMethodTableMap`; cross-module references and `GetTypeFromSpecification` are not currently implemented.
 
 ```csharp
 ITypeHandle ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, ITypeHandle ctx)

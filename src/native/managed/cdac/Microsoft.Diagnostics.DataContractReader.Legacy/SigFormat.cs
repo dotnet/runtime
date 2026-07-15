@@ -359,7 +359,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     }
                     stringBuilder.Append(name);
 
-                    var instantiation = runtimeTypeSystem.GetInstantiation(typeHandle);
+                    ImmutableArray<ITypeHandle> instantiation = runtimeTypeSystem.GetInstantiation(typeHandle);
                     if (instantiation.Length > 0)
                     {
                         stringBuilder.Append('<');

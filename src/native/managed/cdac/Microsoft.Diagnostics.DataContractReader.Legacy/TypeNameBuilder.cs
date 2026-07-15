@@ -185,18 +185,18 @@ public struct TypeNameBuilder
         } while (true);
     }
 
-    public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.ITypeHandle typeHandle, TypeNameFormat format)
+    public static void AppendType(Target target, StringBuilder stringBuilder, ITypeHandle typeHandle, TypeNameFormat format)
     {
         AppendType(target, stringBuilder, typeHandle, ImmutableArray<ITypeHandle>.Empty, format);
     }
 
-    public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.ITypeHandle typeHandle, ImmutableArray<ITypeHandle> typeInstantiation, TypeNameFormat format)
+    public static void AppendType(Target target, StringBuilder stringBuilder, ITypeHandle typeHandle, ImmutableArray<ITypeHandle> typeInstantiation, TypeNameFormat format)
     {
         TypeNameBuilder builder = new(stringBuilder, target, format);
         AppendTypeCore(ref builder, typeHandle, typeInstantiation, format);
     }
 
-    private static void AppendTypeCore(ref TypeNameBuilder tnb, Contracts.ITypeHandle typeHandle, ImmutableArray<Contracts.ITypeHandle> instantiation, TypeNameFormat format)
+    private static void AppendTypeCore(ref TypeNameBuilder tnb, ITypeHandle typeHandle, ImmutableArray<ITypeHandle> instantiation, TypeNameFormat format)
     {
         bool toString = format.HasFlag(TypeNameFormat.FormatNamespace) && !format.HasFlag(TypeNameFormat.FormatFullInst) && !format.HasFlag(TypeNameFormat.FormatAssembly);
 
@@ -213,13 +213,13 @@ public struct TypeNameBuilder
                 if (elemType != Contracts.CorElementType.ValueType)
                 {
                     typeSystemContract.IsArray(typeHandle, out uint rank);
-                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), ImmutableArray<Contracts.ITypeHandle>.Empty, (TypeNameFormat)(format & ~TypeNameFormat.FormatAssembly));
+                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), ImmutableArray<ITypeHandle>.Empty, (TypeNameFormat)(format & ~TypeNameFormat.FormatAssembly));
                     AppendParamTypeQualifier(ref tnb, elemType, rank);
                 }
                 else
                 {
                     tnb.TypeString.Append("VALUETYPE");
-                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), ImmutableArray<Contracts.ITypeHandle>.Empty, format & ~TypeNameFormat.FormatAssembly);
+                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), ImmutableArray<ITypeHandle>.Empty, format & ~TypeNameFormat.FormatAssembly);
                 }
             }
             else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
@@ -344,11 +344,11 @@ public struct TypeNameBuilder
             tnb.OpenGenericArgument();
             if (format.HasFlag(TypeNameFormat.FormatFullInst) && !tnb.Target.Contracts.RuntimeTypeSystem.IsGenericVariable(arg, out _, out _))
             {
-                AppendTypeCore(ref tnb, arg, ImmutableArray<Contracts.ITypeHandle>.Empty, format | TypeNameFormat.FormatNamespace | TypeNameFormat.FormatAssembly);
+                AppendTypeCore(ref tnb, arg, ImmutableArray<ITypeHandle>.Empty, format | TypeNameFormat.FormatNamespace | TypeNameFormat.FormatAssembly);
             }
             else
             {
-                AppendTypeCore(ref tnb, arg, ImmutableArray<Contracts.ITypeHandle>.Empty, format & (TypeNameFormat.FormatNamespace | TypeNameFormat.FormatAngleBrackets));
+                AppendTypeCore(ref tnb, arg, ImmutableArray<ITypeHandle>.Empty, format & (TypeNameFormat.FormatNamespace | TypeNameFormat.FormatAngleBrackets));
             }
             tnb.CloseGenericArgument();
         }

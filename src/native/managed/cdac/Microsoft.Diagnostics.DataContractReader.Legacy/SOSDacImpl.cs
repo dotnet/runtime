@@ -2793,7 +2793,7 @@ public sealed unsafe partial class SOSDacImpl
             if (mt == 0 || data == null)
                 throw new ArgumentException();
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.ITypeHandle methodTable = contract.GetTypeHandle(mt.ToTargetPointer(_target));
+            ITypeHandle methodTable = contract.GetTypeHandle(mt.ToTargetPointer(_target));
 
             DacpMethodTableData result = default;
             result.baseSize = contract.GetBaseSize(methodTable);
@@ -2906,7 +2906,7 @@ public sealed unsafe partial class SOSDacImpl
             if (eeClassReallyCanonMT == 0 || value == null)
                 throw new ArgumentException();
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.ITypeHandle methodTableHandle = contract.GetTypeHandle(eeClassReallyCanonMT.ToTargetPointer(_target));
+            ITypeHandle methodTableHandle = contract.GetTypeHandle(eeClassReallyCanonMT.ToTargetPointer(_target));
             *value = methodTableHandle.Address.ToClrDataAddress(_target);
         }
         catch (global::System.Exception ex)
@@ -2936,7 +2936,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
             Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.ILoader loader = _target.Contracts.Loader;
-            Contracts.ITypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt.ToTargetPointer(_target, overrideCheck: true));
+            ITypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt.ToTargetPointer(_target, overrideCheck: true));
             if (typeSystemContract.IsFreeObjectMethodTable(methodTableHandle))
             {
                 OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, "Free");
@@ -3251,7 +3251,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ILoader loader = _target.Contracts.Loader;
 
             TargetPointer mt = objectContract.GetMethodTableAddress(obj.ToTargetPointer(_target));
-            Contracts.ITypeHandle typeHandle = rts.GetTypeHandle(mt);
+            ITypeHandle typeHandle = rts.GetTypeHandle(mt);
 
             TargetPointer modulePointer = rts.GetModule(typeHandle);
             if (modulePointer == TargetPointer.Null)
@@ -5424,7 +5424,7 @@ public sealed unsafe partial class SOSDacImpl
 
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             ILoader loaderContract = _target.Contracts.Loader;
-            Contracts.ITypeHandle typeHandle = rtsContract.GetTypeHandle(mt.ToTargetPointer(_target));
+            ITypeHandle typeHandle = rtsContract.GetTypeHandle(mt.ToTargetPointer(_target));
 
             bool isCollectible = rtsContract.IsCollectible(typeHandle);
             if (isCollectible)
@@ -5998,7 +5998,7 @@ public sealed unsafe partial class SOSDacImpl
 
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.ILoader loaderContract = _target.Contracts.Loader;
-            Contracts.ITypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+            ITypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
             Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(rtsContract.GetModule(methodTableHandle));
             TargetPointer alc = loaderContract.GetAssemblyLoadContext(moduleHandle);
             *assemblyLoadContext = alc.ToClrDataAddress(_target);
@@ -6726,7 +6726,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.ITypeHandle typeHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+            ITypeHandle typeHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
             if (GCStaticsAddress != null)
                 *GCStaticsAddress = rtsContract.GetGCStaticsBasePointer(typeHandle).ToClrDataAddress(_target);
             if (nonGCStaticsAddress != null)
@@ -6767,7 +6767,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             TargetPointer methodTablePtr = methodTable.ToTargetPointer(_target);
             TargetPointer threadPtr = thread.ToTargetPointer(_target);
-            Contracts.ITypeHandle typeHandle = rtsContract.GetTypeHandle(methodTablePtr);
+            ITypeHandle typeHandle = rtsContract.GetTypeHandle(methodTablePtr);
             ushort numThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
             if (numThreadStaticFields == 0)
             {
@@ -6820,7 +6820,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new NullReferenceException();
 
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.ITypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+            ITypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
             *initializationStatus = (MethodTableInitializationFlags)0;
             if (rtsContract.IsClassInited(methodTableHandle))
                 *initializationStatus = MethodTableInitializationFlags.MethodTableInitialized;

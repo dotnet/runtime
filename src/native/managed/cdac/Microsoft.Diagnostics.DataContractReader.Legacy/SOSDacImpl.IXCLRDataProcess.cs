@@ -298,7 +298,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             }
         }
 
-        private IEnumerable<Contracts.ITypeHandle> IterateTypeParams(Contracts.ModuleHandle moduleHandle)
+        private IEnumerable<ITypeHandle> IterateTypeParams(Contracts.ModuleHandle moduleHandle)
         {
             IEnumerable<TargetPointer> typeParams = _loader.GetAvailableTypeParams(moduleHandle);
 
@@ -382,7 +382,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 {
                     if (HasClassInstantiation(mainMD))
                     {
-                        foreach (Contracts.ITypeHandle typeParam in IterateTypeParams(moduleHandle))
+                        foreach (ITypeHandle typeParam in IterateTypeParams(moduleHandle))
                         {
                             uint typeParamToken = _rts.GetTypeDefToken(typeParam);
 
