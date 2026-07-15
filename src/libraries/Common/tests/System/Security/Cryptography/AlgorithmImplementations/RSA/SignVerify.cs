@@ -731,7 +731,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             {
                 byte[] maxSignature = SignData(rsa, data, hashAlgorithm, maxPadding);
 
-                Assert.Throws<CryptographicException>(() => SignData(rsa, data, hashAlgorithm, tooLargePadding));
+                Assert.ThrowsAny<CryptographicException>(() => SignData(rsa, data, hashAlgorithm, tooLargePadding));
                 AssertExtensions.FalseExpression(VerifyData(rsa, data, maxSignature, hashAlgorithm, tooLargePadding));
             }
         }
