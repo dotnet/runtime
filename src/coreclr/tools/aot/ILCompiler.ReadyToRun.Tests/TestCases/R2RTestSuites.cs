@@ -166,7 +166,8 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    // JitStressProcedureSplitting is only available in Debug/Checked JIT builds
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotRelease))]
     public void ArmThumbBitHotColdRuntimeFunctions()
     {
         var hotColdSplitting = new CompiledAssembly
