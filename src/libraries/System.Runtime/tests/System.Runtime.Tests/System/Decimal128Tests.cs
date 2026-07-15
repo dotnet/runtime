@@ -2489,6 +2489,11 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => byte.CreateChecked(Decimal128.NaN));
             Assert.Throws<OverflowException>(() => byte.CreateChecked(Decimal128.PositiveInfinity));
             Assert.Throws<OverflowException>(() => byte.CreateChecked(Decimal128.NegativeInfinity));
+
+            // A negative value in the open interval (-1, 0) truncates toward zero into range, so a
+            // checked conversion to an unsigned target returns zero rather than throwing, matching
+            // checked((byte)(-0.5)) and the binary floating-point to integer conversions.
+            Assert.Equal((byte)0, byte.CreateChecked((Decimal128)(-0.5m)));
         }
 
         [Fact]
