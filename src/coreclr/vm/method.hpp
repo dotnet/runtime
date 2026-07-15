@@ -1480,9 +1480,9 @@ public:
     void TrySetInitialCodeEntryPointForVersionableMethod(PCODE entryPoint, bool mayHaveEntryPointSlotsToBackpatch);
 #endif // FEATURE_CODE_VERSIONING
     void SetCodeEntryPoint(PCODE entryPoint);
-#ifdef FEATURE_TIERED_COMPILATION
+#ifdef FEATURE_CODE_VERSIONING
     void ResetCodeEntryPoint();
-#endif // FEATURE_TIERED_COMPILATION
+#endif // FEATURE_CODE_VERSIONING
 
 
 public:

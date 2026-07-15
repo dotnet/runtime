@@ -3456,7 +3456,7 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
-#ifdef FEATURE_TIERED_COMPILATION
+#ifdef FEATURE_CODE_VERSIONING
 void MethodDesc::ResetCodeEntryPoint()
 {
     WRAPPER_NO_CONTRACT;
@@ -3482,7 +3482,7 @@ void MethodDesc::ResetCodeEntryPoint()
         GetPrecode()->ResetTargetInterlocked();
     }
 }
-#endif // FEATURE_TIERED_COMPILATION
+#endif // FEATURE_CODE_VERSIONING
 
 //*******************************************************************************
 BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
