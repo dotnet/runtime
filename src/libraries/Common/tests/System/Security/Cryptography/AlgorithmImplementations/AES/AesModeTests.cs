@@ -8,39 +8,41 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     using Aes = System.Security.Cryptography.Aes;
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class AesModeTests
+    public abstract class AesModeTests
     {
+        protected abstract AesProvider AesFactory { get; }
+
         [Fact]
-        public static void SupportsCBC()
+        public void SupportsCBC()
         {
             SupportsMode(CipherMode.CBC);
         }
 
         [Fact]
-        public static void SupportsECB()
+        public void SupportsECB()
         {
             SupportsMode(CipherMode.ECB);
         }
 
         [Fact]
-        public static void SupportsCFB8()
+        public void SupportsCFB8()
         {
             SupportsMode(CipherMode.CFB, feedbackSize: 8);
         }
 
         [Fact]
-        public static void SupportsCFB128()
+        public void SupportsCFB128()
         {
             SupportsMode(CipherMode.CFB, feedbackSize: 128);
         }
 
         [Fact]
-        public static void DoesNotSupportCTS()
+        public void DoesNotSupportCTS()
         {
             DoesNotSupportMode(CipherMode.CTS);
         }
 
-        private static void SupportsMode(CipherMode mode, int? feedbackSize = null)
+        private void SupportsMode(CipherMode mode, int? feedbackSize = null)
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -59,7 +61,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        private static void DoesNotSupportMode(CipherMode mode, int? feedbackSize = null)
+        private void DoesNotSupportMode(CipherMode mode, int? feedbackSize = null)
         {
             using (Aes aes = AesFactory.Create())
             {

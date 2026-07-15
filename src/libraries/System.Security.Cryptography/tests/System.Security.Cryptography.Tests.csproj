@@ -288,8 +288,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesModeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesProvider.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesProvider.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\KeyWrapTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\KeyWrapTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaCngTests.cs"
@@ -536,7 +536,8 @@
   <ItemGroup>
     <Compile Include="AesCcmTests.cs" />
     <Compile Include="AesManagedTests.cs" />
-    <Compile Include="AesProvider.cs" />
+    <Compile Include="DefaultAesProvider.cs" />
+    <Compile Include="AesTestRegistration.Default.cs" />
     <Compile Include="AesTests.cs" />
     <Compile Include="AsnEncodedDataTests.cs" />
     <Compile Include="AsnEncodedDataCollectionTests.cs" />
@@ -707,6 +708,10 @@
     <Compile Include="X509Certificates\RevocationTests\TimeoutTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="AesCngProvider.cs" />
+    <Compile Include="AesCngTests.cs" />
+    <Compile Include="AesTestRegistration.Cng.cs" />
+    <Compile Include="SymmetricCngTestHelpers.cs" />
     <Compile Include="CngHelpers.cs" />
     <Compile Include="DSACngProvider.Windows.cs" />
     <Compile Include="DSACngTests.Windows.cs" />

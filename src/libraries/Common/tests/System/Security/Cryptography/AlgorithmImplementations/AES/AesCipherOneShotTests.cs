@@ -10,8 +10,10 @@ using Xunit;
 namespace System.Security.Cryptography.Encryption.Aes.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class AesCipherOneShotTests : SymmetricOneShotBase
+    public abstract class AesCipherOneShotTests : SymmetricOneShotBase
     {
+        protected abstract AesProvider AesFactory { get; }
+
         protected override byte[] Key =>
             new byte[] { 0x00, 0x01, 0x02, 0x03, 0x05, 0x06, 0x07, 0x08, 0x0A, 0x0B, 0x0C, 0x0D, 0x0F, 0x10, 0x11, 0x12 };
 
