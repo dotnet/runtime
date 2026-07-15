@@ -341,7 +341,10 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                         unreached();
                 }
 
-#ifdef FEATURE_HW_INTRINSICS
+                    // WASM defines FEATURE_HW_INTRINSICS but gtNewSimdMinMaxNativeNode is
+                    // NYI there, so it uses scalar GT_INTRINSIC MaxNative/MinNative nodes
+                    // (which lower to native WebAssembly min/max) instead.
+#if defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_WASM)
                 oper = gtNewSimdMinMaxNativeNode(srcType, gtNewDconNode(smallMin, srcType), oper, srcType,
                                                  /* simdSize */ 0, /* isMax */ true);
                 oper = gtNewSimdMinMaxNativeNode(srcType, gtNewDconNode(smallMax, srcType), oper, srcType,
@@ -354,7 +357,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                                                                  NI_System_Math_MaxNative, nullptr R2RARG(nullEntry));
                 oper = new (this, GT_INTRINSIC) GenTreeIntrinsic(srcType, gtNewDconNode(smallMax, srcType), oper,
                                                                  NI_System_Math_MinNative, nullptr R2RARG(nullEntry));
-#endif // FEATURE_HW_INTRINSICS
+#endif // FEATURE_HW_INTRINSICS && !TARGET_WASM
             }
 #elif defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             // Integer-domain clamp is applied after R -> int below.
