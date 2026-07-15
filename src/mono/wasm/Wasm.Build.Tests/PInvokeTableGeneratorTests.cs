@@ -179,6 +179,30 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        public async Task UnmanagedCallersOnly_Nested(Configuration config, bool aot)
+        {
+            // Regression coverage for the CoreCLR wasm reverse-P/Invoke thunk key of a nested
+            // [UnmanagedCallersOnly] type. Reflection reports the enclosing namespace for a nested
+            // type while the runtime reads the (empty) metadata namespace; if PInvokeCollector emits
+            // the reflection namespace the key never matches and the first cold ldftn asserts.
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_nested");
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNested.cs"));
+
+            string output = PublishForVariadicFunctionTests(info, config, aot);
+            Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Namespaced.Outer.Nested.C", result.TestOutput);
+            Assert.Contains("Namespaced.Outer.Nested.Deeper.D", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun()]
         // The test fetches WasmAppBuilder.dll from the Microsoft.NET.Runtime.WebAssembly.Sdk
         // workload pack, which is not present in the NoWorkload (CoreCLR-Wasm) Helix payload.
         [TestCategory("mono")]
