@@ -20,10 +20,10 @@ namespace System.IO.Tests
         {
             // WritableMemoryStream wraps a fixed-capacity buffer and cannot be created empty and then
             // grown, so - like the other fixed-capacity streams (UnmanagedMemoryStream,
-            // MemoryMappedViewStream) - the empty case returns null and the grow-from-empty conformance
+            // MemoryMappedViewStream) - the null case returns null and the grow-from-empty conformance
             // tests are skipped. Growing the length within the fixed capacity is covered by the unit
             // tests in WritableMemoryStreamTests.
-            if (initialData is null or { Length: 0 })
+            if (initialData is null)
             {
                 return Task.FromResult<Stream?>(null);
             }

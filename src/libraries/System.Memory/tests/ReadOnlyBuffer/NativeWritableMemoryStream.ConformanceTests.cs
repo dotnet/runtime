@@ -20,8 +20,8 @@ namespace System.Memory.Tests
         protected override Task<Stream?> CreateReadWriteStreamCore(byte[]? initialData)
         {
             // See WritableMemoryStreamConformanceTests: WritableMemoryStream is fixed-capacity, so the
-            // empty case returns null and the grow-from-empty conformance tests are skipped.
-            if (initialData is null or { Length: 0 })
+            // null case returns null and the grow-from-empty conformance tests are skipped.
+            if (initialData is null)
             {
                 return Task.FromResult<Stream?>(null);
             }
