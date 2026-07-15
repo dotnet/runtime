@@ -338,6 +338,14 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
 // Note: claimantCredHandle can be null
 // Note: *contextHandle is null only in the first call and non-null in the subsequent calls
 
+    // Guard against a malformed channel binding token size. A negative value would be cast to a
+    // huge size_t below and cause gss_init_sec_context to read past the buffer.
+    if (cbtSize < 0)
+    {
+        *minorStatus = 0;
+        return GSS_S_BAD_BINDINGS;
+    }
+
 #if HAVE_GSS_SPNEGO_MECHANISM
     gss_OID krbMech = GSS_KRB5_MECHANISM;
     gss_OID desiredMech;

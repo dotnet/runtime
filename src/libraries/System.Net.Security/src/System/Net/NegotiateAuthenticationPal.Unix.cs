@@ -585,6 +585,12 @@ namespace System.Net
                         // to the application specific data.
                         int appDataOffset = sizeof(SecChannelBindings);
                         Debug.Assert(appDataOffset < channelBinding.Size);
+                        if (channelBinding.Size < appDataOffset)
+                        {
+                            // Malformed channel binding; fail rather than passing a negative size to interop.
+                            return NegotiateAuthenticationStatusCode.BadBinding;
+                        }
+
                         IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
                         int cbtAppDataSize = channelBinding.Size - appDataOffset;
                         status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
@@ -690,12 +696,19 @@ namespace System.Net
                         // If a TLS channel binding token (cbt) is available then get the pointer
                         // to the application specific data. The handle is ref-counted to prevent it
                         // from being released while the native call is in progress.
+                        int appDataOffset = sizeof(SecChannelBindings);
+                        Debug.Assert(appDataOffset < channelBinding.Size);
+                        if (channelBinding.Size < appDataOffset)
+                        {
+                            // Malformed channel binding; fail rather than passing a negative size to interop.
+                            resultBlobLength = 0;
+                            return NegotiateAuthenticationStatusCode.BadBinding;
+                        }
+
                         bool refAdded = false;
                         try
                         {
                             channelBinding.DangerousAddRef(ref refAdded);
-                            int appDataOffset = sizeof(SecChannelBindings);
-                            Debug.Assert(appDataOffset < channelBinding.Size);
                             IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
                             int cbtAppDataSize = channelBinding.Size - appDataOffset;
                             status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
