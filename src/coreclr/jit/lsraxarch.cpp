@@ -2013,46 +2013,6 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
-// SkipContainedUnaryOp: Skips a contained non-memory or const node
-// and gets the underlying op1 instead
-//
-// Arguments:
-//    node - The node to handle
-//
-// Return Value:
-//    If node is a contained non-memory or const unary op, its op1 is returned;
-//    otherwise node is returned unchanged.
-static GenTree* SkipContainedUnaryOp(GenTree* node)
-{
-    if (!node->isContained())
-    {
-        return node;
-    }
-
-    if (node->OperIsHWIntrinsic())
-    {
-        GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
-        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-
-        switch (intrinsicId)
-        {
-            case NI_Vector_CreateScalar:
-            case NI_Vector_CreateScalarUnsafe:
-            {
-                return hwintrinsic->Op(1);
-            }
-
-            default:
-            {
-                break;
-            }
-        }
-    }
-
-    return node;
-}
-
-//------------------------------------------------------------------------
 // BuildHWIntrinsic: Set the NodeInfo for a GT_HWINTRINSIC tree.
 //
 // Arguments:
@@ -2106,47 +2066,42 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // In a few cases, we contain an operand that isn't a load from memory or a constant. Instead,
-        // it is essentially a "transparent" node we're ignoring or handling specially in codegen
-        // to simplify the overall IR handling. As such, we need to "skip" such nodes when present and
-        // get the underlying op1 so that delayFreeUse and other preferencing remains correct.
-
         GenTree* op1    = nullptr;
         GenTree* op2    = nullptr;
         GenTree* op3    = nullptr;
         GenTree* op4    = nullptr;
         GenTree* op5    = nullptr;
-        GenTree* lastOp = SkipContainedUnaryOp(intrinsicTree->Op(numArgs));
+        GenTree* lastOp = intrinsicTree->Op(numArgs);
 
         switch (numArgs)
         {
             case 5:
             {
-                op5 = SkipContainedUnaryOp(intrinsicTree->Op(5));
+                op5 = intrinsicTree->Op(5);
                 FALLTHROUGH;
             }
 
             case 4:
             {
-                op4 = SkipContainedUnaryOp(intrinsicTree->Op(4));
+                op4 = intrinsicTree->Op(4);
                 FALLTHROUGH;
             }
 
             case 3:
             {
-                op3 = SkipContainedUnaryOp(intrinsicTree->Op(3));
+                op3 = intrinsicTree->Op(3);
                 FALLTHROUGH;
             }
 
             case 2:
             {
-                op2 = SkipContainedUnaryOp(intrinsicTree->Op(2));
+                op2 = intrinsicTree->Op(2);
                 FALLTHROUGH;
             }
 
             case 1:
             {
-                op1 = SkipContainedUnaryOp(intrinsicTree->Op(1));
+                op1 = intrinsicTree->Op(1);
                 break;
             }
 

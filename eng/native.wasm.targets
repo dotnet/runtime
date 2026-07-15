@@ -57,7 +57,7 @@
   <ItemGroup Condition="'$(FeatureMultithreading)' == 'true'">
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_MULTITHREADING=1&quot;" />
       <!-- TODO-WASM - https://github.com/dotnet/runtime/issues/68162
-        -sUSE_PTHREADS=1
+        -pthread
         -sPTHREAD_POOL_SIZE=0
         -sPTHREAD_POOL_SIZE_STRICT=0
         -Wno-pthreads-mem-growth

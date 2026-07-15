@@ -93,6 +93,12 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
     endif()
 
     add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
+
+    # minipal_objects is embedded into static libraries we ship for external
+    # consumption (libnethost, libhostfxr), so LTCG must be disabled to ensure
+    # that non-MSVC toolchains can work with them.
+    set_target_properties(minipal_objects PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+
     add_subdirectory(hostcommon)
     add_subdirectory(hostmisc)
     add_subdirectory(nethost)

@@ -106,7 +106,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 //   ins         - instruction to emit
 //   attr        - emit attributes
 //   imm         - immediate value (depth in control flow stack)
-//   targetBlock - block at that depth
+//   targetBlock - block at that depth (may be null, in the case of jump table which doesn't target a real block)
 //
 void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock)
 {
@@ -116,7 +116,7 @@ void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, Basi
     id->idIns(ins);
     id->idInsFmt(fmt);
 
-    if (m_debugInfoSize > 0)
+    if (m_debugInfoSize > 0 && targetBlock != nullptr)
     {
         id->idDebugOnlyInfo()->idTargetBlock = targetBlock;
     }
@@ -463,14 +463,16 @@ void emitter::emitIns_V128Imm(instruction ins, const uint8_t bytes[16])
 //
 // Arguments:
 //   ins     - instruction (e.g., INS_i8x16_extract_lane_s)
-//   attr    - emit attribute indicating the lane element size
 //   laneIdx - lane index byte
 //
-void emitter::emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx)
+void emitter::emitIns_Lane(instruction ins, uint8_t laneIdx)
 {
-    instrDesc* id       = emitNewInstrSC(attr, laneIdx);
-    insFormat  fmt      = emitInsFormat(ins);
-    uint8_t    elemSize = CodeGenInterface::instSimdElemSize(ins);
+    uint8_t elemSize = CodeGenInterface::instSimdElemSize(ins);
+
+    // Add element width as an emit attribute
+    emitAttr   attr = EA_ATTR(elemSize);
+    instrDesc* id   = emitNewInstrSC(attr, laneIdx);
+    insFormat  fmt  = emitInsFormat(ins);
     assert(fmt == IF_LANE);
     assert(isValidVectorIndex(elemSize, laneIdx));
 
