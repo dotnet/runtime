@@ -38,6 +38,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <StaticWebAssetsAdditionalPublishPropertiesToRemove>$(StaticWebAssetsAdditionalPublishPropertiesToRemove);NoBuild;RuntimeIdentifier</StaticWebAssetsAdditionalPublishPropertiesToRemove>
     <StaticWebAssetStandaloneHosting Condition="'$(StaticWebAssetStandaloneHosting)' == '' and '$(StaticWebAssetProjectMode)' == 'Root'">true</StaticWebAssetStandaloneHosting>
     <StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute Condition="'$(StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute)' == ''">true</StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute>
+    <!-- Serve index.html as the SPA fallback for non-file requests (e.g. '/'). WasmAppHost serves the app through
+         the Blazor Gateway, which relies on this endpoint (generated in the static web assets endpoints manifest)
+         to route '/' to index.html, matching the fallback the in-process dev server used to provide. -->
+    <StaticWebAssetSpaFallbackEnabled Condition="'$(StaticWebAssetSpaFallbackEnabled)' == '' and '$(StaticWebAssetProjectMode)' == 'Root'">true</StaticWebAssetSpaFallbackEnabled>
   </PropertyGroup>
 
   <ItemGroup>

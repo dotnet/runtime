@@ -8,8 +8,9 @@ For projects built with the WebAssembly SDK (`--use-staticwebassets`), the brows
 through the shared [Blazor Gateway](https://github.com/dotnet/aspnetcore/tree/main/src/Components/Gateway)
 (`Microsoft.AspNetCore.Components.Gateway`). The Gateway ships as a self-contained application; the WasmAppHost
 launches it as a subprocess and reads its listening URLs from the process output. Static web assets, including
-the SPA fallback, are served from the generated static web assets endpoints manifest via `MapStaticAssets`, so
-the served application should be built with `StaticWebAssetSpaFallbackEnabled` enabled to get a fallback route.
+the SPA fallback, are served from the generated static web assets endpoints manifest via `MapStaticAssets`. The
+WebAssembly SDK enables `StaticWebAssetSpaFallbackEnabled` by default for root apps, so `index.html` is served
+as the fallback route (e.g. for `/`), matching the fallback the in-process dev server used to provide.
 
 Some runtime/testing behaviors the previous in-process dev server provided are not yet available through the
 Gateway and are expected to be added upstream: browser console output forwarding (`/console` WebSocket),
