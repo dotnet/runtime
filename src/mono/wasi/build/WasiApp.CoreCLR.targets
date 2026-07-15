@@ -119,11 +119,12 @@
 
       <!-- Curated header set for the generated callhelpers (mirrors browser's
            _EmccCFlagsGenerated): force-include coreclr_compat.h + -I the dirs with
-           <callhelpers.hpp> and minipal. In-tree uses the repo dirs; env vars override for
-           out-of-tree. coreclr_compat.h is referenced from the browser build dir rather than
-           copied (a second copy would drift from the callhelpers ABI); relocating it to a
-           shared location + out-of-tree staging is tracked by #128362. -->
-      <_WasiCoreClrCompatHeader>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'browser', 'build', 'coreclr_compat.h'))</_WasiCoreClrCompatHeader>
+           <callhelpers.hpp> and minipal. In-tree uses the repo dirs; env vars override each
+           for out-of-tree. coreclr_compat.h is referenced from the browser build dir rather
+           than copied (a second copy would drift from the callhelpers ABI); relocating it to
+           a shared location + out-of-tree staging is tracked by #128362. -->
+      <_WasiCoreClrCompatHeader Condition="'$(CORECLR_COMPAT_HEADER)' != ''">$([System.IO.Path]::GetFullPath('$(CORECLR_COMPAT_HEADER)'))</_WasiCoreClrCompatHeader>
+      <_WasiCoreClrCompatHeader Condition="'$(_WasiCoreClrCompatHeader)' == ''">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'browser', 'build', 'coreclr_compat.h'))</_WasiCoreClrCompatHeader>
       <_WasiVmWasmIncludeDir Condition="'$(CORECLR_VM_WASM_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(CORECLR_VM_WASM_INCLUDE_DIR)'))))</_WasiVmWasmIncludeDir>
       <_WasiVmWasmIncludeDir Condition="'$(_WasiVmWasmIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'coreclr', 'vm', 'wasm'))</_WasiVmWasmIncludeDir>
       <_WasiMinipalIncludeRoot Condition="'$(MINIPAL_INCLUDE_DIR)' != ''">$([MSBuild]::NormalizeDirectory($([System.IO.Path]::GetFullPath('$(MINIPAL_INCLUDE_DIR)')), '..'))</_WasiMinipalIncludeRoot>
@@ -143,7 +144,7 @@
     <MakeDir Directories="$(_WasiRelinkObjDir)" />
 
     <Error Condition="!Exists('$(_WasiCoreClrCompatHeader)')"
-           Text="coreclr_compat.h not found at $(_WasiCoreClrCompatHeader) (set CORECLR_VM_WASM_INCLUDE_DIR/MINIPAL_INCLUDE_DIR for out-of-tree builds)." />
+           Text="coreclr_compat.h not found at $(_WasiCoreClrCompatHeader). For out-of-tree/pack builds set %24(CORECLR_COMPAT_HEADER) to the staged header (and CORECLR_VM_WASM_INCLUDE_DIR/MINIPAL_INCLUDE_DIR for the include dirs); see #128362." />
     <Error Condition="!Exists('$(_WasiHttpWorldWit)')"
            Text="WasiHttpWorld_component_type.wit not found at $(_WasiHttpWorldWit)." />
 
@@ -271,10 +272,12 @@
            in libcoreclr_static.a gc-strip. The DECODER for GC stackwalks
            (TGcInfoDecoder<Wasm32GcInfoEncoding>) is in libcoreclr_static.a. Mirrors the
            corerun executable link, which also omits it. -->
-      <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" />
-      <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a" />
-      <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a" />
-      <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a" />
+      <!-- Globalization + ICU only when not invariant, matching browser and the generator's
+           globalization P/Invoke handling (ignored/omitted above when invariant). -->
+      <_WasiHostLibsPre Condition="'$(InvariantGlobalization)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" />
+      <_WasiHostLibsPre Condition="'$(InvariantGlobalization)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a" />
+      <_WasiHostLibsPre Condition="'$(InvariantGlobalization)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a" />
+      <_WasiHostLibsPre Condition="'$(InvariantGlobalization)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a" />
 
       <!-- Linked after -lstdc++ -->
       <_WasiHostLibsPost Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclrminipal.a" />
