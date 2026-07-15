@@ -83,6 +83,8 @@ public class GenerateWasmBootJson : Task
 
     public bool IsMultiThreaded { get; set; }
 
+    public string? UseMonoRuntime { get; set; }
+
     public bool FingerprintAssets { get; set; }
 
     public string ApplicationEnvironment { get; set; }
@@ -119,7 +121,8 @@ public class GenerateWasmBootJson : Task
 
     private void WriteBootConfig(string entryAssemblyName)
     {
-        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion);
+        bool isMonoRuntime = !string.Equals(UseMonoRuntime, "false", StringComparison.OrdinalIgnoreCase);
+        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion, isMonoRuntime);
 
         var result = new BootJsonData
         {
