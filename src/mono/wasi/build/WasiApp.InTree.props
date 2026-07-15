@@ -8,10 +8,9 @@
        WasiApp.CoreCLR.targets). -->
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <UseMonoRuntime>false</UseMonoRuntime>
-    <!-- Default to invariant globalization for the CoreCLR-WASI bring-up, matching the
-         CoreCLR-WASI runtime tests (see src/tests/Common/CLRTest.Execute.Bash.targets).
-         TODO (#130129): flip to full ICU once icu data loading is validated on wasi. -->
-    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
+    <!-- Full ICU globalization: the relinked corerun host preloads icudt.dat (see
+         corerun.cpp / WasiApp.CoreCLR.targets), so the leg no longer needs invariant mode. -->
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
     <UseMonoRuntime>true</UseMonoRuntime>

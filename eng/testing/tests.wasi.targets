@@ -22,10 +22,10 @@
   <Import Project="$(MSBuildThisFileDirectory)wasi-provisioning.targets" />
 
   <!-- CoreCLR-WASI: WasiApp.CoreCLR.targets relinks the corerun host per-app (so
-       library/test reverse P/Invoke thunks are covered). Default to invariant
-       globalization for bring-up, matching the CoreCLR-WASI runtime tests. -->
+       library/test reverse P/Invoke thunks are covered), and the relinked host preloads
+       icudt.dat, so the leg runs with full ICU globalization. -->
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
-    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>
 
   <PropertyGroup>
