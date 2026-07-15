@@ -399,6 +399,25 @@ namespace System
             return null;
         }
 
+        public static bool TryFormatDecimalIeee754<TDecimal, TValue, TChar>(TValue value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            var vlb = new ValueListBuilder<TChar>(stackalloc TChar[CharStackBufferSize]);
+            string? s = FormatDecimalIeee754<TDecimal, TValue, TChar>(ref vlb, value, format, info);
+
+            Debug.Assert(s is null || typeof(TChar) == typeof(char));
+            bool success = s != null ?
+                TryCopyTo(s, destination, out charsWritten) :
+                vlb.TryCopyTo(destination, out charsWritten);
+
+            vlb.Dispose();
+            return success;
+        }
+
         private static void FormatGeneralAndRoundTripDecimalIeee754<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char fmt, int digits, NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
         {

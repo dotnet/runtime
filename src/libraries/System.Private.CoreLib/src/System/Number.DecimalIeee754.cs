@@ -1458,6 +1458,62 @@ namespace System
             return ClassifyIntegerParityDecimalIeee754<TDecimal, TValue>(decimalBits) == 1;
         }
 
+        internal static bool IsZeroDecimalIeee754<TDecimal, TValue>(TValue decimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (!TDecimal.IsFinite(decimalBits))
+            {
+                return false;
+            }
+
+            DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(decimalBits);
+            return TValue.IsZero(decoded.Significand);
+        }
+
+        // This code is based on `bid32_isCanonical`, `bid64_isCanonical`, and `bid128_isCanonical`
+        // from Intel(R) Decimal Floating-Point Math Library
+        // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+        //
+        // Licensed under the BSD 3-Clause "New" or "Revised" License
+        // See THIRD-PARTY-NOTICES.TXT for the full license text
+        internal static bool IsCanonicalDecimalIeee754<TDecimal, TValue>(TValue decimalBits, TValue nanReservedMask, TValue nanPayloadMask, TValue maxNaNPayload)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (TDecimal.IsNaN(decimalBits))
+            {
+                // A canonical NaN leaves the reserved bits clear and carries a payload within range.
+                if ((decimalBits & nanReservedMask) != TValue.Zero)
+                {
+                    return false;
+                }
+                return (decimalBits & nanPayloadMask) <= maxNaNPayload;
+            }
+
+            if (TDecimal.IsInfinity(decimalBits))
+            {
+                // A canonical infinity leaves every bit outside the sign and NaN/infinity indicator clear.
+                return (decimalBits & ~(TDecimal.SignMask | TDecimal.NaNMask)) == TValue.Zero;
+            }
+
+            // A finite value is canonical when its raw coefficient does not exceed the maximum
+            // representable significand. The `11` steering form implies the most significant bit,
+            // whose combination always overflows the maximum for `Decimal128`.
+            TValue significand;
+
+            if ((decimalBits & TDecimal.G0G1Mask) == TDecimal.G0G1Mask)
+            {
+                significand = (decimalBits & TDecimal.GwPlus4SignificandMask) | TDecimal.MostSignificantBitOfSignificandMask;
+            }
+            else
+            {
+                significand = decimalBits & TDecimal.GwPlus2ToGwPlus4SignificandMask;
+            }
+
+            return significand <= TDecimal.MaxSignificand;
+        }
+
         /// <summary>
         /// Determines whether a finite non-zero value has an adjusted exponent at or above the minimum normal
         /// exponent. Zero, infinity, and NaN are never normal.
@@ -1710,6 +1766,448 @@ namespace System
             }
 
             return ((decimalBits & TDecimal.SignMask) != TValue.Zero) ? -1 : +1;
+        }
+
+        // ==================================================================================================
+        // Conversions
+        // ==================================================================================================
+
+        /// <summary>
+        /// Classifies a decimal value for conversion to an integer type: whether it is NaN, an infinity, or a
+        /// finite value. For finite values it also returns the sign and the magnitude truncated toward zero.
+        /// </summary>
+        internal enum DecimalIeee754ToIntegerStatus
+        {
+            Finite,
+            NaN,
+            PositiveInfinity,
+            NegativeInfinity,
+        }
+
+        /// <summary>
+        /// Converts the decimal <paramref name="decimalBits"/> to the integer magnitude obtained by truncating
+        /// toward zero (the fractional part is discarded). Returns whether the value is finite, an infinity, or
+        /// NaN. For finite values, <paramref name="isNegative"/> carries the sign, <paramref name="magnitude"/>
+        /// the truncated absolute value, and <paramref name="exceedsUInt128"/> is set when that magnitude does
+        /// not fit in <see cref="UInt128"/> (and therefore in no integer type).
+        /// </summary>
+        private static DecimalIeee754ToIntegerStatus DecimalIeee754ToIntegerMagnitude<TDecimal, TValue>(TValue decimalBits, out bool isNegative, out UInt128 magnitude, out bool exceedsUInt128)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            isNegative = (decimalBits & TDecimal.SignMask) != TValue.Zero;
+            magnitude = UInt128.Zero;
+            exceedsUInt128 = false;
+
+            if (TDecimal.IsNaN(decimalBits))
+            {
+                return DecimalIeee754ToIntegerStatus.NaN;
+            }
+
+            if (TDecimal.IsInfinity(decimalBits))
+            {
+                return isNegative ? DecimalIeee754ToIntegerStatus.NegativeInfinity : DecimalIeee754ToIntegerStatus.PositiveInfinity;
+            }
+
+            DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(decimalBits);
+            isNegative = decoded.Signed;
+
+            UInt128 significand = UInt128.CreateTruncating(decoded.Significand);
+            int exponent = decoded.UnbiasedExponent;
+
+            if (significand == UInt128.Zero)
+            {
+                return DecimalIeee754ToIntegerStatus.Finite;
+            }
+
+            if (exponent >= 0)
+            {
+                // magnitude = significand * 10^exponent. UInt128 holds at most 39 digits, so any exponent that
+                // would push the product past that bound overflows every integer type and saturates/throws.
+                for (int i = 0; (i < exponent) && !exceedsUInt128; i++)
+                {
+                    if (significand > UInt128.MaxValue / 10)
+                    {
+                        exceedsUInt128 = true;
+                        break;
+                    }
+                    significand *= 10;
+                }
+
+                magnitude = exceedsUInt128 ? UInt128.Zero : significand;
+            }
+            else
+            {
+                // magnitude = significand / 10^(-exponent), truncated toward zero. Once the divisor has more
+                // digits than the significand the quotient is zero.
+                int drop = -exponent;
+
+                for (int i = 0; (i < drop) && (significand != UInt128.Zero); i++)
+                {
+                    significand /= 10;
+                }
+
+                magnitude = significand;
+            }
+
+            return DecimalIeee754ToIntegerStatus.Finite;
+        }
+
+        /// <summary>
+        /// Converts a decimal value to an integer type, truncating toward zero. When <paramref name="isChecked"/>
+        /// is <c>true</c>, NaN, infinities, and out-of-range values throw <see cref="OverflowException"/>;
+        /// otherwise the result saturates (NaN maps to zero, out-of-range values clamp to the type's bounds),
+        /// matching the behavior of the binary floating-point to integer conversions.
+        /// </summary>
+        internal static TInteger ConvertDecimalIeee754ToInteger<TDecimal, TValue, TInteger>(TValue decimalBits, bool isChecked)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+            where TInteger : IBinaryInteger<TInteger>, IMinMaxValue<TInteger>
+        {
+            DecimalIeee754ToIntegerStatus status = DecimalIeee754ToIntegerMagnitude<TDecimal, TValue>(decimalBits, out bool isNegative, out UInt128 magnitude, out bool exceedsUInt128);
+
+            bool isUnsigned = TInteger.IsZero(TInteger.MinValue);
+            UInt128 maxMagnitude = UInt128.CreateTruncating(TInteger.MaxValue);
+            // For a two's-complement signed type the most-negative value has magnitude MaxValue + 1.
+            UInt128 minMagnitude = isUnsigned ? UInt128.Zero : maxMagnitude + UInt128.One;
+
+            switch (status)
+            {
+                case DecimalIeee754ToIntegerStatus.NaN:
+                {
+                    if (isChecked)
+                    {
+                        ThrowHelper.ThrowOverflowException();
+                    }
+                    return TInteger.Zero;
+                }
+
+                case DecimalIeee754ToIntegerStatus.PositiveInfinity:
+                {
+                    if (isChecked)
+                    {
+                        ThrowHelper.ThrowOverflowException();
+                    }
+                    return TInteger.MaxValue;
+                }
+
+                case DecimalIeee754ToIntegerStatus.NegativeInfinity:
+                {
+                    if (isChecked)
+                    {
+                        ThrowHelper.ThrowOverflowException();
+                    }
+                    return TInteger.MinValue;
+                }
+
+                default:
+                {
+                    if (!isNegative)
+                    {
+                        if (exceedsUInt128 || (magnitude > maxMagnitude))
+                        {
+                            if (isChecked)
+                            {
+                                ThrowHelper.ThrowOverflowException();
+                            }
+                            return TInteger.MaxValue;
+                        }
+
+                        return TInteger.CreateTruncating(magnitude);
+                    }
+
+                    // Negative magnitude.
+                    if (isUnsigned)
+                    {
+                        if ((magnitude != UInt128.Zero) && isChecked)
+                        {
+                            ThrowHelper.ThrowOverflowException();
+                        }
+                        return TInteger.Zero;
+                    }
+
+                    if (exceedsUInt128 || (magnitude > minMagnitude))
+                    {
+                        if (isChecked)
+                        {
+                            ThrowHelper.ThrowOverflowException();
+                        }
+                        return TInteger.MinValue;
+                    }
+
+                    if (magnitude == minMagnitude)
+                    {
+                        return TInteger.MinValue;
+                    }
+
+                    return TInteger.Zero - TInteger.CreateTruncating(magnitude);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Converts an integer value of type <typeparamref name="TInteger"/> to the decimal format, rounding to
+        /// the format precision when the integer has more significant digits than the format can represent. The
+        /// result uses the preferred exponent of zero (quantum one) whenever the value fits exactly.
+        /// </summary>
+        internal static TValue ConvertIntegerToDecimalIeee754<TDecimal, TValue, TInteger>(TInteger value)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+            where TInteger : IBinaryInteger<TInteger>
+        {
+            bool isNegative = TInteger.IsNegative(value);
+            UInt128 bits = UInt128.CreateTruncating(value);
+
+            // For a negative value CreateTruncating sign-extends the two's-complement pattern to 128 bits, so a
+            // width-independent negate recovers the true magnitude (including the most-negative value).
+            UInt128 magnitude = isNegative ? (~bits) + UInt128.One : bits;
+
+            return DecimalIeee754FromMagnitude<TDecimal, TValue>(isNegative, magnitude, 0);
+        }
+
+        /// <summary>
+        /// Builds the decimal encoding for the value <c>(-1)^<paramref name="sign"/> * <paramref name="magnitude"/> * 10^<paramref name="exponent"/></c>,
+        /// rendering the magnitude to its decimal digits and running the shared rounding pipeline (which rounds
+        /// to the format precision and handles the subnormal and overflow ranges).
+        /// </summary>
+        private static TValue DecimalIeee754FromMagnitude<TDecimal, TValue>(bool sign, UInt128 magnitude, int exponent)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (magnitude == UInt128.Zero)
+            {
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(sign, TValue.Zero, exponent);
+            }
+
+            // A UInt128 has at most 39 decimal digits; leave room for the terminating null. The NumberBuffer
+            // constructor rewrites Digits[0] as part of initialization, so the digits must be written into the
+            // buffer's span after construction rather than before.
+            Span<byte> digits = stackalloc byte[UInt128NumberBufferLength + 1];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, digits);
+
+            int digitsCount = WriteDecimalDigits(magnitude, number.Digits);
+            number.DigitsCount = digitsCount;
+            number.Scale = digitsCount + exponent;
+            number.IsNegative = sign;
+            number.CheckConsistency();
+
+            return NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
+        }
+
+        /// <summary>
+        /// Writes the decimal digits of the non-zero <paramref name="magnitude"/> into <paramref name="digits"/>
+        /// (most-significant digit first, no leading zeros) followed by a terminating null, returning the digit count.
+        /// </summary>
+        private static int WriteDecimalDigits(UInt128 magnitude, Span<byte> digits)
+        {
+            Debug.Assert(magnitude != UInt128.Zero);
+
+            // Emit least-significant digit first into the tail of a scratch buffer, then compact to the front.
+            Span<byte> scratch = stackalloc byte[UInt128NumberBufferLength];
+            int index = scratch.Length;
+
+            while (magnitude != UInt128.Zero)
+            {
+                (magnitude, UInt128 digit) = UInt128.DivRem(magnitude, 10);
+                scratch[--index] = (byte)('0' + (int)digit);
+            }
+
+            int count = scratch.Length - index;
+            scratch.Slice(index, count).CopyTo(digits);
+            digits[count] = (byte)'\0';
+            return count;
+        }
+
+        /// <summary>
+        /// Converts a decimal value from the source format to the target format. Widening conversions are exact;
+        /// narrowing conversions round to the target precision. NaN and infinities are propagated with their sign.
+        /// </summary>
+        internal static TTargetValue ConvertDecimalIeee754<TSourceDecimal, TSourceValue, TTargetDecimal, TTargetValue>(TSourceValue decimalBits)
+            where TSourceDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TSourceDecimal, TSourceValue>
+            where TSourceValue : unmanaged, IBinaryInteger<TSourceValue>
+            where TTargetDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TTargetDecimal, TTargetValue>
+            where TTargetValue : unmanaged, IBinaryInteger<TTargetValue>
+        {
+            bool isNegative = (decimalBits & TSourceDecimal.SignMask) != TSourceValue.Zero;
+
+            if (TSourceDecimal.IsNaN(decimalBits))
+            {
+                return isNegative ? (TTargetDecimal.NaN | TTargetDecimal.SignMask) : TTargetDecimal.NaN;
+            }
+
+            if (TSourceDecimal.IsInfinity(decimalBits))
+            {
+                return isNegative ? TTargetDecimal.NegativeInfinity : TTargetDecimal.PositiveInfinity;
+            }
+
+            DecodedDecimalIeee754<TSourceValue> decoded = UnpackDecimalIeee754<TSourceDecimal, TSourceValue>(decimalBits);
+
+            if (TSourceValue.IsZero(decoded.Significand))
+            {
+                return DecimalIeee754FiniteNumberBinaryEncoding<TTargetDecimal, TTargetValue>(decoded.Signed, TTargetValue.Zero, decoded.UnbiasedExponent);
+            }
+
+            UInt128 magnitude = UInt128.CreateTruncating(decoded.Significand);
+            return DecimalIeee754FromMagnitude<TTargetDecimal, TTargetValue>(decoded.Signed, magnitude, decoded.UnbiasedExponent);
+        }
+
+        /// <summary>
+        /// Converts a decimal value to the binary floating-point type <typeparamref name="TFloat"/>, correctly
+        /// rounded. NaN and infinities propagate with their sign; finite values are rendered to their decimal
+        /// digits and run through the shared binary parsing pipeline, which produces the correctly rounded result.
+        /// </summary>
+        internal static TFloat ConvertDecimalIeee754ToFloat<TDecimal, TValue, TFloat>(TValue decimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
+        {
+            bool isNegative = (decimalBits & TDecimal.SignMask) != TValue.Zero;
+
+            if (TDecimal.IsNaN(decimalBits))
+            {
+                return isNegative ? -TFloat.NaN : TFloat.NaN;
+            }
+
+            if (TDecimal.IsInfinity(decimalBits))
+            {
+                return isNegative ? TFloat.NegativeInfinity : TFloat.PositiveInfinity;
+            }
+
+            DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(decimalBits);
+
+            if (TValue.IsZero(decoded.Significand))
+            {
+                return decoded.Signed ? -TFloat.Zero : TFloat.Zero;
+            }
+
+            // The NumberBuffer constructor rewrites Digits[0] as part of initialization, so the digits must be
+            // written into the buffer's span after construction rather than before.
+            UInt128 magnitude = UInt128.CreateTruncating(decoded.Significand);
+            Span<byte> digits = stackalloc byte[UInt128NumberBufferLength + 1];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, digits);
+
+            int digitsCount = WriteDecimalDigits(magnitude, number.Digits);
+            number.DigitsCount = digitsCount;
+            number.Scale = digitsCount + decoded.UnbiasedExponent;
+            number.IsNegative = decoded.Signed;
+
+            return NumberToFloat<TFloat>(ref number);
+        }
+
+        /// <summary>
+        /// Converts a binary floating-point value to the decimal format, correctly rounded. NaN and infinities
+        /// propagate with their sign; finite values are expanded to their exact decimal representation via Dragon4
+        /// and rounded once to the target precision (IEEE convertFormat rounds the exact value, not the shortest
+        /// round-trippable string).
+        /// </summary>
+        internal static TValue ConvertFloatToDecimalIeee754<TFloat, TDecimal, TValue>(TFloat value)
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            bool isNegative = TFloat.IsNegative(value);
+
+            if (TFloat.IsNaN(value))
+            {
+                return isNegative ? (TDecimal.NaN | TDecimal.SignMask) : TDecimal.NaN;
+            }
+
+            if (TFloat.IsInfinity(value))
+            {
+                return isNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            if (value == TFloat.Zero)
+            {
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(isNegative, TValue.Zero, 0);
+            }
+
+            // Produce the exact decimal expansion of the finite value. Passing a length-based cutoff of int.MaxValue
+            // ensures the buffer size is the limiting factor, and NumberBufferLength is large enough to hold the full
+            // expansion (so the result is exact and a single rounding to precision follows).
+            Span<byte> digits = stackalloc byte[TFloat.NumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, digits);
+            Dragon4<TFloat>(value, cutoffNumber: int.MaxValue, isSignificantDigits: false, ref number);
+            number.IsNegative = isNegative;
+
+            // IEEE convertFormat delivers the preferred (quantum) exponent: for an exact result it is the
+            // representable exponent closest to zero from below. Dragon4 strips trailing zeros, which can push the
+            // exponent above zero (e.g. 1000 -> digits "1", Scale 4, exponent 3). Re-materialize those trailing zeros
+            // to bring the exponent down to zero so integer-valued inputs keep quantum one (matching the decimal parse
+            // path); the shared pipeline then rounds when the coefficient exceeds the target precision.
+            int preferredZeros = number.Scale - number.DigitsCount;
+            if (preferredZeros > 0)
+            {
+                int end = number.DigitsCount + preferredZeros;
+                digits.Slice(number.DigitsCount, preferredZeros).Fill((byte)'0');
+                digits[end] = (byte)'\0';
+                number.DigitsCount = end;
+            }
+
+            number.CheckConsistency();
+
+            return NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
+        }
+
+        /// <summary>
+        /// Converts a decimal value to <see cref="decimal"/> (System.Decimal). NaN and infinities cannot be
+        /// represented and throw <see cref="OverflowException"/>; finite values are rendered to their decimal
+        /// digits and run through the shared System.Decimal conversion pipeline, which rounds to the System.Decimal
+        /// precision and throws <see cref="OverflowException"/> when the value is outside the System.Decimal range.
+        /// </summary>
+        internal static decimal ConvertDecimalIeee754ToDecimal<TDecimal, TValue>(TValue decimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (TDecimal.IsNaN(decimalBits) || TDecimal.IsInfinity(decimalBits))
+            {
+                throw new OverflowException(SR.Overflow_Decimal);
+            }
+
+            DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(decimalBits);
+
+            if (TValue.IsZero(decoded.Significand))
+            {
+                // System.Decimal has no infinite quantum range: clamp the preferred exponent into the [0, -28]
+                // scale range the way the parse pipeline does for a zero coefficient.
+                return new decimal(0, 0, 0, decoded.Signed, (byte)Math.Clamp(-decoded.UnbiasedExponent, 0, 28));
+            }
+
+            UInt128 magnitude = UInt128.CreateTruncating(decoded.Significand);
+            Span<byte> digits = stackalloc byte[UInt128NumberBufferLength + 1];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, digits);
+
+            int digitsCount = WriteDecimalDigits(magnitude, number.Digits);
+            number.DigitsCount = digitsCount;
+            number.Scale = digitsCount + decoded.UnbiasedExponent;
+            number.IsNegative = decoded.Signed;
+            number.CheckConsistency();
+
+            decimal result = default;
+
+            if (!TryNumberToDecimal(ref number, ref result))
+            {
+                throw new OverflowException(SR.Overflow_Decimal);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Converts a <see cref="decimal"/> (System.Decimal) value to the decimal format, correctly rounded. The
+        /// System.Decimal digits and scale are rendered into a NumberBuffer and run through the shared rounding
+        /// pipeline, which rounds to the format precision and preserves the source quantum (IEEE convertFormat).
+        /// </summary>
+        internal static TValue ConvertDecimalToDecimalIeee754<TDecimal, TValue>(decimal value)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            Span<byte> digits = stackalloc byte[DecimalNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, digits);
+
+            DecimalToNumber(ref value, ref number);
+
+            return NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
         }
     }
 }
