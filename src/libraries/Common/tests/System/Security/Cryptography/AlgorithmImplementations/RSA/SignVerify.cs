@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography.Tests;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Test.IO.Streams;
@@ -11,7 +12,7 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public sealed class SignVerify_Array : SignVerify
+    public abstract class SignVerify_Array : SignVerify
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             rsa.SignData(data, hashAlgorithm, padding);
@@ -42,9 +43,10 @@ namespace System.Security.Cryptography.Rsa.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class SignVerify
     {
-        public static bool SupportsPss => RSAFactory.SupportsPss;
-        public static bool AreCustomSaltLengthsSupportedWithPss => SupportsPss && PlatformSupport.AreCustomSaltLengthsSupportedWithPss;
-        public static bool IsAppleCrypto => PlatformDetection.IsApplePlatform;
+        protected abstract RSAProvider RSAFactory { get; }
+
+        public bool SupportsPss => RSAFactory.SupportsPss;
+        public bool AreCustomSaltLengthsSupportedWithPss => SupportsPss && PlatformSupport.AreCustomSaltLengthsSupportedWithPss;
 
         protected abstract byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
         protected abstract byte[] SignHash(RSA rsa, byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
@@ -150,9 +152,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        [ConditionalFact]
         public void ExpectedSignature_SHA1_384()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha1Signatures);
+
             byte[] expectedSignature =
             {
                 0x79, 0xD9, 0x3C, 0xBF, 0x54, 0xFA, 0x55, 0x8C,
@@ -181,9 +185,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        [ConditionalFact]
         public void ExpectedSignature_SHA1_1032()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha1Signatures);
+
             byte[] expectedSignature =
             {
                 0x49, 0xBC, 0x1C, 0xBE, 0x72, 0xEF, 0x83, 0x6E,
@@ -208,9 +214,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             ExpectSignature(expectedSignature, TestData.HelloBytes, "SHA1", TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        [ConditionalFact]
         public void ExpectedSignature_SHA1_2048()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha1Signatures);
+
             byte[] expectedSignature = new byte[]
             {
                 0xA1, 0xFC, 0x74, 0x67, 0x49, 0x91, 0xF4, 0x28,
@@ -353,9 +361,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(expectedSignature, signature);
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        [ConditionalFact]
         public void VerifySignature_SHA1_384()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha1Signatures);
+
             byte[] signature =
             {
                 0x79, 0xD9, 0x3C, 0xBF, 0x54, 0xFA, 0x55, 0x8C,
@@ -369,9 +379,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifySignature(signature, TestData.HelloBytes, "SHA1", TestData.RSA384Parameters);
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        [ConditionalFact]
         public void VerifySignature_SHA1_1032()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha1Signatures);
+
             byte[] signature =
             {
                 0x49, 0xBC, 0x1C, 0xBE, 0x72, 0xEF, 0x83, 0x6E,
@@ -396,9 +408,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifySignature(signature, TestData.HelloBytes, "SHA1", TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        [ConditionalFact]
         public void VerifySignature_SHA1_2048()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha1Signatures);
+
             byte[] signature = new byte[]
             {
                 0xA1, 0xFC, 0x74, 0x67, 0x49, 0x91, 0xF4, 0x28,
@@ -506,9 +520,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifySignature(signature, TestData.HelloBytes, "SHA256", TestData.RSA2048Params);
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha3))]
+        [ConditionalFact]
         public void VerifySignature_SHA3_256_RSA2048()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha3);
+
             byte[] signature = new byte[]
             {
                 0x37, 0xfc, 0x5b, 0xa7, 0xcd, 0x72, 0x93, 0x55, 0x43, 0x6f, 0x2c, 0x5c, 0xce, 0x10, 0x20, 0x67,
@@ -532,9 +548,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifySignature(signature, TestData.HelloBytes, HashAlgorithmName.SHA3_256.Name, TestData.RSA2048Params);
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha3))]
+        [ConditionalFact]
         public void VerifySignature_SHA3_384_RSA2048()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha3);
+
             byte[] signature = new byte[]
             {
                 0x96, 0x76, 0xdf, 0xa3, 0xd3, 0xac, 0x74, 0x08, 0x18, 0x41, 0x0a, 0xa1, 0x03, 0x6b, 0x28, 0x5d,
@@ -558,9 +576,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifySignature(signature, TestData.HelloBytes, HashAlgorithmName.SHA3_384.Name, TestData.RSA2048Params);
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha3))]
+        [ConditionalFact]
         public void VerifySignature_SHA3_512_RSA2048()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha3);
+
             byte[] signature = new byte[]
             {
                 0x18, 0x83, 0xab, 0x01, 0xc1, 0xaf, 0x98, 0xa9, 0xc2, 0xde, 0x2d, 0x63, 0x4f, 0x8a, 0xf6, 0x47,
@@ -738,8 +758,18 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         [Theory]
         [MemberData(nameof(RoundTripTheories))]
-        public void SignAndVerify_Roundtrip(string hashAlgorithm, RSAParameters rsaParameters)
+        public void SignAndVerify_Roundtrip(
+            string hashAlgorithm,
+            RSAParameters rsaParameters,
+            bool requiresSha1Signature,
+            bool requiresMd5Signature)
         {
+            if ((requiresSha1Signature && !RSAFactory.SupportsSha1Signatures) ||
+                (requiresMd5Signature && !RSAFactory.SupportsMd5Signatures))
+            {
+                return;
+            }
+
             SignAndVerify(TestData.HelloBytes, hashAlgorithm, rsaParameters);
         }
 
@@ -749,21 +779,13 @@ namespace System.Security.Cryptography.Rsa.Tests
             {
                 foreach (RSAParameters rsaParameters in new[] { TestData.RSA1024Params, TestData.RSA2048Params })
                 {
-                    if (RSAFactory.SupportsSha1Signatures)
-                    {
-                        yield return new object[] { nameof(HashAlgorithmName.SHA1), rsaParameters };
-                    }
-
-                    if (RSAFactory.SupportsMd5Signatures)
-                    {
-                        yield return new object[] { nameof(HashAlgorithmName.MD5), rsaParameters };
-                    }
-
-                    yield return new object[] { nameof(HashAlgorithmName.SHA256), rsaParameters };
+                    yield return new object[] { nameof(HashAlgorithmName.SHA1), rsaParameters, true, false };
+                    yield return new object[] { nameof(HashAlgorithmName.MD5), rsaParameters, false, true };
+                    yield return new object[] { nameof(HashAlgorithmName.SHA256), rsaParameters, false, false };
                 }
 
-                yield return new object[] { nameof(HashAlgorithmName.SHA384), TestData.RSA2048Params };
-                yield return new object[] { nameof(HashAlgorithmName.SHA512), TestData.RSA2048Params };
+                yield return new object[] { nameof(HashAlgorithmName.SHA384), TestData.RSA2048Params, false, false };
+                yield return new object[] { nameof(HashAlgorithmName.SHA512), TestData.RSA2048Params, false, false };
             }
         }
 
@@ -851,9 +873,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        [ConditionalFact]
         public void ExpectedHashSignature_SHA1_2048()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha1Signatures);
+
             byte[] expectedHashSignature = new byte[]
             {
                 0xA1, 0xFC, 0x74, 0x67, 0x49, 0x91, 0xF4, 0x28,
@@ -982,9 +1006,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             ExpectHashSignature(expectedHashSignature, dataHash, "SHA256", TestData.RSA2048Params);
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        [ConditionalFact]
         public void VerifyHashSignature_SHA1_2048()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha1Signatures);
+
             byte[] hashSignature = new byte[]
             {
                 0xA1, 0xFC, 0x74, 0x67, 0x49, 0x91, 0xF4, 0x28,
@@ -1115,8 +1141,13 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         [Theory]
         [MemberData(nameof(PssRoundTripParameters))]
-        public void PssRoundtrip(string hashAlgorithmName, RSASignaturePadding padding)
+        public void PssRoundtrip(string hashAlgorithmName, Func<RSAProvider, bool> isSupported, int? saltLength)
         {
+            if (!isSupported(RSAFactory))
+            {
+                return;
+            }
+
             RSAParameters privateParameters = TestData.RSA2048Params;
             RSAParameters publicParameters = new RSAParameters
             {
@@ -1132,6 +1163,9 @@ namespace System.Security.Cryptography.Rsa.Tests
 
                 byte[] data = TestData.RsaBigExponentParams.Modulus;
                 HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
+                RSASignaturePadding padding = saltLength is null ?
+                    RSASignaturePadding.Pss :
+                    RSASignaturePadding.CreatePss(saltLength.Value);
 
                 if (RSAFactory.SupportsPss)
                 {
@@ -1175,9 +1209,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                 modulus2048Signature);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact]
         public void VerifyExpectedSignature_PssSha256_RSA16384()
         {
+            SkipTestException.ThrowUnless(RSAFactory.Supports16384);
+
             byte[] modulus2048Signature = (
                 "1D92D529567F6922866FFDE4BF44C427FA511BF5EDF163ED51A0D14ADECD98FB" +
                 "C6A61A61532404AF74C3AB65119BB1358855A68362FBABAED7D8E56403EE9AFA" +
@@ -1251,9 +1287,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                 modulus2048Signature);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact]
         public void VerifyExpectedSignature_PssSha384()
         {
+            SkipTestException.ThrowUnless(RSAFactory.Supports16384);
+
             byte[] bigModulusSignature = (
                 "70F48CA4E8640701369DB986C4D09C91E4C197DB1BE4F32C3F37A67AEC4BA95D" +
                 "733EAACAE139B7B9C8E66C5BC82629971C3BEBF93A949CB81763FECDF96B73DA" +
@@ -1288,9 +1326,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                 helloSignature);
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha3))]
+        [ConditionalFact]
         public void VerifyExpectedSignature_PssSha3_256()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha3);
+
             // Signature independently created with
             // echo -n Hello | openssl dgst -sha3-256 -binary | openssl pkeyutl -sign -inkey key.pem -pkeyopt rsa_padding_mode:pss -pkeyopt digest:sha3-256 | xxd -i -c 16
             byte[] helloSignature =
@@ -1320,9 +1360,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                 helloSignature);
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha3))]
+        [ConditionalFact]
         public void VerifyExpectedSignature_PssSha3_384()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha3);
+
             // Signature independently created with
             // echo -n Hello | openssl dgst -sha3-384 -binary | openssl pkeyutl -sign -inkey key.pem -pkeyopt rsa_padding_mode:pss -pkeyopt digest:sha3-384 | xxd -i -c 16
             byte[] helloSignature =
@@ -1352,9 +1394,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                 helloSignature);
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha3))]
+        [ConditionalFact]
         public void VerifyExpectedSignature_PssSha3_512()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha3);
+
             // Signature independently created with
             // echo -n Hello | openssl dgst -sha3-512 -binary | openssl pkeyutl -sign -inkey key.pem -pkeyopt rsa_padding_mode:pss -pkeyopt digest:sha3-512 | xxd -i -c 16
             byte[] helloSignature =
@@ -1384,12 +1428,14 @@ namespace System.Security.Cryptography.Rsa.Tests
                 helloSignature);
         }
 
-        [ConditionalTheory(typeof(RSAFactory), nameof(RSAFactory.NoSupportsSha3))]
+        [ConditionalTheory]
         [InlineData("SHA3-256")]
         [InlineData("SHA3-384")]
         [InlineData("SHA3-512")]
         public void Pkcs1UnsupportedHashAlgorithm(string hashAlgorithm)
         {
+            SkipTestException.ThrowUnless(RSAFactory.NoSupportsSha3);
+
             using (RSA rsa = RSAFactory.Create())
             {
                 Exception ex = Assert.ThrowsAny<Exception>(() =>
@@ -1408,12 +1454,14 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsAppleCrypto))]
+        [ConditionalTheory]
         [InlineData(0)]
         [InlineData(5)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]
         public void PssUnsupportedPssSaltLengthOnApple(int saltLength)
         {
+            SkipTestException.ThrowUnless(PlatformDetection.IsApplePlatform);
+
             using (RSA rsa = RSAFactory.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(() =>
@@ -1424,12 +1472,14 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalTheory(typeof(RSAFactory), nameof(RSAFactory.NoSupportsSha3))]
+        [ConditionalTheory]
         [InlineData("SHA3-256")]
         [InlineData("SHA3-384")]
         [InlineData("SHA3-512")]
         public void PssUnsupportedHashAlgorithm(string hashAlgorithm)
         {
+            SkipTestException.ThrowUnless(RSAFactory.NoSupportsSha3);
+
             using (RSA rsa = RSAFactory.Create())
             {
                 Exception ex = Assert.ThrowsAny<Exception>(() =>
@@ -1506,9 +1556,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignVerify), nameof(SupportsPss))]
+        [ConditionalFact]
         public void PssSignature_WrongHashAlgorithm()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsPss);
+
             RSASignaturePadding padding = RSASignaturePadding.Pss;
             byte[] data = TestData.HelloBytes;
 
@@ -1519,10 +1571,12 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignVerify), nameof(SupportsPss))]
+        [ConditionalFact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void PssVerifyHash_MismatchedHashSize()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsPss);
+
             // This is a legal SHA-1 value, which we're going to use with SHA-2-256 instead.
             byte[] hash = "75ED7E627DB9AECBD870E27EED49ED7D9AEB2F52".HexToByteArray();
 
@@ -1542,10 +1596,12 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignVerify), nameof(SupportsPss))]
+        [ConditionalFact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void PssSignHash_MismatchedHashSize()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsPss);
+
             RSASignaturePadding padding = RSASignaturePadding.Pss;
 
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
@@ -1566,9 +1622,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignVerify), nameof(SupportsPss))]
+        [ConditionalFact]
         public void PssSignature_WrongData()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsPss);
+
             RSASignaturePadding padding = RSASignaturePadding.Pss;
             byte[] dataCopy = (byte[])TestData.HelloBytes.Clone();
             HashAlgorithmName hashAlgorithmName = HashAlgorithmName.SHA256;
@@ -1581,9 +1639,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignVerify), nameof(SupportsPss))]
+        [ConditionalFact]
         public void PssSignature_WrongLength()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsPss);
+
             RSASignaturePadding padding = RSASignaturePadding.Pss;
             byte[] data = TestData.HelloBytes;
             HashAlgorithmName hashAlgorithmName = HashAlgorithmName.SHA256;
@@ -1759,61 +1819,30 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             get
             {
-                int?[] saltLengths = AreCustomSaltLengthsSupportedWithPss
+                int?[] saltLengths = PlatformSupport.AreCustomSaltLengthsSupportedWithPss
                     ? [null, RSASignaturePadding.PssSaltLengthMax, RSASignaturePadding.PssSaltLengthIsHashLength, 0, 1, 4]
                     : [null];
 
                 foreach (int? saltLength in saltLengths)
                 {
-                    RSASignaturePadding padding = saltLength is null ?
-                        RSASignaturePadding.Pss :
-                        RSASignaturePadding.CreatePss(saltLength.Value);
-
-                    yield return new object[] { HashAlgorithmName.SHA256.Name, padding };
-                    yield return new object[] { HashAlgorithmName.SHA384.Name, padding };
-                    yield return new object[] { HashAlgorithmName.SHA512.Name, padding };
-
-                    if (RSAFactory.SupportsMd5Signatures)
-                    {
-                        yield return new object[] { HashAlgorithmName.MD5.Name, padding };
-                    }
-
-                    if (RSAFactory.SupportsSha1Signatures)
-                    {
-                        yield return new object[] { HashAlgorithmName.SHA1.Name, padding };
-                    }
-
-                    if (RSAFactory.SupportsSha3)
-                    {
-                        yield return new object[] { HashAlgorithmName.SHA3_256.Name, padding };
-                        yield return new object[] { HashAlgorithmName.SHA3_384.Name, padding };
-                        yield return new object[] { HashAlgorithmName.SHA3_512.Name, padding };
-                    }
+                    yield return new object[] { HashAlgorithmName.SHA256.Name, (RSAProvider _) => true, saltLength };
+                    yield return new object[] { HashAlgorithmName.SHA384.Name, (RSAProvider _) => true, saltLength };
+                    yield return new object[] { HashAlgorithmName.SHA512.Name, (RSAProvider _) => true, saltLength };
+                    yield return new object[] { HashAlgorithmName.MD5.Name, (RSAProvider p) => p.SupportsMd5Signatures, saltLength };
+                    yield return new object[] { HashAlgorithmName.SHA1.Name, (RSAProvider p) => p.SupportsSha1Signatures, saltLength };
+                    yield return new object[] { HashAlgorithmName.SHA3_256.Name, (RSAProvider p) => p.SupportsSha3, saltLength };
+                    yield return new object[] { HashAlgorithmName.SHA3_384.Name, (RSAProvider p) => p.SupportsSha3, saltLength };
+                    yield return new object[] { HashAlgorithmName.SHA3_512.Name, (RSAProvider p) => p.SupportsSha3, saltLength };
                 }
 
-                // Also try every hash algorithm name with its hash size, explicitly.
-                // This should work even on platforms that don't allow it to be customized.
-
-                yield return new object[] { HashAlgorithmName.SHA256.Name, RSASignaturePadding.CreatePss(32) };
-                yield return new object[] { HashAlgorithmName.SHA384.Name, RSASignaturePadding.CreatePss(48) };
-                yield return new object[] { HashAlgorithmName.SHA512.Name, RSASignaturePadding.CreatePss(64) };
-
-                if (RSAFactory.SupportsMd5Signatures)
-                {
-                    yield return new object[] { HashAlgorithmName.MD5.Name, RSASignaturePadding.CreatePss(16) };
-                }
-
-                if (RSAFactory.SupportsSha1Signatures)
-                {
-                    yield return new object[] { HashAlgorithmName.SHA1.Name, RSASignaturePadding.CreatePss(20) };
-                }
-
-                if (RSAFactory.SupportsSha3)
-                {
-                    yield return new object[] { HashAlgorithmName.SHA3_256.Name, RSASignaturePadding.CreatePss(32) };
-                    yield return new object[] { HashAlgorithmName.SHA3_384.Name, RSASignaturePadding.CreatePss(48) };
-                    yield return new object[] { HashAlgorithmName.SHA3_512.Name, RSASignaturePadding.CreatePss(64) };
-                }
+                yield return new object[] { HashAlgorithmName.SHA256.Name, (RSAProvider _) => true, 32 };
+                yield return new object[] { HashAlgorithmName.SHA384.Name, (RSAProvider _) => true, 48 };
+                yield return new object[] { HashAlgorithmName.SHA512.Name, (RSAProvider _) => true, 64 };
+                yield return new object[] { HashAlgorithmName.MD5.Name, (RSAProvider p) => p.SupportsMd5Signatures, 16 };
+                yield return new object[] { HashAlgorithmName.SHA1.Name, (RSAProvider p) => p.SupportsSha1Signatures, 20 };
+                yield return new object[] { HashAlgorithmName.SHA3_256.Name, (RSAProvider p) => p.SupportsSha3, 32 };
+                yield return new object[] { HashAlgorithmName.SHA3_384.Name, (RSAProvider p) => p.SupportsSha3, 48 };
+                yield return new object[] { HashAlgorithmName.SHA3_512.Name, (RSAProvider p) => p.SupportsSha3, 64 };
             }
         }
     }

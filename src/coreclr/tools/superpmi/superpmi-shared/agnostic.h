@@ -244,6 +244,7 @@ struct Agnostic_CORINFO_ASYNC_INFO
 struct Agnostic_GetAwaitReturnCallResult
 {
     DWORDLONG methodHnd;
+    DWORDLONG contextHandle;
     Agnostic_CORINFO_LOOKUP instArg;
 };
 
