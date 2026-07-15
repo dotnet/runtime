@@ -722,7 +722,7 @@ static int32_t ForkAndExecProcessInternal(
         }
 
         // Spawn the process
-        result = posix_spawn(&spawnedPid, filename, &file_actions, &attr, argv, envp != NULL ? envp : GetEnviron());
+        result = posix_spawn(&spawnedPid, filename, &file_actions, &attr, argv, envp);
 
         posix_spawn_file_actions_destroy(&file_actions);
         posix_spawnattr_destroy(&attr);

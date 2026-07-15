@@ -93,7 +93,6 @@ namespace System
         {
             ValidateVariable(variable);
             SetEnvironmentVariableCore(variable, value);
-            Volatile.Write(ref ProcessEnvironmentState.HasChanged, true);
         }
 
         public static void SetEnvironmentVariable(string variable, string? value, EnvironmentVariableTarget target)
@@ -108,11 +107,6 @@ namespace System
 
             bool fromMachine = ValidateAndConvertRegistryTarget(target);
             SetEnvironmentVariableFromRegistry(variable, value, fromMachine: fromMachine);
-        }
-
-        private sealed class ProcessEnvironmentState
-        {
-            internal static bool HasChanged;
         }
 
 #if !MONO

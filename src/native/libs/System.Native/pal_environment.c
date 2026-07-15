@@ -15,6 +15,16 @@ char* SystemNative_GetEnv(const char* variable)
     return getenv(variable);
 }
 
+int32_t SystemNative_SetEnv(const char* variable, const char* value)
+{
+    return setenv(variable, value, 1);
+}
+
+int32_t SystemNative_UnsetEnv(const char* variable)
+{
+    return unsetenv(variable);
+}
+
 char** SystemNative_GetEnviron(void)
 {
 #if HAVE_NSGETENVIRON

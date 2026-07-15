@@ -552,6 +552,7 @@ SetEnvironmentVariableA(
         }
 
         EnvironUnsetenv(lpName);
+        (void)unsetenv(lpName);
     }
     else
     {
@@ -568,6 +569,10 @@ SetEnvironmentVariableA(
 
         sprintf_s(string, iLen, "%s=%s", lpName, lpValue);
         nResult = EnvironPutenv(string, FALSE) ? 0 : -1;
+        if (nResult == 0)
+        {
+            (void)setenv(lpName, lpValue, 1);
+        }
 
         free(string);
         string = nullptr;

@@ -49,10 +49,12 @@ namespace System
             {
                 if (value == null)
                 {
+                    Interop.Sys.UnsetEnv(variable);
                     s_environment.Remove(variable);
                 }
                 else
                 {
+                    Interop.Sys.SetEnv(variable, value);
                     s_environment[variable] = value;
                 }
             }
