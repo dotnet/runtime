@@ -159,8 +159,10 @@ INST(slag,             "slag",                 0,              0xEB0B)
 
 //// R_R_I
 INST(stc,		"stc",			0,		0x42)
+INST(stcy,		"stcy",		    0,		0xe372)
 INST(sth,		"sth",			0,		0x40)
 INST(st,		"st",			0,		0x50)
+INST(sty,		"sty",			0,		0xe350)
 INST(stg,		"stg",			0,		0xe324)
 INST(std,		"std",			0,		0x60)
 INST(lay,		"lay",			0,		0xe371)

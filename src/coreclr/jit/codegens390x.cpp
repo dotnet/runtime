@@ -5812,6 +5812,7 @@ void CodeGen::genZeroInitFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
     regNumber rZero = REG_R0;
     regNumber rAddr = (initReg != REG_NA) ? initReg : REG_R1;
+    regNumber rTmpAddr = (rAddr != REG_R1) ? REG_R1 : REG_R2;
 
     // Zero out r0: xgr r0, r0
     GetEmitter()->emitIns_R_R(INS_xgr, EA_8BYTE, rZero, rZero);
@@ -6065,194 +6066,50 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 //
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    _ASSERTE(!"NYI");
-#if 0
     assert(compiler->compGeneratingProlog);
     assert(genUseBlockInit);
     assert(untrLclHi > untrLclLo);
 
-    int bytesToWrite = untrLclHi - untrLclLo;
+    regNumber zeroReg  = genGetZeroReg(initReg, pInitRegZeroed);
+    regNumber frameReg = genFramePointerReg();
+    // Scratch for out-of-range displacements; must not clobber the zero register
+    regNumber rTmpAddr = (zeroReg != REG_R1) ? REG_R1 : REG_R2;
+    int       offset  = untrLclLo;
 
-    const regNumber zeroSimdReg          = REG_ZERO_INIT_FRAME_SIMD;
-    bool            simdRegZeroed        = false;
-    const int       simdRegPairSizeBytes = 2 * FP_REGSIZE_BYTES;
-
-    regNumber addrReg = REG_ZERO_INIT_FRAME_REG1;
-
-    if (addrReg == initReg)
-    {
-        *pInitRegZeroed = false;
-    }
-
-    int addrOffset = 0;
-
-    // The following invariants are held below:
-    //
-    //   1) [addrReg, #addrOffset] points at a location where next chunk of zero bytes will be written;
-    //   2) bytesToWrite specifies the number of bytes on the frame to initialize;
-    //   3) if simdRegZeroed is true then 128-bit wide zeroSimdReg contains zeroes.
-
-    const int bytesUseZeroingLoop = 192;
-
-    if (bytesToWrite >= bytesUseZeroingLoop)
-    {
-        // Generates the following code:
-        //
-        // When the size of the region is greater than or equal to 256 bytes
-        // **and** DC ZVA instruction use is permitted
-        // **and** the instruction block size is configured to 64 bytes:
-        //
-        //    movi    v16.16b, #0
-        //    add     x9, fp, #(untrLclLo+64)
-        //    add     x10, fp, #(untrLclHi-64)
-        //    stp     q16, q16, [x9, #-64]
-        //    stp     q16, q16, [x9, #-32]
-        //    bfm     x9, xzr, #0, #5
-        //
-        // loop:
-        //    dc      zva, x9
-        //    add     x9, x9, #64
-        //    cmp     x9, x10
-        //    blo     loop
-        //
-        //    stp     q16, q16, [x10]
-        //    stp     q16, q16, [x10, #32]
-        //
-        // Otherwise:
-        //
-        //     movi    v16.16b, #0
-        //     add     x9, fp, #(untrLclLo-32)
-        //     mov     x10, #(bytesToWrite-64)
-        //
-        // loop:
-        //     stp     q16, q16, [x9, #32]
-        //     mov     x10, #(bytesToWrite-64)
-        //
-        // loop:
-        //     stp     q16, q16, [x9, #32]
-        //     stp     q16, q16, [x9, #64]!
-        //     subs    x10, x10, #64
-        //     bge     loop
-
-        const int bytesUseDataCacheZeroInstruction = 256;
-
-        GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, zeroSimdReg, 0, INS_OPTS_16B);
-        simdRegZeroed = true;
-
-        if ((bytesToWrite >= bytesUseDataCacheZeroInstruction) &&
-            compiler->compOpportunisticallyDependsOn(InstructionSet_Dczva))
+    // Emit zero store via RXY (stg/sty/stcy). If the displacement is outside the
+    // encodable 20-bit signed range, materialize FP+offset in a temp and store at disp 0.
+    auto emitZeroStore = [&](instruction ins, emitAttr attr, int offs) {
+        if (emitter::emitIns_valid_imm_for_ldst_offset(offs, attr))
         {
-            // The first and the last 64 bytes should be written with two stp q-reg instructions.
-            // This is in order to avoid **unintended** zeroing of the data by dc zva
-            // outside of [fp+untrLclLo, fp+untrLclHi) memory region.
-
-            genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo + 64, addrReg);
-            addrOffset = -64;
-
-            const regNumber endAddrReg = REG_ZERO_INIT_FRAME_REG2;
-
-            if (endAddrReg == initReg)
-            {
-                *pInitRegZeroed = false;
-            }
-
-            genInstrWithConstant(INS_add, EA_PTRSIZE, endAddrReg, genFramePointerReg(), untrLclHi - 64, endAddrReg);
-
-            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, addrOffset);
-            addrOffset += simdRegPairSizeBytes;
-
-            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, addrOffset);
-            addrOffset += simdRegPairSizeBytes;
-
-            assert(addrOffset == 0);
-
-            GetEmitter()->emitIns_R_R_I_I(INS_bfm, EA_PTRSIZE, addrReg, REG_ZR, 0, 5);
-            // addrReg points at the beginning of a cache line.
-
-            GetEmitter()->emitIns_R(INS_dczva, EA_PTRSIZE, addrReg);
-            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, addrReg, addrReg, 64);
-            GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, addrReg, endAddrReg);
-            GetEmitter()->emitIns_J(INS_blo, NULL, -4);
-
-            addrReg      = endAddrReg;
-            bytesToWrite = 64;
+            GetEmitter()->emitIns_R_R_I(ins, attr, zeroReg, frameReg, offs);
+            return;
         }
-        else
+        if (rTmpAddr == initReg)
         {
-            genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo - 32, addrReg);
-            addrOffset = 32;
-
-            const regNumber countReg = REG_ZERO_INIT_FRAME_REG2;
-
-            if (countReg == initReg)
-            {
-                *pInitRegZeroed = false;
-            }
-
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, countReg, bytesToWrite - 64);
-
-            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, 32);
-            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, 64,
-                                          INS_OPTS_PRE_INDEX);
-
-            GetEmitter()->emitIns_R_R_I(INS_subs, EA_PTRSIZE, countReg, countReg, 64);
-            GetEmitter()->emitIns_J(INS_bge, NULL, -4);
-
-            bytesToWrite %= 64;
+            *pInitRegZeroed = false;
         }
-    }
-    else
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, rTmpAddr, offs);
+        GetEmitter()->emitIns_R_R(INS_agr, EA_PTRSIZE, rTmpAddr, frameReg);
+        GetEmitter()->emitIns_R_R_I(ins, attr, zeroReg, rTmpAddr, 0);
+    };
+
+    while ((offset + (int)REGSIZE_BYTES) <= untrLclHi)
     {
-        genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo, addrReg);
+        GetEmitter()->emitIns_R_R_I(INS_stg, EA_8BYTE, zeroReg, genFramePointerReg(), offset);
+        offset += REGSIZE_BYTES;
     }
 
-    if (bytesToWrite >= simdRegPairSizeBytes)
+    if ((offset + (int)sizeof(int)) <= untrLclHi)
     {
-        // Generates the following code:
-        //
-        //     movi    v16.16b, #0
-        //     stp     q16, q16, [x9, #addrOffset]
-        //     stp     q16, q16, [x9, #(addrOffset+32)]
-        // ...
-        //     stp     q16, q16, [x9, #(addrOffset+roundDown(bytesToWrite, 32))]
-
-        if (!simdRegZeroed)
-        {
-            GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, zeroSimdReg, 0, INS_OPTS_16B);
-            simdRegZeroed = true;
-        }
-
-        for (; bytesToWrite >= simdRegPairSizeBytes; bytesToWrite -= simdRegPairSizeBytes)
-        {
-            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, addrOffset);
-            addrOffset += simdRegPairSizeBytes;
-        }
+        GetEmitter()->emitIns_R_R_I(INS_sty, EA_4BYTE, zeroReg, genFramePointerReg(), offset);
+        offset += sizeof(int);
     }
 
-    const int regPairSizeBytes = 2 * REGSIZE_BYTES;
-
-    if (bytesToWrite >= regPairSizeBytes)
+    while (offset < untrLclHi)
     {
-        GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ZR, REG_ZR, addrReg, addrOffset);
-        addrOffset += regPairSizeBytes;
-        bytesToWrite -= regPairSizeBytes;
+        GetEmitter()->emitIns_R_R_I(INS_stcy, EA_1BYTE, zeroReg, genFramePointerReg(), offset);
+        offset++;
     }
-
-    if (bytesToWrite >= REGSIZE_BYTES)
-    {
-        GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_ZR, addrReg, addrOffset);
-        addrOffset += REGSIZE_BYTES;
-        bytesToWrite -= REGSIZE_BYTES;
-    }
-
-    if (bytesToWrite == sizeof(int))
-    {
-        GetEmitter()->emitIns_R_R_I(INS_str, EA_4BYTE, REG_ZR, addrReg, addrOffset);
-        bytesToWrite = 0;
-    }
-
-    assert(bytesToWrite == 0);
-#endif
 }
 
 

@@ -1749,7 +1749,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr attr)
 {
-    _ASSERTE(!"NYI");
+    (void)attr;
+    return isValidSimm<20>(imm);
 #if 0
     if (imm == 0)
         return true; // Encodable using IF_LS_2A
@@ -7452,6 +7453,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     switch (ins)
     {
         case INS_stc:
+        case INS_stcy:
         case INS_lgb:
         case INS_llgc:
             scale = 0;
@@ -7468,6 +7470,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 //            break;
 
         case INS_st:
+        case INS_sty:
         case INS_stg:
         case INS_l:
         case INS_lg:
@@ -10054,17 +10057,31 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case INS_st:
             imm = emitGetInsSC(id); //get instruction's constant value
-            assert((imm >= 0) && (imm <= 2047)); // 11 bit imm unsigned value
+            assert((imm >= 0) && (imm <= 4095)); 
             op = emitInsCode(ins, fmt);
             S390_RX_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            break;
+
+        case INS_sty:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            assert((imm >= -524288) && (imm <= 524287));
+            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
             break;
 
         case INS_stg:
             op = emitInsCode(ins, fmt);
             imm = emitGetInsSC(id);
+            assert((imm >= -524288) && (imm <= 524287));
             S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
             break;
 
+        case INS_stcy:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            assert((imm >= -524288) && (imm <= 524287));
+            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            break;
 	    
         case INS_stmg:
             op = emitInsCode(ins, fmt);
