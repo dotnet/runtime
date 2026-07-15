@@ -2,6 +2,21 @@
 
 WasmAppHost is used when `dotnet run` executes for projects targeting wasm.
 
+## Dev server
+
+For projects built with the WebAssembly SDK (`--use-staticwebassets`), the browser host serves the app
+through the shared [Blazor Gateway](https://github.com/dotnet/aspnetcore/tree/main/src/Components/Gateway)
+(`Microsoft.AspNetCore.Components.Gateway`). The Gateway ships as a self-contained application; the WasmAppHost
+launches it as a subprocess and reads its listening URLs from the process output. Static web assets, including
+the SPA fallback, are served from the generated static web assets endpoints manifest via `MapStaticAssets`, so
+the served application should be built with `StaticWebAssetSpaFallbackEnabled` enabled to get a fallback route.
+
+Some runtime/testing behaviors the previous in-process dev server provided are not yet available through the
+Gateway and are expected to be added upstream: browser console output forwarding (`/console` WebSocket),
+cross-origin isolation headers (COOP/COEP) for multi-threaded runtimes, WebAssembly debugging, and the
+`DEVSERVER_UPLOAD_PATH` file upload endpoint. Scenarios relying on these will regress until the upstream gaps
+are closed. See [dotnet/runtime#122144](https://github.com/dotnet/runtime/issues/122144).
+
 ## Command line arguments
 
 - **--debug** | **-d**: Whether to start debug server. [More on debugging](../debugger/debugger.md).

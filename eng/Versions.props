@@ -162,6 +162,10 @@
     <CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion>17.0.46</CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>10.0.0-preview-20251006.1</MicrosoftPrivateIntellisenseVersion>
+    <!-- Blazor Gateway: consumed by the WasmAppHost dev server (issue https://github.com/dotnet/runtime/issues/122144).
+         Pinned for the initial prototype to the latest build compatible with the Microsoft.AspNetCore.App shared
+         framework referenced by this repo; not yet flowed via Version.Details.xml. -->
+    <MicrosoftAspNetCoreComponentsGatewayVersion>11.0.0-preview.6.26309.103</MicrosoftAspNetCoreComponentsGatewayVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.9</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- emscripten workload package when testing workloads -->

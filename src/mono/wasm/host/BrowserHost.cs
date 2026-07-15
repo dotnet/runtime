@@ -110,11 +110,19 @@ internal sealed class BrowserHost
             onConsoleConnected = socket => RunConsoleMessagesPump(socket, logProcessor!, token);
         }
 
-        // If we are using new browser template, use dev server
+        // If we are using the new browser template, serve the app through the shared Blazor Gateway.
         if (args.CommonConfig.UseStaticWebAssets)
         {
+            if (onConsoleConnected is not null)
+            {
+                // Browser console forwarding is provided in-process by the legacy web server. The Blazor Gateway
+                // does not expose the /console WebSocket yet; this is expected to be added upstream. See
+                // https://github.com/dotnet/runtime/issues/122144.
+                _logger.LogWarning("Browser console output forwarding is not available when serving through the Blazor Gateway.");
+            }
+
             DevServerOptions devServerOptions = CreateDevServerOptions(args, urls, onConsoleConnected);
-            return await DevServer.DevServer.StartAsync(devServerOptions, _logger, token);
+            return await DevServer.GatewayServer.StartAsync(devServerOptions, _logger, token);
         }
 
         // Otherwise for old template, use web server

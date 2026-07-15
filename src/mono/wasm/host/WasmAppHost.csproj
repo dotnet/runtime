@@ -10,6 +10,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Blazor Gateway used by the browser dev server (unification with WasmAppHost DevServer, issue 122144).
+         The package ships the gateway as a self-contained app under tools/, which WasmAppHost launches as a
+         subprocess. GeneratePathProperty lets us locate and copy that payload. ExcludeAssets=build prevents the
+         package's build/.targets (which override RunCommand/RunArguments) from being applied to WasmAppHost. -->
+    <PackageReference Include="Microsoft.AspNetCore.Components.Gateway" Version="$(MicrosoftAspNetCoreComponentsGatewayVersion)" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Copy the Blazor Gateway payload next to WasmAppHost so it can be launched at runtime. -->
+    <_blazorGatewayFiles Include="$(PkgMicrosoft_AspNetCore_Components_Gateway)\tools\**\*" />
+    <None Include="@(_blazorGatewayFiles)" CopyToOutputDirectory="PreserveNewest" Link="BlazorGateway\%(RecursiveDir)%(Filename)%(Extension)" />
+    <PackageFile Include="@(_blazorGatewayFiles)" TargetPath="tools\$(NetCoreAppCurrent)\BlazorGateway\%(RecursiveDir)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="$(BrowserProjectRoot)debugger\BrowserDebugHost\BrowserDebugHost.csproj" />
 
     <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.dll" />
