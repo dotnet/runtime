@@ -231,11 +231,11 @@
   <data name="InferredDerivedTypeIsNotAccessibleMessageFormat" xml:space="preserve">
     <value>The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</value>
   </data>
-  <data name="InferredDerivedTypeDiscriminatorCollisionTitle" xml:space="preserve">
-    <value>Inferred derived types produce a duplicate type discriminator.</value>
+  <data name="DerivedTypeDiscriminatorCollisionTitle" xml:space="preserve">
+    <value>Derived types produce a duplicate type discriminator.</value>
   </data>
-  <data name="InferredDerivedTypeDiscriminatorCollisionMessageFormat" xml:space="preserve">
-    <value>The inferred type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Inferred derived types must have unique names.</value>
+  <data name="DerivedTypeDiscriminatorCollisionMessageFormat" xml:space="preserve">
+    <value>The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</value>
   </data>
   <data name="Polymorphism_OpenGeneric_Reason_NotAssignable" xml:space="preserve">
     <value>the derived type is not assignable to the base type</value>

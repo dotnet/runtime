@@ -87,28 +87,31 @@ namespace System.Text.Json.Serialization.Metadata
 
             JsonPolymorphismOptions? options = JsonPolymorphismOptions.CreateFromAttributeDeclarations(typeInfo.Type, out JsonPolymorphicAttribute? polymorphicAttribute);
 
-#if NET11_0_OR_GREATER
-            // IsClosedTypeAttribute is a .NET 11 addition emitted by the compiler for closed
-            // hierarchies, so closed-type polymorphism inference is only possible on runtimes
-            // where the attribute type exists. On down-level targets the feature is a no-op.
+            // 'closed' is a C# language feature that can be used on any target framework, including .NET Framework.
+            // When targeting a runtime that predates System.Runtime.CompilerServices.IsClosedTypeAttribute, the C#
+            // compiler polyfills the attribute directly into the consuming assembly. We therefore detect it by full
+            // name (as we do for other compiler-emitted attributes such as RequiredMemberAttribute) instead of via a
+            // compile-time type reference, so that inference works on every target framework and regardless of whether
+            // the attribute is provided by the runtime or polyfilled by the compiler.
             if (typeInfo.Options.InferClosedTypePolymorphism &&
                 (options is null || options.DerivedTypes.Count == 0) &&
-                typeInfo.Type.GetCustomAttribute<IsClosedTypeAttribute>(inherit: false) is { DerivedTypes.Length: > 0 } closedTypeAttribute)
+                GetInferredClosedDerivedTypes(typeInfo.Type) is { Length: > 0 } inferredDerivedTypes)
             {
                 options ??= new();
-                int baseAccessibility = GetEffectiveAccessibility(typeInfo.Type);
 
-                foreach (Type derivedType in closedTypeAttribute.DerivedTypes)
+                foreach (Type derivedType in inferredDerivedTypes)
                 {
-                    if (GetEffectiveAccessibility(derivedType) < baseAccessibility)
+                    // An inferred derived type must be at least as visible as the base type it is
+                    // being registered under; otherwise there are call sites that can see the base but
+                    // not the derived type, and source-gen could not emit a reference to it.
+                    if (!derivedType.IsAtLeastAsVisibleAs(typeInfo.Type))
                     {
                         ThrowHelper.ThrowInvalidOperationException_InferredDerivedTypeIsNotAccessible(typeInfo.Type, derivedType);
                     }
 
-                    options.DerivedTypes.Add(new JsonDerivedType(derivedType, derivedType.Name));
+                    options.DerivedTypes.Add(new JsonDerivedType(derivedType, GetInferredTypeDiscriminator(derivedType)));
                 }
             }
-#endif
 
             if (options is not null)
             {
@@ -133,6 +136,13 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     typeInfo.TypeClassifierResolutionPending = true;
                 }
+            }
+
+            static string GetInferredTypeDiscriminator(Type type)
+            {
+                string name = type.Name;
+                int genericAritySeparatorIndex = name.IndexOf('`');
+                return genericAritySeparatorIndex < 0 ? name : name.Substring(0, genericAritySeparatorIndex);
             }
         }
 
@@ -179,41 +189,50 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-#if NET11_0_OR_GREATER
         /// <summary>
-        /// Computes the effective accessibility rank of a type for closed-hierarchy inference:
-        /// 2 = publicly visible, 1 = internal/assembly visible, 0 = private or protected.
-        /// The effective rank is the most restrictive level across the type's nesting chain.
+        /// Reads the derived-type list from the compiler-emitted
+        /// <c>System.Runtime.CompilerServices.IsClosedTypeAttribute</c> that marks a closed type hierarchy.
+        /// The attribute is matched by full name because the C# compiler polyfills it into assemblies that
+        /// target runtimes without the type, making the polyfilled copy distinct from any runtime-provided one.
+        /// Returns <see langword="null"/> when the type is not a closed hierarchy or declares no derived types.
         /// </summary>
-        private static int GetEffectiveAccessibility(Type type)
+        private static Type[]? GetInferredClosedDerivedTypes(Type type)
         {
-            int rank = 2;
-
-            for (Type? current = type; current is not null; current = current.IsNested ? current.DeclaringType : null)
+            foreach (CustomAttributeData attributeData in type.GetCustomAttributesData())
             {
-                int level;
-                if (current.IsPublic || current.IsNestedPublic)
+                Type attributeType = attributeData.AttributeType;
+                if (attributeType.Name != "IsClosedTypeAttribute" ||
+                    attributeType.FullName != "System.Runtime.CompilerServices.IsClosedTypeAttribute")
                 {
-                    level = 2;
-                }
-                else if (current.IsNestedFamily || current.IsNestedFamANDAssem || current.IsNestedPrivate)
-                {
-                    level = 0;
-                }
-                else
-                {
-                    level = 1;
+                    continue;
                 }
 
-                if (level < rank)
+                foreach (CustomAttributeNamedArgument namedArgument in attributeData.NamedArguments)
                 {
-                    rank = level;
+                    if (namedArgument.MemberName == "DerivedTypes" &&
+                        namedArgument.TypedValue.Value is IList<CustomAttributeTypedArgument> derivedTypeArguments)
+                    {
+                        Type[] derivedTypes = new Type[derivedTypeArguments.Count];
+                        for (int i = 0; i < derivedTypes.Length; i++)
+                        {
+                            if (derivedTypeArguments[i].Value is not Type derivedType)
+                            {
+                                return null;
+                            }
+
+                            derivedTypes[i] = derivedType;
+                        }
+
+                        return derivedTypes;
+                    }
                 }
+
+                // The closed-type marker is present but carries no derived types.
+                return null;
             }
 
-            return rank;
+            return null;
         }
-#endif
 
         /// <summary>
         /// Reflection-side resolver: closes <paramref name="openDerivedType"/> against the

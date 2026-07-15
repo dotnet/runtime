@@ -62,14 +62,14 @@
         <target state="translated">'JsonSourceGenerationMode.Serialization' içinde 'JsonDerivedTypeAttribute' desteklenmiyor.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InferredDerivedTypeDiscriminatorCollisionMessageFormat">
-        <source>The inferred type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Inferred derived types must have unique names.</source>
-        <target state="new">The inferred type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Inferred derived types must have unique names.</target>
+      <trans-unit id="DerivedTypeDiscriminatorCollisionMessageFormat">
+        <source>The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</source>
+        <target state="new">The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InferredDerivedTypeDiscriminatorCollisionTitle">
-        <source>Inferred derived types produce a duplicate type discriminator.</source>
-        <target state="new">Inferred derived types produce a duplicate type discriminator.</target>
+      <trans-unit id="DerivedTypeDiscriminatorCollisionTitle">
+        <source>Derived types produce a duplicate type discriminator.</source>
+        <target state="new">Derived types produce a duplicate type discriminator.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleMessageFormat">

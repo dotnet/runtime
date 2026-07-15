@@ -887,7 +887,8 @@ namespace System.Text.Json
         /// By default, it's set to <see langword="false"/>. When set to <see langword="true"/>, types that
         /// declare a closed set of derived types (and that do not specify an explicit
         /// <see cref="Serialization.JsonDerivedTypeAttribute"/> list) are treated as polymorphic, with one
-        /// derived type registered per member of the closed hierarchy.
+        /// derived type registered per member of the closed hierarchy. The simple name of each derived type,
+        /// equivalent to the result of <c>nameof</c>, is used as its type discriminator.
         /// </remarks>
         public bool InferClosedTypePolymorphism
         {

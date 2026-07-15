@@ -713,6 +713,7 @@ namespace System.Text.Json.SourceGeneration
                     out bool foundJsonConverterAttribute,
                     out TypeRef? customConverterType,
                     out PolymorphismOptionsSpec? polymorphismOptions,
+                    out bool hasClosedDerivedTypes,
                     out TypeRef? unionClassifierFactoryType);
 
                 bool isPolymorphic = polymorphismOptions is not null;
@@ -913,6 +914,10 @@ namespace System.Text.Json.SourceGeneration
                     PrimitiveTypeKind = primitiveTypeKind,
                     IsPolymorphic = isPolymorphic,
                     PolymorphismOptions = polymorphismOptions,
+                    IsClosedTypeWithoutInferredPolymorphism =
+                        polymorphismOptions is null &&
+                        options?.InferClosedTypePolymorphism is not true &&
+                        hasClosedDerivedTypes,
                     NumberHandling = numberHandling,
                     UnmappedMemberHandling = unmappedMemberHandling,
                     PreferredPropertyObjectCreationHandling = preferredPropertyObjectCreationHandling,
@@ -959,6 +964,7 @@ namespace System.Text.Json.SourceGeneration
                 out bool foundJsonConverterAttribute,
                 out TypeRef? customConverterType,
                 out PolymorphismOptionsSpec? polymorphismOptions,
+                out bool hasClosedDerivedTypes,
                 out TypeRef? unionClassifierFactoryType)
             {
                 numberHandling = null;
@@ -969,6 +975,7 @@ namespace System.Text.Json.SourceGeneration
                 customConverterType = null;
                 foundJsonConverterAttribute = false;
                 polymorphismOptions = null;
+                hasClosedDerivedTypes = false;
                 unionClassifierFactoryType = null;
 
                 bool hasPolymorphicAttribute = false;
@@ -977,8 +984,8 @@ namespace System.Text.Json.SourceGeneration
                 string? typeDiscriminatorPropertyName = null;
                 TypeRef? polymorphicClassifierFactoryType = null;
                 List<DerivedTypeSpec>? derivedTypes = null;
+                HashSet<object>? typeDiscriminators = null;
                 bool hasExplicitDerivedTypeAttribute = false;
-                ImmutableArray<TypedConstant> closedTypeDerivedTypes = default;
                 bool hasUnionTypeClassifierSpecified = false;
                 bool isUnionType = IsUnionType(typeToGenerate.Type);
                 INamedTypeSymbol? namedUnionType = typeToGenerate.Type as INamedTypeSymbol;
@@ -1049,37 +1056,7 @@ namespace System.Text.Json.SourceGeneration
                     {
                         Debug.Assert(attributeData.ConstructorArguments.Length > 0);
                         hasExplicitDerivedTypeAttribute = true;
-                        var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
-
-                        if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
-                        {
-                            if (!TryResolveOpenGenericDerivedType(
-                                    unboundDerived, typeToGenerate.Type,
-                                    out INamedTypeSymbol? resolvedType, out string? failureReason))
-                            {
-                                // An open generic derived type that cannot be unified against this base
-                                // has no concrete type to emit. Surface it at build time and drop the
-                                // entry; source-gen reports invalid polymorphic configurations through
-                                // diagnostics rather than baking runtime throws into generated metadata.
-                                ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, attributeData.GetLocation(), derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
-                                continue;
-                            }
-
-                            derivedType = resolvedType!;
-                        }
-                        else if (!typeToGenerate.Type.IsAssignableFrom(derivedType))
-                        {
-                            // A closed derived type that is not assignable to the base is not a
-                            // supported polymorphic derived type. The shared runtime resolver already
-                            // throws DerivedTypeNotSupported for the emitted entry; surface the problem
-                            // at build time with a warning so it is not missed.
-                            ReportDiagnostic(DiagnosticDescriptors.DerivedTypeIsNotSupported, attributeData.GetLocation(), derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
-                        }
-
-                        TypeRef derivedTypeRef = EnqueueType(derivedType, typeToGenerate.Mode);
-
-                        // The generated polymorphic metadata references the derived type by name.
-                        AddExperimentalDiagnosticIds(derivedType, ref experimentalIds);
+                        ITypeSymbol derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
 
                         object? typeDiscriminator = null;
                         if (attributeData.ConstructorArguments.Length == 2)
@@ -1088,16 +1065,16 @@ namespace System.Text.Json.SourceGeneration
                             Debug.Assert(typeDiscriminator is int or string);
                         }
 
-                        if (derivedTypes is null && typeToGenerate.Mode == JsonSourceGenerationMode.Serialization)
-                        {
-                            ReportDiagnostic(DiagnosticDescriptors.PolymorphismNotSupported, typeToGenerate.Location, typeToGenerate.Type.ToDisplayString());
-                        }
-
-                        (derivedTypes ??= new()).Add(new DerivedTypeSpec
-                        {
-                            DerivedType = derivedTypeRef,
-                            TypeDiscriminator = typeDiscriminator,
-                        });
+                        AddPolymorphicDerivedType(
+                            typeToGenerate,
+                            derivedType,
+                            typeDiscriminator,
+                            attributeData.GetLocation(),
+                            typeToGenerate.Location,
+                            ref typeDiscriminators,
+                            ref experimentalIds,
+                            ref derivedTypes,
+                            isInferredDerivedType: false);
                     }
                     else if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonPolymorphicAttributeType))
                     {
@@ -1140,27 +1117,30 @@ namespace System.Text.Json.SourceGeneration
                             }
                         }
                     }
-                    else if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.IsClosedTypeAttributeType))
-                    {
-                        foreach (KeyValuePair<string, TypedConstant> namedArg in attributeData.NamedArguments)
-                        {
-                            if (namedArg.Key == "DerivedTypes")
-                            {
-                                closedTypeDerivedTypes = namedArg.Value.Values;
-                                break;
-                            }
-                        }
-                    }
                 }
 
-                // Infer polymorphism from a closed type hierarchy when InferClosedTypePolymorphism is
-                // enabled, the base type is marked [IsClosedType] with a non-empty derived type set, and
-                // no explicit [JsonDerivedType] attributes were specified (explicit registration wins).
-                if (options?.InferClosedTypePolymorphism is true &&
-                    !hasExplicitDerivedTypeAttribute &&
-                    !closedTypeDerivedTypes.IsDefaultOrEmpty)
+                // Enumerate a closed hierarchy once when it is needed either for inference or to determine
+                // whether generated metadata must reject runtime-only inference. Explicit derived-type
+                // registrations suppress inference, while any explicit polymorphism metadata makes the
+                // runtime-only inference guard unnecessary.
+                bool shouldInferClosedTypePolymorphism =
+                    options?.InferClosedTypePolymorphism is true && !hasExplicitDerivedTypeAttribute;
+                bool needsRuntimeInferenceGuard =
+                    options?.InferClosedTypePolymorphism is not true &&
+                    !hasPolymorphicAttribute &&
+                    derivedTypes is null;
+
+                if ((shouldInferClosedTypePolymorphism || needsRuntimeInferenceGuard) &&
+                    typeToGenerate.Type is INamedTypeSymbol closedBaseType &&
+                    closedBaseType.IsClosedType())
                 {
-                    InferClosedTypeDerivedTypes(typeToGenerate, closedTypeDerivedTypes, ref derivedTypes);
+                    List<ITypeSymbol>? closedDerivedTypes = closedBaseType.GetClosedDerivedTypes();
+                    hasClosedDerivedTypes = closedDerivedTypes is { Count: > 0 };
+
+                    if (shouldInferClosedTypePolymorphism && closedDerivedTypes is not null)
+                    {
+                        InferClosedTypeDerivedTypes(typeToGenerate, closedDerivedTypes, ref typeDiscriminators, ref experimentalIds, ref derivedTypes);
+                    }
                 }
 
                 if (hasPolymorphicAttribute || derivedTypes is { Count: > 0 })
@@ -1183,109 +1163,114 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            /// <summary>
-            /// Synthesizes <see cref="DerivedTypeSpec"/> entries from the <c>[IsClosedType]</c> derived
-            /// type set, mirroring the reflection-side inference in
-            /// <c>DefaultJsonTypeInfoResolver.Helpers.PopulatePolymorphismMetadata</c>. Each inferred
-            /// entry uses the derived type's metadata name as its string discriminator.
-            /// </summary>
-            private void InferClosedTypeDerivedTypes(
+            private void AddPolymorphicDerivedType(
                 in TypeToGenerate typeToGenerate,
-                ImmutableArray<TypedConstant> closedTypeDerivedTypes,
-                ref List<DerivedTypeSpec>? derivedTypes)
+                ITypeSymbol derivedType,
+                object? typeDiscriminator,
+                Location? derivedTypeDiagnosticLocation,
+                Location? polymorphismDiagnosticLocation,
+                ref HashSet<object>? typeDiscriminators,
+                ref HashSet<string>? experimentalIds,
+                ref List<DerivedTypeSpec>? derivedTypes,
+                bool isInferredDerivedType)
             {
-                int baseAccessibility = GetEffectiveAccessibility(typeToGenerate.Type);
-                HashSet<string>? seenDiscriminators = null;
+                ITypeSymbol? resolvedDerivedType = derivedType;
 
-                foreach (TypedConstant closedTypeConstant in closedTypeDerivedTypes)
+                if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
                 {
-                    if (closedTypeConstant.Value is not ITypeSymbol closedDerivedType)
+                    if (!TryResolveOpenGenericDerivedType(
+                            unboundDerived, typeToGenerate.Type,
+                            out resolvedDerivedType, out string? failureReason))
                     {
-                        continue;
+                        // An open generic derived type that cannot be unified against this base
+                        // has no concrete type to emit. Surface it at build time and emit a
+                        // guaranteed-invalid placeholder so the shared runtime resolver rejects
+                        // the hierarchy, matching reflection without referencing the unresolvable type.
+                        ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, derivedTypeDiagnosticLocation, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
                     }
-
-                    ITypeSymbol derivedType = closedDerivedType;
-
-                    if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
-                    {
-                        if (!TryResolveOpenGenericDerivedType(unboundDerived, typeToGenerate.Type, out INamedTypeSymbol? resolvedType, out string? failureReason))
-                        {
-                            // An inferred open generic derived type that cannot be unified against this
-                            // base has no concrete type to emit. Surface it at build time and drop the
-                            // entry, mirroring the established source-gen handling for unresolvable
-                            // [JsonDerivedType] registrations.
-                            ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, typeToGenerate.Location, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
-                            continue;
-                        }
-
-                        derivedType = resolvedType!;
-                    }
-                    else if (!typeToGenerate.Type.IsAssignableFrom(derivedType))
-                    {
-                        // Not assignable to the base: the shared runtime resolver throws
-                        // DerivedTypeNotSupported for the emitted entry, matching reflection. Surface the
-                        // problem at build time and keep the entry so the runtime behavior matches.
-                        ReportDiagnostic(DiagnosticDescriptors.DerivedTypeIsNotSupported, typeToGenerate.Location, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
-                    }
-
-                    if (GetEffectiveAccessibility(derivedType) < baseAccessibility)
-                    {
-                        // The inferred derived type is less accessible than the base. Surface it at
-                        // build time and drop the entry; source-gen reports invalid polymorphic
-                        // configurations through diagnostics rather than baking runtime throws.
-                        ReportDiagnostic(DiagnosticDescriptors.InferredDerivedTypeIsNotAccessible, typeToGenerate.Location, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
-                        continue;
-                    }
-
-                    string discriminator = closedDerivedType.MetadataName;
-                    if (!(seenDiscriminators ??= new(StringComparer.Ordinal)).Add(discriminator))
-                    {
-                        // Emit the colliding entry anyway so the shared runtime resolver throws,
-                        // matching the reflection path; surface the collision at build time.
-                        ReportDiagnostic(DiagnosticDescriptors.InferredDerivedTypeDiscriminatorCollision, typeToGenerate.Location, discriminator, typeToGenerate.Type.ToDisplayString());
-                    }
-
-                    if (derivedTypes is null && typeToGenerate.Mode == JsonSourceGenerationMode.Serialization)
-                    {
-                        ReportDiagnostic(DiagnosticDescriptors.PolymorphismNotSupported, typeToGenerate.Location, typeToGenerate.Type.ToDisplayString());
-                    }
-
-                    TypeRef derivedTypeRef = EnqueueType(derivedType, typeToGenerate.Mode);
-                    (derivedTypes ??= new()).Add(new DerivedTypeSpec
-                    {
-                        DerivedType = derivedTypeRef,
-                        TypeDiscriminator = discriminator,
-                    });
                 }
+
+                if (resolvedDerivedType is not null &&
+                    !typeToGenerate.Type.IsAssignableFrom(resolvedDerivedType))
+                {
+                    // The shared runtime resolver throws DerivedTypeNotSupported for the emitted entry;
+                    // surface the problem at build time and keep the entry so runtime behavior matches.
+                    ReportDiagnostic(DiagnosticDescriptors.DerivedTypeIsNotSupported, derivedTypeDiagnosticLocation, resolvedDerivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
+                }
+
+                derivedType = resolvedDerivedType ?? _knownSymbols.ObjectType;
+
+                // An inferred derived type must be at least as visible as the base type it is
+                // being registered under; otherwise there are call sites that can see the base but
+                // not the derived type, and the generated context could not reference it.
+                if (isInferredDerivedType &&
+                    !derivedType.IsAtLeastAsVisibleAs(typeToGenerate.Type))
+                {
+                    // Emit a guaranteed-invalid placeholder so the shared runtime resolver rejects
+                    // the hierarchy without referencing the inaccessible type.
+                    ReportDiagnostic(DiagnosticDescriptors.InferredDerivedTypeIsNotAccessible, derivedTypeDiagnosticLocation, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
+                    derivedType = _knownSymbols.ObjectType;
+                }
+
+                if (typeDiscriminator is not null &&
+                    !(typeDiscriminators ??= new()).Add(typeDiscriminator))
+                {
+                    // Emit the colliding entry anyway so the shared runtime resolver throws,
+                    // matching the reflection path; surface the collision at build time.
+                    ReportDiagnostic(DiagnosticDescriptors.DerivedTypeDiscriminatorCollision, derivedTypeDiagnosticLocation, typeDiscriminator, typeToGenerate.Type.ToDisplayString());
+                }
+
+                if (derivedTypes is null && typeToGenerate.Mode == JsonSourceGenerationMode.Serialization)
+                {
+                    ReportDiagnostic(DiagnosticDescriptors.PolymorphismNotSupported, polymorphismDiagnosticLocation, typeToGenerate.Type.ToDisplayString());
+                }
+
+                TypeRef derivedTypeRef = EnqueueType(derivedType, typeToGenerate.Mode);
+
+                // The generated polymorphic metadata references the derived type by name.
+                AddExperimentalDiagnosticIds(derivedType, ref experimentalIds);
+
+                (derivedTypes ??= new()).Add(new DerivedTypeSpec
+                {
+                    DerivedType = derivedTypeRef,
+                    TypeDiscriminator = typeDiscriminator,
+                });
             }
 
             /// <summary>
-            /// Computes the effective accessibility rank of a type for closed-hierarchy inference:
-            /// 2 = publicly visible, 1 = internal/assembly visible, 0 = private or protected.
-            /// The effective rank is the most restrictive level across the type's nesting chain.
-            /// Mirrors <c>DefaultJsonTypeInfoResolver.Helpers.GetEffectiveAccessibility</c>.
+            /// Synthesizes <see cref="DerivedTypeSpec"/> entries from a closed hierarchy's immediate
+            /// derived type set, mirroring the reflection-side inference in
+            /// <c>DefaultJsonTypeInfoResolver.Helpers.PopulatePolymorphismMetadata</c>. Each inferred
+            /// entry uses the derived type's simple name as its string discriminator.
             /// </summary>
-            private static int GetEffectiveAccessibility(ITypeSymbol type)
+            private void InferClosedTypeDerivedTypes(
+                in TypeToGenerate typeToGenerate,
+                List<ITypeSymbol> closedTypeDerivedTypes,
+                ref HashSet<object>? typeDiscriminators,
+                ref HashSet<string>? experimentalIds,
+                ref List<DerivedTypeSpec>? derivedTypes)
             {
-                int rank = 2;
+                // Surface inference diagnostics at the [JsonSerializable] registration site when available
+                // (mirroring the TypeNotSupported handling), so they appear on the context the author
+                // controls rather than on the closed base type's declaration, which may live in another
+                // file or referenced assembly.
+                Location? diagnosticLocation = typeToGenerate.AttributeLocation ?? typeToGenerate.Location;
 
-                for (ITypeSymbol? current = type; current is not null; current = current.ContainingType)
+                // Order by the simple name used as the discriminator, which must be unique.
+                foreach (ITypeSymbol closedDerivedType in closedTypeDerivedTypes.OrderBy(static type => type.Name, StringComparer.Ordinal))
                 {
-                    int level = current.DeclaredAccessibility switch
-                    {
-                        Accessibility.Public => 2,
-                        Accessibility.Internal or Accessibility.ProtectedOrInternal => 1,
-                        Accessibility.Protected or Accessibility.ProtectedAndInternal or Accessibility.Private => 0,
-                        _ => 2,
-                    };
-
-                    if (level < rank)
-                    {
-                        rank = level;
-                    }
+                    string discriminator = closedDerivedType.Name;
+                    AddPolymorphicDerivedType(
+                        typeToGenerate,
+                        closedDerivedType,
+                        discriminator,
+                        diagnosticLocation,
+                        diagnosticLocation,
+                        ref typeDiscriminators,
+                        ref experimentalIds,
+                        ref derivedTypes,
+                        isInferredDerivedType: true);
                 }
-
-                return rank;
             }
 
             /// <summary>
@@ -1307,7 +1292,7 @@ namespace System.Text.Json.SourceGeneration
             private bool TryResolveOpenGenericDerivedType(
                 INamedTypeSymbol unboundDerived,
                 ITypeSymbol baseType,
-                out INamedTypeSymbol? resolvedType,
+                [NotNullWhen(true)] out ITypeSymbol? resolvedType,
                 out string? failureReason)
             {
                 resolvedType = null;

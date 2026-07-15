@@ -164,10 +164,10 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
-            public static DiagnosticDescriptor InferredDerivedTypeDiscriminatorCollision { get; } = DiagnosticDescriptorHelper.Create(
+            public static DiagnosticDescriptor DerivedTypeDiscriminatorCollision { get; } = DiagnosticDescriptorHelper.Create(
                 id: "SYSLIB1242",
-                title: new LocalizableResourceString(nameof(SR.InferredDerivedTypeDiscriminatorCollisionTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                messageFormat: new LocalizableResourceString(nameof(SR.InferredDerivedTypeDiscriminatorCollisionMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                title: new LocalizableResourceString(nameof(SR.DerivedTypeDiscriminatorCollisionTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.DerivedTypeDiscriminatorCollisionMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);

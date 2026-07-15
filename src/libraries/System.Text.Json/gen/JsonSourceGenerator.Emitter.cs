@@ -449,6 +449,8 @@ namespace System.Text.Json.SourceGeneration
                     jsonTypeInfo.NumberHandling = {{FormatNumberHandling(typeGenerationSpec.NumberHandling)}};
                     """);
 
+                GenerateClosedTypeInferenceGuard(writer, typeGenerationSpec);
+
                 GenerateTypeInfoFactoryFooter(writer);
 
                 if (serializeMethodName != null)
@@ -633,6 +635,8 @@ namespace System.Text.Json.SourceGeneration
                         writer.WriteLine($"jsonTypeInfo.PreferredPropertyObjectCreationHandling = {FormatObjectCreationHandling(typeMetadata.PreferredPropertyObjectCreationHandling.Value)};");
                     }
                 }
+
+                GenerateClosedTypeInferenceGuard(writer, typeMetadata);
 
                 GenerateTypeInfoFactoryFooter(writer);
 
@@ -1923,6 +1927,27 @@ namespace System.Text.Json.SourceGeneration
                         return jsonTypeInfo;
                     }
                     """);
+            }
+
+            /// <summary>
+            /// Emits a runtime guard for closed hierarchies whose derived-type polymorphism metadata was not
+            /// generated because <c>JsonSourceGenerationOptionsAttribute.InferClosedTypePolymorphism</c> was
+            /// disabled at compile time. Enabling the setting only on the runtime <c>JsonSerializerOptions</c>
+            /// cannot recover that metadata, so we fail explicitly rather than silently serializing the base
+            /// type non-polymorphically.
+            /// </summary>
+            private static void GenerateClosedTypeInferenceGuard(SourceWriter writer, TypeGenerationSpec typeSpec)
+            {
+                if (typeSpec.IsClosedTypeWithoutInferredPolymorphism)
+                {
+                    writer.WriteLine($$"""
+
+                        if (options.InferClosedTypePolymorphism)
+                        {
+                            throw new {{InvalidOperationExceptionTypeRef}}(string.Format("{{ExceptionMessages.ClosedTypeInferenceRequiresCompileTimeOptIn}}", typeof({{typeSpec.TypeRef.FullyQualifiedName}})));
+                        }
+                        """);
+                }
             }
 
             private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec, bool emitGetConverterForNullablePropertyMethod, bool emitValueTypeSetterDelegate, bool emitByteArrayValueHelper)
