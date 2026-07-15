@@ -270,7 +270,7 @@ namespace ILCompiler
                 // of the implementation to the generic parameters of the declaration - any call to the
                 // declaration will be modeled as if the declaration was calling into the implementation.
 
-                var decl = (EcmaMethod)MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method).GetTypicalMethodDefinition();
+                var decl = (EcmaMethod)MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method.GetMethodDefinition()).GetTypicalMethodDefinition();
                 if (decl != method)
                 {
                     RecordBinding(this, decl.Instantiation, method.Instantiation);

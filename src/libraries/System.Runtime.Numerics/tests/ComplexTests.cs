@@ -230,17 +230,17 @@ namespace System.Numerics.Tests
             Complex result;
             int charsConsumed;
 
-            Assert.True(Complex.TryParse(value, Style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<Complex>.TryParse(value, Style, provider, out result, out charsConsumed));
             Assert.Equal(expected, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
-            Assert.True(Complex.TryParse(value.AsSpan(), Style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<Complex>.TryParse(value.AsSpan(), Style, provider, out result, out charsConsumed));
             Assert.Equal(expected, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
             byte[] utf8Value = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.True(Complex.TryParse(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
+            Assert.True(NumberBaseHelper<Complex>.TryParse(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
             Assert.Equal(expected, result);
             if (value.All(c => c < 128))
             {
@@ -275,17 +275,17 @@ namespace System.Numerics.Tests
             Complex result;
             int charsConsumed;
 
-            Assert.False(Complex.TryParse(value, Style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<Complex>.TryParse(value, Style, provider, out result, out charsConsumed));
             Assert.Equal(Complex.Zero, result);
             Assert.Equal(0, charsConsumed);
 
-            Assert.False(Complex.TryParse(value.AsSpan(), Style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<Complex>.TryParse(value.AsSpan(), Style, provider, out result, out charsConsumed));
             Assert.Equal(Complex.Zero, result);
             Assert.Equal(0, charsConsumed);
 
             byte[] utf8Value = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.False(Complex.TryParse(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
+            Assert.False(NumberBaseHelper<Complex>.TryParse(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
             Assert.Equal(Complex.Zero, result);
             Assert.Equal(0, bytesConsumed);
         }

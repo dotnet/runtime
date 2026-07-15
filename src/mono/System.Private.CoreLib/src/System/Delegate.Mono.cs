@@ -105,7 +105,13 @@ namespace System
             };
         }
 
+        public partial bool HasSingleTarget => Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
+
+        public object? Target => Unsafe.As<MulticastDelegate>(this).Target;
+
         internal virtual object? GetTarget() => _target;
+
+        public Delegate[] GetInvocationList() => Unsafe.As<MulticastDelegate>(this).GetInvocationList();
 
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure)
         {

@@ -497,26 +497,26 @@ namespace System.Tests
             yield return new object[] { "123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, 123L, 3 };
             yield return new object[] { "456xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, 456L, 3 };
             yield return new object[] { "789!", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, 789L, 3 };
-            
+
             // With leading whitespace
             yield return new object[] { "  123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, 123L, 5 };
-            
+
             // With signs
             yield return new object[] { "+123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, 123L, 4 };
             yield return new object[] { "-456xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, -456L, 4 };
-            
+
             // HexNumber with trailing invalid characters
             yield return new object[] { "ABCxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, 0xABCL, 3 };
             yield return new object[] { "FFGHxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, 0xFFL, 2 };
-            
+
             // BinaryNumber with trailing invalid characters
             yield return new object[] { "101abc", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null, 0b101L, 3 };
             yield return new object[] { "1112", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null, 0b111L, 3 };
-            
+
             // Max and min values with trailing characters
             yield return new object[] { "9223372036854775807abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, 9223372036854775807L, 19 };
             yield return new object[] { "-9223372036854775808xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, -9223372036854775808L, 20 };
-            
+
             // Valid number without trailing characters
             yield return new object[] { "123", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, 123L, 3 };
         }
@@ -527,21 +527,21 @@ namespace System.Tests
         {
             long result;
             int charsConsumed;
-            
+
             // Test string overload with charsConsumed
-            Assert.True(long.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<long>.TryParse(value, style, provider, out result, out charsConsumed));
             Assert.Equal(expectedValue, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
-            
+
             // Test ReadOnlySpan<char> overload with charsConsumed
-            Assert.True(long.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<long>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(expectedValue, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
-            
+
             // Test UTF-8 overload with bytesConsumed
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.True(long.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.True(NumberBaseHelper<long>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             Assert.Equal(expectedValue, result);
             // For ASCII characters, bytes consumed should equal chars consumed
             if (value.All(c => c < 128))
@@ -554,10 +554,10 @@ namespace System.Tests
         {
             // Empty string
             yield return new object[] { "", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
-            
+
             // Only invalid characters (no valid number)
             yield return new object[] { "abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
-            
+
             // Overflow
             yield return new object[] { "9223372036854775808abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
             yield return new object[] { "-9223372036854775809xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
@@ -569,21 +569,21 @@ namespace System.Tests
         {
             long result;
             int charsConsumed;
-            
+
             // Test string overload with charsConsumed
-            Assert.False(long.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<long>.TryParse(value, style, provider, out result, out charsConsumed));
             Assert.Equal(0, result);
             Assert.Equal(0, charsConsumed);
-            
+
             // Test ReadOnlySpan<char> overload with charsConsumed
-            Assert.False(long.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<long>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(0, result);
             Assert.Equal(0, charsConsumed);
 
             // Test UTF-8 overload with bytesConsumed
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.False(long.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.False(NumberBaseHelper<long>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             Assert.Equal(0, result);
             Assert.Equal(0, bytesConsumed);
         }
