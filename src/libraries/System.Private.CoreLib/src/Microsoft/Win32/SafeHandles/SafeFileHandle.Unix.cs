@@ -41,15 +41,19 @@ namespace Microsoft.Win32.SafeHandles
         private NullableBool _canSeek /* = NullableBool.Undefined */;
         private NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
         private NullableBool _isAsync /* = NullableBool.Undefined */;
-        // Cached on macOS when locking is enabled: True = is network FS (use fsync only),
-        // False = is local FS (use F_FULLFSYNC), Undefined = unknown (use F_FULLFSYNC).
+        // Set during Init() on macOS when file locking is enabled: True = is network FS (skip
+        // F_FULLFSYNC), False = is local FS (use F_FULLFSYNC). Stays Undefined on non-macOS or
+        // when file locking is disabled; UseFullFSync treats Undefined the same as False (use
+        // F_FULLFSYNC). This is a deliberate tradeoff: network FS detection is coupled with the
+        // locking check to avoid an extra fstatfs call per open; when locking is disabled,
+        // F_FULLFSYNC may still be attempted on network FSs.
         // See https://github.com/dotnet/runtime/issues/124722.
         private NullableBool _isNetworkFileSystem /* = NullableBool.Undefined */;
         private bool _deleteOnClose;
         private bool _isLocked;
 
         // Returns true when F_FULLFSYNC should be attempted (the file is on a local file system or
-        // the file system type is unknown). Returns false only when the file is known to be on a
+        // the file system type is unknown). Returns false only when the file is confirmed to be on a
         // network file system where F_FULLFSYNC can silently discard writes. The value is only used
         // on macOS; native code ignores it on other platforms.
         internal bool UseFullFSync => _isNetworkFileSystem != NullableBool.True;

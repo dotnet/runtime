@@ -798,7 +798,7 @@ int32_t SystemNative_FSync(intptr_t fd, int32_t useFullFSync)
         }
 
         // F_FULLFSYNC is not supported on all file systems and handle types (e.g.,
-        // read-only handles). Fall back to fsync.
+        // network file systems, read-only handles). Fall back to fsync.
         // For genuine I/O errors (e.g., EIO), fsync will also fail and propagate the error.
     }
 #else
