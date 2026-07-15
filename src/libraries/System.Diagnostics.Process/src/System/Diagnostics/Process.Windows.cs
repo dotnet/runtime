@@ -193,8 +193,8 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
-        /// <remarks>The value can be retrieved after the process exits.</remarks>
-        /// <exception cref="InvalidOperationException">No process is associated with this object.</exception>
+        /// <remarks>If a handle to the process is available, the value can be retrieved after the process exits.</remarks>
+        /// <exception cref="InvalidOperationException">No process is associated with this object, or there is no process handle available.</exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -214,8 +214,8 @@ namespace System.Diagnostics
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
         /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
         /// </summary>
-        /// <remarks>The value can be retrieved after the process exits.</remarks>
-        /// <exception cref="InvalidOperationException">No process is associated with this object.</exception>
+        /// <remarks>If a handle to the process is available, the value can be retrieved after the process exits.</remarks>
+        /// <exception cref="InvalidOperationException">No process is associated with this object, or there is no process handle available.</exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -228,8 +228,8 @@ namespace System.Diagnostics
         /// Gets the amount of time the associated process has spent running code
         /// inside the application portion of the process (not the operating system core).
         /// </summary>
-        /// <remarks>The value can be retrieved after the process exits.</remarks>
-        /// <exception cref="InvalidOperationException">No process is associated with this object.</exception>
+        /// <remarks>If a handle to the process is available, the value can be retrieved after the process exits.</remarks>
+        /// <exception cref="InvalidOperationException">No process is associated with this object, or there is no process handle available.</exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]

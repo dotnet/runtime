@@ -189,12 +189,13 @@ namespace System.Diagnostics
 
         /// <summary>Gets the time the associated process was started.</summary>
         /// <remarks>
-        /// On Windows, this property can be read after the process exits.
+        /// On Windows, if a handle to the process is available, this property can be read after the process exits.
         /// On Unix, this property caches its value on first access. A cached value can be read after the process exits,
         /// but accessing an uncached value after the process has been reaped may throw <see cref="InvalidOperationException"/>.
         /// </remarks>
         /// <exception cref="InvalidOperationException">
-        /// No process is associated with this object, or on Unix the value was not cached before the process was reaped.
+        /// No process is associated with this object; on Windows, there is no process handle available; or on Unix,
+        /// the value was not cached before the process was reaped.
         /// </exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
