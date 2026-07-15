@@ -203,6 +203,31 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/130739")]
+        public async Task UnmanagedCallersOnly_NestedConflict(Configuration config, bool aot)
+        {
+            // The reverse-P/Invoke thunk key drops the enclosing-type chain, keying only on the
+            // simple type name plus the (empty) nested namespace. Two nested types that share a
+            // simple name under different enclosing types therefore collide and currently fail the
+            // build. This encodes the desired behavior (both callbacks resolve and run) and is
+            // skipped until #130739 removes the limitation.
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_nested_conflict");
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNestedConflict.cs"));
+
+            PublishForVariadicFunctionTests(info, config, aot);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Conflicting.OuterA.Conflict.C", result.TestOutput);
+            Assert.Contains("Conflicting.OuterB.Conflict.C", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun()]
         // The test fetches WasmAppBuilder.dll from the Microsoft.NET.Runtime.WebAssembly.Sdk
         // workload pack, which is not present in the NoWorkload (CoreCLR-Wasm) Helix payload.
         [TestCategory("mono")]
