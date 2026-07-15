@@ -7,13 +7,16 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct ArgumentLocation
 {
-    public ArgumentLocation()
-    {
-    }
+    private readonly ITypeHandle? _typeHandle;
+    private readonly ITypeHandle? _openGenericType;
 
     public int Offset { get; init; }
     public CorElementType ElementType { get; init; }
-    public ITypeHandle TypeHandle { get; init; } = ITypeHandle.Null;
+    public ITypeHandle TypeHandle
+    {
+        get => _typeHandle ?? ITypeHandle.Null;
+        init => _typeHandle = value;
+    }
     public bool IsThis { get; init; }
     public bool IsValueTypeThis { get; init; }
     public bool IsParamType { get; init; }
@@ -34,7 +37,11 @@ internal readonly struct ArgumentLocation
     // For generic-instantiation parameters with an uncached closed ITypeHandle,
     // the open generic MethodTable (e.g. Span<T> for a Span<int> arg) so
     // encoders can inspect type structure as a fallback.
-    public ITypeHandle OpenGenericType { get; init; } = ITypeHandle.Null;
+    public ITypeHandle OpenGenericType
+    {
+        get => _openGenericType ?? ITypeHandle.Null;
+        init => _openGenericType = value;
+    }
 
     // SystemV-AMD64 struct passed in registers. Offset is the StructInRegsOffset
     // sentinel; the encoder consumes SysVEightByteDescriptor + SysVIdxGenReg.
