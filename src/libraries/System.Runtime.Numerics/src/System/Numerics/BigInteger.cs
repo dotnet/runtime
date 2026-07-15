@@ -2372,15 +2372,20 @@ namespace System.Numerics
                 return sign;
             }
 
+#if !MONO
             // Magnitudes up to 64 bits convert directly through the correctly rounded ulong -> float
             // conversion. Wider magnitudes round directly at float's 24-bit significand, so the
-            // narrowing cast is exact and cannot double round.
+            // narrowing cast is exact and cannot double round. Mono routes ulong -> float through
+            // double, which double rounds, so it is excluded and always rounds directly below.
             if (bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb)
             {
                 float result = (float)ToUInt64(bits);
                 return sign < 0 ? -result : result;
             }
+#endif
 
+            // Round directly at float's 24-bit significand so the double we produce already lies on
+            // float's grid and the narrowing cast is exact, avoiding any double rounding.
             return (float)ConvertToDouble(value, precision: 24);
         }
 
