@@ -39,7 +39,7 @@ inline MethodTable* MethodTable::GetDynamicTemplateType()
 #endif // !defined(DACCESS_COMPILE)
 
 // Calculate the offset of a field of the MethodTable that has a variable offset.
-__forceinline uint32_t MethodTable::GetFieldOffset(EETypeField eField)
+FORCEINLINE uint32_t MethodTable::GetFieldOffset(EETypeField eField)
 {
     // First part of MethodTable consists of the fixed portion followed by the vtable.
     uint32_t cbOffset = offsetof(MethodTable, m_VTable) + (sizeof(UIntTarget) * m_usNumVtableSlots);

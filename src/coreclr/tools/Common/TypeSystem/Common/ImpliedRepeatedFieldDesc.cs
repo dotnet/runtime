@@ -3,20 +3,22 @@
 
 using System;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem
 {
     public sealed partial class ImpliedRepeatedFieldDesc : FieldDesc
     {
         private readonly FieldDesc _underlyingFieldDesc;
 
-        public ImpliedRepeatedFieldDesc(DefType owningType, FieldDesc underlyingFieldDesc, int fieldIndex)
+        public ImpliedRepeatedFieldDesc(MetadataType owningType, FieldDesc underlyingFieldDesc, int fieldIndex)
         {
             OwningType = owningType;
             _underlyingFieldDesc = underlyingFieldDesc;
             FieldIndex = fieldIndex;
         }
 
-        public override DefType OwningType { get; }
+        public override MetadataType OwningType { get; }
 
         public override TypeDesc FieldType => _underlyingFieldDesc.FieldType;
 
@@ -42,6 +44,6 @@ namespace Internal.TypeSystem
 
         public override MarshalAsDescriptor GetMarshalAsDescriptor() => _underlyingFieldDesc.GetMarshalAsDescriptor();
 
-        public override ReadOnlySpan<byte> Name => System.Text.Encoding.UTF8.GetBytes($"{_underlyingFieldDesc.GetName()}[{FieldIndex}]");
+        public override Utf8Span Name => System.Text.Encoding.UTF8.GetBytes($"{_underlyingFieldDesc.GetName()}[{FieldIndex}]");
     }
 }

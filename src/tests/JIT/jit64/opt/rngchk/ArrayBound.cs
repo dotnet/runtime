@@ -4,12 +4,14 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 namespace ArrayBound
 {
     public delegate void RngTest();
     public class Class1
     {
+        [ActiveIssue("Doesn't pass after LLVM AOT compilation.", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

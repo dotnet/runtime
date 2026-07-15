@@ -66,7 +66,7 @@ Hazır mısınız? Ayarlar tamam mı? Hadi başlayalım!"/>
   <String Id="WelcomeHeaderMessage" Value=".NET Çalışma Zamanı"/>
   <String Id="WelcomeDescription" Value=".NET Çalışma Zamanı, Windows bilgisayarınızda .NET uygulamalarını çalıştırmak için kullanılır. .NET açık kaynaktır, platformlar arasında kullanılabilir ve Microsoft tarafından desteklenmektedir. Beğeneceğinizi umuyoruz!"/>
   <String Id="LearnMoreTitle" Value=".NET hakkında daha fazla bilgi edinin"/>
-  <String Id="SuccessInstallLocation" Value="Aşağıdakiler [DOTNETHOME] konumunda yüklendi"/>
+  <String Id="SuccessInstallLocation" Value="Şunlar yüklendi:"/>
   <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
   <String Id="ResourcesHeader" Value="Kaynaklar"/>
   <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Belgeler&lt;/A&gt;"/>

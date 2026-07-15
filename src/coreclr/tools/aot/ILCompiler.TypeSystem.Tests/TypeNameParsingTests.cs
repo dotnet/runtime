@@ -32,12 +32,12 @@ namespace TypeSystemTests
             _context.SetSystemModule(_testModule);
 
             _simpleType = _testModule.GetType("TypeNameParsing"u8, "Simple"u8);
-            _nestedType = _simpleType.GetNestedType("Nested");
-            _nestedTwiceType = _nestedType.GetNestedType("NestedTwice");
+            _nestedType = _simpleType.GetNestedType("Nested"u8);
+            _nestedTwiceType = _nestedType.GetNestedType("NestedTwice"u8);
 
             _genericType = _testModule.GetType("TypeNameParsing"u8, "Generic`1"u8);
-            _nestedGenericType = _genericType.GetNestedType("NestedGeneric`1");
-            _nestedNongenericType = _genericType.GetNestedType("NestedNongeneric");
+            _nestedGenericType = _genericType.GetNestedType("NestedGeneric`1"u8);
+            _nestedNongenericType = _genericType.GetNestedType("NestedNongeneric"u8);
 
             _veryGenericType = _testModule.GetType("TypeNameParsing"u8, "VeryGeneric`3"u8);
 

@@ -13,7 +13,6 @@ using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore
 using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
 using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
 using CombinedDependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry;
-using MethodAttributes = System.Reflection.MethodAttributes;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -54,51 +53,21 @@ namespace ILCompiler.DependencyAnalysis
                 AddDependenciesDueToCustomAttributes(ref dependencies, genericParameterCondition, factory, method.Module, parameter.GetCustomAttributes(), method);
             }
 
-            // We don't model properties and events as separate entities within the compiler, so ensuring
-            // we can generate custom attributes for the associated events and properties from here
-            // is as good as any other place.
-            //
-            // As a performance optimization, we look for associated events and properties only
-            // if the method is SpecialName. This is required for CLS compliance and compilers we
-            // care about emit accessors like this.
-            object propertyCondition = GetMetadataApiDependency(factory, "Property"u8);
-            if ((methodDef.Attributes & MethodAttributes.SpecialName) != 0)
-            {
-                TypeDefinition declaringType = reader.GetTypeDefinition(methodDef.GetDeclaringType());
 
-                foreach (PropertyDefinitionHandle propertyHandle in declaringType.GetProperties())
-                {
-                    PropertyDefinition property = reader.GetPropertyDefinition(propertyHandle);
-                    PropertyAccessors accessors = property.GetAccessors();
-
-                    if (accessors.Getter == methodHandle || accessors.Setter == methodHandle)
-                        AddDependenciesDueToCustomAttributes(ref dependencies, propertyCondition, factory, method.Module, property.GetCustomAttributes(), new PropertyPseudoDesc((EcmaType)method.OwningType, propertyHandle));
-                }
-
-                object eventCondition = GetMetadataApiDependency(factory, "Event"u8);
-                foreach (EventDefinitionHandle eventHandle in declaringType.GetEvents())
-                {
-                    EventDefinition @event = reader.GetEventDefinition(eventHandle);
-                    EventAccessors accessors = @event.GetAccessors();
-
-                    if (accessors.Adder == methodHandle || accessors.Remover == methodHandle || accessors.Raiser == methodHandle)
-                        AddDependenciesDueToCustomAttributes(ref dependencies, eventCondition, factory, method.Module, @event.GetCustomAttributes(), new EventPseudoDesc((EcmaType)method.OwningType, eventHandle));
-                }
-            }
         }
 
         public static void AddDependenciesDueToCustomAttributes(ref CombinedDependencyList dependencies, NodeFactory factory, EcmaType type)
         {
             MetadataReader reader = type.MetadataReader;
             TypeDefinition typeDef = reader.GetTypeDefinition(type.Handle);
-            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "TypeDefinition"u8), factory, type.EcmaModule, typeDef.GetCustomAttributes(), type);
+            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "TypeDefinition"u8), factory, type.Module, typeDef.GetCustomAttributes(), type);
 
             // Handle custom attributes on generic type parameters
             object genericParameterCondition = GetMetadataApiDependency(factory, "GenericParameter"u8);
             foreach (GenericParameterHandle genericParameterHandle in typeDef.GetGenericParameters())
             {
                 GenericParameter parameter = reader.GetGenericParameter(genericParameterHandle);
-                AddDependenciesDueToCustomAttributes(ref dependencies, genericParameterCondition, factory, type.EcmaModule, parameter.GetCustomAttributes(), type);
+                AddDependenciesDueToCustomAttributes(ref dependencies, genericParameterCondition, factory, type.Module, parameter.GetCustomAttributes(), type);
             }
         }
 
@@ -106,6 +75,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             FieldDefinition fieldDef = field.MetadataReader.GetFieldDefinition(field.Handle);
             AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "Field"u8), factory, field.Module, fieldDef.GetCustomAttributes(), field);
+        }
+
+        public static void AddDependenciesDueToCustomAttributes(ref CombinedDependencyList dependencies, NodeFactory factory, PropertyPseudoDesc property)
+        {
+            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "Property"u8), factory, property.OwningType.Module, property.GetCustomAttributes, property);
+        }
+
+        public static void AddDependenciesDueToCustomAttributes(ref CombinedDependencyList dependencies, NodeFactory factory, EventPseudoDesc @event)
+        {
+            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "Event"u8), factory, @event.OwningType.Module, @event.GetCustomAttributes, @event);
         }
 
         public static void AddDependenciesDueToCustomAttributes(ref CombinedDependencyList dependencies, NodeFactory factory, EcmaAssembly assembly)
@@ -250,7 +229,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (!accessors.Setter.IsNil)
                     {
-                        MethodDesc setterMethod = (MethodDesc)attributeTypeDefinition.EcmaModule.GetObject(accessors.Setter);
+                        MethodDesc setterMethod = (MethodDesc)attributeTypeDefinition.Module.GetObject(accessors.Setter);
                         if (factory.MetadataManager.IsReflectionBlocked(setterMethod))
                             return false;
 

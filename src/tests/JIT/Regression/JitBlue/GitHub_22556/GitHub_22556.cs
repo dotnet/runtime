@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace GitHub_22556;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -9,6 +12,8 @@ using Xunit;
 public class Test_GitHub_22556
 {
     int f;
+
+    public Test_GitHub_22556() { }
 
     Test_GitHub_22556(int f)
     {

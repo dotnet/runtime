@@ -708,6 +708,61 @@ namespace SerializationTypes
             writer.WriteAttributeString("BoolValue", BoolValue.ToString());
         }
     }
+
+    public struct StructImplementingIXmlSerializableWithoutParameterlessConstructor : IXmlSerializable
+    {
+        public static bool WriteXmlInvoked = false;
+        public static bool ReadXmlInvoked = false;
+
+        public string StringValue { get; set; }
+
+        public System.Xml.Schema.XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(System.Xml.XmlReader reader)
+        {
+            ReadXmlInvoked = true;
+            reader.MoveToContent();
+            StringValue = reader.GetAttribute("StringValue");
+        }
+
+        public void WriteXml(System.Xml.XmlWriter writer)
+        {
+            WriteXmlInvoked = true;
+            writer.WriteAttributeString("StringValue", StringValue);
+        }
+    }
+
+    public struct StructImplementingIXmlSerializableWithParameterlessConstructor : IXmlSerializable
+    {
+        public static bool WriteXmlInvoked = false;
+        public static bool ReadXmlInvoked = false;
+
+        public string StringValue { get; set; }
+
+        public StructImplementingIXmlSerializableWithParameterlessConstructor() { }
+
+        public System.Xml.Schema.XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(System.Xml.XmlReader reader)
+        {
+            ReadXmlInvoked = true;
+            reader.MoveToContent();
+            StringValue = reader.GetAttribute("StringValue");
+        }
+
+        public void WriteXml(System.Xml.XmlWriter writer)
+        {
+            WriteXmlInvoked = true;
+            writer.WriteAttributeString("StringValue", StringValue);
+        }
+    }
+
     public class TypeWithPropertyNameSpecified
     {
         public string MyField;
@@ -922,6 +977,36 @@ namespace SerializationTypes
         {
             return Foo != DefaultFoo;
         }
+    }
+
+    public class BaseTypeWithShouldSerializeMethod
+    {
+        public string Foo { get; set; } = "default";
+
+        [System.Xml.Serialization.XmlAttribute]
+        public string Bar { get; set; } = "default";
+
+        public bool ShouldSerializeFoo()
+        {
+            return Foo != "default";
+        }
+
+        public bool ShouldSerializeBar()
+        {
+            return Bar != "default";
+        }
+    }
+
+    public class DerivedTypeWithInheritedShouldSerialize : BaseTypeWithShouldSerializeMethod
+    {
+    }
+
+    public class TypeWithFieldBackedSpecifiedMember
+    {
+        public string Foo { get; set; }
+
+        [System.Xml.Serialization.XmlIgnore]
+        public bool FooSpecified;
     }
 
     public class KnownTypesThroughConstructorWithArrayProperties

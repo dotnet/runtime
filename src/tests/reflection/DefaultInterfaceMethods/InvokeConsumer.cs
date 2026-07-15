@@ -4,9 +4,11 @@
 using System;
 using System.Reflection;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/36113", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

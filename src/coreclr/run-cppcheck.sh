@@ -49,7 +49,7 @@ else
   NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
 fi
 
-while [[ $# > 0 ]]
+while [[ $# -gt 0 ]]
 do
     opt="$1"
     shift

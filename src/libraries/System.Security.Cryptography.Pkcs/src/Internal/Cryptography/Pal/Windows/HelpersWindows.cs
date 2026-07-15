@@ -385,7 +385,7 @@ namespace Internal.Cryptography.Pal.Windows
                 throw new CryptographicException();
             }
 
-            int provType = MemoryMarshal.Read<int>(stackSpan.Slice(0, size));
+            int provType = BitConverter.ToInt32(stackSpan.Slice(0, size));
 
             size = stackSpan.Length;
             if (!Interop.Advapi32.CryptGetProvParam(handle, CryptProvParam.PP_KEYSET_TYPE, stackSpan, ref size))
@@ -399,7 +399,7 @@ namespace Internal.Cryptography.Pal.Windows
                 throw new CryptographicException();
             }
 
-            int keysetType = MemoryMarshal.Read<int>(stackSpan.Slice(0, size));
+            int keysetType = BitConverter.ToInt32(stackSpan.Slice(0, size));
 
             // Only CRYPT_MACHINE_KEYSET is described as coming back, but be defensive.
             CspProviderFlags provFlags =

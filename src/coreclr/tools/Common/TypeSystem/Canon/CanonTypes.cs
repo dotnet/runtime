@@ -5,8 +5,13 @@ using System;
 using System.Collections.Generic;
 
 using Internal.NativeFormat;
+using Internal.Text;
 
 using Debug = System.Diagnostics.Debug;
+
+#if TYPE_LOADER_IMPLEMENTATION
+using MetadataType = Internal.TypeSystem.DefType;
+#endif
 
 namespace Internal.TypeSystem
 {
@@ -51,7 +56,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override DefType ContainingType => null;
+        public override MetadataType ContainingType => null;
     }
 
     /// <summary>
@@ -61,7 +66,7 @@ namespace Internal.TypeSystem
     {
         private int _hashcode;
 
-        public override ReadOnlySpan<byte> Namespace
+        public override Utf8Span Namespace
         {
             get
             {
@@ -69,7 +74,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
@@ -87,11 +92,11 @@ namespace Internal.TypeSystem
         // consumer-specific initialization.
         partial void Initialize();
 
-        public override DefType BaseType
+        public override MetadataType BaseType
         {
             get
             {
-                return Context.GetWellKnownType(WellKnownType.Object);
+                return (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
             }
         }
 
@@ -145,7 +150,7 @@ namespace Internal.TypeSystem
     {
         private int _hashcode;
 
-        public override ReadOnlySpan<byte> Namespace
+        public override Utf8Span Namespace
         {
             get
             {
@@ -153,7 +158,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
@@ -171,12 +176,12 @@ namespace Internal.TypeSystem
         // consumer-specific initialization.
         partial void Initialize();
 
-        public override DefType BaseType
+        public override MetadataType BaseType
         {
             get
             {
                 // UniversalCanon is "a struct of indeterminate size and GC layout"
-                return Context.GetWellKnownType(WellKnownType.ValueType);
+                return (MetadataType)Context.GetWellKnownType(WellKnownType.ValueType);
             }
         }
 

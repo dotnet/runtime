@@ -49,6 +49,7 @@ namespace ILCompiler
                 // all types without GC references (ie C# unmanaged types).
                 MetadataLayoutKind.Sequential when !type.ContainsGCPointers => ComputeSequentialFieldLayout(type, numInstanceFields, layoutMetadata),
                 MetadataLayoutKind.CStruct => ComputeCStructFieldLayout(type, numInstanceFields),
+                MetadataLayoutKind.CUnion => ComputeCUnionFieldLayout(type, numInstanceFields),
                 _ => ComputeAutoFieldLayout(type, numInstanceFields, layoutMetadata),
             };
         }

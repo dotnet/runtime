@@ -159,6 +159,22 @@ namespace System.Reflection.Tests
             Assert.Equal(returnValue, genReturnValue);
         }
 
+        private interface IStaticInterface
+        {
+            public static virtual string? StaticVirtual(string? s) => s;
+        }
+
+        [Fact]
+        public void CreateDelegate_StaticVirtual()
+        {
+            MethodInfo miStaticVirtual = GetMethod(typeof(IStaticInterface), nameof(IStaticInterface.StaticVirtual));
+            const string testString = "test";
+
+            Func<string?, string?> methodDelegate = miStaticVirtual.CreateDelegate<Func<string?, string?>>();
+            string? returnValue = methodDelegate(testString);
+            Assert.Equal(testString, returnValue);
+        }
+
         [Theory]
         [InlineData(typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualMethod), null, typeof(ArgumentNullException))]
         [InlineData(typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualMethod), typeof(Delegate_Void_Int), typeof(ArgumentException))]
@@ -346,6 +362,27 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, methodInfo.GetHashCode());
         }
 
+        [Fact]
+        public void GetHashCode_MultipleSubClasses_ShouldBeUnique()
+        {
+            var numberOfCollisions = 0;
+            var hashset = new HashSet<int>();
+
+            foreach (var type in new Type[] { typeof(MI_BaseClass), typeof(MI_SubClassA), typeof(MI_SubClassB), typeof(MI_SubClassC) })
+            {
+                foreach (var methodInfo in type.GetMethods())
+                {
+                    if (!hashset.Add(methodInfo.GetHashCode()))
+                    {
+                        numberOfCollisions++;
+                    }
+                }
+            }
+
+            // If intermittent failures are observed, it's acceptable to relax the assertion to allow some collisions.
+            Assert.Equal(0, numberOfCollisions);
+        }
+
         public static IEnumerable<object[]> Invoke_TestData()
         {
             yield return new object[] { typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualReturnIntMethod), new MI_BaseClass(), null, 0 };
@@ -430,7 +467,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67531", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_TwoParameters_CustomBinder_IncorrectTypeArguments()
         {
             MethodInfo method = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.StaticIntIntMethodReturningInt));
@@ -438,6 +474,16 @@ namespace System.Reflection.Tests
             Assert.Equal(110, method.Invoke(null, BindingFlags.Default, new ConvertStringToIntBinder(), args, null));
             Assert.True(args[0] is int);
             Assert.True(args[1] is int);
+        }
+
+        [Fact]
+        public void Invoke_CustomBinder_ResultRequiringPrimitiveWidening_DoesNotCopyBackWidenedArgument()
+        {
+            MethodInfo method = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.StaticIntIntMethodReturningInt));
+            object[] args = new object[] { "10", 100 };
+
+            Assert.Equal(110, method.Invoke(null, BindingFlags.Default, new ConvertStringToInt16Binder(), args, null));
+            Assert.Equal("10", Assert.IsType<string>(args[0]));
         }
 
         [Theory]
@@ -712,7 +758,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void CallStackFrame_AggressiveInlining()
         {
             MethodInfo mi = typeof(System.Reflection.TestAssembly.ClassToInvoke).GetMethod(nameof(System.Reflection.TestAssembly.ClassToInvoke.CallMe_AggressiveInlining),
@@ -807,6 +852,10 @@ namespace System.Reflection.Tests
         TypeAttr(typeof(object), name = "TypeAttrSimple")]
         public void MethodWithAttributes() { }
     }
+
+    public class MI_SubClassA : MI_BaseClass { }
+    public class MI_SubClassB : MI_BaseClass { }
+    public class MI_SubClassC : MI_BaseClass { }
 
     public class MethodInfoDummySubClass : MI_BaseClass
     {

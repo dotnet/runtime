@@ -6,6 +6,7 @@
 #include "longfilepathwrappers.h"
 #include "sstring.h"
 #include "ex.h"
+#include <dn-stdio.h>
 
 #ifdef HOST_WINDOWS
 class LongFile
@@ -340,6 +341,32 @@ CreateFileWrapper(
     }
 
     return ret;
+}
+
+int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+    }
+    CONTRACTL_END;
+
+    EX_TRY
+    {
+        LongPathString path(LongPathString::Literal, filename);
+
+        if (SUCCEEDED(LongFile::NormalizePath(path)))
+        {
+            return u16_fopen_s(stream, path.GetUnicode(), mode);
+        }
+    }
+    EX_CATCH
+    {
+        return -1;
+    }
+    EX_END_CATCH
+
+    return -1;
 }
 
 BOOL

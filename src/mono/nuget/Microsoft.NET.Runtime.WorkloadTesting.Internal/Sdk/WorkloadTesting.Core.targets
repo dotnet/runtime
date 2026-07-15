@@ -99,18 +99,25 @@
       <_DotNetVersionCommand>$(_DotNetPath) --version</_DotNetVersionCommand>
     </PropertyGroup>
 
-    <Exec Command="$(_DotNetVersionCommand)" ConsoleToMsBuild="true" StandardOutputImportance="Low" IgnoreExitCode="true">
+    <!-- Write an empty global.json so the SDK resolver uses the SDK in this directory
+         instead of walking up to the repo root's global.json which has relative "paths"
+         entries that would resolve to the wrong SDK. -->
+    <WriteLinesToFile File="$(_SdkWithNoWorkloadPath)global.json" Lines="{}" Overwrite="true" />
+
+    <Exec Command="$(_DotNetVersionCommand)" ConsoleToMsBuild="true" StandardOutputImportance="Low" IgnoreExitCode="true"
+          WorkingDirectory="$(_SdkWithNoWorkloadPath)">
       <Output TaskParameter="ConsoleOutput" PropertyName="_DotNetVersionOutput" />
       <Output TaskParameter="ExitCode" PropertyName="_DotNetVersionExitCode" />
     </Exec>
 
-    <!-- If `dotnet -version` failed, then run it again, so we can surface the output as *Errors*.
+    <!-- If `$(_DotNetVersionCommand)` failed, then run it again, so we can surface the output as *Errors*.
          This allows the errors to show up correctly, versus trying to use the output lines with
          the Error task -->
-    <Exec Condition="$(_DotNetVersionExitCode) != '0'" Command="$(_DotNetVersionCommand)" CustomErrorRegularExpression=".*" />
+    <Exec Condition="$(_DotNetVersionExitCode) != '0'" Command="$(_DotNetVersionCommand)" CustomErrorRegularExpression=".*"
+          WorkingDirectory="$(_SdkWithNoWorkloadPath)" />
 
     <PropertyGroup>
-      <SdkBandVersionForWorkload_ComputedFromInstaller>$(SdkBandVersion)$([System.Text.RegularExpressions.Regex]::Match($(_DotNetVersionOutput), `-(?!rtm)[A-z]*[\.]*\d*`))</SdkBandVersionForWorkload_ComputedFromInstaller>
+      <SdkBandVersionForWorkload_ComputedFromInstaller>$(SdkBandVersion)$([System.Text.RegularExpressions.Regex]::Match($(_DotNetVersionOutput), `-(?!rtm|release)[A-z]*[\.]*\d*`))</SdkBandVersionForWorkload_ComputedFromInstaller>
       <VersionBandForSdkManifestsDir Condition="'$(VersionBandForSdkManifestsDir)' == ''">$(SdkBandVersionForWorkload_ComputedFromInstaller)</VersionBandForSdkManifestsDir>
       <VersionBandForManifestPackages Condition="'$(VersionBandForManifestPackages)' == ''">$(VersionBandForSdkManifestsDir)</VersionBandForManifestPackages>
     </PropertyGroup>
@@ -129,7 +136,8 @@
 
   <Target Name="_FirstDotNetRun">
     <!-- info`, or version don't trigger workload integrity check -->
-    <Exec Command="$(_DotNetPath) workload list" ConsoleToMsBuild="true" StandardOutputImportance="Low" />
+    <Exec Command="$(_DotNetPath) workload list" ConsoleToMsBuild="true" StandardOutputImportance="Low"
+          WorkingDirectory="$(_SdkWithNoWorkloadPath)" />
   </Target>
 
   <Target Name="_SetPackageVersionForWorkloadsTesting">
@@ -197,6 +205,7 @@
     </ItemGroup>
 
     <Message Text="Packages found in $(BuiltNugetsDir): @(_BuiltNuGets)" Importance="Low" />
+    <Message Text="Skipping 'InstallWorkloadFromArtifacts' as no workloads selected for installation" Importance="Low" Condition="@(_SdkWithWorkloadToInstall->Count()) == 0" />
 
     <InstallWorkloadFromArtifacts
                      WorkloadIds="@(WorkloadIdForTesting)"
@@ -212,6 +221,7 @@
                      WorkloadInstallCommandOutputImportance="$(WorkloadInstallCommandOutputImportance)"
                      IntermediateOutputPath="$(ArtifactsObjDir)"
                      SkipTempDirectoryCleanup="$(SkipTempDirectoryCleanup)"
+                     Condition="@(_SdkWithWorkloadToInstall->Count()) > 0"
       />
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />

@@ -3,12 +3,13 @@
 //
 
 using Xunit;
-namespace DefaultNamespace
+namespace b14443
 {
     using System;
 
     public class Bug4
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

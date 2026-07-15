@@ -8,14 +8,12 @@ using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Runtime;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -100,9 +98,12 @@ namespace Internal.Runtime.TypeLoader
             }
 
             public override int GetHashCode()
-                => _handle.GetHashCode() ^ (_genericArgs == null
-                ? _declaringType.GetHashCode()
-                : VersionResilientHashCode.GenericInstanceHashCode(_declaringType.GetHashCode(), _genericArgs));
+            {
+                int declaringTypeHashCode = _genericArgs == null
+                    ? _declaringType.GetHashCode()
+                    : VersionResilientHashCode.GenericInstanceHashCode(_declaringType.GetHashCode(), _genericArgs);
+                return _handle.GetHashCode() ^ declaringTypeHashCode;
+            }
         }
 
         private LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle> _runtimeFieldHandles = new LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle>();
@@ -186,26 +187,6 @@ namespace Internal.Runtime.TypeLoader
 
                 return runtimeMethodHandle;
             }
-        }
-
-        public MethodDesc GetMethodDescForRuntimeMethodHandle(TypeSystemContext context, RuntimeMethodHandle runtimeMethodHandle)
-        {
-            bool success = TryGetRuntimeMethodHandleComponents(runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle,
-                out MethodHandle handle, out RuntimeTypeHandle[] genericMethodArgs);
-            Debug.Assert(success);
-
-            MetadataReader reader = ModuleList.Instance.GetMetadataReaderForModule(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle));
-            MethodNameAndSignature nameAndSignature = new MethodNameAndSignature(reader, handle);
-
-            DefType type = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-
-            if (genericMethodArgs != null)
-            {
-                Instantiation methodInst = context.ResolveRuntimeTypeHandles(genericMethodArgs);
-                return context.ResolveGenericMethodInstantiation(unboxingStub: false, type, nameAndSignature, methodInst);
-            }
-
-            return context.ResolveRuntimeMethod(unboxingStub: false, type, nameAndSignature);
         }
 
         public unsafe bool TryGetRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition handle, out RuntimeTypeHandle[] genericMethodArgs)

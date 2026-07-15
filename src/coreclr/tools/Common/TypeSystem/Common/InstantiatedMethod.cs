@@ -3,7 +3,9 @@
 
 using System;
 using System.Diagnostics;
+
 using Internal.NativeFormat;
+using Internal.Text;
 
 namespace Internal.TypeSystem
 {
@@ -126,6 +128,15 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsAsync
+        {
+            get
+            {
+                return _methodDef.IsAsync;
+            }
+        }
+
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _methodDef.HasCustomAttribute(attributeNamespace, attributeName);
@@ -157,7 +168,7 @@ namespace Internal.TypeSystem
             return _methodDef.GetTypicalMethodDefinition();
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {

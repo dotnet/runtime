@@ -1,74 +1,56 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class TypeDesc : IData<TypeDesc>
+[CdacType(nameof(DataType.TypeDesc))]
+internal sealed partial class TypeDesc : IData<TypeDesc>
 {
-    static TypeDesc IData<TypeDesc>.Create(Target target, TargetPointer address) => new TypeDesc(target, address);
-    public TypeDesc(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
-        TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
-    }
-
-    public uint TypeAndFlags { get; init; }
+    [Field] public uint TypeAndFlags { get; }
 }
 
-internal sealed class ParamTypeDesc : IData<ParamTypeDesc>
+[CdacType(nameof(DataType.ParamTypeDesc))]
+internal sealed partial class ParamTypeDesc : IData<ParamTypeDesc>
 {
-    static ParamTypeDesc IData<ParamTypeDesc>.Create(Target target, TargetPointer address) => new ParamTypeDesc(target, address);
-    public ParamTypeDesc(Target target, TargetPointer address)
+    public uint TypeAndFlags { get; private set; }
+    [Field] public TargetPointer TypeArg { get; }
+
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
-        TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
-
-        type = target.GetTypeInfo(DataType.ParamTypeDesc);
-        TypeArg = target.ReadPointer(address + (ulong)type.Fields[nameof(TypeArg)].Offset);
+        TypeAndFlags = target.ReadField<uint>(address, type, nameof(TypeAndFlags));
     }
-
-    public uint TypeAndFlags { get; init; }
-    public TargetPointer TypeArg { get; init; }
 }
 
-internal sealed class TypeVarTypeDesc : IData<TypeVarTypeDesc>
+[CdacType(nameof(DataType.TypeVarTypeDesc))]
+internal sealed partial class TypeVarTypeDesc : IData<TypeVarTypeDesc>
 {
-    static TypeVarTypeDesc IData<TypeVarTypeDesc>.Create(Target target, TargetPointer address) => new TypeVarTypeDesc(target, address);
-    public TypeVarTypeDesc(Target target, TargetPointer address)
+    public uint TypeAndFlags { get; private set; }
+    [Field] public TargetPointer Module { get; }
+    [Field] public uint Token { get; }
+
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
-        TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
-
-        type = target.GetTypeInfo(DataType.TypeVarTypeDesc);
-
-        Module = target.ReadPointer(address + (ulong)type.Fields[nameof(Module)].Offset);
-        Token = target.Read<uint>(address + (ulong)type.Fields[nameof(Token)].Offset);
+        TypeAndFlags = target.ReadField<uint>(address, type, nameof(TypeAndFlags));
     }
-
-    public uint TypeAndFlags { get; init; }
-    public TargetPointer Module { get; init; }
-    public uint Token { get; init; }
 }
 
-internal sealed class FnPtrTypeDesc : IData<FnPtrTypeDesc>
+[CdacType(nameof(DataType.FnPtrTypeDesc))]
+internal sealed partial class FnPtrTypeDesc : IData<FnPtrTypeDesc>
 {
-    static FnPtrTypeDesc IData<FnPtrTypeDesc>.Create(Target target, TargetPointer address) => new FnPtrTypeDesc(target, address);
-    public FnPtrTypeDesc(Target target, TargetPointer address)
+    public uint TypeAndFlags { get; private set; }
+    [Field] public uint NumArgs { get; }
+    [Field] public uint CallConv { get; }
+
+    [FieldAddress]
+    public TargetPointer RetAndArgTypes { get; }
+
+    [Field] public TargetPointer LoaderModule { get; }
+
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
-        TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
-
-        type = target.GetTypeInfo(DataType.FnPtrTypeDesc);
-
-        NumArgs = target.Read<uint>(address + (ulong)type.Fields[nameof(NumArgs)].Offset);
-        CallConv = target.Read<uint>(address + (ulong)type.Fields[nameof(CallConv)].Offset);
-        RetAndArgTypes = (TargetPointer)(address + (ulong)type.Fields[nameof(RetAndArgTypes)].Offset);
-        LoaderModule = target.ReadPointer(address + (ulong)type.Fields[nameof(LoaderModule)].Offset);
+        TypeAndFlags = target.ReadField<uint>(address, type, nameof(TypeAndFlags));
     }
-
-    public uint TypeAndFlags { get; init; }
-    public uint NumArgs {  get; init; }
-    public uint CallConv { get; init; }
-    public TargetPointer RetAndArgTypes { get; init; }
-    public TargetPointer LoaderModule { get; init; }
 }

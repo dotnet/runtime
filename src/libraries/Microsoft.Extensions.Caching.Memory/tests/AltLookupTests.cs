@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Caching.Memory.Tests
             Assert.False(cache.TryGetValue(objKey, out result));
             Assert.Null(result);
 
-#if NET9_0_OR_GREATER
+#if NET
             Assert.False(cache.TryGetValue(stringSpanKey, out result));
             Assert.Null(result);
 
@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Caching.Memory.Tests
             Assert.True(cache.TryGetValue(objKey, out result));
             Assert.Same(cachedValue, result);
 
-#if NET9_0_OR_GREATER
+#if NET
             Assert.True(cache.TryGetValue(stringSpanKey, out result));
             Assert.Same(cachedValue, result);
 
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.Caching.Memory.Tests
             Assert.False(cache.TryGetValue(objKey, out result));
             Assert.Null(result);
 
-#if NET9_0_OR_GREATER
+#if NET
             Assert.False(cache.TryGetValue(stringSpanKey, out result));
             Assert.Null(result);
 

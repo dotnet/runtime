@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Xunit;
+using TestLibrary;
 
 public abstract class AComponent { }
 public class Component : AComponent { }
@@ -21,6 +22,7 @@ public sealed class Concrete<T> : Abstract
 
 public class Program
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -2,7 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+
+using Internal.Text;
+
 using Debug = System.Diagnostics.Debug;
+#if TYPE_LOADER_IMPLEMENTATION
+using MetadataType = Internal.TypeSystem.DefType;
+#endif
 
 namespace Internal.TypeSystem
 {
@@ -26,7 +32,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override DefType OwningType
+        public override MetadataType OwningType
         {
             get
             {
@@ -34,7 +40,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {

@@ -131,7 +131,7 @@ internal sealed class MsQuicTlsSecret : IDisposable
 
             QUIC_TLS_SECRETS* tlsSecrets = _tlsSecrets;
             _tlsSecrets = null;
-            NativeMemory.Free(_tlsSecrets);
+            NativeMemory.Free(tlsSecrets);
         }
     }
 }

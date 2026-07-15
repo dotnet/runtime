@@ -61,7 +61,7 @@ namespace ILCompiler.Dataflow
                 }
             }
 
-            mdType = mdType.MetadataBaseType;
+            mdType = mdType.BaseType;
             if (mdType != null)
                 return GetProperty(mdType, name, signature);
 

@@ -1,12 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
-  <ItemGroup Condition="'$(TargetOS)' == 'windows' or '$(DotNetBuildSourceOnly)' == 'true'">
-    <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.pkgproj" />
-    <ProjectReference Include="Microsoft.ILVerification\Microsoft.ILVerification.pkgproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
-    <ProjectReference Include="dotnet-ilverify\dotnet-ilverify.pkgproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(DotNetBuildSourceOnly)' != 'true'">
-    <ProjectReference Include="ILCompiler.Reflection.ReadyToRun.Experimental\ILCompiler.Reflection.ReadyToRun.Experimental.pkgproj" />
+  <ItemGroup>
+    <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' ">
@@ -16,6 +10,14 @@
   <ItemGroup Condition=" '$(TargetsMobile)' != 'true' ">
     <ProjectReference Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.proj" />
     <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.proj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NETCore.BrowserDebugHost.Transport\Microsoft.NETCore.BrowserDebugHost.Transport.pkgproj" />
+    <ProjectReference Include="$(MonoProjectRoot)\wasm\templates\Microsoft.NET.Runtime.WebAssembly.Templates.csproj" />
+    <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\Microsoft.NET.Sdk.WebAssembly.Pack.pkgproj" />
+
+    <ProjectReference Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Runtime.WorkloadTesting.Internal\Microsoft.NET.Runtime.WorkloadTesting.Internal.pkgproj" />
   </ItemGroup>
 
   <Import Project="versioning.targets" />

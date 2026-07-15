@@ -67,6 +67,15 @@ namespace System.Numerics.Tests
             yield return new object[] { new BigInteger(Math.Pow(2, 32)), new BigInteger(Math.Pow(2, 32)), new BigInteger(8589934592) };
             yield return new object[] { new BigInteger(Math.Pow(2, 32) + Math.Pow(2, 31)), new BigInteger(Math.Pow(2, 32) + Math.Pow(2, 31)), new BigInteger(12884901888) };
 
+            // 64-bit nuint boundaries (carry across limb boundary on 64-bit platforms)
+            yield return new object[] { new BigInteger(ulong.MaxValue), BigInteger.One, BigInteger.Parse("18446744073709551616") };
+            yield return new object[] { new BigInteger(ulong.MaxValue), new BigInteger(ulong.MaxValue), BigInteger.Parse("36893488147419103230") };
+            yield return new object[] { BigInteger.Parse("18446744073709551616"), BigInteger.Parse("18446744073709551616"), BigInteger.Parse("36893488147419103232") };
+
+            // Multi-limb carry propagation (all-ones + 1 forces carry through every limb)
+            yield return new object[] { (BigInteger.One << 256) - 1, BigInteger.One, BigInteger.One << 256 };
+            yield return new object[] { (BigInteger.One << 512) - 1, BigInteger.One, BigInteger.One << 512 };
+
             // Very large + very large
             yield return new object[]
             {

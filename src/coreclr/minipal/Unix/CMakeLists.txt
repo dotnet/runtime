@@ -1,6 +1,8 @@
 set(SOURCES
     doublemapping.cpp
     dn-u16.cpp
+    dn-stdio.cpp
+    memory.cpp
 )
 
 add_library(coreclrminipal_objects
@@ -14,3 +16,7 @@ add_library(coreclrminipal
 )
 
 target_link_libraries(coreclrminipal PRIVATE minipal)
+
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+  install_clr(TARGETS coreclrminipal DESTINATIONS sharedFramework COMPONENT runtime)
+endif (CLR_CMAKE_TARGET_ARCH_WASM)

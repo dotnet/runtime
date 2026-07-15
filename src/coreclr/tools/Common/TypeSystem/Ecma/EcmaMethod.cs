@@ -9,12 +9,15 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem.Ecma
 {
     public sealed partial class EcmaMethod : MethodDesc, EcmaModule.IEntityHandleObject
     {
         private static class MethodFlags
         {
+#pragma warning disable IDE0055 // Disable formatting to keep aligned
             public const int BasicMetadataCache     = 0x00001;
             public const int Virtual                = 0x00002;
             public const int NewSlot                = 0x00004;
@@ -28,10 +31,12 @@ namespace Internal.TypeSystem.Ecma
             public const int AggressiveOptimization = 0x00400;
             public const int NoOptimization         = 0x00800;
             public const int RequireSecObject       = 0x01000;
+            public const int Async                  = 0x02000;
 
-            public const int AttributeMetadataCache = 0x02000;
-            public const int Intrinsic              = 0x04000;
-            public const int UnmanagedCallersOnly   = 0x08000;
+            public const int AttributeMetadataCache = 0x04000;
+            public const int Intrinsic              = 0x08000;
+            public const int UnmanagedCallersOnly   = 0x10000;
+#pragma warning restore IDE0055
         };
 
         private EcmaType _type;
@@ -66,7 +71,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override TypeDesc OwningType
+        public override EcmaType OwningType
         {
             get
             {
@@ -98,7 +103,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return _type.EcmaModule;
+                return _type.Module;
             }
         }
 
@@ -166,6 +171,9 @@ namespace Internal.TypeSystem.Ecma
 
                 if ((methodImplAttributes & MethodImplAttributes.Synchronized) != 0)
                     flags |= MethodFlags.Synchronized;
+
+                if ((methodImplAttributes & MethodImplAttributes.Async) != 0)
+                    flags |= MethodFlags.Async;
 
                 flags |= MethodFlags.BasicMetadataCache;
             }
@@ -346,7 +354,7 @@ namespace Internal.TypeSystem.Ecma
                 return attributes.IsRuntimeSpecialName()
                     && attributes.IsPublic()
                     && Signature.Length == 0
-                    && Name.SequenceEqual(".ctor"u8)
+                    && Name == ".ctor"u8
                     && !_type.IsAbstract;
             }
         }
@@ -363,7 +371,15 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return Attributes.IsRuntimeSpecialName() && Name.SequenceEqual(".cctor"u8);
+                return Attributes.IsRuntimeSpecialName() && Name == ".cctor"u8;
+            }
+        }
+
+        public override bool IsAsync
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.Async) & MethodFlags.Async) != 0;
             }
         }
 
@@ -391,7 +407,7 @@ namespace Internal.TypeSystem.Ecma
             return new ReadOnlySpan<byte>(_namePointer, _nameLength);
         }
 
-        public override unsafe ReadOnlySpan<byte> Name
+        public override unsafe Utf8Span Name
         {
             get
             {
@@ -517,7 +533,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 CustomAttribute attribute = reader.GetCustomAttribute(attributeHandle);
                 CustomAttributeValue<TypeDesc> decoded = attribute.DecodeValue(
-                    new CustomAttributeTypeProvider(_type.EcmaModule));
+                    new CustomAttributeTypeProvider(_type.Module));
 
                 if (decoded.FixedArguments.Length != 1 || !(decoded.FixedArguments[0].Value is bool))
                     ThrowHelper.ThrowBadImageFormatException();
@@ -581,5 +597,11 @@ namespace Internal.TypeSystem.Ecma
             }
             return null;
         }
+
+        public override EcmaMethod GetMethodDefinition() => this;
+
+        public override EcmaMethod GetTypicalMethodDefinition() => this;
+
+        public override MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation) => this;
     }
 }

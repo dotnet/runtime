@@ -30,7 +30,7 @@ namespace ILCompiler.Dataflow
         public NodeFactory Factory { get; }
         public FlowAnnotations Annotations { get; }
         public DependencyList Dependencies { get => _dependencies; }
-        public List<INodeWithRuntimeDeterminedDependencies> RuntimeDeterminedDependencies { get; } = new List<INodeWithRuntimeDeterminedDependencies>();
+        public List<(MethodDesc OwningMethod, INodeWithRuntimeDeterminedDependencies Dependency)> RuntimeDeterminedDependencies { get; } = new List<(MethodDesc, INodeWithRuntimeDeterminedDependencies)>();
 
         internal enum AccessKind
         {
@@ -90,7 +90,7 @@ namespace ILCompiler.Dataflow
 
             List<ModuleDesc> referencedModules = new();
             TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
-                referencedModules, needsAssemblyName, out bool failedBecauseNotFullyQualified);
+                referencedModules, needsAssemblyName, fallbackToCoreLib: true, out bool failedBecauseNotFullyQualified);
             if (foundType == null)
             {
                 if (failedBecauseNotFullyQualified)
@@ -104,12 +104,15 @@ namespace ILCompiler.Dataflow
             if (_enabled)
             {
                 string displayName = reason.GetDisplayName();
+                // Also add module metadata in case this reference was through a type forward
+                // TODO-ILTRIM: add handling of type forwards
+#if !ILTRIM
                 foreach (ModuleDesc referencedModule in referencedModules)
                 {
-                    // Also add module metadata in case this reference was through a type forward
                     if (Factory.MetadataManager.CanGenerateMetadata(referencedModule.GetGlobalModuleType()))
                         _dependencies.Add(Factory.ModuleMetadata(referencedModule), displayName);
                 }
+#endif
 
                 MarkType(diagnosticContext.Origin, foundType, displayName);
             }
@@ -118,11 +121,11 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
-        internal bool TryResolveTypeNameAndMark(ModuleDesc assembly, string typeName, in DiagnosticContext diagnosticContext, string reason, [NotNullWhen(true)] out TypeDesc? type)
+        internal bool TryResolveTypeNameAndMark(ModuleDesc assembly, string typeName, in DiagnosticContext diagnosticContext, string reason, bool fallbackToCoreLib, [NotNullWhen(true)] out TypeDesc? type)
         {
             List<ModuleDesc> referencedModules = new();
             TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, assembly, assembly.Context,
-                referencedModules, needsAssemblyName: false, out _);
+                referencedModules, needsAssemblyName: false, fallbackToCoreLib, out _);
             if (foundType == null)
             {
                 type = default;
@@ -131,12 +134,15 @@ namespace ILCompiler.Dataflow
 
             if (_enabled)
             {
+                // Also add module metadata in case this reference was through a type forward
+                // TODO-ILTRIM: add handling of type forwards
+#if !ILTRIM
                 foreach (ModuleDesc referencedModule in referencedModules)
                 {
-                    // Also add module metadata in case this reference was through a type forward
                     if (Factory.MetadataManager.CanGenerateMetadata(referencedModule.GetGlobalModuleType()))
                         _dependencies.Add(Factory.ModuleMetadata(referencedModule), reason);
                 }
+#endif
 
                 MarkType(diagnosticContext.Origin, foundType, reason);
             }

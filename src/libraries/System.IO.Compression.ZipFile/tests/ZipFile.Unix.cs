@@ -14,7 +14,11 @@ namespace System.IO.Compression.Tests
 {
     public partial class ZipFile_Unix : ZipFileTestBase
     {
+        private const byte WindowsMadeByPlatform = 0;
+        private const byte UnixMadeByPlatform = 3;
+
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void UnixCreateSetsPermissionsInExternalAttributes()
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits get preserved in ExternalAttributes
@@ -70,6 +74,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void UnixExtractSetsFilePermissionsFromExternalAttributes()
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits don't get extracted to file permissions
@@ -111,6 +116,64 @@ namespace System.IO.Compression.Tests
                 umask(0);
                 new ZipFile_Unix().UnixExtractSetsFilePermissionsFromExternalAttributes();
             }).Dispose();
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        public void UnixExtractIgnoresUnixPermissionBitsForWindowsMadeEntries()
+        {
+            const string permissions = "777";
+
+            string archivePath = GetTestFilePath();
+            using (FileStream fileStream = new FileStream(archivePath, FileMode.CreateNew))
+            using (ZipArchive archive = new ZipArchive(fileStream, ZipArchiveMode.Create))
+            {
+                ZipArchiveEntry entry = archive.CreateEntry("file.txt", CompressionLevel.NoCompression);
+                entry.ExternalAttributes = Convert.ToInt32(permissions, 8) << 16;
+                using Stream stream = entry.Open();
+                stream.Write("contents"u8);
+            }
+
+            SetFirstEntryVersionMadeByPlatform(archivePath, WindowsMadeByPlatform);
+
+            string expectedPermissions = GetExpectedPermissions(expectedPermissions: null);
+
+            using var tempFolder = new TempDirectory(GetTestFilePath());
+            ZipFile.ExtractToDirectory(archivePath, tempFolder.Path);
+
+            string filename = Path.Combine(tempFolder.Path, "file.txt");
+            Assert.True(File.Exists(filename));
+
+            Interop.Sys.FileStatus status;
+            Assert.Equal(0, Interop.Sys.Stat(filename, out status));
+            Assert.Equal(Convert.ToInt32(expectedPermissions, 8), status.Mode & 0xFFF);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        public void UnixExtractAppliesUnixPermissionBitsForUnixMadeEntries()
+        {
+            const string permissions = "777";
+
+            string archivePath = GetTestFilePath();
+            using (FileStream fileStream = new FileStream(archivePath, FileMode.CreateNew))
+            using (ZipArchive archive = new ZipArchive(fileStream, ZipArchiveMode.Create))
+            {
+                ZipArchiveEntry entry = archive.CreateEntry("file.txt", CompressionLevel.NoCompression);
+                entry.ExternalAttributes = Convert.ToInt32(permissions, 8) << 16;
+                using Stream stream = entry.Open();
+                stream.Write("contents"u8);
+            }
+
+            SetFirstEntryVersionMadeByPlatform(archivePath, UnixMadeByPlatform);
+
+            using var tempFolder = new TempDirectory(GetTestFilePath());
+            ZipFile.ExtractToDirectory(archivePath, tempFolder.Path);
+
+            string filename = Path.Combine(tempFolder.Path, "file.txt");
+            Assert.True(File.Exists(filename));
+
+            EnsureFilePermissions(filename, permissions);
         }
 
         private static string[] CreateFiles(string folderPath, string[] testPermissions)
@@ -173,6 +236,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_UnixExtractFilePermissionsCompat_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task UnixExtractFilePermissionsCompat(string zipName, string expectedPermissions, bool async)
         {
             expectedPermissions = GetExpectedPermissions(expectedPermissions);
@@ -210,7 +274,29 @@ namespace System.IO.Compression.Tests
             await Assert.ThrowsAsync<IOException>(() => CallZipFileCreateFromDirectory(async, subFolderPath, destPath));
         }
 
-        private static string GetExpectedPermissions(string expectedPermissions)
+        private static void SetFirstEntryVersionMadeByPlatform(string archivePath, byte madeByPlatform)
+        {
+            byte[] archiveBytes = File.ReadAllBytes(archivePath);
+            int endOfCentralDirectoryIndex = archiveBytes.AsSpan().LastIndexOf(new byte[] { 0x50, 0x4B, 0x05, 0x06 });
+            Assert.True(endOfCentralDirectoryIndex >= 0);
+
+            const int EndOfCentralDirectoryOffsetOfStartOfCentralDirectory = 16;
+            const int EndOfCentralDirectorySize = 22;
+            Assert.True(archiveBytes.Length >= endOfCentralDirectoryIndex + EndOfCentralDirectorySize);
+
+            int centralDirectoryHeaderIndex = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(
+                archiveBytes.AsSpan(endOfCentralDirectoryIndex + EndOfCentralDirectoryOffsetOfStartOfCentralDirectory, sizeof(int)));
+
+            Assert.True(centralDirectoryHeaderIndex >= 0);
+            Assert.True(archiveBytes.Length >= centralDirectoryHeaderIndex + 6);
+            Assert.Equal(new byte[] { 0x50, 0x4B, 0x01, 0x02 }, archiveBytes.AsSpan(centralDirectoryHeaderIndex, 4).ToArray());
+
+            // version made by is a little-endian ushort; upper byte is the platform.
+            archiveBytes[centralDirectoryHeaderIndex + 5] = madeByPlatform;
+            File.WriteAllBytes(archivePath, archiveBytes);
+        }
+
+        private static string GetExpectedPermissions(string? expectedPermissions)
         {
             using (var tempFolder = new TempDirectory())
             {

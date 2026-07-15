@@ -3,6 +3,8 @@
 
 using System;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem
 {
     /// <summary>
@@ -28,7 +30,7 @@ namespace Internal.TypeSystem
         public override bool IsDefaultConstructor => _wrappedMethod.IsDefaultConstructor;
         public override bool IsStaticConstructor => _wrappedMethod.IsStaticConstructor;
 
-        public override ReadOnlySpan<byte> Name => _wrappedMethod.Name;
+        public override Utf8Span Name => _wrappedMethod.Name;
 
         public override bool IsVirtual => _wrappedMethod.IsVirtual;
 
@@ -37,6 +39,8 @@ namespace Internal.TypeSystem
         public override bool IsAbstract => _wrappedMethod.IsAbstract;
 
         public override bool IsFinal => _wrappedMethod.IsFinal;
+
+        public override bool IsAsync => _wrappedMethod.IsAsync;
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {

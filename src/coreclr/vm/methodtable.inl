@@ -308,21 +308,26 @@ inline DWORD MethodTable::GetRank()
     if (GetFlag(enum_flag_Category_IfArrayThenSzArray))
         return 1;  // ELEMENT_TYPE_SZARRAY
     else
-        return dac_cast<PTR_ArrayClass>(GetClass())->GetRank();
+    {
+        // Multidim array: BaseSize = ARRAYBASE_BASESIZE + Rank * sizeof(DWORD) * 2
+        DWORD boundsSize = GetBaseSize() - ARRAYBASE_BASESIZE;
+        return boundsSize / (sizeof(DWORD) * 2);
+    }
 }
 
 //==========================================================================================
-inline BOOL MethodTable::IsTruePrimitive()
+inline bool MethodTable::IsTruePrimitive()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return GetFlag(enum_flag_Category_Mask) == enum_flag_Category_TruePrimitive;
 }
 
 //==========================================================================================
-inline void MethodTable::SetIsTruePrimitive()
+inline bool MethodTable::IsPrimitive()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    SetFlag(enum_flag_Category_TruePrimitive);
+    // enum_flag_Category_ElementTypeMask maps both Category_TruePrimitive and Category_Primitive here.
+    return GetFlag(enum_flag_Category_ElementTypeMask) == enum_flag_Category_Primitive;
 }
 
 //==========================================================================================
@@ -1339,7 +1344,7 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
     while (--numInterfaces);
 
     // Second scan, looking for the curiously recurring generic scenario
-    if (pInterface->HasInstantiation() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pInterface->GetInstantiation().ContainsAllOneType(this))
+    if (pInterface->HasInstantiation() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pInterface->GetInstantiation().ContainsAllOneType(this->GetSpecialInstantiationType()))
     {
         numInterfaces = GetNumInterfaces();
         pInfo = GetInterfaceMap();

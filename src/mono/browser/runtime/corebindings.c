@@ -116,12 +116,14 @@ void SystemInteropJS_AssemblyGetEntryPoint (char *assembly_name, int auto_insert
 {
 	assert (assembly_name);
 	*method_out = NULL;
+
+    MonoMethod *method = NULL;
+
 	MonoAssembly* assembly = _mono_wasm_assembly_load (assembly_name);
 	if(!assembly)
 		goto end;
 
 	MonoImage *image;
-	MonoMethod *method = NULL;
 
 	image = mono_assembly_get_image (assembly);
 	uint32_t entry = mono_image_get_entry_point (image);

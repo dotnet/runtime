@@ -9,6 +9,8 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem.Ecma
 {
     public sealed partial class EcmaField : FieldDesc, EcmaModule.IEntityHandleObject
@@ -61,7 +63,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override DefType OwningType
+        public override EcmaType OwningType
         {
             get
             {
@@ -73,7 +75,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return _type.EcmaModule;
+                return _type.Module;
             }
         }
 
@@ -267,7 +269,7 @@ namespace Internal.TypeSystem.Ecma
             return new ReadOnlySpan<byte>(_namePointer, _nameLength);
         }
 
-        public override unsafe ReadOnlySpan<byte> Name
+        public override unsafe Utf8Span Name
         {
             get
             {
@@ -293,7 +295,7 @@ namespace Internal.TypeSystem.Ecma
             if ((definition.Attributes & FieldAttributes.HasFieldMarshal) != 0)
             {
                 BlobReader marshalAsReader = reader.GetBlobReader(definition.GetMarshallingDescriptor());
-                EcmaSignatureParser parser = new EcmaSignatureParser(_type.EcmaModule, marshalAsReader, NotFoundBehavior.Throw);
+                EcmaSignatureParser parser = new EcmaSignatureParser(_type.Module, marshalAsReader, NotFoundBehavior.Throw);
                 return parser.ParseMarshalAsDescriptor();
             }
 

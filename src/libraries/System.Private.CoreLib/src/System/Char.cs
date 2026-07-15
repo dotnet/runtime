@@ -129,16 +129,22 @@ namespace System
             return m_value == obj;
         }
 
-        internal bool Equals(char right, StringComparison comparisonType)
+        /// <summary>
+        /// Returns a value that indicates whether the current instance and a specified character are equal using the specified comparison option.
+        /// </summary>
+        /// <param name="other">The character to compare with the current instance.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+        /// <returns><see langword="true"/> if the current instance and <paramref name="other"/> are equal; otherwise, <see langword="false"/>.</returns>
+        public bool Equals(char other, StringComparison comparisonType)
         {
             switch (comparisonType)
             {
                 case StringComparison.Ordinal:
-                    return Equals(right);
+                    return Equals(other);
                 default:
-                    ReadOnlySpan<char> leftCharsSlice = [this];
-                    ReadOnlySpan<char> rightCharsSlice = [right];
-                    return leftCharsSlice.Equals(rightCharsSlice, comparisonType);
+                    ReadOnlySpan<char> thisCharsSlice = [this];
+                    ReadOnlySpan<char> otherCharsSlice = [other];
+                    return thisCharsSlice.Equals(otherCharsSlice, comparisonType);
             }
         }
 
@@ -523,6 +529,14 @@ namespace System
         // Converts a character to upper-case for invariant culture.
         public static char ToUpperInvariant(char c) => TextInfo.ToUpperInvariant(c);
 
+        /// <summary>
+        /// Converts a character to uppercase using the casing rules used by
+        /// <see cref="StringComparison.OrdinalIgnoreCase"/> comparisons.
+        /// </summary>
+        /// <param name="c">The character to convert.</param>
+        /// <returns>The uppercase equivalent of <paramref name="c"/>.</returns>
+        public static char ToUpperOrdinal(char c) => TextInfo.ToUpperOrdinal(c);
+
         /*===================================ToLower====================================
         **
         ==============================================================================*/
@@ -551,6 +565,13 @@ namespace System
 
         // Converts a character to lower-case for invariant culture.
         public static char ToLowerInvariant(char c) => TextInfo.ToLowerInvariant(c);
+
+        /// <summary>
+        /// Converts a character to lowercase using ordinal (simple, one-to-one) casing rules.
+        /// </summary>
+        /// <param name="c">The character to convert.</param>
+        /// <returns>The lowercase equivalent of <paramref name="c"/>.</returns>
+        public static char ToLowerOrdinal(char c) => TextInfo.ToLowerOrdinal(c);
 
         //
         // IConvertible implementation
@@ -1208,6 +1229,9 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         static char IBinaryInteger<char>.LeadingZeroCount(char value) => (char)(BitOperations.LeadingZeroCount(value) - 16);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        static char IBinaryInteger<char>.Log10(char value) => (char)uint.Log10(value);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         static char IBinaryInteger<char>.PopCount(char value) => (char)BitOperations.PopCount(value);
 
@@ -1245,24 +1269,15 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(char))
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(char));
-
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<char>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = (char)BinaryPrimitives.ReadUInt16BigEndian(source.Slice(source.Length - sizeof(char)));
                 }
                 else
                 {
                     // We only have 1-byte so read it directly
-                    result = (char)sourceRef;
+                    result = (char)source[0];
                 }
             }
 
@@ -1295,22 +1310,15 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(char))
                 {
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<char>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = (char)BinaryPrimitives.ReadUInt16LittleEndian(source);
                 }
                 else
                 {
                     // We only have 1-byte so read it directly
-                    result = (char)sourceRef;
+                    result = (char)source[0];
                 }
             }
 
@@ -1965,6 +1973,45 @@ namespace System
         static bool INumberBase<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
+
+        static bool INumberBase<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
+        {
+            if (TryParse(s, out result))
+            {
+                charsConsumed = 1;
+                return true;
+            }
+
+            charsConsumed = 0;
+            return false;
+        }
+
+        static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
+        {
+            if (TryParse(s, out result))
+            {
+                charsConsumed = 1;
+                return true;
+            }
+
+            charsConsumed = 0;
+            return false;
+        }
+
+        static bool INumberBase<char>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out char result, out int bytesConsumed)
+        {
+            if (Rune.DecodeFromUtf8(utf8Text, out Rune rune, out bytesConsumed) != Buffers.OperationStatus.Done ||
+                bytesConsumed != utf8Text.Length ||
+                !rune.IsBmp)
+            {
+                result = '\0';
+                bytesConsumed = 0;
+                return false;
+            }
+
+            result = (char)rune.Value;
+            return true;
+        }
 
         //
         // IParsable

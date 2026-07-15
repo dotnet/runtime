@@ -54,6 +54,11 @@ namespace Mono.Linker
                 (md.SemanticsAttributes & MethodSemanticsAttributes.RemoveOn) != 0;
         }
 
+        public static bool IsRuntimeAsync(this MethodDefinition md)
+        {
+            return (md.ImplAttributes & (MethodImplAttributes)0x2000) == (MethodImplAttributes)0x2000;
+        }
+
         public static bool TryGetProperty(this MethodDefinition md, [NotNullWhen(true)] out PropertyDefinition? property)
         {
             property = null;

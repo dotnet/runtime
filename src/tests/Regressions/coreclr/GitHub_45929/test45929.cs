@@ -8,11 +8,13 @@ using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using TestLibrary;
 
 namespace test45929
 {
     public class Program
     {
+        [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
         [Fact]
         public static void TestEntryPoint()
         {

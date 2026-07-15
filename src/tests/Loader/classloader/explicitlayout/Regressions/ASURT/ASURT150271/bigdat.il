@@ -5,6 +5,7 @@
 .assembly extern xunit.core {}
 .assembly BIGDAT {}
 .assembly extern mscorlib{}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .module BIGDAT
 .class public 'BIGDAT'
 {
@@ -26,6 +27,8 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {string('needs triage') int32(2)}
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.OuterLoopAttribute::.ctor() = { }
     .entrypoint
             newobj      instance void BIGDAT/WS_TYPE::.ctor ()
             stsfld      class BIGDAT/WS_TYPE BIGDAT::WS_DATA

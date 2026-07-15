@@ -10,8 +10,6 @@ include asmconstants.inc
     option  casemap:none
     .code
 
-ifdef FEATURE_EH_FUNCLETS
-
 ; DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP);
 ; ESP based frame
 _CallEHFunclet@16 proc public
@@ -95,7 +93,5 @@ _CallEHFilterFunclet@16 proc public
     ret     16
 
 _CallEHFilterFunclet@16 endp
-
-endif ; FEATURE_EH_FUNCLETS
 
     end

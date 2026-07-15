@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
+using Internal.Text;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -23,7 +24,7 @@ namespace Internal.TypeSystem.Ecma
             if (attributeHandle.IsNil)
                 return null;
 
-            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.EcmaModule));
+            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
         }
 
         public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EcmaType This,
@@ -35,7 +36,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 if (IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
                 {
-                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.EcmaModule));
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
                 }
             }
         }
@@ -319,7 +320,7 @@ namespace Internal.TypeSystem.Ecma
             return new ReadOnlySpan<byte>(blobReader.CurrentPointer, blobReader.Length);
         }
 
-        public static unsafe bool StringEquals(this MetadataReader reader, StringHandle handle, ReadOnlySpan<byte> otherString)
+        public static unsafe bool StringEquals(this MetadataReader reader, StringHandle handle, Utf8Span otherString)
         {
             int stringOffset = reader.GetHeapOffset(handle);
 
@@ -333,9 +334,10 @@ namespace Internal.TypeSystem.Ecma
                 return false;
 
             // Compare characters
+            ReadOnlySpan<byte> otherSpan = otherString.AsSpan();
             for (int i = 0; i < otherString.Length; i++)
             {
-                if (otherString[i] != *(currentChar++))
+                if (otherSpan[i] != *(currentChar++))
                     return false;
             }
 

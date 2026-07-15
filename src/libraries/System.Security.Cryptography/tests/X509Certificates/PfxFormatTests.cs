@@ -1089,27 +1089,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     X509Certificate2[] expectedOrder = { first, second };
 
-                    Action<X509Certificate2> followup = CheckKeyConsistency;
-
-                    // For unknown reasons, CheckKeyConsistency on this test fails
-                    // on Windows 7 with an Access Denied in all variations for
-                    // Collections, and in invertCertOrder: true for Single.
-                    //
-                    // Obviously this hit some sort of weird corner case in the Win7
-                    // loader, but it's not important to the test.
-
-                    if (OperatingSystem.IsWindows() &&
-                        !PlatformDetection.IsWindows8xOrLater)
-                    {
-                        followup = null;
-                    }
-
                     ReadMultiPfx(
                         pfxBytes,
                         pw,
                         first,
                         expectedOrder,
-                        followup);
+                        CheckKeyConsistency);
                 }
             }
         }
@@ -1196,34 +1181,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     X509Certificate2[] expectedOrder = { first, second };
 
-                    Action<X509Certificate2> followup = CheckKeyConsistency;
-
-                    // For unknown reasons, CheckKeyConsistency on this test fails
-                    // on Windows 7 with an Access Denied in all variations for
-                    // Collections, and in invertCertOrder: true for Single.
-                    //
-                    // Obviously this hit some sort of weird corner case in the Win7
-                    // loader, but it's not important to the test.
-
-                    if (OperatingSystem.IsWindows() &&
-                        !PlatformDetection.IsWindows8xOrLater)
-                    {
-                        followup = null;
-                    }
-
                     ReadMultiPfx(
                         pfxBytes,
                         "",
                         first,
                         expectedOrder,
-                        followup);
+                        CheckKeyConsistency);
 
                     ReadMultiPfx(
                         pfxBytes,
                         null,
                         first,
                         expectedOrder,
-                        followup);
+                        CheckKeyConsistency);
                 }
             }
         }

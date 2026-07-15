@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -448,5 +449,80 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat(sbyte i, string format, IFormatProvider provider, string expected) =>
             NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        {
+            yield return new object[] { "123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (sbyte)123, 3 };
+            yield return new object[] { "12xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (sbyte)12, 2 };
+            yield return new object[] { "-123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (sbyte)-123, 4 };
+            yield return new object[] { "+127xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (sbyte)127, 4 };
+            yield return new object[] { "-128abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (sbyte)-128, 4 };
+            yield return new object[] { "7Fxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, (sbyte)0x7F, 2 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, sbyte expectedValue, int expectedCharsConsumed)
+        {
+            sbyte result;
+            int charsConsumed;
+
+            Assert.True(NumberBaseHelper<sbyte>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            Assert.True(NumberBaseHelper<sbyte>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(NumberBaseHelper<sbyte>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(expectedValue, result);
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        {
+            yield return new object[] { "", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "   ", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "!!!", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { ".123", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+
+            // Overflow of the leading valid digits
+            yield return new object[] { "128abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "-129xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "999abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+
+            // Invalid hex/binary starting characters
+            yield return new object[] { "Gxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "2abc", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        {
+            sbyte result;
+            int charsConsumed;
+
+            Assert.False(NumberBaseHelper<sbyte>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, charsConsumed);
+
+            Assert.False(NumberBaseHelper<sbyte>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, charsConsumed);
+
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.False(NumberBaseHelper<sbyte>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, bytesConsumed);
+        }
     }
 }

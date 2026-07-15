@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace System.Formats.Cbor
 {
@@ -17,73 +16,6 @@ namespace System.Formats.Cbor
         private const long UnixEpochTicks = 719162L /*Number of days from 1/1/0001 to 12/31/1969*/ * 10000 * 1000 * 60 * 60 * 24; /* Ticks per day.*/
 
         public static readonly DateTimeOffset UnixEpoch = new DateTimeOffset(UnixEpochTicks, TimeSpan.Zero);
-
-        public static unsafe int GetBytes(Encoding encoding, ReadOnlySpan<char> source, Span<byte> destination)
-        {
-            if (source.IsEmpty || destination.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (char* charPtr = source)
-            fixed (byte* bytePtr = destination)
-            {
-                return encoding.GetBytes(charPtr, source.Length, bytePtr, destination.Length);
-            }
-        }
-
-        public static unsafe int GetByteCount(Encoding encoding, ReadOnlySpan<char> chars)
-        {
-            if (chars.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (char* charPtr = chars)
-            {
-                return encoding.GetByteCount(charPtr, chars.Length);
-            }
-        }
-
-        public static unsafe int GetChars(Encoding encoding, ReadOnlySpan<byte> source, Span<char> destination)
-        {
-            if (source.IsEmpty || destination.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (byte* bytePtr = source)
-            fixed (char* charPtr = destination)
-            {
-                return encoding.GetChars(bytePtr, source.Length, charPtr, destination.Length);
-            }
-        }
-
-        public static unsafe int GetCharCount(Encoding encoding, ReadOnlySpan<byte> source)
-        {
-            if (source.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (byte* bytePtr = source)
-            {
-                return encoding.GetCharCount(bytePtr, source.Length);
-            }
-        }
-
-        public static unsafe string GetString(Encoding encoding, ReadOnlySpan<byte> bytes)
-        {
-            if (bytes.IsEmpty)
-            {
-                return string.Empty;
-            }
-
-            fixed (byte* bytePtr = bytes)
-            {
-                return encoding.GetString(bytePtr, bytes.Length);
-            }
-        }
 
         public static BigInteger CreateBigIntegerFromUnsignedBigEndianBytes(byte[] bigEndianBytes)
         {
@@ -159,71 +91,27 @@ namespace System.Formats.Cbor
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ushort ReadHalfBigEndian(ReadOnlySpan<byte> source)
-        {
-            ushort value = BitConverter.IsLittleEndian ?
-                BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<ushort>(source)) :
-                MemoryMarshal.Read<ushort>(source);
-
-            return value;
-        }
+            => BinaryPrimitives.ReadUInt16BigEndian(source);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteHalfBigEndian(Span<byte> destination, ushort value)
-        {
-            if (BitConverter.IsLittleEndian)
-            {
-                ushort tmp = BinaryPrimitives.ReverseEndianness(value);
-                MemoryMarshal.Write(destination, ref tmp);
-            }
-            else
-            {
-                MemoryMarshal.Write(destination, ref value);
-            }
-        }
+            => BinaryPrimitives.WriteUInt16BigEndian(destination, value);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ReadSingleBigEndian(ReadOnlySpan<byte> source)
-        {
-            return BitConverter.IsLittleEndian ?
-                Int32BitsToSingle(BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<int>(source))) :
-                MemoryMarshal.Read<float>(source);
-        }
+            => Int32BitsToSingle(BinaryPrimitives.ReadInt32BigEndian(source));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSingleBigEndian(Span<byte> destination, float value)
-        {
-            if (BitConverter.IsLittleEndian)
-            {
-                int tmp = BinaryPrimitives.ReverseEndianness(SingleToInt32Bits(value));
-                MemoryMarshal.Write(destination, ref tmp);
-            }
-            else
-            {
-                MemoryMarshal.Write(destination, ref value);
-            }
-        }
+            => BinaryPrimitives.WriteInt32BigEndian(destination, SingleToInt32Bits(value));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReadDoubleBigEndian(ReadOnlySpan<byte> source)
-        {
-            return BitConverter.IsLittleEndian ?
-                BitConverter.Int64BitsToDouble(BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<long>(source))) :
-                MemoryMarshal.Read<double>(source);
-        }
+            => BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64BigEndian(source));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteDoubleBigEndian(Span<byte> destination, double value)
-        {
-            if (BitConverter.IsLittleEndian)
-            {
-                long tmp = BinaryPrimitives.ReverseEndianness(BitConverter.DoubleToInt64Bits(value));
-                MemoryMarshal.Write(destination, ref tmp);
-            }
-            else
-            {
-                MemoryMarshal.Write(destination, ref value);
-            }
-        }
+            => BinaryPrimitives.WriteInt64BigEndian(destination, BitConverter.DoubleToInt64Bits(value));
 
         internal static uint SingleToUInt32Bits(float value)
             => (uint)SingleToInt32Bits(value);

@@ -100,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
                     await connection.SendResponseAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
                 }
                 // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
-                catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
+                catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode is SocketError.Shutdown or SocketError.ConnectionReset or SocketError.ConnectionAborted) { }
 #if !WINHTTPHANDLER_TEST
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) { }
 #endif
@@ -165,7 +165,7 @@ namespace System.Net.Http.Functional.Tests
                     await connection.SendResponseAsync(headers: headers);
                 }
                 // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
-                catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
+                catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode is SocketError.Shutdown or SocketError.ConnectionReset or SocketError.ConnectionAborted) { }
 #if !WINHTTPHANDLER_TEST
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
 #endif

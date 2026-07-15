@@ -8,6 +8,9 @@
 // Debug: Prints 0 line(s)
 // Release: Prints 1 line(s)
 
+
+namespace Runtime_116159;
+
 using System;
 using Xunit;
 

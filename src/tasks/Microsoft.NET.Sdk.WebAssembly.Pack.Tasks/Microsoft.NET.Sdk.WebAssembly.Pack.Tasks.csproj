@@ -2,25 +2,18 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
-    <NoWarn>$(NoWarn),CA1050,CA1850,CA1845,CA1859;CA1866,NU5128</NoWarn>
+    <NoWarn>$(NoWarn),CA1050,CA1850,CA1845,CA1859,CA1866,CS8632,NU5128</NoWarn>
     <RootNamespace>Microsoft.NET.Sdk.WebAssembly</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS8632</NoWarn>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
-
-  <ItemDefinitionGroup>
-    <PackageReference>
-      <PrivateAssets>All</PrivateAssets>
-      <Publish>true</Publish>
-    </PackageReference>
-  </ItemDefinitionGroup>
 
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\WasmAppBuilder\WebcilConverter.cs" />
     <Compile Include="..\WasmAppBuilder\LogAdapter.cs" />
-    
+
     <ProjectReference Include="..\Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
   </ItemGroup>
 

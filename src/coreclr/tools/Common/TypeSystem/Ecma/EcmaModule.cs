@@ -9,6 +9,8 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 
+using Internal.Text;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Ecma
@@ -101,7 +103,7 @@ namespace Internal.TypeSystem.Ecma
                         {
                             MethodDefinitionHandle methodDefinitionHandle = (MethodDefinitionHandle)handle;
                             TypeDefinitionHandle typeDefinitionHandle = _module._metadataReader.GetMethodDefinition(methodDefinitionHandle).GetDeclaringType();
-                            EcmaType type = (EcmaType)_module.GetObject(typeDefinitionHandle, NotFoundBehavior.Throw);
+                            EcmaType type = _module.GetType(typeDefinitionHandle);
                             item = new EcmaMethod(type, methodDefinitionHandle);
                         }
                         break;
@@ -110,7 +112,7 @@ namespace Internal.TypeSystem.Ecma
                         {
                             FieldDefinitionHandle fieldDefinitionHandle = (FieldDefinitionHandle)handle;
                             TypeDefinitionHandle typeDefinitionHandle = _module._metadataReader.GetFieldDefinition(fieldDefinitionHandle).GetDeclaringType();
-                            EcmaType type = (EcmaType)_module.GetObject(typeDefinitionHandle, NotFoundBehavior.Throw);
+                            EcmaType type = _module.GetType(typeDefinitionHandle);
                             item = new EcmaField(type, fieldDefinitionHandle);
                         }
                         break;
@@ -315,7 +317,7 @@ namespace Internal.TypeSystem.Ecma
             return bucketHeads;
         }
 
-        private TypeDefinitionHandle FindDefinedType(int hashCode, ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name)
+        private TypeDefinitionHandle FindDefinedType(int hashCode, Utf8Span nameSpace, Utf8Span name)
         {
             MetadataReader reader = _metadataReader;
 
@@ -366,7 +368,7 @@ namespace Internal.TypeSystem.Ecma
             return bucketHeads;
         }
 
-        private ExportedTypeHandle FindExportedType(int hashCode, ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name)
+        private ExportedTypeHandle FindExportedType(int hashCode, Utf8Span nameSpace, Utf8Span name)
         {
             MetadataReader reader = _metadataReader;
 
@@ -387,7 +389,7 @@ namespace Internal.TypeSystem.Ecma
             return default;
         }
 
-        public sealed override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior)
+        public sealed override object GetType(Utf8Span nameSpace, Utf8Span name, NotFoundBehavior notFoundBehavior)
         {
             int hashCode = VersionResilientHashCode.NameHashCode(nameSpace, name);
 
@@ -458,6 +460,11 @@ namespace Internal.TypeSystem.Ecma
             return type;
         }
 
+        public EcmaType GetType(TypeDefinitionHandle handle)
+        {
+            return (EcmaType)GetType((EntityHandle)handle);
+        }
+
         public MethodDesc GetMethod(EntityHandle handle)
         {
             MethodDesc method = GetObject(handle, NotFoundBehavior.Throw) as MethodDesc;
@@ -466,12 +473,22 @@ namespace Internal.TypeSystem.Ecma
             return method;
         }
 
+        public EcmaMethod GetMethod(MethodDefinitionHandle handle)
+        {
+            return (EcmaMethod)GetMethod((EntityHandle)handle);
+        }
+
         public FieldDesc GetField(EntityHandle handle)
         {
             FieldDesc field = GetObject(handle, NotFoundBehavior.Throw) as FieldDesc;
             if (field == null)
                 ThrowHelper.ThrowBadImageFormatException();
             return field;
+        }
+
+        public EcmaField GetField(FieldDefinitionHandle handle)
+        {
+            return (EcmaField)GetField((EntityHandle)handle);
         }
 
         internal EcmaField GetField(FieldDefinitionHandle handle, EcmaType owningType)
@@ -673,14 +690,14 @@ namespace Internal.TypeSystem.Ecma
             else
             if (resolutionScope is MetadataType)
             {
-                string typeName = _metadataReader.GetString(typeReference.Name);
+                ReadOnlySpan<byte> typeName = _metadataReader.GetStringBytes(typeReference.Name);
                 if (!typeReference.Namespace.IsNil)
-                    typeName = _metadataReader.GetString(typeReference.Namespace) + "." + typeName;
+                    typeName = _metadataReader.GetStringBytes(typeReference.Namespace).Append("."u8, typeName);
                 MetadataType result = ((MetadataType)(resolutionScope)).GetNestedType(typeName);
                 if (result != null)
                     return result;
 
-                return ResolutionFailure.GetTypeLoadResolutionFailure(typeName, ((MetadataType)resolutionScope).Module);
+                return ResolutionFailure.GetTypeLoadResolutionFailure(Encoding.UTF8.GetString(typeName), ((MetadataType)resolutionScope).Module);
             }
 
             // TODO
@@ -721,10 +738,10 @@ namespace Internal.TypeSystem.Ecma
             else
             if (implementation is MetadataType type)
             {
-                string name = _metadataReader.GetString(exportedType.Name);
+                ReadOnlySpan<byte> name = _metadataReader.GetStringBytes(exportedType.Name);
                 var nestedType = type.GetNestedType(name);
                 if (nestedType == null)
-                    return ResolutionFailure.GetTypeLoadResolutionFailure(name, this);
+                    return ResolutionFailure.GetTypeLoadResolutionFailure(Encoding.UTF8.GetString(name), this);
                 return nestedType;
             }
             else if (implementation is ResolutionFailure)
@@ -738,21 +755,21 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public sealed override IEnumerable<MetadataType> GetAllTypes()
+        public sealed override IEnumerable<EcmaType> GetAllTypes()
         {
             foreach (var typeDefinitionHandle in _metadataReader.TypeDefinitions)
             {
-                yield return (MetadataType)GetType(typeDefinitionHandle);
+                yield return GetType(typeDefinitionHandle);
             }
         }
 
-        public sealed override MetadataType GetGlobalModuleType()
+        public sealed override EcmaType GetGlobalModuleType()
         {
             int typeDefinitionsCount = _metadataReader.TypeDefinitions.Count;
             if (typeDefinitionsCount == 0)
                 return null;
 
-            return (MetadataType)GetType(MetadataTokens.EntityHandle(0x02000001 /* COR_GLOBAL_PARENT_TOKEN */));
+            return (EcmaType)GetType(MetadataTokens.EntityHandle(0x02000001 /* COR_GLOBAL_PARENT_TOKEN */));
         }
 
         public string GetUserString(UserStringHandle userStringHandle)

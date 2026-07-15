@@ -21,9 +21,9 @@ namespace System.Diagnostics.Metrics
 
         public CircularBufferBuckets(int capacity)
         {
-            if (capacity < 1)
+            if (capacity < 2)
             {
-                throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity must be greater than 0.");
+                throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity must be at least 2.");
             }
 
             Capacity = capacity;
@@ -283,11 +283,7 @@ namespace System.Diagnostics.Metrics
         {
             if (_trait is not null)
             {
-#if NET
                 Array.Clear(_trait);
-#else
-                Array.Clear(_trait, 0, _trait.Length);
-#endif
             }
 
             _begin = 0;

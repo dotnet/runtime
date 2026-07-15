@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -652,6 +653,52 @@ namespace System
             return ConsolePal.OpenStandardError();
         }
 
+        /// <summary>
+        /// Gets the standard input handle.
+        /// </summary>
+        /// <returns>A <see cref="SafeFileHandle"/> representing the standard input handle.</returns>
+        /// <remarks>
+        /// The returned handle does not own the underlying resource, so disposing it will not close the standard input handle.
+        /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static SafeFileHandle OpenStandardInputHandle()
+        {
+            return ConsolePal.OpenStandardInputHandle();
+        }
+
+        /// <summary>
+        /// Gets the standard output handle.
+        /// </summary>
+        /// <returns>A <see cref="SafeFileHandle"/> representing the standard output handle.</returns>
+        /// <remarks>
+        /// The returned handle does not own the underlying resource, so disposing it will not close the standard output handle.
+        /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static SafeFileHandle OpenStandardOutputHandle()
+        {
+            return ConsolePal.OpenStandardOutputHandle();
+        }
+
+        /// <summary>
+        /// Gets the standard error handle.
+        /// </summary>
+        /// <returns>A <see cref="SafeFileHandle"/> representing the standard error handle.</returns>
+        /// <remarks>
+        /// The returned handle does not own the underlying resource, so disposing it will not close the standard error handle.
+        /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static SafeFileHandle OpenStandardErrorHandle()
+        {
+            return ConsolePal.OpenStandardErrorHandle();
+        }
+
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
@@ -813,6 +860,10 @@ namespace System
             Out.WriteLine(value);
         }
 
+        /// <summary>
+        /// Writes the specified read-only span of characters, followed by the current line terminator, to the standard output stream.
+        /// </summary>
+        /// <param name="value">The span of characters to write.</param>
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void WriteLine(ReadOnlySpan<char> value)
         {
@@ -975,6 +1026,10 @@ namespace System
             Out.Write(value);
         }
 
+        /// <summary>
+        /// Writes the specified read-only span of characters to the standard output stream.
+        /// </summary>
+        /// <param name="value">The span of characters to write.</param>
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void Write(ReadOnlySpan<char> value)
         {

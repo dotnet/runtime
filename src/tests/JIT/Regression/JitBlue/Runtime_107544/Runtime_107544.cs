@@ -10,6 +10,9 @@
 // 
 //     File: /Users/runner/work/1/s/src/coreclr/jit/morph.cpp Line: 11580
 // 
+
+namespace Runtime_107544;
+
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;

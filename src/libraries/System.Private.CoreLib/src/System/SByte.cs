@@ -160,19 +160,13 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out sbyte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-
-            if (s is null)
-            {
-                result = 0;
-                return false;
-            }
-            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out sbyte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         //
@@ -287,6 +281,16 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static sbyte LeadingZeroCount(sbyte value) => (sbyte)(BitOperations.LeadingZeroCount((byte)value) - 24);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        public static sbyte Log10(sbyte value)
+        {
+            if (value < 0)
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+            return (sbyte)uint.Log10((uint)value);
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         public static sbyte PopCount(sbyte value) => (sbyte)BitOperations.PopCount((byte)value);
 
@@ -345,7 +349,7 @@ namespace System
                 }
 
                 // We only have 1-byte so read it directly
-                result = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(source), source.Length - sizeof(sbyte));
+                result = (sbyte)source[source.Length - sizeof(sbyte)];
             }
 
             value = result;
@@ -398,7 +402,7 @@ namespace System
                 }
 
                 // We only have 1-byte so read it directly
-                result = (sbyte)MemoryMarshal.GetReference(source);
+                result = (sbyte)source[0];
             }
 
             value = result;
@@ -584,24 +588,17 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static sbyte CopySign(sbyte value, sbyte sign)
         {
-            sbyte absValue = value;
+            // signMask is all-bits-set when value and sign differ in sign, in which case value needs to be negated.
+            int signMask = (value ^ sign) >> 31;
+            sbyte result = (sbyte)((value ^ signMask) - signMask);
 
-            if (absValue < 0)
+            if ((sign >= 0) && (result < 0))
             {
-                absValue = (sbyte)(-absValue);
+                // value was sbyte.MinValue and a non-negative result was requested, which is unrepresentable.
+                Math.ThrowNegateTwosCompOverflow();
             }
 
-            if (sign >= 0)
-            {
-                if (absValue < 0)
-                {
-                    Math.ThrowNegateTwosCompOverflow();
-                }
-
-                return absValue;
-            }
-
-            return (sbyte)(-absValue);
+            return result;
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
@@ -1263,6 +1260,27 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        static bool INumberBase<sbyte>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out sbyte result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        static bool INumberBase<sbyte>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out sbyte result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        static bool INumberBase<sbyte>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out sbyte result, out int bytesConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
+        }
+
         //
         // IParsable
         //
@@ -1342,7 +1360,7 @@ namespace System
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out sbyte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />

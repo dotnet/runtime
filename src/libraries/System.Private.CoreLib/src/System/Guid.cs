@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 using System.Text;
@@ -345,6 +346,11 @@ namespace System
             return result.ToGuid();
         }
 
+        /// <summary>
+        /// Parses the specified sequence of UTF-8 encoded bytes and returns a new <see cref="Guid"/>.
+        /// </summary>
+        /// <param name="utf8Text">A span containing the UTF-8 encoded representation of the GUID to parse.</param>
+        /// <returns>The parsed <see cref="Guid"/>.</returns>
         public static Guid Parse(ReadOnlySpan<byte> utf8Text)
         {
             var result = new GuidResult(GuidParseThrowStyle.AllButOverflow);
@@ -380,6 +386,12 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Tries to parse the specified sequence of UTF-8 encoded bytes as a GUID.
+        /// </summary>
+        /// <param name="utf8Text">A span containing the UTF-8 encoded representation of the GUID to parse.</param>
+        /// <param name="result">When this method returns, contains the parsed <see cref="Guid"/>, if the parse succeeded; otherwise, the default value.</param>
+        /// <returns><see langword="true"/> if the parse operation succeeded; otherwise, <see langword="false"/>.</returns>
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, out Guid result)
         {
             var parseResult = new GuidResult(GuidParseThrowStyle.None);
@@ -579,7 +591,7 @@ namespace System
                                 result._fg = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
 
                                 // Unlike the other components, this one never allowed 0x or +, so we can parse it as straight hex.
-                                if (Number.TryParseBinaryIntegerHexNumberStyle(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _h, _i, _j, _k
+                                if (Number.TryParseBinaryIntegerHexOrBinaryNumberStyle<TChar, uint, Number.HexParser<uint>>(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, out uintTmp, out _) == Number.ParsingStatus.OK) // _h, _i, _j, _k
                                 {
                                     result._hijk = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(uintTmp) : uintTmp;
                                     return true;
@@ -819,14 +831,13 @@ namespace System
         {
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
             Debug.Assert(lookup.Length == 256);
-            int upper = (sbyte)lookup[byte.CreateTruncating(ch1)];
-            int lower = (sbyte)lookup[byte.CreateTruncating(ch2)];
-            int result = (upper << 4) | lower;
 
-            uint c1 = TChar.CastToUInt32(ch1);
-            uint c2 = TChar.CastToUInt32(ch2);
-            // Result will be negative if ch1 or/and ch2 are greater than 0xFF
-            result = (c1 | c2) >> 8 == 0 ? result : -1;
+            uint c1 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch1) : Math.Min(TChar.CastToUInt32(ch1), 0x7F);
+            uint c2 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch2) : Math.Min(TChar.CastToUInt32(ch2), 0x7F);
+            int upper = (sbyte)lookup[(int)c1];
+            int lower = (sbyte)lookup[(int)c2];
+
+            int result = (upper << 4) | lower;
             invalidIfNegative |= result;
             return (byte)result;
         }
@@ -890,9 +901,8 @@ namespace System
             {
                 ReadOnlySpan<char> charSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(str);
                 // Find the first whitespace character. If there is none, just return the input.
-                int i;
-                for (i = 0; i < charSpan.Length && !char.IsWhiteSpace(charSpan[i]); i++) ;
-                if (i == charSpan.Length)
+                int i = charSpan.IndexOfAnyWhiteSpace();
+                if (i < 0)
                 {
                     return str;
                 }
@@ -1336,7 +1346,7 @@ namespace System
                 }
                 flags >>= 8;
 
-                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
+                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian)
                 {
                     // Vectorized implementation for D, N, P and B formats:
                     // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
@@ -1504,9 +1514,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static (Vector128<byte>, Vector128<byte>, Vector128<byte>) FormatGuidVector128Utf8(Guid value, bool useDashes)
         {
-            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
+            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian);
             // Vectorized implementation for D, N, P and B formats:
             // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
 

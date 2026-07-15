@@ -7,6 +7,7 @@ namespace NetClient
     using System;
     using System.Drawing;
     using System.Globalization;
+    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
 
@@ -19,7 +20,7 @@ namespace NetClient
     {
         static void Validate_Numeric_In_ReturnByRef()
         {
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
 
             byte b1 = 1;
             byte b2 = b1;
@@ -74,7 +75,7 @@ namespace NetClient
 
         static void Validate_Float_In_ReturnAndUpdateByRef()
         {
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
 
             float a = .1f;
             float b = .2f;
@@ -91,7 +92,7 @@ namespace NetClient
 
         static void Validate_Double_In_ReturnAndUpdateByRef()
         {
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
 
             double a = .1;
             double b = .2;
@@ -114,7 +115,7 @@ namespace NetClient
 
         static void Validate_Exception()
         {
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
 
             int errorCode = 1127;
             string resultString = errorCode.ToString("x");
@@ -174,7 +175,7 @@ namespace NetClient
         static void Validate_StructNotSupported()
         {
             Console.WriteLine($"IDispatch with structs not supported...");
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
 
             var input = new HFA_4() { x = 1f, y = 2f, z = 3f, w = 4f };
             Assert.Throws<NotSupportedException>(() => dispatchTesting.DoubleHVAValues(ref input));
@@ -182,7 +183,7 @@ namespace NetClient
 
         static void Validate_LCID_Marshaled()
         {
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
             CultureInfo oldCulture = CultureInfo.CurrentCulture;
             CultureInfo newCulture = new CultureInfo("es-ES", false);
             try
@@ -200,7 +201,7 @@ namespace NetClient
 
         static void Validate_Enumerator()
         {
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
             var expected = System.Linq.Enumerable.Range(0, 10);
 
             {
@@ -251,7 +252,7 @@ namespace NetClient
 
         static void Validate_ValueCoerce_ReturnToManaged()
         {
-            var dispatchCoerceTesting = (DispatchCoerceTesting)new DispatchCoerceTestingClass();
+            var dispatchCoerceTesting = new DispatchCoerceTesting();
 
             Console.WriteLine($"Calling {nameof(DispatchCoerceTesting.ReturnToManaged)} ...");
 
@@ -346,11 +347,37 @@ namespace NetClient
             Assert.Equal("True", dispatchCoerceTesting.BoolToString());
         }
 
+        static void Validate_Sum_IntArray_SafeArray()
+        {
+            var dispatchTesting = new DispatchTesting();
+
+            int[] data = [1, 2, 3, 4, 5];
+            int expectedSum = data.Sum();
+
+            Console.WriteLine($"Calling {nameof(IDispatchTesting.Sum_IntArray_SafeArray)} ...");
+            int sum = dispatchTesting.Sum_IntArray_SafeArray(data);
+            Console.WriteLine($"Call to {nameof(IDispatchTesting.Sum_IntArray_SafeArray)} complete: sum = {sum}");
+            Assert.Equal(expectedSum, sum);
+        }
+
+        static void Validate_GetDispId_Methods()
+        {
+            var dispatchTesting = new DispatchTesting();
+
+            Console.WriteLine($"Calling {nameof(DispatchTesting.GetDispIdAsString)} ...");
+            string result1 = dispatchTesting.GetDispIdAsString();
+            Assert.Equal("1000", result1);
+
+            Console.WriteLine($"Calling {nameof(DispatchTesting.GetDispIdAsString2)} ...");
+            string result2 = dispatchTesting.GetDispIdAsString2();
+            Assert.Equal("1001", result2);
+        }
+
         [Fact]
         public static int TestEntryPoint()
         {
             // RegFree COM is not supported on Windows Nano
-            if (Utilities.IsWindowsNanoServer)
+            if (Utilities.IsWindowsNanoServer || Utilities.IsCoreClrInterpreter)
             {
                 return 100;
             }
@@ -365,6 +392,8 @@ namespace NetClient
                 Validate_LCID_Marshaled();
                 Validate_Enumerator();
                 Validate_ValueCoerce_ReturnToManaged();
+                Validate_Sum_IntArray_SafeArray();
+                Validate_GetDispId_Methods();
             }
             catch (Exception e)
             {

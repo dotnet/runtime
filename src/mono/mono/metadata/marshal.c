@@ -3474,7 +3474,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 	}
 
 	if (attr != NULL) {
-		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, error);
+		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (method->klass), attr->ctor, attr->data, attr->data_size, error);
 		mono_error_assert_ok (error);
 		for (int i = 0; i < decoded_args->named_args_num; ++i) {
 			if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
@@ -6022,7 +6022,7 @@ mono_marshal_load_standard_layout_type_info(MonoClass* klass, MonoMarshalType* i
 					if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
 						break;
 					else
-						size = initial_size; // failure occured during AOT compilation, continue execution
+						size = initial_size; // failure occurred during AOT compilation, continue execution
 				} else {
 					mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds, abnormally large.");
 					break;

@@ -30,10 +30,15 @@ struct HijackArgs
 {
 };
 
-inline LPVOID STDCALL GetCurrentSP()
+// Reads the wasm __stack_pointer global (the C stack pointer that LLVM
+// maintains). Shared by browser and WASI: wasi-sdk has no
+// emscripten_stack_get_current() equivalent, and reading the global directly
+// works on both. Naked function: the body is exactly the emitted instructions.
+static __attribute__((naked)) void* GetCurrentSP()
 {
-    _ASSERTE("The function is not implemented on wasm, it lacks registers");
-    return nullptr;
+    __asm__(
+        "global.get __stack_pointer\n"
+        "return\n");
 }
 
 extern PCODE GetPreStubEntryPoint();
@@ -66,9 +71,10 @@ struct ArgumentRegisters {
 #define NUM_ARGUMENT_REGISTERS 0
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
 
-#define ENREGISTERED_RETURNTYPE_MAXSIZE         16  // not sure here, 16 bytes is v128
+#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 8    // bytes
+#define ENREGISTERED_RETURNTYPE_MAXSIZE         16   // bytes, so that v128 can be returned without retbuff
 
-#define STACKWALK_CONTROLPC_ADJUST_OFFSET 1
+#define STACKWALK_CONTROLPC_ADJUST_OFFSET 2
 
 class StubLinkerCPU : public StubLinker
 {
@@ -110,7 +116,7 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return context->InterpreterFP;
 }
 
-#define ENUM_CALLEE_SAVED_REGISTERS()
+#define ENUM_CALLEE_SAVED_REGISTERS() CALLEE_SAVED_REGISTER(InterpreterFP)
 
 #define ENUM_FP_CALLEE_SAVED_REGISTERS()
 
@@ -126,26 +132,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 {
     // no-op on wasm
     return true;
-}
-
-//
-// On IA64 back to back jumps should be separated by a nop bundle to get
-// the best performance from the hardware's branch prediction logic.
-// For all other platforms back to back jumps don't require anything special
-// That is why we have these two wrapper functions that call emitJump and decodeJump
-//
-
-//------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    _ASSERTE("emitBackToBackJump is not implemented on wasm");
-}
-
-//------------------------------------------------------------------------
-inline PCODE decodeBackToBackJump(PCODE pBuffer)
-{
-    _ASSERTE("decodeBackToBackJump is not implemented on wasm");
-    return 0;
 }
 
 FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue, int64_t iComparand)
@@ -175,5 +161,7 @@ inline TADDR GetSecondArgReg(T_CONTEXT *context)
     PORTABILITY_ASSERT("GetSecondArgReg is not implemented on wasm");
     return 0;
 }
+
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC);
 
 #endif // __cgenwasm_h__

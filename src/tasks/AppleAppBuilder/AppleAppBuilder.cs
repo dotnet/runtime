@@ -159,7 +159,9 @@ public class AppleAppBuilderTask : Task
     public bool InvariantGlobalization { get; set; }
 
     /// <summary>
-    /// Forces the runtime to use hybrid(icu files + native functions) mode
+    /// Adds the legacy <c>HYBRID_GLOBALIZATION</c> preprocessor define to the generated native Xcode project.
+    /// This property does not control Apple mobile globalization; Hybrid mode is always used unless
+    /// <see cref="InvariantGlobalization"/> is enabled.
     /// </summary>
     public bool HybridGlobalization { get; set; }
 
@@ -342,7 +344,7 @@ public class AppleAppBuilderTask : Task
             {
                 extraLinkerArgs.Add("-rpath @executable_path");
             }
-            shouldStaticLink = true;
+            shouldStaticLink = false;
         }
 
         var generator = new Xcode(Log, TargetOS, Arch);

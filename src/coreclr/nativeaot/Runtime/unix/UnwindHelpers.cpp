@@ -4,6 +4,7 @@
 #include "common.h"
 #include "daccess.h"
 #include "rhassert.h"
+#include <minipal/utils.h>
 
 #define UNW_STEP_SUCCESS 1
 #define UNW_STEP_END     0
@@ -535,6 +536,8 @@ void Registers_REGDISPLAY::setFloatRegister(int num, unw_fpreg_t value)
 // Shim that implements methods required by libunwind over REGDISPLAY
 struct Registers_REGDISPLAY : REGDISPLAY
 {
+    typedef uint64_t reg_t;
+
     inline static int  getArch() { return libunwind::REGISTERS_ARM64; }
     static constexpr int lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM64; }
 

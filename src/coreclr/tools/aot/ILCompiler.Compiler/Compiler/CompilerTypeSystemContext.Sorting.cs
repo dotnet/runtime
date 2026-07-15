@@ -40,17 +40,6 @@ namespace ILCompiler
             }
         }
 
-        internal partial class ValueTypeInstanceMethodWithHiddenParameter
-        {
-            protected override int ClassCode => 2131875345;
-
-            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
-            {
-                var otherMethod = (ValueTypeInstanceMethodWithHiddenParameter)other;
-                return comparer.Compare(_methodRepresented, otherMethod._methodRepresented);
-            }
-        }
-
         private partial class DefaultInterfaceMethodImplementationInstantiationThunk
         {
             protected override int ClassCode => -789598;
@@ -64,17 +53,6 @@ namespace ILCompiler
                     return result;
 
                 return comparer.Compare(_targetMethod, otherMethod._targetMethod);
-            }
-        }
-
-        internal partial class DefaultInterfaceMethodImplementationWithHiddenParameter
-        {
-            protected override int ClassCode => 4903209;
-
-            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
-            {
-                var otherMethod = (DefaultInterfaceMethodImplementationWithHiddenParameter)other;
-                return comparer.Compare(_methodRepresented, otherMethod._methodRepresented);
             }
         }
     }

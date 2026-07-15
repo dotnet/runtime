@@ -66,7 +66,7 @@
   <String Id="WelcomeHeaderMessage" Value=".NET Runtime"/>
   <String Id="WelcomeDescription" Value=".NET Runtime は、Windows コンピューターで .NET アプリケーションを実行するために使用されます。.NET はオープン ソースのクロス プラットフォームで、Microsoft によってサポートされています。ぜひご利用ください。"/>
   <String Id="LearnMoreTitle" Value=".Net の詳細情報"/>
-  <String Id="SuccessInstallLocation" Value="[DOTNETHOME] に以下がインストールされました"/>
+  <String Id="SuccessInstallLocation" Value="以下がインストールされました:"/>
   <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
   <String Id="ResourcesHeader" Value="リソース"/>
   <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;ドキュメント&lt;/A&gt;"/>

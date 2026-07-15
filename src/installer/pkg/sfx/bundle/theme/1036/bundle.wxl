@@ -66,7 +66,7 @@
   <String Id="WelcomeHeaderMessage" Value="Runtime .NET"/>
   <String Id="WelcomeDescription" Value="Le runtime .NET vous permet d'exécuter les applications .NET sur votre ordinateur Windows. .NET est open source, multiplateforme et pris en charge par Microsoft. Nous espérons que vous l'apprécierez !"/>
   <String Id="LearnMoreTitle" Value="En savoir plus sur .NET"/>
-  <String Id="SuccessInstallLocation" Value="L'élément suivant a été installé sur [DOTNETHOME]"/>
+  <String Id="SuccessInstallLocation" Value="Nous avons installé l’élément suivant :"/>
   <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
   <String Id="ResourcesHeader" Value="Ressources"/>
   <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Documentation&lt;/A&gt;"/>

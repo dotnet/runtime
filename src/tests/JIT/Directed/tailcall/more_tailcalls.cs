@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 struct S16
 {
@@ -85,6 +86,7 @@ public class Program
         s_instanceMethodOnValueType = instanceMethodOnValueType;
     }
 
+    [ActiveIssue("FSharp Test", TestRuntimes.Mono)]
     [Fact]
     public static int Main()
     {

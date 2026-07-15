@@ -78,6 +78,7 @@ namespace System.Reflection
         public override bool ContainsGenericParameters => _unmodifiedType.ContainsGenericParameters;
         public override Type GetGenericTypeDefinition() => _unmodifiedType.GetGenericTypeDefinition();
         public override bool IsGenericType => _unmodifiedType.IsGenericType;
+        public override Type? GetNullableUnderlyingType() => _unmodifiedType.GetNullableUnderlyingType() is not null ? GetGenericArguments()[0] : null;
 
         [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
@@ -172,8 +173,10 @@ namespace System.Reflection
         public override bool IsEnum => _unmodifiedType.IsEnum;
         protected override bool IsPrimitiveImpl() => _unmodifiedType.IsPrimitive;
         protected override bool IsByRefImpl() => _unmodifiedType.IsByRef;
+        public override bool IsGenericParameter => _unmodifiedType.IsGenericParameter;
         public override bool IsGenericTypeParameter => _unmodifiedType.IsGenericTypeParameter;
         public override bool IsGenericMethodParameter => _unmodifiedType.IsGenericMethodParameter;
+        public override int GenericParameterPosition => _unmodifiedType.GenericParameterPosition;
         protected override bool IsPointerImpl() => _unmodifiedType.IsPointer;
         protected override bool IsValueTypeImpl() => _unmodifiedType.IsValueType;
         protected override bool IsCOMObjectImpl() => _unmodifiedType.IsCOMObject;

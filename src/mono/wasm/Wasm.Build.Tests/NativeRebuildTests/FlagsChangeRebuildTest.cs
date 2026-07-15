@@ -13,6 +13,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.NativeRebuild.Tests
 {
+    [TestCategory("native-mono")]
     public class FlagsChangeRebuildTests : NativeRebuildTestsBase
     {
         public FlagsChangeRebuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -35,12 +36,9 @@ namespace Wasm.Build.NativeRebuild.Tests
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, requestNativeRelink: true, invariant: false);
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
-            bool dotnetNativeFilesUnchanged = extraLDFlags.Length == 0 && extraCFlags.Length == 0;
+            bool dotnetNativeFilesUnchanged = extraLDFlags.Length == 0;
             if (!dotnetNativeFilesUnchanged)
                 pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
-
-            if (extraCFlags.Length != 0)
-                pathsDict.UpdateTo(unchanged: false, "driver.o", "runtime.o", "corebindings.o", "pinvoke.o");
 
             var originalStat = StatFiles(pathsDict);
 
@@ -51,14 +49,22 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             var newStat = StatFilesAfterRebuild(pathsDict);
             CompareStat(originalStat, newStat, pathsDict);
-            
+
+            // check that emscripten emulator for sockets and pipe was trimmed from dotnet.native.js
+            if (config == Configuration.Release)
+            {
+                Assert.True(newStat.TryGetValue("dotnet.native.js", out var dotnetNativeJsStat));
+                var dotnetNativeJs = File.ReadAllText(dotnetNativeJsStat.FullPath);
+                Assert.DoesNotContain("var SOCKFS", dotnetNativeJs);
+                Assert.DoesNotContain("var PIPEFS", dotnetNativeJs);
+            }
+
             // cflags: pinvoke get's compiled, but doesn't overwrite pinvoke.o
             // and thus doesn't cause relinking
             TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
 
-            // ldflags or cflags: link step args change, so it should trigger relink
+            // ldflags: link step args change, so it should trigger relink
             TestUtils.AssertSubstring("Linking with emcc", output, contains: !dotnetNativeFilesUnchanged);
-
             if (aot)
             {
                 // ExtraEmccLDFlags does not affect .bc files

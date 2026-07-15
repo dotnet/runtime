@@ -66,7 +66,7 @@ Auf die Plätze? Fertig? Los geht's!"/>
   <String Id="WelcomeHeaderMessage" Value=".NET-Runtime"/>
   <String Id="WelcomeDescription" Value="Die .NET-Runtime wird zum Ausführen von .NET-Anwendungen auf Ihrem Windows-Computer verwendet. .NET ist ein plattformübergreifendes Open-Source-Framework, das von Microsoft unterstützt wird. Wir wünschen Ihnen viel Spaß damit!"/>
   <String Id="LearnMoreTitle" Value="Weitere Informationen zu .NET"/>
-  <String Id="SuccessInstallLocation" Value="Folgendes wurde unter [DOTNETHOME] installiert."/>
+  <String Id="SuccessInstallLocation" Value="Folgendes wurde installiert:"/>
   <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
   <String Id="ResourcesHeader" Value="Ressourcen"/>
   <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Dokumentation&lt;/A&gt;"/>

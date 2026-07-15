@@ -63,6 +63,7 @@
 /src/mono/dlls @thaystg @steveisok @vitek-karas
 
 /src/native/public/mono @steveisok @vitek-karas
+/src/native/eventpipe @noahfalk @lateralusX @mdh1418
 /src/native/external/libunwind @janvorli @AaronRobinsonMSFT @dotnet/dotnet-diag
 /src/native/external/libunwind_extras @janvorli @AaronRobinsonMSFT @dotnet/dotnet-diag
 
@@ -97,12 +98,7 @@
 /eng/pipelines/**/*wasm* @akoeplinger
 
 # ILLink codeowners
-/src/tools/illink/ @marek-safar
-/src/tools/illink/src/analyzer/ @radekdoulik
-/src/tools/illink/src/ILLink.Tasks/ @sbomer
-/src/tools/illink/src/ILLink.RoslynAnalyzer/ @sbomer
-/src/tools/illink/src/linker/ @marek-safar @mrvoorhe
-/src/tools/illink/test/ @marek-safar @mrvoorhe
+/src/tools/illink/ @sbomer
 
 # Obsoletions / Custom Diagnostics
 

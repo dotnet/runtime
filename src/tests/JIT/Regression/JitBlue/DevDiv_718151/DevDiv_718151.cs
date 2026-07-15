@@ -4,6 +4,9 @@
 // The test originally showed unsupported PUTARG_STK(OBJ(LCL_FLD_ADDR)) when both OBJ and LCL_FLD_ADDR were contained.
 // codegenarmarch `genPutArgStk` did not expect that.
 
+
+namespace DevDiv_718151;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

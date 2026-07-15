@@ -62,7 +62,7 @@ namespace System.Security.Cryptography
 
             AlgorithmMetadata metadata = s_algorithmMetadata[algorithm];
 
-            // draft-ietf-lamps-pq-composite-sigs-08, 4.1
+            // draft-ietf-lamps-pq-composite-sigs-12, 4.1
             // 1. Generate component keys
             //
             //    mldsaSeed = Random(32)
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography
 
             AlgorithmMetadata metadata = s_algorithmMetadata[algorithm];
 
-            // draft-ietf-lamps-pq-composite-sigs-08, 5.1
+            // draft-ietf-lamps-pq-composite-sigs-12, 5.1
             // 1. Parse each constituent encoded public key.
             //    The length of the mldsaKey is known based on the
             //    size of the ML-DSA component key length specified
@@ -167,7 +167,7 @@ namespace System.Security.Cryptography
 
             AlgorithmMetadata metadata = s_algorithmMetadata[algorithm];
 
-            // draft-ietf-lamps-pq-composite-sigs-08, 5.2
+            // draft-ietf-lamps-pq-composite-sigs-12, 5.2
             // 1. Parse each constituent encoded key.
             //
             //    mldsaSeed = bytes[:32]
@@ -203,7 +203,7 @@ namespace System.Security.Cryptography
 
         protected override int SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination)
         {
-            // draft-ietf-lamps-pq-composite-sigs-08, 4.2
+            // draft-ietf-lamps-pq-composite-sigs-12, 4.2
             // 1. If len(ctx) > 255:
             //     return error
 
@@ -287,7 +287,7 @@ namespace System.Security.Cryptography
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature)
         {
-            // draft-ietf-lamps-pq-composite-sigs-08, 4.3
+            // draft-ietf-lamps-pq-composite-sigs-12, 4.3
             // 1. If len(ctx) > 255
             //      return error
 
@@ -335,47 +335,12 @@ namespace System.Security.Cryptography
             return And(_mldsa.VerifyData(M_prime, mldsaSig, AlgorithmDetails.Label), _componentAlgorithm.VerifyData(M_prime, tradSig));
         }
 
-        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
-        {
-            AsnWriter? writer = null;
-
-            try
-            {
-                using (CryptoPoolLease lease = CryptoPoolLease.Rent(Algorithm.MaxPrivateKeySizeInBytes))
-                {
-                    int privateKeySize = ExportCompositeMLDsaPrivateKeyCore(lease.Span);
-
-                    // Add some overhead for the ASN.1 structure.
-                    int initialCapacity = 32 + privateKeySize;
-
-                    writer = new AsnWriter(AsnEncodingRules.DER, initialCapacity);
-
-                    using (writer.PushSequence())
-                    {
-                        writer.WriteInteger(0); // Version
-
-                        using (writer.PushSequence())
-                        {
-                            writer.WriteObjectIdentifier(Algorithm.Oid);
-                        }
-
-                        writer.WriteOctetString(lease.Span.Slice(0, privateKeySize));
-                    }
-
-                    Debug.Assert(writer.GetEncodedLength() <= initialCapacity);
-                }
-
-                return writer.TryEncode(destination, out bytesWritten);
-            }
-            finally
-            {
-                writer?.Reset();
-            }
-        }
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+            TryExportPkcs8FromExportedPrivateKey(destination, out bytesWritten);
 
         protected override int ExportCompositeMLDsaPublicKeyCore(Span<byte> destination)
         {
-            // draft-ietf-lamps-pq-composite-sigs-08, 5.1
+            // draft-ietf-lamps-pq-composite-sigs-12, 5.1
             // 1. Combine and output the encoded public key
             //
             //    output mldsaPK || tradPK
@@ -397,7 +362,7 @@ namespace System.Security.Cryptography
 
         protected override int ExportCompositeMLDsaPrivateKeyCore(Span<byte> destination)
         {
-            // draft-ietf-lamps-pq-composite-sigs-08, 5.2
+            // draft-ietf-lamps-pq-composite-sigs-12, 5.2
             // 1. Combine and output the encoded private key.
             //
             //    output mldsaSeed || tradSK
@@ -626,7 +591,7 @@ namespace System.Security.Cryptography
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
                         ECDsaAlgorithm.CreateP256(HashAlgorithmName.SHA256),
-                        [.."COMPSIG-MLDSA65-P256-SHA512"u8],
+                        [.."COMPSIG-MLDSA65-ECDSA-P256-SHA512"u8],
                         HashAlgorithmName.SHA512)
                 },
                 {
@@ -634,7 +599,7 @@ namespace System.Security.Cryptography
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
                         ECDsaAlgorithm.CreateP384(HashAlgorithmName.SHA384),
-                        [.."COMPSIG-MLDSA65-P384-SHA512"u8],
+                        [.."COMPSIG-MLDSA65-ECDSA-P384-SHA512"u8],
                         HashAlgorithmName.SHA512)
                 },
                 {
@@ -642,7 +607,7 @@ namespace System.Security.Cryptography
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
                         ECDsaAlgorithm.CreateBrainpoolP256r1(HashAlgorithmName.SHA256),
-                        [.."COMPSIG-MLDSA65-BP256-SHA512"u8],
+                        [.."COMPSIG-MLDSA65-ECDSA-BP256-SHA512"u8],
                         HashAlgorithmName.SHA512)
                 },
                 {
@@ -658,7 +623,7 @@ namespace System.Security.Cryptography
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
                         ECDsaAlgorithm.CreateP384(HashAlgorithmName.SHA384),
-                        [.."COMPSIG-MLDSA87-P384-SHA512"u8],
+                        [.."COMPSIG-MLDSA87-ECDSA-P384-SHA512"u8],
                         HashAlgorithmName.SHA512)
                 },
                 {
@@ -666,7 +631,7 @@ namespace System.Security.Cryptography
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
                         ECDsaAlgorithm.CreateBrainpoolP384r1(HashAlgorithmName.SHA384),
-                        [.."COMPSIG-MLDSA87-BP384-SHA512"u8],
+                        [.."COMPSIG-MLDSA87-ECDSA-BP384-SHA512"u8],
                         HashAlgorithmName.SHA512)
                 },
                 {
@@ -698,7 +663,7 @@ namespace System.Security.Cryptography
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
                         ECDsaAlgorithm.CreateP521(HashAlgorithmName.SHA512),
-                        [.."COMPSIG-MLDSA87-P521-SHA512"u8],
+                        [.."COMPSIG-MLDSA87-ECDSA-P521-SHA512"u8],
                         HashAlgorithmName.SHA512)
                 }
             };

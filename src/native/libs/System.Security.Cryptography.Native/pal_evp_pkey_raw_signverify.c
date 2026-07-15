@@ -38,36 +38,38 @@ int32_t CryptoNative_EvpPKeySignPure(EVP_PKEY *pkey,
         goto done;
     }
 
-    OSSL_PARAM contextParams[] =
     {
-        OSSL_PARAM_construct_end(),
-        OSSL_PARAM_construct_end(),
-    };
-
-    if (context)
-    {
-        contextParams[0] = OSSL_PARAM_construct_octet_string(OSSL_SIGNATURE_PARAM_CONTEXT_STRING, (void*)context, Int32ToSizeT(contextLen));
-    }
-
-    if (EVP_PKEY_sign_message_init(ctx, NULL, contextParams) <= 0)
-    {
-        goto done;
-    }
-
-    size_t dstLen = Int32ToSizeT(destinationLen);
-    if (EVP_PKEY_sign(ctx, destination, &dstLen, msg, Int32ToSizeT(msgLen)) == 1)
-    {
-        if (dstLen != Int32ToSizeT(destinationLen))
+        OSSL_PARAM contextParams[] =
         {
-            assert(false); // length mismatch
+            OSSL_PARAM_construct_end(),
+            OSSL_PARAM_construct_end(),
+        };
+
+        if (context)
+        {
+            contextParams[0] = OSSL_PARAM_construct_octet_string(OSSL_SIGNATURE_PARAM_CONTEXT_STRING, (void*)context, Int32ToSizeT(contextLen));
+        }
+
+        if (EVP_PKEY_sign_message_init(ctx, NULL, contextParams) <= 0)
+        {
             goto done;
         }
 
-        ret = 1;
-    }
-    else
-    {
-        ret = 0;
+        size_t dstLen = Int32ToSizeT(destinationLen);
+        if (EVP_PKEY_sign(ctx, destination, &dstLen, msg, Int32ToSizeT(msgLen)) == 1)
+        {
+            if (dstLen != Int32ToSizeT(destinationLen))
+            {
+                assert(false); // length mismatch
+                goto done;
+            }
+
+            ret = 1;
+        }
+        else
+        {
+            ret = 0;
+        }
     }
 
 done:
@@ -116,23 +118,25 @@ int32_t CryptoNative_EvpPKeyVerifyPure(EVP_PKEY *pkey,
         goto done;
     }
 
-    OSSL_PARAM contextParams[] =
     {
-        OSSL_PARAM_construct_end(),
-        OSSL_PARAM_construct_end(),
-    };
+        OSSL_PARAM contextParams[] =
+        {
+            OSSL_PARAM_construct_end(),
+            OSSL_PARAM_construct_end(),
+        };
 
-    if (context)
-    {
-        contextParams[0] = OSSL_PARAM_construct_octet_string(OSSL_SIGNATURE_PARAM_CONTEXT_STRING, (void*)context, Int32ToSizeT(contextLen));
+        if (context)
+        {
+            contextParams[0] = OSSL_PARAM_construct_octet_string(OSSL_SIGNATURE_PARAM_CONTEXT_STRING, (void*)context, Int32ToSizeT(contextLen));
+        }
+
+        if (EVP_PKEY_verify_message_init(ctx, NULL, contextParams) <= 0)
+        {
+            goto done;
+        }
+
+        ret = EVP_PKEY_verify(ctx, sig, Int32ToSizeT(sigLen), msg, Int32ToSizeT(msgLen)) == 1;
     }
-
-    if (EVP_PKEY_verify_message_init(ctx, NULL, contextParams) <= 0)
-    {
-        goto done;
-    }
-
-    ret = EVP_PKEY_verify(ctx, sig, Int32ToSizeT(sigLen), msg, Int32ToSizeT(msgLen)) == 1;
 
 done:
     if (ctx != NULL) EVP_PKEY_CTX_free(ctx);
@@ -179,32 +183,34 @@ int32_t CryptoNative_EvpPKeySignPreEncoded(EVP_PKEY *pkey,
         goto done;
     }
 
-    int messageEncoding = 0;
-    OSSL_PARAM messageEncodingParams[] =
     {
-        OSSL_PARAM_construct_int(OSSL_SIGNATURE_PARAM_MESSAGE_ENCODING, &messageEncoding),
-        OSSL_PARAM_construct_end(),
-    };
-
-    if (EVP_PKEY_sign_message_init(ctx, NULL, messageEncodingParams) <= 0)
-    {
-        goto done;
-    }
-
-    size_t dstLen = Int32ToSizeT(destinationLen);
-    if (EVP_PKEY_sign(ctx, destination, &dstLen, msg, Int32ToSizeT(msgLen)) == 1)
-    {
-        if (dstLen != Int32ToSizeT(destinationLen))
+        int messageEncoding = 0;
+        OSSL_PARAM messageEncodingParams[] =
         {
-            assert(false); // length mismatch
+            OSSL_PARAM_construct_int(OSSL_SIGNATURE_PARAM_MESSAGE_ENCODING, &messageEncoding),
+            OSSL_PARAM_construct_end(),
+        };
+
+        if (EVP_PKEY_sign_message_init(ctx, NULL, messageEncodingParams) <= 0)
+        {
             goto done;
         }
 
-        ret = 1;
-    }
-    else
-    {
-        ret = 0;
+        size_t dstLen = Int32ToSizeT(destinationLen);
+        if (EVP_PKEY_sign(ctx, destination, &dstLen, msg, Int32ToSizeT(msgLen)) == 1)
+        {
+            if (dstLen != Int32ToSizeT(destinationLen))
+            {
+                assert(false); // length mismatch
+                goto done;
+            }
+
+            ret = 1;
+        }
+        else
+        {
+            ret = 0;
+        }
     }
 
 done:
@@ -249,19 +255,21 @@ int32_t CryptoNative_EvpPKeyVerifyPreEncoded(EVP_PKEY *pkey,
         goto done;
     }
 
-    int messageEncoding = 0;
-    OSSL_PARAM messageEncodingParams[] =
     {
-        OSSL_PARAM_construct_int(OSSL_SIGNATURE_PARAM_MESSAGE_ENCODING, &messageEncoding),
-        OSSL_PARAM_construct_end(),
-    };
+        int messageEncoding = 0;
+        OSSL_PARAM messageEncodingParams[] =
+        {
+            OSSL_PARAM_construct_int(OSSL_SIGNATURE_PARAM_MESSAGE_ENCODING, &messageEncoding),
+            OSSL_PARAM_construct_end(),
+        };
 
-    if (EVP_PKEY_verify_message_init(ctx, NULL, messageEncodingParams) <= 0)
-    {
-        goto done;
+        if (EVP_PKEY_verify_message_init(ctx, NULL, messageEncodingParams) <= 0)
+        {
+            goto done;
+        }
+
+        ret = EVP_PKEY_verify(ctx, sig, Int32ToSizeT(sigLen), msg, Int32ToSizeT(msgLen)) == 1;
     }
-
-    ret = EVP_PKEY_verify(ctx, sig, Int32ToSizeT(sigLen), msg, Int32ToSizeT(msgLen)) == 1;
 
 done:
     if (ctx != NULL) EVP_PKEY_CTX_free(ctx);

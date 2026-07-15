@@ -168,19 +168,13 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out uint result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-
-            if (s is null)
-            {
-                result = 0;
-                return false;
-            }
-            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out uint result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         //
@@ -295,6 +289,35 @@ namespace System
         [Intrinsic]
         public static uint LeadingZeroCount(uint value) => (uint)BitOperations.LeadingZeroCount(value);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Log10(uint value)
+        {
+            // Use Log2 to get approximate Log10 via the relationship:
+            // log10(x) ≈ (log2(x) + 1) * 1233 >> 12
+            // Then correct with a powers-of-10 lookup table.
+            // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog10
+            value |= 1;
+            uint log2 = (uint)BitOperations.Log2(value) + 1;
+            uint approx = (log2 * 1233) >> 12;
+            return value < PowersOf10[(int)approx] ? approx - 1 : approx;
+        }
+
+        // Lookup table for power-of-10 boundaries corrections
+        private static ReadOnlySpan<uint> PowersOf10 =>
+        [
+            1,
+            10,
+            100,
+            1_000,
+            10_000,
+            100_000,
+            1_000_000,
+            10_000_000,
+            100_000_000,
+            1_000_000_000,
+        ];
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         [Intrinsic]
         public static uint PopCount(uint value) => (uint)BitOperations.PopCount(value);
@@ -336,19 +359,10 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(uint))
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(uint));
-
                     // We have at least 4 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<uint>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUInt32BigEndian(source.Slice(source.Length - sizeof(uint)));
                 }
                 else
                 {
@@ -359,7 +373,7 @@ namespace System
                     for (int i = 0; i < source.Length; i++)
                     {
                         result <<= 8;
-                        result |= Unsafe.Add(ref sourceRef, i);
+                        result |= source[i];
                     }
                 }
             }
@@ -393,17 +407,10 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(uint))
                 {
                     // We have at least 4 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<uint>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUInt32LittleEndian(source);
                 }
                 else
                 {
@@ -415,7 +422,7 @@ namespace System
 
                     for (int i = 0; i < source.Length; i++)
                     {
-                        uint part = Unsafe.Add(ref sourceRef, i);
+                        uint part = source[i];
                         part <<= (i * 8);
                         result |= part;
                     }
@@ -1167,6 +1174,27 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        static bool INumberBase<uint>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out uint result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        static bool INumberBase<uint>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out uint result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        static bool INumberBase<uint>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out uint result, out int bytesConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
+        }
+
         //
         // IParsable
         //
@@ -1239,7 +1267,7 @@ namespace System
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out uint result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />

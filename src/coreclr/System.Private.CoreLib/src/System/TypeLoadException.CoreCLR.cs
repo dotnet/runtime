@@ -8,7 +8,6 @@ namespace System
 {
     public partial class TypeLoadException : SystemException
     {
-        // This is called from inside the EE.
         private TypeLoadException(string? className,
             string? assemblyName,
             string? messageArg,
@@ -48,5 +47,21 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString);
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void Create(char* pClassName, char* pAssemblyName, char* pMessageArg, int resourceId, object* pResult, Exception* pException)
+        {
+            try
+            {
+                string? className = pClassName is not null ? new string(pClassName) : null;
+                string? assemblyName = pAssemblyName is not null ? new string(pAssemblyName) : null;
+                string? messageArg = pMessageArg is not null ? new string(pMessageArg) : null;
+                *pResult = new TypeLoadException(className, assemblyName, messageArg, resourceId);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

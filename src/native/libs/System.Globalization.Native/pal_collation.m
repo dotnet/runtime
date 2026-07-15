@@ -13,14 +13,14 @@
 
 #if defined(APPLE_HYBRID_GLOBALIZATION)
 // Enum that corresponds to C# CompareOptions
-typedef enum
+typedef enum : int32_t
 {
-    None = 0,
-    IgnoreCase = 1,
-    IgnoreNonSpace = 2,
-    IgnoreKanaType = 8,
-    IgnoreWidth = 16,
-    StringSort = 536870912,
+    None = 0x00000000,
+    IgnoreCase = 0x00000001,
+    IgnoreNonSpace = 0x00000002,
+    IgnoreKanaType = 0x00000008,
+    IgnoreWidth = 0x00000010,
+    StringSort = 0x20000000,
 } CompareOptions;
 
 typedef enum
@@ -45,7 +45,7 @@ static NSLocale* GetCurrentLocale(const uint16_t* localeName, int32_t lNameLengt
     return currentLocale;
 }
 
-static bool IsComparisonOptionSupported(int32_t comparisonOptions)
+static bool IsComparisonOptionSupported(CompareOptions comparisonOptions)
 {
     int32_t supportedOptions = None | IgnoreCase | IgnoreNonSpace | IgnoreWidth | StringSort | IgnoreKanaType;
     if ((comparisonOptions | supportedOptions) != supportedOptions)
@@ -53,11 +53,11 @@ static bool IsComparisonOptionSupported(int32_t comparisonOptions)
     return true;
 }
 
-static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(int32_t comparisonOptions, bool isLiteralSearchSupported)
+static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(CompareOptions comparisonOptions, bool isLiteralSearchSupported)
 {
     // To achieve an equivalent search behavior to the default in ICU,
     // NSLiteralSearch is employed as the default search option.
-    NSStringCompareOptions options = isLiteralSearchSupported ? NSLiteralSearch : 0;
+    NSStringCompareOptions options = isLiteralSearchSupported ? NSLiteralSearch : (NSStringCompareOptions)0;
 
     if (comparisonOptions & IgnoreCase)
         options |= NSCaseInsensitiveSearch;
@@ -87,7 +87,7 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
 {
     @autoreleasepool
     {
-        if (!IsComparisonOptionSupported(comparisonOptions))
+        if (!IsComparisonOptionSupported((CompareOptions)comparisonOptions))
             return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
         NSString *sourceString = [NSString stringWithCharacters: lpSource length: (NSUInteger)cwSourceLength];
@@ -103,12 +103,12 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
 
         if (comparisonOptions != 0 && comparisonOptions != StringSort)
         {
-            NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, false);
+            NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions((CompareOptions)comparisonOptions, false);
             sourceStrPrecomposed = [sourceStrPrecomposed stringByFoldingWithOptions:options locale:currentLocale];
             targetStrPrecomposed = [targetStrPrecomposed stringByFoldingWithOptions:options locale:currentLocale];
         }
 
-        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
+        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions((CompareOptions)comparisonOptions, true);
         NSRange comparisonRange = NSMakeRange(0, sourceStrPrecomposed.length);
         return (int32_t)[sourceStrPrecomposed compare:targetStrPrecomposed
                                      options:options
@@ -130,7 +130,7 @@ static NSString* RemoveWeightlessCharacters(NSString* source)
     if (error != nil)
         return source;
 
-    NSString *modifiedString = [regex stringByReplacingMatchesInString:source options:0 range:NSMakeRange(0, [source length]) withTemplate:@""];
+    NSString *modifiedString = [regex stringByReplacingMatchesInString:source options:(NSMatchingOptions)0 range:NSMakeRange(0, [source length]) withTemplate:@""];
 
     return modifiedString;
 }
@@ -156,12 +156,12 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
     {
         assert(cwTargetLength >= 0);
         Range result = {ERROR_INDEX_NOT_FOUND, 0};
-        if (!IsComparisonOptionSupported(comparisonOptions))
+        if (!IsComparisonOptionSupported((CompareOptions)comparisonOptions))
         {
             result.location = ERROR_COMPARISON_OPTIONS_NOT_FOUND;
             return result;
         }
-        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
+        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions((CompareOptions)comparisonOptions, true);
         if (!fromBeginning) // LastIndexOf
             options |= NSBackwardsSearch;
 
@@ -270,9 +270,9 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t
 {
     @autoreleasepool
     {
-        if (!IsComparisonOptionSupported(comparisonOptions))
+        if (!IsComparisonOptionSupported((CompareOptions)comparisonOptions))
             return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
-        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
+        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions((CompareOptions)comparisonOptions, true);
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
         NSString *prefixString = [NSString stringWithCharacters: lpPrefix length: (NSUInteger)cwPrefixLength];
         NSString *prefixStrComposed = RemoveWeightlessCharacters(prefixString.precomposedStringWithCanonicalMapping);
@@ -302,9 +302,9 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
 {
     @autoreleasepool
     {
-        if (!IsComparisonOptionSupported(comparisonOptions))
+        if (!IsComparisonOptionSupported((CompareOptions)comparisonOptions))
             return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
-        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
+        NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions((CompareOptions)comparisonOptions, true);
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
         NSString *suffixString = [NSString stringWithCharacters: lpSuffix length: (NSUInteger)cwSuffixLength];
         NSString *suffixStrComposed = RemoveWeightlessCharacters(suffixString.precomposedStringWithCanonicalMapping);
@@ -336,7 +336,7 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
                 sortKey[0] = '\0';
             return 1;
         }
-        if (!IsComparisonOptionSupported(options))
+        if (!IsComparisonOptionSupported((CompareOptions)options))
             return 0;
         NSString *sourceString = [NSString stringWithCharacters: lpStr length: (NSUInteger)cwStrLength];
         if (options & IgnoreKanaType)
@@ -353,7 +353,7 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
         }
 
         NSLocale *locale = GetCurrentLocale(localeName, lNameLength);
-        NSStringCompareOptions comparisonOptions = options == 0 ? 0 : ConvertFromCompareOptionsToNSStringCompareOptions(options, false);
+        NSStringCompareOptions comparisonOptions = options == 0 ? (NSStringCompareOptions)0 : ConvertFromCompareOptionsToNSStringCompareOptions((CompareOptions)options, false);
 
         // Generate a sort key for the original string based on the locale
         NSString *transformedString = [sourceStringCleaned stringByFoldingWithOptions:comparisonOptions locale:locale];
@@ -368,7 +368,7 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
             return (int32_t)transformedStringBytes;
         NSRange range = NSMakeRange(0, [transformedString length]);
         NSUInteger usedLength = 0;
-        BOOL result = [transformedString getBytes:sortKey maxLength:transformedStringBytes usedLength:&usedLength encoding:NSUTF16StringEncoding options:0 range:range remainingRange:NULL];
+        BOOL result = [transformedString getBytes:sortKey maxLength:transformedStringBytes usedLength:&usedLength encoding:NSUTF16StringEncoding options:(NSStringEncodingConversionOptions)0 range:range remainingRange:NULL];
         if (result)
             return (int32_t)usedLength;
         return 0;

@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b61028;
+
 using System;
 using Xunit;
 public class bug1
@@ -18,6 +21,7 @@ public class bug1
     {
         return Convert.ToInt32(Convert.ToInt32(Convert.ToInt32(vtstatic.a9 / 3 + vtstatic.a3)) % (Convert.ToInt32(vtstatic.a1 * vtstatic.a0) - Convert.ToInt32(Convert.ToInt32(2) % Convert.ToInt32(Convert.ToInt32(2) % (Convert.ToInt32(9))))));
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

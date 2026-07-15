@@ -10,6 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 
 using Internal.NativeFormat;
+using Internal.Text;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -109,15 +110,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override ModuleDesc Module
-        {
-            get
-            {
-                return _module;
-            }
-        }
-
-        public EcmaModule EcmaModule
+        public override EcmaModule Module
         {
             get
             {
@@ -160,17 +153,7 @@ namespace Internal.TypeSystem.Ecma
             return type;
         }
 
-        public override DefType BaseType
-        {
-            get
-            {
-                if (_baseType == this)
-                    return InitializeBaseType();
-                return _baseType;
-            }
-        }
-
-        public override MetadataType MetadataBaseType
+        public override MetadataType BaseType
         {
             get
             {
@@ -264,7 +247,7 @@ namespace Internal.TypeSystem.Ecma
             return flags;
         }
 
-        private unsafe ReadOnlySpan<byte> InitializeName()
+        private unsafe Utf8Span InitializeName()
         {
             StringHandle handle = _typeDefinition.Name;
             _nameLength = MetadataReader.GetStringBytes(handle).Length;
@@ -272,7 +255,7 @@ namespace Internal.TypeSystem.Ecma
             return new ReadOnlySpan<byte>(_namePointer, _nameLength);
         }
 
-        public override unsafe ReadOnlySpan<byte> Name
+        public override unsafe Utf8Span Name
         {
             get
             {
@@ -285,7 +268,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private unsafe ReadOnlySpan<byte> InitializeNamespace()
+        private unsafe Utf8Span InitializeNamespace()
         {
             StringHandle handle = _typeDefinition.Namespace;
             _namespaceLength = MetadataReader.GetStringBytes(handle).Length;
@@ -293,7 +276,7 @@ namespace Internal.TypeSystem.Ecma
             return new ReadOnlySpan<byte>(_namespacePointer, _namespaceLength);
         }
 
-        public override unsafe ReadOnlySpan<byte> Namespace
+        public override unsafe Utf8Span Namespace
         {
             get
             {
@@ -306,7 +289,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override IEnumerable<MethodDesc> GetMethods()
+        public override IEnumerable<EcmaMethod> GetMethods()
         {
             foreach (var handle in _typeDefinition.GetMethods())
             {
@@ -314,7 +297,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override IEnumerable<MethodDesc> GetVirtualMethods()
+        public override IEnumerable<EcmaMethod> GetVirtualMethods()
         {
             MetadataReader reader = _module.MetadataReader;
             foreach (var handle in _typeDefinition.GetMethods())
@@ -325,7 +308,18 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override MethodDesc GetMethod(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
+        /// <summary>
+        /// Gets a named method on the type. This method only looks at methods defined
+        /// in type's metadata. The <paramref name="signature"/> parameter can be null.
+        /// If signature is not specified and there are multiple matches, the first one
+        /// is returned. Returns null if method not found.
+        /// </summary>
+        public new EcmaMethod GetMethod(Utf8Span name, MethodSignature signature)
+        {
+            return GetMethod(name, signature, default(Instantiation));
+        }
+
+        public override EcmaMethod GetMethod(Utf8Span name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
 
@@ -342,7 +336,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override MethodDesc GetMethodWithEquivalentSignature(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
+        public override EcmaMethod GetMethodWithEquivalentSignature(Utf8Span name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
 
@@ -359,7 +353,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override MethodDesc GetStaticConstructor()
+        public override EcmaMethod GetStaticConstructor()
         {
             var metadataReader = this.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
@@ -378,7 +372,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override MethodDesc GetDefaultConstructor()
+        public override EcmaMethod GetDefaultConstructor()
         {
             if (IsAbstract)
                 return null;
@@ -426,7 +420,7 @@ namespace Internal.TypeSystem.Ecma
                 if (impl == null)
                 {
                     // TODO: invalid input: the type doesn't derive from our System.Object
-                    throw new TypeLoadException(this.GetFullName());
+                    ThrowHelper.ThrowTypeLoadException(this);
                 }
 
                 if (impl.OwningType != objectType)
@@ -441,7 +435,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override IEnumerable<FieldDesc> GetFields()
+        public override IEnumerable<EcmaField> GetFields()
         {
             foreach (var handle in _typeDefinition.GetFields())
             {
@@ -468,7 +462,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override FieldDesc GetField(ReadOnlySpan<byte> name)
+        public override EcmaField GetField(Utf8Span name)
         {
             var metadataReader = this.MetadataReader;
 
@@ -484,7 +478,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override IEnumerable<MetadataType> GetNestedTypes()
+        public override IEnumerable<EcmaType> GetNestedTypes()
         {
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
@@ -492,10 +486,9 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override MetadataType GetNestedType(string name)
+        public override EcmaType GetNestedType(Utf8Span name)
         {
             var metadataReader = this.MetadataReader;
-            var stringComparer = metadataReader.StringComparer;
 
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
@@ -503,17 +496,17 @@ namespace Internal.TypeSystem.Ecma
                 TypeDefinition type = metadataReader.GetTypeDefinition(handle);
                 if (type.Namespace.IsNil)
                 {
-                    nameMatched = stringComparer.Equals(type.Name, name);
+                    nameMatched = metadataReader.StringEquals(type.Name, name);
                 }
                 else
                 {
-                    string typeName = metadataReader.GetString(type.Name);
-                    typeName = metadataReader.GetString(type.Namespace) + "." + typeName;
-                    nameMatched = typeName == name;
+                    ReadOnlySpan<byte> typeName = metadataReader.GetStringBytes(type.Name);
+                    typeName = metadataReader.GetStringBytes(type.Namespace).Append("."u8, typeName);
+                    nameMatched = typeName.SequenceEqual(name.AsSpan());
                 }
 
                 if (nameMatched)
-                    return (EcmaType)_module.GetObject(handle);
+                    return _module.GetType(handle);
             }
 
             return null;
@@ -527,7 +520,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override DefType ContainingType
+        public override EcmaType ContainingType
         {
             get
             {
@@ -535,7 +528,7 @@ namespace Internal.TypeSystem.Ecma
                     return null;
 
                 var handle = _typeDefinition.GetDeclaringType();
-                return (DefType)_module.GetType(handle);
+                return _module.GetType(handle);
             }
         }
 
@@ -593,6 +586,9 @@ namespace Internal.TypeSystem.Ecma
                 {
                     case 0:
                         layoutKind = MetadataLayoutKind.CStruct;
+                        break;
+                    case 1:
+                        layoutKind = MetadataLayoutKind.CUnion;
                         break;
                     default:
                         ThrowHelper.ThrowTypeLoadException(this);

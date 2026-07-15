@@ -12,8 +12,13 @@
     <BundleTestAndroidAppDependsOn>AndroidBuild</BundleTestAndroidAppDependsOn>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(IsFunctionalTest)' != 'true'">
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(IsFunctionalTest)' != 'true' and '$(TestBuildMode)' != 'nativeaot'">
     <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <TestNativeAOT Condition="'$(TestNativeAOT)' == ''">true</TestNativeAOT>
+    <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestNativeAOT)' == 'true'">
@@ -21,8 +26,13 @@
   </ItemGroup>
   <PropertyGroup Condition="'$(TestNativeAOT)' == 'true'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <_UseNativeLibPrefix>true</_UseNativeLibPrefix>
+    <_SuppressNativeLibEventSourceWarning>true</_SuppressNativeLibEventSourceWarning>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TestNativeAOT)' == 'true'">
+    <!-- Android test APKs link the crypto archive directly; keep the Java native trust-manager callback visible. -->
+    <IlcArg Include="--export-dynamic-symbol:Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate" />
+    <LinkerArg Include="-Wl,-u,Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate" />
+  </ItemGroup>
 
   <!-- Target that kicks off the whole test build and run flow -->
   <Target Name="BundleTestAndroidApp" DependsOnTargets="$(BundleTestAndroidAppDependsOn)" />

@@ -122,7 +122,7 @@ namespace System.Reflection
             (MetadataUpdater.IsSupported && CacheEquals(obj));
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
+            HashCode.Combine(m_handle, m_declaringType.GetUnderlyingNativeHandle());
         #endregion
 
         #region ICustomAttributeProvider
@@ -159,7 +159,6 @@ namespace System.Reflection
 
         #region MemberInfo Overrides
         public override string Name => RuntimeMethodHandle.GetName(this);
-        public override MemberTypes MemberType => MemberTypes.Constructor;
 
         public override Type? DeclaringType => m_reflectedTypeCache.IsGlobal ? null : m_declaringType;
 

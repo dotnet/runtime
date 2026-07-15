@@ -137,19 +137,11 @@ bool interceptor_ICJI::resolveVirtualMethod(
     return original_ICorJitInfo->resolveVirtualMethod(info);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncOtherVariant(
           CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg)
+          bool* variantIsThunk)
 {
-    return original_ICorJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg)
-{
-    return original_ICorJitInfo->getInstantiatedEntry(ftn, methodArg, classArg);
+    return original_ICorJitInfo->getAsyncOtherVariant(ftn, variantIsThunk);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultComparerClass(
@@ -354,13 +346,13 @@ bool interceptor_ICJI::getIsClassInitedFlagAddress(
     return original_ICorJitInfo->getIsClassInitedFlagAddress(cls, addr, offset);
 }
 
-size_t interceptor_ICJI::getClassThreadStaticDynamicInfo(
+void* interceptor_ICJI::getClassThreadStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr)
 {
     return original_ICorJitInfo->getClassThreadStaticDynamicInfo(clr);
 }
 
-size_t interceptor_ICJI::getClassStaticDynamicInfo(
+void* interceptor_ICJI::getClassStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr)
 {
     return original_ICorJitInfo->getClassStaticDynamicInfo(clr);
@@ -507,12 +499,11 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(
 
 bool interceptor_ICJI::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup)
 {
-    return original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
+    return original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup);
 }
 
 void interceptor_ICJI::getReadyToRunDelegateCtorHelper(
@@ -719,12 +710,6 @@ bool interceptor_ICJI::isFieldStatic(
     return original_ICorJitInfo->isFieldStatic(fldHnd);
 }
 
-bool interceptor_ICJI::canOmitPinning(
-          CORINFO_FIELD_HANDLE fldHnd)
-{
-    return original_ICorJitInfo->canOmitPinning(fldHnd);
-}
-
 int interceptor_ICJI::getArrayOrStringLength(
           CORINFO_OBJECT_HANDLE objHnd)
 {
@@ -772,6 +757,15 @@ void interceptor_ICJI::reportRichMappings(
           uint32_t numMappings)
 {
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+}
+
+void interceptor_ICJI::reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars)
+{
+    original_ICorJitInfo->reportAsyncDebugInfo(asyncInfo, suspensionPoints, vars, numVars);
 }
 
 void interceptor_ICJI::reportMetadata(
@@ -855,6 +849,14 @@ void interceptor_ICJI::getAsyncInfo(
     original_ICorJitInfo->getAsyncInfo(pAsyncInfoOut);
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    return original_ICorJitInfo->getAwaitReturnCall(callerHandle, contextHandle, instArg);
+}
+
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -907,6 +909,24 @@ void interceptor_ICJI::getFpStructLowering(
     original_ICorJitInfo->getFpStructLowering(structHnd, pLowering);
 }
 
+CorInfoWasmType interceptor_ICJI::getWasmLowering(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    return original_ICorJitInfo->getWasmLowering(structHnd);
+}
+
+uint32_t interceptor_ICJI::getAddressAlignment(
+          void* address)
+{
+    return original_ICorJitInfo->getAddressAlignment(address);
+}
+
+bool interceptor_ICJI::canOmitPinning(
+          CORINFO_FIELD_HANDLE fldHnd)
+{
+    return original_ICorJitInfo->canOmitPinning(fldHnd);
+}
+
 uint32_t interceptor_ICJI::getThreadTLSIndex(
           void** ppIndirection)
 {
@@ -941,12 +961,6 @@ void interceptor_ICJI::getFunctionFixedEntryPoint(
           CORINFO_CONST_LOOKUP* pResult)
 {
     original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
-}
-
-CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle)
-{
-    return original_ICorJitInfo->getLazyStringLiteralHelper(handle);
 }
 
 CORINFO_MODULE_HANDLE interceptor_ICJI::embedModuleHandle(
@@ -1117,9 +1131,18 @@ bool interceptor_ICJI::getTailCallHelpers(
     return original_ICorJitInfo->getTailCallHelpers(callToken, sig, flags, pResult);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          size_t objRefsSize)
 {
-    return original_ICorJitInfo->getAsyncResumptionStub();
+    return original_ICorJitInfo->getContinuationType(dataSize, objRefs, objRefsSize);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub(
+          void** entryPoint)
+{
+    return original_ICorJitInfo->getAsyncResumptionStub(entryPoint);
 }
 
 bool interceptor_ICJI::convertPInvokeCalliToCall(
@@ -1237,17 +1260,23 @@ void interceptor_ICJI::recordCallSite(
     original_ICorJitInfo->recordCallSite(instrOffset, callSig, methodHandle);
 }
 
+void interceptor_ICJI::recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig)
+{
+    original_ICorJitInfo->recordWasmManagedCallSig(callSig);
+}
+
 void interceptor_ICJI::recordRelocation(
           void* location,
           void* locationRW,
           void* target,
-          uint16_t fRelocType,
+          CorInfoReloc fRelocType,
           int32_t addlDelta)
 {
     original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, addlDelta);
 }
 
-uint16_t interceptor_ICJI::getRelocTypeHint(
+CorInfoReloc interceptor_ICJI::getRelocTypeHint(
           void* target)
 {
     return original_ICorJitInfo->getRelocTypeHint(target);
@@ -1263,6 +1292,13 @@ uint32_t interceptor_ICJI::getJitFlags(
           uint32_t sizeInBytes)
 {
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
+}
+
+CORINFO_WASM_TYPE_SYMBOL_HANDLE interceptor_ICJI::getWasmTypeSymbol(
+          CorInfoWasmType* types,
+          size_t typesSize)
+{
+    return original_ICorJitInfo->getWasmTypeSymbol(types, typesSize);
 }
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(

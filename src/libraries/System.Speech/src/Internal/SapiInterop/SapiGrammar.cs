@@ -45,19 +45,19 @@ namespace System.Speech.Internal.SapiInterop
             _sapiProxy.Invoke2(delegate { _sapiGrammar.LoadCmdFromMemory(grammar, options); });
         }
 
-        internal void LoadDictation(string pszTopicName, SPLOADOPTIONS options)
+        internal void LoadDictation(string? pszTopicName, SPLOADOPTIONS options)
         {
             _sapiProxy.Invoke2(delegate { _sapiGrammar.LoadDictation(pszTopicName, options); });
         }
 
         internal SAPIErrorCodes SetDictationState(SPRULESTATE state)
         {
-            return (SAPIErrorCodes)_sapiProxy.Invoke(delegate { return _sapiGrammar.SetDictationState(state); });
+            return (SAPIErrorCodes)_sapiProxy.Invoke(delegate { return _sapiGrammar.SetDictationState(state); })!;
         }
 
-        internal SAPIErrorCodes SetRuleState(string name, SPRULESTATE state)
+        internal SAPIErrorCodes SetRuleState(string? name, SPRULESTATE state)
         {
-            return (SAPIErrorCodes)_sapiProxy.Invoke(delegate { return _sapiGrammar.SetRuleState(name, IntPtr.Zero, state); });
+            return (SAPIErrorCodes)_sapiProxy.Invoke(delegate { return _sapiGrammar.SetRuleState(name, IntPtr.Zero, state); })!;
         }
 
         /*
@@ -70,16 +70,16 @@ namespace System.Speech.Internal.SapiInterop
             SpRecoGrammar2.SetGrammarLoader(resourceLoader);
         }
 
-        internal void LoadCmdFromMemory2(IntPtr grammar, SPLOADOPTIONS options, string sharingUri, string baseUri)
+        internal void LoadCmdFromMemory2(IntPtr grammar, SPLOADOPTIONS options, string? sharingUri, string? baseUri)
         {
             SpRecoGrammar2.LoadCmdFromMemory2(grammar, options, sharingUri, baseUri);
         }
 
-        internal void SetRulePriority(string name, uint id, int priority)
+        internal void SetRulePriority(string? name, uint id, int priority)
         {
             SpRecoGrammar2.SetRulePriority(name, id, priority);
         }
-        internal void SetRuleWeight(string name, uint id, float weight)
+        internal void SetRuleWeight(string? name, uint id, float weight)
         {
             SpRecoGrammar2.SetRuleWeight(name, id, weight);
         }
@@ -99,7 +99,7 @@ namespace System.Speech.Internal.SapiInterop
 
         #region Private Methods
 
-        private ISpRecoGrammar2 _sapiGrammar2;
+        private ISpRecoGrammar2? _sapiGrammar2;
         private ISpRecoGrammar _sapiGrammar;
         private SapiProxy _sapiProxy;
         private bool _disposed;

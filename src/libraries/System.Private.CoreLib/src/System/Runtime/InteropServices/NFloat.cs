@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -1040,97 +1039,25 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<NFloat>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(NativeExponentType))
-            {
-                NativeExponentType exponent = _value.Exponent;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    exponent = BinaryPrimitives.ReverseEndianness(exponent);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
-                bytesWritten = sizeof(NativeExponentType);
-                return true;
-            }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+            return _value.TryWriteExponentBigEndian(destination, out bytesWritten);
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<NFloat>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(NativeExponentType))
-            {
-                NativeExponentType exponent = _value.Exponent;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    exponent = BinaryPrimitives.ReverseEndianness(exponent);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
-                bytesWritten = sizeof(NativeExponentType);
-                return true;
-            }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+            return _value.TryWriteExponentLittleEndian(destination, out bytesWritten);
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<NFloat>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(NativeSignificandType))
-            {
-                NativeSignificandType significand = _value.Significand;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
-                bytesWritten = sizeof(NativeSignificandType);
-                return true;
-            }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+            return _value.TryWriteSignificandBigEndian(destination, out bytesWritten);
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<NFloat>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(NativeSignificandType))
-            {
-                NativeSignificandType significand = _value.Significand;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
-                bytesWritten = sizeof(NativeSignificandType);
-                return true;
-            }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+            return _value.TryWriteSignificandLittleEndian(destination, out bytesWritten);
         }
 
         //
@@ -1784,6 +1711,30 @@ namespace System.Runtime.InteropServices
                 result = default;
                 return false;
             }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out NFloat result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out Unsafe.As<NFloat, NativeType>(ref result), out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out NFloat result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out Unsafe.As<NFloat, NativeType>(ref result), out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out NFloat result, out int bytesConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out Unsafe.As<NFloat, NativeType>(ref result), out bytesConsumed);
         }
 
         //

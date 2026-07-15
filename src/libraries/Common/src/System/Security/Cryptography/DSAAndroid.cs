@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -202,7 +202,7 @@ namespace System.Security.Cryptography
             protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
                 CryptographicOperations.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
 
-            public override byte[] CreateSignature(byte[] rgbHash)
+            public override unsafe byte[] CreateSignature(byte[] rgbHash)
             {
                 ArgumentNullException.ThrowIfNull(rgbHash);
 
@@ -227,7 +227,7 @@ namespace System.Security.Cryptography
                     out bytesWritten);
             }
 
-            protected override bool TryCreateSignatureCore(
+            protected override unsafe bool TryCreateSignatureCore(
                 ReadOnlySpan<byte> hash,
                 Span<byte> destination,
                 DSASignatureFormat signatureFormat,

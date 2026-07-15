@@ -26,6 +26,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="ILCompiler.Compiler.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RyuJitNodeFactory.cs" />
     <Compile Include="Compiler\ProfileDataManager.cs" />
@@ -49,6 +53,12 @@
     </Compile>
     <Compile Include="..\ILCompiler.Compiler\Compiler\JitHelper.cs">
       <Link>Compiler\JitHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmNative.cs">
+      <Link>ObjectWriter\WasmNative.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmInstructions.cs">
+      <Link>ObjectWriter\WasmInstructions.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
@@ -88,6 +98,9 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs">
       <Link>JitInterface\SwiftPhysicalLowering.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\WasmLowering.cs">
+      <Link>JitInterface\WasmLowering.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs">
       <Link>Pgo\TypeSystemEntityOrUnknown.cs</Link>

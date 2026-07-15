@@ -83,6 +83,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/w32api.h>
+#include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-proclib.h>
 
@@ -5712,11 +5713,17 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 {
 	ErrorCode err;
 
-	if (m_type_is_byref (t) && extra_space != NULL && *extra_space != NULL) {
-		*(guint8**)addr = *extra_space; //assign the extra_space allocated for byref fields to the addr
-		guint8 *buf_int = buf;
-		addr = *(guint8**)addr; //dereference the pointer as it's a byref field
-		*extra_space += decode_value_compute_size (t, type, domain, buf_int, &buf_int, limit, TRUE); //increment the extra_space used then it can use the correct address for the next byref field
+	if (m_type_is_byref (t)) {
+		if (type == VALUE_TYPE_ID_NULL) {
+			// It means the by ref field hasn't been set, it is NULL, so we should not try to decode its value further
+			goto handle_type_id_null;
+		}
+		if (extra_space != NULL && *extra_space != NULL) {
+			*(guint8**)addr = *extra_space; //assign the extra_space allocated for byref fields to the addr
+			guint8 *buf_int = buf;
+			addr = *(guint8**)addr; //dereference the pointer as it's a byref field
+			*extra_space += decode_value_compute_size (t, type, domain, buf_int, &buf_int, limit, TRUE); //increment the extra_space used then it can use the correct address for the next byref field
+		}
 	}
 
 	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
@@ -5867,9 +5874,10 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 
 				mono_gc_wbarrier_generic_store_internal (addr, obj);
 			} else if (type == VALUE_TYPE_ID_NULL) {
-				if (CHECK_PROTOCOL_VERSION (2, 59)) {
-					decode_byte (buf, &buf, limit);
-					decode_int (buf, &buf, limit); //not used
+			handle_type_id_null:
+				if (CHECK_PROTOCOL_VERSION(2, 59)) {
+					decode_byte(buf, &buf, limit);
+					decode_int(buf, &buf, limit); //not used
 				}
 				*(MonoObject**)addr = NULL;
 
@@ -7185,6 +7193,10 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_VM_SET_PROTOCOL_VERSION: {
+		if (protocol_version_set) {
+			PRINT_DEBUG_MSG (1, "[dbg] Trying to reset the protocol version, ignoring it\n");
+			break;
+		}
 		major_version = decode_int (p, &p, end);
 		minor_version = decode_int (p, &p, end);
 		if (p < end)
@@ -7608,6 +7620,26 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			}
 		}
+		break;
+	}
+	case CMD_VM_GET_SYSTEM_INFORMATION: {
+		int processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_UNKNOWN;
+		int page_size = mono_pagesize ();
+
+#if defined(TARGET_AMD64)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_AMD64;
+#elif defined(TARGET_X86)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_INTEL;
+#elif defined(TARGET_ARM64)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_ARM64;
+#elif defined(TARGET_ARM)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_ARM;
+#elif defined(TARGET_WASM)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_AMD64;
+#endif
+
+		buffer_add_int (buf, processor_architecture);
+		buffer_add_int (buf, page_size);
 		break;
 	}
 	case MDBGPROT_CMD_GET_ASSEMBLY_BYTES: { //only used by wasm
@@ -9324,7 +9356,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		names = g_new (char *, sig->param_count);
 		mono_method_get_param_names_internal (method, (const char **) names);
 		for (guint16 i = 0; i < sig->param_count; ++i)
-			buffer_add_string (buf, names [i]);
+			buffer_add_string (buf, names [i] ? names [i] : "");
 		g_free (names);
 
 		break;
@@ -10346,6 +10378,10 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
 				if (CHECK_ICORDBG (TRUE))
 					buffer_add_byte (buf, GINT_TO_UINT8 (MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)))));
+			}
+			if (type == MONO_TYPE_SZARRAY && CHECK_ICORDBG (TRUE) && CHECK_PROTOCOL_VERSION (2, 67))
+			{
+				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
 			}
 		}
 		break;

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -50,30 +50,26 @@ namespace System.IO
         /// <summary>
         /// Gets the count of common characters from the left optionally ignoring case
         /// </summary>
-        internal static unsafe int EqualStartingCharacterCount(string? first, string? second, bool ignoreCase)
+        internal static int EqualStartingCharacterCount(string? first, string? second, bool ignoreCase)
         {
-            if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(second)) return 0;
-
-            int commonChars = 0;
-
-            fixed (char* f = first)
-            fixed (char* s = second)
+            if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(second))
             {
-                char* l = f;
-                char* r = s;
-                char* leftEnd = l + first.Length;
-                char* rightEnd = r + second.Length;
-
-                while (l != leftEnd && r != rightEnd
-                    && (*l == *r || (ignoreCase && char.ToUpperInvariant(*l) == char.ToUpperInvariant(*r))))
-                {
-                    commonChars++;
-                    l++;
-                    r++;
-                }
+                return 0;
             }
 
-            return commonChars;
+            int commonLength = first.AsSpan().CommonPrefixLength(second);
+            if (ignoreCase)
+            {
+                for (; (uint)commonLength < (uint)first.Length; commonLength++)
+                {
+                    if (commonLength >= second.Length ||
+                        char.ToUpperInvariant(first[commonLength]) != char.ToUpperInvariant(second[commonLength]))
+                    {
+                        break;
+                    }
+                }
+            }
+            return commonLength;
         }
 
         /// <summary>
@@ -99,7 +95,7 @@ namespace System.IO
         /// </summary>
         /// <param name="path">Input path</param>
         /// <param name="rootLength">The length of the root of the given path</param>
-        internal static string RemoveRelativeSegments(string path, int rootLength)
+        internal static unsafe string RemoveRelativeSegments(string path, int rootLength)
         {
             var sb = new ValueStringBuilder(stackalloc char[260 /* PathInternal.MaxShortPath */]);
 

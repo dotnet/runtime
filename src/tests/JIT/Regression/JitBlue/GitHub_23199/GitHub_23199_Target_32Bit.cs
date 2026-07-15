@@ -182,6 +182,7 @@ namespace GitHub_23199_32Bit
         }
 
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

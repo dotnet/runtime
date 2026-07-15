@@ -1,6 +1,6 @@
 # Documentation of Exploratory tools Antigen and Fuzzlyn
 
-[Antigen](https://github.com/kunalspathak/antigen) and [Fuzzlyn](https://github.com/jakobbotsch/Fuzzlyn) are exploratory fuzzing tools used to test the JIT compiler.
+[Antigen](https://github.com/dotnet/jitutils/tree/main/src/Antigen) and [Fuzzlyn](https://github.com/jakobbotsch/Fuzzlyn) are exploratory fuzzing tools used to test the JIT compiler.
 
 ## Overview
 

@@ -1,51 +1,38 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using System.Collections.Generic;
+using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace System.Security.Cryptography
 {
     internal static class NetStandardShims
     {
-        internal static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> str)
+#if !NET
+        extension<T>(ReadOnlySpan<T> source) where T : IEquatable<T>?
         {
-            if (str.IsEmpty)
+            internal int IndexOfAnyExcept(T value)
             {
-                return 0;
-            }
+                for (int i = 0; i < source.Length; i++)
+                {
+                    if (!EqualityComparer<T>.Default.Equals(source[i], value))
+                    {
+                        return i;
+                    }
+                }
 
-            fixed (char* pStr = str)
-            {
-                return encoding.GetByteCount(pStr, str.Length);
+                return -1;
             }
         }
 
-        internal static unsafe int GetBytes(this Encoding encoding, string str, Span<byte> destination)
-        {
-            return GetBytes(encoding, str.AsSpan(), destination);
-        }
+#endif
 
-        internal static unsafe int GetBytes(this Encoding encoding, ReadOnlySpan<char> str, Span<byte> destination)
-        {
-            if (str.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (char* pStr = str)
-            fixed (byte* pDestination = destination)
-            {
-                return encoding.GetBytes(pStr, str.Length, pDestination, destination.Length);
-            }
-        }
-
-        internal static void ReadExactly(this System.IO.Stream stream, Span<byte> buffer) =>
+        internal static void ReadExactly(this Stream stream, Span<byte> buffer) =>
             ReadAtLeast(stream, buffer, buffer.Length, throwOnEndOfStream: true);
 
         internal static int ReadAtLeast(
-            this System.IO.Stream stream,
+            this Stream stream,
             Span<byte> buffer,
             int minimumBytes,
             bool throwOnEndOfStream = true)
@@ -119,7 +106,34 @@ namespace System.Security.Cryptography
         }
     }
 
-#if !NETSTANDARD2_1_OR_GREATER
+#if !NET11_0_OR_GREATER && (NET || NETSTANDARD)
+    internal static class CryptographicOperationsExtensions
+    {
+        extension(CryptographicOperations)
+        {
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            internal static bool FixedTimeEquals(ReadOnlySpan<byte> left, byte right)
+            {
+                // NoOptimization because we want this method to be exactly as non-short-circuiting
+                // as written.
+                //
+                // NoInlining because the NoOptimization would get lost if the method got inlined.
+
+                int length = left.Length;
+                int accum = 0;
+
+                for (int i = 0; i < length; i++)
+                {
+                    accum |= left[i] - right;
+                }
+
+                return accum == 0;
+            }
+        }
+    }
+#endif
+
+#if NETFRAMEWORK || NETSTANDARD2_0
     internal static class CryptographicOperations
     {
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -151,6 +165,27 @@ namespace System.Security.Cryptography
 
             return accum == 0;
         }
+
+#if NETFRAMEWORK
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        internal static bool FixedTimeEquals(ReadOnlySpan<byte> left, byte right)
+        {
+            // NoOptimization because we want this method to be exactly as non-short-circuiting
+            // as written.
+            //
+            // NoInlining because the NoOptimization would get lost if the method got inlined.
+
+            int length = left.Length;
+            int accum = 0;
+
+            for (int i = 0; i < length; i++)
+            {
+                accum |= left[i] - right;
+            }
+
+            return accum == 0;
+        }
+#endif
     }
 #endif
 }
