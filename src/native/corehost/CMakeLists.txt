@@ -81,7 +81,7 @@ if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_SUNOS)
     add_link_options(LINKER:-Bsymbolic)
 endif()
 
-if(NOT CLR_CMAKE_TARGET_BROWSER)
+if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     add_library(fxr_resolver INTERFACE)
     target_sources(fxr_resolver INTERFACE fxr_resolver.c)
     target_include_directories(fxr_resolver INTERFACE fxr)
@@ -112,9 +112,13 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
     if(CLR_CMAKE_BUILD_HOST_TESTS)
         add_subdirectory(test)
     endif()
-else()
+elseif(CLR_CMAKE_TARGET_BROWSER)
     add_subdirectory(hostmisc)
     add_subdirectory(browserhost)
+else() # CLR_CMAKE_TARGET_WASI
+    # The wasi host is a self-contained static archive (libWasiHost.a) linked per-app; it does not
+    # depend on hostmisc (it shares the corerun pal header instead), so only wasihost is built here.
+    add_subdirectory(wasihost)
 endif()
 
 # If there's a dynamic ASAN runtime, then install it in the directories where we put our executables.
