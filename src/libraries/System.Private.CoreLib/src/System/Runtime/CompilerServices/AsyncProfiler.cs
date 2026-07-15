@@ -994,9 +994,20 @@ namespace System.Runtime.CompilerServices
 
                 SyncPoint.Check(context);
 
-                if (IsEnabled.CreateStateMachineAsyncContextEvent(context.ActiveEventKeywords))
+                EventKeywords activeEventKeywords = context.ActiveEventKeywords;
+                if (IsEnabled.AnyBufferedEvents(activeEventKeywords))
                 {
-                    EmitEvent(context, Stopwatch.GetTimestamp(), parentDispatcherId, dispatcherId, AsyncEventID.CreateStateMachineAsyncContext);
+                    long currentTimestamp = Stopwatch.GetTimestamp();
+
+                    if (IsEnabled.TraceIdChangedEvent(activeEventKeywords))
+                    {
+                        ResumeAsyncContext.EmitTraceIdIfChanged(context, currentTimestamp);
+                    }
+
+                    if (IsEnabled.CreateStateMachineAsyncContextEvent(activeEventKeywords))
+                    {
+                        EmitEvent(context, currentTimestamp, parentDispatcherId, dispatcherId, AsyncEventID.CreateStateMachineAsyncContext);
+                    }
                 }
 
                 AsyncThreadContext.Release(context);

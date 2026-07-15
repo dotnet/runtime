@@ -143,7 +143,7 @@ namespace System.Runtime.CompilerServices
             // while the source is being disabled.
             if (keywords == 0 && IsEnabled())
             {
-                keywords = AsyncEventKeywords;
+                keywords = AsyncEventKeywords | Keywords.TraceIdChanged;
             }
 
             AsyncProfiler.Config.Update(m_level, keywords);
