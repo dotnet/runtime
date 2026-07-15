@@ -208,9 +208,7 @@
 #pragma warning(disable:4189) //local variable is initialized but not referenced
 #endif
 
-// Contract data types are limited to debug builds. The JIT doesn't link
-// against any portions of the contract data system so it must be disabled.
-#if defined(_DEBUG) && !defined(DISABLE_CONTRACTS) && !defined(JIT_BUILD)
+#if defined(_DEBUG) && !defined(DISABLE_CONTRACTS)
 #define ENABLE_CONTRACTS_DATA
 #endif
 
@@ -220,7 +218,6 @@
 #define ENABLE_CONTRACTS
 #endif
 
-// Finally, only define the implementation parts of contracts if this isn't for an external access (that is, _DEBUG_IMPL).
 #if defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS)
 #define ENABLE_CONTRACTS_IMPL
 #endif
