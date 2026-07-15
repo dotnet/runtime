@@ -290,6 +290,23 @@ namespace System.Numerics.Tests
             Assert.Equal(0, bytesConsumed);
         }
 
+        [Fact]
+        public static void PublicParse_RejectsInternalTrailingInvalidCharactersSentinel()
+        {
+            // 0x8000_0000 is the internal-only AllowTrailingInvalidCharacters sentinel used to
+            // implement TryParsePartial. It must never be honored through a public entry point,
+            // otherwise callers could opt into stop-at-first-invalid parsing via a raw cast.
+            NumberStyles sentinel = unchecked((NumberStyles)0x8000_0000);
+
+            AssertExtensions.Throws<ArgumentException>("style", () => Complex.Parse("<1; 2>x", sentinel, CultureInfo.InvariantCulture));
+            AssertExtensions.Throws<ArgumentException>("style", () => Complex.Parse("<1; 2>x".AsSpan(), sentinel, CultureInfo.InvariantCulture));
+            AssertExtensions.Throws<ArgumentException>("style", () => Complex.Parse("<1; 2>x"u8, sentinel, CultureInfo.InvariantCulture));
+
+            AssertExtensions.Throws<ArgumentException>("style", () => Complex.TryParse("<1; 2>x", sentinel, CultureInfo.InvariantCulture, out _));
+            AssertExtensions.Throws<ArgumentException>("style", () => Complex.TryParse("<1; 2>x".AsSpan(), sentinel, CultureInfo.InvariantCulture, out _));
+            AssertExtensions.Throws<ArgumentException>("style", () => Complex.TryParse("<1; 2>x"u8, sentinel, CultureInfo.InvariantCulture, out _));
+        }
+
         public static IEnumerable<object[]> Valid_2_TestData()
         {
             foreach (double real in s_validDoubleValues)

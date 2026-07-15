@@ -1508,5 +1508,22 @@ namespace System.Numerics.Tests
             Assert.Equal(BigInteger.Zero, result);
             Assert.Equal(0, bytesConsumed);
         }
+
+        [Fact]
+        public static void PublicParse_RejectsInternalTrailingInvalidCharactersSentinel()
+        {
+            // 0x8000_0000 is the internal-only AllowTrailingInvalidCharacters sentinel used to
+            // implement TryParsePartial. It must never be honored through a public entry point,
+            // otherwise callers could opt into stop-at-first-invalid parsing via a raw cast.
+            NumberStyles sentinel = unchecked((NumberStyles)0x8000_0000);
+
+            AssertExtensions.Throws<ArgumentException>("style", () => BigInteger.Parse("1x", sentinel));
+            AssertExtensions.Throws<ArgumentException>("style", () => BigInteger.Parse("1x".AsSpan(), sentinel));
+            AssertExtensions.Throws<ArgumentException>("style", () => BigInteger.Parse("1x"u8, sentinel));
+
+            AssertExtensions.Throws<ArgumentException>("style", () => BigInteger.TryParse("1x", sentinel, null, out _));
+            AssertExtensions.Throws<ArgumentException>("style", () => BigInteger.TryParse("1x".AsSpan(), sentinel, null, out _));
+            AssertExtensions.Throws<ArgumentException>("style", () => BigInteger.TryParse("1x"u8, sentinel, null, out _));
+        }
     }
 }

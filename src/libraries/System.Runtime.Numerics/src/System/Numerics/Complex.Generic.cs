@@ -1461,21 +1461,36 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
         public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int charsConsumed)
-            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style | Number.AllowTrailingInvalidCharacters, provider, out result, out charsConsumed);
+            => TryParsePartial(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style, provider, out result, out charsConsumed);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
         public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int bytesConsumed)
-            => TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style | Number.AllowTrailingInvalidCharacters, provider, out result, out bytesConsumed);
+            => TryParsePartial(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result, out bytesConsumed);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
         public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int charsConsumed)
-            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style | Number.AllowTrailingInvalidCharacters, provider, out result, out charsConsumed);
+            => TryParsePartial(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out result, out charsConsumed);
 
         internal static bool TryParse<TChar>(ReadOnlySpan<TChar> text, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             ValidateParseStyleFloatingPoint(style);
+            return TryParseCore(text, style, provider, out result, out elementsConsumed);
+        }
 
+        // Used by the INumberBase.TryParsePartial implementations. The user-provided style is validated first so the
+        // internal-only AllowTrailingInvalidCharacters sentinel can't be smuggled in through a public entry point; it
+        // is only layered on afterwards, once the style is known to be valid.
+        internal static bool TryParsePartial<TChar>(ReadOnlySpan<TChar> text, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int elementsConsumed)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            ValidateParseStyleFloatingPoint(style);
+            return TryParseCore(text, style | Number.AllowTrailingInvalidCharacters, provider, out result, out elementsConsumed);
+        }
+
+        private static bool TryParseCore<TChar>(ReadOnlySpan<TChar> text, NumberStyles style, IFormatProvider? provider, out Complex<T> result, out int elementsConsumed)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
             int openBracket = text.IndexOf(TChar.CastFrom('<'));
             int semicolon = text.IndexOf(TChar.CastFrom(';'));
             int closeBracket = text.IndexOf(TChar.CastFrom('>'));
@@ -1568,10 +1583,6 @@ namespace System.Numerics
 
         private static void ValidateParseStyleFloatingPoint(NumberStyles style)
         {
-            // AllowTrailingInvalidCharacters is an internal-only style used to request partial parsing; it is never
-            // user-visible, so exclude it from validation.
-            style &= ~Number.AllowTrailingInvalidCharacters;
-
             // Check for undefined flags or hex number
             if ((style & (Complex.InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
             {

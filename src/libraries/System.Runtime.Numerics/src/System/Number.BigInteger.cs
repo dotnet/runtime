@@ -42,10 +42,6 @@ namespace System
 
         internal static bool TryValidateParseStyleInteger(NumberStyles style, [NotNullWhen(false)] out ArgumentException? e)
         {
-            // AllowTrailingInvalidCharacters is an internal-only style used to request partial parsing; it is never
-            // user-visible, so exclude it from validation.
-            style &= ~AllowTrailingInvalidCharacters;
-
             // Check for undefined flags or using AllowHexSpecifier/AllowBinarySpecifier each with anything other than AllowLeadingWhite/AllowTrailingWhite.
             if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0 &&
                 (style & ~NumberStyles.HexNumber) != 0 &&
@@ -67,6 +63,26 @@ namespace System
                 throw e; // TryParse still throws ArgumentException on invalid NumberStyles
             }
 
+            return TryParseBigIntegerCore(value, style, info, out result, out elementsConsumed);
+        }
+
+        // Used by the INumberBase.TryParsePartial implementations. The user-provided style is validated first so the
+        // internal-only AllowTrailingInvalidCharacters sentinel can't be smuggled in through a public entry point; it
+        // is only layered on afterwards, once the style is known to be valid.
+        internal static ParsingStatus TryParseBigIntegerPartial<TChar>(ReadOnlySpan<TChar> value, NumberStyles style, NumberFormatInfo info, out BigInteger result, out int elementsConsumed)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (!TryValidateParseStyleInteger(style, out ArgumentException? e))
+            {
+                throw e; // TryParsePartial still throws ArgumentException on invalid NumberStyles
+            }
+
+            return TryParseBigIntegerCore(value, style | AllowTrailingInvalidCharacters, info, out result, out elementsConsumed);
+        }
+
+        private static ParsingStatus TryParseBigIntegerCore<TChar>(ReadOnlySpan<TChar> value, NumberStyles style, NumberFormatInfo info, out BigInteger result, out int elementsConsumed)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             {
                 return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerHexParser<TChar>, TChar>(value, style, out result, out elementsConsumed);
@@ -135,7 +151,7 @@ namespace System
                 throw e;
             }
 
-            ParsingStatus status = TryParseBigInteger(value, style, info, out BigInteger result, out _);
+            ParsingStatus status = TryParseBigIntegerCore(value, style, info, out BigInteger result, out _);
 
             if (status != ParsingStatus.OK)
             {

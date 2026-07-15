@@ -834,21 +834,21 @@ namespace System.Numerics
         public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Complex result, out int charsConsumed)
         {
             Unsafe.SkipInit(out result);
-            return Complex<double>.TryParse(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style | Number.AllowTrailingInvalidCharacters, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out charsConsumed);
+            return Complex<double>.TryParsePartial(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out charsConsumed);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
         public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex result, out int bytesConsumed)
         {
             Unsafe.SkipInit(out result);
-            return Complex<double>.TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style | Number.AllowTrailingInvalidCharacters, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out bytesConsumed);
+            return Complex<double>.TryParsePartial(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out bytesConsumed);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
         public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex result, out int charsConsumed)
         {
             Unsafe.SkipInit(out result);
-            return Complex<double>.TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style | Number.AllowTrailingInvalidCharacters, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out charsConsumed);
+            return Complex<double>.TryParsePartial(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out charsConsumed);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf)" />
