@@ -25,8 +25,9 @@ namespace BitwiseEquatableTests
         [InlineData(typeof(int), true)]
         [InlineData(typeof(Int128), true)]
         [InlineData(typeof(UInt128), true)]
-        // A SIMD/Unsafe-backed body is not a recognized field-wise shape.
-        [InlineData(typeof(Guid), false)]
+        // A SIMD/Unsafe-backed body isn't a recognized field-wise shape, but Guid is a known
+        // bitwise-equatable type special-cased by the runtime (matching NativeAOT), so it stays true.
+        [InlineData(typeof(Guid), true)]
         // Plain field-wise IEquatable<T>.Equals.
         [InlineData(typeof(Point), true)]
         [InlineData(typeof(ThreeFields), true)]

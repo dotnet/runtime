@@ -1,4 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- The field-wise scan matches the optimized IL shape Roslyn emits, so keep this test optimized
+         regardless of the build configuration (Debug would otherwise default Optimize to false). -->
+    <Optimize>true</Optimize>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="BitwiseEquatable.cs" />
   </ItemGroup>
