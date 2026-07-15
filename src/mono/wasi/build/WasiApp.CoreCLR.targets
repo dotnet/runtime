@@ -68,16 +68,18 @@
            Text="System.Private.CoreLib.dll not found in the runtime pack native dir: $(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
     <ItemGroup>
       <_WasiCoreCLRCoreLib Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll" />
-      <!-- Framework assemblies from the runtime pack (implementation, not ref). -->
+      <!-- Framework assemblies from the runtime pack (implementation, not ref). Filter out
+           any the app already published (its version is authoritative) into a separate list
+           so a single Copy runs on the remainder - avoids per-file Copy task batching. -->
       <_WasiCoreCLRFrameworkFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)\*.dll" />
+      <_WasiCoreCLRFrameworkToCopy Include="@(_WasiCoreCLRFrameworkFiles)"
+                                   Condition="!Exists('$(WasmAppDir)managed\%(_WasiCoreCLRFrameworkFiles.FileName)%(_WasiCoreCLRFrameworkFiles.Extension)')" />
     </ItemGroup>
     <Copy SourceFiles="@(_WasiCoreCLRCoreLib)"
           DestinationFolder="$(WasmAppDir)managed"
           SkipUnchangedFiles="true" />
-    <!-- Do not overwrite an assembly the app already published (its version is authoritative). -->
-    <Copy SourceFiles="@(_WasiCoreCLRFrameworkFiles)"
-          DestinationFiles="@(_WasiCoreCLRFrameworkFiles->'$(WasmAppDir)managed\%(FileName)%(Extension)')"
-          Condition="!Exists('$(WasmAppDir)managed\%(_WasiCoreCLRFrameworkFiles.FileName)%(_WasiCoreCLRFrameworkFiles.Extension)')"
+    <Copy SourceFiles="@(_WasiCoreCLRFrameworkToCopy)"
+          DestinationFolder="$(WasmAppDir)managed"
           SkipUnchangedFiles="true" />
   </Target>
 
@@ -173,7 +175,7 @@
          force-included coreclr_compat.h supplies the prerequisite types/macros the
          in-tree PCH would otherwise provide. -->
     <ItemGroup>
-      <_WasiRelinkCompileFlags Include="--target=wasm32-wasip2" />
+      <_WasiRelinkCompileFlags Include="--target=wasm32-unknown-wasip2" />
       <_WasiRelinkCompileFlags Include="--sysroot=&quot;$(_WasiSysroot.Replace('\','/'))&quot;" />
       <_WasiRelinkCompileFlags Include="$(_WasiRelinkOptFlag)" />
       <_WasiRelinkCompileFlags Include="-DNDEBUG" Condition="'$(Configuration)' != 'Debug'" />
@@ -280,7 +282,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_WasiRelinkLinkFlags Include="--target=wasm32-wasip2" />
+      <_WasiRelinkLinkFlags Include="--target=wasm32-unknown-wasip2" />
       <_WasiRelinkLinkFlags Include="$(_WasiRelinkOptFlag)" />
       <_WasiRelinkLinkFlags Include="-DNDEBUG" Condition="'$(Configuration)' != 'Debug'" />
       <_WasiRelinkLinkFlags Include="-Wl,--gc-sections" />
