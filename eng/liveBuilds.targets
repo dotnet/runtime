@@ -215,6 +215,16 @@
                                                    $(LibrariesNativeArtifactsPath)libbrotlidec.a;
                                                    $(LibrariesNativeArtifactsPath)libbrotlienc.a" />
 
+      <!-- Android CoreCLR also installs these native libs to its shared framework. -->
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetsAndroid)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(BuildNativeAOTRuntimePack)' != 'true'"
+                                          Include="$(LibrariesNativeArtifactsPath)libSystem.Globalization.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Security.Cryptography.Native.Android.a;
+                                                   $(LibrariesNativeArtifactsPath)libbrotlicommon.a;
+                                                   $(LibrariesNativeArtifactsPath)libbrotlidec.a;
+                                                   $(LibrariesNativeArtifactsPath)libbrotlienc.a" />
+
       <!-- Same situation on WASI with CoreCLR: System.IO.Compression.Native/CMakeLists.txt
            installs libSystem.IO.Compression.Native.a and libz.a directly into the
            CoreCLR sharedFramework directory for CLR_CMAKE_TARGET_WASI, where they are
