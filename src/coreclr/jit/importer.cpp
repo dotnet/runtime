@@ -5513,16 +5513,30 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
         }
         else if (castResult == TypeCompareState::MustNot)
         {
-            // See if we can sharpen exactness by looking for final classes
-            if (!isExact)
+            // See if we can prove that no subtype of fromClass can be cast to toClass.
+            bool castMustFail = isExact || info.compCompHnd->isExactType(fromClass);
+
+            if (!castMustFail && !isCastClass)
             {
-                isExact = info.compCompHnd->isExactType(fromClass);
+                constexpr unsigned nonClassTypeAttribs = CORINFO_FLG_ARRAY | CORINFO_FLG_DELEGATE |
+                                                         CORINFO_FLG_GENERIC_TYPE_VARIABLE | CORINFO_FLG_INTERFACE |
+                                                         CORINFO_FLG_VALUECLASS;
+
+                // If both types are ordinary classes and neither derives from the other,
+                // then their class hierarchies cannot overlap.
+                const unsigned toClassAttribs = info.compCompHnd->getClassAttribs(toClass);
+                if ((toClassAttribs & nonClassTypeAttribs) == 0)
+                {
+                    const unsigned fromClassAttribs = info.compCompHnd->getClassAttribs(fromClass);
+                    if ((fromClassAttribs & nonClassTypeAttribs) == 0)
+                    {
+                        castMustFail =
+                            info.compCompHnd->compareTypesForCast(toClass, fromClass) == TypeCompareState::MustNot;
+                    }
+                }
             }
 
-            // Cast to exact type will fail. Handle case where we have
-            // an exact type (that is, fromClass is not a subtype)
-            // and we're not going to throw on failure.
-            if (isExact && !isCastClass)
+            if (castMustFail && !isCastClass)
             {
                 JITDUMP("Cast will fail, optimizing to return null\n");
 
@@ -5539,7 +5553,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
                 }
                 return gtNewNull();
             }
-            else if (isExact)
+            else if (castMustFail)
             {
                 JITDUMP("Not optimizing failing castclass (yet)\n");
             }
