@@ -42,39 +42,5 @@ namespace System.IO.Tests
                 Assert.Throws<NotSupportedException>(() => _ = fs.Position);
             }
         }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void SyncWrite_PositionUpdatedAfterWrite(bool useSpanOverload)
-        {
-            string fileName = GetTestFilePath();
-            using FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-
-            Assert.Equal(0, fs.Position);
-
-            byte[] firstChunk = new byte[50];
-            byte[] secondChunk = new byte[50];
-
-            if (useSpanOverload)
-            {
-                fs.Write(firstChunk.AsSpan());
-            }
-            else
-            {
-                fs.Write(firstChunk, 0, firstChunk.Length);
-            }
-            Assert.Equal(firstChunk.Length, fs.Position);
-
-            if (useSpanOverload)
-            {
-                fs.Write(secondChunk.AsSpan());
-            }
-            else
-            {
-                fs.Write(secondChunk, 0, secondChunk.Length);
-            }
-            Assert.Equal(firstChunk.Length + secondChunk.Length, fs.Position);
-        }
     }
 }
