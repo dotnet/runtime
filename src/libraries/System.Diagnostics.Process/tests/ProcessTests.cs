@@ -772,7 +772,8 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                // Unix reaps child processes after exit. Processor times are unavailable, and StartTime was not cached.
+                // Unix reaps child processes after exit. Processor times are unavailable, and StartTime was not
+                // accessed before exit and therefore was not cached.
                 Assert.Throws<InvalidOperationException>(() => process.StartTime);
                 Assert.Throws<InvalidOperationException>(() => process.PrivilegedProcessorTime);
                 Assert.Throws<InvalidOperationException>(() => process.TotalProcessorTime);
