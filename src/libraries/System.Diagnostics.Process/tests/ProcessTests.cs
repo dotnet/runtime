@@ -751,6 +751,35 @@ namespace System.Diagnostics.Tests
             Assert.InRange(p.ExitTime.ToUniversalTime(), timeBeforeProcessStart, DateTime.MaxValue);
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Process timing information is not supported on iOS/tvOS")]
+        public void TimingProperties_AfterProcessExit()
+        {
+            Process process = CreateProcess();
+            process.Start();
+            Assert.True(process.WaitForExit(WaitInMS));
+
+            Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
+            Assert.NotEqual(default, process.ExitTime);
+
+            if (OperatingSystem.IsWindows())
+            {
+                // Windows process handles retain timing information after the process exits.
+                Assert.InRange(process.StartTime, DateTime.MinValue, process.ExitTime);
+                Assert.InRange(process.PrivilegedProcessorTime, TimeSpan.Zero, TimeSpan.MaxValue);
+                Assert.InRange(process.TotalProcessorTime, TimeSpan.Zero, TimeSpan.MaxValue);
+                Assert.InRange(process.UserProcessorTime, TimeSpan.Zero, TimeSpan.MaxValue);
+            }
+            else
+            {
+                // Unix reaps child processes after exit, so timing information that was not cached is unavailable.
+                Assert.Throws<InvalidOperationException>(() => process.StartTime);
+                Assert.Throws<InvalidOperationException>(() => process.PrivilegedProcessorTime);
+                Assert.Throws<InvalidOperationException>(() => process.TotalProcessorTime);
+                Assert.Throws<InvalidOperationException>(() => process.UserProcessorTime);
+            }
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void StartTime_GetNotStarted_ThrowsInvalidOperationException()

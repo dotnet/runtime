@@ -27,6 +27,8 @@ namespace System.Diagnostics
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
         /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
         /// </summary>
+        /// <remarks>The value is unavailable after the process exits.</remarks>
+        /// <exception cref="InvalidOperationException">No process is associated with this object, or the process has exited.</exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -49,6 +51,8 @@ namespace System.Diagnostics
         /// Gets the amount of time the associated process has spent running code
         /// inside the application portion of the process (not the operating system core).
         /// </summary>
+        /// <remarks>The value is unavailable after the process exits.</remarks>
+        /// <exception cref="InvalidOperationException">No process is associated with this object, or the process has exited.</exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -69,6 +73,8 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
+        /// <remarks>The value is unavailable after the process exits.</remarks>
+        /// <exception cref="InvalidOperationException">No process is associated with this object, or the process has exited.</exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]

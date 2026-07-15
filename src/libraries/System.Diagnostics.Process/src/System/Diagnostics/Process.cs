@@ -188,6 +188,13 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
+        /// <remarks>
+        /// On Windows, this property can be read after the process exits.
+        /// On Unix, it can be read after exit only if it was accessed while the process was running.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// No process is associated with this object, or the process exited on Unix before the property was accessed.
+        /// </exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -203,11 +210,8 @@ namespace System.Diagnostics
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the time that the associated process exited.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>Gets the time that the associated process exited.</summary>
+        /// <exception cref="InvalidOperationException">The process has not exited.</exception>
         public DateTime ExitTime
         {
             get
