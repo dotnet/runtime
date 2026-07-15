@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
@@ -34,6 +35,7 @@ namespace System.Runtime.CompilerServices
             public const EventKeywords ResumeStateMachineAsyncCallstack = (EventKeywords)0x8000;
             public const EventKeywords ResumeStateMachineAsyncMethod = (EventKeywords)0x10000;
             public const EventKeywords CompleteStateMachineAsyncMethod = (EventKeywords)0x20000;
+            public const EventKeywords TraceIdChanged = (EventKeywords)0x40000;
         }
 
         public const EventKeywords AsyncEventKeywords =
@@ -56,7 +58,6 @@ namespace System.Runtime.CompilerServices
             Keywords.ResumeStateMachineAsyncMethod |
             Keywords.CompleteStateMachineAsyncMethod;
 
-
         public const int FlushCommand = 1;
 
         //----------------------- Event IDs (must be unique) -----------------------
@@ -71,7 +72,10 @@ namespace System.Runtime.CompilerServices
             Version = 1,
             Opcode = EventOpcode.Info,
             Level = EventLevel.Informational,
-            Keywords = AsyncEventKeywords,
+            // This blob carries every buffered payload, including trace-id records under the decoupled
+            // transport, so its keyword must include TraceIdChanged; otherwise a trace-id-only session buffers
+            // records that are then dropped here because the carrier's keyword is inactive.
+            Keywords = AsyncEventKeywords | Keywords.TraceIdChanged,
             Message = "")]
         public void AsyncEvents(byte[] buffer)
         {

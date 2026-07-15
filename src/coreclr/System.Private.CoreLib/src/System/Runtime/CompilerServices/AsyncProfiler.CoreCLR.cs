@@ -51,20 +51,29 @@ namespace System.Runtime.CompilerServices
                 SyncPoint.Check(context);
 
                 EventKeywords eventKeywords = context.ActiveEventKeywords;
-                if (IsEnabled.AnyAsyncEvents(eventKeywords))
+                if (IsEnabled.AnyBufferedEvents(eventKeywords))
                 {
-                    ulong parentDispatcherId = DispatcherIds.CaptureParentDispatcherId();
-                    ulong dispatcherId = DispatcherIds.GetDispatcherId(dispatcher);
                     long currentTimestamp = Stopwatch.GetTimestamp();
 
-                    if (IsEnabled.CreateRuntimeAsyncContextEvent(eventKeywords))
+                    if (IsEnabled.TraceIdChangedEvent(eventKeywords))
                     {
-                        EmitEvent(context, currentTimestamp, parentDispatcherId, dispatcherId, AsyncEventID.CreateRuntimeAsyncContext);
+                        ResumeAsyncContext.EmitTraceIdIfChanged(context, currentTimestamp);
                     }
 
-                    if (IsEnabled.CreateRuntimeAsyncCallstackEvent(eventKeywords) && nextContinuation != null)
+                    if (IsEnabled.AnyAsyncEvents(eventKeywords))
                     {
-                        AsyncCallstack.EmitCreateEvent(context, currentTimestamp, parentDispatcherId, dispatcherId, nextContinuation);
+                        ulong parentDispatcherId = DispatcherIds.CaptureParentDispatcherId();
+                        ulong dispatcherId = DispatcherIds.GetDispatcherId(dispatcher);
+
+                        if (IsEnabled.CreateRuntimeAsyncContextEvent(eventKeywords))
+                        {
+                            EmitEvent(context, currentTimestamp, parentDispatcherId, dispatcherId, AsyncEventID.CreateRuntimeAsyncContext);
+                        }
+
+                        if (IsEnabled.CreateRuntimeAsyncCallstackEvent(eventKeywords) && nextContinuation != null)
+                        {
+                            AsyncCallstack.EmitCreateEvent(context, currentTimestamp, parentDispatcherId, dispatcherId, nextContinuation);
+                        }
                     }
                 }
 
@@ -124,9 +133,14 @@ namespace System.Runtime.CompilerServices
                 SyncPoint.Check(context);
 
                 EventKeywords activeEventKeywords = context.ActiveEventKeywords;
-                if (IsEnabled.AnyAsyncEvents(activeEventKeywords))
+                if (IsEnabled.AnyBufferedEvents(activeEventKeywords))
                 {
                     long currentTimestamp = Stopwatch.GetTimestamp();
+
+                    if (IsEnabled.TraceIdChangedEvent(activeEventKeywords))
+                    {
+                        ResumeAsyncContext.EmitTraceIdIfChanged(context, currentTimestamp);
+                    }
 
                     if (IsEnabled.SuspendRuntimeAsyncCallstackEvent(activeEventKeywords) && nextContinuation != null)
                     {

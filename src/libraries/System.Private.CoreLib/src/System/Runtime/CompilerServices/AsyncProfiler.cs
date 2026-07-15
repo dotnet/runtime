@@ -48,7 +48,16 @@ namespace System.Runtime.CompilerServices
             ResetAsyncContinuationWrapperIndex = 21,
             AsyncProfilerMetadata = 22,
             AsyncProfilerSyncClock = 23,
+
+            // Per-thread trace-id change-point (16-byte payload). Emitted on-change at the async hooks and at
+            // synchronous Activity.Current transitions, so a parser can resolve the active trace at any
+            // (osThreadId, timestamp).
+            TraceIdChanged = 24,
         }
+
+        // W3C trace id is 16 bytes: the TraceIdChanged payload, the async-path scratch buffer, and the
+        // per-context last-seen id all share this width.
+        private const int TraceIdLength = 16;
 
         // Per-event manifest entry: schema version + payload length-prefix size.
         // The runtime emits this table in the AsyncProfilerMetadata event so parsers can
@@ -98,6 +107,8 @@ namespace System.Runtime.CompilerServices
             public const EventManifestEntry.PayloadLengthFieldSize AsyncProfilerMetadataPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.UShort;
             public const EventManifestEntry.PayloadLengthFieldSize AsyncProfilerSyncClockPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.Byte;
 
+            public const EventManifestEntry.PayloadLengthFieldSize TraceIdChangedPayloadLengthFieldSize = EventManifestEntry.PayloadLengthFieldSize.Byte;
+
             public static readonly EventManifestEntry[] Entries = BuildEntries();
 
             public static EventManifestEntry.PayloadLengthFieldSize GetPayloadLengthFieldSize(AsyncEventID eventID)
@@ -138,6 +149,8 @@ namespace System.Runtime.CompilerServices
                     new EventManifestEntry(AsyncEventID.ResetAsyncContinuationWrapperIndex, 1, ResetAsyncContinuationWrapperIndexPayloadLengthFieldSize),
                     new EventManifestEntry(AsyncEventID.AsyncProfilerMetadata, 1, AsyncProfilerMetadataPayloadLengthFieldSize),
                     new EventManifestEntry(AsyncEventID.AsyncProfilerSyncClock, 1, AsyncProfilerSyncClockPayloadLengthFieldSize),
+
+                    new EventManifestEntry(AsyncEventID.TraceIdChanged, 1, TraceIdChangedPayloadLengthFieldSize),
                 ];
 
 #if DEBUG
@@ -193,7 +206,7 @@ namespace System.Runtime.CompilerServices
                         EventBufferSize = Math.Min(eventBufferSize, 64 * 1024 - 256);
                     }
 
-                    if (IsEnabled.AnyAsyncEvents(ActiveEventKeywords))
+                    if (IsEnabled.AnyBufferedEvents(ActiveEventKeywords))
                     {
                         AsyncThreadContextCache.EnableFlushTimer();
                         AsyncThreadContextCache.DisableCleanupTimer();
@@ -291,7 +304,7 @@ namespace System.Runtime.CompilerServices
 
                 s_lastSyncClockEventTimestamp = currentTimestamp;
 
-                if (IsEnabled.AnyAsyncEvents(ActiveEventKeywords))
+                if (IsEnabled.AnyBufferedEvents(ActiveEventKeywords))
                 {
                     AsyncThreadContext transientContext = AsyncThreadContext.AcquireTransient();
 
@@ -371,6 +384,8 @@ namespace System.Runtime.CompilerServices
                 flags |= IsEnabled.ResumeStateMachineAsyncCallstackEvent(ActiveEventKeywords) ? AsyncInstrumentation.Flags.ResumeAsyncContext : AsyncInstrumentation.Flags.Disabled;
                 flags |= IsEnabled.ResumeStateMachineAsyncMethodEvent(ActiveEventKeywords) ? AsyncInstrumentation.Flags.ResumeAsyncMethod : AsyncInstrumentation.Flags.Disabled;
                 flags |= IsEnabled.CompleteStateMachineAsyncMethodEvent(ActiveEventKeywords) ? AsyncInstrumentation.Flags.CompleteAsyncMethod : AsyncInstrumentation.Flags.Disabled;
+
+                flags |= IsEnabled.TraceIdChangedEvent(ActiveEventKeywords) ? (AsyncInstrumentation.Flags.CreateAsyncContext | AsyncInstrumentation.Flags.SuspendAsyncContext) : AsyncInstrumentation.Flags.Disabled;
 
                 AsyncInstrumentation.UpdateAsyncProfilerFlags(flags);
             }
@@ -700,6 +715,26 @@ namespace System.Runtime.CompilerServices
 
             public volatile bool BlockContext;
 
+            // Last trace id buffered as a change-point on this context (emit-on-change dedup). Reset on context
+            // reset / return-to-pool so a recycled thread re-declares its id rather than inheriting a stale one.
+            private readonly byte[] _lastTraceId = new byte[TraceIdLength];
+            private bool _hasLastTraceId;
+
+            public bool TraceIdChanged(ReadOnlySpan<byte> traceId)
+            {
+                Debug.Assert(traceId.Length == TraceIdLength);
+                return !_hasLastTraceId || !traceId.SequenceEqual(_lastTraceId);
+            }
+
+            public void SetLastTraceId(ReadOnlySpan<byte> traceId)
+            {
+                Debug.Assert(traceId.Length == TraceIdLength);
+                traceId.CopyTo(_lastTraceId);
+                _hasLastTraceId = true;
+            }
+
+            public void ResetLastTraceId() => _hasLastTraceId = false;
+
             public ref EventBuffer EventBuffer
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -929,9 +964,15 @@ namespace System.Runtime.CompilerServices
                 SyncPoint.Check(context);
 
                 EventKeywords activeEventKeywords = context.ActiveEventKeywords;
-                if (IsEnabled.AnyAsyncEvents(activeEventKeywords))
+                if (IsEnabled.AnyBufferedEvents(activeEventKeywords))
                 {
                     long currentTimestamp = Stopwatch.GetTimestamp();
+
+                    if (IsEnabled.TraceIdChangedEvent(activeEventKeywords))
+                    {
+                        ResumeAsyncContext.EmitTraceIdIfChanged(context, currentTimestamp);
+                    }
+
                     if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(activeEventKeywords))
                     {
                         ResumeAsyncContext.Append(dispatcher, context, currentTimestamp);
@@ -1013,6 +1054,54 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
+            // Samples the current trace id at an async hook and buffers it if it changed.
+            //
+            // Called at create and suspend where the user's ExecutionContext (and thus Activity.Current) is live,
+            // and not called at resume where the hook runs before the continuation's ExecutionContext is restored,
+            // so Activity.Current (an AsyncLocal) would read its ambient null value.
+            //
+            // There is no cheaper edge-trigger for async: an ExecutionContext restore does not raise Activity.CurrentChanged,
+            // so the async trace context is invisible to that event and must be sampled here.
+            // A cleared/non-W3C Activity reads as the all-zero id, so clearing the trace is just another change-point.
+            public static void EmitTraceIdIfChanged(AsyncThreadContext context, long currentTimestamp)
+            {
+                Span<byte> traceId = stackalloc byte[TraceIdLength];
+                if (!EventTraceContext.TryGetCurrentTraceId(traceId))
+                {
+                    traceId.Clear();
+                }
+
+                WriteTraceIdChanged(context, currentTimestamp, traceId);
+            }
+
+            // Buffers a 16-byte trace-id change-point, deduped against this context's last-seen id. Shared by the
+            // async change-points (which sample the live Activity.Current) and the synchronous change-point
+            // (which supplies the new activity's id directly), so both funnel through one buffer and one
+            // last-seen. Last-seen advances only after a successful write, so a record dropped by a full buffer
+            // is re-attempted next time.
+            public static void WriteTraceIdChanged(AsyncThreadContext context, long currentTimestamp, ReadOnlySpan<byte> traceId)
+            {
+                Debug.Assert(traceId.Length == TraceIdLength);
+
+                if (!context.TraceIdChanged(traceId))
+                {
+                    return;
+                }
+
+                const int MaxPayloadLength = TraceIdLength;
+
+                ref EventBuffer eventBuffer = ref context.EventBuffer;
+                if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, AsyncEventID.TraceIdChanged, EventManifest.TraceIdChangedPayloadLengthFieldSize, MaxPayloadLength, out int payloadLengthFieldOffset))
+                {
+                    Span<byte> payload = eventBuffer.Data.AsSpan(eventBuffer.Index, MaxPayloadLength);
+                    traceId.CopyTo(payload);
+                    eventBuffer.Index += MaxPayloadLength;
+                    Serializer.WriteAsyncEventPayloadLength(ref eventBuffer, AsyncEventID.TraceIdChanged, EventManifest.TraceIdChangedPayloadLengthFieldSize, payloadLengthFieldOffset);
+
+                    context.SetLastTraceId(traceId);
+                }
+            }
+
             public static void Append(AsyncStateMachineDispatcher dispatcher, AsyncThreadContext context, long currentTimestamp)
             {
                 if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(context.ActiveEventKeywords) && dispatcher.ContinuationChainChanged)
@@ -1059,9 +1148,15 @@ namespace System.Runtime.CompilerServices
                 SyncPoint.Check(context);
 
                 EventKeywords activeEventKeywords = context.ActiveEventKeywords;
-                if (IsEnabled.AnyAsyncEvents(activeEventKeywords))
+                if (IsEnabled.AnyBufferedEvents(activeEventKeywords))
                 {
                     long currentTimestamp = Stopwatch.GetTimestamp();
+
+                    if (IsEnabled.TraceIdChangedEvent(activeEventKeywords))
+                    {
+                        ResumeAsyncContext.EmitTraceIdIfChanged(context, currentTimestamp);
+                    }
+
                     if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(activeEventKeywords))
                     {
                         ResumeAsyncContext.Append(dispatcher, context, currentTimestamp);
@@ -1307,9 +1402,20 @@ namespace System.Runtime.CompilerServices
                 context.ConfigRevision = Config.Revision;
                 context.ActiveEventKeywords = Config.ActiveEventKeywords;
 
-                if (IsEnabled.AnyAsyncEvents(context.ActiveEventKeywords))
+                // Reset the last-seen so the next change-point re-declares the id: a reset means a late-joining
+                // session or a recycled thread, and the parser must not trust a value from before the reset.
+                context.ResetLastTraceId();
+
+                // Metadata (clock sync + manifest) is required to decode any buffered event, including a lone
+                // trace-id change-point, so emit it whenever the buffer path is active.
+                if (IsEnabled.AnyBufferedEvents(context.ActiveEventKeywords))
                 {
                     Config.EmitAsyncProfilerMetadataIfNeeded(context);
+                }
+
+                // The continuation-wrapper index only matters to async callstack events; skip it in TraceId-only mode.
+                if (IsEnabled.AnyAsyncEvents(context.ActiveEventKeywords))
+                {
                     EmitEvent(context);
                 }
 
@@ -1369,6 +1475,10 @@ namespace System.Runtime.CompilerServices
             public static bool ResumeStateMachineAsyncMethodEvent(EventKeywords eventKeywords) => (eventKeywords & AsyncProfilerEventSource.Keywords.ResumeStateMachineAsyncMethod) != 0;
             public static bool CompleteStateMachineAsyncMethodEvent(EventKeywords eventKeywords) => (eventKeywords & AsyncProfilerEventSource.Keywords.CompleteStateMachineAsyncMethod) != 0;
             public static bool AnyAsyncEvents(EventKeywords eventKeywords) => (eventKeywords & AsyncProfilerEventSource.AsyncEventKeywords) != 0;
+
+            public static bool TraceIdChangedEvent(EventKeywords eventKeywords) => (eventKeywords & AsyncProfilerEventSource.Keywords.TraceIdChanged) != 0;
+
+            public static bool AnyBufferedEvents(EventKeywords eventKeywords) => AnyAsyncEvents(eventKeywords) || TraceIdChangedEvent(eventKeywords);
         }
 
         private static class AsyncThreadContextCache
@@ -1450,7 +1560,7 @@ namespace System.Runtime.CompilerServices
                 {
                     FlushCore(false);
 
-                    if (IsEnabled.AnyAsyncEvents(Config.ActiveEventKeywords))
+                    if (IsEnabled.AnyBufferedEvents(Config.ActiveEventKeywords))
                     {
                         // Restart flush timer.
                         s_flushTimer?.Change(AsyncThreadContextCacheFlushTimerIntervalMs, Timeout.Infinite);
