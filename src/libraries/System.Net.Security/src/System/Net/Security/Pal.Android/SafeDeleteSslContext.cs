@@ -218,9 +218,19 @@ namespace System.Net
                     ? authOptions.TargetHost
                     : null;
 
-            IntPtr keyManagers = authOptions.CertificateContext is not null
-                ? CreateKeyManagers(authOptions.CertificateContext)
-                : IntPtr.Zero;
+            IntPtr keyManagers = IntPtr.Zero;
+            if (authOptions.CertificateContext is not null)
+            {
+                keyManagers = CreateKeyManagers(authOptions.CertificateContext);
+            }
+            else if (!authOptions.IsServer && authOptions.CertSelectionDelegate is not null)
+            {
+                keyManagers = Interop.AndroidCrypto.SSLStreamCreateKeyManagersForSelection(sslStreamProxy);
+                if (keyManagers == IntPtr.Zero)
+                {
+                    throw new Interop.AndroidCrypto.SslException();
+                }
+            }
 
             try
             {
@@ -242,50 +252,50 @@ namespace System.Net
                     Interop.JObjectLifetime.DeleteGlobalReference(keyManagers);
                 }
             }
+        }
 
-            static IntPtr CreateKeyManagers(SslStreamCertificateContext context)
+        internal static IntPtr CreateKeyManagers(SslStreamCertificateContext context)
+        {
+            X509Certificate2 cert = context.TargetCertificate;
+            Debug.Assert(cert.HasPrivateKey);
+
+            IntPtr keyManagers;
+            if (Interop.AndroidCrypto.IsKeyStorePrivateKeyEntry(cert.Handle))
             {
-                X509Certificate2 cert = context.TargetCertificate;
-                Debug.Assert(cert.HasPrivateKey);
-
-                IntPtr keyManagers;
-                if (Interop.AndroidCrypto.IsKeyStorePrivateKeyEntry(cert.Handle))
-                {
-                    keyManagers = Interop.AndroidCrypto.SSLStreamCreateKeyManagersFromKeyStoreEntry(cert.Handle);
-                }
-                else
-                {
-                    PAL_KeyAlgorithm algorithm;
-                    byte[] keyBytes;
-                    using (AsymmetricAlgorithm key = GetPrivateKeyAlgorithm(cert, out algorithm))
-                    {
-                        keyBytes = key.ExportPkcs8PrivateKey();
-                    }
-
-                    try
-                    {
-                        IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Count + 1];
-                        ptrs[0] = cert.Handle;
-                        for (int i = 0; i < context.IntermediateCertificates.Count; i++)
-                        {
-                            ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
-                        }
-
-                        keyManagers = Interop.AndroidCrypto.SSLStreamCreateKeyManagers(keyBytes, algorithm, ptrs);
-                    }
-                    finally
-                    {
-                        CryptographicOperations.ZeroMemory(keyBytes);
-                    }
-                }
-
-                if (keyManagers == IntPtr.Zero)
-                {
-                    throw new Interop.AndroidCrypto.SslException();
-                }
-
-                return keyManagers;
+                keyManagers = Interop.AndroidCrypto.SSLStreamCreateKeyManagersFromKeyStoreEntry(cert.Handle);
             }
+            else
+            {
+                PAL_KeyAlgorithm algorithm;
+                byte[] keyBytes;
+                using (AsymmetricAlgorithm key = GetPrivateKeyAlgorithm(cert, out algorithm))
+                {
+                    keyBytes = key.ExportPkcs8PrivateKey();
+                }
+
+                try
+                {
+                    IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Count + 1];
+                    ptrs[0] = cert.Handle;
+                    for (int i = 0; i < context.IntermediateCertificates.Count; i++)
+                    {
+                        ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
+                    }
+
+                    keyManagers = Interop.AndroidCrypto.SSLStreamCreateKeyManagers(keyBytes, algorithm, ptrs);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(keyBytes);
+                }
+            }
+
+            if (keyManagers == IntPtr.Zero)
+            {
+                throw new Interop.AndroidCrypto.SslException();
+            }
+
+            return keyManagers;
         }
 
         private static AsymmetricAlgorithm GetPrivateKeyAlgorithm(X509Certificate2 cert, out PAL_KeyAlgorithm algorithm)
