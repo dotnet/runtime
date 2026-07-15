@@ -4,6 +4,7 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
@@ -292,10 +293,10 @@ namespace System.Net.Security
 
         // Translates a non-progress SslErrorCode into either a status the caller
         // can act on (NeedMoreData / DestinationTooSmall / Closed) or, for a real
-        // failure, an SslException whose message includes the OpenSSL error-queue
-        // reason (formatted via SR-backed template). The template is picked per
-        // operation so exceptions surface consistently with SslStream's OpenSSL
-        // error handling.
+        // failure, an AuthenticationException whose inner SslException carries the
+        // OpenSSL error-queue reason (formatted via SR-backed template). The template
+        // is picked per operation so exceptions surface consistently with SslStream's
+        // OpenSSL error handling.
         private static TlsOperationStatus MapSslError(Interop.Ssl.SslErrorCode error, string sslErrorTemplate)
         {
             return error switch
@@ -303,7 +304,7 @@ namespace System.Net.Security
                 Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ => TlsOperationStatus.NeedMoreData,
                 Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE => TlsOperationStatus.DestinationTooSmall,
                 Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN => TlsOperationStatus.Closed,
-                _ => throw Interop.OpenSsl.CreateSslException(sslErrorTemplate),
+                _ => throw new AuthenticationException(SR.net_auth_SSPI, Interop.OpenSsl.CreateSslException(sslErrorTemplate)),
             };
         }
     }
