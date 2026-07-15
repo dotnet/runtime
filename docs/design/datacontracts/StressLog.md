@@ -223,6 +223,7 @@ protected TargetPointer GetFormatPointer(ulong formatOffset)
     }
     uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
     TargetNUInt maxModules = new(target.ReadGlobalPointer("StressLogMaxModules").Value);
+    ulong cumulativeOffset = 0;
     for (ulong i = 0; i < maxModules.Value; ++i)
     {
         StressLogModuleDesc module = new(Target, moduleTable.Value + i * moduleEntrySize);
