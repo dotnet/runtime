@@ -76,7 +76,7 @@ extern "C" {
     int32_t SystemNative_FChflags (void *, uint32_t);
     int32_t SystemNative_FLock (void *, int32_t);
     int32_t SystemNative_FStat (void *, void *);
-    int32_t SystemNative_FSync (void *);
+    int32_t SystemNative_FSync (void *, int32_t);
     int32_t SystemNative_FTruncate (void *, int64_t);
     int32_t SystemNative_FUTimens (void *, void *);
     int32_t SystemNative_FcntlGetFD (void *);
