@@ -2509,7 +2509,7 @@ CorInfoHelpFunc GenTreeCall::GetHelperNum() const
 // Return Value:
 //    true if the 2 CALL nodes have the same call semantics and operands
 //
-bool 		(GenTreeCall* c1, GenTreeCall* c2)
+bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
 {
     assert(c1->OperGet() == c2->OperGet());
 
@@ -2643,7 +2643,7 @@ bool 		(GenTreeCall* c1, GenTreeCall* c2)
 
         ClassLayout* l1 = a1->GetSignatureLayout();
         ClassLayout* l2 = a2->GetSignatureLayout();
-        return (l1 == nullptr) ? (l2 == nullptr) : ((l2 != nullptr) && ClassLayout::AreCompatible(l1, l2));
+        return (l1 == l2) || ((l1 != nullptr) && (l2 != nullptr) && ClassLayout::AreCompatible(l1, l2));
     };
 
     {
