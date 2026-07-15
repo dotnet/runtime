@@ -562,7 +562,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,  // Transition to preemptive mode in reverse P/Invoke epilog, frame is the first argument
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.
 
-    CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
+    CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and dispatch cell
     CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT,  // Dispatch a non-generic interface method from this pointer and dispatch cell
     CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT,  // Resolve a non-generic interface method from this pointer and dispatch cell
 
@@ -3145,7 +3145,14 @@ public:
 
     // Get information about which await call to use to await the return type
     // of the non-async version of an async call.
-    virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg) = 0;
+    //
+    // Returns the method handle of the await call to insert. 'contextHandle' is
+    // set to the context to use when inlining the await call, exactly as
+    // getCallInfo would report it for a direct call to it (it may be an
+    // approximate/shared instantiation when 'instArg' requires a runtime
+    // lookup). 'instArg' is filled with the (potentially runtime-looked-up)
+    // instantiation argument that must be passed to the await call.
+    virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg) = 0;
 
     /*********************************************************************************/
     //

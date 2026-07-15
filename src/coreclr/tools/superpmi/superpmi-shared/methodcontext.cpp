@@ -4453,7 +4453,7 @@ void MethodContext::repGetWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* p
     pWellKnownGlobalsOut->tableBase    = (CORINFO_WASM_GLOBAL_SYMBOL_HANDLE)value.tableBase;
     DEBUG_REP(dmpGetWasmWellKnownGlobals(0, value));
 }
-void MethodContext::recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_LOOKUP* instArg, CORINFO_METHOD_HANDLE methHnd)
+void MethodContext::recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg, CORINFO_METHOD_HANDLE methHnd)
 {
     if (GetAwaitReturnCall == nullptr)
         GetAwaitReturnCall = new LightWeightMap<DWORDLONG, Agnostic_GetAwaitReturnCallResult>();
@@ -4461,6 +4461,7 @@ void MethodContext::recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORIN
     Agnostic_GetAwaitReturnCallResult value;
     ZeroMemory(&value, sizeof(value));
     value.methodHnd = CastHandle(methHnd);
+    value.contextHandle = CastHandle(*contextHandle);
     value.instArg = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(instArg);
 
     GetAwaitReturnCall->Add(CastHandle(callerHnd), value);
@@ -4468,14 +4469,16 @@ void MethodContext::recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORIN
 }
 void MethodContext::dmpGetAwaitReturnCall(DWORDLONG key, Agnostic_GetAwaitReturnCallResult& value)
 {
-    printf("GetAwaitReturnCall key %016" PRIX64 " value methodHnd-%016" PRIX64 " instArg %s",
+    printf("GetAwaitReturnCall key %016" PRIX64 " value methodHnd-%016" PRIX64 " contextHandle-%016" PRIX64 " instArg %s",
         key,
         value.methodHnd,
+        value.contextHandle,
         SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.instArg).c_str());
 }
-CORINFO_METHOD_HANDLE MethodContext::repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_LOOKUP* instArg)
+CORINFO_METHOD_HANDLE MethodContext::repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
 {
     const Agnostic_GetAwaitReturnCallResult& result = LookupByKeyOrMissNoMessage(GetAwaitReturnCall, CastHandle(callerHnd));
+    *contextHandle = (CORINFO_CONTEXT_HANDLE)result.contextHandle;
     *instArg = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(result.instArg);
     return (CORINFO_METHOD_HANDLE)result.methodHnd;
 }

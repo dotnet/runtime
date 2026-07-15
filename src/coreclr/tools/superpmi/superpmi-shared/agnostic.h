@@ -251,6 +251,7 @@ struct Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS
 struct Agnostic_GetAwaitReturnCallResult
 {
     DWORDLONG methodHnd;
+    DWORDLONG contextHandle;
     Agnostic_CORINFO_LOOKUP instArg;
 };
 

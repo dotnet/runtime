@@ -903,6 +903,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (!typeHandle.IsMethodTable())
             yield break;
 
+        (TargetPointer fieldDescListPtr, uint fieldDescSize, int totalFields) = GetFieldDescListLayout(typeHandle);
+        for (int i = 0; i < totalFields; i++)
+        {
+            yield return fieldDescListPtr + (ulong)i * fieldDescSize;
+        }
+    }
+
+    // Returns the start pointer, per-element size, and count of the enclosing type's contiguous FieldDesc
+    // array (the fields declared by the type: its own instance fields plus its static fields).
+    private (TargetPointer ListStart, uint FieldDescSize, int TotalFields) GetFieldDescListLayout(TypeHandle typeHandle)
+    {
         TargetPointer fieldDescListPtr = GetClassData(typeHandle).FieldDescList;
         uint fieldDescSize = _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
 
@@ -914,10 +925,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             numInstanceFields -= GetNumInstanceFields(parentHandle);
         }
         int totalFields = numInstanceFields + GetNumStaticFields(typeHandle);
-        for (int i = 0; i < totalFields; i++)
-        {
-            yield return fieldDescListPtr + (ulong)i * fieldDescSize;
-        }
+        return (fieldDescListPtr, fieldDescSize, totalFields);
     }
     public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsTrackedReferenceWithFinalizer;
     private TargetPointer GetDynamicStaticsInfo(TypeHandle typeHandle)
@@ -2358,6 +2366,24 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             return default;
         }
+    }
+
+    bool IRuntimeTypeSystem.TryGetFieldDescNext(TargetPointer fieldDescPointer, out TargetPointer nextFieldDesc)
+    {
+        // Bounds check the advance: the FieldDescs of a type form a contiguous array with no terminator,
+        // so advancing past the last one would yield a pointer that is not a valid FieldDesc. Locate the
+        // enclosing type and return false when this is the final FieldDesc in its list.
+        TargetPointer enclosingMT = ((IRuntimeTypeSystem)this).GetMTOfEnclosingClass(fieldDescPointer);
+        (TargetPointer listStart, uint fieldDescSize, int totalFields) = GetFieldDescListLayout(GetTypeHandle(enclosingMT));
+
+        TargetPointer lastFieldDesc = listStart + (ulong)(totalFields - 1) * fieldDescSize;
+        if (fieldDescPointer == lastFieldDesc)
+        {
+            nextFieldDesc = TargetPointer.Null;
+            return false;
+        }
+        nextFieldDesc = fieldDescPointer + fieldDescSize;
+        return true;
     }
 
     TargetPointer IRuntimeTypeSystem.GetFieldDescByName(TypeHandle typeHandle, string fieldName)
