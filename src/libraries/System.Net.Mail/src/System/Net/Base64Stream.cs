@@ -84,14 +84,15 @@ namespace System.Net
 
             while (source < buffer.Length)
             {
+                byte current = buffer[source++];
+
                 //space and tab are ok because folding must include a whitespace char.
-                if (buffer[source] == '\r' || buffer[source] == '\n' || buffer[source] == '=' || buffer[source] == ' ' || buffer[source] == '\t')
+                if (current == '\r' || current == '\n' || current == '=' || current == ' ' || current == '\t')
                 {
-                    source++;
                     continue;
                 }
 
-                byte s = Base64DecodeMap[buffer[source]];
+                byte s = Base64DecodeMap[current];
 
                 if (s == InvalidBase64Value)
                 {
@@ -119,7 +120,6 @@ namespace System.Net
                         ReadState.Pos = 0;
                         break;
                 }
-                source++;
             }
 
             return destination;
