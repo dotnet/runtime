@@ -3,11 +3,15 @@
 
 namespace Internal.TypeSystem.Ecma
 {
+    internal sealed class BadTypeSpecException : TypeSystemException.BadImageFormatException
+    {
+    }
+
     public partial struct EcmaSignatureParser
     {
         partial void ReportInvalidTypeSpec()
         {
-            ThrowHelper.ThrowBadImageFormatException();
+            throw new BadTypeSpecException();
         }
     }
 }

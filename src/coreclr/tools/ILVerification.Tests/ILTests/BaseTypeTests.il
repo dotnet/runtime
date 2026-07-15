@@ -9,7 +9,7 @@
 {
 }
 
-.class public auto ansi beforefieldinit ObjectTypeSpecBase_InvalidType_InvalidBaseType
+.class public auto ansi beforefieldinit ObjectTypeSpecBase_InvalidType_BadTypeSpec
     extends object
 {
     .method public hidebysig specialname rtspecialname instance void .ctor() cil managed

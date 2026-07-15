@@ -14,7 +14,7 @@
 {
 }
 
-.class public auto ansi beforefieldinit CustomModifierTypeSpecBase_InvalidType_None
+.class public auto ansi beforefieldinit CustomModifierTypeSpecBase_InvalidType_BadTypeSpec
     extends class GenericBase`1<int32 modopt(int32)>
 {
 }
@@ -22,7 +22,7 @@
 .class public auto ansi beforefieldinit MethodSignatureTests
     extends [System.Runtime]System.Object
 {
-    .method public static hidebysig int32 modopt(int32) CustomModifierTypeSpecReturn_Invalid_None() cil managed
+    .method public static hidebysig int32 modopt(int32) CustomModifierTypeSpecReturn_Invalid_BadTypeSpec() cil managed
     {
         ldc.i4.0
         ret

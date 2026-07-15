@@ -333,20 +333,19 @@ namespace Internal.TypeSystem.Ecma
 
         public TypeDesc ParseTypeSpec()
         {
-            // ECMA-335 II.23.2.14 defines a narrower TypeSpecBlob grammar than what
-            // the .NET runtime accepts in practice. See the runtime ECMA-335 augment:
-            // https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md#5-typespecs-can-encode-more-than-specified
-            //
-            // In practice, TypeSpec can encode primitives, VAR/MVAR, custom-modifier
-            // rooted forms, and other forms used by existing tools/runtimes. The only
-            // top-level TypeSpec form that does not make sense is a direct
-            // CLASS/VALUETYPE TypeDefOrRef, represented here as SignatureTypeCode.TypeHandle
             SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
-            if (typeCode == SignatureTypeCode.TypeHandle)
+            switch (typeCode)
             {
-                ReportInvalidTypeSpec();
+                case SignatureTypeCode.Pointer:
+                case SignatureTypeCode.FunctionPointer:
+                case SignatureTypeCode.Array:
+                case SignatureTypeCode.SZArray:
+                case SignatureTypeCode.GenericTypeInstance:
+                case SignatureTypeCode.GenericTypeParameter:
+                case SignatureTypeCode.GenericMethodParameter:
+                    return ParseType(ParseTypeCodeImpl(typeCode));
             }
-
+            ReportInvalidTypeSpec();
             return ParseType(ParseTypeCodeImpl(typeCode));
         }
 

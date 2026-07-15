@@ -227,6 +227,15 @@ namespace ILVerify
             {
                 reportException(e);
             }
+            catch (BadTypeSpecException)
+            {
+                builder.Add(new VerificationResult()
+                {
+                    Code = VerifierError.BadTypeSpec,
+                    Method = methodHandle,
+                    Message = _stringResourceManager.Value.GetString(nameof(VerifierError.BadTypeSpec), CultureInfo.InvariantCulture)
+                });
+            }
             catch (TypeSystemException e)
             {
                 reportTypeSystemException(e);
@@ -297,6 +306,15 @@ namespace ILVerify
             catch (VerifierException e)
             {
                 reportException(e);
+            }
+            catch (BadTypeSpecException)
+            {
+                builder.Add(new VerificationResult()
+                {
+                    Code = VerifierError.BadTypeSpec,
+                    Type = typeHandle,
+                    Message = $"[MD]: Error: {_stringResourceManager.Value.GetString(nameof(VerifierError.BadTypeSpec), CultureInfo.InvariantCulture)}"
+                });
             }
             catch (TypeSystemException e)
             {

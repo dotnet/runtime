@@ -456,4 +456,7 @@
   <data name="InvalidBaseType" xml:space="preserve">
     <value>Type '{0}' has invalid base type '{1}'.</value>
   </data>
+  <data name="BadTypeSpec" xml:space="preserve">
+    <value>TypeSpec is not valid in this signature context.</value>
+  </data>
 </root>
