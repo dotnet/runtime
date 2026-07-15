@@ -3044,7 +3044,7 @@ private:
     void        emitPrintLabel(const insGroup* ig) const;
     const char* emitLabelString(const insGroup* ig) const;
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_POWERPC64)
 
     void emitGetInstrDescs(insGroup* ig, instrDesc** id, int* insCnt);
 
@@ -3058,7 +3058,7 @@ private:
 
     static void emitGenerateUnwindNop(instrDesc* id, void* context);
 
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_POWERPC64
 
 #if EMIT_BACKWARDS_NAVIGATION
     bool emitPrevID(insGroup*& ig, instrDesc*& id);

@@ -11049,6 +11049,12 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 
     // Add space for personality routine, it must be 4-byte aligned.
     unwindSize += sizeof(ULONG);
+#elif defined(TARGET_POWERPC64)
+    // The JIT passes in a 4-byte aligned block of unwind data.
+    _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
+
+    // Add space for personality routine, it must be 4-byte aligned.
+    unwindSize += sizeof(ULONG);
 #else
     PORTABILITY_ASSERT("reservePersonalityRoutineSpace");
 #endif // !defined(TARGET_AMD64)
@@ -12512,7 +12518,18 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "AllCharsInUInt64AreAscii",
        "BulkMoveWithWriteBarrier",
        "CheckAsyncTaskInProgress",
-       "CheckFileCall"
+       "CheckFileCall",
+       "CheckName",
+       "CheckOriginalRuntimeType",
+       "Clear",
+       "CompareExchange",
+       "GetChars",
+       "GetConsoleEncoding",
+       "GetConstructorList",
+       "GetEncoder",
+       "TryGetSpan",
+       "MemoryCopy",
+       "Read"
 
 
     };
@@ -12573,12 +12590,11 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         { "System.Diagnostics.Tracing.Statics",".cctor"},
         { "OrdinalComparer",".ctor"},
         { "System.Collections.Generic.List`1[Char]",".cctor"},
-        { "System.Collections.Generic.Dictionary`2[Char,__Canon]:.ctor"},
+        { "System.Collections.Generic.Dictionary`2[Char,__Canon]",".ctor"},
         { "System.Diagnostics.Tracing.EventSourceInitHelper",".cctor"},
         { "System.Collections.Generic.List`1[__Canon]",".cctor"},
         { "OverrideEventProvider",".ctor"},
         { "System.Diagnostics.Tracing.EventPipeEventProvider",".ctor"},
-        { "System.Runtime.InteropServices.GCHandle",".ctor"},
 	{ "System.Reflection.MethodBase",".ctor"},
 	{ "System.Reflection.MemberInfo",".ctor"},
 	{ "System.Reflection.ConstructorInfo",".ctor"},
@@ -12586,7 +12602,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
 	{ "IntroducedMethodEnumerator",".ctor"},
 	{ "Filter",".ctor"},
 	{ "System.MdUtf8String",".ctor"},
-	{ "MemberInfoCache`1[__Canon]:.ctor"},
 
     };
 

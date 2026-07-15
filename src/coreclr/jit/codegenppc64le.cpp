@@ -3969,6 +3969,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         localFrameSize -= TARGET_POINTER_SIZE;
     }
 
+    constexpr int FP_backchain_save_offset = -8;
     constexpr int LR_save_offset = 16;
     constexpr int R2_save_offset = 24;
 
@@ -4018,6 +4019,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
     compiler->unwindAllocStack(totalFrameSize);
+
+    emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_backchain_save_offset);
+    compiler->unwindSaveReg(REG_FP, FP_backchain_save_offset);
 
     emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_R0, REG_SPBASE, LR_save_offset);
     compiler->unwindSaveReg(REG_R0, LR_save_offset);
