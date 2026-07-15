@@ -3045,9 +3045,9 @@ void IUInvokeDispMethod(
     DISPID              MemberID            = 0;
     ByrefArgumentInfo*  aByrefArgInfos      = NULL;
     BOOL                bSomeArgsAreByref   = FALSE;
-    SafeComHolder<IUnknown> pUnk            = NULL;
-    SafeComHolder<IDispatch> pDisp          = NULL;
-    SafeComHolder<IDispatchEx> pDispEx      = NULL;
+    ComHolderAnyMode<IUnknown> pUnk;
+    ComHolderAnyMode<IDispatch> pDisp;
+    ComHolderAnyMode<IDispatchEx> pDispEx;
     VariantPtrHolder    pVarResult;
     NewArrayHolder<DispParamHolder> params  = NULL;
 
@@ -3143,17 +3143,17 @@ void IUInvokeDispMethod(
         // we will not correctly detect that the user did something wrong and will crash.
         // This is a known issue with no solution.
         // Our check here is best effort to catch the simple case where a user may make a mistake.
-        SafeComHolder<IUnknown> pInvokedMTUnknown = ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
+        ComHolderAnyMode<IUnknown> pInvokedMTUnknown{ ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT) };
 
         // QI for IDispatch to catch the simple error case (COM object has no IDispatch but pInvokedMT is specified as a dispatch or dual interface)
-        SafeComHolder<IUnknown> pCanonicalDisp;
+        ComHolderAnyMode<IUnknown> pCanonicalDisp;
         hr = SafeQueryInterface(pInvokedMTUnknown, IID_IDispatch, &pCanonicalDisp);
         if (FAILED(hr))
             COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
 
         _ASSERTE(IsDispatchBasedItf(pInvokedMT->GetComInterfaceType()));
         // Extract the IDispatch pointer that is associated with pInvokedMT specifically.
-        pDisp = (IDispatch*)pInvokedMTUnknown.Extract();
+        pDisp = (IDispatch*)pInvokedMTUnknown.Detach();
     }
     else
     {
@@ -3924,7 +3924,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
 
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
-    SafeComHolder<IUnknown> pUnk        = NULL;
+    ComHolderAnyMode<IUnknown> pUnk;
     CHAR                szIID[MINIPAL_GUID_BUFFER_LEN];
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
@@ -3971,7 +3971,7 @@ VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, _In_z_ LPCSTR szMsg)
 
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
-    SafeComHolder<IUnknown> pUnk        = NULL;
+    ComHolderAnyMode<IUnknown> pUnk;
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
 

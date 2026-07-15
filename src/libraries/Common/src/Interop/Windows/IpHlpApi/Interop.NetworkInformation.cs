@@ -512,6 +512,7 @@ internal static partial class Interop
             internal readonly IPEndPoint LocalEndPoint => new(new IPAddress(LocalAddr, LocalScopeId), BinaryPrimitives.ReverseEndianness((ushort)LocalPort));
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetAdaptersAddresses(
             AddressFamily family,
@@ -520,44 +521,57 @@ internal static partial class Interop
             IntPtr adapterAddresses,
             uint* outBufLen);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetBestInterfaceEx(ReadOnlySpan<byte> ipAddress, int* index);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial uint GetIfEntry2(ref MibIfRow2 pIfRow);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetIpStatisticsEx(MibIpStats* statistics, AddressFamily family);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetTcpStatisticsEx(MibTcpStats* statistics, AddressFamily family);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetUdpStatisticsEx(MibUdpStats* statistics, AddressFamily family);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetIcmpStatistics(MibIcmpInfo* statistics);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial uint GetIcmpStatisticsEx(out MibIcmpInfoEx statistics, AddressFamily family);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetExtendedTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order,
                                                         uint IPVersion, TcpTableClass tableClass, uint reserved);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetExtendedUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order,
                                                         uint IPVersion, UdpTableClass tableClass, uint reserved);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetPerAdapterInfo(uint IfIndex, IntPtr pPerAdapterInfo, uint* pOutBufLen);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial void FreeMibTable(IntPtr handle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial uint CancelMibChangeNotify2(IntPtr notificationHandle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint NotifyStableUnicastIpAddressTable(
             AddressFamily addressFamily,

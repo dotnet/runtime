@@ -440,7 +440,7 @@
     <value>Invalid handle.</value>
   </data>
   <data name="Arg_InvalidHexBinaryStyle" xml:space="preserve">
-    <value>With the AllowHexSpecifier or AllowBinarySpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be AllowLeadingWhite and AllowTrailingWhite.</value>
+    <value>With the AllowHexSpecifier or AllowBinarySpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be AllowLeadingWhite, AllowTrailingWhite, and AllowTrailingInvalidCharacters.</value>
   </data>
   <data name="Arg_InvalidNeutralResourcesLanguage_Asm_Culture" xml:space="preserve">
     <value>The NeutralResourcesLanguageAttribute on the assembly "{0}" specifies an invalid culture name: "{1}".</value>
@@ -536,6 +536,15 @@
   </data>
   <data name="Arg_MustBeDecimal" xml:space="preserve">
     <value>Object must be of type Decimal.</value>
+  </data>
+  <data name="Arg_MustBeDecimal32" xml:space="preserve">
+    <value>Object must be of type Decimal32.</value>
+  </data>
+  <data name="Arg_MustBeDecimal64" xml:space="preserve">
+    <value>Object must be of type Decimal64.</value>
+  </data>
+  <data name="Arg_MustBeDecimal128" xml:space="preserve">
+    <value>Object must be of type Decimal128.</value>
   </data>
   <data name="Arg_MustBeDelegate" xml:space="preserve">
     <value>Type must derive from Delegate.</value>
@@ -1926,10 +1935,7 @@
     <value>Valid values are between {0} and {1}, inclusive.</value>
   </data>
   <data name="ArgumentOutOfRange_RoundingDigits" xml:space="preserve">
-    <value>Rounding digits must be between 0 and 15, inclusive.</value>
-  </data>
-  <data name="ArgumentOutOfRange_RoundingDigits_MathF" xml:space="preserve">
-    <value>Rounding digits must be between 0 and 6, inclusive.</value>
+    <value>Rounding digits must be greater than or equal to 0.</value>
   </data>
   <data name="ArgumentOutOfRange_SmallCapacity" xml:space="preserve">
     <value>capacity was less than the current size.</value>
@@ -2990,9 +2996,6 @@
   <data name="MissingSatelliteAssembly_Default" xml:space="preserve">
     <value>Resource lookup fell back to the ultimate fallback resources in a satellite assembly, but that satellite either was not found or could not be loaded. Please consider reinstalling or repairing the application.</value>
   </data>
-  <data name="Multicast_Combine" xml:space="preserve">
-    <value>Delegates that are not of type MulticastDelegate may not be combined.</value>
-  </data>
   <data name="MustUseCCRewrite" xml:space="preserve">
     <value>An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from https://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.</value>
   </data>
@@ -3070,6 +3073,9 @@
   </data>
   <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
     <value>This operation is invalid on overlapping buffers.</value>
+  </data>
+  <data name="NotSupported_StackTraceSupportDisabled" xml:space="preserve">
+    <value>Unable to retrieve stack trace information when StackTraceSupport feature switch is set to false.</value>
   </data>
   <data name="InvalidOperation_TimeProviderNullLocalTimeZone" xml:space="preserve">
     <value>The operation cannot be performed when TimeProvider.LocalTimeZone is null.</value>
@@ -4052,6 +4058,9 @@
   <data name="ResourceManager_ReflectionNotAllowed" xml:space="preserve">
     <value>Use of ResourceManager for custom types is disabled. Set the MSBuild Property CustomResourceTypesSupport to true in order to enable it.</value>
   </data>
+  <data name="InvalidOperation_AssemblyLocationOverrideAlreadySet" xml:space="preserve">
+    <value>The assembly location override has already been set.</value>
+  </data>
   <data name="InvalidOperation_AssemblyNotEditable" xml:space="preserve">
     <value>The assembly can not be edited or changed.</value>
   </data>
@@ -4485,5 +4494,8 @@
   </data>
   <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
     <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on the decimal type.</value>
+  </data>
+  <data name="InvalidOperation_NoElements" xml:space="preserve">
+    <value>Sequence contains no elements.</value>
   </data>
 </root>

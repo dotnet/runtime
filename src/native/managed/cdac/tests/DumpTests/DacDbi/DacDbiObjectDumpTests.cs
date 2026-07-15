@@ -247,7 +247,7 @@ public class DacDbiObjectDumpTests : DumpTestBase
         Assert.Equal(cFields, fetched);
 
         TargetPointer[] fieldDescList = rts.GetFieldDescList(stringHandle).Take((int)cFields).ToArray();
-        uint firstFieldOffset = rts.IsObjRef(stringHandle) ? Target.GetTypeInfo(DataType.Object).Size!.Value : 0;
+        uint firstFieldOffset = rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(stringHandle)) ? Target.GetTypeInfo(DataType.Object).Size!.Value : 0;
 
         for (uint i = 0; i < cFields; i++)
         {

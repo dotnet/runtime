@@ -130,6 +130,21 @@ namespace System.Net.Sockets
             _handle.LastConnectFailed = false;
         }
 
+        // On platforms that lack IPv6 dual-mode support (e.g. OpenBSD), a socket created for one address
+        // family cannot connect to an address of the other. When the socket has not yet connected, re-create
+        // its handle for the requested family so a pending connect attempt can use it. Returns false if the
+        // family is unchanged or the handle could not be replaced.
+        internal bool TryReplaceHandleForAddressFamily(AddressFamily addressFamily)
+        {
+            if (_addressFamily == addressFamily)
+            {
+                return false;
+            }
+
+            _addressFamily = addressFamily;
+            return ReplaceHandle() == SocketError.Success;
+        }
+
         internal unsafe SocketError ReplaceHandle()
         {
             // Collect values of trackable socket options marked by SafeSocketHandle.TrackSocketOption().

@@ -106,7 +106,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 //   ins         - instruction to emit
 //   attr        - emit attributes
 //   imm         - immediate value (depth in control flow stack)
-//   targetBlock - block at that depth
+//   targetBlock - block at that depth (may be null, in the case of jump table which doesn't target a real block)
 //
 void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock)
 {
@@ -116,7 +116,7 @@ void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, Basi
     id->idIns(ins);
     id->idInsFmt(fmt);
 
-    if (m_debugInfoSize > 0)
+    if (m_debugInfoSize > 0 && targetBlock != nullptr)
     {
         id->idDebugOnlyInfo()->idTargetBlock = targetBlock;
     }
@@ -216,12 +216,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     assert(params.callType < EC_COUNT);
     assert((params.callType == EC_FUNC_TOKEN) || (params.addr == nullptr));
-
-    /* Managed RetVal: emit sequence point for the call */
-    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
-    }
 
     assert(params.wasmSignature != nullptr);
 
@@ -469,14 +463,16 @@ void emitter::emitIns_V128Imm(instruction ins, const uint8_t bytes[16])
 //
 // Arguments:
 //   ins     - instruction (e.g., INS_i8x16_extract_lane_s)
-//   attr    - emit attribute indicating the lane element size
 //   laneIdx - lane index byte
 //
-void emitter::emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx)
+void emitter::emitIns_Lane(instruction ins, uint8_t laneIdx)
 {
-    instrDesc* id       = emitNewInstrSC(attr, laneIdx);
-    insFormat  fmt      = emitInsFormat(ins);
-    uint8_t    elemSize = CodeGenInterface::instSimdElemSize(ins);
+    uint8_t elemSize = CodeGenInterface::instSimdElemSize(ins);
+
+    // Add element width as an emit attribute
+    emitAttr   attr = EA_ATTR(elemSize);
+    instrDesc* id   = emitNewInstrSC(attr, laneIdx);
+    insFormat  fmt  = emitInsFormat(ins);
     assert(fmt == IF_LANE);
     assert(isValidVectorIndex(elemSize, laneIdx));
 
@@ -721,9 +717,8 @@ unsigned emitter::instrDesc::idCodeSize() const
         {
             // no opcode, this is part of a try_table
 
-            size = 1; // catch kind
-            // TODO-WASM: tag index
-            // size += PADDED_RELOC_SIZE;                 // catch type tag
+            size = 1;                                  // catch kind
+            size += PADDED_RELOC_SIZE;                 // catch type tag (RtlRestoreContext tag index)
             size += SizeOfULEB128(emitGetInsSC(this)); // control flow stack offset
             break;
         }
@@ -1046,11 +1041,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_CATCH_DECL:
         {
-            // TODO-WASM: this should be Kind 1: catch_ref with type tag
-            uint8_t catchKind = 2;
+            // Kind 1: catch_ref with type tag. The tag is the well-known
+            // CoreCLR RtlRestoreContext exception tag exported by the runtime;
+            // crossgen2's WasmObjectWriter resolves this reloc to the tag index
+            // of the module's imported `rtlRestoreContextTag`.
+            uint8_t catchKind = 1;
             dst += emitOutputByte(dst, catchKind);
-            // TODO-WASM: figure out how to get proper tag index here
-            // dst += emitOutputPaddedReloc(dst);
+
+            emitRecordRelocation(dst, emitCodeBlock, CorInfoReloc::WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB);
+            dst += emitOutputPaddedReloc(dst);
+
             dst += emitOutputULEB128(dst, (int64_t)emitGetInsSC(id));
             break;
         }
@@ -1341,8 +1341,8 @@ void emitter::emitDispIns(
 
         case IF_CATCH_DECL:
         {
-            // TODO: catch type
-            // target label
+            // catch_ref RtlRestoreContextTag, depth
+            printf(" RtlRestoreContextTag");
             dispJumpTargetIfAny();
         }
         break;

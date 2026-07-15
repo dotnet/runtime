@@ -14,7 +14,10 @@
 #if defined(__linux__)
 #include <unistd.h>
 #include <sys/syscall.h>
-#elif defined(__FreeBSD__) || defined(__OpenBSD__)
+#elif defined(__FreeBSD__)
+#include <pthread_np.h>
+#elif defined(__OpenBSD__)
+#include <unistd.h>
 #include <pthread_np.h>
 #elif defined(__NetBSD__)
 #include <lwp.h>

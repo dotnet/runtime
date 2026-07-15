@@ -562,7 +562,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,  // Transition to preemptive mode in reverse P/Invoke epilog, frame is the first argument
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.
 
-    CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
+    CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and dispatch cell
     CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT,  // Dispatch a non-generic interface method from this pointer and dispatch cell
     CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT,  // Resolve a non-generic interface method from this pointer and dispatch cell
 
@@ -716,6 +716,7 @@ enum CorInfoOptions
                                                CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
     CORINFO_GENERICS_CTXT_KEEP_ALIVE        = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
     CORINFO_ASYNC_SAVE_CONTEXTS             = 0x00000200, // Runtime async method must save and restore contexts
+    CORINFO_ASYNC_VERSION                   = 0x00000400, // This is an async version whose IL belongs to a non-async method
 };
 
 //
@@ -857,6 +858,7 @@ enum class CorInfoReloc
     ARM64_BRANCH26,                        // Arm64: B, BL
     ARM64_PAGEBASE_REL21,                  // ADRP
     ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+    ARM64_PAGEOFFSET_12L,                  // LDR (indexed, unsigned immediate), for page offset
     // Linux arm64
     ARM64_LIN_TLSDESC_ADR_PAGE21,
     ARM64_LIN_TLSDESC_LD64_LO12,
@@ -913,6 +915,7 @@ enum class CorInfoReloc
     WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
     WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                            // e.g. in R2R scenarios as an offset from __image_base
+    WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
 };
 
 enum CorInfoGCType
@@ -1542,8 +1545,6 @@ struct CORINFO_CALL_INFO
     };
 
     CORINFO_CONST_LOOKUP    instParamLookup;
-
-    bool                    wrapperDelegateInvoke;
 };
 
 enum CORINFO_DEVIRTUALIZATION_DETAIL
@@ -1583,12 +1584,15 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // [Out] results of resolveVirtualMethod.
     // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
     //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-    // - tokenLookupContext is set to the wrapped context handle to use for token lookups after devirtualization.
+    // - tokenLookupContext is set to the wrapped context handle to use for token lookups and the instantiation
+    //   parameter after devirtualization.
     // - details on the computation done by the jit host
-    // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
-    //   use it as the parameter to getCallInfo
+    // - resolvedTokenDevirtualizedMethod is used as the parameter to getCallInfo when targeting an R2R image.
+    // - resolvedTokenDevirtualizedUnboxedMethod is set when devirtualizedMethod is an unboxing stub. Its hMethod
+    //   is the unboxed entry point, and the resolved token is used as the parameter to getCallInfo when targeting
+    //   an R2R image.
     // - instParamLookup contains all the information necessary to pass the instantiation parameter for
-    //   the devirtualized method.
+    //   the devirtualized method or its unboxed entry point.
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
     CORINFO_CONTEXT_HANDLE          tokenLookupContext;
@@ -1754,9 +1758,6 @@ struct CORINFO_EE_INFO
     unsigned    offsetOfDelegateInstance;
     unsigned    offsetOfDelegateFirstTarget;
 
-    // Wrapper delegate offsets
-    unsigned    offsetOfWrapperDelegateIndirectCell;
-
     // Reverse PInvoke offsets
     unsigned    sizeOfReversePInvokeFrame;
 
@@ -1785,26 +1786,29 @@ enum CorInfoContinuationFlags
     // If this bit is set the continuation context is a TaskScheduler that
     // we should continue on.
     CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 1 << 2,
+    // If this bit is set this is an await of valueTask.AsTask()
+    // (common pattern when returning a value-task in an async version)
+    CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK = 1 << 3,
 
     // The flags encode where in the continuation various members are stored.
     // If the encoded index is 0, it means no such member is present.
     // Otherwise the exact offset of the member is computed as
     //   OFFSETOF__CORINFO_Continuation__data + (index - 1) * PointerSize
 
-    CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT = 3,
+    CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT = 4,
     CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS = 2,
 
-    CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT = 5,
+    CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT = 6,
     CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS = 2,
 
-    CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT = 7,
+    CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT = 8,
     CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS = 3,
 
     // For JIT, the continuation stores space for every possible type of
     // async callee's result. We need to represent the offset to each of
     // these, so we allocate the rest of the bits for this.
-    CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 10,
-    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 22,
+    CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 11,
+    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 21,
 };
 
 struct CORINFO_ASYNC_INFO
@@ -2264,20 +2268,6 @@ public:
     //
     // Returns false if devirtualization is not possible.
     virtual bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info) = 0;
-
-    // Get the unboxed entry point for a method, if possible.
-    virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
-        CORINFO_METHOD_HANDLE ftn,
-        bool*                 requiresInstMethodTableArg
-        ) = 0;
-
-    // Get the wrapped entry point for an instantiating stub, if possible.
-    // Sets methodArg for method instantiations, classArg for class instantiations.
-    virtual CORINFO_METHOD_HANDLE getInstantiatedEntry(
-        CORINFO_METHOD_HANDLE ftn,
-        CORINFO_METHOD_HANDLE* methodArg,
-        CORINFO_CLASS_HANDLE* classArg
-        ) = 0;
 
     // Get the other variant of an async method, if possible.
     // If this is a method with async calling convention: returns the corresponding task-returning method.
@@ -3139,6 +3129,10 @@ public:
         CORINFO_ASYNC_INFO* pAsyncInfoOut
     ) = 0;
 
+    // Get information about which await call to use to await the return type
+    // of the non-async version of an async call.
+    virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg) = 0;
+
     /*********************************************************************************/
     //
     // Diagnostic methods
@@ -3199,6 +3193,15 @@ public:
     // Returns the primitive type for passing/returning a Wasm struct by value,
     // or CORINFO_WASM_TYPE_VOID if passing/returning must be by reference.
     virtual CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) = 0;
+
+    // Returns the guaranteed alignment, in bytes, of the data referenced by 'address'.
+    // 'address' is a relocation target such as a static, RVA, or frozen-data blob. The JIT
+    // uses this to decide whether it can emit an alignment-sensitive relocation against the
+    // target (e.g. the Arm64 LDST64 ':lo12:' page-offset fold, which requires the target to
+    // be 8-byte aligned).
+    virtual uint32_t getAddressAlignment(
+            void* address
+            ) = 0;
 };
 
 /*****************************************************************************

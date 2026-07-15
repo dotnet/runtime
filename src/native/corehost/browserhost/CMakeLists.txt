@@ -123,7 +123,6 @@ target_link_options(browserhost PRIVATE
     -sENVIRONMENT=web,webview,worker,node,shell
     --emit-symbol-map
     -lexports.js
-    -Wl,--export=__stack_pointer
     -Wl,--error-limit=0)
 
 target_link_libraries(browserhost PRIVATE

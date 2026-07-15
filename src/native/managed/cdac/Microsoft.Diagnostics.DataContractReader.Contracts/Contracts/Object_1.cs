@@ -9,6 +9,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Object_1 : IObject
 {
+    private const long UnmanagedMarker = -1;
+
     private readonly Target _target;
     private readonly ulong _methodTableOffset;
     private readonly byte _objectToMethodTableUnmask;
@@ -51,6 +53,19 @@ internal readonly struct Object_1 : IObject
         Span<byte> span = stackalloc byte[(int)str.StringLength * sizeof(char)];
         _target.ReadBuffer(str.FirstChar, span);
         return new string(MemoryMarshal.Cast<byte, char>(span));
+    }
+
+    public void GetStringData(TargetPointer address, out uint length, out uint offsetToFirstChar)
+    {
+        TargetPointer mt = GetMethodTableAddress(address);
+        if (mt == TargetPointer.Null)
+            throw new ArgumentException("Address represents a set-free object");
+        if (mt != _stringMethodTable)
+            throw new ArgumentException("Address does not represent a string object", nameof(address));
+
+        Data.String str = _target.ProcessedData.GetOrAdd<Data.String>(address);
+        length = str.StringLength;
+        offsetToFirstChar = (uint)(str.FirstChar.Value - address.Value);
     }
 
     public TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds)
@@ -150,17 +165,22 @@ internal readonly struct Object_1 : IObject
     {
         Data.Delegate del = _target.ProcessedData.GetOrAdd<Data.Delegate>(address);
 
-        // Classify by invocation count first:
-        // anything other than 0 indicates a multicast/wrapper/special-sig delegate
-        // that this API does not interpret further. Only when invocationCount==0
-        // do MethodPtr/MethodPtrAux unambiguously identify a closed/open delegate.
-        DelegateType delegateType = DelegateType.Unknown;
-        if (del.InvocationCount.Value == 0)
+        // Check for multicast and unmanaged first.
+        bool isMulticast = false;
+        if (del.HelperObject != TargetPointer.Null)
         {
-            if (del.MethodPtrAux == TargetCodePointer.Null)
-                delegateType = DelegateType.Closed;
-            else
-                delegateType = DelegateType.Open;
+            IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
+
+            TargetPointer mt = GetMethodTableAddress(del.HelperObject);
+            Debug.Assert(mt != TargetPointer.Null);
+
+            isMulticast = typeSystemContract.IsArray(typeSystemContract.GetTypeHandle(mt), out _);
+        }
+
+        DelegateType delegateType = DelegateType.Unknown;
+        if (!isMulticast && del.ExtraData.Value != UnmanagedMarker)
+        {
+            delegateType = del.MethodPtrAux == TargetCodePointer.Null ? DelegateType.Closed : DelegateType.Open;
         }
 
         (TargetPointer targetObject, TargetCodePointer targetMethodPtr) = delegateType switch
@@ -174,5 +194,37 @@ internal readonly struct Object_1 : IObject
             TargetObject: targetObject,
             TargetMethodPtr: targetMethodPtr,
             DelegateType: delegateType);
+    }
+
+    public ContinuationInfo GetContinuationInfo(TargetPointer address)
+    {
+        Data.ContinuationObject cont = _target.ProcessedData.GetOrAdd<Data.ContinuationObject>(address);
+        TargetPointer diagnosticIP = cont.ResumeInfo != TargetPointer.Null
+            ? _target.ProcessedData.GetOrAdd<Data.AsyncResumeInfo>(cont.ResumeInfo).DiagnosticIP
+            : TargetPointer.Null;
+        return new ContinuationInfo(
+            Next: cont.Next,
+            DiagnosticIP: diagnosticIP,
+            State: (uint)cont.State);
+    }
+
+    public ulong GetSize(TargetPointer address)
+    {
+        TargetPointer mt = GetMethodTableAddress(address);
+        if (mt == TargetPointer.Null)
+            throw new ArgumentException("Address represents a free object");
+        Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
+        TypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
+
+        ulong size = typeSystemContract.GetBaseSize(typeHandle);
+        uint componentSize = typeSystemContract.GetComponentSize(typeHandle);
+        if (componentSize > 0)
+        {
+            // Variable-size object (array or string): add the component data size.
+            // Both Array and String share the m_NumComponents/m_StringLength field layout.
+            Data.Array arr = _target.ProcessedData.GetOrAdd<Data.Array>(address);
+            size += (ulong)arr.NumComponents * componentSize;
+        }
+        return size;
     }
 }

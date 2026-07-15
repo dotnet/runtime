@@ -3249,13 +3249,13 @@ namespace ILCompiler
         private sealed class DelegateInstance : AllocatedReferenceTypeValue, ISerializableReference
         {
             private readonly MethodDesc _methodPointed;
-            private readonly ReferenceTypeValue _firstParameter;
+            private readonly ReferenceTypeValue _target;
 
             public DelegateInstance(TypeDesc delegateType, MethodDesc methodPointed, ReferenceTypeValue firstParameter, AllocationSite allocationSite)
                 : base(delegateType, allocationSite)
             {
                 _methodPointed = methodPointed;
-                _firstParameter = firstParameter;
+                _target = firstParameter;
             }
 
             private DelegateCreationInfo GetDelegateCreationInfo(NodeFactory factory)
@@ -3280,7 +3280,7 @@ namespace ILCompiler
 
             public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
-                Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
+                Debug.Assert(_methodPointed.Signature.IsStatic == (_target == null));
 
                 DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
 
@@ -3295,34 +3295,34 @@ namespace ILCompiler
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk"u8);
 
-                    // _firstParameter
-                    builder.EmitPointerReloc(thisNode);
-
                     // _helperObject
                     builder.EmitZeroPointer();
 
-                    // _extraFunctionPointerOrData
-                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
+                    // _target
+                    builder.EmitPointerReloc(thisNode);
 
-                    // _functionPointer
+                    // _methodPtr
                     Debug.Assert(creationInfo.Thunk != null);
                     builder.EmitPointerReloc(creationInfo.Thunk);
+
+                    // _extraFunctionPointerOrData
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
                 else
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance"u8);
 
-                    // _firstParameter
-                    _firstParameter.WriteFieldData(ref builder, factory);
-
                     // _helperObject
                     builder.EmitZeroPointer();
 
+                    // _target
+                    _target.WriteFieldData(ref builder, factory);
+
+                    // _methodPtr
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
+
                     // _extraFunctionPointerOrData
                     builder.EmitZeroPointer();
-
-                    // _functionPointer
-                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
             }
 

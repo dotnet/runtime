@@ -151,10 +151,6 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        // CoreCLR-Wasm does not yet link the user-generated reverse pinvoke table, so
-        // user UnmanagedCallersOnly methods cannot be resolved at runtime.
-        // TODO: enable on CoreCLR once user reverse-thunks are linked into dotnet.native.wasm.
-        [TestCategory("mono")]
         public async Task UnmanagedCallersOnly_Namespaced(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_namespace");
@@ -338,7 +334,7 @@ namespace Wasm.Build.Tests
             // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
             // Assert.Contains("Adding pinvoke signature FD for method 'Test.", output);
 
-            string pinvokeTableFileName = IsCoreClrRuntime ? "pinvoke-table.cpp" : "pinvoke-table.h";
+            string pinvokeTableFileName = IsCoreClrRuntime ? "callhelpers-pinvoke.cpp" : "pinvoke-table.h";
             string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
             // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
             //  for example if the module isn't found
@@ -371,7 +367,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native-mono")] // coreclr ActiveIssue: https://github.com/dotnet/runtime/issues/120897
+        [TestCategory("native-mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
@@ -390,10 +386,6 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        // CoreCLR-Wasm does not yet link the user-generated reverse pinvoke table, so
-        // user UnmanagedCallersOnly methods cannot be resolved at runtime.
-        // TODO: enable on CoreCLR once user reverse-thunks are linked into dotnet.native.wasm.
-        [TestCategory("mono")]
         public async Task UCOWithSpecialCharacters(Configuration config, bool aot)
         {
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";

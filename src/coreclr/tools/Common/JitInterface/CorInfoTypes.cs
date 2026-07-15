@@ -444,6 +444,7 @@ namespace Internal.JitInterface
                                                    CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
         CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
         CORINFO_ASYNC_SAVE_CONTEXTS = 0x00000200, // Runtime async method must save and restore contexts
+        CORINFO_ASYNC_VERSION = 0x00000400, // This is an async version whose IL belongs to a non-async method
     }
 
     // These are used to detect array methods as NamedIntrinsic in JIT importer,
@@ -478,6 +479,7 @@ namespace Internal.JitInterface
         ARM64_BRANCH26,                        // Arm64: B, BL
         ARM64_PAGEBASE_REL21,                  // ADRP
         ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+        ARM64_PAGEOFFSET_12L,                  // LDR (indexed, unsigned immediate), for page offset
         // Linux arm64
         ARM64_LIN_TLSDESC_ADR_PAGE21,
         ARM64_LIN_TLSDESC_LD64_LO12,
@@ -520,6 +522,7 @@ namespace Internal.JitInterface
         WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
         WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                                // e.g. in R2R scenarios, encoding an offset from $imageBase
+        WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
     }
 
     public enum CorInfoGCType
@@ -929,9 +932,6 @@ namespace Internal.JitInterface
         public uint offsetOfDelegateInstance;
         public uint offsetOfDelegateFirstTarget;
 
-        // Wrapper delegate offsets
-        public uint offsetOfWrapperDelegateIndirectCell;
-
         // Reverse PInvoke offsets
         public uint sizeOfReversePInvokeFrame;
 
@@ -1134,9 +1134,6 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP instParamLookup;
-
-        public byte _wrapperDelegateInvoke;
-        public bool wrapperDelegateInvoke { get { return _wrapperDelegateInvoke != 0; } set { _wrapperDelegateInvoke = value ? (byte)1 : (byte)0; } }
     }
 
     public enum CORINFO_DEVIRTUALIZATION_DETAIL
@@ -1176,10 +1173,15 @@ namespace Internal.JitInterface
         // [Out] results of resolveVirtualMethod.
         // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-        // - tokenLookupContext is set to the wrapped context handle to use for token lookups after devirtualization.
+        // - tokenLookupContext is set to the wrapped context handle to use for token lookups and the instantiation
+        //   parameter after devirtualization.
         // - detail describes the computation done by the jit host
+        // - resolvedTokenDevirtualizedMethod is used as the parameter to getCallInfo when targeting an R2R image.
+        // - resolvedTokenDevirtualizedUnboxedMethod is set when devirtualizedMethod is an unboxing stub. Its hMethod
+        //   is the unboxed entry point, and the resolved token is used as the parameter to getCallInfo when targeting
+        //   an R2R image.
         // - instParamLookup contains all the information necessary to pass the instantiation parameter for
-        //   the devirtualized method.
+        //   the devirtualized method or its unboxed entry point.
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public CORINFO_CONTEXT_STRUCT* tokenLookupContext;
@@ -1361,15 +1363,16 @@ namespace Internal.JitInterface
 
     public enum ILNum
     {
-        VARARGS_HND_ILNUM   = -1, // Value for the CORINFO_VARARGS_HANDLE varNumber
-        RETBUF_ILNUM        = -2, // Pointer to the return-buffer
-        TYPECTXT_ILNUM      = -3, // ParamTypeArg for CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+        VARARGS_HND_ILNUM        = -1, // Value for the CORINFO_VARARGS_HANDLE varNumber
+        RETBUF_ILNUM             = -2, // Pointer to the return-buffer
+        TYPECTXT_ILNUM           = -3, // ParamTypeArg for CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
         ASYNC_CONTINUATION_ILNUM = -4, // Async continuation argument
+        CALL_RETURN_ILNUM        = -5, // The return value of a call
 
-        UNKNOWN_ILNUM       = -5, // Unknown variable
+        UNKNOWN_ILNUM            = -6, // Unknown variable
 
-        MAX_ILNUM           = -5  // Sentinel value. This should be set to the largest magnitude value in the enum
-                                  // so that the compression routines know the enum's range.
+        MAX_ILNUM                = -6  // Sentinel value. This should be set to the largest magnitude value in the enum
+                                       // so that the compression routines know the enum's range.
     };
 
     public struct ILVarInfo

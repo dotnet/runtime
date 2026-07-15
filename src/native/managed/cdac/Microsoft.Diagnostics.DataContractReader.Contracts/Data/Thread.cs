@@ -12,6 +12,7 @@ internal sealed partial class Thread : IData<Thread>
     [Field(Writable = true)] public uint DebuggerControlledThreadState { get; private set; }
     [Field] public uint PreemptiveGCDisabled { get; }
     [Field] public TargetPointer Frame { get; }
+    [Field] public TargetPointer GCFrame { get; }
     [Field] public TargetPointer CachedStackBase { get; }
     [Field] public TargetPointer CachedStackLimit { get; }
     [Field] public ObjectHandle ExposedObject { get; }

@@ -2127,10 +2127,10 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     }
     CONTRACTL_END;
 
+#ifdef TARGET_WASM
     // On WASM, the exception needs to keep propagating until it reaches the target frame. On other platforms,
     // this is ensured by unwinding stack up to the target frame before propagating the exception. This
     // difference is due to the fact that on WASM we don't have native stack unwinding support.
-#ifdef TARGET_WASM
     struct Param
     {
         Object *exceptionObj;
@@ -2620,8 +2620,13 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
         }
         else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
         {
-            stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
-            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+#ifdef TARGET_WASM
+            if (!ExecutionManager::IsVirtualIP(stackTraceElem.ip))
+#endif
+            {
+                stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+                stackTraceElem.flags |= STEF_IP_ADJUSTED;
+            }
         }
     }
     else
@@ -3404,7 +3409,7 @@ CreateCrashDumpIfEnabled(bool stackoverflow)
     {
         if (stackoverflow)
         {
-            HandleHolder createDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET SO Dumper"));
+            HandleHolder createDumpThreadHandle{ Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET SO Dumper")) };
             if (createDumpThreadHandle != INVALID_HANDLE_VALUE)
             {
                 // Wait for the dump to be generated
@@ -5610,6 +5615,13 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
         }
     }
 
+#if defined(HOST_WINDOWS) && defined(HOST_AMD64)
+    TADDR ssp = GetSSP(pContext);
+#else
+    TADDR ssp = 0;
+#endif
+
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(fef.GetExceptionContext(), ssp);
     // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
     // Do NOT also GCPROTECT it - reporting the same location twice corrupts
     // the GC's relocation logic (see clr-code-guide.md §2.1.5).
@@ -5621,6 +5633,7 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
     DispatchExSecondPass(&exInfo);
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 
     UNREACHABLE();
 }
@@ -6687,48 +6700,12 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     }
 }
 
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-size_t GetSSPForFrameOnCurrentStack(TADDR ip);
-#endif // HOST_AMD64 && HOST_WINDOWS
-
 #ifdef FEATURE_INTERPRETER
 void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP)
 {
     throw ResumeAfterCatchException(resumeSP, resumeIP);
 }
 
-VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    CONTEXT context;
-    ClrCaptureContext(&context);
-
-    // Unwind to the caller of the Ex.RhThrowEx / Ex.RhThrowHwEx
-    Thread::VirtualUnwindToFirstManagedCallFrame(&context);
-
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    size_t targetSSP = GetSSPForFrameOnCurrentStack(GetIP(&context));
-#else
-    size_t targetSSP = 0;
-#endif
-
-    // Skip all managed frames upto a native frame
-    while (ExecutionManager::IsManagedCode(GetIP(&context)))
-    {
-        Thread::VirtualUnwindCallFrame(&context);
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-        if (targetSSP != 0)
-        {
-            targetSSP += sizeof(size_t);
-        }
-#endif
-    }
-
-    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, &context, targetSSP, resumeSP, resumeIP);
-}
 #endif // FEATURE_INTERPRETER
 
 thread_local DWORD t_dwCurrentExceptionCode;
@@ -10325,6 +10302,7 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
+#ifndef TARGET_WASM
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *dac_cast<PTR_SIZE_T>((TADDR)m_ContextPointers.regname);
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -10342,6 +10320,11 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = m_Context.regname;
     ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
+#else // TARGET_WASM
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = m_Context.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // !TARGET_WASM
 
     SetIP(pRD->pCurrentContext, ::GetIP(&m_Context));
     SetSP(pRD->pCurrentContext, ::GetSP(&m_Context));
@@ -10353,6 +10336,22 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 }
 
 #ifndef DACCESS_COMPILE
+
+void SoftwareExceptionFrame::SetContext(T_CONTEXT *pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context = *pContext;
+
+#ifndef TARGET_WASM
+#define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = &m_Context.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // !TARGET_WASM
+
+    m_ReturnAddress = ::GetIP(&m_Context);
+}
+
 #ifdef TARGET_X86
 
 void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
@@ -10751,7 +10750,6 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 }
 
 #elif defined(TARGET_WASM)
-
 void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
 {
     LIMITED_METHOD_CONTRACT;
@@ -10763,8 +10761,9 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     if (pTransitionBlock != nullptr)
     {
         m_Context.InterpreterSP = pTransitionBlock->m_StackPointer;
-        m_Context.InterpreterFP = 0;
         m_Context.InterpreterIP = GetWasmVirtualIPFromStackPointer(pTransitionBlock->m_StackPointer);
+        _ASSERTE(m_Context.InterpreterIP != 0); // We should only ever reach here with a valid VirtualIP
+        m_Context.InterpreterFP = GetWasmFramePointerFromStackPointer(m_Context.InterpreterSP, (PCODE)m_Context.InterpreterIP);
         m_ReturnAddress = m_Context.InterpreterIP;
         m_Context.InterpreterWalkFramePointer = 0;
     }

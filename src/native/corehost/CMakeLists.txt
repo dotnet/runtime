@@ -43,6 +43,8 @@ if("${CLI_CMAKE_FALLBACK_OS}" STREQUAL "${CLR_CMAKE_TARGET_OS}")
     add_compile_definitions(FALLBACK_OS_IS_SAME_AS_TARGET_OS)
 endif()
 
+string(TOUPPER "${CLR_CMAKE_TARGET_ARCH}" CLR_CMAKE_TARGET_ARCH_UPPER)
+
 # Find support libraries that we need if they're present on the system.
 find_library(PTHREAD_LIB pthread)
 
@@ -81,7 +83,7 @@ endif()
 
 if(NOT CLR_CMAKE_TARGET_BROWSER)
     add_library(fxr_resolver INTERFACE)
-    target_sources(fxr_resolver INTERFACE fxr_resolver.cpp)
+    target_sources(fxr_resolver INTERFACE fxr_resolver.c)
     target_include_directories(fxr_resolver INTERFACE fxr)
 
     add_compile_definitions(RAPIDJSON_HAS_CXX17)
@@ -89,6 +91,13 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
     if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
         include_directories(${CLR_SRC_NATIVE_DIR}/external/)
     endif()
+
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
+
+    # minipal_objects is embedded into static libraries we ship for external
+    # consumption (libnethost, libhostfxr), so LTCG must be disabled to ensure
+    # that non-MSVC toolchains can work with them.
+    set_target_properties(minipal_objects PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
     add_subdirectory(hostcommon)
     add_subdirectory(hostmisc)

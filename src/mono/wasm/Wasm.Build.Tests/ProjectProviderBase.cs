@@ -112,9 +112,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         foreach ((string expectedFilename, bool expectFingerprint) in superSet.OrderByDescending(kvp => kvp.Key))
         {
-            string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
-            string extension = Path.GetExtension(expectedFilename).Substring(1);
-
             dotnetFiles = dotnetFiles
                 .Where(actualFile =>
                 {
@@ -127,14 +124,24 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                                expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
                                                expectFingerprintForThisFile: expectFingerprint))
                     {
-                        string pattern = $"^{prefix}{s_dotnetVersionHashRegex}{extension}$";
+                        string pattern = GetFingerprintRegexPattern(expectedFilename);
                         var match = Regex.Match(actualFilename, pattern);
                         if (!match.Success)
                             return true;
 
-                        actual[expectedFilename] = new(ExpectedFilename: expectedFilename,
-                                                       Hash: match.Groups[1].Value,
-                                                       ActualPath: actualFile);
+                        // Multiple fingerprinted variants of the same logical file can coexist when
+                        // republishing into an existing output directory: the previous publish's
+                        // fingerprinted copy is not removed, and a rebuild that changes the file's
+                        // content produces a new fingerprint alongside the stale one. Keep the newest
+                        // file so the assertion compares against the current (re)build output instead
+                        // of picking a stale artifact by filename ordering.
+                        if (!actual.TryGetValue(expectedFilename, out DotNetFileName? existingMatch) ||
+                            File.GetLastWriteTimeUtc(actualFile) >= File.GetLastWriteTimeUtc(existingMatch.ActualPath))
+                        {
+                            actual[expectedFilename] = new(ExpectedFilename: expectedFilename,
+                                                           Hash: match.Groups[1].Value,
+                                                           ActualPath: actualFile);
+                        }
                     }
                     else
                     {
@@ -418,6 +425,19 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public bool ShouldCheckFingerprint(string expectedFilename, bool? expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile)
         => IsFingerprintingEnabled && ((expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs == true) || expectFingerprintForThisFile);
 
+    private static string GetFingerprintRegexPattern(string expectedFilename)
+    {
+        const string jsSymbolsSuffix = ".js.symbols";
+        if (expectedFilename.EndsWith(jsSymbolsSuffix, StringComparison.Ordinal))
+        {
+            string prefix = expectedFilename[..^jsSymbolsSuffix.Length];
+            return $"^{Regex.Escape(prefix)}{s_dotnetVersionHashRegex}js\\.symbols$";
+        }
+
+        string defaultPrefix = Path.GetFileNameWithoutExtension(expectedFilename);
+        string extension = Path.GetExtension(expectedFilename).Substring(1);
+        return $"^{Regex.Escape(defaultPrefix)}{s_dotnetVersionHashRegex}{Regex.Escape(extension)}$";
+    }
 
     public static void AssertRuntimePackPath(string buildOutput, string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
@@ -596,7 +616,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var bootJsonEntries = assets.jsModuleNative.Select(a => a.name)
             .Union(assets.wasmNative.Select(a => a.name))
             .Union(assets.jsModuleRuntime.Select(a => a.name))
-            .Union(assets.jsModuleWorker?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .Union(assets.jsModuleDiagnostics?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .Union(assets.wasmSymbols?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .ToArray();
@@ -614,14 +633,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             bool expectFingerprint = knownSet[expectedFilename];
             expectedEntries[expectedFilename] = item =>
             {
-                string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
-                string extension = Path.GetExtension(expectedFilename).Substring(1);
-
                 if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
                                            expectFingerprintOnDotnetJs: options.ExpectDotnetJsFingerprinting,
                                            expectFingerprintForThisFile: expectFingerprint))
                 {
-                    return Regex.Match(item, $"{prefix}{s_dotnetVersionHashRegex}{extension}").Success;
+                    return Regex.Match(item, GetFingerprintRegexPattern(expectedFilename)).Success;
                 }
                 else
                 {
