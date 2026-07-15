@@ -81,6 +81,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(2, count);
         }
 
+#if NET
         [Fact]
         public void SameTransformInstanceCanBeAppliedTwice()
         {
@@ -123,6 +124,7 @@ namespace System.Security.Cryptography.Xml.Tests
             FieldInfo cryptoStreamField = typeof(XmlDsigBase64Transform).GetField("_cs", BindingFlags.Instance | BindingFlags.NonPublic)!;
             Assert.Null(cryptoStreamField.GetValue(transform));
         }
+#endif
 
     }
 }
