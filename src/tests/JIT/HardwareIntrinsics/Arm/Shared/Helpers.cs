@@ -243,7 +243,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             T result = T.Zero;
             T one = T.One;
-            int bitSize = Unsafe.SizeOf<T>() * 8;
+            int bitSize = sizeof(T) * 8;
 
             for (int i = 0; i < bitSize; i++)
             {
@@ -273,7 +273,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             T result = T.Zero;
             T one = T.One;
-            int bitSize = Unsafe.SizeOf<T>() * 8;
+            int bitSize = sizeof(T) * 8;
 
             for (int i = 0; i < bitSize; i++)
             {
@@ -1051,7 +1051,7 @@ namespace JIT.HardwareIntrinsics.Arm
             where T : unmanaged, INumber<T>, IShiftOperators<T, int, T>
         {
             T roundConst = T.Zero;
-            int shift = 8 * Unsafe.SizeOf<U>();
+            int shift = 8 * sizeof(U);
             if (round)
             {
                 roundConst = T.One << (shift - 1);
@@ -3237,7 +3237,7 @@ namespace JIT.HardwareIntrinsics.Arm
             where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
             where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
         {
-            Debug.Assert(Unsafe.SizeOf<TUnsigned>() == Unsafe.SizeOf<TSigned>(), "Unsigned/signed types must be same width");
+            Debug.Assert(sizeof(TUnsigned) == sizeof(TSigned), "Unsigned/signed types must be same width");
 
             var signedMaxAsUnsigned = TUnsigned.AllBitsSet >> 1;
             var leftUnsigned = TUnsigned.CreateTruncating(left);
@@ -3269,7 +3269,7 @@ namespace JIT.HardwareIntrinsics.Arm
             where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
             where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
         {
-            Debug.Assert(Unsafe.SizeOf<TUnsigned>() == Unsafe.SizeOf<TSigned>(), "Unsigned/signed types must be same width");
+            Debug.Assert(sizeof(TUnsigned) == sizeof(TSigned), "Unsigned/signed types must be same width");
 
             if (TSigned.IsNegative(right))
             {
@@ -6578,22 +6578,22 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int NumberOfElementsInVectorInt8(SveMaskPattern pattern)
         {
-            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern);
+            return MaskNumberOfElementsVector(sizeof(Vector<byte>) / sizeof(byte), pattern);
         }
 
         public static int NumberOfElementsInVectorInt16(SveMaskPattern pattern)
         {
-            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern);
+            return MaskNumberOfElementsVector(sizeof(Vector<short>) / sizeof(short), pattern);
         }
 
         public static int NumberOfElementsInVectorInt32(SveMaskPattern pattern)
         {
-            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern);
+            return MaskNumberOfElementsVector(sizeof(Vector<int>) / sizeof(int), pattern);
         }
 
         public static int NumberOfElementsInVectorInt64(SveMaskPattern pattern)
         {
-            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern);
+            return MaskNumberOfElementsVector(sizeof(Vector<long>) / sizeof(long), pattern);
         }
 
         public static int NumberOfActiveElementsInMask(sbyte[] mask)
@@ -7679,7 +7679,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return false;
             }
 
-            var elemSize = Unsafe.SizeOf<ExtendedElementT>();
+            var elemSize = sizeof(ExtendedElementT);
             var hasFaulted = false;
             var expectedFaultResult =
                 InitVector<TFault>(i =>
@@ -8522,5 +8522,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return sum;
         }
+
+        private static ulong RotateLeft1(ulong op) => (op << 1) | (op >> 63);
+
+        public static ulong BitwiseRotateLeftBy1AndXor(ulong op1, ulong op2)
+            => op1 ^ RotateLeft1(op2);
+
+        public static long BitwiseRotateLeftBy1AndXor(long op1, long op2)
+            => op1 ^ unchecked((long)RotateLeft1((ulong)op2));
     }
 }

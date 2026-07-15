@@ -343,14 +343,12 @@ public class TestPlaceholderTarget : Target
     public override T ReadLittleEndian<T>(ulong address)
     {
         T value = default;
-        unsafe
-        {
-            Span<byte> buffer = stackalloc byte[sizeof(T)];
-            if (_dataReader(address, buffer) < 0)
-                throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+        Span<byte> buffer = stackalloc byte[sizeof(T)];
+        if (_dataReader(address, buffer) < 0)
+            throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
-            T.TryReadLittleEndian(buffer, !IsSigned<T>(), out value);
-        }
+        T.TryReadLittleEndian(buffer, !IsSigned<T>(), out value);
+
         return value;
     }
 
@@ -368,7 +366,7 @@ public class TestPlaceholderTarget : Target
     {
         if (_dataWriter is null)
             throw new NotImplementedException();
-        Span<byte> buffer = stackalloc byte[Unsafe.SizeOf<T>()];
+        Span<byte> buffer = stackalloc byte[sizeof(T)];
         bool success = IsLittleEndian
             ? value.TryWriteLittleEndian(buffer, out int bytesWritten)
             : value.TryWriteBigEndian(buffer, out bytesWritten);
@@ -547,6 +545,7 @@ public class TestPlaceholderTarget : Target
         => _typeInfoCache.TryGetValue(typeName, out info);
 
     public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => throw new NotImplementedException();
+    public override bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context) => throw new NotImplementedException();
 
     public override Target.IDataCache ProcessedData => _dataCache;
     public override ContractRegistry Contracts => _contractRegistry;

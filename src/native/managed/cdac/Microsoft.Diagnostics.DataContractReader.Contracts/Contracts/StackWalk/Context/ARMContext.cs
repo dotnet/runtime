@@ -64,6 +64,7 @@ internal struct ARMContext : IPlatformContext
         unwinder.Unwind(ref this);
     }
 
+    public void UnsetSingleStepFlag() { }
     public bool TrySetRegister(string name, TargetNUInt value)
     {
         if (name.Equals("r0", StringComparison.OrdinalIgnoreCase)) { R0 = (uint)value.Value; return true; }

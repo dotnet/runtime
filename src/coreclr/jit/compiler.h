@@ -3349,6 +3349,10 @@ public:
                                var_types             type,
                                const DebugInfo&      di = DebugInfo());
 
+    GenTreeCall* gtNewUserCallNode(CORINFO_METHOD_HANDLE handle,
+                                   var_types             type,
+                                   const DebugInfo&      di = DebugInfo());
+
     GenTreeCall* gtNewIndCallNode(GenTree* addr, var_types type, const DebugInfo& di = DebugInfo());
 
     GenTreeCall* gtNewHelperCallNode(
@@ -3524,6 +3528,7 @@ public:
 
     GenTree* gtNewSimdGetIndicesNode(var_types type, var_types simdBaseType, unsigned simdSize);
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     GenTree* gtNewSimdGetLowerNode(var_types   type,
                                    GenTree*    op1,
                                    var_types   simdBaseType,
@@ -3533,6 +3538,7 @@ public:
                                    GenTree*    op1,
                                    var_types   simdBaseType,
                                    unsigned    simdSize);
+#endif  // !TARGET_XARCH && !TARGET_ARM64
 
     GenTree* gtNewSimdIsEvenIntegerNode(var_types   type,
                                         GenTree*    op1,
@@ -3724,6 +3730,7 @@ public:
                                       var_types   simdBaseType,
                                       unsigned    simdSize);
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     GenTree* gtNewSimdWithLowerNode(var_types   type,
                                     GenTree*    op1,
                                     GenTree*    op2,
@@ -3735,6 +3742,7 @@ public:
                                     GenTree*    op2,
                                     var_types   simdBaseType,
                                     unsigned    simdSize);
+#endif  // !TARGET_XARCH && !TARGET_ARM64
 
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
@@ -3915,6 +3923,7 @@ public:
     bool gtComplexityExceeds(GenTree* tree, unsigned limit, TFunc getComplexity);
 
     GenTree* gtReverseCond(GenTree* tree);
+    bool     gtTryReverseCond(GenTree* tree);
 
     static bool gtHasRef(GenTree* tree, unsigned lclNum);
 
@@ -5001,6 +5010,7 @@ private:
         PREFIX_IS_TASK_AWAIT = 0x00000080,
         PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
         PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT = 0x00000200,
+        PREFIX_IS_ADAPTED_FROM_VALUETASK = 0x00000400,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -5152,6 +5162,11 @@ protected:
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
 #if defined(FEATURE_HW_INTRINSICS)
+    GenTree* impSimdCreate(NamedIntrinsic    intrinsic,
+                           CORINFO_SIG_INFO* sig,
+                           var_types         simdBaseType,
+                           var_types         retType,
+                           unsigned          simdSize);
     GenTree* impSimdCreateScalarHalf(GenTree* op1);
     GenTree* impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd);
 #endif // FEATURE_HW_INTRINSICS
@@ -5204,6 +5219,13 @@ protected:
                             int                prefixFlags,
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
+
+    GenTree* impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                CORINFO_CALL_INFO*      callInfo,
+                                CORINFO_CONTEXT_HANDLE  exactContextHnd,
+                                bool                    exactContextNeedsRuntimeLookup,
+                                unsigned                clsFlags,
+                                bool                    isReadonlyCall);
 
     void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
 
@@ -5346,6 +5368,16 @@ protected:
                                  unsigned              simdSize,
                                  bool                  mustExpand);
 
+    GenTree* impXplatIntrinsic(NamedIntrinsic        intrinsic,
+                               CORINFO_CLASS_HANDLE  clsHnd,
+                               CORINFO_METHOD_HANDLE method,
+                               CORINFO_SIG_INFO*     sig
+                               R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
+                               var_types             simdBaseType,
+                               var_types             retType,
+                               unsigned              simdSize,
+                               bool                  mustExpand);
+
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType);
     GenTree* addRangeCheckIfNeeded(
@@ -5468,6 +5500,10 @@ public:
     bool impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed);
 
     const BYTE* impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal, IL_OFFSET* awaitOffset);
+    bool impMatchAsyncVersionTailCall(const BYTE* codeAddr, const BYTE* codeEndp, int*        prefixFlags, int*        numBytesMatched);
+    bool impMatchStlocLdloca(const BYTE** codeAddr, const BYTE* codeEndp, unsigned* lclNum);
+
+    bool impCheckOptimizeAwait(IL_OFFSET awaitOffset);
 
     GenTree* impCastClassOrIsInstToTree(
         GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, bool* booleanCheck, IL_OFFSET ilOffset);
@@ -5690,6 +5726,7 @@ private:
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
     bool impWrapTopOfStackInAwait();
+    bool impFoldAwaitedTopOfStack();
     void impPoisonImplicitByrefsBeforeReturn();
 
     // A free list of linked list nodes used to represent to-do stacks of basic blocks.
@@ -5778,14 +5815,12 @@ private:
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                bool                   exactContextNeedsRuntimeLookup,
                                 CORINFO_CALL_INFO*     callInfo,
                                 InlineContext*         inlinersContext);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       uint8_t                candidateIndex,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                      bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
                                       InlineContext*         inlinersContext,
                                       InlineResult*          inlineResult);
@@ -7496,7 +7531,6 @@ private:
 public:
     PhaseStatus rangeCheckPhase();
     GenTree* optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
-    GenTree* optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
     void optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);
 
 protected:
@@ -9206,7 +9240,6 @@ public:
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
-    GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                                           GenTree*         tree,
@@ -9658,6 +9691,8 @@ public:
     void eeSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause);
 
     CorInfoReloc eeGetRelocTypeHint(void* target);
+
+    uint32_t eeGetAddressAlignment(void* address);
 
     // ICorStaticInfo wrapper functions
 
@@ -10133,9 +10168,6 @@ private:
         return sizeBytes;
     }
 
-    // Get the number of elements of baseType of SIMD vector given by its size and baseType
-    static int getSIMDVectorLength(unsigned simdSize, var_types baseType);
-
     // Get the number of elements of baseType of SIMD vector given by its type handle
     int getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd);
 
@@ -10143,6 +10175,9 @@ private:
     int getSIMDTypeAlignment(var_types simdType);
 
 public:
+    // Get the number of elements of baseType of SIMD vector given by its size and baseType
+    static int getSIMDVectorLength(unsigned simdSize, var_types baseType);
+
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
     uint32_t getVectorTByteLength()
@@ -10594,12 +10629,36 @@ public:
         return threshold;
     }
 
-    // Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many
-    // structs will fit the criteria.
-    bool structSizeMightRepresentSIMDType(size_t structSize)
+    //---------------------------------------------------------------------------------------------
+    // structMightRepresentSIMDType: Can this class handle be a SIMD type?
+    //
+    // Returns:
+    //   false if it is not possible for this class handle to be a SIMD type, otherwise true.
+    //
+    // Notes:
+    //   SIMD types are currently all value classes annotated with the [Intrinsic] attribute.
+    //   This is a first stage filter, caller should verify exact SIMD types by name.
+    bool structMightRepresentSIMDType(CORINFO_CLASS_HANDLE clsHnd)
     {
+        uint32_t structFlags   = info.compCompHnd->getClassAttribs(clsHnd);
+        uint32_t filteredFlags = structFlags & (CORINFO_FLG_VALUECLASS | CORINFO_FLG_CONTAINS_GC_PTR |
+                                                CORINFO_FLG_BYREF_LIKE | CORINFO_FLG_INTRINSIC_TYPE);
+        uint32_t desiredFlags  = (CORINFO_FLG_VALUECLASS | CORINFO_FLG_INTRINSIC_TYPE);
+
+        if (filteredFlags != desiredFlags)
+        {
+            return false;
+        }
+
+        unsigned structSize = info.compCompHnd->getClassSize(clsHnd);
 #ifdef FEATURE_SIMD
-        return (structSize >= getMinVectorByteLength()) && (structSize <= getMaxVectorByteLength());
+#ifdef TARGET_ARM64
+        const uint32_t max =
+            compOpportunisticallyDependsOn(InstructionSet_VectorT) ? MAX_SVE_REGSIZE_BYTES : FP_REGSIZE_BYTES;
+#else
+        const uint32_t max = getMaxVectorByteLength();
+#endif // TARGET_ARM64
+        return (structSize >= getMinVectorByteLength()) && (structSize <= max);
 #else
         return false;
 #endif // FEATURE_SIMD
@@ -10924,8 +10983,6 @@ public:
     bool compRegAllocDone               = false;
     bool compRationalIRForm             = false;
 
-    bool compGeneratingProlog       = false;
-    bool compGeneratingEpilog       = false;
     bool compGeneratingUnwindProlog = false;
     bool compGeneratingUnwindEpilog = false;
 

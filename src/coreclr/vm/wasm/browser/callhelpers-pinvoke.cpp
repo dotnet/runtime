@@ -45,6 +45,7 @@ extern "C" {
     int32_t GlobalizationNative_IndexOf (void *, void *, int32_t, void *, int32_t, int32_t, void *);
     void GlobalizationNative_InitICUFunctions (void *, void *, void *, void *);
     void GlobalizationNative_InitOrdinalCasingPage (int32_t, void *);
+    void GlobalizationNative_InitOrdinalLowerCasingPage (int32_t, void *);
     int32_t GlobalizationNative_IsNormalized (int32_t, void *, int32_t);
     int32_t GlobalizationNative_IsPredefinedLocale (void *);
     int32_t GlobalizationNative_LastIndexOf (void *, void *, int32_t, void *, int32_t, int32_t, void *);
@@ -182,6 +183,7 @@ static const Entry s_libSystem_Globalization_Native [] = {
     DllImportEntry(GlobalizationNative_IndexOf) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_InitICUFunctions) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_InitOrdinalCasingPage) // System.Private.CoreLib
+    DllImportEntry(GlobalizationNative_InitOrdinalLowerCasingPage) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_IsNormalized) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_IsPredefinedLocale) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_LastIndexOf) // System.Private.CoreLib
@@ -321,7 +323,7 @@ typedef struct PInvokeTable {
 } PInvokeTable;
 
 static PInvokeTable s_PInvokeTables[] = {
-    {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
+    {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
     {"libSystem.Native", s_libSystem_Native, 94},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},

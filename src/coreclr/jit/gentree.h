@@ -528,8 +528,6 @@ enum GenTreeFlags : unsigned
 
     GTF_DIV_MOD_NO_OVERFLOW     = 0x40000000, // GT_DIV, GT_MOD -- Div or mod definitely does not overflow.
 
-    GTF_CHK_INDEX_INBND         = 0x80000000, // GT_BOUNDS_CHECK -- have proven this check is always in-bounds
-
     GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
@@ -4386,6 +4384,11 @@ struct GenTreeConditional : public GenTreeOp
         assert(cond != nullptr);
     }
 
+    static bool Equals(GenTreeConditional* op1, GenTreeConditional* op2)
+    {
+        return Compare(op1->gtCond, op2->gtCond) && Compare(op1->gtOp1, op2->gtOp1) && Compare(op1->gtOp2, op2->gtOp2);
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeConditional()
         : GenTreeOp()
@@ -4534,6 +4537,11 @@ struct AsyncCallInfo
     // configured and whether it is a task await or custom await. This field
     // records that behavior.
     ::ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+
+    // Is this 'await valueTask.AsTask()'? These come with special semantics as
+    // they no longer transparently forward continuation context handling to an
+    // underlying IValueTaskSource, if present.
+    bool IsValueTaskAsTask = false;
 
     // Tail awaits do not generate suspension points and the JIT instead
     // directly returns the callee's continuation to the caller.
@@ -4795,29 +4803,8 @@ class CallArgs;
 enum class WellKnownArg : unsigned
 {
     None,
-    ThisPointer,
-    VarArgsCookie,
-    InstParam,
-    AsyncContinuation,
-    RetBuffer,
-    PInvokeFrame,
-    ShiftLow,
-    ShiftHigh,
-    VirtualStubCell,
-    PInvokeCookie,
-    PInvokeTarget,
-    R2RIndirectionCell,
-    ValidateIndirectCallTarget,
-    DispatchIndirectCallTarget,
-    SwiftError,
-    SwiftSelf,
-    X86TailCallSpecialArg,
-    StackArrayLocal,
-    RuntimeMethodHandle,
-    AsyncExecutionContext,
-    AsyncSynchronizationContext,
-    WasmShadowStackPointer,
-    WasmPortableEntryPoint
+#define WELL_KNOWN_ARG(name, shortName, isILArg, addedByMorph) name,
+#include "wellknownargs.h"
 };
 
 #ifdef DEBUG
@@ -6796,6 +6783,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     NamedIntrinsic GetHWIntrinsicId() const;
 
+#ifdef TARGET_WASM
+    GenTree* GetImmOp() const;
+#endif // TARGET_WASM
+
     //---------------------------------------------------------------------------------------
     // ChangeHWIntrinsicId: Change the intrinsic id for this node.
     //
@@ -6956,21 +6947,9 @@ struct GenTreeVecCon : public GenTree
 
         switch (intrinsic)
         {
-            case NI_Vector128_Create:
-            case NI_Vector128_CreateScalar:
-            case NI_Vector128_CreateScalarUnsafe:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_Create:
-            case NI_Vector512_Create:
-            case NI_Vector256_CreateScalar:
-            case NI_Vector512_CreateScalar:
-            case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector512_CreateScalarUnsafe:
-#elif defined(TARGET_ARM64)
-            case NI_Vector64_Create:
-            case NI_Vector64_CreateScalar:
-            case NI_Vector64_CreateScalarUnsafe:
-#endif
+            case NI_Vector_Create:
+            case NI_Vector_CreateScalar:
+            case NI_Vector_CreateScalarUnsafe:
             {
                 // Zero out the simdVal
                 simdVal = {};
@@ -6980,12 +6959,7 @@ struct GenTreeVecCon : public GenTree
                 {
                     // CreateScalar leaves the upper bits as zero
 
-#if defined(TARGET_XARCH)
-                    if ((intrinsic != NI_Vector128_CreateScalar) && (intrinsic != NI_Vector256_CreateScalar) &&
-                        (intrinsic != NI_Vector512_CreateScalar))
-#elif defined(TARGET_ARM64)
-                    if ((intrinsic != NI_Vector64_CreateScalar) && (intrinsic != NI_Vector128_CreateScalar))
-#endif
+                    if (intrinsic != NI_Vector_CreateScalar)
                     {
                         // Now assign the rest of the arguments.
                         for (unsigned i = 1; i < ElementCount(simdSize, simdBaseType); i++)
@@ -9796,20 +9770,7 @@ inline bool GenTree::IsVectorCreate() const
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIs(GT_HWINTRINSIC))
     {
-        switch (AsHWIntrinsic()->GetHWIntrinsicId())
-        {
-            case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_Create:
-            case NI_Vector512_Create:
-#elif defined(TARGET_ARMARCH)
-            case NI_Vector64_Create:
-#endif
-                return true;
-
-            default:
-                return false;
-        }
+        return AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector_Create;
     }
 #endif // FEATURE_HW_INTRINSICS
 

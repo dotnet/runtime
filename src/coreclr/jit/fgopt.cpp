@@ -5127,6 +5127,28 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     ArrayStack<PredInfo>    matchedPredInfo(getAllocator(CMK_ArrayStack));
     ArrayStack<BasicBlock*> retryBlocks(getAllocator(CMK_ArrayStack));
 
+    auto sameEHRegionForTailMerge = [this](BasicBlock* block1, BasicBlock* block2) -> bool {
+        if (!BasicBlock::sameEHRegion(block1, block2))
+        {
+            return false;
+        }
+
+        if (!block1->hasHndIndex())
+        {
+            assert(!block2->hasHndIndex());
+            return true;
+        }
+
+        assert(block2->hasHndIndex());
+        EHblkDsc* const hndDsc = ehGetDsc(block1->getHndIndex());
+        if (!hndDsc->HasFilter())
+        {
+            return true;
+        }
+
+        return hndDsc->InFilterRegionBBRange(block1) == hndDsc->InFilterRegionBBRange(block2);
+    };
+
     auto tryRemoveAndFixFlow = [&](BasicBlock* emptyBlock, BasicBlock* newTarget) -> bool {
         assert(emptyBlock->isEmpty());
         assert(emptyBlock->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_ALWAYS));
@@ -5198,7 +5220,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // Consider: bypass this for statements that can't cause exceptions.
                 //
-                if (!BasicBlock::sameEHRegion(baseBlock, otherBlock))
+                if (!sameEHRegionForTailMerge(baseBlock, otherBlock))
                 {
                     continue;
                 }
@@ -5224,7 +5246,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // and all preds have matching last statements, and we're not changing EH behavior.
             //
             bool const hasCommSucc               = (commSucc != nullptr);
-            bool const predsInSameEHRegionAsSucc = hasCommSucc && BasicBlock::sameEHRegion(baseBlock, commSucc);
+            bool const predsInSameEHRegionAsSucc = hasCommSucc && sameEHRegionForTailMerge(baseBlock, commSucc);
             bool const canMergeAllPreds = hasCommSucc && (matchedPredInfo.Height() == (int)commSucc->countOfInEdges());
             bool const canMergeIntoSucc = predsInSameEHRegionAsSucc && canMergeAllPreds;
 
@@ -5285,10 +5307,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
             JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
-            BasicBlock* crossJumpVictim       = nullptr;
-            Statement*  crossJumpStmt         = nullptr;
-            bool        haveNoSplitVictim     = false;
-            bool        haveFallThroughVictim = false;
+            BasicBlock* crossJumpVictim = nullptr;
+            Statement*  crossJumpStmt   = nullptr;
+            unsigned    bestRank        = UINT32_MAX;
 
             for (PredInfo& info : matchedPredInfo.TopDownOrder())
             {
@@ -5302,46 +5323,40 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     continue;
                 }
 
-                bool const isNoSplit     = stmt == predBlock->firstStmt();
-                bool const isFallThrough = (predBlock->KindIs(BBJ_ALWAYS) && predBlock->JumpsToNext());
+                auto getRank = [=]() -> unsigned {
+                    bool const isNoSplit     = stmt == predBlock->firstStmt();
+                    bool const isFallThrough = (predBlock->KindIs(BBJ_ALWAYS) && predBlock->JumpsToNext());
 
-                // Is this block possibly better than what we have?
-                //
-                bool useBlock = false;
-
-                if (crossJumpVictim == nullptr)
-                {
-                    // Pick an initial candidate.
-                    useBlock = true;
-                }
-                else if (isNoSplit && isFallThrough)
-                {
-                    // This is the ideal choice.
+                    // From most to least preferable.
                     //
-                    useBlock = true;
-                }
-                else if (!haveNoSplitVictim && isNoSplit)
+                    if (isNoSplit && isFallThrough)
+                    {
+                        return 0;
+                    }
+                    if (isNoSplit)
+                    {
+                        return 1;
+                    }
+                    if (isFallThrough)
+                    {
+                        return 2;
+                    }
+
+                    return 3;
+                };
+
+                unsigned const rank = getRank();
+                bool           pick = rank < bestRank;
+                if (rank == bestRank)
                 {
-                    useBlock = true;
-                }
-                else if (!haveNoSplitVictim && !haveFallThroughVictim && isFallThrough)
-                {
-                    useBlock = true;
+                    pick = predBlock->bbID < crossJumpVictim->bbID;
                 }
 
-                if (useBlock)
+                if (pick)
                 {
-                    crossJumpVictim       = predBlock;
-                    crossJumpStmt         = stmt;
-                    haveNoSplitVictim     = isNoSplit;
-                    haveFallThroughVictim = isFallThrough;
-                }
-
-                // If we have the perfect victim, stop looking.
-                //
-                if (haveNoSplitVictim && haveFallThroughVictim)
-                {
-                    break;
+                    crossJumpVictim = predBlock;
+                    crossJumpStmt   = stmt;
+                    bestRank        = rank;
                 }
             }
 
@@ -5350,7 +5365,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // If this block requires splitting, then split it.
             // Note we know that stmt has a prev stmt.
             //
-            if (haveNoSplitVictim)
+            if (crossJumpStmt == crossJumpTarget->firstStmt())
             {
                 JITDUMP("Will cross-jump to " FMT_BB "\n", crossJumpTarget->bbNum);
             }

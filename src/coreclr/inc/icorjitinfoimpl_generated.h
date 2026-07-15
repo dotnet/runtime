@@ -500,6 +500,7 @@ void getAsyncInfo(
 
 CORINFO_METHOD_HANDLE getAwaitReturnCall(
           CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
           CORINFO_LOOKUP* instArg) override;
 
 mdMethodDef getMethodDefFromMethod(
@@ -535,6 +536,9 @@ void getFpStructLowering(
 
 CorInfoWasmType getWasmLowering(
           CORINFO_CLASS_HANDLE structHnd) override;
+
+uint32_t getAddressAlignment(
+          void* address) override;
 
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;

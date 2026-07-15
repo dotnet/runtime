@@ -154,8 +154,19 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(method.IsVirtual);
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            MethodDesc canonSlotMethodDefinition = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(canonMethod.GetMethodDefinition());
+            return _gvmDependenciesNode.GetOrAdd(canonSlotMethodDefinition.MakeInstantiatedMethod(canonMethod.Instantiation));
+        }
+
+        private NodeCache<MethodDesc, VirtualMethodUseNode> _virtualMethodUseNodes;
+
+        public VirtualMethodUseNode VirtualMethodUse(MethodDesc method)
+        {
+            Debug.Assert(method.IsVirtual);
+            Debug.Assert(!method.HasInstantiation);
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             canonMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(canonMethod);
-            return _gvmDependenciesNode.GetOrAdd(canonMethod);
+            return _virtualMethodUseNodes.GetOrAdd(canonMethod);
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
@@ -288,6 +299,11 @@ namespace ILCompiler.DependencyAnalysis
             _gvmDependenciesNode = new NodeCache<MethodDesc, GVMDependenciesNode>(method =>
             {
                 return new GVMDependenciesNode(method);
+            });
+
+            _virtualMethodUseNodes = new NodeCache<MethodDesc, VirtualMethodUseNode>(method =>
+            {
+                return new VirtualMethodUseNode(method);
             });
 
             _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(helperKey =>

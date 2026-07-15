@@ -2818,7 +2818,7 @@ public:
     bool emitChkAlign; // perform some alignment checks
 #endif
 
-    insGroup* emitCurIG;
+    insGroup* emitCurIG = nullptr;
 
     void emitSetShortJump(instrDescJmp* id);
     void emitSetMediumJump(instrDescJmp* id);
@@ -3894,6 +3894,7 @@ public:
         debugPrevGCrefRegs = RBM_NONE;
         debugPrevByrefRegs = RBM_NONE;
 #endif
+        emitCurIG = nullptr;
     }
 };
 
