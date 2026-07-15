@@ -222,7 +222,7 @@ protected TargetPointer GetFormatPointer(ulong formatOffset)
         moduleTable = stressLog.Modules ?? throw new InvalidOperationException("StressLogModuleTable is not set and StressLog does not contain a ModuleTable offset, but StressLogHasModuleTable is set to 1.");
     }
     uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
-    TargetPointer maxModules = target.ReadGlobalPointer("StressLogMaxModules");
+    TargetNUInt maxModules = new(target.ReadGlobalPointer("StressLogMaxModules").Value);
     for (ulong i = 0; i < maxModules.Value; ++i)
     {
         StressLogModuleDesc module = new(Target, moduleTable.Value + i * moduleEntrySize);
