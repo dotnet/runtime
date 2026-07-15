@@ -67,7 +67,7 @@ namespace System.Net.Security
                 _sslAuthenticationOptions.SetCertificateContextFromCert(selectedCertificate);
             }
 
-            return SafeDeleteSslContext.CreateKeyManagers(_sslAuthenticationOptions.CertificateContext!);
+            return AndroidKeyManager.Create(_sslAuthenticationOptions.CertificateContext!);
         }
 
         private bool TryGetRemoteCertificateValidationResult(out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus, ref ProtocolToken alertToken, out bool isValid)
