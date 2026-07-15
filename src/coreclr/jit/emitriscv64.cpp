@@ -1010,7 +1010,7 @@ bool emitter::tryEmitCompressedIns_R_R_R(
     instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt)
 {
     // TODO-RISCV64-RVC: Disable this early return once compresed instructions are allowed in prolog / epilog
-    if (m_compiler->compGeneratingProlog || m_compiler->compGeneratingEpilog)
+    if (emitGeneratingPrologOrFuncletProlog() || emitGeneratingEpilogOrFuncletEpilog())
     {
         return false;
     }
@@ -1634,7 +1634,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     int insCountLimit = prefMaxInsCount;
     // If we are currently generating prolog / epilog, we are currently not inside a method block, therefore, we should
     // not use the emitDataConst + emitIns_R_C combination.
-    if (m_compiler->compGeneratingProlog || m_compiler->compGeneratingEpilog)
+    if (emitGeneratingPrologOrFuncletProlog() || emitGeneratingEpilogOrFuncletEpilog())
     {
         insCountLimit = absMaxInsCount;
     }
@@ -1861,7 +1861,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     {
         if (doEmit)
         {
-            assert(!m_compiler->compGeneratingProlog && !m_compiler->compGeneratingEpilog);
+            assert(!emitGeneratingPrologOrFuncletProlog() && !emitGeneratingEpilogOrFuncletEpilog());
             auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
             emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, m_compiler->eeFindJitDataOffs(constAddr));
         }

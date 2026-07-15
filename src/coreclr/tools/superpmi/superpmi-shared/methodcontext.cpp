@@ -6480,6 +6480,39 @@ CorInfoReloc MethodContext::repGetRelocTypeHint(void* target)
     return retVal;
 }
 
+void MethodContext::recGetAddressAlignment(void* address, uint32_t result)
+{
+    if (GetAddressAlignment == nullptr)
+        GetAddressAlignment = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key   = CastPointer(address);
+    DWORD     value = (DWORD)result;
+    GetAddressAlignment->Add(key, value);
+    DEBUG_REC(dmpGetAddressAlignment(key, value));
+}
+void MethodContext::dmpGetAddressAlignment(DWORDLONG key, DWORD value)
+{
+    printf("GetAddressAlignment key addr-%016" PRIX64 ", value align-%u", key, value);
+}
+uint32_t MethodContext::repGetAddressAlignment(void* address)
+{
+    DWORDLONG key = CastPointer(address);
+
+    if ((GetAddressAlignment == nullptr) || (GetAddressAlignment->GetIndex(key) == -1))
+    {
+#ifdef sparseMC
+        LogDebug("Sparse - repGetAddressAlignment yielding fake answer...");
+        return 1;
+#else
+        LogException(EXCEPTIONCODE_MC, "Didn't find %016" PRIX64 "", key);
+#endif
+    }
+
+    DWORD value = GetAddressAlignment->Get(key);
+    DEBUG_REP(dmpGetAddressAlignment(key, value));
+    return (uint32_t)value;
+}
+
 void MethodContext::recGetExpectedTargetArchitecture(DWORD result)
 {
     if (GetExpectedTargetArchitecture == nullptr)

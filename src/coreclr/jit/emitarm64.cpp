@@ -4596,18 +4596,17 @@ void emitter::emitIns_R_R(instruction     ins,
                 fmt = IF_DV_2M;
                 break;
             }
-            if (ins == INS_cnt)
-            {
-                // Doesn't have general register version(s)
-                break;
-            }
-
+            // INS_cnt on general registers requires FEAT_CSSC; fall through to the DR_2G encoding.
+            assert((ins != INS_cnt) || m_compiler->compIsaSupportedDebugOnly(InstructionSet_Cssc));
             FALLTHROUGH;
 
+        case INS_ctz:
         case INS_rev:
             assert(insOptsNone(opt));
             assert(isGeneralRegister(reg1));
             assert(isGeneralRegister(reg2));
+            // INS_ctz on general registers requires FEAT_CSSC.
+            assert((ins != INS_ctz) || m_compiler->compIsaSupportedDebugOnly(InstructionSet_Cssc));
             if (ins == INS_rev32)
             {
                 assert(size == EA_8BYTE);
@@ -15017,8 +15016,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     // First load/store tmpReg with the large offset constant
                     codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
                     // Then add the base register
-                    //      rd = rd + base
-                    emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, memBase->GetRegNum());
+                    //      rd = base + rd
+                    emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), tmpReg);
 
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
                     noway_assert(tmpReg != index->GetRegNum());
@@ -17617,9 +17616,12 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     ssize_t     prevImm = emitGetInsSC(emitLastIns);
     instruction optIns  = (ins == INS_ldr) ? INS_ldp : INS_stp;
 
+    // For IF_LS_2C (ldur/stur) the immediate is already the raw byte offset; for the scaled
+    // formats it must be multiplied by the operand size to recover the byte offset that
+    // emitIns_R_R_R_I_LdStPair / emitIns_R_R_I expect.
     emitAttr prevReg1Attr;
-    ssize_t  prevImmSize   = prevImm * size;
-    ssize_t  newImmSize    = imm * size;
+    ssize_t  prevImmSize   = (emitLastIns->idInsFmt() == IF_LS_2C) ? prevImm : (prevImm * size);
+    ssize_t  newImmSize    = (fmt == IF_LS_2C) ? imm : (imm * size);
     bool     isLastLclVar  = emitLastIns->idIsLclVar();
     int      prevOffset    = -1;
     int      prevLclVarNum = -1;
@@ -17655,7 +17657,7 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     if ((ins == INS_str) && (reg1 == REG_ZR) && (prevReg1 == REG_ZR) && (size == EA_4BYTE))
     {
         // The first register is at the lower offset for the ascending order
-        ssize_t offset = (optimizationOrder == eRO_ascending ? prevImm : imm) * size;
+        ssize_t offset = (optimizationOrder == eRO_ascending ? prevImmSize : newImmSize);
         emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
         return true;
     }
@@ -17725,13 +17727,28 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     emitAttr  prevSize   = emitLastIns->idOpSize();
     ssize_t   prevImm    = emitGetInsSC(emitLastIns);
 
-    // If we have this format, the 'imm' and/or 'prevImm' are not scaled(encoded),
-    // therefore we cannot proceed.
-    // TODO: In this context, 'imm' and 'prevImm' are assumed to be scaled(encoded).
-    //       They should never be scaled(encoded) until its about to be written to the buffer.
-    if (fmt == IF_LS_2C || lastInsFmt == IF_LS_2C)
+    // For IF_LS_2C (ldur/stur) the immediate is the raw, unscaled byte offset, whereas for the
+    // scaled formats (IF_LS_2B) it has already been divided by the operand size. Normalize both
+    // immediates to the scaled representation so that the range and adjacency checks below operate
+    // on consistent units. A raw byte offset that is not a multiple of the operand size cannot be
+    // re-encoded as a scaled ldp/stp offset, so in that case the accesses cannot be merged.
+    const unsigned scale     = NaturalScale_helper(size);
+    const ssize_t  scaleMask = ((ssize_t)1 << scale) - 1;
+    if (fmt == IF_LS_2C)
     {
-        return eRO_none;
+        if ((imm & scaleMask) != 0)
+        {
+            return eRO_none;
+        }
+        imm >>= scale;
+    }
+    if (lastInsFmt == IF_LS_2C)
+    {
+        if ((prevImm & scaleMask) != 0)
+        {
+            return eRO_none;
+        }
+        prevImm >>= scale;
     }
 
     // Signed, *raw* immediate value fits in 7 bits, so for LDP/ STP the raw value is from -64 to +63.
@@ -18075,6 +18092,15 @@ bool emitter::TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber
     }
 
     void* sym = prevId->idAddr()->iiaAddr;
+
+    // PAGEOFFSET_12L encodes the :lo12: page offset scaled by 8, so the reloc target must be at
+    // least 8-byte aligned. Only fold when the VM guarantees that alignment for 'sym' (e.g. in
+    // NativeAOT a byte-packed non-GC static region may be only 4-byte aligned, which the linker
+    // rejects for R_AARCH64_LDST64_ABS_LO12_NC).
+    if (m_compiler->eeGetAddressAlignment(sym) < 8)
+    {
+        return false;
+    }
 
     // Drop the "add"; the preceding "adrp" already put the page base of 'sym' into reg1.
     emitRemoveLastInstruction();

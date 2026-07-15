@@ -440,7 +440,7 @@
     <value>Invalid handle.</value>
   </data>
   <data name="Arg_InvalidHexBinaryStyle" xml:space="preserve">
-    <value>With the AllowHexSpecifier or AllowBinarySpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be AllowLeadingWhite and AllowTrailingWhite.</value>
+    <value>With the AllowHexSpecifier or AllowBinarySpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be AllowLeadingWhite, AllowTrailingWhite, and AllowTrailingInvalidCharacters.</value>
   </data>
   <data name="Arg_InvalidNeutralResourcesLanguage_Asm_Culture" xml:space="preserve">
     <value>The NeutralResourcesLanguageAttribute on the assembly "{0}" specifies an invalid culture name: "{1}".</value>
@@ -536,6 +536,15 @@
   </data>
   <data name="Arg_MustBeDecimal" xml:space="preserve">
     <value>Object must be of type Decimal.</value>
+  </data>
+  <data name="Arg_MustBeDecimal32" xml:space="preserve">
+    <value>Object must be of type Decimal32.</value>
+  </data>
+  <data name="Arg_MustBeDecimal64" xml:space="preserve">
+    <value>Object must be of type Decimal64.</value>
+  </data>
+  <data name="Arg_MustBeDecimal128" xml:space="preserve">
+    <value>Object must be of type Decimal128.</value>
   </data>
   <data name="Arg_MustBeDelegate" xml:space="preserve">
     <value>Type must derive from Delegate.</value>
@@ -1926,10 +1935,7 @@
     <value>Valid values are between {0} and {1}, inclusive.</value>
   </data>
   <data name="ArgumentOutOfRange_RoundingDigits" xml:space="preserve">
-    <value>Rounding digits must be between 0 and 15, inclusive.</value>
-  </data>
-  <data name="ArgumentOutOfRange_RoundingDigits_MathF" xml:space="preserve">
-    <value>Rounding digits must be between 0 and 6, inclusive.</value>
+    <value>Rounding digits must be greater than or equal to 0.</value>
   </data>
   <data name="ArgumentOutOfRange_SmallCapacity" xml:space="preserve">
     <value>capacity was less than the current size.</value>
@@ -4051,6 +4057,9 @@
   </data>
   <data name="ResourceManager_ReflectionNotAllowed" xml:space="preserve">
     <value>Use of ResourceManager for custom types is disabled. Set the MSBuild Property CustomResourceTypesSupport to true in order to enable it.</value>
+  </data>
+  <data name="InvalidOperation_AssemblyLocationOverrideAlreadySet" xml:space="preserve">
+    <value>The assembly location override has already been set.</value>
   </data>
   <data name="InvalidOperation_AssemblyNotEditable" xml:space="preserve">
     <value>The assembly can not be edited or changed.</value>

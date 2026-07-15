@@ -142,6 +142,29 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      # Release build of wasi wasm for CoreCLR (build-only — the
+      # runtime tests run in a separate job dispatched to Helix from
+      # wasi-wasm-coreclr-runtime-tests.yml below).
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-build-only.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          publishArtifactsForWorkload: true
+          condition: >-
+            or(
+              eq(variables['wasmDarcDependenciesChanged'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
+              eq(variables['isRollingBuild'], true))
+
+      # CoreCLR src/tests subset run on wasmtime via Helix
+      # (wasi_wasm queue -> ubuntu-26.04-helix-webassembly-amd64 image).
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-runtime-tests.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          alwaysRun: ${{ variables.isRollingBuild }}
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -1009,8 +1032,7 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnFirefox
-            # ActiveIssue https://github.com/dotnet/runtime/issues/129849
-            # - WasmTestOnV8
+            - WasmTestOnV8
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -1133,10 +1155,8 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS simulators
+      # iOS devices
       # Build the whole product using Native AOT and run libraries tests
-      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
-      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1145,7 +1165,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1178,10 +1198,8 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS simulators
+      # iOS devices
       # Build the whole product using CoreCLR and run libraries tests
-      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
-      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1190,7 +1208,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1493,6 +1511,7 @@ extends:
           platforms:
             - windows_x64
             - linux_x64
+            - linux_musl_x64
           helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
             nameSuffix: Installer_Build_And_Test
