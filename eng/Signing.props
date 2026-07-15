@@ -132,7 +132,6 @@
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.wasm.Sample.Mono.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WorkloadTesting.Internal.*.nupkg;
-                  $(ArtifactsPackagesDir)**\Microsoft.NETCore.BrowserDebugHost.Transport.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Sdk.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Templates.net11.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;

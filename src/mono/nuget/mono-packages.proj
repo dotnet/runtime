@@ -5,7 +5,6 @@
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.wasm.Sample.Mono\Microsoft.NET.Runtime.wasm.Sample.Mono.pkgproj" />
-    <ProjectReference Include="Microsoft.NETCore.BrowserDebugHost.Transport\Microsoft.NETCore.BrowserDebugHost.Transport.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Runtime.WebAssembly.Sdk\Microsoft.NET.Runtime.WebAssembly.Sdk.pkgproj" />
     <ProjectReference Include="..\wasm\templates\Microsoft.NET.Runtime.WebAssembly.Templates.csproj" />
     <ProjectReference Include="Microsoft.NET.Sdk.WebAssembly.Pack\Microsoft.NET.Sdk.WebAssembly.Pack.pkgproj" />
@@ -18,7 +17,6 @@
     <ProjectReference Include="..\wasm\templates\Microsoft.NET.Runtime.WebAssembly.Templates.csproj" />
     <ProjectReference Include="Microsoft.NET.Sdk.WebAssembly.Pack\Microsoft.NET.Sdk.WebAssembly.Pack.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Runtime.WorkloadTesting.Internal\Microsoft.NET.Runtime.WorkloadTesting.Internal.pkgproj" />
-    <ProjectReference Include="Microsoft.NETCore.BrowserDebugHost.Transport\Microsoft.NETCore.BrowserDebugHost.Transport.pkgproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetsiOSSimulator)' == 'true'">

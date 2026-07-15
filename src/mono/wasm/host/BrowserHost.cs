@@ -16,7 +16,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.AppHost.DevServer;
-using Microsoft.WebAssembly.Diagnostics;
 
 #nullable enable
 
@@ -34,27 +33,20 @@ internal sealed class BrowserHost
     }
 
     public static async Task<int> InvokeAsync(CommonConfiguration commonArgs,
-                                              ILoggerFactory loggerFactory,
+                                              ILoggerFactory _,
                                               ILogger logger,
                                               CancellationToken token)
     {
         var args = new BrowserArguments(commonArgs);
         args.Validate();
         var host = new BrowserHost(args, logger);
-        await host.RunAsync(loggerFactory, token);
+        await host.RunAsync(token);
 
         return 0;
     }
 
-    private async Task RunAsync(ILoggerFactory loggerFactory, CancellationToken token)
+    private async Task RunAsync(CancellationToken token)
     {
-        if (_args.CommonConfig.Debugging && !_args.CommonConfig.UseStaticWebAssets)
-        {
-            ProxyOptions options = _args.CommonConfig.ToProxyOptions();
-            _ = Task.Run(() => DebugProxyHost.RunDebugProxyAsync(options, Array.Empty<string>(), loggerFactory, token), token)
-                    .ConfigureAwait(false);
-        }
-
         Dictionary<string, string> envVars = new();
         if (_args.CommonConfig.HostProperties.EnvironmentVariables is not null)
         {

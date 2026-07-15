@@ -149,22 +149,6 @@ src/mono/wasm/symbolicator$ dotnet run /path/to/dotnet.native.js.symbols /path/t
 
 When not relinking, or not building with AOT, you can find `dotnet.native.js.symbols` in the runtime pack.
 
-## Debugger tests on macOS
-
-Debugger tests need `Google Chrome` to be installed.
-
-`make run-debugger-tests`
-
-To run a test with `FooBar` in the name:
-
-`make run-debugger-tests TEST_FILTER=FooBar`
-
-(See https://learn.microsoft.com/dotnet/core/testing/selective-unit-tests?pivots=xunit for filter options)
-
-Additional arguments for `dotnet test` can be passed via `MSBUILD_ARGS` or `TEST_ARGS`. For example `MSBUILD_ARGS="/p:WasmDebugLevel=5"`. Though only one of `TEST_ARGS`, or `TEST_FILTER` can be used at a time.
-
-Chrome can be installed for testing by setting `InstallChromeForDebuggerTests=true` when building the tests.
-
 ## Run samples
 
 The samples in `src/mono/sample/wasm` can be build and run like this:
@@ -333,7 +317,6 @@ npm update --lockfile-version=1
 | libtests aot      | linux+windows: smoke, only-pc |
 | high resource aot | none                          |
 | Wasm.Build.Tests  | linux+windows:        only-pc |
-| Debugger tests    | linux+windows:        only-pc |
 | Runtime tests     | linux+windows:        only-pc |
 
 ### Run manually with `/azp run ..`
@@ -348,14 +331,11 @@ npm update --lockfile-version=1
 | libtests aot      | linux+windows: all         | linux+windows: all    | none                      |
 | high resource aot | linux+windows: all         | linux+windows: all    | none                      |
 | Wasm.Build.Tests  | linux+windows              | none                  | linux+windows             |
-| Debugger tests    | linux+windows              | none                  | linux+windows             |
 | Runtime tests     | linux                      | none                  | linux                     |
 | Multi-thread      | linux: all tests           | linux: all tests      | none                      |
 
 * `runtime-extra-platforms` does not run any wasm jobs on PRs
 * `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.
-
-* `runtime-wasm-dbgtests` runs all the debugger test jobs
 
 ## Rolling build (twice a day):
 
@@ -370,7 +350,6 @@ npm update --lockfile-version=1
 | high resource aot | none                       | linux+windows: all                   |
 |                   |                            |                                      |
 | Wasm.Build.Tests  | linux+windows              | none                                 |
-| Debugger tests    | linux+windows              | none                                 |
 | Runtime tests     | linux                      | none                                 |
 | Multi-thread      | linux: build only          | none                                 |
 

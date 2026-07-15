@@ -10,7 +10,6 @@ parameters:
   excludeLibTests: false
   excludeNonLibTests: false
   excludeOptional: true
-  debuggerTestsOnly: false
 
 jobs:
 
@@ -62,7 +61,7 @@ jobs:
 # - run everything, if relevant paths changed
 # - For runtime-wasm, force run all the jobs
 #
-- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
+- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeLibTests, true)) }}:
   # Library tests
   # these run on runtime also
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -164,7 +163,7 @@ jobs:
       scenarios:
         - WasmTestOnWasmtime
 
-- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
+- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true)) }}:
   # Builds only
   - template: /eng/pipelines/common/templates/wasm-build-only.yml
     parameters:

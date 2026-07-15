@@ -356,7 +356,7 @@ You can add following elements in your .csproj
 ```
 
 See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
-For more details see also [debugger.md](../browser/debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
+For more details see also [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
 
 ### Mono runtime logging and tracing
 

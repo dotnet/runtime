@@ -89,7 +89,7 @@ Located in `src/mono/sample/wasm/`:
 
 ### How do I debug a library test failure seen on CI?
 
-See the [WebAssembly Debugging Reference](debugging/mono/wasm-debugging.md#common-debugging-workflow) for detailed instructions on debugging library tests locally.
+See the [WebAssembly Debugging Reference](debugging/mono/wasm-debugging.md) for detailed instructions on debugging locally.
 
 ### How do I build for different WebAssembly targets?
 

@@ -38,8 +38,6 @@ internal sealed class DevServerStartup
         app.UseDeveloperExceptionPage();
         EnableConfiguredPathbase(app, configuration);
 
-        app.UseWebAssemblyDebugging();
-
         DevServerOptions options = optionsContainer.Value;
 
         if (options.WebServerUseCrossOriginPolicy)
