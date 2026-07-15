@@ -140,7 +140,13 @@
            _EmccCFlagsGenerated approach): force-include coreclr_compat.h (shared with
            the browser CoreCLR build) and add -I for the dir that has <callhelpers.hpp>
            and the minipal root. In-tree these are the repo source dirs; env-var overrides
-           let them resolve from a shipped payload out-of-tree. -->
+           let them resolve from a shipped payload out-of-tree.
+           coreclr_compat.h is referenced directly from the browser build dir (NOT copied)
+           on purpose: it must stay in lockstep with the callhelpers ABI, and a second copy
+           would invite exactly the kind of silent drift the nested-key bug came from. This
+           cross-tree reference is intentional and temporary; relocating the header to a
+           neutral coreclr-adjacent location shared by both browser and wasi (and staging it
+           + the vm/minipal headers for out-of-tree runs) is tracked with #128362. -->
       <_WasiCoreClrCompatHeader>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'browser', 'build', 'coreclr_compat.h'))</_WasiCoreClrCompatHeader>
       <_WasiVmWasmIncludeDir Condition="'$(CORECLR_VM_WASM_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(CORECLR_VM_WASM_INCLUDE_DIR)'))))</_WasiVmWasmIncludeDir>
       <_WasiVmWasmIncludeDir Condition="'$(_WasiVmWasmIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'coreclr', 'vm', 'wasm'))</_WasiVmWasmIncludeDir>
