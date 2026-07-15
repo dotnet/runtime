@@ -3864,6 +3864,8 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.StringField1, actual.StringField1);
         Assert.Equal(value.StringField2, actual.StringField2);
     }
+
+    [Fact]
     public static void Xml_TypeWithArrayLikeChoiceElement()
     {
         // Exercises an [XmlChoiceIdentifier] member where one of the choice element types is
