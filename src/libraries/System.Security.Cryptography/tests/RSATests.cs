@@ -239,7 +239,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(2)]
         [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]
-        public void RSASignaturePadding_Constructor_ValidParameters(int saltLength)
+        public static void RSASignaturePadding_Constructor_ValidParameters(int saltLength)
         {
             RSASignaturePadding padding = RSASignaturePadding.CreatePss(saltLength);
             Assert.Equal(RSASignaturePaddingMode.Pss, padding.Mode);
@@ -248,7 +248,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [InlineData(-3)]
-        public void RSASignaturePadding_Constructor_InvalidParameters(int saltLength)
+        public static void RSASignaturePadding_Constructor_InvalidParameters(int saltLength)
         {
             ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => RSASignaturePadding.CreatePss(saltLength));
             Assert.Equal("saltLength", exception.ParamName);
