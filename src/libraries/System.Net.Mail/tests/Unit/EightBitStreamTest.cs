@@ -89,6 +89,9 @@ namespace System.Net.Mime.Tests
 
             // Disposal flushes the deferred CR.
             Assert.Equal("Hello\r", Encoding.ASCII.GetString(outputStream.ToArray()));
+
+            // Disposal also disposes the underlying stream.
+            Assert.False(outputStream.CanWrite);
         }
     }
 }

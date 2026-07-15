@@ -158,6 +158,10 @@ namespace System.Net.Mime
                 _lastWriteEndedWithCr = false;
                 await BaseStream.WriteAsync(new byte[] { (byte)'\r' }, CancellationToken.None).ConfigureAwait(false);
             }
+
+            // DelegatedStream does not override DisposeAsync, so the base implementation
+            // falls back to synchronous Dispose(), which disposes the underlying stream.
+            await base.DisposeAsync().ConfigureAwait(false);
         }
 
         public int DecodeBytes(Span<byte> buffer) { throw new NotImplementedException(); }
