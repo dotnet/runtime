@@ -7,7 +7,6 @@
 // See https://github.com/dotnet/runtime/issues/130129.
 
 #include <cstdint>
-#include <cstdlib>
 #include <set>
 #include <sstream>
 
@@ -58,18 +57,6 @@ extern "C"
 // to the runtime via the host contract below so app callhelpers and reverse thunks resolve. Plain
 // C++ linkage to match the generated definition (not extern "C").
 const void* callhelpers_pinvoke_override(const char* library_name, const char* entry_point_name);
-
-// JS interop QCall targets referenced by libcoreclr_static.a but never called on wasi; stubbed so
-// the relink doesn't pull the browser-only libSystem.Runtime.InteropServices.JavaScript.Native.
-extern "C"
-{
-    void* SystemInteropJS_BindJSImportST(void*) { std::abort(); }
-    void SystemInteropJS_CancelPromise(void*) { std::abort(); }
-    void SystemInteropJS_InvokeJSFunction(void*, void*) { std::abort(); }
-    void SystemInteropJS_InvokeJSImportST(int32_t, void*) { std::abort(); }
-    void SystemInteropJS_ReleaseCSOwnedObject(void*) { std::abort(); }
-    void SystemInteropJS_ResolveOrRejectPromise(void*) { std::abort(); }
-}
 
 // Weak: only linked (from libSystem.Globalization.Native.a) in a non-invariant relink; null and
 // skipped otherwise.
@@ -155,8 +142,6 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    string_t exe_path = pal::get_exe_path();
-
     // argv[1] is the managed entry assembly; argv[2..] are passed to it. Copy the slice into a
     // const char* vector rather than casting char** to const char**.
     string_t entry_assembly = pal::get_absolute_path(argv[1]);
@@ -182,15 +167,15 @@ int main(int argc, char* argv[])
     }
 
     // CORE_ROOT locates the framework assemblies for the TPA list (the runtime itself is static on
-    // wasi). Fall back to the host's own directory when unset.
+    // wasi). On wasi the bundle co-locates the framework with the entry assembly, so default to the
+    // entry assembly's directory; CORE_ROOT remains an optional override.
     string_t core_root = pal::getenv(envvar::coreRoot);
     if (core_root.empty())
-    {
-        string_t file;
-        pal::split_path_to_dir_filename(exe_path, core_root, file);
-    }
+        core_root = app_path;
     pal::ensure_trailing_delimiter(core_root);
     native_search_dirs << core_root << pal::env_path_delim;
+
+    string_t exe_path = pal::get_exe_path();
 
     string_t tpa_list = build_tpa(core_root, core_libs);
 
