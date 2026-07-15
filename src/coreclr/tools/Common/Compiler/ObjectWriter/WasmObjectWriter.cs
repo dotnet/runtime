@@ -105,7 +105,7 @@ namespace ILCompiler.ObjectWriter
             Utf8String mangledName = mangledNameBuilder.ToUtf8String();
             // Record the signature's wasm type index in the shared symbol table. The signature bytes
             // are emitted by the node's own data; here we only assign its index.
-            EnsureSymbolIndex(mangledName, GetOrCreateSection(ObjectNodeSection.WasmTypeSection).SectionIndex);
+            GetOrCreateSymbolIndex(mangledName, GetOrCreateSection(ObjectNodeSection.WasmTypeSection).SectionIndex);
         }
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
@@ -826,7 +826,7 @@ namespace ILCompiler.ObjectWriter
         // index space, tracked here by the section the symbol is first registered in. Keeping the
         // first registration ensures a later definition of the same symbol (e.g. the code-section
         // body of a function already registered in the function section) does not reassign its index.
-        private int EnsureSymbolIndex(Utf8String symbolName, int sectionIndex)
+        private int GetOrCreateSymbolIndex(Utf8String symbolName, int sectionIndex)
         {
             // Keep-first: a symbol legitimately appears in two sections - its index-space section
             // (function/type/import), where it is registered first, and later its definition section
@@ -844,11 +844,11 @@ namespace ILCompiler.ObjectWriter
         }
 
         private int RegisterFunctionSymbol(Utf8String name) =>
-            EnsureSymbolIndex(name, GetOrCreateSection(WasmObjectNodeSection.FunctionSection).SectionIndex);
+            GetOrCreateSymbolIndex(name, GetOrCreateSection(WasmObjectNodeSection.FunctionSection).SectionIndex);
 
         protected internal override void EmitSymbolDefinition(int sectionIndex, Utf8String symbolName, long offset = 0, int size = 0, bool global = false)
         {
-            EnsureSymbolIndex(symbolName, sectionIndex);
+            GetOrCreateSymbolIndex(symbolName, sectionIndex);
             base.EmitSymbolDefinition(sectionIndex, symbolName, offset, size, global);
         }
 
