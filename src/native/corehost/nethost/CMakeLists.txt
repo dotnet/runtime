@@ -1,14 +1,6 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
-if (CLR_CMAKE_HOST_APPLE)
-    # Prevent exporting any symbol except _get_hostfxr_path from nethost. This is necessary
-    # to avoid a problem with local typeinfo for standard C++ EH types like std::bad_alloc,
-    # std::out_of_range etc. being exposed for binding for external shared libraries and
-    # causing mismatch in catch type matching.
-    add_link_options(LINKER:-exported_symbol,_get_hostfxr_path)
-endif()
-
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
     nethost.cpp

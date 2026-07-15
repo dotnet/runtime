@@ -14,11 +14,11 @@ endif()
 set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
 
 if (CLR_CMAKE_HOST_APPLE)
-    # Prevent exporting symbols from corerun. This is necessary to avoid a problem with
-    # local typeinfo for standard C++ EH types like std::bad_alloc, std::out_of_range etc.
-    # being exposed for binding for external shared libraries and causing mismatch in
-    # catch type matching.
-    add_link_options(LINKER:-no_exported_symbols)
+    # Prevent exporting symbols except for GetCurrentClrDetails from corerun. This is necessary
+    # to avoid a problem with local typeinfo for standard C++ EH types like std::bad_alloc,
+    # std::out_of_range etc. being exposed for binding for external shared libraries and causing
+    # mismatch in catch type matching.
+    add_link_options(LINKER:-exported_symbol,_GetCurrentClrDetails)
 endif()
 
 add_executable_clr(corerun
