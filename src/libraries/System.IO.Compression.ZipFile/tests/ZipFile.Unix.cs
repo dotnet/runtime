@@ -284,8 +284,8 @@ namespace System.IO.Compression.Tests
             const int EndOfCentralDirectorySize = 22;
             Assert.True(archiveBytes.Length >= endOfCentralDirectoryIndex + EndOfCentralDirectorySize);
 
-            int centralDirectoryHeaderIndex =
-                BitConverter.ToInt32(archiveBytes, endOfCentralDirectoryIndex + EndOfCentralDirectoryOffsetOfStartOfCentralDirectory);
+            int centralDirectoryHeaderIndex = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(
+                archiveBytes.AsSpan(endOfCentralDirectoryIndex + EndOfCentralDirectoryOffsetOfStartOfCentralDirectory, sizeof(int)));
 
             Assert.True(centralDirectoryHeaderIndex >= 0);
             Assert.True(archiveBytes.Length >= centralDirectoryHeaderIndex + 6);
