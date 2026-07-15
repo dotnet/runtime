@@ -91,5 +91,17 @@ namespace Common.Tests
         {
             Assert.Equal(expectedPath, Interop.procfs.DecodeMountInfoPath(encodedPath));
         }
+
+        [Theory]
+        [InlineData("/run/media/user/DISC\\0403", "/run/media/user/DISC 3/file", true, 22)]
+        [InlineData("/path\\134name", "/path\\name", true, 10)]
+        [InlineData("/unknown\\041escape", "/unknown\\041escape/file", true, 18)]
+        [InlineData("/run/media/user/DISC\\0403", "/run/media/user/DISC 4", false, 0)]
+        [InlineData("/longer/path", "/longer", false, 0)]
+        public void MountInfoPathStartsWith(string encodedPath, string path, bool expectedResult, int expectedDecodedLength)
+        {
+            Assert.Equal(expectedResult, Interop.procfs.MountInfoPathStartsWith(encodedPath, path, out int decodedLength));
+            Assert.Equal(expectedDecodedLength, decodedLength);
+        }
     }
 }

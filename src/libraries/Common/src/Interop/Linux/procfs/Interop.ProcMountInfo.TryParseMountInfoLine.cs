@@ -103,18 +103,7 @@ internal static partial class Interop
 
             for (int i = backslashIndex; i < path.Length; i++)
             {
-                char decodedCharacter = i + 3 < path.Length
-                    ? path.Slice(i, 4) switch
-                    {
-                        "\\040" => ' ',
-                        "\\011" => '\t',
-                        "\\012" => '\n',
-                        "\\134" => '\\',
-                        _ => '\0'
-                    }
-                    : '\0';
-
-                if (decodedCharacter != '\0')
+                if (TryDecodeMountInfoEscape(path, i, out char decodedCharacter))
                 {
                     decodedPath.Append(decodedCharacter);
                     i += 3;
@@ -126,6 +115,49 @@ internal static partial class Interop
             }
 
             return decodedPath.ToString();
+        }
+
+        internal static bool MountInfoPathStartsWith(ReadOnlySpan<char> encodedPath, ReadOnlySpan<char> path, out int decodedLength)
+        {
+            int pathIndex = 0;
+
+            for (int encodedIndex = 0; encodedIndex < encodedPath.Length; encodedIndex++, pathIndex++)
+            {
+                char decodedCharacter;
+                if (TryDecodeMountInfoEscape(encodedPath, encodedIndex, out decodedCharacter))
+                {
+                    encodedIndex += 3;
+                }
+                else
+                {
+                    decodedCharacter = encodedPath[encodedIndex];
+                }
+
+                if ((uint)pathIndex >= (uint)path.Length || path[pathIndex] != decodedCharacter)
+                {
+                    decodedLength = 0;
+                    return false;
+                }
+            }
+
+            decodedLength = pathIndex;
+            return true;
+        }
+
+        private static bool TryDecodeMountInfoEscape(ReadOnlySpan<char> path, int index, out char decodedCharacter)
+        {
+            decodedCharacter = path[index] == '\\' && index + 3 < path.Length
+                ? path.Slice(index, 4) switch
+                {
+                    "\\040" => ' ',
+                    "\\011" => '\t',
+                    "\\012" => '\n',
+                    "\\134" => '\\',
+                    _ => '\0'
+                }
+                : '\0';
+
+            return decodedCharacter != '\0';
         }
     }
 }
