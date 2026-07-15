@@ -928,7 +928,7 @@ namespace System
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
-        private void CtorOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk)
+        private void CtorOpen(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
             _target = this;
             _methodPtr = shuffleThunk;
@@ -956,7 +956,7 @@ namespace System
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
-        private void CtorCollectibleOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
+        private void CtorCollectibleOpen(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
             _target = this;
             _methodPtr = shuffleThunk;
