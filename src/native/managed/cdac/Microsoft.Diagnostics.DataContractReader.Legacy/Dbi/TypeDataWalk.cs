@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 // Port of native DacDbiInterfaceImpl::TypeDataWalk
 //
 // Walks the flattened DebuggerIPCE_TypeArgData[] tree that the right side built in
-// CordbType::GatherTypeData and produces a ITypeHandle for the loaded representation
+// CordbType::GatherTypeData and produces an ITypeHandle for the loaded representation
 // (exact, or canonical when generic code-sharing collapses reference type-args to
 // System.__Canon and value type-args to their canonical form).
 //

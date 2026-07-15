@@ -615,7 +615,7 @@ Contracts used:
         ... // If this is a MethodTable
         ... //     read Data.MethodTable from typeHandlePointer.
         ... //     create a MethodTable_1 and add it to _methodTables.
-        return TypeHandle { Address = typeHandlePointer }
+        return GetOrCreateTargetTypeHandle(typeHandlePointer);
     }
 
     public TargetPointer GetModule(ITypeHandle TypeHandle)

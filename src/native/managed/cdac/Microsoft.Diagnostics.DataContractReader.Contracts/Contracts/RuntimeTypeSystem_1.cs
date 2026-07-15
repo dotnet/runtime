@@ -929,7 +929,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     // Returns the start pointer, per-element size, and count of the enclosing type's contiguous FieldDesc
     // array (the fields declared by the type: its own instance fields plus its static fields).
-    private (TargetPointer ListStart, uint FieldDescSize, int TotalFields) GetFieldDescListLayout(TypeHandle typeHandle)
+    private (TargetPointer ListStart, uint FieldDescSize, int TotalFields) GetFieldDescListLayout(ITypeHandle typeHandle)
     {
         TargetPointer fieldDescListPtr = GetClassData(typeHandle).FieldDescList;
         uint fieldDescSize = _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
