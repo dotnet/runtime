@@ -336,7 +336,14 @@ internal sealed class PInvokeCallback
         TypeFullName = t.FullName!;
         AssemblyName = t.Module!.Assembly!.GetName()!.Name!;
         AssemblyFQName = t.Module!.Assembly!.GetName()!.FullName!;
-        Namespace = t.Namespace;
+        // Nested types: the runtime reverse-thunk key (vm/wasm/helpers.cpp GetHashCode ->
+        // GetFullyQualifiedNameInfo) reports an empty namespace for nested types, so match that
+        // here or the emitted g_ReverseThunks key won't be found at lookup time (#130129).
+        // This key drops the enclosing-type chain, so nested types with the same simple name in
+        // different namespaces collide; the duplicate-key check in PInvokeTableGenerator
+        // (EmitNativeToInterp) turns that into a build error.
+        // Tracked by https://github.com/dotnet/runtime/issues/130739.
+        Namespace = t.IsNested ? string.Empty : t.Namespace;
         MethodName = method.Name!;
         ReturnType = method.ReturnType!;
         IsVoid = ReturnType.Name == "Void";

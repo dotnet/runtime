@@ -839,7 +839,6 @@ private HandleData CreateHandleData(TargetPointer handleAddress, byte uBlock, ui
     HandleData handleData = default;
     handleData.Handle = handleAddress;
     handleData.Type = GetInternalHandleType(type);
-    handleData.IsPegged = false;
     handleData.StrongReference = IsStrongReference(type);
     if (HasSecondary(type))
     {
