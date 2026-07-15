@@ -214,9 +214,11 @@
   </Target>
 
   <!-- WASI CoreCLR: stage the host archive (libWasiHost.a) into the runtime pack native dir so the
-       per-app relink (src/mono/wasi/build/WasiApp.CoreCLR.targets) can consume it. Mirrors the
-       browser CopyWasmNativeFiles above; the runtime .a libraries come from the coreclr build. -->
-  <Target Name="CopyWasiNativeFiles" AfterTargets="Build" DependsOnTargets="$(CopyWasmNativeFilesDependsOn)" Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+       per-app relink (the CoreCLR-WASI app builder) can consume it. Mirrors the browser
+       CopyWasmNativeFiles above; the runtime .a libraries come from the coreclr build. Depends on
+       both host-build targets explicitly (one is skipped by its HostOS condition) so the copy runs
+       after the archive is produced regardless of host OS. -->
+  <Target Name="CopyWasiNativeFiles" AfterTargets="Build" DependsOnTargets="BuildCoreHostOnUnix;BuildCoreHostOnWindows" Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
     <ItemGroup>
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)libWasiHost.a" />
     </ItemGroup>

@@ -38,5 +38,5 @@ target_include_directories(WasiHost-Static PRIVATE
 )
 
 # The runtime static libraries and the app-generated callhelpers are supplied at the per-app relink
-# (src/mono/wasi/build/WasiApp.CoreCLR.targets), which pulls this archive whole-archive for main().
+# by the CoreCLR-WASI app builder, which pulls this archive whole-archive for main().
 install(TARGETS WasiHost-Static DESTINATION sharedFramework COMPONENT runtime)

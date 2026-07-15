@@ -329,7 +329,7 @@
          $(CoreCLRSharedFrameworkDir)) and the libs.native static libs (already provided by the
          unconditional glob above). corerun.wasm is not part of the runtime pack. The host archive
          (libWasiHost.a) is a separate deliverable built by the host subset and staged from
-         $(HostSharedFrameworkDir); the per-app relink (WasiApp.CoreCLR.targets) links it. Runtime
+         $(HostSharedFrameworkDir); the per-app relink (the CoreCLR-WASI app builder) links it. Runtime
          tests for Helix are built without the host subset, so the host archive is excluded there
          (mirrors the browser libBrowserHost.a handling). -->
     <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'">

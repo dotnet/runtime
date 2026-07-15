@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Thin CoreCLR-WASI corehost, built as a static archive (libWasiHost.a) and linked per-app by the
-// WASI app builder (src/mono/wasi/build/WasiApp.CoreCLR.targets) against the statically-linked
-// runtime. Mirrors browserhost, but with a real wasi:cli/run main() instead of a JS driver.
+// CoreCLR-WASI app builder against the statically-linked runtime. Mirrors browserhost, but with a
+// real wasi:cli/run main() instead of a JS driver.
 // See https://github.com/dotnet/runtime/issues/130129.
 
 #include <cstdint>
