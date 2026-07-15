@@ -61,7 +61,6 @@ namespace Internal.TypeVerifier
             {
                 TypeDesc resolvedBaseType = _module.GetType(baseType);
                 
-
                 if (resolvedBaseType.IsValueType ||
                     resolvedBaseType.IsInterface ||
                     !resolvedBaseType.IsDefType)
