@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,9 +46,6 @@ internal static class GatewayServer
 
         await host.StartAsync(token);
 
-        if (token.CanBeCanceled)
-            token.Register(async () => await host.StopAsync());
-
         ServerURLs serverUrls = await realUrlsAvailableTcs.Task;
         return (serverUrls, host);
     }
@@ -71,7 +67,9 @@ internal static class GatewayServer
         }
 
         throw new FileNotFoundException(
-            $"Cannot start the Blazor Gateway because 'blazor-gateway.dll' was not found next to WasmAppHost. Searched: {string.Join(", ", candidates)}");
+            "Cannot start the Blazor Gateway because 'blazor-gateway.dll' was not found. Ensure the " +
+            "Microsoft.AspNetCore.Components.Gateway package is referenced by WasmAppHost.csproj and its payload " +
+            $"is copied to the output directory. Searched: {string.Join(", ", candidates)}");
     }
 }
 
@@ -112,7 +110,8 @@ internal sealed class GatewayProcessService : IHostedService, IAsyncDisposable
 
         var processStartInfo = new ProcessStartInfo
         {
-            FileName = "dotnet" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : ""),
+            // "dotnet" is resolved via PATH on all platforms (Windows CreateProcess appends the .exe extension).
+            FileName = "dotnet",
             Arguments = BuildArguments(gatewayDll, _options),
             UseShellExecute = false,
             RedirectStandardOutput = true,
