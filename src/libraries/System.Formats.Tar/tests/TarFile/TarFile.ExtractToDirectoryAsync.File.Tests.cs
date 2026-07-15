@@ -57,7 +57,6 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public async Task SetsLastModifiedTimeOnExtractedFiles()
         {
             using TempDirectory root = new TempDirectory();
@@ -85,7 +84,6 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public async Task SetsLastModifiedTimeOnExtractedDirectories()
         {
             using TempDirectory root = new TempDirectory();
@@ -238,7 +236,6 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public async Task ExtractArchiveWithEntriesThatStartWithSlashDotPrefix_Async()
         {
             using (TempDirectory root = new TempDirectory())
@@ -267,7 +264,6 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public async Task UnixFileModes_Async(bool overwrite)
         {
             using TempDirectory source = new TempDirectory();
@@ -334,7 +330,6 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public async Task UnixFileModes_RestrictiveParentDir_Async()
         {
             using TempDirectory source = new TempDirectory();
@@ -368,7 +363,6 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public async Task LinkBeforeTargetAsync()
         {
             using TempDirectory source = new TempDirectory();
