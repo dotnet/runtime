@@ -3770,6 +3770,7 @@ public static partial class XmlSerializerTests
         }
     }
 
+    [Fact]
     public static void Xml_TypeWithArrayLikeChoiceElement()
     {
         // Exercises an [XmlChoiceIdentifier] member where one of the choice element types is
