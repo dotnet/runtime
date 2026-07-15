@@ -704,7 +704,7 @@ namespace System.Numerics
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, out Decimal128 result) => TryParse(utf8Text, provider: null, out result);
 
-        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
         public static Decimal128 Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleDecimal(style);
