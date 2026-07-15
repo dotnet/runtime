@@ -432,6 +432,19 @@ namespace Internal.IL.Stubs
 
         private static bool ScanFieldwiseEqualsBody(MethodIL methodIL, MetadataType type)
         {
+            try
+            {
+                return ScanFieldwiseEqualsBodyCore(methodIL, type);
+            }
+            catch (TypeSystemException.InvalidProgramException)
+            {
+                // Malformed or truncated IL: stay conservative and treat it as not field-wise.
+                return false;
+            }
+        }
+
+        private static bool ScanFieldwiseEqualsBodyCore(MethodIL methodIL, MetadataType type)
+        {
             // Verifies the body is a plain field-wise equality: every instance field is compared exactly once
             // (via `==`, its own `Equals`, or `EqualityComparer<F>.Default.Equals` for records) and the results
             // are ANDed together, which is equivalent to a bitwise (memcmp) comparison.
