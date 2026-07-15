@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
 using Microsoft.Test.ModuleCore;
 using Xunit;
 
@@ -228,6 +231,189 @@ namespace System.Xml.Linq.Tests
             yield return new object[] { Tuple.Create(1, "Melitta", 7.5), typeof(Tuple) };
             yield return new object[] { new Guid(), typeof(Guid) };
             yield return new object[] { d, typeof(Dictionary<int, string>) };
+        }
+
+        // When a reader delivers a single logical text value as many small text nodes (as the
+        // reader used by DataContractSerializer over a stream does), loading must remain linear
+        // and still coalesce the chunks into a single, correct text value rather than
+        // concatenating them one at a time.
+        [Theory]
+        [InlineData(1)]
+        [InlineData(7)]
+        public void LoadCoalescesChunkedTextIntoSingleNode(int chunkSize)
+        {
+            var original = new XElement("root", string.Join("\n", Enumerable.Repeat(new string('a', 40), 100)));
+            string xml = original.ToString(SaveOptions.DisableFormatting);
+
+            XElement loaded = LoadChunked(xml, chunkSize, LoadOptions.None);
+
+            Assert.Equal(original.Value, loaded.Value);
+            XText textNode = Assert.IsType<XText>(Assert.Single(loaded.Nodes()));
+            Assert.Equal(original.Value, textNode.Value);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(3)]
+        public void LoadChunkedTextPreservesMixedContent(int chunkSize)
+        {
+            const string xml = "<root>hello world<child>inner text</child>trailing text</root>";
+
+            XElement loaded = LoadChunked(xml, chunkSize, LoadOptions.None);
+
+            Assert.Equal(xml, loaded.ToString(SaveOptions.DisableFormatting));
+            Assert.Equal("hello world", ((XText)loaded.FirstNode).Value);
+            Assert.Equal("inner text", loaded.Element("child").Value);
+            Assert.Equal("trailing text", ((XText)loaded.LastNode).Value);
+        }
+
+        [Fact]
+        public void LoadChunkedTextWithBaseUriOptionCoalesces()
+        {
+            // LoadOptions.SetBaseUri routes through the ContentReader "container" code path.
+            var original = new XElement("root", string.Join("\n", Enumerable.Repeat(new string('b', 30), 80)));
+            string xml = original.ToString(SaveOptions.DisableFormatting);
+
+            XElement loaded = LoadChunked(xml, chunkSize: 1, LoadOptions.SetBaseUri);
+
+            Assert.Equal(original.Value, loaded.Value);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(7)]
+        public async Task LoadAsyncCoalescesChunkedText(int chunkSize)
+        {
+            var original = new XElement("root", string.Join("\n", Enumerable.Repeat(new string('c', 40), 100)));
+            string xml = original.ToString(SaveOptions.DisableFormatting);
+
+            using var reader = new ChunkingXmlReader(XmlReader.Create(new StringReader(xml)), chunkSize);
+            XElement loaded = await XElement.LoadAsync(reader, LoadOptions.None, default);
+
+            Assert.Equal(original.Value, loaded.Value);
+            Assert.Equal(original.Value, Assert.IsType<XText>(Assert.Single(loaded.Nodes())).Value);
+        }
+
+        private static XElement LoadChunked(string xml, int chunkSize, LoadOptions options)
+        {
+            using var reader = new ChunkingXmlReader(XmlReader.Create(new StringReader(xml)), chunkSize);
+            return XElement.Load(reader, options);
+        }
+
+        // With buffering, loading a heavily-chunked text value is O(n). Reverting to per-chunk
+        // string concatenation makes it O(n^2), which would take minutes for this input instead
+        // of well under a second, so the generous time bound only trips on an algorithmic
+        // regression, not on normal machine-speed variance.
+        [Fact]
+        public void LoadChunkedLargeTextRemainsLinear()
+        {
+            const int length = 750_000;
+            string xml = "<root>" + new string('a', length) + "</root>";
+
+            var stopwatch = Stopwatch.StartNew();
+            XElement loaded = LoadChunked(xml, chunkSize: 1, LoadOptions.None);
+            stopwatch.Stop();
+
+            Assert.Equal(length, loaded.Value.Length);
+            Assert.True(
+                stopwatch.Elapsed < TimeSpan.FromSeconds(30),
+                $"Chunked load took {stopwatch.Elapsed.TotalSeconds:F1}s; expected linear-time completion.");
+        }
+
+        // Wraps an XmlReader and reports each text node's value in fixed-size chunks, emulating
+        // readers that surface large text content as many small text nodes.
+        private sealed class ChunkingXmlReader : XmlReader
+        {
+            private readonly XmlReader _inner;
+            private readonly int _chunkSize;
+            private string? _pendingText;
+            private int _position;
+
+            public ChunkingXmlReader(XmlReader inner, int chunkSize)
+            {
+                _inner = inner;
+                _chunkSize = chunkSize;
+            }
+
+            public override bool Read()
+            {
+                if (_pendingText != null)
+                {
+                    _position += _chunkSize;
+                    if (_position < _pendingText.Length)
+                    {
+                        return true;
+                    }
+
+                    _pendingText = null;
+                    _position = 0;
+                }
+
+                if (!_inner.Read())
+                {
+                    return false;
+                }
+
+                if (_inner.NodeType == XmlNodeType.Text && _inner.Value.Length > _chunkSize)
+                {
+                    _pendingText = _inner.Value;
+                    _position = 0;
+                }
+
+                return true;
+            }
+
+            public override Task<bool> ReadAsync() => Task.FromResult(Read());
+
+            public override Task<string> GetValueAsync() => Task.FromResult(Value);
+
+            public override XmlNodeType NodeType => _pendingText != null ? XmlNodeType.Text : _inner.NodeType;
+
+            public override string Value
+            {
+                get
+                {
+                    if (_pendingText != null)
+                    {
+                        return _pendingText.Substring(_position, Math.Min(_chunkSize, _pendingText.Length - _position));
+                    }
+
+                    return _inner.Value;
+                }
+            }
+
+            public override int AttributeCount => _inner.AttributeCount;
+            public override string BaseURI => _inner.BaseURI;
+            public override int Depth => _inner.Depth;
+            public override bool EOF => _inner.EOF;
+            public override bool IsEmptyElement => _inner.IsEmptyElement;
+            public override string LocalName => _inner.LocalName;
+            public override string NamespaceURI => _inner.NamespaceURI;
+            public override XmlNameTable NameTable => _inner.NameTable;
+            public override string Prefix => _inner.Prefix;
+            public override ReadState ReadState => _inner.ReadState;
+
+            public override string GetAttribute(int i) => _inner.GetAttribute(i);
+            public override string? GetAttribute(string name) => _inner.GetAttribute(name);
+            public override string? GetAttribute(string name, string? namespaceURI) => _inner.GetAttribute(name, namespaceURI);
+            public override string? LookupNamespace(string prefix) => _inner.LookupNamespace(prefix);
+            public override bool MoveToAttribute(string name) => _inner.MoveToAttribute(name);
+            public override bool MoveToAttribute(string name, string? ns) => _inner.MoveToAttribute(name, ns);
+            public override bool MoveToElement() => _inner.MoveToElement();
+            public override bool MoveToFirstAttribute() => _inner.MoveToFirstAttribute();
+            public override bool MoveToNextAttribute() => _inner.MoveToNextAttribute();
+            public override bool ReadAttributeValue() => _inner.ReadAttributeValue();
+            public override void ResolveEntity() => _inner.ResolveEntity();
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    _inner.Dispose();
+                }
+
+                base.Dispose(disposing);
+            }
         }
     }
 }
