@@ -1089,9 +1089,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool TryFindAncestorWithSameTypeDefinition(TypeHandle type, TypeHandle definingType, out TypeHandle ancestor)
     {
+        const int MaxParentWalkIterations = 1000;
+
         TypeHandle current = type;
         TargetPointer previous = TargetPointer.Null;
-        for (int i = 0; i < 1000 && !current.IsNull; i++)
+        for (int i = 0; i < MaxParentWalkIterations && !current.IsNull; i++)
         {
             if (HasSameTypeDefinition(current, definingType))
             {
