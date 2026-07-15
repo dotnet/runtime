@@ -36,7 +36,7 @@ steps:
   # Build Artifacts (not via the migrated upload-artifact-step.yml) until the
   # performance-repo consumer is migrated to DownloadPipelineArtifact@2.
   - task: ArchiveFiles@2
-    displayName: 'Zip Browser Wasm Artifacts'
+    displayName: 'Archive Browser Wasm Artifacts (tar.gz)'
     inputs:
       rootFolderOrFile:  '$(Build.SourcesDirectory)/artifacts/staging'
       archiveFile:       '$(Build.StagingDirectory)/${{ parameters.artifactName }}.tar.gz'
