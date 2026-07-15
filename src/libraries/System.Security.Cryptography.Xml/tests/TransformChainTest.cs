@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 types: new[] { typeof(Stream), typeof(XmlResolver), typeof(string) },
                 modifiers: null);
 
-            if (transformToOctetStream == null)
+            if (transformToOctetStream is null)
             {
                 transformToOctetStream = typeof(TransformChain).GetMethod(
                     "TransformToOctetStream",
@@ -119,6 +119,10 @@ namespace System.Security.Cryptography.Xml.Tests
             using StreamReader reader = new StreamReader(output, Encoding.UTF8);
 
             Assert.Equal(Expected, reader.ReadToEnd());
+
+            FieldInfo cryptoStreamField = typeof(XmlDsigBase64Transform).GetField("_cs", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            Assert.Null(cryptoStreamField.GetValue(transform));
         }
+
     }
 }

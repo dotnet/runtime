@@ -34,7 +34,7 @@ namespace System
         /// <summary>
         /// Gets the maximum number of <c>EncryptedData</c> references that may be processed during a single
         /// <see cref="System.Security.Cryptography.Xml.XmlDecryptionTransform"/> operation.
-        /// Configurable via AppContext data "System.Security.Cryptography.Xml.MaxEncryptedDataReferences".
+        /// Configurable via AppContext data "System.Security.Cryptography.Xml.MaxDecryptedDataElements".
         /// Default value is 100. A value of 0 means infinite (no limit).
         /// </summary>
         internal static int MaxDecryptedDataElements { get; } =

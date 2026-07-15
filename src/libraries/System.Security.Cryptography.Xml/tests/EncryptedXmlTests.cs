@@ -1681,38 +1681,31 @@ namespace System.Security.Cryptography.Xml.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(EncodedDtdTransformChainLimits))]
-        public static void EncryptedXml_DecryptedEncodedDtd_WithExactTransformChainLimit(int maxTransformsPerChain, bool expectTransformLimit)
+        public static void EncryptedData_LoadEncodedDtd_WithExactTransformChainLimit(int maxTransformsPerChain, bool expectTransformLimit)
         {
             RemoteExecutor.Invoke(static (string maxTransformsPerChainText, string expectTransformLimitText) =>
             {
                 AppContext.SetData(MaxTransformsPerChainAppContextSwitch, int.Parse(maxTransformsPerChainText, CultureInfo.InvariantCulture));
 
-                EncryptedXml encryptedXml = CreateEncryptedXmlWithEncodedDtdPayload();
-                CryptographicException ex = Assert.ThrowsAny<CryptographicException>(() => encryptedXml.DecryptDocument());
-
                 if (bool.Parse(expectTransformLimitText))
                 {
+                    CryptographicException ex = Assert.Throws<CryptographicException>(LoadEncodedDtdPayload);
                     Assert.Equal(MalformedTransformsMessage, ex.Message);
                 }
                 else
                 {
-                    Assert.NotEqual(MalformedTransformsMessage, ex.Message);
+                    LoadEncodedDtdPayload();
                 }
             }, maxTransformsPerChain.ToString(CultureInfo.InvariantCulture), expectTransformLimit.ToString()).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void EncryptedXml_DecryptedEncodedDtd_WithUnlimitedTransformChain()
+        public static void EncryptedData_LoadEncodedDtd_WithUnlimitedTransformChain()
         {
-            // With the transform chain limit removed, the operation should still release
-            // intermediate state so processing terminates without excessive memory usage.
             RemoteExecutor.Invoke(static () =>
             {
                 AppContext.SetData(MaxTransformsPerChainAppContextSwitch, 0);
-
-                EncryptedXml encryptedXml = CreateEncryptedXmlWithEncodedDtdPayload();
-                CryptographicException ex = Assert.ThrowsAny<CryptographicException>(() => encryptedXml.DecryptDocument());
-                Assert.NotEqual(MalformedTransformsMessage, ex.Message);
+                LoadEncodedDtdPayload();
             }).Dispose();
         }
 
@@ -1731,9 +1724,19 @@ namespace System.Security.Cryptography.Xml.Tests
                 namespaceManager)!.Count;
         }
 
+        private static void LoadEncodedDtdPayload()
+        {
+            using Stream encryptedXmlStream = TestHelpers.LoadResourceStream("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample5.xml");
+            XmlDocument encryptedXmlDocument = new();
+            encryptedXmlDocument.Load(encryptedXmlStream);
+
+            EncryptedData encryptedData = new();
+            encryptedData.LoadXml(encryptedXmlDocument.DocumentElement!);
+        }
+
         private static EncryptedXml CreateEncryptedXmlWithEncodedDtdPayload()
         {
-            Stream encryptedXmlStream = TestHelpers.LoadResourceStream("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample5.xml");
+            using Stream encryptedXmlStream = TestHelpers.LoadResourceStream("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample5.xml");
             XmlDocument encryptedXmlDocument = new();
             encryptedXmlDocument.Load(encryptedXmlStream);
             EncryptedXml encryptedXml = new(encryptedXmlDocument);
