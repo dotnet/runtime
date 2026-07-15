@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Xml.Schema;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Xml.Tests
@@ -87,6 +88,54 @@ namespace System.Xml.Tests
         public static void ToDateTimeOffset_EndOfDay_Invalid(string input)
         {
             Assert.Throws<FormatException>(() => XmlConvert.ToDateTimeOffset(input));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("Pacific/Kiritimati", true)]
+        [InlineData("America/Los_Angeles", false)]
+        public static void ToDateTimeOffset_MinValue_Unspecified_UsesExpectedBoundaryValue(string timeZoneId, bool expectMinValue)
+        {
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (timeZoneId, expectMinValueString) =>
+            {
+                Environment.SetEnvironmentVariable("TZ", timeZoneId);
+                TimeZoneInfo.ClearCachedData();
+
+                TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.MinValue);
+                bool expectMinValue = bool.Parse(expectMinValueString);
+
+                Assert.Equal(expectMinValue, offset >= TimeSpan.Zero);
+
+                DateTimeOffset expected = expectMinValue ?
+                    DateTimeOffset.MinValue :
+                    new DateTimeOffset(DateTime.MinValue, offset);
+
+                Assert.Equal(expected, XmlConvert.ToDateTimeOffset("0001-01-01T00:00:00"));
+            }, timeZoneId, expectMinValue.ToString());
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("Pacific/Kiritimati", false)]
+        [InlineData("America/Los_Angeles", true)]
+        public static void ToDateTimeOffset_MaxValue_Unspecified_UsesExpectedBoundaryValue(string timeZoneId, bool expectMaxValue)
+        {
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (timeZoneId, expectMaxValueString) =>
+            {
+                Environment.SetEnvironmentVariable("TZ", timeZoneId);
+                TimeZoneInfo.ClearCachedData();
+
+                TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.MaxValue);
+                bool expectMaxValue = bool.Parse(expectMaxValueString);
+
+                Assert.Equal(expectMaxValue, offset <= TimeSpan.Zero);
+
+                DateTimeOffset expected = expectMaxValue ?
+                    DateTimeOffset.MaxValue :
+                    new DateTimeOffset(DateTime.MaxValue, offset);
+
+                Assert.Equal(expected, XmlConvert.ToDateTimeOffset("9999-12-31T23:59:59.9999999"));
+            }, timeZoneId, expectMaxValue.ToString());
         }
 
         [Theory]
