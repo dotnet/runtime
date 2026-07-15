@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="..\Common\LogAsErrorException.cs" />
+    <Compile Include="..\Microsoft.NET.WebAssembly.Webcil\WasmCustomSectionWriter.cs" Link="WasmCustomSectionWriter.cs" />
   </ItemGroup>
 
   <Target Name="PublishBuilder"
