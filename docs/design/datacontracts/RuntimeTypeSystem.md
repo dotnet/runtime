@@ -312,9 +312,10 @@ uint GetFieldDescMemberDef(TargetPointer fieldDescPointer);
 bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescRVA(TargetPointer fieldDescPointer);
-uint GetFieldDescType(TargetPointer fieldDescPointer);
+CorElementType GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef);
 TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer);
+bool TryGetFieldDescNext(TargetPointer fieldDescPointer, out TargetPointer nextFieldDesc);
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
 TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true);
 ```
@@ -2306,10 +2307,10 @@ bool IsFieldDescRVA(TargetPointer fieldDescPointer)
     return (DWord1 & (uint)FieldDescFlags1.IsRVA) != 0;
 }
 
-uint GetFieldDescType(TargetPointer fieldDescPointer)
+CorElementType GetFieldDescType(TargetPointer fieldDescPointer)
 {
     uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
-    return (DWord2 & (uint)FieldDescFlags2.TypeMask) >> 27;
+    return (CorElementType)((DWord2 & (uint)FieldDescFlags2.TypeMask) >> 27);
 }
 
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef)
@@ -2351,6 +2352,26 @@ TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
     // bound to the enclosing class as generic context, and return the resulting
     // TypeHandle. Returns TypeHandle.Null if any link in the chain is unavailable
     // (e.g. uncached constructed instantiation).
+}
+
+bool TryGetFieldDescNext(TargetPointer fieldDescPointer, out TargetPointer nextFieldDesc)
+{
+    // The FieldDescs of a type form a contiguous array with no terminator. Advance one FieldDesc-size
+    // along, but first bounds-check: locate the enclosing type (via the FieldDesc's enclosing
+    // MethodTable) and, if `fieldDescPointer` is the last FieldDesc in that type's list, report that
+    // there is no next FieldDesc by returning false.
+    TargetPointer enclosingMT = GetMTOfEnclosingClass(fieldDescPointer);
+    TypeHandle typeHandle = GetTypeHandle(enclosingMT);
+    // The field list holds the type's own instance fields (total instance fields minus the parent's)
+    // followed by its static fields; see GetFieldDescList.
+    TargetPointer lastFieldDesc = /* address of the final FieldDesc in typeHandle's list */;
+    if (fieldDescPointer == lastFieldDesc)
+    {
+        nextFieldDesc = TargetPointer.Null;
+        return false;
+    }
+    nextFieldDesc = fieldDescPointer + /* sizeof(FieldDesc) */;
+    return true;
 }
 ```
 

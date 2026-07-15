@@ -593,19 +593,6 @@ namespace System.Tests
 
             foreach ((float original, Half expected) in data)
             {
-                // WASM on Mono lowers `float.Min` / `float.Max` through `f32.min` / `f32.max`
-                // (and `float.IsNaN(...)` branches through `f32.add`). The WebAssembly spec
-                // permits NaN-payload canonicalization on these ops but doesn't require it --
-                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
-                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
-                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
-                // trip through the software conversion path in that environment. Gated on
-                // Mono specifically since other WASM runtimes don't share this lowering.
-                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
-                // be removed once the conversion path either avoids the canonicalizing ops
-                // or the host engines start preserving NaN payloads.
-                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && float.IsNaN(original))
-                    continue;
                 yield return new object[] { original, expected };
             }
         }
@@ -615,6 +602,21 @@ namespace System.Tests
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)f;
+
+            // The software `float`->`Half` conversion routes the value through `f32.abs`/`f32.min`/
+            // `f32.max`/`f32.add`, and the WebAssembly spec permits (but doesn't require) host engines
+            // to canonicalize NaN payloads on those ops -- the V8 engine used on CI does. The sign is
+            // still carried through the integer ALU, so a canonicalized result is `sign | 0x7E00`.
+            // Accept that as the expected value on WASM. See https://github.com/dotnet/runtime/issues/103347.
+            if (PlatformDetection.IsWasm && Half.IsNaN(expected))
+            {
+                ushort canonical = (ushort)((BitConverter.HalfToUInt16Bits(expected) & 0x8000) | 0x7E00);
+                if (BitConverter.HalfToUInt16Bits(h) == canonical)
+                {
+                    expected = h;
+                }
+            }
+
             AssertExtensions.Equal(expected, h);
         }
 
@@ -2621,17 +2623,17 @@ namespace System.Tests
             yield return new object[] { "123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)123.45, 6 };
             yield return new object[] { "1.5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)1.5, 3 };
             yield return new object[] { "0.123abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)0.123, 5 };
-            
+
             // With leading whitespace
             yield return new object[] { "  12.5abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)12.5, 6 };
-            
+
             // With signs
             yield return new object[] { "+12.5abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)12.5, 5 };
             yield return new object[] { "-45.5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)(-45.5), 5 };
-            
+
             // With exponent
             yield return new object[] { "1.5e2abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)1.5e2, 5 };
-            
+
             // Special values
             yield return new object[] { "Infinityabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 8 };
             yield return new object[] { "-Infinityxyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NegativeInfinity, 9 };
@@ -2646,7 +2648,7 @@ namespace System.Tests
 
             // AllowTrailingWhite has no effect on special values; the surrounding whitespace is still consumed
             yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite) | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 10 };
-            
+
             // Valid number without trailing characters
             yield return new object[] { "123.45", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)123.45, 6 };
         }
@@ -2657,9 +2659,9 @@ namespace System.Tests
         {
             Half result;
             int charsConsumed;
-            
+
             // Test string overload with charsConsumed
-            Assert.True(Half.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<Half>.TryParse(value, style, provider, out result, out charsConsumed));
             if (Half.IsNaN(expectedValue))
             {
                 Assert.True(Half.IsNaN(result));
@@ -2669,9 +2671,9 @@ namespace System.Tests
                 Assert.Equal(expectedValue, result);
             }
             Assert.Equal(expectedCharsConsumed, charsConsumed);
-            
+
             // Test ReadOnlySpan<char> overload with charsConsumed
-            Assert.True(Half.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<Half>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
             if (Half.IsNaN(expectedValue))
             {
                 Assert.True(Half.IsNaN(result));
@@ -2681,11 +2683,11 @@ namespace System.Tests
                 Assert.Equal(expectedValue, result);
             }
             Assert.Equal(expectedCharsConsumed, charsConsumed);
-            
+
             // Test UTF-8 overload with bytesConsumed
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.True(Half.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.True(NumberBaseHelper<Half>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             if (Half.IsNaN(expectedValue))
             {
                 Assert.True(Half.IsNaN(result));
@@ -2705,7 +2707,7 @@ namespace System.Tests
         {
             // Empty string
             yield return new object[] { "", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
-            
+
             // Only invalid characters (no valid number)
             yield return new object[] { "abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
         }
@@ -2716,21 +2718,21 @@ namespace System.Tests
         {
             Half result;
             int charsConsumed;
-            
+
             // Test string overload with charsConsumed
-            Assert.False(Half.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<Half>.TryParse(value, style, provider, out result, out charsConsumed));
             Assert.Equal((Half)0.0, result);
             Assert.Equal(0, charsConsumed);
-            
+
             // Test ReadOnlySpan<char> overload with charsConsumed
-            Assert.False(Half.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<Half>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal((Half)0.0, result);
             Assert.Equal(0, charsConsumed);
 
             // Test UTF-8 overload with bytesConsumed
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.False(Half.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.False(NumberBaseHelper<Half>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             Assert.Equal((Half)0.0, result);
             Assert.Equal(0, bytesConsumed);
         }
