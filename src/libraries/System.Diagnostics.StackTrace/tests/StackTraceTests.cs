@@ -281,7 +281,7 @@ namespace System.Diagnostics
                 return _isCompleted ? ValueTaskSourceStatus.Faulted : ValueTaskSourceStatus.Pending;
             }
 
-            public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags)
+            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
             {
                 Task.Delay(50).ContinueWith(_ =>
                 {
