@@ -129,7 +129,9 @@ public final class DotnetX509KeyManager extends X509ExtendedKeyManager {
     }
 
     private synchronized X509KeyManager selectClientKeyManager(Principal[] issuers) {
-        selectedKeyManager = null;
+        if (selectedKeyManager != null) {
+            return selectedKeyManager;
+        }
 
         KeyManager[] keyManagers = selectClientCertificate(sslStreamProxyHandle, getIssuerNames(issuers));
         if (keyManagers != null) {
