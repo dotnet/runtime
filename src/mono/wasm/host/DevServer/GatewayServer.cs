@@ -75,8 +75,8 @@ internal static class GatewayServer
 
 internal sealed class GatewayProcessService : IHostedService, IAsyncDisposable
 {
-    private static readonly Regex NowListeningRegex = new(@"^\s*Now listening on: (?<url>.*)$", RegexOptions.Compiled, TimeSpan.FromSeconds(10));
-    private static readonly Regex ApplicationStartedRegex = new(@"^\s*Application started\.", RegexOptions.Compiled, TimeSpan.FromSeconds(10));
+    private static readonly Regex NowListeningRegex = new(@"^\s*Now listening on: (?<url>.*)$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex ApplicationStartedRegex = new(@"^\s*Application started\.", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly string[] MessageSuppressionPrefixes =
     {
         "Now listening on:",
@@ -261,7 +261,7 @@ internal sealed class GatewayProcessService : IHostedService, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogDebug("Failed to stop the Blazor Gateway process: {Message}", ex.Message);
+            _logger.LogWarning("Failed to stop the Blazor Gateway process: {Message}", ex.Message);
         }
         finally
         {
