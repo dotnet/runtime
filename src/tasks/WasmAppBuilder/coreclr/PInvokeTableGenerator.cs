@@ -25,13 +25,15 @@ internal sealed class PInvokeTableGenerator
     private readonly List<PInvokeCallback> callbacks = new();
     private readonly PInvokeCollector _pinvokeCollector;
     private readonly bool _isLibraryMode;
+    private readonly bool _warnOnUnresolvedModules;
 
-    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode, string targetOS)
+    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode, string targetOS, bool warnOnUnresolvedModules = true)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
         _pinvokeCollector = new(log, targetOS);
         _isLibraryMode = isLibraryMode;
+        _warnOnUnresolvedModules = warnOnUnresolvedModules;
     }
 
     public void ScanAssembly(Assembly asm)
@@ -103,7 +105,15 @@ internal sealed class PInvokeTableGenerator
             }
             else if (pinvoke.Module != "QCall")
             {
-                Log.Warning("WASM0066", $"PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' is not in the list of allowed modules. It is also not a specially treated module.");
+                // Unresolved module: not statically linked, ignored, [WasmImportLinkage], "*" or QCall.
+                // By design we skip it and throw at runtime if it is ever called. For hand-authored
+                // apps this is likely a bug, so warn; consumers scanning untrimmed closures full of
+                // cross-platform interop (library-test bundles) disable the warning to avoid failing
+                // the build under warn-as-error for P/Invokes that are never called on wasm.
+                if (_warnOnUnresolvedModules)
+                    Log.Warning("WASM0066", $"PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' is not in the list of allowed modules. It is also not a specially treated module.");
+                else
+                    Log.LogMessage(MessageImportance.Low, $"Skipping unresolved PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' (not statically linked on wasm; will throw if called).");
             }
         }
 
