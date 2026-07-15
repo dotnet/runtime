@@ -381,13 +381,9 @@ namespace System.Net
                 {
                     for (int attempt = 0; attempt <= MaxRetries; attempt++)
                     {
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            ArrayPool<byte>.Shared.Return(responseBuffer);
-                            cancellationToken.ThrowIfCancellationRequested();
-                        }
                         try
                         {
+                            cancellationToken.ThrowIfCancellationRequested();
                             int responseLength = async
                                 ? await SendUdpQueryAsync(query, server, responseBuffer, cancellationToken).ConfigureAwait(false)
                                 : SendUdpQuerySync(query, server, responseBuffer);
