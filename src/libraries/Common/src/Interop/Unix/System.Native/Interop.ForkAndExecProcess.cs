@@ -13,7 +13,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         internal static unsafe int ForkAndExecProcess(
-            string filename, string[] argv, IDictionary<string, string?> env, string? cwd,
+            string filename, string[] argv, IDictionary<string, string?>? env, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd,
             ProcessStartInfo startInfo, SafeHandle[]? inheritedHandles = null)
@@ -67,7 +67,10 @@ internal static partial class Interop
                 }
 
                 AllocArgvArray(argv, ref argvPtr);
-                AllocEnvpArray(env, ref envpPtr);
+                if (env is not null)
+                {
+                    AllocEnvpArray(env, ref envpPtr);
+                }
                 fixed (uint* pGroups = groups)
                 fixed (int* pInheritedFds = inheritedFds)
                 {

@@ -336,6 +336,16 @@ static int32_t ForkAndExecProcessInternal(
     int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
     int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig, int32_t startSuspended);
 
+static char** GetEnviron(void)
+{
+#if HAVE_NSGETENVIRON
+    return *(_NSGetEnviron());
+#else
+    extern char** environ;
+    return environ;
+#endif
+}
+
 #if HAVE_PR_SET_PDEATHSIG
 // Dedicated thread infrastructure for PR_SET_PDEATHSIG.
 //
@@ -565,7 +575,7 @@ static int32_t ForkAndExecProcessInternal(
     int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig, int32_t startSuspended)
 {
 #if HAVE_FORK || defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
-    assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
+    assert(NULL != filename && NULL != argv && NULL != childPid &&
             (groupsLength == 0 || groups != NULL) && "null argument.");
 
 #if !HAVE_PR_SET_PDEATHSIG
@@ -712,7 +722,7 @@ static int32_t ForkAndExecProcessInternal(
         }
 
         // Spawn the process
-        result = posix_spawn(&spawnedPid, filename, &file_actions, &attr, argv, envp);
+        result = posix_spawn(&spawnedPid, filename, &file_actions, &attr, argv, envp != NULL ? envp : GetEnviron());
 
         posix_spawn_file_actions_destroy(&file_actions);
         posix_spawnattr_destroy(&attr);
@@ -934,7 +944,7 @@ static int32_t ForkAndExecProcessInternal(
 #endif
 
         // Finally, execute the new process.  execve will not return if it's successful.
-        execve(filename, argv, envp);
+        execve(filename, argv, envp != NULL ? envp : GetEnviron());
         ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno); // execve failed
     }
 

@@ -218,7 +218,7 @@ namespace Microsoft.Win32.SafeHandles
             string filename;
             string[] argv;
 
-            IDictionary<string, string?> env = startInfo.Environment;
+            IDictionary<string, string?>? env = startInfo._environmentVariables;
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
@@ -356,7 +356,7 @@ namespace Microsoft.Win32.SafeHandles
         private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
             SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
         {
-            IDictionary<string, string?> env = startInfo.Environment;
+            IDictionary<string, string?>? env = startInfo._environmentVariables;
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
@@ -427,7 +427,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private static SafeProcessHandle ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
-            IDictionary<string, string?> env, string? cwd, bool setCredentials, uint userId,
+            IDictionary<string, string?>? env, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
             SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
             bool usesTerminal, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder, bool throwOnNoExec = true)
