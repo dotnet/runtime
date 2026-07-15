@@ -66,6 +66,7 @@ namespace System.Security.Cryptography.Tests
         {
             const int IterationCount = 10;
             const int ThreadCount = 8;
+            TimeSpan timeout = TimeSpan.FromSeconds(30);
 
             for (int iteration = 0; iteration < IterationCount; iteration++)
             {
@@ -82,7 +83,7 @@ namespace System.Security.Cryptography.Tests
                     {
                         try
                         {
-                            barrier.SignalAndWait();
+                            Assert.True(barrier.SignalAndWait(timeout), "Timed out waiting for concurrent handle access.");
                             handles[index] = key.Handle;
                         }
                         catch (Exception e)
@@ -90,12 +91,13 @@ namespace System.Security.Cryptography.Tests
                             exceptions[index] = e;
                         }
                     });
+                    threads[i].IsBackground = true;
                     threads[i].Start();
                 }
 
                 foreach (Thread thread in threads)
                 {
-                    thread.Join();
+                    Assert.True(thread.Join(timeout), "Timed out waiting for handle access thread.");
                 }
 
                 Assert.All(exceptions, Assert.Null);
