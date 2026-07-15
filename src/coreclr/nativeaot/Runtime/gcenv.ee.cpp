@@ -568,7 +568,9 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
             delete threadStubArgs;
             return false;
         }
-        strcpy(name_copy, name);
+
+        memcpy(name_copy, name, name_length);
+        name_copy[name_length] = '\0';
         threadStubArgs->m_name = name_copy;
     }
 
@@ -582,6 +584,8 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
             PalSetCurrentThreadName(pStartContext->m_name);
             auto realStartRoutine = pStartContext->m_pRealStartRoutine;
             void* realContext = pStartContext->m_pRealContext;
+
+            delete[] pStartContext->m_name;
             delete pStartContext;
 
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
