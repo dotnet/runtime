@@ -23,7 +23,6 @@ public final class DotnetX509KeyManager extends X509ExtendedKeyManager {
     private final PrivateKey privateKey;
     private final X509Certificate[] certificateChain;
     private volatile X509KeyManager selectedKeyManager;
-    private boolean selectionAttempted;
 
     public DotnetX509KeyManager(KeyStore.PrivateKeyEntry privateKeyEntry) {
         if (privateKeyEntry == null) {
@@ -71,7 +70,7 @@ public final class DotnetX509KeyManager extends X509ExtendedKeyManager {
     @Override
     public String chooseClientAlias(String[] keyTypes, Principal[] issuers, Socket socket) {
         if (sslStreamProxyHandle != 0) {
-            X509KeyManager keyManager = getSelectedKeyManager(issuers);
+            X509KeyManager keyManager = selectClientKeyManager(issuers);
             return keyManager == null ? null : keyManager.chooseClientAlias(keyTypes, issuers, socket);
         }
 
@@ -81,7 +80,7 @@ public final class DotnetX509KeyManager extends X509ExtendedKeyManager {
     @Override
     public String chooseEngineClientAlias(String[] keyTypes, Principal[] issuers, SSLEngine engine) {
         if (sslStreamProxyHandle != 0) {
-            X509KeyManager keyManager = getSelectedKeyManager(issuers);
+            X509KeyManager keyManager = selectClientKeyManager(issuers);
             if (keyManager == null) {
                 return null;
             }
@@ -129,18 +128,15 @@ public final class DotnetX509KeyManager extends X509ExtendedKeyManager {
         return privateKey;
     }
 
-    private synchronized X509KeyManager getSelectedKeyManager(Principal[] issuers) {
-        if (!selectionAttempted) {
-            // Conscrypt supplies all acceptable key types in one choose call. Invoke the managed
-            // callback only once for this key manager to avoid duplicate prompts for one request.
-            selectionAttempted = true;
-            KeyManager[] keyManagers = selectClientCertificate(sslStreamProxyHandle, getIssuerNames(issuers));
-            if (keyManagers != null) {
-                for (KeyManager keyManager : keyManagers) {
-                    if (keyManager instanceof X509KeyManager) {
-                        selectedKeyManager = (X509KeyManager) keyManager;
-                        break;
-                    }
+    private synchronized X509KeyManager selectClientKeyManager(Principal[] issuers) {
+        selectedKeyManager = null;
+
+        KeyManager[] keyManagers = selectClientCertificate(sslStreamProxyHandle, getIssuerNames(issuers));
+        if (keyManagers != null) {
+            for (KeyManager keyManager : keyManagers) {
+                if (keyManager instanceof X509KeyManager) {
+                    selectedKeyManager = (X509KeyManager) keyManager;
+                    break;
                 }
             }
         }
