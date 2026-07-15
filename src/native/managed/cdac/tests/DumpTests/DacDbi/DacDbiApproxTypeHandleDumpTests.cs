@@ -170,7 +170,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
             case CorElementType.Class:
             case CorElementType.ValueType:
                 {
-                    ImmutableArray<ITypeHandle> inst = rts.GetInstantiation(th);
+                    ReadOnlySpan<ITypeHandle> inst = rts.GetInstantiation(th);
                     uint numTypeArgs = (uint)inst.Length;
                     pSelf->numTypeArgs = BitConverter.IsLittleEndian ? numTypeArgs : System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(numTypeArgs);
                     for (int i = 0; i < inst.Length; i++)
@@ -268,7 +268,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
                 th = rts.GetTypeHandle(parentMT);
         }
 
-        ImmutableArray<ITypeHandle> inst = rts.GetInstantiation(th);
+        ReadOnlySpan<ITypeHandle> inst = rts.GetInstantiation(th);
         if (inst.Length == 0)
             return th;
 

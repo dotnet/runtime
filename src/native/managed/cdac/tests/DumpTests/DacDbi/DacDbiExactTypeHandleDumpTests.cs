@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Immutable;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
@@ -109,7 +108,7 @@ public class DacDbiExactTypeHandleDumpTests : DumpTestBase
             return one;
         }
 
-        ImmutableArray<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+        ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
         if (instantiation.Length == 0)
             return Array.Empty<DebuggerIPCE_BasicTypeData>();
 

@@ -3127,10 +3127,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             TargetPointer specMethodMtPtr = rts.GetMethodTable(pSpecificMethod);
             ITypeHandle thSpecMethodMt = rts.GetTypeHandle(specMethodMtPtr);
             ITypeHandle thMatchingParent = GetMethodTableMatchingParentClass(rts, thSpecificClass, thSpecMethodMt);
-            ImmutableArray<ITypeHandle> classInst = thMatchingParent.IsNull
-                ? ImmutableArray<ITypeHandle>.Empty
+            ReadOnlySpan<ITypeHandle> classInst = thMatchingParent.IsNull
+                ? default
                 : rts.GetInstantiation(thMatchingParent);
-            ImmutableArray<ITypeHandle> methodInst = rts.GetGenericMethodInstantiation(pSpecificMethod);
+            ReadOnlySpan<ITypeHandle> methodInst = rts.GetGenericMethodInstantiation(pSpecificMethod);
 
             cClassParams = (uint)classInst.Length;
             *pcGenericClassTypeParams = cClassParams;
@@ -3398,7 +3398,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             ITypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
-            ImmutableArray<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+            ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
 
             DebuggerIPCE_ExpandedTypeData entry;
             for (int i = 0; i < instantiation.Length; i++)
@@ -5862,7 +5862,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return rts.GetSignatureCorElementType(typeHandle);
     }
 
-    // Mirrors native ITypeHandle::UpCastTypeIfNeeded — for continuation types, returns the
+    // Mirrors native TypeHandle::UpCastTypeIfNeeded — for continuation types, returns the
     // parent (continuation base) type handle instead.
     private static ITypeHandle UpCastTypeIfNeeded(IRuntimeTypeSystem rts, ITypeHandle typeHandle)
     {
@@ -5909,7 +5909,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         Contracts.ILoader loader = _target.Contracts.Loader;
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
 
-        ImmutableArray<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+        ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
         if (instantiation.Length > 0)
         {
             // Generic instantiation — set the type handle so the debugger can fetch type arguments
@@ -5965,7 +5965,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 Contracts.ILoader loader = _target.Contracts.Loader;
                 Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
 
-                ImmutableArray<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+                ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
                 if (instantiation.Length > 0)
                 {
                     WriteLittleEndian(ref typeInfo.vmTypeHandle, typeHandle.Address.Value);

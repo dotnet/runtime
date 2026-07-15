@@ -21,7 +21,7 @@ bool TryGetTypeInfo(string fullyQualifiedName, out Target.TypeInfo info);
 // Throws InvalidOperationException if the type cannot be resolved.
 Target.TypeInfo GetTypeInfo(string fullyQualifiedName);
 
-// Return true and populate `typeHandle` with the runtime ITypeHandle for the type,
+// Return true and populate `typeHandle` with the cDAC ITypeHandle for the runtime type,
 // or false if the type cannot be resolved.
 bool TryGetTypeHandle(string fullyQualifiedName, out ITypeHandle typeHandle);
 ITypeHandle GetTypeHandle(string fullyQualifiedName);

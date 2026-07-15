@@ -35,7 +35,9 @@ internal enum CorElementType
 }
 ```
 
-A `ITypeHandle` is the runtime representation of the type information about a value.  This can be constructed from the address of a `ITypeHandle` or a `MethodTable`.
+An `ITypeHandle` is the cDAC representation of runtime type information. Consumers obtain
+canonical handles from `RuntimeTypeSystem.GetTypeHandle` using the target address of a
+runtime `TypeHandle` or `MethodTable`.
 
 ``` csharp
 partial interface IRuntimeTypeSystem : IContract
@@ -116,7 +118,7 @@ partial interface IRuntimeTypeSystem : IContract
     public bool IsTrackedReferenceWithFinalizer(ITypeHandle typeHandle);
     public TargetPointer GetGCStaticsBasePointer(ITypeHandle typeHandle);
     public TargetPointer GetNonGCStaticsBasePointer(ITypeHandle typeHandle);
-    public virtual ImmutableArray<ITypeHandle> GetInstantiation(ITypeHandle typeHandle);
+    public virtual ReadOnlySpan<ITypeHandle> GetInstantiation(ITypeHandle typeHandle);
     public bool IsClassInited(ITypeHandle typeHandle);
     public bool IsInitError(ITypeHandle typeHandle);
     public virtual bool IsGenericTypeDefinition(ITypeHandle typeHandle);
@@ -146,7 +148,7 @@ partial interface IRuntimeTypeSystem : IContract
     ITypeHandle GetConstructedType(ITypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default);
     ITypeHandle GetPrimitiveType(CorElementType typeCode);
     bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token);
-    bool IsFunctionPointer(ITypeHandle typeHandle, out ImmutableArray<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv);
+    bool IsFunctionPointer(ITypeHandle typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv);
     bool IsPointer(ITypeHandle typeHandle);
     bool IsTypeDesc(ITypeHandle typeHandle);
     TargetPointer GetLoaderModule(ITypeHandle typeHandle);
@@ -224,7 +226,7 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true for an uninstantiated generic method
     public virtual bool IsGenericMethodDefinition(MethodDescHandle methodDesc);
 
-    public virtual ImmutableArray<ITypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDesc);
+    public virtual ReadOnlySpan<ITypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDesc);
 
     // Return mdTokenNil (0x06000000) if the method doesn't have a token, otherwise return the token of the method
     public virtual uint GetMethodToken(MethodDescHandle methodDesc);
@@ -934,7 +936,7 @@ Contracts used:
         return threadContract.GetThreadLocalStaticBase(threadPtr, tlsIndexAddr);
     }
 
-    public ImmutableArray<ITypeHandle> GetInstantiation(ITypeHandle TypeHandle)
+    public ReadOnlySpan<ITypeHandle> GetInstantiation(ITypeHandle TypeHandle)
     {
         if (!typeHandle.IsMethodTable())
             return default;
@@ -1143,7 +1145,7 @@ Contracts used:
 
     private bool GenericInstantiationMatch(ITypeHandle genericType, ITypeHandle potentialMatch, ImmutableArray<ITypeHandle> typeArguments)
     {
-        ImmutableArray<ITypeHandle> instantiation = GetInstantiation(potentialMatch);
+        ReadOnlySpan<ITypeHandle> instantiation = GetInstantiation(potentialMatch);
         if (instantiation.Length != typeArguments.Length)
             return false;
 
@@ -1173,7 +1175,7 @@ Contracts used:
 
     private bool FnPtrMatch(ITypeHandle candidate, ImmutableArray<ITypeHandle> retAndArgTypes, SignatureCallingConvention callConv)
     {
-        if (!IsFunctionPointer(candidate, out ImmutableArray<ITypeHandle> candidateRetAndArgs, out SignatureCallingConvention candidateCallConv))
+        if (!IsFunctionPointer(candidate, out ReadOnlySpan<ITypeHandle> candidateRetAndArgs, out SignatureCallingConvention candidateCallConv))
             return false;
         if (candidateCallConv != callConv)
             return false;
@@ -1266,7 +1268,7 @@ Contracts used:
         return false;
     }
 
-    public bool IsFunctionPointer(ITypeHandle typeHandle, out ImmutableArray<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv)
+    public bool IsFunctionPointer(ITypeHandle typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv)
     {
         retAndArgTypes = default;
         callConv = default;
@@ -1598,7 +1600,7 @@ And the various apis are implemented with the following algorithms
         return ((int)Flags2 & (int)InstantiatedMethodDescFlags2.KindMask) == (int)InstantiatedMethodDescFlags2.GenericMethodDefinition;
     }
 
-    public ImmutableArray<ITypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDescHandle)
+    public ReadOnlySpan<ITypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 

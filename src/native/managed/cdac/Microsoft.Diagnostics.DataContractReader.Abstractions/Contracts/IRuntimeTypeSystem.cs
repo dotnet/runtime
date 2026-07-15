@@ -231,7 +231,7 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetNonGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr) => throw new NotImplementedException();
 
 
-    ImmutableArray<ITypeHandle> GetInstantiation(ITypeHandle typeHandle) => throw new NotImplementedException();
+    ReadOnlySpan<ITypeHandle> GetInstantiation(ITypeHandle typeHandle) => throw new NotImplementedException();
     public bool IsClassInited(ITypeHandle typeHandle) => throw new NotImplementedException();
     public bool IsInitError(ITypeHandle typeHandle) => throw new NotImplementedException();
     bool IsGenericTypeDefinition(ITypeHandle typeHandle) => throw new NotImplementedException();
@@ -263,7 +263,7 @@ public interface IRuntimeTypeSystem : IContract
     ITypeHandle GetConstructedType(ITypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default) => throw new NotImplementedException();
     ITypeHandle GetPrimitiveType(CorElementType typeCode) => throw new NotImplementedException();
     bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
-    bool IsFunctionPointer(ITypeHandle typeHandle, out ImmutableArray<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv) => throw new NotImplementedException();
+    bool IsFunctionPointer(ITypeHandle typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv) => throw new NotImplementedException();
     bool IsPointer(ITypeHandle typeHandle) => throw new NotImplementedException();
     bool IsTypeDesc(ITypeHandle typeHandle) => throw new NotImplementedException();
     TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef) => throw new NotImplementedException();
@@ -276,7 +276,7 @@ public interface IRuntimeTypeSystem : IContract
 
     // Return true for an uninstantiated generic method
     bool IsGenericMethodDefinition(MethodDescHandle methodDesc) => throw new NotImplementedException();
-    ImmutableArray<ITypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    ReadOnlySpan<ITypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
 

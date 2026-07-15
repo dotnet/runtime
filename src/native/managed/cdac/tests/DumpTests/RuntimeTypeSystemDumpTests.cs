@@ -257,6 +257,23 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
+    public void ManagedTypeSource_TypeHandleIsCanonicalAfterForwardFlush(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+
+        ITypeHandle first = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.IntPtr");
+
+        Target.Flush(FlushScope.ForwardExecution);
+
+        ITypeHandle second = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.IntPtr");
+        ITypeHandle direct = Target.Contracts.RuntimeTypeSystem.GetTypeHandle(second.Address);
+
+        Assert.NotSame(first, second);
+        Assert.Same(second, direct);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_ObjectMethodTableHasIntroducedMethods(TestConfiguration config)
     {
         InitializeDumpTest(config);

@@ -117,7 +117,7 @@ internal sealed class GcSignatureTypeProvider
                 return ClassifyTypeHandle(rts.GetTypeParam(classCtx));
             }
 
-            ImmutableArray<ITypeHandle> instantiation = rts.GetInstantiation(classCtx);
+            ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(classCtx);
             if ((uint)index >= (uint)instantiation.Length)
                 return GcTypeKind.Ref;
             return ClassifyTypeHandle(instantiation[index]);

@@ -25,15 +25,19 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
     public void Flush(FlushScope scope)
     {
-        // They are safe to retain across FlushScope.ForwardExecution because
-        // ManagedTypeSource_1 only resolves names in System.Private.CoreLib, which
-        // is loaded into the non-collectible default AssemblyLoadContext at runtime
-        // startup and whose ECMA metadata never changes for the process lifetime.
+        // RuntimeTypeSystem invalidates its canonical ITypeHandle instances on every
+        // flush, so this cache must be cleared even when the underlying CoreLib types
+        // remain loaded and immutable.
+        _typeHandleCache.Clear();
+
+        // Type layouts and field descriptors are safe to retain across
+        // FlushScope.ForwardExecution because ManagedTypeSource_1 only resolves names
+        // in System.Private.CoreLib, which is loaded into the non-collectible default
+        // AssemblyLoadContext at runtime startup and whose ECMA metadata never changes.
         if (scope != FlushScope.All)
             return;
 
         _typeInfoCache.Clear();
-        _typeHandleCache.Clear();
         _fieldDescCache.Clear();
     }
 
@@ -268,7 +272,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         if (!TryFindTypeDefinition(moduleHandle, managedFqName, out mdReader, out TypeDefinitionHandle typeDefHandle))
             return false;
 
-        // Look up the runtime ITypeHandle via the module's TypeDef → MethodTable map.
+        // Look up the cDAC ITypeHandle via the module's TypeDef → MethodTable map.
         int token = MetadataTokens.GetToken((EntityHandle)typeDefHandle);
         TargetPointer typeDefToMethodTable = loader.GetLookupTables(moduleHandle).TypeDefToMethodTable;
         TargetPointer typeHandlePtr = loader.GetModuleLookupMapElement(typeDefToMethodTable, (uint)token, out _);
