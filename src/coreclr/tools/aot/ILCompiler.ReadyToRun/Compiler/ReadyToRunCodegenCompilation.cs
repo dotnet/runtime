@@ -383,18 +383,7 @@ namespace ILCompiler
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
             // code if the runtime environment doesn't support the specified instruction set
-            InstructionSetSupport runtimeInstructionSetSupport = instructionSetSupport;
-            if (TargetDetails.IsFixedInstructionSetPlatform(nodeFactory.Target.OperatingSystem))
-            {
-                runtimeInstructionSetSupport = new InstructionSetSupport(
-                    instructionSetSupport.SupportedFlags,
-                    default,
-                    instructionSetSupport.OptimisticFlags,
-                    instructionSetSupport.NonSpecifiableFlags,
-                    instructionSetSupport.Architecture);
-            }
-
-            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(runtimeInstructionSetSupport);
+            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
             ReadyToRunInstructionSetSupportSignature instructionSetSupportSig = new ReadyToRunInstructionSetSupportSignature(instructionSetSupportString);
             _dependencyGraph.AddRoot(new Import(NodeFactory.EagerImports, instructionSetSupportSig), "Baseline instruction set support");
 
@@ -456,10 +445,9 @@ namespace ILCompiler
                     }
 
                     HashSet<MethodDesc> compiledMethodDefs = null;
-                    HashSet<MethodDesc> methodsWithPerMethodInstructionSetSupportFixup = null;
                     if (_nodeFactory.OptimizationFlags.StripILBodies)
                     {
-                        compiledMethodDefs = _nodeFactory.BuildCompiledMethodDefsSet(out methodsWithPerMethodInstructionSetSupportFixup);
+                        compiledMethodDefs = _nodeFactory.BuildCompiledMethodDefsSet();
                     }
 
                     foreach (string inputFile in _inputFiles)
@@ -481,8 +469,7 @@ namespace ILCompiler
                             inputFile: inputFile,
                             outputFile: standaloneMsilOutputFile,
                             ownerExecutableName: ownerExecutableName,
-                            compiledMethodDefs: compiledMethodDefs,
-                            methodsWithPerMethodInstructionSetSupportFixup: methodsWithPerMethodInstructionSetSupportFixup);
+                            compiledMethodDefs: compiledMethodDefs);
                     }
                 }
             }
@@ -492,8 +479,7 @@ namespace ILCompiler
             string inputFile,
             string outputFile,
             string ownerExecutableName,
-            HashSet<MethodDesc> compiledMethodDefs,
-            HashSet<MethodDesc> methodsWithPerMethodInstructionSetSupportFixup)
+            HashSet<MethodDesc> compiledMethodDefs)
         {
             EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
 
@@ -517,7 +503,6 @@ namespace ILCompiler
             {
                 IsComponentModule = true,
                 CompiledMethodDefs = compiledMethodDefs,
-                MethodsWithPerMethodInstructionSetSupportFixup = methodsWithPerMethodInstructionSetSupportFixup,
             };
 
             if (optimizationFlags.StripILBodies)

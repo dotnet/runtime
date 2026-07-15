@@ -74,11 +74,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private static bool MayNeedILAtRuntime(NodeFactory factory, MethodDesc method)
         {
-            if (factory.OptimizationFlags.MethodsWithPerMethodInstructionSetSupportFixup?.Contains(method) == true)
-            {
-                return true;
-            }
-
             if (method.HasInstantiation || method.OwningType.HasInstantiation)
             {
                 // IL may be needed for new instantiations

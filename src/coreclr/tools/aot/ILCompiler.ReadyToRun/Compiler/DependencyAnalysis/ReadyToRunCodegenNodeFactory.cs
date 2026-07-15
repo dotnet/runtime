@@ -69,7 +69,6 @@ namespace ILCompiler.DependencyAnalysis
         public bool StripDebugInfo;
         public bool StripILBodies;
         public HashSet<MethodDesc> CompiledMethodDefs;
-        public HashSet<MethodDesc> MethodsWithPerMethodInstructionSetSupportFixup;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -611,25 +610,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public HashSet<MethodDesc> BuildCompiledMethodDefsSet(out HashSet<MethodDesc> methodsWithPerMethodInstructionSetSupportFixup)
+        public HashSet<MethodDesc> BuildCompiledMethodDefsSet()
         {
             Debug.Assert(MarkingComplete);
 
             var set = new HashSet<MethodDesc>();
-            methodsWithPerMethodInstructionSetSupportFixup = new HashSet<MethodDesc>();
             foreach (MethodWithGCInfo compiled in EnumerateCompiledMethods())
             {
-                MethodDesc method = compiled.Method.GetTypicalMethodDefinition();
-                set.Add(method);
-
-                foreach (var fixup in compiled.Fixups)
-                {
-                    if (fixup is Import { Signature: ReadyToRunInstructionSetSupportSignature })
-                    {
-                        methodsWithPerMethodInstructionSetSupportFixup.Add(method);
-                        break;
-                    }
-                }
+                set.Add(compiled.Method.GetTypicalMethodDefinition());
             }
 
             return set;

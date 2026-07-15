@@ -479,11 +479,11 @@ public class R2RTestSuites
 
             Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "GenericIdentity", out diag), diag);
             Assert.True(R2RAssert.MethodILIsPresent(componentFile, "GenericHolder`1", "MethodOnGenericType", out diag), diag);
-            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "UsesRuntimeCheckedInstructionSet", out diag), diag);
 
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "PlainStrippableMethod", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "ComputeTag", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "Root", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "UsesRuntimeCheckedInstructionSet", out diag), diag);
 
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "AsyncTaskMethod", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "AsyncValueTaskMethod", out diag), diag);

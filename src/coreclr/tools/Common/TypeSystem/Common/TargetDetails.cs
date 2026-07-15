@@ -53,7 +53,7 @@ namespace Internal.TypeSystem
         public static bool IsFixedInstructionSetPlatform(TargetOS operatingSystem) =>
             operatingSystem is TargetOS.iOS or TargetOS.tvOS
                 or TargetOS.iOSSimulator or TargetOS.tvOSSimulator
-                or TargetOS.MacCatalyst or TargetOS.Browser;
+                or TargetOS.MacCatalyst or TargetOS.Browser or TargetOS.Wasi;
 
         /// <summary>
         /// Gets the target CPU architecture.
