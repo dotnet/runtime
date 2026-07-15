@@ -17,8 +17,23 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// Implementation of IXCLRDataProcess* interfaces intended to be passed out to consumers
 /// interacting with the DAC via those COM interfaces.
 /// </summary>
-public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProcess2
+public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProcess2, IXCLRDataProcess3
 {
+    int IXCLRDataProcess3.GetFunctionTable(
+        ClrDataAddress tableAddress,
+        uint bufferSize,
+        byte* buffer,
+        uint* bytesNeeded,
+        uint* entries)
+    {
+        if (bytesNeeded is not null)
+            *bytesNeeded = 0;
+        if (entries is not null)
+            *entries = 0;
+
+        return HResults.E_NOTIMPL;
+    }
+
     int IXCLRDataProcess.Flush()
     {
         _target.Flush(FlushScope.All);

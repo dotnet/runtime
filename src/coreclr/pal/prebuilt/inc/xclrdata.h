@@ -80,6 +80,13 @@ typedef interface IXCLRDataProcess2 IXCLRDataProcess2;
 #endif 	/* __IXCLRDataProcess2_FWD_DEFINED__ */
 
 
+#ifndef __IXCLRDataProcess3_FWD_DEFINED__
+#define __IXCLRDataProcess3_FWD_DEFINED__
+typedef interface IXCLRDataProcess3 IXCLRDataProcess3;
+
+#endif 	/* __IXCLRDataProcess3_FWD_DEFINED__ */
+
+
 #ifndef __IXCLRDataAppDomain_FWD_DEFINED__
 #define __IXCLRDataAppDomain_FWD_DEFINED__
 typedef interface IXCLRDataAppDomain IXCLRDataAppDomain;
@@ -2890,6 +2897,35 @@ EXTERN_C const IID IID_IXCLRDataProcess2;
 
 
 #endif 	/* __IXCLRDataProcess2_INTERFACE_DEFINED__ */
+
+
+#ifndef __IXCLRDataProcess3_INTERFACE_DEFINED__
+#define __IXCLRDataProcess3_INTERFACE_DEFINED__
+
+/* interface IXCLRDataProcess3 */
+/* [uuid][local][object] */
+
+
+EXTERN_C const IID IID_IXCLRDataProcess3;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+
+    MIDL_INTERFACE("5c552ab6-fc09-4cb3-8e36-22fa03c798b9")
+    IXCLRDataProcess3 : public IXCLRDataProcess2
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetFunctionTable(
+            /* [in] */ CLRDATA_ADDRESS tableAddress,
+            /* [in] */ ULONG32 bufferSize,
+            /* [size_is][out] */ BYTE *buffer,
+            /* [out] */ ULONG32 *bytesNeeded,
+            /* [out] */ ULONG32 *entries) = 0;
+
+    };
+
+#endif
+
+#endif 	/* __IXCLRDataProcess3_INTERFACE_DEFINED__ */
 
 
 /* interface __MIDL_itf_xclrdata_0000_0006 */
@@ -7905,5 +7941,4 @@ EXTERN_C const IID IID_IXCLRDataExceptionNotification5;
 #endif
 
 #endif
-
 
