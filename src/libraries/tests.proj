@@ -664,7 +664,6 @@
       Tracking Issue for this work item: https://github.com/dotnet/runtime/issues/95928
   -->
   <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.TypeExtensions/tests/System.Reflection.TypeExtensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/FunctionalTests/System.Text.RegularExpressions.Tests.csproj" />
 
