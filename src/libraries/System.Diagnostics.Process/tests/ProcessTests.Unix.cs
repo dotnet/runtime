@@ -36,25 +36,28 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Start_EnvironmentNotAccessed_InheritsEnvironmentWithoutInitializingDictionary()
         {
-            string? path = Environment.GetEnvironmentVariable("PATH");
-            Assert.NotNull(path);
-
-            ProcessStartInfo startInfo = new("/bin/sh")
+            RemoteExecutor.Invoke(() =>
             {
-                ArgumentList = { "-c", "printf %s \"$PATH\"" },
-                RedirectStandardOutput = true,
-            };
+                string? path = Environment.GetEnvironmentVariable("PATH");
+                Assert.NotNull(path);
 
-            using Process process = Process.Start(startInfo);
-            Assert.Equal(path, process.StandardOutput.ReadToEnd());
-            Assert.True(process.WaitForExit(WaitInMS));
-            Assert.Equal(0, process.ExitCode);
-            Assert.Null(typeof(ProcessStartInfo)
-                .GetField("_environmentVariables", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .GetValue(startInfo));
+                ProcessStartInfo startInfo = new("/bin/sh")
+                {
+                    ArgumentList = { "-c", "printf %s \"$PATH\"" },
+                    RedirectStandardOutput = true,
+                };
+
+                using Process process = Process.Start(startInfo);
+                Assert.Equal(path, process.StandardOutput.ReadToEnd());
+                Assert.True(process.WaitForExit(WaitInMS));
+                Assert.Equal(0, process.ExitCode);
+                Assert.Null(typeof(ProcessStartInfo)
+                    .GetField("_environmentVariables", BindingFlags.NonPublic | BindingFlags.Instance)!
+                    .GetValue(startInfo));
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

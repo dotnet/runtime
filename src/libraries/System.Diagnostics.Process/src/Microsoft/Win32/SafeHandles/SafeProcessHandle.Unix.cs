@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
@@ -218,7 +219,7 @@ namespace Microsoft.Win32.SafeHandles
             string filename;
             string[] argv;
 
-            IDictionary<string, string?>? env = startInfo._environmentVariables;
+            IDictionary<string, string?>? env = GetEnvironmentVariables(startInfo);
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
@@ -356,7 +357,7 @@ namespace Microsoft.Win32.SafeHandles
         private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
             SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
         {
-            IDictionary<string, string?>? env = startInfo._environmentVariables;
+            IDictionary<string, string?>? env = GetEnvironmentVariables(startInfo);
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
@@ -424,6 +425,20 @@ namespace Microsoft.Win32.SafeHandles
         // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
         private static bool UsesTerminal(SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
             => ProcessUtils.IsTerminal(stdinHandle) || ProcessUtils.IsTerminal(stdoutHandle) || ProcessUtils.IsTerminal(stderrHandle);
+
+        private static IDictionary<string, string?>? GetEnvironmentVariables(ProcessStartInfo startInfo)
+        {
+            if (startInfo._environmentVariables is null && Volatile.Read(ref GetEnvironmentVariablesChanged(null)))
+            {
+                return startInfo.Environment;
+            }
+
+            return startInfo._environmentVariables;
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "HasChanged")]
+        private static extern ref bool GetEnvironmentVariablesChanged(
+            [UnsafeAccessorType("System.Environment+ProcessEnvironmentState, System.Private.CoreLib")] object? _);
 
         private static SafeProcessHandle ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
