@@ -3,6 +3,9 @@
     <!-- The field-wise scan matches the optimized IL shape Roslyn emits, so keep this test optimized
          regardless of the build configuration (Debug would otherwise default Optimize to false). -->
     <Optimize>true</Optimize>
+    <!-- Validates the CoreCLR VM IsBitwiseEquatable semantics. Mono's intrinsic only recognizes
+         non-float primitives today, so gate the test off Mono until it matches. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BitwiseEquatable.cs" />
