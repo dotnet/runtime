@@ -2507,11 +2507,25 @@ CorInfoHelpFunc GenTreeCall::GetHelperNum() const
 //    c2 - The second call node
 //
 // Return Value:
-//    true if the 2 CALL nodes have the same type and operands
+//    true if the 2 CALL nodes have the same call semantics and operands
 //
-bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
+bool 		(GenTreeCall* c1, GenTreeCall* c2)
 {
     assert(c1->OperGet() == c2->OperGet());
+
+    constexpr GenTreeFlags CallNodeFlags =
+        GTF_CALL_UNMANAGED | GTF_CALL_VIRT_KIND_MASK | GTF_CALL_NULLCHECK | GTF_CALL_POP_ARGS | GTF_TLS_GET_ADDR;
+    if ((c1->gtFlags & CallNodeFlags) != (c2->gtFlags & CallNodeFlags))
+    {
+        return false;
+    }
+
+    // Conservatively require that all the call more flags match.
+    //
+    if (c1->gtCallMoreFlags != c2->gtCallMoreFlags)
+    {
+        return false;
+    }
 
     if (c1->TypeGet() != c2->TypeGet())
     {
@@ -2523,6 +2537,56 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
         return false;
     }
 
+    if (c1->gtReturnType != c2->gtReturnType)
+    {
+        return false;
+    }
+
+    if (varTypeIsStruct(c1->gtReturnType) && (c1->gtRetClsHnd != c2->gtRetClsHnd))
+    {
+        return false;
+    }
+
+#if FEATURE_MULTIREG_RET
+    if (!c1->gtReturnTypeDesc.Equals(c2->gtReturnTypeDesc))
+    {
+        return false;
+    }
+#endif
+
+    if ((c1->gtArgs.HasThisPointer() != c2->gtArgs.HasThisPointer()) ||
+        (c1->gtArgs.HasRetBuffer() != c2->gtArgs.HasRetBuffer()) || (c1->gtArgs.IsVarArgs() != c2->gtArgs.IsVarArgs()))
+    {
+        return false;
+    }
+
+    if (c1->IsUnmanaged() && (c1->GetUnmanagedCallConv() != c2->GetUnmanagedCallConv()))
+    {
+        return false;
+    }
+
+    // Explicit tail call candidates have call-site-specific signature and token
+    // information that is consumed when they are transformed.
+    if (c1->IsTailPrefixedCall())
+    {
+        return false;
+    }
+
+    if (c1->IsAsync())
+    {
+        const AsyncCallInfo& i1 = c1->GetAsyncInfo();
+        const AsyncCallInfo& i2 = c2->GetAsyncInfo();
+        if ((i1.ContinuationContextHandling != i2.ContinuationContextHandling) ||
+            (i1.IsValueTaskAsTask != i2.IsValueTaskAsTask) || (i1.IsTailAwait != i2.IsTailAwait))
+        {
+            return false;
+        }
+    }
+
+    auto sameLookup = [](const CORINFO_CONST_LOOKUP& l1, const CORINFO_CONST_LOOKUP& l2) {
+        return (l1.accessType == l2.accessType) && (l1.addr == l2.addr);
+    };
+
     if (c1->gtCallType != CT_INDIRECT)
     {
         if (c1->gtCallMethHnd != c2->gtCallMethHnd)
@@ -2530,38 +2594,57 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
             return false;
         }
 
-        if (c1->IsHelperCall() && ((c1->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL) !=
-                                   (c2->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL)))
+        if (c1->IsVirtualStub() && (c1->gtStubCallStubAddr != c2->gtStubCallStubAddr))
         {
             return false;
         }
 
 #ifdef FEATURE_READYTORUN
-        if (c1->gtEntryPoint.addr != c2->gtEntryPoint.addr)
+        if (!sameLookup(c1->gtEntryPoint, c2->gtEntryPoint))
         {
             return false;
         }
 #endif
 
-        if ((c1->gtCallType == CT_USER_FUNC) &&
-            ((c1->gtFlags & GTF_CALL_VIRT_KIND_MASK) != (c2->gtFlags & GTF_CALL_VIRT_KIND_MASK)))
+        if (c1->IsHelperCall())
+        {
+            CorInfoHelpFunc helper = c1->GetHelperNum();
+
+            if (Compiler::IsStaticHelperEligibleForExpansion(c1) && (c1->gtInitClsHnd != c2->gtInitClsHnd))
+            {
+                return false;
+            }
+
+            if (Compiler::s_helperCallProperties.IsAllocator(helper) &&
+                (c1->compileTimeHelperArgumentHandle != c2->compileTimeHelperArgumentHandle))
+            {
+                return false;
+            }
+        }
+    }
+    else if (!c1->IsVirtualStub())
+    {
+        if ((c1->gtCallCookie == nullptr) != (c2->gtCallCookie == nullptr))
         {
             return false;
         }
 
-        // For virtual stub calls the stub addresses must agree.
-        if (c1->IsVirtualStub() && (c1->gtStubCallStubAddr != c2->gtStubCallStubAddr))
+        if ((c1->gtCallCookie != nullptr) && !sameLookup(*c1->gtCallCookie, *c2->gtCallCookie))
         {
             return false;
         }
     }
-    else
-    {
-        if (!Compare(c1->gtControlExpr, c2->gtControlExpr))
+
+    auto sameArgMetadata = [](CallArg* a1, CallArg* a2) {
+        if ((a1->GetSignatureType() != a2->GetSignatureType()) || (a1->GetWellKnownArg() != a2->GetWellKnownArg()))
         {
             return false;
         }
-    }
+
+        ClassLayout* l1 = a1->GetSignatureLayout();
+        ClassLayout* l2 = a2->GetSignatureLayout();
+        return (l1 == nullptr) ? (l2 == nullptr) : ((l2 != nullptr) && ClassLayout::AreCompatible(l1, l2));
+    };
 
     {
         CallArgs::ArgIterator i1   = c1->gtArgs.Args().begin();
@@ -2571,12 +2654,37 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
 
         for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
         {
+            if (!sameArgMetadata(i1.GetArg(), i2.GetArg()))
+            {
+                return false;
+            }
+
             if (!Compare(i1->GetEarlyNode(), i2->GetEarlyNode()))
             {
                 return false;
             }
 
             if (!Compare(i1->GetLateNode(), i2->GetLateNode()))
+            {
+                return false;
+            }
+        }
+
+        if ((i1 != end1) || (i2 != end2))
+        {
+            return false;
+        }
+    }
+
+    {
+        CallArgs::LateArgIterator i1   = c1->gtArgs.LateArgs().begin();
+        CallArgs::LateArgIterator end1 = c1->gtArgs.LateArgs().end();
+        CallArgs::LateArgIterator i2   = c2->gtArgs.LateArgs().begin();
+        CallArgs::LateArgIterator end2 = c2->gtArgs.LateArgs().end();
+
+        for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
+        {
+            if (!sameArgMetadata(i1.GetArg(), i2.GetArg()) || !Compare(i1->GetLateNode(), i2->GetLateNode()))
             {
                 return false;
             }

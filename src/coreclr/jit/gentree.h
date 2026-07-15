@@ -4725,6 +4725,26 @@ public:
 
     unsigned GetReturnFieldOffset(unsigned index) const;
 
+    bool Equals(const ReturnTypeDesc& other) const
+    {
+        for (unsigned i = 0; i < MAX_RET_REG_COUNT; i++)
+        {
+            if (m_regType[i] != other.m_regType[i])
+            {
+                return false;
+            }
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            if (m_fieldOffset[i] != other.m_fieldOffset[i])
+            {
+                return false;
+            }
+#endif
+        }
+
+        return true;
+    }
+
     // Get i'th ABI return register
     regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
 
