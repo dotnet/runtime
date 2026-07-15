@@ -6,6 +6,7 @@
     <HasCdacBuildTool Condition="'$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true' or '$(ClrDebugSubset)' == 'true' or '$(ClrCrossComponentsSubset)' == 'true' or '$(ClrNativeAotSubset)' == 'true'">true</HasCdacBuildTool>
     <BuildRuntimeDependsOnTargets>GetPgoDataPackagePath</BuildRuntimeDependsOnTargets>
     <BuildRuntimeDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildRuntimeDependsOnTargets);GenerateEmccExports</BuildRuntimeDependsOnTargets>
+    <BuildRuntimeDependsOnTargets Condition="'$(TargetsWasi)' == 'true'">AcquireWasiSdk;$(BuildRuntimeDependsOnTargets)</BuildRuntimeDependsOnTargets>
   </PropertyGroup>
 
   <ItemGroup>

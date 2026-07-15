@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- A classic Windows PDB (DebugType=Full) is required to exercise the diasymreader path,
+         and it can only be emitted on Windows. The test itself is Windows-only. -->
+    <DebugType Condition="'$(TargetOS)' == 'windows'">Full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>false</Optimize>
+    <!-- Needed for StackTraceLineNumberSupport -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- DIA isn't used under Native AOT at runtime, but ensure that ILC does create
+     line number blobs from full PDB that can be used in runtime stack traces. -->
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
+    <PreservePdbInHelixPayload>true</PreservePdbInHelixPayload>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="FullPdbThrower.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

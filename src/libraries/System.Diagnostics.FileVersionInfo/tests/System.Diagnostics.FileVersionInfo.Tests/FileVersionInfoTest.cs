@@ -16,10 +16,10 @@ namespace System.Diagnostics.Tests
         private const string TestCsFileName = "Assembly1.cs";
         private const string TestNotFoundFileName = "notfound.dll";
 
-        private string WriteTestAssemblyToFile()
+        private string WriteEmbeddedResourceToFile(string resourceName)
         {
             string path = GetTestFilePath();
-            using (Stream source = typeof(FileVersionInfoTest).Assembly.GetManifestResourceStream("System.Diagnostics.FileVersionInfo.TestAssembly.dll"))
+            using (Stream source = typeof(FileVersionInfoTest).Assembly.GetManifestResourceStream(resourceName))
             using (FileStream destination = File.Create(path))
             {
                 source.CopyTo(destination);
@@ -27,6 +27,9 @@ namespace System.Diagnostics.Tests
 
             return path;
         }
+
+        private string WriteTestAssemblyToFile() =>
+            WriteEmbeddedResourceToFile("System.Diagnostics.FileVersionInfo.TestAssembly.dll");
 
         [Fact]
         public void FileVersionInfo_CustomManagedAssembly()
@@ -67,8 +70,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void FileVersionInfo_EmptyFVI()
         {
-            // Assembly1.cs
-            VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName), new MyFVI()
+            string filePath = WriteEmbeddedResourceToFile(TestCsFileName);
+            VerifyVersionInfo(filePath, new MyFVI()
             {
                 Comments = null,
                 CompanyName = null,
@@ -76,7 +79,7 @@ namespace System.Diagnostics.Tests
                 FileDescription = null,
                 FileMajorPart = 0,
                 FileMinorPart = 0,
-                FileName = Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName),
+                FileName = filePath,
                 FilePrivatePart = 0,
                 FileVersion = null,
                 InternalName = null,

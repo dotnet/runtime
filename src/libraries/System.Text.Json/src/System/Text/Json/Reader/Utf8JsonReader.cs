@@ -1009,29 +1009,39 @@ namespace System.Text.Json
             // Create local copy to avoid bounds checks.
             ReadOnlySpan<byte> localBuffer = _buffer;
 #if NET
-            // Vectorized scan to the first non-whitespace byte. The SearchValues-based
-            // IndexOfAnyExcept already handles short and long runs efficiently, so there is no
-            // need to special-case small inputs with a scalar pre-scan.
-            ReadOnlySpan<byte> remaining = localBuffer.Slice(_consumed);
-            int idx = remaining.IndexOfFirstNonWhiteSpace();
-            if (idx > 0)
+            // A vectorized SearchValues-based scan to the first non-whitespace byte is fastest on most
+            // runtimes, so we go straight to it. On Mono/WASM AOT (browser) the fixed per-call SIMD
+            // entry cost is high relative to the short inter-token whitespace runs typical of JSON,
+            // and reconstructing the line/byte-position bookkeeping needs up to two more vectorized
+            // passes (CountNewLines), so short runs regress there. The browser path therefore uses the
+            // plain scalar loop below instead. OperatingSystem.IsBrowser() folds to a constant per
+            // target, so only one path survives in codegen and non-browser output is unchanged from a
+            // direct vectorized scan.
+            if (!OperatingSystem.IsBrowser())
             {
-                // Reproduce the scalar loop's line/byte-position bookkeeping for the skipped run.
-                (int newLines, int lastLineFeedIndex) = JsonReaderHelper.CountNewLines(remaining.Slice(0, idx));
-                _lineNumber += newLines;
-                if (lastLineFeedIndex >= 0)
+                ReadOnlySpan<byte> remaining = localBuffer.Slice(_consumed);
+                int idx = remaining.IndexOfFirstNonWhiteSpace();
+                if (idx > 0)
                 {
-                    // Byte positions on the current line start after the last line feed character.
-                    _bytePositionInLine = idx - lastLineFeedIndex - 1;
-                }
-                else
-                {
-                    _bytePositionInLine += idx;
+                    // Reproduce the scalar loop's line/byte-position bookkeeping for the skipped run.
+                    (int newLines, int lastLineFeedIndex) = JsonReaderHelper.CountNewLines(remaining.Slice(0, idx));
+                    _lineNumber += newLines;
+                    if (lastLineFeedIndex >= 0)
+                    {
+                        // Byte positions on the current line start after the last line feed character.
+                        _bytePositionInLine = idx - lastLineFeedIndex - 1;
+                    }
+                    else
+                    {
+                        _bytePositionInLine += idx;
+                    }
+
+                    _consumed += idx;
                 }
 
-                _consumed += idx;
+                return;
             }
-#else
+#endif
             for (; _consumed < localBuffer.Length; _consumed++)
             {
                 byte val = localBuffer[_consumed];
@@ -1055,7 +1065,6 @@ namespace System.Text.Json
                     _bytePositionInLine++;
                 }
             }
-#endif
         }
 
         /// <summary>

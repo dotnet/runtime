@@ -96,6 +96,7 @@ namespace System.Numerics.Tensors.Tests
             where TFrom : unmanaged, INumber<TFrom>
             where TTo : unmanaged, INumber<TTo>
         {
+            string banner = $"{typeof(TFrom).Name} => {typeof(TTo).Name}";
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertTruncating<TFrom, TTo>(new TFrom[3], new TTo[2]));
 
             Random rand = new(42);
@@ -116,10 +117,7 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    if (!Helpers.IsEqualWithTolerance(TTo.CreateTruncating(source.Span[i]), destination.Span[i]))
-                    {
-                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Actual: {destination.Span[i]}. Expected: {TTo.CreateTruncating(source.Span[i])}.");
-                    }
+                    Helpers.AssertEqualWithTolerance(TTo.CreateTruncating(source.Span[i]), destination.Span[i], banner: banner);
                 }
             }
         }
@@ -128,6 +126,7 @@ namespace System.Numerics.Tensors.Tests
             where TFrom : unmanaged, INumber<TFrom>
             where TTo : unmanaged, INumber<TTo>
         {
+            string banner = $"{typeof(TFrom).Name} => {typeof(TTo).Name}";
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertSaturating<TFrom, TTo>(new TFrom[3], new TTo[2]));
 
             Random rand = new(42);
@@ -148,10 +147,7 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    if (!Helpers.IsEqualWithTolerance(TTo.CreateSaturating(source.Span[i]), destination.Span[i]))
-                    {
-                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Actual: {destination.Span[i]}. Expected: {TTo.CreateSaturating(source.Span[i])}.");
-                    }
+                    Helpers.AssertEqualWithTolerance(TTo.CreateSaturating(source.Span[i]), destination.Span[i], banner: banner);
                 }
             }
         }
@@ -160,6 +156,7 @@ namespace System.Numerics.Tensors.Tests
             where TFrom : unmanaged, INumber<TFrom>
             where TTo : unmanaged, INumber<TTo>
         {
+            string banner = $"{typeof(TFrom).Name} => {typeof(TTo).Name}";
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertChecked<TFrom, TTo>(new TFrom[3], new TTo[2]));
 
             foreach (int tensorLength in Helpers.TensorLengthsIncluding0)
@@ -180,10 +177,7 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    if (!Helpers.IsEqualWithTolerance(TTo.CreateChecked(source.Span[i]), destination.Span[i]))
-                    {
-                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Actual: {destination.Span[i]}. Expected: {TTo.CreateChecked(source.Span[i])}.");
-                    }
+                    Helpers.AssertEqualWithTolerance(TTo.CreateChecked(source.Span[i]), destination.Span[i], banner: banner);
                 }
             }
         }
@@ -192,6 +186,8 @@ namespace System.Numerics.Tensors.Tests
             where TFrom : unmanaged, INumber<TFrom>
             where TTo : unmanaged, INumber<TTo>
         {
+            string banner = $"{typeof(TFrom).Name} => {typeof(TTo).Name}";
+
             foreach (int tensorLength in Helpers.TensorLengths)
             {
                 using BoundedMemory<TFrom> source = BoundedMemory.Allocate<TFrom>(tensorLength);
@@ -202,7 +198,7 @@ namespace System.Numerics.Tensors.Tests
                 TensorPrimitives.ConvertChecked<TFrom, TTo>(source.Span, destination.Span);
                 foreach (TTo result in destination.Span)
                 {
-                    Assert.True(Helpers.IsEqualWithTolerance(TTo.CreateChecked(valid), result));
+                    Helpers.AssertEqualWithTolerance(TTo.CreateChecked(valid), result, banner: banner);
                 }
 
                 // Test with at least one invalid
@@ -258,6 +254,7 @@ namespace System.Numerics.Tensors.Tests
             where TFrom : unmanaged, IFloatingPoint<TFrom>
             where TTo : unmanaged, IBinaryInteger<TTo>
         {
+            string banner = $"{typeof(TFrom).Name} => {typeof(TTo).Name}";
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertToInteger<TFrom, TTo>(new TFrom[3], new TTo[2]));
 
             Random rand = new(42);
@@ -277,10 +274,7 @@ namespace System.Numerics.Tensors.Tests
                 for (int i = 0; i < tensorLength; i++)
                 {
                     TTo expected = TFrom.ConvertToInteger<TTo>(source.Span[i]);
-                    if (!Helpers.IsEqualWithTolerance(expected, destination.Span[i]))
-                    {
-                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Expected: {expected}. Actual: {destination.Span[i]}.");
-                    }
+                    Helpers.AssertEqualWithTolerance(expected, destination.Span[i], banner: banner);
                 }
             }
         }
@@ -289,6 +283,7 @@ namespace System.Numerics.Tensors.Tests
             where TFrom : unmanaged, IFloatingPoint<TFrom>
             where TTo : unmanaged, IBinaryInteger<TTo>
         {
+            string banner = $"{typeof(TFrom).Name} => {typeof(TTo).Name}";
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertToIntegerNative<TFrom, TTo>(new TFrom[3], new TTo[2]));
 
             Random rand = new(42);
@@ -308,10 +303,7 @@ namespace System.Numerics.Tensors.Tests
                 for (int i = 0; i < tensorLength; i++)
                 {
                     TTo expected = TFrom.ConvertToIntegerNative<TTo>(source.Span[i]);
-                    if (!Helpers.IsEqualWithTolerance(expected, destination.Span[i]))
-                    {
-                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Expected: {expected}. Actual: {destination.Span[i]}.");
-                    }
+                    Helpers.AssertEqualWithTolerance(expected, destination.Span[i], banner: banner);
                 }
             }
         }
@@ -459,6 +451,9 @@ namespace System.Numerics.Tensors.Tests
             T? trigTolerance = IsFmaSupported
                 ? Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-5f)
                 : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
+            T? tanTolerance = IsFmaSupported
+                ? Helpers.DetermineTolerance<T>(doubleTolerance: 3e-13, floatTolerance: 1e-4f)
+                : trigTolerance;
 
             yield return Create(TensorPrimitives.Acosh, T.Acosh);
             yield return Create(TensorPrimitives.AcosPi, T.AcosPi);
@@ -507,7 +502,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Sinh, T.Sinh, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14));
             yield return Create(TensorPrimitives.SinPi, T.SinPi, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-4f));
             yield return Create(TensorPrimitives.Sqrt, T.Sqrt);
-            yield return Create(TensorPrimitives.Tan, T.Tan, trigTolerance);
+            yield return Create(TensorPrimitives.Tan, T.Tan, tanTolerance);
             yield return Create(TensorPrimitives.Tanh, T.Tanh);
             yield return Create(TensorPrimitives.TanPi, T.TanPi);
             yield return Create(TensorPrimitives.Truncate, T.Truncate);
@@ -1674,7 +1669,7 @@ namespace System.Numerics.Tensors.Tests
         {
             foreach (MidpointRounding mode in Enum.GetValues(typeof(MidpointRounding)))
             {
-                foreach (int digits in new[] { 0, 1, 4 })
+                foreach (int digits in new[] { 0, 1, 4, 20 })
                 {
                     yield return new object[] { mode, digits };
                 }
@@ -2755,10 +2750,7 @@ namespace System.Numerics.Tensors.Tests
 
         protected override void AssertEqualTolerance(T expected, T actual, T? tolerance = null)
         {
-            if (!Helpers.IsEqualWithTolerance(expected, actual, tolerance))
-            {
-                throw EqualException.ForMismatchedValues($"{expected}", $"{actual}");
-            }
+            Helpers.AssertEqualWithTolerance(expected, actual, tolerance);
         }
 
         protected override T Cosh(T x) => throw new NotSupportedException();
