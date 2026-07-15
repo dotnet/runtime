@@ -139,10 +139,15 @@ internal static class DebugInfoHelpers
 
             yield return locType switch
             {
-                VarLocType.VLT_REG or VarLocType.VLT_REG_FP => new DebugVarInfo
+                VarLocType.VLT_REG => new DebugVarInfo
                 {
                     StartOffset = startOffset, EndOffset = endOffset, VarNumber = varNumber, CallReturnValueILOffset = callReturnValueILOffset,
                     Kind = DebugVarLocKind.Register, Register = reader.ReadUInt(),
+                },
+                VarLocType.VLT_REG_FP => new DebugVarInfo
+                {
+                    StartOffset = startOffset, EndOffset = endOffset, VarNumber = varNumber, CallReturnValueILOffset = callReturnValueILOffset,
+                    Kind = DebugVarLocKind.Register, IsFloatingPoint = true, Register = reader.ReadUInt(),
                 },
                 VarLocType.VLT_REG_BYREF => new DebugVarInfo
                 {
@@ -201,5 +206,57 @@ internal static class DebugInfoHelpers
         int value = reader.ReadInt();
         // On x86, stack offsets are DWORD-aligned and stored divided by sizeof(DWORD)
         return isX86 ? value * sizeof(int) : value;
+    }
+
+    /// <summary>
+    /// Decodes the AsyncInfo chunk produced by EECodeInfo::SetAsyncInfo in debuginfostore.cpp.
+    /// Layout (NibbleWriter):
+    ///   ReadUInt:  NumSuspensionPoints
+    ///   ReadUInt:  total var count (informational, unused here)
+    ///   for each suspension point:
+    ///     ReadInt:  delta from previous DiagnosticNativeOffset (first delta is from 0)
+    ///     ReadUInt: NumContinuationVars for this suspension point
+    ///   for each var (flat, in suspension-point order):
+    ///     ReadUInt: VarNumber - MAX_ILNUM   (sentinel-adjusted to keep negative IL var nums positive)
+    ///     ReadUInt: Offset
+    /// </summary>
+    internal static IReadOnlyList<AsyncSuspensionInfo> DoAsyncInfo(NativeReader nativeReader)
+    {
+        NibbleReader reader = new(nativeReader, 0);
+
+        uint numSuspensionPoints = reader.ReadUInt();
+        // Total var count - not used directly; we read each suspension point's count below.
+        _ = reader.ReadUInt();
+
+        if (numSuspensionPoints == 0)
+            return Array.Empty<AsyncSuspensionInfo>();
+
+        // Phase 1: read suspension-point headers (offset + per-point var count).
+        uint[] nativeOffsets = new uint[numSuspensionPoints];
+        uint[] varCounts = new uint[numSuspensionPoints];
+
+        long lastOffset = 0;
+        for (uint i = 0; i < numSuspensionPoints; i++)
+        {
+            lastOffset += reader.ReadInt();
+            nativeOffsets[i] = (uint)lastOffset;
+            varCounts[i] = reader.ReadUInt();
+        }
+
+        // Phase 2: read the flat var list and slice it per suspension point.
+        AsyncSuspensionInfo[] result = new AsyncSuspensionInfo[numSuspensionPoints];
+        for (uint i = 0; i < numSuspensionPoints; i++)
+        {
+            uint n = varCounts[i];
+            AsyncLocalInfo[] locals = n == 0 ? Array.Empty<AsyncLocalInfo>() : new AsyncLocalInfo[n];
+            for (uint v = 0; v < n; v++)
+            {
+                uint ilVarNumber = reader.ReadUInt() + MAX_ILNUM;
+                uint offset = reader.ReadUInt();
+                locals[v] = new AsyncLocalInfo { Offset = offset, ILVarNumber = ilVarNumber };
+            }
+            result[i] = new AsyncSuspensionInfo { NativeOffset = nativeOffsets[i], Locals = locals };
+        }
+        return result;
     }
 }

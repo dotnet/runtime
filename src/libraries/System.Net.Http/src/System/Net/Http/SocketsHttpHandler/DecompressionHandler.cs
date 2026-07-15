@@ -449,8 +449,11 @@ namespace System.Net.Http
 
         private sealed class ZstandardDecompressedContent(HttpContent originalContent, string[] contentEncodings) : DecompressedContent(originalContent, contentEncodings)
         {
+            // RFC 9659 §3.2 mandates HTTP implementations cap decompression window size at 8 MB (WindowLog=23).
+            private static readonly ZstandardDecompressionOptions s_decompressionOptions = new ZstandardDecompressionOptions { MaxWindowLog2 = 23 };
+
             protected override Stream GetDecompressedStream(Stream originalStream) =>
-                new ZstandardStream(originalStream, CompressionMode.Decompress);
+                new ZstandardStream(originalStream, s_decompressionOptions);
         }
     }
 }

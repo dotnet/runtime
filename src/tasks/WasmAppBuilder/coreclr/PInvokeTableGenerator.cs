@@ -26,11 +26,11 @@ internal sealed class PInvokeTableGenerator
     private readonly PInvokeCollector _pinvokeCollector;
     private readonly bool _isLibraryMode;
 
-    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode = false)
+    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode, string targetOS)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
-        _pinvokeCollector = new(log);
+        _pinvokeCollector = new(log, targetOS);
         _isLibraryMode = isLibraryMode;
     }
 
@@ -174,7 +174,17 @@ internal sealed class PInvokeTableGenerator
                 .Where(l => l.Module == module && !l.Skip)
                 .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
                 .GroupBy(d => d.EntryPoint, StringComparer.Ordinal)
-                .Select(l => $"    DllImportEntry({CEntryPoint(l.First())}) // {ListRefs(l)}{w.NewLine}")
+                .Select(l =>
+                {
+                    PInvoke p = l.First();
+                    // Runtime resolver looks up by managed EntryPoint.
+                    // [WasmImportLinkage] mangles the C symbol per module,
+                    // so emit the entry-point string explicitly rather than
+                    // stringifying the mangled name via DllImportEntry.
+                    if (p.WasmLinkage)
+                        return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{CEntryPoint(p)} }}, // {ListRefs(l)}{w.NewLine}";
+                    return $"    DllImportEntry({CEntryPoint(p)}) // {ListRefs(l)}{w.NewLine}";
+                })
                 .ToList();
 
             moduleImports[module] = imports;

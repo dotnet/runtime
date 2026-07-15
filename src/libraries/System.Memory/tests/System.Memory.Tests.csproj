@@ -30,6 +30,7 @@
     <Compile Include="ParsersAndFormatters\Formatter\RealFormatterTests.cs" />
     <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs" Link="ParsersAndFormatters\Parser\RealParserTestsBase.cs" />
     <Compile Include="ParsersAndFormatters\Parser\RealParserTests.cs" />
+    <Compile Include="ReadOnlySpan\MinMax.cs" />
     <Compile Include="ReadOnlySpan\Comparers.cs" />
     <Compile Include="ReadOnlySpan\Contains.byte.cs" />
     <Compile Include="ReadOnlySpan\Contains.T.cs" />
@@ -135,6 +136,10 @@
     <Compile Include="Span\TryWrite.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceStream.ConformanceTests.cs" />
+    <Compile Include="ReadOnlyBuffer\NativeMemoryOwningStream.cs" />
+    <Compile Include="ReadOnlyBuffer\NativeReadOnlyMemoryStream.ConformanceTests.cs" />
+    <Compile Include="ReadOnlyBuffer\NativeWritableMemoryStream.ConformanceTests.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.char.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.byte.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Default.cs" />
@@ -290,5 +295,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
 </Project>

@@ -410,6 +410,47 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ZipArchiveEntry_OpenInUpdateMode_UncompressedSizeGreaterThanArrayMaxLength_ThrowsInvalidData(bool async)
+        {
+            // When _uncompressedSize > Array.MaxLength, the entry's uncompressed payload
+            // cannot be loaded into a MemoryStream (which is backed by a single byte[] and
+            // therefore bounded by Array.MaxLength). The entry must be rejected up front
+            // with a descriptive InvalidDataException when opened in Update mode, rather
+            // than failing later from the MemoryStream constructor with a misleading
+            // argument-out-of-range exception caused by the (int) cast wrapping negative
+            // when _uncompressedSize exceeds int.MaxValue.
+            byte[] payload = [0xCA, 0xFE, 0xBA, 0xBE, 0xDE, 0xAD, 0xBE, 0xEF];
+            MemoryStream stream = new MemoryStream();
+
+            ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry("entry.bin", CompressionLevel.NoCompression);
+            Stream entryStream = await OpenEntryStream(async, entry);
+            await entryStream.WriteAsync(payload);
+            await DisposeStream(async, entryStream);
+            await DisposeZipArchive(async, archive);
+
+            stream.Position = 0;
+            archive = await CreateZipArchive(async, stream, ZipArchiveMode.Update, leaveOpen: true);
+            entry = archive.GetEntry("entry.bin");
+
+            FieldInfo uncompressedSizeField = typeof(ZipArchiveEntry).GetField("_uncompressedSize", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(uncompressedSizeField);
+            uncompressedSizeField.SetValue(entry, (long)int.MaxValue + 1L);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => entry.OpenAsync());
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => entry.Open());
+            }
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         public static async Task UnseekableVeryLargeArchive_DataDescriptor_Read_Zip64(bool async)
         {
             MemoryStream stream = await LocalMemoryStream.ReadAppFileAsync(strange("veryLarge.zip"));

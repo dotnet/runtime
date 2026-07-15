@@ -45,10 +45,6 @@ typedef void* * RefWalkHandle;
 
 #include "dacdbistructures.h"
 
-// This is the current format of code:DbiVersion.   It needs to be rev'ed when we decide to store something
-// else other than the product version of the DBI in DbiVersion (e.g. a timestamp).  See
-// code:CordbProcess::CordbProcess#DBIVersionChecking for more information.
-const DWORD kCurrentDbiVersionFormat = 1;
 
 //-----------------------------------------------------------------------------
 // This is a low-level interface between DAC and DBI.
@@ -177,20 +173,6 @@ public:
     //-----------------------------------------------------------------------------
     // Functions to control the behavior of the DacDbi implementation itself.
     //-----------------------------------------------------------------------------
-
-    //
-    // Check whether the version of the DBI matches the version of the runtime.
-    // This is only called when we are remote debugging.  On Windows, we should have checked all the
-    // versions before we call any API on the IDacDbiInterface.  See
-    // code:CordbProcess::CordbProcess#DBIVersionChecking for more information on version checks.
-    //
-    // Return Value:
-    //    S_OK on success.
-    //
-    // Notes:
-    //    THIS MUST BE THE FIRST API ON THE INTERFACE!
-    //
-    virtual HRESULT STDMETHODCALLTYPE CheckDbiVersion(const DbiVersion * pVersion) = 0;
 
     //
     // Flush the DAC cache. This should be called when target memory changes.
@@ -1031,22 +1013,27 @@ public:
     // for a function.
     // Arguments:
     //    input:
-    //       vmMethodDesc    MethodDesc of the function
-    //       startAddr       starting address of the function--this serves to
-    //                       differentiate various EnC versions of the function
+    //       vmMethodDesc       MethodDesc of the function
+    //       startAddr          starting address of the function--this serves to
+    //                          differentiate various EnC versions of the function
     //       fCodeAvailable
+    //       fpVarInfoCallback  callback invoked once per native variable info entry
+    //       fpSeqPointCallback callback invoked once per sequence point entry
+    //       pUserData          user data passed to the callbacks
     //    output:
-    //       pNativeVarData  space for the native code offset information for locals
-    //       pSequencePoints space for the IL/native sequence points
+    //       pFixedArgCount     number of fixed arguments (explicit args + this)
     // Return value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     // Assumptions:
-    //    vmMethodDesc, pNativeVarInfo and pSequencePoints are non-NULL
+    //    vmMethodDesc is non-NULL
 
     // Notes:
     //-----------------------------------------------------------------------------
 
-    virtual HRESULT STDMETHODCALLTYPE GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT NativeVarData * pNativeVarData, OUT SequencePoints * pSequencePoints) = 0;
+    typedef void (*FP_NATIVEVARINFO_CALLBACK)(ICorDebugInfo::NativeVarInfo *pVarInfo, CALLBACK_DATA pUserData);
+    typedef void (*FP_SEQUENCEPOINT_CALLBACK)(ICorDebugInfo::OffsetMapping *pMapping, CALLBACK_DATA pUserData);
+
+    virtual HRESULT STDMETHODCALLTYPE GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT ULONG32 * pFixedArgCount, FP_NATIVEVARINFO_CALLBACK fpVarInfoCallback, FP_SEQUENCEPOINT_CALLBACK fpSeqPointCallback, CALLBACK_DATA pUserData) = 0;
 
     //
     // Get the filter CONTEXT on the LS.  Once we move entirely over to the new managed pipeline
@@ -1230,31 +1217,6 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetStackParameterSize(CORDB_ADDRESS controlPC, OUT ULONG32 * pRetVal) = 0;
 
     //
-    // Get the FramePointer of the current frame where the stackwalker is stopped at.
-    //
-    // Arguments:
-    //    pSFIHandle - the handle to the stackwalker
-    //    pRetVal - [out] The FramePointer of the current frame.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //    The FramePointer of a stack frame is:
-    //    the stack address of the return address on x86,
-    //    the current SP on AMD64,
-    //
-    //    On x86, to get the stack address of the return address, we need to unwind one more frame
-    //    and use the SP of the caller frame as the FramePointer of the callee frame.  This
-    //    function does NOT do that.  It just returns the SP.  The caller needs to handle the
-    //    unwinding.
-    //
-    //    The FramePointer of an explicit frame is just the stack address of the explicit frame.
-    //
-
-    virtual HRESULT STDMETHODCALLTYPE GetFramePointer(StackWalkHandle pSFIHandle, OUT FramePointer * pRetVal) = 0;
-
-    //
     // Check whether the specified CONTEXT is the CONTEXT of the leaf frame.  This function doesn't care
     // whether the leaf frame is native or managed.
     //
@@ -1280,21 +1242,6 @@ public:
     //                              The memory for this belongs to the caller. It must not be NULL.
     // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT STDMETHODCALLTYPE GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContextBuffer) = 0;
-
-    //
-    // This is a simple helper function to convert a CONTEXT to a DebuggerREGDISPLAY.  We need to do this
-    // inside DDI because the RS has no notion of REGDISPLAY.
-    //
-    // Arguments:
-    //    pInContext - the CONTEXT to be converted
-    //    pOutDRD    - the converted DebuggerREGDISPLAY
-    //    fActive    - Indicate whether the CONTEXT is active or not.  An active CONTEXT means that the
-    //                 IP is the next instruction to be executed, not the return address of a function call.
-    //                 The opposite of an active CONTEXT is an unwind CONTEXT, which is obtained from
-    //                 unwinding.
-    //
-
-    virtual HRESULT STDMETHODCALLTYPE ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * pInContext, DebuggerREGDISPLAY * pOutDRD, BOOL fActive) = 0;
 
     typedef enum
     {
@@ -1646,8 +1593,7 @@ public:
     //                              the assembly
     //                              an indication of the type: whether it's a class or value type
     //     output:  pFieldData    - information about the EnC added field
-    //              pfStatic      - flag to indicate whether the field is static
-    virtual HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData, OUT BOOL * pfStatic) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData) = 0;
 
 
     // EnumerateTypeHandleParams gets the necessary data for a type handle, i.e. its
@@ -1906,7 +1852,7 @@ public:
     // to terminate the process when the attach is canceled.
     virtual HRESULT STDMETHODCALLTYPE GetAttachStateFlags(OUT CLR_DEBUGGING_PROCESS_FLAGS * pRetVal) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetModuleMetaDataFileInfo(VMPTR_Module vmModule, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT BOOL * pResult) = 0;
 
@@ -1981,13 +1927,12 @@ public:
     //  Parameters:
     //      pHandle - out - the reference walk handle to create
     //      walkStacks - in - whether or not to report stack references
-    //      walkFQ - in - whether or not to report references from the finalizer queue
     //      handleWalkMask - in - the types of handles report (see CorGCReferenceType, cordebug.idl)
     //  Returns:
     //      An HRESULT indicating whether it succeeded or failed.
     //  Exceptions:
     //      Returns an HRESULT indicating success or failure.
-    virtual HRESULT STDMETHODCALLTYPE CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask) = 0;
+    virtual HRESULT STDMETHODCALLTYPE CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, UINT32 handleWalkMask) = 0;
 
     // Deletes a reference walk.
     // Parameters:
@@ -2230,11 +2175,34 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE ParseContinuation(
         CORDB_ADDRESS continuationAddress,
-        OUT PCODE* pDiagnosticIP,
+        OUT CORDB_ADDRESS* pDiagnosticIP,
         OUT CORDB_ADDRESS* pNextContinuation,
         OUT UINT32* pState) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, OUT DacDbiArrayList<AsyncLocalData>* pAsyncLocals) = 0;
+    // Callback invoked once per async local enumerated by EnumerateAsyncLocals.
+    // The callback must not throw. Implementations typically push the value into an
+    // accumulator stashed in pUserData (see CallbackAccumulator<AsyncLocalData>).
+    typedef void (*FP_ASYNC_LOCAL_CALLBACK)(AsyncLocalData * pLocal, CALLBACK_DATA pUserData);
+
+    // Enumerate the async locals captured at a given async suspension point.
+    //
+    // Arguments:
+    //    vmMethod    - the async method in question
+    //    codeAddr    - native code address used to disambiguate code versions; when 0
+    //                  the active native code of vmMethod is used
+    //    state       - index of the async suspension point whose locals are requested
+    //    fpCallback  - callback invoked once per AsyncLocalData; must not be NULL and
+    //                  must not throw
+    //    pUserData   - opaque user data passed through to the callback
+    //
+    // Notes:
+    //    Returns S_OK with no callbacks invoked when:
+    //      - vmMethod refers to an async thunk method
+    //      - codeAddr is non-zero but does not resolve to a valid native code version
+    //      - state is past the number of suspension points reported for the method
+    //    Otherwise returns S_OK after invoking fpCallback for every local captured at
+    //    suspension point `state`.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(
         VMPTR_MethodDesc vmMethod,

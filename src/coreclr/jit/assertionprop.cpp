@@ -34,6 +34,53 @@ bool IntegralRange::Contains(int64_t value) const
 }
 
 //------------------------------------------------------------------------
+// GetRange: Compute the {int32 lo;int32 hi} range for a given tree node.
+//
+// Arguments:
+//   comp       - the Compiler object.
+//   tree       - the tree node to compute the range for.
+//   block      - the BasicBlock in which "tree" is being evaluated.
+//   assertions - the set of assertions to consider when computing the range. Can be null.
+//   fast       - fast is when we only use VN and assertions. slow is when we perform an SSA walk to compute the range.
+//
+// Return Value:
+//    Range of possible values for "tree" based on the given assertions and block context.
+//    An unknown range if the range cannot be determined, or if the computation exceeds the visit budget.
+//
+static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_VALARG_TP assertions, bool fast = true)
+{
+    assert(block != nullptr);
+    assert(tree != nullptr);
+
+    // TryGetRange walks the SSA use-def chain up to three times per query (range computation, the overflow check,
+    // and a monotonicity-driven re-walk in Widen that recovers loop lower bounds), all sharing this budget.
+    int budget = 256;
+#ifdef DEBUG
+    // JIT stress: always take the slow, SSA-based range walk (with a larger budget) to maximize
+    // coverage of TryGetRange and shake out correctness issues in the range computation.
+    if (comp->compStressCompile(Compiler::STRESS_GET_RANGE, 50))
+    {
+        fast = false;
+        budget *= 16;
+    }
+#endif
+
+    if (fast)
+    {
+        return RangeCheck::GetRangeFromAssertions(comp, tree,
+                                                  !BitVecOps::MayBeUninit(assertions) ? assertions
+                                                                                      : block->bbAssertionIn);
+    }
+
+    Range range = Limit(Limit::keUndef);
+    if (comp->GetRangeCheck(budget)->TryGetRange(block, tree, &range))
+    {
+        return range;
+    }
+    return Limit(Limit::keUnknown);
+}
+
+//------------------------------------------------------------------------
 // SymbolicToRealValue: Convert a symbolic value to a 64-bit signed integer.
 //
 // Arguments:
@@ -295,16 +342,14 @@ bool IntegralRange::Contains(int64_t value) const
             switch (id)
             {
 #if defined(TARGET_XARCH)
-                case NI_Vector256_ExtractMostSignificantBits:
-                case NI_Vector512_ExtractMostSignificantBits:
                 case NI_X86Base_MoveMask:
                 case NI_AVX_MoveMask:
                 case NI_AVX2_MoveMask:
                 case NI_AVX512_MoveMask:
-#elif defined(TARGET_ARM64)
-                case NI_Vector64_ExtractMostSignificantBits:
+#elif defined(TARGET_WASM)
+                case NI_PackedSimd_Bitmask:
 #endif
-                case NI_Vector128_ExtractMostSignificantBits:
+                case NI_Vector_ExtractMostSignificantBits:
                 {
                     // We have 1 bit per element, remaining upper bits are 0
 
@@ -1903,23 +1948,10 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         GenTreeHWIntrinsic* hwi = op1->AsHWIntrinsic();
         switch (hwi->GetHWIntrinsicId())
         {
-#if defined(TARGET_XARCH)
-            case NI_Vector128_op_Equality:
-            case NI_Vector256_op_Equality:
-            case NI_Vector512_op_Equality:
-#elif defined(TARGET_ARM64)
-            case NI_Vector64_op_Equality:
-            case NI_Vector128_op_Equality:
-#endif
+            case NI_Vector_op_Equality:
                 break;
-#if defined(TARGET_XARCH)
-            case NI_Vector128_op_Inequality:
-            case NI_Vector256_op_Inequality:
-            case NI_Vector512_op_Inequality:
-#elif defined(TARGET_ARM64)
-            case NI_Vector64_op_Inequality:
-            case NI_Vector128_op_Inequality:
-#endif
+
+            case NI_Vector_op_Inequality:
                 equals = !equals;
                 break;
 
@@ -2161,6 +2193,18 @@ void Compiler::optAssertionGen(GenTree* tree)
             if (tree->IndirMayFault(this))
             {
                 assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, /*equals*/ false);
+            }
+            else if (tree->OperIs(GT_IND) && tree->TypeIs(TYP_INT) &&
+                     IntegralRange::ForNode(tree, this).IsNonNegative())
+            {
+                // Create "IND >= 0" assertion for int indirections that are known to be non-negative.
+                // Mainly, this is for unpromoted Span.Length indirections.
+                ValueNum vn = optConservativeNormalVN(tree);
+                if (vn != ValueNumStore::NoVN)
+                {
+                    assertionInfo = optAddAssertion(
+                        AssertionDsc::CreateConstantBound(this, VNF_GE, vn, vnStore->VNZeroForType(TYP_INT)));
+                }
             }
             break;
 
@@ -3609,6 +3653,14 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
         }
     }
 
+    // Do not propagate promoted locals if they are not DNER.
+    // This would require DNER'ing for many cases where the consumer
+    // does not support whole-local uses, such as GT_FIELD_LIST.
+    if (tree->OperIs(GT_LCL_VAR) && varTypeIsSIMD(tree) && copyVarDsc->lvPromoted && !copyVarDsc->lvDoNotEnregister)
+    {
+        return nullptr;
+    }
+
     tree->SetLclNum(copyLclNum);
 
     // The copied var also needs multi-reg, if set
@@ -4022,18 +4074,11 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     }
 
     // Let's see if MergeEdgeAssertions can help us:
-    Range rng = RangeCheck::GetRangeFromAssertions(this, tree, assertions);
-
+    Range rng = GetRange(this, tree, block, assertions, /*fast*/ true);
     if (rng.IsConstantRange())
     {
-        if (rng.LowerLimit().GetConstant() >= 0)
-        {
-            *isKnownNonNegative = true;
-        }
-        if ((rng.LowerLimit().GetConstant() > 0) || (rng.UpperLimit().GetConstant() < 0))
-        {
-            *isKnownNonZero = true;
-        }
+        *isKnownNonNegative |= rng.LowerLimit().GetConstant() >= 0;
+        *isKnownNonZero |= (rng.LowerLimit().GetConstant() > 0) || (rng.UpperLimit().GetConstant() < 0);
     }
 }
 
@@ -4045,11 +4090,15 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
 //    assertions - set of live assertions
 //    tree       - the MUL/ADD/SUB node to optimize
 //    stmt       - statement containing MUL/ADD/SUB
+//    block      - the block containing the statement
 //
 // Returns:
 //    Updated MUL/ADD/SUB node, or nullptr
 //
-GenTree* Compiler::optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
+GenTree* Compiler::optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions,
+                                              GenTreeOp*       tree,
+                                              Statement*       stmt,
+                                              BasicBlock*      block)
 {
     assert(tree->OperIs(GT_MUL, GT_ADD, GT_SUB));
 
@@ -4058,8 +4107,8 @@ GenTree* Compiler::optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions, GenTr
         GenTree* op1 = tree->gtGetOp1();
         GenTree* op2 = tree->gtGetOp2();
 
-        Range op1Rng = RangeCheck::GetRangeFromAssertions(this, op1, assertions);
-        Range op2Rng = RangeCheck::GetRangeFromAssertions(this, op2, assertions);
+        Range op1Rng = GetRange(this, op1, block, assertions, /*fast*/ true);
+        Range op2Rng = GetRange(this, op2, block, assertions, /*fast*/ true);
 
         if (op1Rng.IsConstantRange() && op2Rng.IsConstantRange())
         {
@@ -4129,17 +4178,19 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
         changed = true;
     }
 
-    if (op2IsNotZero)
+    if (op2IsNotZero && ((tree->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) == 0))
     {
         JITDUMP("Divisor for DIV/MOD is proven to be never negative...\n")
         tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+        tree->SetHasOrderingSideEffect();
         changed = true;
     }
 
-    if (op1IsNotNegative || op2IsNotNegative)
+    if ((op1IsNotNegative || op2IsNotNegative) && ((tree->gtFlags & GTF_DIV_MOD_NO_OVERFLOW) == 0))
     {
         JITDUMP("DIV/MOD is proven to never overflow...\n")
         tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+        tree->SetHasOrderingSideEffect();
         changed = true;
     }
 
@@ -4443,9 +4494,9 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     {
         Range relopRange = RangeCheck::GetRangeFromAssertions(this, tree, assertions);
 
+        int relopResult;
         if (relopRange.IsConstantRange())
         {
-            int relopResult;
             if (!relopRange.IsSingleValueConstant(&relopResult))
             {
                 // Retry by obtaining operand ranges individually. This accounts for cases where the
@@ -4459,10 +4510,21 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 }
                 else
                 {
-                    Range op1Range = RangeCheck::GetRangeFromAssertions(this, op1, assertions);
-                    Range op2Range = RangeCheck::GetRangeFromAssertions(this, op2, assertions);
+                    Range op1Range = GetRange(this, op1, block, assertions, /*fast*/ true);
+                    Range op2Range = GetRange(this, op2, block, assertions, /*fast*/ true);
                     relopRange     = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Range, op2Range);
                 }
+            }
+
+            // Perform a slow, SSA-based range check analysis.
+            if (!relopRange.IsSingleValueConstant(&relopResult) &&
+                // The few checks below ensure this analysis
+                // is only performed when beneficial according to SPMI, keeping the TP impact low.
+                op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() && tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT))
+            {
+                Range op1Rng = GetRange(this, op1, block, assertions, /*fast*/ false);
+                Range op2Rng = GetRange(this, op2, block, assertions, /*fast*/ false);
+                relopRange   = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Rng, op2Rng);
             }
 
             if (relopRange.IsSingleValueConstant(&relopResult))
@@ -4892,7 +4954,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
             if (castToTypeRange.IsConstantRange())
             {
                 GenTree* castOp    = cast->CastOp();
-                Range    castOpRng = RangeCheck::GetRangeFromAssertions(this, castOp, assertions);
+                Range    castOpRng = GetRange(this, castOp, block, assertions, /*fast*/ true);
 
                 if (castOpRng.IsConstantRange())
                 {
@@ -4957,23 +5019,6 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         return optAssertionProp_Update(op1, cast, stmt);
     }
 
-    return nullptr;
-}
-
-/*****************************************************************************
- *
- *  Given a tree with an array bounds check node, eliminate it because it was
- *  checked already in the program.
- */
-GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
-{
-    // Remove the bounds check as part of the GT_COMMA node since we need parent pointer to remove nodes.
-    // When processing visits the bounds check, it sets the throw kind to None if the check is redundant.
-    if (tree->gtGetOp1()->OperIs(GT_BOUNDS_CHECK) && ((tree->gtGetOp1()->gtFlags & GTF_CHK_INDEX_INBND) != 0))
-    {
-        optRemoveCommaBasedRangeCheck(tree, stmt);
-        return optAssertionProp_Update(tree, tree, stmt);
-    }
     return nullptr;
 }
 
@@ -5458,61 +5503,67 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
  *
  *  Given a tree with a bounds check, remove it if it has already been checked in the program flow.
  */
-GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
+GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
+                                            GenTree*         tree,
+                                            Statement*       stmt,
+                                            BasicBlock*      block)
 {
+    assert(tree->OperIs(GT_BOUNDS_CHECK));
     if (optLocalAssertionProp)
     {
+        // We don't have the right kind of assertions to optimize bounds checks in local assertion prop.
         return nullptr;
     }
-
-    assert(tree->OperIs(GT_BOUNDS_CHECK));
-
-#ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
-    if (JitConfig.JitNoRngChks())
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nFlagging check redundant due to JitNoRngChks in " FMT_BB ":\n", compCurBB->bbNum);
-            gtDispTree(tree, nullptr, nullptr, true);
-        }
-#endif // DEBUG
-        tree->gtFlags |= GTF_CHK_INDEX_INBND;
-        return nullptr;
-    }
-#endif // FEATURE_ENABLE_NO_RANGE_CHECKS
 
     GenTreeBoundsChk* arrBndsChk    = tree->AsBoundsChk();
     GenTree*          arrBndsChkIdx = arrBndsChk->GetIndex();
     GenTree*          arrBndsChkLen = arrBndsChk->GetArrayLength();
-    ValueNum          vnCurIdx      = vnStore->VNConservativeNormalValue(arrBndsChkIdx->gtVNPair);
-    ValueNum          vnCurLen      = vnStore->VNConservativeNormalValue(arrBndsChkLen->gtVNPair);
+    ValueNum          vnCurIdx      = optConservativeNormalVN(arrBndsChkIdx);
+    ValueNum          vnCurLen      = optConservativeNormalVN(arrBndsChkLen);
+
+    Range idxRng = Limit(Limit::LimitType::keUndef);
+    Range lenRng = Limit(Limit::LimitType::keUndef);
+
+    // Lazily compute the range of the index and length, since it may not be needed.
+
+    auto getIdxRng = [&]() -> Range {
+        if (idxRng.IsUndef())
+        {
+            idxRng = GetRange(this, arrBndsChkIdx, block, assertions, /*fast*/ true);
+        }
+        return idxRng;
+    };
+
+    auto getLenRng = [&]() -> Range {
+        if (lenRng.IsUndef())
+        {
+            lenRng = GetRange(this, arrBndsChkLen, block, assertions, /*fast*/ true);
+        }
+        return lenRng;
+    };
 
     auto dropBoundsCheck = [&](INDEBUG(const char* reason)) -> GenTree* {
-        JITDUMP("\nVN based redundant (%s) bounds check assertion prop in " FMT_BB ":\n", reason, compCurBB->bbNum);
+        JITDUMP("\nRemoving redundant (%s) bounds check in " FMT_BB ":\n", reason, compCurBB->bbNum);
         DISPTREE(tree);
-        if (arrBndsChk != stmt->GetRootNode())
-        {
-            // Defer the removal.
-            arrBndsChk->gtFlags |= GTF_CHK_INDEX_INBND;
-            return nullptr;
-        }
 
-        GenTree* newTree = optRemoveStandaloneRangeCheck(arrBndsChk, stmt);
-        return optAssertionProp_Update(newTree, arrBndsChk, stmt);
+        // Extract the side effects of idx and len. We deliberately ignore the potential null-check
+        // exception of the length (e.g. GT_ARR_LENGTH): having proven the bounds check redundant, we
+        // have also proven the length load is non-faulting. This mirrors the hack in optRemoveRangeCheck.
+        // TODO-Bug: We really should be extracting all side effects from the length and index here.
+        GenTree* sideEffList = nullptr;
+        gtExtractSideEffList(arrBndsChkLen, &sideEffList, GTF_ASG);
+        gtExtractSideEffList(arrBndsChkIdx, &sideEffList);
+
+        GenTree* nothing = (sideEffList != nullptr) ? sideEffList : gtNewNothingNode();
+        return optAssertionProp_Update(nothing, arrBndsChk, stmt);
     };
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
-        AssertionIndex assertionIndex = GetAssertionIndex(index);
-        if (assertionIndex > optAssertionCount)
-        {
-            break;
-        }
         // If it is not a nothrow assertion, skip.
-        const AssertionDsc& curAssertion = optGetAssertion(assertionIndex);
+        const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
         if (!curAssertion.IsBoundsCheckNoThrow())
         {
             continue;
@@ -5522,65 +5573,31 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         assert(curAssertion.GetOp2().IsVNNeverNegative());
 
         // Do we have a previous range check involving the same 'vnLen' upper bound?
-        if (curAssertion.GetOp2().GetVN() == optConservativeNormalVN(arrBndsChkLen))
+        if (curAssertion.GetOp2().GetVN() == vnCurLen)
         {
-            // Do we have the exact same lower bound 'vnIdx'?
-            //       a[i] followed by a[i]
             if (curAssertion.GetOp1().GetVN() == vnCurIdx)
             {
                 return dropBoundsCheck(INDEBUG("a[i] followed by a[i]"));
             }
-            // Are we using zero as the index?
-            // It can always be considered as redundant with any previous value
-            //       a[*] followed by a[0]
-            else if (vnCurIdx == vnStore->VNZeroForType(arrBndsChkIdx->TypeGet()))
+            else if (getIdxRng().IsConstantRange() && getIdxRng().LowerLimit().GetConstant() >= 0)
             {
-                return dropBoundsCheck(INDEBUG("a[*] followed by a[0]"));
-            }
-            else
-            {
-                // index1 doesn't have to be a constant, it can be a Phi each predecessor of which is a constant.
-                // The smallest of those is what we can rely on. Example:
-                //
-                //  arr[cond ? 10 : 5] = 0;  // arr is at least 6 elements long
-                //  arr[2] = 0;              // arr must be at least 3 elements long
-                //
-                // or even:
-                //
-                //  arr[cond ? 10 : 5] = 0; // arr is at least 6 elements long
-                //  arr[cond ? 1 : 2] = 0;  // arr must be at least 3 elements long
-                //
-                auto tryGetMaxOrMinConst = [this](ValueNum vn, bool getMin, int* index) -> bool {
-                    *index = getMin ? INT_MAX : INT_MIN;
-                    return vnStore->VNVisitReachingVNs(vn,
-                                                       [this, index, getMin](ValueNum vn) -> ValueNumStore::VNVisit {
-                        int cns = 0;
-                        if (vnStore->IsVNIntegralConstant(vn, &cns))
-                        {
-                            *index = getMin ? min(*index, cns) : max(*index, cns);
-                            return ValueNumStore::VNVisit::Continue;
-                        }
-                        return ValueNumStore::VNVisit::Abort;
-                    }) == ValueNumStore::VNVisit::Continue;
-                };
+                // Get the range of the previously checked index for the same array length.
+                // NOTE: we can't re-use 'assertions' since they may not be live at the point of the previous check.
+                Range rngOfPrevIdx =
+                    RangeCheck::GetRangeFromAssertions(this, curAssertion.GetOp1().GetVN(), BitVecOps::UninitVal());
 
-                int index1;
-                int index2;
-                if (tryGetMaxOrMinConst(curAssertion.GetOp1().GetVN(), /*min*/ true, &index1) &&
-                    tryGetMaxOrMinConst(vnCurIdx, /*max*/ false, &index2))
+                // We know the range of the previous index, we know the range of the current index.
+                //
+                //  a[prevIdx] = 0; // e.g. prevIdx's range is [5..10]
+                //  a[currIdx] = 0; // e.g. currIdx's range is [2..5] -> drop bounds check for currIdx
+                //
+                if (rngOfPrevIdx.IsConstantRange() &&
+                    (rngOfPrevIdx.LowerLimit().GetConstant() >= getIdxRng().UpperLimit().GetConstant()))
                 {
-                    // It can always be considered as redundant with any previous higher constant value
-                    //       a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2
-                    if (index2 >= 0 && index1 >= index2)
-                    {
-                        return dropBoundsCheck(INDEBUG("a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2"));
-                    }
+                    assert(getIdxRng().LowerLimit().GetConstant() >= 0);
+                    return dropBoundsCheck(INDEBUG("currIdx upper bound covered by prevIdx lower bound"));
                 }
             }
-            // Extend this to remove additional redundant bounds checks:
-            // i.e.  a[i+1] followed by a[i]  by using the VN(i+1) >= VN(i)
-            //       a[i]   followed by a[j]  when j is known to be >= i
-            //       a[i]   followed by a[5]  when i is known to be >= 5
         }
     }
 
@@ -5619,15 +5636,11 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         return dropBoundsCheck(INDEBUG("a[X u% a.Length] is always within bounds"));
     }
 
-    // Let's see if we can remove the bounds check based on the ranges.
-    Range idxRng = RangeCheck::GetRangeFromAssertions(this, arrBndsChkIdx, assertions);
-    Range lenRng = RangeCheck::GetRangeFromAssertions(this, arrBndsChkLen, assertions);
-
-    if (idxRng.IsConstantRange() && lenRng.IsConstantRange())
+    if (getIdxRng().IsConstantRange() && getLenRng().IsConstantRange())
     {
-        int idxLo = idxRng.LowerLimit().GetConstant();
-        int idxHi = idxRng.UpperLimit().GetConstant();
-        int lenLo = lenRng.LowerLimit().GetConstant();
+        int idxLo = getIdxRng().LowerLimit().GetConstant();
+        int idxHi = getIdxRng().UpperLimit().GetConstant();
+        int lenLo = getLenRng().LowerLimit().GetConstant();
 
         // GT_BOUNDS_CHECK node has an implicit contract - the length node must always be non-negative.
         // So we additionally tighten the lower bound of lenLo to be ">= 1" when we also have a
@@ -5654,6 +5667,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             return dropBoundsCheck(INDEBUG("upper bound of index is less than lower bound of length"));
         }
     }
+
     return nullptr;
 }
 
@@ -5774,7 +5788,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_SUB:
         case GT_MUL:
         case GT_ADD:
-            return optAssertionProp_AddMulSub(assertions, tree->AsOp(), stmt);
+            return optAssertionProp_AddMulSub(assertions, tree->AsOp(), stmt, block);
 
         case GT_MOD:
         case GT_DIV:
@@ -5800,10 +5814,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_BOUNDS_CHECK:
-            return optAssertionProp_BndsChk(assertions, tree, stmt);
-
-        case GT_COMMA:
-            return optAssertionProp_Comma(assertions, tree, stmt);
+            return optAssertionProp_BndsChk(assertions, tree, stmt, block);
 
         case GT_CAST:
             return optAssertionProp_Cast(assertions, tree->AsCast(), stmt, block);

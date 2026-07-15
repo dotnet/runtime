@@ -894,12 +894,15 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         case CodeGenInterface::VLT_REG:
         case CodeGenInterface::VLT_REG_BYREF:
-        case CodeGenInterface::VLT_REG_FP:
             printf("%s", getRegName(var->loc.vlReg.vlrReg));
             if (var->loc.vlType == (ICorDebugInfo::VarLocType)CodeGenInterface::VLT_REG_BYREF)
             {
                 printf(" byref");
             }
+            break;
+
+        case CodeGenInterface::VLT_REG_FP:
+            printf("%s", getRegName((regNumber)(var->loc.vlReg.vlrReg + REG_FP_FIRST)));
             break;
 
         case CodeGenInterface::VLT_STK:
@@ -1393,6 +1396,30 @@ CorInfoReloc Compiler::eeGetRelocTypeHint(void* target)
     {
         // No hints
         return CorInfoReloc::NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// eeGetAddressAlignment: Get the guaranteed alignment, in bytes, of the data referenced by
+//   'address' (a relocation target such as a static, RVA, or frozen-data blob).
+//
+// Arguments:
+//   address - the relocation target to query
+//
+// Return Value:
+//   The guaranteed alignment in bytes, or 1 when it cannot be determined (e.g. when the JIT's
+//   target does not match the VM). The JIT uses this to gate alignment-sensitive relocations.
+//
+uint32_t Compiler::eeGetAddressAlignment(void* address)
+{
+    if (info.compMatchedVM)
+    {
+        return info.compCompHnd->getAddressAlignment(address);
+    }
+    else
+    {
+        // The VM does not match the JIT target, so we cannot assume any alignment.
+        return 1;
     }
 }
 

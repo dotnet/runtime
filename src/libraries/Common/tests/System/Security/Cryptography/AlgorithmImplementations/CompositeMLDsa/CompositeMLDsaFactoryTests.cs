@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Formats.Asn1;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using Microsoft.DotNet.RemoteExecutor;
 using Test.Cryptography;
@@ -12,6 +13,11 @@ namespace System.Security.Cryptography.Tests
 {
     public static class CompositeMLDsaFactoryTests
     {
+        // The Ed448 composite is commonly not supported, so we can use it as a representative test case for scenarios 
+        // where Composite ML-DSA is supported but a specific composite is not.
+        public static bool CompositeMLDsaSupportedAndEd448CompositeNotSupported =>
+            CompositeMLDsa.IsSupported && !CompositeMLDsa.IsAlgorithmSupported(CompositeMLDsaAlgorithm.MLDsa87WithEd448);
+
         [Fact]
         public static void NullArgumentValidation()
         {
@@ -332,7 +338,7 @@ namespace System.Security.Cryptography.Tests
         {
             CompositeMLDsaTestHelpers.AssertImportPrivateKey(
                 import => AssertThrowIfNotSupported(
-                    () => AssertExtensions.Throws<CryptographicException>(() => import()),
+                    () => Assert.ThrowsAny<CryptographicException>(() => import()),
                     algorithm),
                 algorithm,
                 key);
@@ -463,7 +469,7 @@ namespace System.Security.Cryptography.Tests
         {
             CompositeMLDsaTestHelpers.AssertImportPublicKey(
                 import => AssertThrowIfNotSupported(
-                    () => AssertExtensions.Throws<CryptographicException>(() => import()),
+                    () => Assert.ThrowsAny<CryptographicException>(() => import()),
                     algorithm),
                 algorithm,
                 key);
@@ -571,6 +577,24 @@ namespace System.Security.Cryptography.Tests
             CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import => AssertThrowIfNotSupported(() => import(spki.Encode())));
         }
 
+        [ConditionalFact(nameof(CompositeMLDsaSupportedAndEd448CompositeNotSupported))]
+        public static void ImportSubjectPublicKeyInfo_SupportedButHasUnsupportedAlgorithm()
+        {
+            // Create an unsupported Composite ML-DSA SPKI
+            SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
+            {
+                Algorithm = new AlgorithmIdentifierAsn
+                {
+                    Algorithm = CompositeMLDsaTestHelpers.AlgorithmToOid(CompositeMLDsaAlgorithm.MLDsa87WithEd448),
+                    Parameters = null,
+                },
+                SubjectPublicKey = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa87WithEd448).PublicKey,
+            };
+
+            CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
+                import => Assert.Throws<CryptographicException>(() => import(spki.Encode())));
+        }
+
         [Fact]
         public static void ImportPkcs8PrivateKey_AlgorithmErrorsInAsn()
         {
@@ -607,6 +631,23 @@ namespace System.Security.Cryptography.Tests
             // Sanity check
             pkcs8.PrivateKeyAlgorithm.Parameters = null;
             CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(import => AssertThrowIfNotSupported(() => import(pkcs8.Encode())));
+        }
+
+        [ConditionalFact(nameof(CompositeMLDsaSupportedAndEd448CompositeNotSupported))]
+        public static void ImportPkcs8PrivateKey_SupportedButHasUnsupportedAlgorithm()
+        {
+            PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
+            {
+                PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
+                {
+                    Algorithm = CompositeMLDsaTestHelpers.AlgorithmToOid(CompositeMLDsaAlgorithm.MLDsa87WithEd448),
+                    Parameters = null,
+                },
+                PrivateKey = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa87WithEd448).SecretKey,
+            };
+
+            CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(
+                import => Assert.Throws<CryptographicException>(() => import(pkcs8.Encode())));
         }
 
         [Fact]
@@ -685,23 +726,63 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void IsSupported_AgreesWithPlatform()
         {
-            // Composites are supported everywhere MLDsa is supported
-            Assert.Equal(MLDsa.IsSupported, CompositeMLDsa.IsSupported);
+            bool supported;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                if (PlatformDetection.IsWindows10Version28120OrGreater)
+                {
+                    // Windows supports: https://learn.microsoft.com/en-us/windows/win32/seccng/bcrypt/ns-bcrypt-bcrypt_pqdsa_key_blob#cbparameterset
+                    supported = true;
+                }
+                else
+                {
+                    // Do not fall back to managed implementation on Windows versions that do not support Composite ML-DSA.
+                    supported = false;
+                }
+            }
+            else
+            {
+                // Non-Windows uses the managed implementation, so the support is the same as for MLDsa.
+                supported = MLDsa.IsSupported;
+            }
+
+            Assert.Equal(supported, CompositeMLDsa.IsSupported);
         }
 
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void IsAlgorithmSupported_AgreesWithPlatform(CompositeMLDsaAlgorithm algorithm)
         {
-            bool supported = CompositeMLDsaTestHelpers.ExecuteComponentFunc(
-                algorithm,
-                rsa => MLDsa.IsSupported,
-                ecdsa => ecdsa.IsSec && MLDsa.IsSupported,
-                eddsa => false);
+            bool supported;
 
-            Assert.Equal(
-                supported,
-                CompositeMLDsa.IsAlgorithmSupported(algorithm));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                if (PlatformDetection.IsWindows10Version28120OrGreater)
+                {
+                    // Windows supports: https://learn.microsoft.com/en-us/windows/win32/seccng/bcrypt/ns-bcrypt-bcrypt_pqdsa_key_blob#cbparameterset
+                    supported =
+                        algorithm == CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256 ||
+                        algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256 ||
+                        algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384 ||
+                        algorithm == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384;
+                }
+                else
+                {
+                    // Do not fall back to managed implementation on Windows versions that do not support Composite ML-DSA.
+                    supported = false;
+                }
+            }
+            else
+            {
+                supported = CompositeMLDsaTestHelpers.ExecuteComponentFunc(
+                    algorithm,
+                    rsa => MLDsa.IsSupported,
+                    ecdsa => ecdsa.IsSec && MLDsa.IsSupported,
+                    eddsa => false);
+            }
+
+            Assert.Equal(supported, CompositeMLDsa.IsAlgorithmSupported(algorithm));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -740,6 +821,10 @@ namespace System.Security.Cryptography.Tests
                     Assert.Contains("CompositeMLDsa", pnse.Message);
                 }
                 catch (ThrowsException te) when (te.InnerException is PlatformNotSupportedException pnse)
+                {
+                    Assert.Contains("CompositeMLDsa", pnse.Message);
+                }
+                catch (ThrowsAnyException te) when (te.InnerException is PlatformNotSupportedException pnse)
                 {
                     Assert.Contains("CompositeMLDsa", pnse.Message);
                 }

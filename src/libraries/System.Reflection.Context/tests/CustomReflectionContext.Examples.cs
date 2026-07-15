@@ -39,6 +39,7 @@ namespace System.Reflection.Context.Examples
     public class CustomReflectionContextExamples
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73356", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void AddCustomAttribute()
         {
             #region Snippet2
