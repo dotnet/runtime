@@ -3,7 +3,7 @@
 
 using System;
 
-namespace JIT.HardwareIntrinsics.Arm._ArmBase.Arm64
+namespace JIT.HardwareIntrinsics.Arm._SveSm4
 {
     public static partial class Program
     {
