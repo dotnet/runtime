@@ -41,8 +41,18 @@ namespace Microsoft.Win32.SafeHandles
         private NullableBool _canSeek /* = NullableBool.Undefined */;
         private NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
         private NullableBool _isAsync /* = NullableBool.Undefined */;
+        // Cached on macOS when locking is enabled: True = is network FS (use fsync only),
+        // False = is local FS (use F_FULLFSYNC), Undefined = unknown (use F_FULLFSYNC).
+        // See https://github.com/dotnet/runtime/issues/124722.
+        private NullableBool _isNetworkFileSystem /* = NullableBool.Undefined */;
         private bool _deleteOnClose;
         private bool _isLocked;
+
+        // Returns true when F_FULLFSYNC should be attempted (the file is on a local file system or
+        // the file system type is unknown). Returns false only when the file is known to be on a
+        // network file system where F_FULLFSYNC can silently discard writes. The value is only used
+        // on macOS; native code ignores it on other platforms.
+        internal bool UseFullFSync => _isNetworkFileSystem != NullableBool.True;
 
         public SafeFileHandle() : this(ownsHandle: true)
         {
@@ -461,6 +471,16 @@ namespace Microsoft.Win32.SafeHandles
                     return false;
                 }
             }
+
+            // On macOS, F_FULLFSYNC on network file systems (NFS, SMB, CIFS) can silently discard
+            // pending writes. Cache whether this file is on a network FS so FSync can avoid F_FULLFSYNC
+            // for such handles. The check is only needed when file locking is enabled because that
+            // already queries the file system type. See https://github.com/dotnet/runtime/issues/124722.
+            if (OperatingSystem.IsMacOS() && !DisableFileLocking)
+            {
+                _isNetworkFileSystem = Interop.Sys.IsNetworkFileSystem(this) ? NullableBool.True : NullableBool.False;
+            }
+
             // Enable DeleteOnClose when we've successfully locked the file.
             // On Windows, the locking happens atomically as part of opening the file.
             _deleteOnClose = (options & FileOptions.DeleteOnClose) != 0;

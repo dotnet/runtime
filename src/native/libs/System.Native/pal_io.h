@@ -536,10 +536,17 @@ PALEXPORT int32_t SystemNative_FChMod(intptr_t fd, int32_t mode);
 
 /**
  * Flushes all modified data and attribtues of the specified File Descriptor to the storage medium.
+ * On macOS, attempts F_FULLFSYNC when useFullFSync is non-zero, falling back to fsync on failure.
  *
  * Returns 0 for success; on fail, -1 is returned and errno is set.
  */
-PALEXPORT int32_t SystemNative_FSync(intptr_t fd);
+PALEXPORT int32_t SystemNative_FSync(intptr_t fd, int32_t useFullFSync);
+
+/**
+ * Returns 1 if the file descriptor refers to a file on a network file system (NFS, SMB, CIFS, SMB2),
+ * 0 otherwise. On non-macOS platforms, always returns 0.
+ */
+PALEXPORT int32_t SystemNative_IsNetworkFileSystem(intptr_t fd);
 
 /**
  * Changes the advisory lock status on a given File Descriptor

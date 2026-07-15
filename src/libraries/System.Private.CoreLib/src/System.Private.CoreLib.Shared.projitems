@@ -2473,6 +2473,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FSync.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FSync.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsNetworkFileSystem.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.IsNetworkFileSystem.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FTruncate.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FTruncate.cs</Link>
     </Compile>

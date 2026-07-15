@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FSync", SetLastError = true)]
-        internal static partial int FSync(SafeFileHandle fd, [MarshalAs(UnmanagedType.Bool)] bool useFullFSync);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IsNetworkFileSystem")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsNetworkFileSystem(SafeFileHandle fd);
     }
 }

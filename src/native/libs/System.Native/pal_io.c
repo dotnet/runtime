@@ -783,19 +783,13 @@ int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 #endif /* HAVE_FCHMOD */
 }
 
-#ifdef TARGET_OSX
-static int32_t IsNetworkFileSystem(int fileDescriptor);
-#endif
-
-int32_t SystemNative_FSync(intptr_t fd)
+int32_t SystemNative_FSync(intptr_t fd, int32_t useFullFSync)
 {
     int fileDescriptor = ToFileDescriptor(fd);
 
     int32_t result;
 #ifdef TARGET_OSX
-    // F_FULLFSYNC is not supported on network file systems (e.g., NFS, SMB, CIFS) and may cause
-    // pending writes to be discarded. See https://github.com/dotnet/runtime/issues/124722.
-    if (!IsNetworkFileSystem(fileDescriptor))
+    if (useFullFSync)
     {
         while ((result = fcntl(fileDescriptor, F_FULLFSYNC)) < 0 && errno == EINTR);
         if (result >= 0)
@@ -804,9 +798,11 @@ int32_t SystemNative_FSync(intptr_t fd)
         }
 
         // F_FULLFSYNC is not supported on all file systems and handle types (e.g.,
-        // network file systems, read-only handles). Fall back to fsync.
+        // read-only handles). Fall back to fsync.
         // For genuine I/O errors (e.g., EIO), fsync will also fail and propagate the error.
     }
+#else
+    (void)useFullFSync;
 #endif
     while ((result = fsync(fileDescriptor)) < 0 && errno == EINTR);
     return result;
@@ -1738,6 +1734,16 @@ static int32_t IsNetworkFileSystem(int fileDescriptor)
 #endif
 #endif
 #endif /* TARGET_WASI */
+
+int32_t SystemNative_IsNetworkFileSystem(intptr_t fd)
+{
+#ifdef TARGET_OSX
+    return IsNetworkFileSystem(ToFileDescriptor(fd));
+#else
+    (void)fd;
+    return 0;
+#endif
+}
 
 // LOCK_SH does not work well for write access on nfs/cifs/samba. For example, writes are dropped silently.
 // See https://github.com/dotnet/runtime/issues/44546 and https://github.com/dotnet/runtime/issues/53182.
