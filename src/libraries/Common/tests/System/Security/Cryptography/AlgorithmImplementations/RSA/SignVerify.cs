@@ -656,7 +656,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                var signatureIsValid = VerifyData(rsa, data, signature, HashAlgorithmName.SHA256, padding);
+                bool signatureIsValid = VerifyData(rsa, data, signature, HashAlgorithmName.SHA256, padding);
                 if (validateWithCorrectSaltLength)
                 {
                     Assert.True(signatureIsValid);
