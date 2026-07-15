@@ -80,13 +80,35 @@ namespace System.Security.Cryptography.Cose.Tests
 
 #if NET11_0_OR_GREATER
         [Theory]
-        [InlineData(0)]
-        [InlineData(17)]
-        [InlineData(32)]
-        [InlineData(RSASignaturePadding.PssSaltLengthMax)]
-        public void CoseSigner_PssPaddingWithInvalidSaltLength(int saltLength)
+        [InlineData("SHA256", 32)]
+        [InlineData("SHA384", 48)]
+        [InlineData("SHA512", 64)]
+        public void CoseSigner_PssPaddingWithExplicitHashLength(string hashAlgorithmName, int saltLength)
         {
-            Assert.Throws<ArgumentException>("signaturePadding", () => new CoseSigner(RSA.Create(), RSASignaturePadding.CreatePss(saltLength), HashAlgorithmName.SHA256));
+            CoseSigner signer = new CoseSigner(
+                RSA.Create(),
+                RSASignaturePadding.CreatePss(saltLength),
+                new HashAlgorithmName(hashAlgorithmName));
+
+            RSASignaturePadding padding = Assert.IsType<RSASignaturePadding>(signer.RSASignaturePadding);
+            Assert.Equal(saltLength, padding.PssSaltLength);
+        }
+
+        [Theory]
+        [InlineData("SHA256", 0)]
+        [InlineData("SHA256", 17)]
+        [InlineData("SHA256", 31)]
+        [InlineData("SHA256", 33)]
+        [InlineData("SHA256", RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData("SHA384", 32)]
+        public void CoseSigner_PssPaddingWithInvalidSaltLength(string hashAlgorithmName, int saltLength)
+        {
+            Assert.Throws<ArgumentException>(
+                "signaturePadding",
+                () => new CoseSigner(
+                    RSA.Create(),
+                    RSASignaturePadding.CreatePss(saltLength),
+                    new HashAlgorithmName(hashAlgorithmName)));
         }
 #endif
     }

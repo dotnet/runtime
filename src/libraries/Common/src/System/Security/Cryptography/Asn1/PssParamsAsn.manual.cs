@@ -41,9 +41,6 @@ namespace System.Security.Cryptography.Asn1
                         HashAlgorithm.Algorithm));
             }
 
-#if NET11_0_OR_GREATER
-            return RSASignaturePadding.CreatePss(SaltLength);
-#else
             int saltSize = digestValueLength.GetValueOrDefault();
 
             if (!digestValueLength.HasValue)
@@ -51,6 +48,11 @@ namespace System.Security.Cryptography.Asn1
                 saltSize = Helpers.HashOidToByteLength(HashAlgorithm.Algorithm);
             }
 
+#if NET11_0_OR_GREATER
+            return SaltLength == saltSize ?
+                RSASignaturePadding.Pss :
+                RSASignaturePadding.CreatePss(SaltLength);
+#else
             if (SaltLength != saltSize)
             {
                 throw new CryptographicException(
@@ -60,7 +62,6 @@ namespace System.Security.Cryptography.Asn1
                         HashAlgorithm.Algorithm));
             }
 
-            // When RSASignaturePadding supports custom salt sizes this return will look different.
             return RSASignaturePadding.Pss;
 #endif
         }

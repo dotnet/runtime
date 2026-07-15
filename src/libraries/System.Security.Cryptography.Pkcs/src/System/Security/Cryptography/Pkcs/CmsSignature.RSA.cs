@@ -186,6 +186,7 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         return true;
                     }
+
                     signatureValue = null;
                     signatureParameters = null;
                     return false;
@@ -406,10 +407,17 @@ namespace System.Security.Cryptography.Pkcs
                 HashAlgorithmName hashAlgorithmName,
                 out byte[]? signatureParameters)
             {
+                if (hashAlgorithmName == HashAlgorithmName.MD5)
+                {
+                    signatureParameters = null;
+                    return false;
+                }
+
 #if NET11_0_OR_GREATER
                 if (SignaturePadding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength)
                 {
                     signatureParameters = GetSignaturePaddingForCustomPssSaltLength(publicKey, hashAlgorithmName);
+                    return true;
                 }
 #endif
                 if (hashAlgorithmName == HashAlgorithmName.SHA1)

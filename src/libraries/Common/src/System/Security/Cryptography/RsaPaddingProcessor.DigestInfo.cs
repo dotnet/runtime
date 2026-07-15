@@ -143,6 +143,5 @@ namespace System.Security.Cryptography
             GetDigestInfoForAlgorithm(hashAlgorithmName, out int hLen);
             return hLen;
         }
-
     }
 }

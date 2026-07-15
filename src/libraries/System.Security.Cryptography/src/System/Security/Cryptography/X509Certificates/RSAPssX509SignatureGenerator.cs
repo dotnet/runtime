@@ -24,11 +24,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public override byte[] GetSignatureAlgorithmIdentifier(HashAlgorithmName hashAlgorithm)
         {
-            // If we ever support options in PSS (like MGF-2, if such an MGF is ever invented)
-            if (_padding.Mode != RSASignaturePaddingMode.Pss)
-            {
-                throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
-            }
+            Debug.Assert(_padding.Mode == RSASignaturePaddingMode.Pss);
 
             int cbSalt;
             string digestOid;

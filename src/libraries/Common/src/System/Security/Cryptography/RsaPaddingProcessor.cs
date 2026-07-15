@@ -357,6 +357,7 @@ namespace System.Security.Cryptography
 
                 // 11. Set the "unused" bits in the leftmost byte of maskedDB to 0.
                 int unusedBits = 8 * emLen - emBits;
+
                 if (unusedBits != 0)
                 {
                     byte mask = (byte)(0xFF >> unusedBits);

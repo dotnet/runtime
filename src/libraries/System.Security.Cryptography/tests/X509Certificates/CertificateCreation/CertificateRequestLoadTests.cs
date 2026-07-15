@@ -436,19 +436,19 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
                 }
 
                 // Assert.NoThrow
-                CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _, signerSignaturePadding: padding);
+                CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _);
 
                 pkcs10[^1] ^= 0xFF;
 
                 Assert.Throws<CryptographicException>(
-                    () => CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _, signerSignaturePadding: padding));
+                    () => CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _));
 
                 // Assert.NoThrow
                 CertificateRequest.LoadSigningRequest(
                     pkcs10,
                     hashAlgorithmName,
                     out _,
-                    CertificateRequestLoadOptions.SkipSignatureValidation, signerSignaturePadding: padding);
+                    CertificateRequestLoadOptions.SkipSignatureValidation);
             }
         }
 

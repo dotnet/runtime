@@ -86,6 +86,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     // Salt length is 234
                     return "303606092a864886f70d01010a3029a009300706052b0e03021aa116301406092a864886f70d010108300706052b0e03021aa204020200ea".HexToByteArray();
                 }
+
             }
             throw new InvalidOperationException();
         }

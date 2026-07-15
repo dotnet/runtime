@@ -668,6 +668,74 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
+        [ConditionalTheory(nameof(SupportsPss))]
+        [InlineData("SHA256", 256 / 8)]
+        [InlineData("SHA384", 384 / 8)]
+        public void PssWithImplicitAndExplicitHashLength(string hashName, int hashLength)
+        {
+            byte[] data = TestData.HelloBytes;
+            HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashName);
+            RSASignaturePadding implicitPadding = RSASignaturePadding.Pss;
+            RSASignaturePadding explicitPadding = RSASignaturePadding.CreatePss(hashLength);
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] implicitSignature = SignData(rsa, data, hashAlgorithm, implicitPadding);
+                byte[] explicitSignature = SignData(rsa, data, hashAlgorithm, explicitPadding);
+
+                AssertExtensions.TrueExpression(VerifyData(rsa, data, implicitSignature, hashAlgorithm, explicitPadding));
+                AssertExtensions.TrueExpression(VerifyData(rsa, data, explicitSignature, hashAlgorithm, implicitPadding));
+
+                if (AreCustomSaltLengthsSupportedWithPss)
+                {
+                    RSASignaturePadding minusOne = RSASignaturePadding.CreatePss(hashLength - 1);
+                    RSASignaturePadding plusOne = RSASignaturePadding.CreatePss(hashLength + 1);
+
+                    AssertExtensions.FalseExpression(VerifyData(rsa, data, implicitSignature, hashAlgorithm, minusOne));
+                    AssertExtensions.FalseExpression(VerifyData(rsa, data, implicitSignature, hashAlgorithm, plusOne));
+                }
+            }
+        }
+
+        [ConditionalTheory(nameof(AreCustomSaltLengthsSupportedWithPss))]
+        [InlineData("SHA256", 222)]
+        [InlineData("SHA384", 206)]
+        public void PssWithMaxAndExplicitSaltLength(string hashName, int maxSaltLength)
+        {
+            byte[] data = TestData.HelloBytes;
+            HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashName);
+            RSASignaturePadding maxPadding = RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthMax);
+            RSASignaturePadding explicitPadding = RSASignaturePadding.CreatePss(maxSaltLength);
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] maxSignature = SignData(rsa, data, hashAlgorithm, maxPadding);
+                byte[] explicitSignature = SignData(rsa, data, hashAlgorithm, explicitPadding);
+
+                AssertExtensions.TrueExpression(VerifyData(rsa, data, maxSignature, hashAlgorithm, explicitPadding));
+                AssertExtensions.TrueExpression(VerifyData(rsa, data, explicitSignature, hashAlgorithm, maxPadding));
+            }
+        }
+
+        [ConditionalTheory(nameof(AreCustomSaltLengthsSupportedWithPss))]
+        [InlineData("SHA256", 222)]
+        [InlineData("SHA384", 206)]
+        public void PssSaltLengthTooLarge(string hashName, int maxSaltLength)
+        {
+            byte[] data = TestData.HelloBytes;
+            HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashName);
+            RSASignaturePadding maxPadding = RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthMax);
+            RSASignaturePadding tooLargePadding = RSASignaturePadding.CreatePss(maxSaltLength + 1);
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] maxSignature = SignData(rsa, data, hashAlgorithm, maxPadding);
+
+                Assert.Throws<CryptographicException>(() => SignData(rsa, data, hashAlgorithm, tooLargePadding));
+                AssertExtensions.FalseExpression(VerifyData(rsa, data, maxSignature, hashAlgorithm, tooLargePadding));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(RoundTripTheories))]
         public void SignAndVerify_Roundtrip(string hashAlgorithm, RSAParameters rsaParameters)
@@ -1695,9 +1763,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                     ? [null, RSASignaturePadding.PssSaltLengthMax, RSASignaturePadding.PssSaltLengthIsHashLength, 0, 1, 4]
                     : [null];
 
-                foreach (var saltLength in saltLengths)
+                foreach (int? saltLength in saltLengths)
                 {
-                    var padding = saltLength is null ? RSASignaturePadding.Pss : RSASignaturePadding.CreatePss(saltLength.Value);
+                    RSASignaturePadding padding = saltLength is null ?
+                        RSASignaturePadding.Pss :
+                        RSASignaturePadding.CreatePss(saltLength.Value);
 
                     yield return new object[] { HashAlgorithmName.SHA256.Name, padding };
                     yield return new object[] { HashAlgorithmName.SHA384.Name, padding };
@@ -1720,6 +1790,9 @@ namespace System.Security.Cryptography.Rsa.Tests
                         yield return new object[] { HashAlgorithmName.SHA3_512.Name, padding };
                     }
                 }
+
+                // Also try every hash algorithm name with its hash size, explicitly.
+                // This should work even on platforms that don't allow it to be customized.
 
                 yield return new object[] { HashAlgorithmName.SHA256.Name, RSASignaturePadding.CreatePss(32) };
                 yield return new object[] { HashAlgorithmName.SHA384.Name, RSASignaturePadding.CreatePss(48) };

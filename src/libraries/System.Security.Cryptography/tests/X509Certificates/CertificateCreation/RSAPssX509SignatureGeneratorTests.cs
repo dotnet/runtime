@@ -10,6 +10,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support asymmetric cryptography")]
     public static class RSAPssX509SignatureGeneratorTests
     {
+        private const string Mgf1Oid = "1.2.840.113549.1.1.8";
+        private const string RsaPssOid = "1.2.840.113549.1.1.10";
+        private const string Sha256Oid = "2.16.840.1.101.3.4.2.1";
+        private const string Sha384Oid = "2.16.840.1.101.3.4.2.2";
+        private const string Sha512Oid = "2.16.840.1.101.3.4.2.3";
+
         [Fact]
         public static void RsaPssSignatureGeneratorCtor_Exceptions()
         {
@@ -58,45 +64,69 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.AreCustomSaltLengthsSupportedWithPss))]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
-        [InlineData(RSASignaturePadding.PssSaltLengthMax)]
-        public static void PssPaddingSaltLengths(int saltLengthToTest)
+        [InlineData("SHA256", Sha256Oid, 32, 222, 0)]
+        [InlineData("SHA256", Sha256Oid, 32, 222, 1)]
+        [InlineData("SHA256", Sha256Oid, 32, 222, RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData("SHA256", Sha256Oid, 32, 222, RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData("SHA384", Sha384Oid, 48, 206, RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData("SHA384", Sha384Oid, 48, 206, RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData("SHA512", Sha512Oid, 64, 190, RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData("SHA512", Sha512Oid, 64, 190, RSASignaturePadding.PssSaltLengthMax)]
+        public static void PssPaddingSaltLengths(
+            string hashAlgorithmName,
+            string hashAlgorithmOid,
+            int hashLength,
+            int maxSaltLength,
+            int saltLengthToTest)
         {
             using (RSA rsa = RSA.Create())
             {
-                rsa.ImportParameters(TestData.RsaBigExponentParams);
+                rsa.ImportFromPem(TestData.RsaPkcs8Key);
 
+                HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
                 RSASignaturePadding signaturePadding = RSASignaturePadding.CreatePss(saltLengthToTest);
                 X509SignatureGenerator signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, signaturePadding);
 
                 byte[] data = new byte[] { 1, 2, 3, 4, 5 };
-                byte[] signature = signatureGenerator.SignData(data, HashAlgorithmName.SHA256);
-                byte[] signatureAlgorithm = signatureGenerator.GetSignatureAlgorithmIdentifier(HashAlgorithmName.SHA256);
+                byte[] signature = signatureGenerator.SignData(data, hashAlgorithm);
+                byte[] signatureAlgorithm = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
 
                 AsnReader asnReader = new AsnReader(signatureAlgorithm, AsnEncodingRules.DER);
                 AsnReader rootSequence = asnReader.ReadSequence();
-                Assert.Equal("1.2.840.113549.1.1.10", rootSequence.ReadObjectIdentifier()); // Make sure it's RSASSA-PSS
+                Assert.Equal(RsaPssOid, rootSequence.ReadObjectIdentifier());
                 AsnReader pssStructure = rootSequence.ReadSequence();
-                ReadOnlyMemory<byte> hashAlgorithm = pssStructure.ReadEncodedValue(); // Ignore the hash algorithm OID
-                ReadOnlyMemory<byte> mgf = pssStructure.ReadEncodedValue(); // Ignore the mask generation function OID
+
+                AsnReader hashAlgorithmWrapper = pssStructure.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0, true));
+                AsnReader hashAlgorithmIdentifier = hashAlgorithmWrapper.ReadSequence();
+                Assert.Equal(hashAlgorithmOid, hashAlgorithmIdentifier.ReadObjectIdentifier());
+                hashAlgorithmIdentifier.ThrowIfNotEmpty();
+                hashAlgorithmWrapper.ThrowIfNotEmpty();
+
+                AsnReader mgfWrapper = pssStructure.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 1, true));
+                AsnReader mgfIdentifier = mgfWrapper.ReadSequence();
+                Assert.Equal(Mgf1Oid, mgfIdentifier.ReadObjectIdentifier());
+                AsnReader mgfHashIdentifier = mgfIdentifier.ReadSequence();
+                Assert.Equal(hashAlgorithmOid, mgfHashIdentifier.ReadObjectIdentifier());
+                mgfHashIdentifier.ThrowIfNotEmpty();
+                mgfIdentifier.ThrowIfNotEmpty();
+                mgfWrapper.ThrowIfNotEmpty();
+
                 Asn1Tag saltTag = new Asn1Tag(TagClass.ContextSpecific, 2, true);
-
-                if (pssStructure.HasData && pssStructure.PeekTag().HasSameClassAndValue(saltTag))
+                AsnReader saltEntry = pssStructure.ReadSequence(saltTag);
+                Numerics.BigInteger actualSaltLength = saltEntry.ReadInteger();
+                int expectedSaltLength = saltLengthToTest switch
                 {
-                    AsnReader saltEntry = pssStructure.ReadSequence(saltTag);
-                    Numerics.BigInteger actualSaltLength = saltEntry.ReadInteger();
-                    int expectedSaltLength = saltLengthToTest switch
-                    {
-                        RSASignaturePadding.PssSaltLengthIsHashLength => 32,
-                        RSASignaturePadding.PssSaltLengthMax => 222,
-                        _ => saltLengthToTest
-                    };
-                    Assert.Equal(expectedSaltLength, actualSaltLength);
-                }
+                    RSASignaturePadding.PssSaltLengthIsHashLength => hashLength,
+                    RSASignaturePadding.PssSaltLengthMax => maxSaltLength,
+                    _ => saltLengthToTest,
+                };
+                Assert.Equal(expectedSaltLength, actualSaltLength);
+                saltEntry.ThrowIfNotEmpty();
+                pssStructure.ThrowIfNotEmpty();
+                rootSequence.ThrowIfNotEmpty();
+                asnReader.ThrowIfNotEmpty();
 
-                Assert.True(rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, signaturePadding));
+                Assert.True(rsa.VerifyData(data, signature, hashAlgorithm, signaturePadding));
             }
         }
 

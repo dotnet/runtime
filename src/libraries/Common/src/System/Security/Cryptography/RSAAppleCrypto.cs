@@ -546,6 +546,7 @@ namespace System.Security.Cryptography
                         Debug.Fail($"TryRsaVerificationPrimitive with a pre-allocated buffer");
                         throw new CryptographicException();
                     }
+
                     Debug.Assert(bytesWritten == rsaSize);
                     int saltLength = RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm);
                     return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, keySize, saltLength);
