@@ -435,13 +435,28 @@ namespace System.Tests
         // third underscore-separated token; for the binary and cross families it is the leading or third token.
         private static string IntegerSourceType(string operation) => operation.Substring(operation.LastIndexOf('_') + 1);
 
-        private static string IntegerTargetType(string operation) => operation.Split('_')[2];
+        private static string IntegerTargetType(string operation) => NthToken(operation, 2);
 
-        private static string BinaryTargetType(string operation) => operation.Split('_')[2];
+        private static string BinaryTargetType(string operation) => NthToken(operation, 2);
 
-        private static string BinarySourceType(string operation) => operation.Split('_')[0];
+        private static string BinarySourceType(string operation) => NthToken(operation, 0);
 
-        private static string DecimalSourceType(string operation) => operation.Split('_')[0];
+        private static string DecimalSourceType(string operation) => NthToken(operation, 0);
+
+        // Extracts the zero-based, underscore-delimited token from a fixed-format operation name without the
+        // array and per-token substring allocations that `string.Split('_')` would incur on every vector row.
+        private static string NthToken(string operation, int index)
+        {
+            ReadOnlySpan<char> remaining = operation;
+
+            for (int i = 0; i < index; i++)
+            {
+                remaining = remaining.Slice(remaining.IndexOf('_') + 1);
+            }
+
+            int end = remaining.IndexOf('_');
+            return (end < 0 ? remaining : remaining.Slice(0, end)).ToString();
+        }
 
         private static bool TryParseDecimalSource(string operation, string token, out UInt128 value)
         {
