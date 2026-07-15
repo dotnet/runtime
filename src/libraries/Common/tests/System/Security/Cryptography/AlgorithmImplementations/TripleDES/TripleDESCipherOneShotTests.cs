@@ -10,8 +10,10 @@ using Xunit;
 namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class TripleDESCipherOneShotTests : SymmetricOneShotBase
+    public abstract class TripleDESCipherOneShotTests : SymmetricOneShotBase
     {
+        protected abstract TripleDESProvider TripleDESFactory { get; }
+
         protected override byte[] Key => new byte[]
             {
                 0x00, 0x01, 0x02, 0x03, 0x05, 0x06, 0x07, 0x08,

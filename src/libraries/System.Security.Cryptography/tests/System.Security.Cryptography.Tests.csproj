@@ -488,8 +488,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherOneShotTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESContractTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESProvider.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESProvider.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AsymmetricSignatureFormatter.cs"
@@ -637,7 +637,8 @@
     <Compile Include="SymmetricAlgorithm\Minimal.cs" />
     <Compile Include="SymmetricAlgorithm\Trivial.cs" />
     <Compile Include="SymmetricAlgorithmTests.cs" />
-    <Compile Include="TripleDesProvider.cs" />
+    <Compile Include="DefaultTripleDESProvider.cs" />
+    <Compile Include="TripleDESTestRegistration.Default.cs" />
     <Compile Include="TripleDesTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
     <Compile Include="X509Certificates\Cert.cs" />
@@ -711,6 +712,9 @@
     <Compile Include="AesCngProvider.cs" />
     <Compile Include="AesCngTests.cs" />
     <Compile Include="AesTestRegistration.Cng.cs" />
+    <Compile Include="TripleDESCngProvider.cs" />
+    <Compile Include="TripleDESCngTests.cs" />
+    <Compile Include="TripleDESTestRegistration.Cng.cs" />
     <Compile Include="SymmetricCngTestHelpers.cs" />
     <Compile Include="CngHelpers.cs" />
     <Compile Include="DSACngProvider.Windows.cs" />

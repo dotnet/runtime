@@ -10,8 +10,6 @@
     <Compile Include="HandleTests.cs" />
     <Compile Include="OpenTests.cs" />
     <Compile Include="PropertyTests.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.Security.Cryptography\tests\SymmetricCngTestHelpers.cs"
-             Link="SymmetricCngTestHelpers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
@@ -19,9 +17,6 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs"
              Link="CommonTest\AlgorithmImplementations\RC2\RC2Factory.cs" />
     <Compile Include="RC2Provider.cs" />
-    <Compile Include="TripleDESCngProvider.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)System.Security.Cryptography\tests\TestData.Cng.cs"
@@ -42,17 +37,6 @@
     <Compile Include="ECDHCngPkcs8Tests.cs" />
     <Compile Include="ECDsaCngPkcs8Tests.cs" />
     <Compile Include="RSACngPkcs8Tests.cs" />
-    <Compile Condition="'$(TargetPlatformIdentifier)' == 'windows'" Include="TripleDESCngTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESContractTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESContractTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherOneShotTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherOneShotTests.cs" />
-    <Compile Condition="'$(TargetPlatformIdentifier)' == 'windows'" Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\Symmetric\SymmetricOneShotBase.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\Symmetric\SymmetricOneShotBase.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />

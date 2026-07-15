@@ -7,10 +7,12 @@ using Xunit;
 namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class TripleDESReusabilityTests
+    public abstract class TripleDESReusabilityTests
     {
+        protected abstract TripleDESProvider TripleDESFactory { get; }
+
         [Fact]
-        public static void TripleDESReuseEncryptorDecryptor()
+        public void TripleDESReuseEncryptorDecryptor()
         {
             byte[] key = "6b42da08f93e819fbd26fce0785b0eec3d0cb6bfa053c505".HexToByteArray();
             byte[] iv = "8fc67ce5e7f28cde".HexToByteArray();
