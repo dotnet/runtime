@@ -367,7 +367,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native-mono")] // coreclr ActiveIssue: https://github.com/dotnet/runtime/issues/120897
+        [TestCategory("native-mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 

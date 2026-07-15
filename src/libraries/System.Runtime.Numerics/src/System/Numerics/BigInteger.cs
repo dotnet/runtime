@@ -797,33 +797,33 @@ namespace System.Numerics
 
         public static BigInteger Parse(string value)
         {
-            return Parse(value, NumberStyles.Integer);
+            return Parse(value, NumberStyles.Integer, provider: null);
         }
 
         public static BigInteger Parse(string value, NumberStyles style)
         {
-            return Parse(value, style, NumberFormatInfo.CurrentInfo);
+            return Parse(value, style, provider: null);
         }
 
         public static BigInteger Parse(string value, IFormatProvider? provider)
         {
-            return Parse(value, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Parse(value, NumberStyles.Integer, provider);
         }
 
         public static BigInteger Parse(string value, NumberStyles style, IFormatProvider? provider)
         {
             ArgumentNullException.ThrowIfNull(value);
-            return Parse(value.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
+            return Parse(value.AsSpan(), style, provider);
         }
 
         public static bool TryParse([NotNullWhen(true)] string? value, out BigInteger result)
         {
-            return TryParse(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse(value, NumberStyles.Integer, provider: null, out result);
         }
 
         public static bool TryParse([NotNullWhen(true)] string? value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return TryParse(value.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return TryParse(value.AsSpan(), style, provider, out result);
         }
 
         public static BigInteger Parse(ReadOnlySpan<char> value, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
@@ -838,22 +838,40 @@ namespace System.Numerics
 
         public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result)
         {
-            return TryParse(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse(value, NumberStyles.Integer, provider: null, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(value), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(value), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, out BigInteger result)
         {
-            return TryParse(utf8Text, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse(utf8Text, NumberStyles.Integer, provider: null, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        static bool INumberBase<BigInteger>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
+        {
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        static bool INumberBase<BigInteger>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int bytesConsumed)
+        {
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        static bool INumberBase<BigInteger>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
+        {
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(s), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
         }
 
         public static int Compare(BigInteger left, BigInteger right)
@@ -2013,7 +2031,14 @@ namespace System.Numerics
             return checked((decimal)(Int128)value);
         }
 
-        public static explicit operator double(BigInteger value)
+        public static explicit operator double(BigInteger value) => ConvertToDouble(value, roundToOdd: false);
+
+        // Converts a big integer to an IEEE 754 double. When `roundToOdd` is false the result is the
+        // correctly rounded (round-to-nearest, ties-to-even) double. When it is true the result is
+        // instead rounded to odd: the mantissa's least significant bit is forced set whenever any
+        // information is discarded. Re-rounding such a value to a narrower type (float, Half,
+        // BFloat16) then yields the correctly rounded narrow value, avoiding double rounding.
+        private static double ConvertToDouble(BigInteger value, bool roundToOdd)
         {
             int sign = value._sign;
             nuint[]? bits = value._bits;
@@ -2035,42 +2060,100 @@ namespace System.Numerics
                 return sign == 1 ? double.PositiveInfinity : double.NegativeInfinity;
             }
 
-            ulong h, m, l;
-            int z, exp;
+            // Gather the top 64 significant bits of the magnitude into `man`, with the most
+            // significant set bit at bit 63, the position of that bit within the full magnitude
+            // in `topBit`, and whether any lower (uncaptured) bits are set in `sticky`. These are
+            // everything needed to round to the nearest double using round-to-nearest, ties-to-even.
+            // `man` must be 64 bits wide regardless of the limb width, since a single 32-bit limb
+            // cannot hold the full significand. The top limb is always non-zero, so the leading
+            // zero count is strictly less than the limb width.
             ulong man;
+            int topBit;
+            bool sticky;
 
             if (nint.Size == 8)
             {
-                h = bits[length - 1];
-                m = length > 1 ? bits[length - 2] : 0;
+                ulong h = bits[length - 1];
+                ulong m = length > 1 ? bits[length - 2] : 0;
 
-                z = BitOperations.LeadingZeroCount(h);
-                exp = (length - 1) * 64 - z;
+                int z = BitOperations.LeadingZeroCount(h);
+                topBit = (length - 1) * 64 + (63 - z);
                 man = z == 0 ? h : (h << z) | (m >> (64 - z));
+
+                // Any bits of `m` not captured in `man`, plus all lower limbs, are sticky.
+                ulong mLow = z == 0 ? m : (m & ((1UL << (64 - z)) - 1));
+                sticky = mLow != 0 || (length > 2 && bits.AsSpan(0, length - 2).ContainsAnyExcept((nuint)0));
             }
             else
             {
-                h = (uint)bits[length - 1];
-                m = length > 1 ? (uint)bits[length - 2] : 0;
-                l = length > 2 ? (uint)bits[length - 3] : 0;
+                ulong h = (uint)bits[length - 1];
+                ulong m = length > 1 ? (uint)bits[length - 2] : 0;
+                ulong l = length > 2 ? (uint)bits[length - 3] : 0;
 
-                z = BitOperations.LeadingZeroCount((uint)h);
-                exp = (length - 2) * 32 - z;
-                man = (h << 32 + z) | (m << z) | (l >> 32 - z);
+                int z = BitOperations.LeadingZeroCount((uint)h);
+                topBit = (length - 1) * 32 + (31 - z);
+                man = (h << (32 + z)) | (m << z) | (l >> (32 - z));
+
+                // Any bits of `l` not captured in `man`, plus all lower limbs, are sticky.
+                ulong lLow = l & ((1UL << (32 - z)) - 1);
+                sticky = lLow != 0 || (length > 3 && bits.AsSpan(0, length - 3).ContainsAnyExcept((nuint)0));
             }
 
-            return NumericsHelpers.GetDoubleFromParts(sign, exp, man);
+            // `man` holds 64 bits with the leading 1 at bit 63; a double keeps 53 significant
+            // bits, so bits [63:11] form the significand, bit 10 is the round bit, and bits
+            // [9:0] (together with `sticky`) determine whether we round up.
+            sticky |= (man & 0x3FF) != 0;
+            ulong roundBit = (man >> 10) & 1;
+            ulong mantissa = man >> 11;
+
+            if (roundToOdd)
+            {
+                // Force the least significant bit set whenever anything was discarded. This never
+                // carries, so `topBit` is unchanged and the value stays normalized.
+                if (roundBit != 0 || sticky)
+                {
+                    mantissa |= 1;
+                }
+            }
+            else if (roundBit != 0 && (sticky || (mantissa & 1) != 0))
+            {
+                mantissa++;
+
+                if ((mantissa >> 53) != 0)
+                {
+                    // Rounding carried into a new leading bit; renormalize.
+                    mantissa >>= 1;
+                    topBit++;
+                }
+            }
+
+            int biasedExp = topBit + 1023;
+
+            if (biasedExp >= 0x7FF)
+            {
+                // The rounded value is too large to represent as a finite double.
+                return sign == 1 ? double.PositiveInfinity : double.NegativeInfinity;
+            }
+
+            ulong result = (mantissa & 0x000F_FFFF_FFFF_FFFF) | ((ulong)biasedExp << 52);
+
+            if (sign < 0)
+            {
+                result |= 0x8000_0000_0000_0000;
+            }
+
+            return BitConverter.UInt64BitsToDouble(result);
         }
 
         /// <summary>Explicitly converts a big integer to a <see cref="Half" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to <see cref="Half" /> value.</returns>
-        public static explicit operator Half(BigInteger value) => (Half)(double)value;
+        public static explicit operator Half(BigInteger value) => (Half)ConvertToDouble(value, roundToOdd: true);
 
         /// <summary>Explicitly converts a big integer to a <see cref="BFloat16" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to <see cref="BFloat16" /> value.</returns>
-        public static explicit operator BFloat16(BigInteger value) => (BFloat16)(double)value;
+        public static explicit operator BFloat16(BigInteger value) => (BFloat16)ConvertToDouble(value, roundToOdd: true);
 
         public static explicit operator short(BigInteger value) => checked((short)((int)value));
 
@@ -2195,7 +2278,7 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static explicit operator sbyte(BigInteger value) => checked((sbyte)((int)value));
 
-        public static explicit operator float(BigInteger value) => (float)((double)value);
+        public static explicit operator float(BigInteger value) => (float)ConvertToDouble(value, roundToOdd: true);
 
         [CLSCompliant(false)]
         public static explicit operator ushort(BigInteger value) => checked((ushort)((int)value));
