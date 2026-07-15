@@ -395,6 +395,13 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
 extern "C" int corerun_shutdown(int exit_code);
 static pal::mod_t coreclr_mod;
 
+#ifdef TARGET_WASI
+// Provided by libSystem.Globalization.Native.a when globalization is linked (the non-invariant
+// per-app relink). Declared weak so an invariant relink (which omits that archive) leaves the
+// reference null and the host ICU preload in run() is skipped.
+extern "C" __attribute__((weak)) int32_t GlobalizationNative_LoadICUData(const char* path);
+#endif
+
 static int run(const configuration& config)
 {
     platform_specific_actions actions;
@@ -618,6 +625,22 @@ static int run(const configuration& config)
     {
         coreclr_set_error_writer_func(nullptr);
     }
+
+#ifdef TARGET_WASI
+    // The static ICU shim requires the host to preload icudt.dat before managed globalization
+    // initializes: GlobalizationNative_LoadICU() (the no-path entry the managed side calls on
+    // wasi) returns 0 unless the data was already set, and falls back to invariant. This mirrors
+    // the browser JS host calling wasm_load_icu_data. GlobalizationNative_LoadICUData is only
+    // linked when globalization is enabled (the non-invariant per-app relink), so the file-scope
+    // declaration is weak - when globalization is not linked the reference is null and this is
+    // skipped (invariant). A missing icudt.dat also falls back to invariant (the call just fails).
+    if (GlobalizationNative_LoadICUData != nullptr)
+    {
+        pal::string_utf8_t icu_data_path_utf8 = app_path_utf8;
+        icu_data_path_utf8.append("icudt.dat");
+        GlobalizationNative_LoadICUData(icu_data_path_utf8.c_str());
+    }
+#endif
 
     int exit_code;
     {

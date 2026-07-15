@@ -81,6 +81,12 @@
     <Copy SourceFiles="@(_WasiCoreCLRFrameworkToCopy)"
           DestinationFolder="$(WasmAppDir)managed"
           SkipUnchangedFiles="true" />
+    <!-- Non-invariant: place icudt.dat next to the managed assemblies so the relinked corerun
+         host (which loads it via GlobalizationNative_LoadICUData from the app dir) can find it. -->
+    <Copy Condition="'$(InvariantGlobalization)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat')"
+          SourceFiles="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"
+          DestinationFolder="$(WasmAppDir)managed"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!-- When the relink is disabled, fall back to the prebuilt corerun host from the pack. -->
