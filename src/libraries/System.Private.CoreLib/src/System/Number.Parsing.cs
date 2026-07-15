@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -266,7 +266,7 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
-            if ((styles & ~(NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters)) == 0)
+            if ((styles & ~(NumberStyles.Integer | AllowTrailingInvalidCharacters)) == 0)
             {
                 // Optimized path for the common case of anything that's allowed for integer style.
                 return TryParseBinaryIntegerStyle(value, styles, info, out result, out elementsConsumed);
@@ -311,7 +311,7 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
-            Debug.Assert((styles & ~(NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters)) == 0, "Only handles subsets of Integer format");
+            Debug.Assert((styles & ~(NumberStyles.Integer | AllowTrailingInvalidCharacters)) == 0, "Only handles subsets of Integer format");
 
             if (value.IsEmpty)
             {
@@ -556,7 +556,7 @@ namespace System
 
             index = ConsumeTrailingNulls(value, index);
 
-            if ((index == value.Length) || ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0))
+            if ((index == value.Length) || ((styles & AllowTrailingInvalidCharacters) != 0))
             {
                 goto DoneAtEndButPotentialOverflow;
             }
@@ -610,7 +610,7 @@ namespace System
 
         internal readonly struct HexParser<TInteger> : IHexOrBinaryParser<TInteger> where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
-            public static NumberStyles AllowedStyles => NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters;
+            public static NumberStyles AllowedStyles => NumberStyles.HexNumber | AllowTrailingInvalidCharacters;
             public static bool IsValidChar(uint ch) => HexConverter.IsHexChar((int)ch);
             public static uint FromChar(uint ch) => (uint)HexConverter.FromChar((int)ch);
             public static uint MaxDigitValue => 0xF;
@@ -620,7 +620,7 @@ namespace System
 
         private readonly struct BinaryParser<TInteger> : IHexOrBinaryParser<TInteger> where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
-            public static NumberStyles AllowedStyles => NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters;
+            public static NumberStyles AllowedStyles => NumberStyles.BinaryNumber | AllowTrailingInvalidCharacters;
             public static bool IsValidChar(uint ch) => (ch - '0') <= 1;
             public static uint FromChar(uint ch) => ch - '0';
             public static uint MaxDigitValue => 1;
@@ -759,7 +759,7 @@ namespace System
 
             index = ConsumeTrailingNulls(value, index);
 
-            if ((index == value.Length) || ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0))
+            if ((index == value.Length) || ((styles & AllowTrailingInvalidCharacters) != 0))
             {
                 goto DoneAtEndButPotentialOverflow;
             }
@@ -1003,7 +1003,7 @@ namespace System
                 // the first non-whitespace character after the symbol; otherwise such a trailing
                 // character rejects the match.
                 ReadOnlySpan<TChar> valueTrim = SpanTrimStart(value);
-                bool allowTrailingInvalid = (styles & NumberStyles.AllowTrailingInvalidCharacters) != 0;
+                bool allowTrailingInvalid = (styles & AllowTrailingInvalidCharacters) != 0;
 
                 // elementsConsumed is seeded with the offset of the candidate within value (the leading
                 // whitespace, plus any sign) and then advanced by TryMatchSpecialValueSymbol on a match.
@@ -1454,7 +1454,7 @@ namespace System
 
             index = ConsumeTrailingNulls(value, index);
 
-            if ((index != value.Length) && ((styles & NumberStyles.AllowTrailingInvalidCharacters) == 0))
+            if ((index != value.Length) && ((styles & AllowTrailingInvalidCharacters) == 0))
             {
                 elementsConsumed = 0;
                 return false;
@@ -1602,7 +1602,7 @@ namespace System
             // the first non-whitespace character after the symbol; otherwise such a trailing
             // character rejects the match.
             ReadOnlySpan<TChar> valueTrim = SpanTrimStart(value);
-            bool allowTrailingInvalid = (styles & NumberStyles.AllowTrailingInvalidCharacters) != 0;
+            bool allowTrailingInvalid = (styles & AllowTrailingInvalidCharacters) != 0;
 
             // elementsConsumed is seeded with the offset of the candidate within value (the leading
             // whitespace, plus any sign) and then advanced by TryMatchSpecialValueSymbol on a match.

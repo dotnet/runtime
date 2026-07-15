@@ -856,22 +856,22 @@ namespace System.Numerics
             return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<BigInteger>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
         {
-            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<BigInteger>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int bytesConsumed)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int bytesConsumed)
         {
-            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        static bool INumberBase<BigInteger>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
         {
-            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(s), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(s), style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
         }
 
         public static int Compare(BigInteger left, BigInteger right)

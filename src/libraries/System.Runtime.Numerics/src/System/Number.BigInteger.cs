@@ -21,7 +21,7 @@ namespace System
                                                            | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
                                                            | NumberStyles.AllowThousands | NumberStyles.AllowExponent
                                                            | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier
-                                                           | NumberStyles.AllowBinarySpecifier | NumberStyles.AllowTrailingInvalidCharacters);
+                                                           | NumberStyles.AllowBinarySpecifier);
 
         private static nuint[]? s_cachedPowersOf1e9;
 
@@ -42,10 +42,14 @@ namespace System
 
         internal static bool TryValidateParseStyleInteger(NumberStyles style, [NotNullWhen(false)] out ArgumentException? e)
         {
-            // Check for undefined flags or using AllowHexSpecifier/AllowBinarySpecifier each with anything other than AllowLeadingWhite/AllowTrailingWhite/AllowTrailingInvalidCharacters.
+            // AllowTrailingInvalidCharacters is an internal-only style used to request partial parsing; it is never
+            // user-visible, so exclude it from validation.
+            style &= ~AllowTrailingInvalidCharacters;
+
+            // Check for undefined flags or using AllowHexSpecifier/AllowBinarySpecifier each with anything other than AllowLeadingWhite/AllowTrailingWhite.
             if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0 &&
-                (style & ~(NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters)) != 0 &&
-                (style & ~(NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters)) != 0)
+                (style & ~NumberStyles.HexNumber) != 0 &&
+                (style & ~NumberStyles.BinaryNumber) != 0)
             {
                 e = new ArgumentException((style & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles : SR.Argument_InvalidHexBinaryStyle, nameof(style));
                 return false;
@@ -187,7 +191,7 @@ namespace System
 
             // If anything remains after the digits and their trailing whitespace, the input is
             // only valid when trailing invalid characters are explicitly allowed.
-            if ((trailingStart != value.Length) && ((style & NumberStyles.AllowTrailingInvalidCharacters) == 0))
+            if ((trailingStart != value.Length) && ((style & AllowTrailingInvalidCharacters) == 0))
             {
                 goto FailExit;
             }

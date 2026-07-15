@@ -201,7 +201,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        public static IEnumerable<object[]> TryParsePartial_TestData()
         {
             // value, expectedReal, expectedImaginary, expectedCharsConsumed
             yield return new object[] { "<1.5; 2.5>", 1.5, 2.5, 10 };
@@ -220,27 +220,27 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters(string value, double expectedReal, double expectedImaginary, int expectedCharsConsumed)
+        [MemberData(nameof(TryParsePartial_TestData))]
+        public static void TryParsePartial(string value, double expectedReal, double expectedImaginary, int expectedCharsConsumed)
         {
-            const NumberStyles Style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+            const NumberStyles Style = NumberStyles.Float;
             IFormatProvider provider = CultureInfo.InvariantCulture;
 
             Complex expected = new Complex(expectedReal, expectedImaginary);
             Complex result;
             int charsConsumed;
 
-            Assert.True(NumberBaseHelper<Complex>.TryParse(value, Style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<Complex>.TryParsePartial(value, Style, provider, out result, out charsConsumed));
             Assert.Equal(expected, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
-            Assert.True(NumberBaseHelper<Complex>.TryParse(value.AsSpan(), Style, provider, out result, out charsConsumed));
+            Assert.True(NumberBaseHelper<Complex>.TryParsePartial(value.AsSpan(), Style, provider, out result, out charsConsumed));
             Assert.Equal(expected, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
             byte[] utf8Value = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.True(NumberBaseHelper<Complex>.TryParse(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
+            Assert.True(NumberBaseHelper<Complex>.TryParsePartial(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
             Assert.Equal(expected, result);
             if (value.All(c => c < 128))
             {
@@ -248,7 +248,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        public static IEnumerable<object[]> TryParsePartial_Invalid_TestData()
         {
             // Empty and non-complex inputs
             yield return new object[] { "" };
@@ -259,33 +259,33 @@ namespace System.Numerics.Tests
             yield return new object[] { "1; 2>" };
             yield return new object[] { "<1, 2>" };
 
-            // An invalid character within a component is never allowed, even with AllowTrailingInvalidCharacters,
+            // An invalid character within a component is never allowed by TryParsePartial,
             // because the components are delimited by ';' and '>'.
             yield return new object[] { "<1.5x; 2.5>" };
             yield return new object[] { "<1.5; 2.5x>" };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value)
+        [MemberData(nameof(TryParsePartial_Invalid_TestData))]
+        public static void TryParsePartial_Invalid(string value)
         {
-            const NumberStyles Style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+            const NumberStyles Style = NumberStyles.Float;
             IFormatProvider provider = CultureInfo.InvariantCulture;
 
             Complex result;
             int charsConsumed;
 
-            Assert.False(NumberBaseHelper<Complex>.TryParse(value, Style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<Complex>.TryParsePartial(value, Style, provider, out result, out charsConsumed));
             Assert.Equal(Complex.Zero, result);
             Assert.Equal(0, charsConsumed);
 
-            Assert.False(NumberBaseHelper<Complex>.TryParse(value.AsSpan(), Style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<Complex>.TryParsePartial(value.AsSpan(), Style, provider, out result, out charsConsumed));
             Assert.Equal(Complex.Zero, result);
             Assert.Equal(0, charsConsumed);
 
             byte[] utf8Value = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.False(NumberBaseHelper<Complex>.TryParse(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
+            Assert.False(NumberBaseHelper<Complex>.TryParsePartial(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
             Assert.Equal(Complex.Zero, result);
             Assert.Equal(0, bytesConsumed);
         }
