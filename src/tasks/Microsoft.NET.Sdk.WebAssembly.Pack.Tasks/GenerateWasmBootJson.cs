@@ -121,7 +121,7 @@ public class GenerateWasmBootJson : Task
 
     private void WriteBootConfig(string entryAssemblyName)
     {
-        bool isMonoRuntime = !string.Equals(UseMonoRuntime, "false", StringComparison.OrdinalIgnoreCase);
+        bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime) || string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
         var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion, isMonoRuntime);
 
         var result = new BootJsonData
