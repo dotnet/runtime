@@ -176,7 +176,7 @@ internal sealed class TestTarget : Target
 
     public override T Read<T>(ulong address)
     {
-        Span<byte> span = GetSpan(address, System.Runtime.CompilerServices.Unsafe.SizeOf<T>());
+        Span<byte> span = GetSpan(address, sizeof(T));
         return System.Runtime.InteropServices.MemoryMarshal.Read<T>(span);
     }
 
@@ -204,7 +204,7 @@ internal sealed class TestTarget : Target
 
     public override void Write<T>(ulong address, T value)
     {
-        Span<byte> span = GetSpan(address, System.Runtime.CompilerServices.Unsafe.SizeOf<T>());
+        Span<byte> span = GetSpan(address, sizeof(T));
         System.Runtime.InteropServices.MemoryMarshal.Write(span, in value);
     }
 
