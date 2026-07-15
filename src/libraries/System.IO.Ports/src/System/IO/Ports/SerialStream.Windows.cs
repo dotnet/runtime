@@ -525,20 +525,40 @@ namespace System.IO.Ports
         }
 
 
-        // Fills comStat structure from an unmanaged function
-        // to determine the number of bytes waiting in the serial driver's internal receive buffer.
-        internal int BytesToRead
+        internal int GetBytesToRead(int buffered, bool throwOnDispose = true)
         {
-            get
+            SafeFileHandle? handle = _handle;
+            if (handle == null || !IsOpen)
+            {
+                if (throwOnDispose)
+                {
+                    InternalResources.FileNotOpen();
+                }
+                return 0;
+            }
+
+            try
             {
                 int errorCode = 0; // "ref" arguments need to have values, as opposed to "out" arguments
-                if (!Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat))
+                if (!Interop.Kernel32.ClearCommError(handle, ref errorCode, ref _comStat))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
-                return (int)_comStat.cbInQue;
+                return buffered + (int)_comStat.cbInQue;
+            }
+            catch (ObjectDisposedException) when (!throwOnDispose)
+            {
+                return 0;
             }
         }
+
+
+#pragma warning disable CA1822
+        internal void OnRaiseCharsEventSkipped()
+        {
+        }
+#pragma warning restore CA1822
+
 
         // Fills comStat structure from an unmanaged function
         // to determine the number of bytes waiting in the serial driver's internal transmit buffer.

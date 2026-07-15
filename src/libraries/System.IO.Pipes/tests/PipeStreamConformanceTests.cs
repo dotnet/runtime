@@ -62,7 +62,7 @@ namespace System.IO.Pipes.Tests
 
     public abstract class NamedPipeStreamConformanceTests : PipeStreamConformanceTests
     {
-        protected override bool BrokenPipePropagatedImmediately => OperatingSystem.IsWindows(); // On Unix, implemented on Sockets, where it won't propagate immediate
+        protected override bool BrokenPipePropagatedImmediately => true;
 
         protected abstract NamedPipeServerStream CreateServerStream(string pipeName, int maxInstances = 1);
         protected abstract NamedPipeClientStream CreateClientStream(string pipeName);
@@ -340,15 +340,12 @@ namespace System.IO.Pipes.Tests
             {
                 if (ReferenceEquals(writeable, client))
                 {
-                    if (OperatingSystem.IsWindows()) // writes on Unix may still succeed after other end disconnects, due to socket being used
-                    {
-                        // Pipe is broken
-                        Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
-                        Assert.Throws<IOException>(() => client.WriteByte(5));
-                        Assert.Throws<IOException>(() => { client.WriteAsync(buffer, 0, buffer.Length); });
-                        Assert.Throws<IOException>(() => client.Flush());
-                        Assert.Throws<IOException>(() => client.NumberOfServerInstances);
-                    }
+                    // Pipe is broken
+                    Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
+                    Assert.Throws<IOException>(() => client.WriteByte(5));
+                    Assert.Throws<IOException>(() => { client.WriteAsync(buffer, 0, buffer.Length); });
+                    Assert.Throws<IOException>(() => client.Flush());
+                    Assert.Throws<IOException>(() => client.NumberOfServerInstances);
                 }
                 else
                 {
@@ -502,7 +499,6 @@ namespace System.IO.Pipes.Tests
             Assert.Equal(0, await readTask);
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)] // Unix named pipes are on sockets, where small writes with an empty buffer will succeed immediately
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         [Fact]
@@ -511,7 +507,9 @@ namespace System.IO.Pipes.Tests
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
 
-            Task writeTask = writeable.WriteAsync(new byte[1], 0, 1);
+            // Write more than the pipe buffer size to ensure the write blocks.
+            int writeSize = Math.Max(((writeable as PipeStream)?.OutBufferSize ?? (readable as PipeStream)?.InBufferSize ?? 1) * 2, 4);
+            Task writeTask = writeable.WriteAsync(new byte[writeSize], 0, writeSize);
             readable.Dispose();
             await Assert.ThrowsAsync<IOException>(() => writeTask);
         }
@@ -541,12 +539,12 @@ namespace System.IO.Pipes.Tests
             if (server.CanWrite)
             {
                 var ctx1 = new CancellationTokenSource();
-                if (OperatingSystem.IsWindows()) // On Unix WriteAsync's aren't cancelable once initiated
-                {
-                    Task serverWriteToken = server.WriteAsync(buffer, 0, buffer.Length, ctx1.Token);
-                    ctx1.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWriteToken);
-                }
+                // Write more than the pipe buffer size to ensure the write blocks and is cancellable.
+                var writeBuffer = new byte[Math.Max(server.OutBufferSize * 2, 4)];
+                Task serverWriteToken = server.WriteAsync(writeBuffer, 0, writeBuffer.Length, ctx1.Token);
+                ctx1.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWriteToken);
+
                 ctx1.Cancel();
                 Assert.True(server.WriteAsync(buffer, 0, buffer.Length, ctx1.Token).IsCanceled);
             }
@@ -643,12 +641,12 @@ namespace System.IO.Pipes.Tests
             if (client.CanWrite)
             {
                 var ctx1 = new CancellationTokenSource();
-                if (OperatingSystem.IsWindows()) // On Unix WriteAsync's aren't cancelable once initiated
-                {
-                    Task serverWriteToken = client.WriteAsync(buffer, 0, buffer.Length, ctx1.Token);
-                    ctx1.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWriteToken);
-                }
+                // Write more than the pipe buffer size to ensure the write blocks and is cancellable.
+                var writeBuffer = new byte[Math.Max(client.OutBufferSize * 2, 4)];
+                Task serverWriteToken = client.WriteAsync(writeBuffer, 0, writeBuffer.Length, ctx1.Token);
+                ctx1.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWriteToken);
+
                 ctx1.Cancel();
                 Assert.True(client.WriteAsync(buffer, 0, buffer.Length, ctx1.Token).IsCanceled);
             }

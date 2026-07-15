@@ -142,6 +142,15 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
   </ItemGroup>
 
+  <!-- On Unix, use UnixAsyncContext for .NET 11+ and a poll loop for other target frameworks. -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="System\IO\Ports\SafeSerialDeviceHandle.UnixAsyncContext.cs" />
+    <Compile Include="System\IO\Ports\SerialStream.UnixAsyncContext.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="System\IO\Ports\SerialStream.UnixPollLoop.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToAsyncResult.cs" Link="Common\System\Threading\Tasks\TaskToAsyncResult.cs" />
   </ItemGroup>
