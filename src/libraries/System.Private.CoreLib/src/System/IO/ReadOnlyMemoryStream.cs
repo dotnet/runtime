@@ -220,6 +220,18 @@ namespace System.IO
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+
+        /// <inheritdoc/>
+        public override void WriteByte(byte value) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+
+        /// <inheritdoc/>
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+
+        /// <inheritdoc/>
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+
+        /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
             _isOpen = false;

@@ -40,6 +40,10 @@ namespace System.IO.Tests
             var stream = new ReadOnlyMemoryStream(new byte[] { 1, 2, 3 });
 
             Assert.Throws<NotSupportedException>(() => stream.Write(new byte[1], 0, 1));
+            Assert.Throws<NotSupportedException>(() => stream.Write(new byte[1].AsSpan()));
+            Assert.Throws<NotSupportedException>(() => stream.WriteByte(1));
+            Assert.Throws<NotSupportedException>(() => { _ = stream.WriteAsync(new byte[1], 0, 1); });
+            Assert.Throws<NotSupportedException>(() => { _ = stream.WriteAsync(new byte[1].AsMemory()); });
             Assert.Throws<NotSupportedException>(() => stream.SetLength(1));
         }
     }
