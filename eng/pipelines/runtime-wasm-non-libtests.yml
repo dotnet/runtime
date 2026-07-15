@@ -22,3 +22,10 @@ extends:
           isRollingBuild: ${{ variables.isRollingBuild }}
           excludeNonLibTests: false
           excludeLibTests: true
+
+    - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-wasm-build-tests.yml
+      parameters:
+        isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+        isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
+        isRollingBuild: ${{ variables.isRollingBuild }}
+        excludeNonLibTests: false

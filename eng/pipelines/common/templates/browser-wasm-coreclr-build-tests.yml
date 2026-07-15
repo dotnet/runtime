@@ -7,6 +7,11 @@ parameters:
   platforms: []
   shouldContinueOnError: false
   extraBuildArgs: ''
+  # When true, these WBT jobs run in a dedicated 'WasmBuildTests' stage that
+  # depends on the 'Build' stage. In that case the cross-job 'dependsOn' on the
+  # build-only producer jobs must be dropped (job dependencies are stage-scoped);
+  # the producer artifacts are still fetched via DownloadBuildArtifacts@0.
+  separateStage: false
 
 jobs:
 
@@ -40,11 +45,12 @@ jobs:
           value: $(shouldRunWasmBuildTestsOnDefaultPipeline)
 
       jobParameters:
-        dependsOn:
-          - ${{ if eq(platform, 'browser_wasm') }}:
-            - build_browser_wasm_linux_Release_CoreCLR
-          - ${{ if eq(platform, 'browser_wasm_win') }}:
-            - build_browser_wasm_windows_Release_CoreCLR
+        ${{ if ne(parameters.separateStage, true) }}:
+          dependsOn:
+            - ${{ if eq(platform, 'browser_wasm') }}:
+              - build_browser_wasm_linux_Release_CoreCLR
+            - ${{ if eq(platform, 'browser_wasm_win') }}:
+              - build_browser_wasm_windows_Release_CoreCLR
         isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
         testGroup: innerloop
         nameSuffix: CoreCLR_WasmBuildTests

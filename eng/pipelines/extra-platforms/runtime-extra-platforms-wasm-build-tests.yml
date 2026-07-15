@@ -1,0 +1,49 @@
+# Emits a dedicated 'WasmBuildTests' stage that runs Wasm.Build.Tests (WBT) for
+# the extra-platforms wasm pipelines (runtime-wasm, runtime-wasm-non-libtests).
+#
+# The build-only producer jobs (wasm-build-only.yml) remain in the 'Build' stage
+# emitted by runtime-extra-platforms-wasm.yml. This stage depends on 'Build',
+# consumes the producers' published artifacts, and runs the WBT suite. It also
+# depends on 'EvaluatePaths' (on PRs) because the WBT job conditions consume
+# path-evaluation variables (shouldRunWasmBuildTestsOnDefaultPipeline, etc.).
+#
+# The stage is only emitted when WBT would actually run, mirroring the guard used
+# for the WBT jobs in runtime-extra-platforms-wasm.yml, so pipelines that exclude
+# WBT don't produce an empty stage.
+parameters:
+  isExtraPlatformsBuild: false
+  isWasmOnlyBuild: false
+  isRollingBuild: false
+  excludeNonLibTests: false
+  debuggerTestsOnly: false
+  dependsOn:
+  - Build
+
+stages:
+- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
+  - stage: WasmBuildTests
+    displayName: Wasm.Build.Tests
+    dependsOn:
+    - ${{ each stage in parameters.dependsOn }}:
+      - ${{ stage }}
+    - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+      - EvaluatePaths
+    jobs:
+    # Browser Wasm.Build.Tests (Mono)
+    - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
+      parameters:
+        separateStage: true
+        platforms:
+          - browser_wasm
+          - browser_wasm_win
+        extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+
+    # WASI Wasm.Build.Tests (single-threaded)
+    - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
+      parameters:
+        platforms:
+          - wasi_wasm
+          - wasi_wasm_win
+        extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+        isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+        isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}

@@ -187,22 +187,10 @@ jobs:
       publishArtifactsForWorkload: true
       publishWBT: false
 
-  # Browser Wasm.Build.Tests
-  - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-        - browser_wasm_win
-      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
-  - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
-    parameters:
-      platforms:
-        - wasi_wasm
-        - wasi_wasm_win
-      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+  # Note: Wasm.Build.Tests (browser + wasi) run in a dedicated 'WasmBuildTests'
+  # stage emitted by runtime-extra-platforms-wasm-build-tests.yml. The build-only
+  # producer jobs above stay in the 'Build' stage and publish artifacts the WBT
+  # stage consumes.
 
   - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
     parameters:

@@ -259,15 +259,6 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-      # Browser Wasm.Build.Tests
-      - template: /eng/pipelines/common/templates/browser-wasm-coreclr-build-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
       #
       # Build CoreCLR and Libraries with Libraries tests
       # For running libraries tests and installer tests
@@ -1081,15 +1072,6 @@ extends:
           extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           publishArtifactsForWorkload: true
           publishWBT: false
-
-      # Browser Wasm.Build.Tests
-      - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # Wasm runtime tests
       - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
@@ -2003,3 +1985,35 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+
+    # Dedicated stage for Wasm.Build.Tests (WBT).
+    # The producer runtime/build jobs remain in the 'Build' stage above; these
+    # WBT jobs depend on that stage, consume its published artifacts, and run the
+    # Wasm.Build.Tests suite. The stage also depends on 'EvaluatePaths' (on PRs)
+    # because the WBT job conditions consume path-evaluation variables.
+    - stage: WasmBuildTests
+      displayName: Wasm.Build.Tests
+      dependsOn:
+      - Build
+      - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+        - EvaluatePaths
+      jobs:
+      # Browser Wasm.Build.Tests (CoreCLR)
+      - template: /eng/pipelines/common/templates/browser-wasm-coreclr-build-tests.yml
+        parameters:
+          separateStage: true
+          platforms:
+            - browser_wasm
+            - browser_wasm_win
+          alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+
+      # Browser Wasm.Build.Tests (Mono)
+      - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
+        parameters:
+          separateStage: true
+          platforms:
+            - browser_wasm
+            - browser_wasm_win
+          alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
