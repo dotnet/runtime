@@ -1727,7 +1727,13 @@ static int32_t IsNetworkFileSystem(int fileDescriptor)
     struct statfs statfsArgs;
     int statfsRes;
     while ((statfsRes = fstatfs(fileDescriptor, &statfsArgs)) == -1 && errno == EINTR);
-    return (statfsRes != -1) && !FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
+    if (statfsRes == -1)
+    {
+        // Cannot determine the file system type; skip F_FULLFSYNC to avoid potential data loss.
+        return 1;
+    }
+    // FileSystemNameSupportsLocking returns 0 for network file systems (NFS, CIFS, SMB, SMB2).
+    return !FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
 }
 #endif
 #endif
