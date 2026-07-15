@@ -401,6 +401,15 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 argDest.CopyStructToRegisters(pSrc, th.AsMethodTable()->GetNumInstanceFieldBytes(), 0);
             }
             else
+#elif defined(TARGET_ARM64)
+            if (argDest.IsHFA())
+            {
+                // An HFA/HVA struct argument is enregistered with each field in its own
+                // floating-point/vector register. Expand the packed struct data into the
+                // register slots instead of copying it verbatim.
+                argDest.CopyHFAStructToRegister(pSrc, stackSize);
+            }
+            else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if (argDest.IsStructPassedInRegs())
             {

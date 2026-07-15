@@ -64,7 +64,7 @@ extends:
           ROOTFS_DIR: /crossrootfs/x86
 
       linux_x64_dev_innerloop:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04@sha256:f25b32a4cea16ae65aed36ca88092de7ab8381b04749818bcacee37472fdbf38
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04@sha256:d6d552389ac38566de0620d51d5f59809142d12f434eee37b34e64ecc7718989
 
       linux_musl_x64_dev_innerloop:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-amd64@sha256:b10bded0baa0a8aa42ef0ff803c718752abc719c9f25328dab394cc8028e94ca
@@ -76,7 +76,7 @@ extends:
 
       # Used to test RHEL compatibility: CentOS Stream is upstream of RHEL
       SourceBuild_centos_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:22d0eb3b7a8976c0a771302703007836d1bc7c3f2da104a8a62b4c16e8bc043e
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:74c557aa9fad111e5537c7cc8b046d513fa3d8390133ac706f4d27b7a7d730ef
 
       # Used to test RHEL compatibility: Alma Linux is downstream of RHEL
       SourceBuild_linux_x64:
@@ -103,10 +103,10 @@ extends:
           ROOTFS_DIR: /crossrootfs/loongarch64
 
       debian-13-gcc16-amd64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-gcc16-amd64@sha256:ba441e6477c6665ac04fa09cd2d20216606cff07daa6ab7b6d020e319bd2c433
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-gcc16-amd64@sha256:594c1a8f606c43f46f3298d61f3b7ca020eb410da41875e3b99ecf90e642430d
 
       linux_x64_llvmaot:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:22d0eb3b7a8976c0a771302703007836d1bc7c3f2da104a8a62b4c16e8bc043e
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:74c557aa9fad111e5537c7cc8b046d513fa3d8390133ac706f4d27b7a7d730ef
 
       browser_wasm:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-webassembly-amd64@sha256:0afc4daa90da131fd61de0751429a7dadf4cc2e4a159f0c60a0d24d02267bae8
@@ -124,6 +124,6 @@ extends:
           ROOTFS_DIR: /crossrootfs/x64
 
       tizen_armel:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen@sha256:62c4a7d583aba8ba3f9eafad0ac6f003f3f1ff33c645d8929b1d3252728c24a3
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen@sha256:e309f18d07c331ce8f0e0bdea86092187337596828e271d82bb7ed6ac51f5218
         env:
           ROOTFS_DIR: /crossrootfs/armel

@@ -588,24 +588,17 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static sbyte CopySign(sbyte value, sbyte sign)
         {
-            sbyte absValue = value;
+            // signMask is all-bits-set when value and sign differ in sign, in which case value needs to be negated.
+            int signMask = (value ^ sign) >> 31;
+            sbyte result = (sbyte)((value ^ signMask) - signMask);
 
-            if (absValue < 0)
+            if ((sign >= 0) && (result < 0))
             {
-                absValue = (sbyte)(-absValue);
+                // value was sbyte.MinValue and a non-negative result was requested, which is unrepresentable.
+                Math.ThrowNegateTwosCompOverflow();
             }
 
-            if (sign >= 0)
-            {
-                if (absValue < 0)
-                {
-                    Math.ThrowNegateTwosCompOverflow();
-                }
-
-                return absValue;
-            }
-
-            return (sbyte)(-absValue);
+            return result;
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
@@ -1268,21 +1261,21 @@ namespace System
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out sbyte result, out int charsConsumed)
+        static bool INumberBase<sbyte>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out sbyte result, out int charsConsumed)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out sbyte result, out int charsConsumed)
+        static bool INumberBase<sbyte>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out sbyte result, out int charsConsumed)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out sbyte result, out int bytesConsumed)
+        static bool INumberBase<sbyte>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out sbyte result, out int bytesConsumed)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;

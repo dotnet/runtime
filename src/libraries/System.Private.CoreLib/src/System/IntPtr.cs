@@ -667,24 +667,17 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static nint CopySign(nint value, nint sign)
         {
-            nint absValue = value;
+            // signMask is all-bits-set when value and sign differ in sign, in which case value needs to be negated.
+            nint signMask = (value ^ sign) >> ((Size * 8) - 1);
+            nint result = (value ^ signMask) - signMask;
 
-            if (absValue < 0)
+            if ((sign >= 0) && (result < 0))
             {
-                absValue = -absValue;
+                // value was nint.MinValue and a non-negative result was requested, which is unrepresentable.
+                Math.ThrowNegateTwosCompOverflow();
             }
 
-            if (sign >= 0)
-            {
-                if (absValue < 0)
-                {
-                    Math.ThrowNegateTwosCompOverflow();
-                }
-
-                return absValue;
-            }
-
-            return -absValue;
+            return result;
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
@@ -1372,24 +1365,27 @@ namespace System
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nint result, out int charsConsumed)
+        static bool INumberBase<nint>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nint result, out int charsConsumed)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result), out charsConsumed);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nint, nint_t>(ref result), out charsConsumed) == Number.ParsingStatus.OK;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nint result, out int charsConsumed)
+        static bool INumberBase<nint>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nint result, out int charsConsumed)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result), out charsConsumed);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nint, nint_t>(ref result), out charsConsumed) == Number.ParsingStatus.OK;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out nint result, out int bytesConsumed)
+        static bool INumberBase<nint>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out nint result, out int bytesConsumed)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(utf8Text, style, provider, out Unsafe.As<nint, nint_t>(ref result), out bytesConsumed);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nint, nint_t>(ref result), out bytesConsumed) == Number.ParsingStatus.OK;
         }
 
         //

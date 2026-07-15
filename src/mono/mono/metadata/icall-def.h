@@ -484,6 +484,7 @@ HANDLES_REUSE_WRAPPER(RFH_4, "SetValueInternal", ves_icall_RuntimeFieldInfo_SetV
 
 ICALL_TYPE(MHAN, "System.RuntimeMethodHandle", MHAN_1)
 HANDLES(MHAN_1, "GetFunctionPointer", ves_icall_RuntimeMethodHandle_GetFunctionPointer, gpointer, 1, (MonoMethod_ptr))
+HANDLES(MHAN_4, "GetNativeCode", ves_icall_RuntimeMethodHandle_GetNativeCode, gpointer, 1, (MonoMethod_ptr))
 HANDLES(MAHN_3, "ReboxFromNullable", ves_icall_RuntimeMethodHandle_ReboxFromNullable, void, 2, (MonoObject, MonoObjectHandleOnStack))
 HANDLES(MAHN_2, "ReboxToNullable", ves_icall_RuntimeMethodHandle_ReboxToNullable, void, 3, (MonoObject, MonoQCallTypeHandle, MonoObjectHandleOnStack))
 
