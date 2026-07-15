@@ -438,9 +438,9 @@
       <_WasmDevel Condition="'$(_WasmDevel)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">true</_WasmDevel>
       <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0</_EmccOptimizationFlagDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">-O1</_EmccOptimizationFlagDefault>
-      <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-O2</_EmccOptimizationFlagDefault>
+      <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-O3</_EmccOptimizationFlagDefault>
       <EmccCompileOptimizationFlag Condition="'$(EmccCompileOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccCompileOptimizationFlag>
-      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</EmccLinkOptimizationFlag>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O3</EmccLinkOptimizationFlag>
       <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">$(EmccCompileOptimizationFlag)</EmccLinkOptimizationFlag>
 
       <!-- Memory settings matching browserhost/CMakeLists.txt -->
