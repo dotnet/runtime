@@ -2550,7 +2550,7 @@ namespace Internal.JitInterface
                         }
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.SymbolNodeFactory.InterfaceDispatchCell(
+                            _compilation.SymbolNodeFactory.DispatchCell(
                                 ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
                                 MethodBeingCompiled));
 

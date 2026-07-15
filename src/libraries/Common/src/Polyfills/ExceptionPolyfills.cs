@@ -22,9 +22,33 @@ namespace System
 
         extension(ArgumentOutOfRangeException)
         {
+            public static void ThrowIfNegative(int value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+            {
+                if (value < 0)
+                {
+                    ThrowArgumentOutOfRangeException(paramName);
+                }
+            }
+
+            public static void ThrowIfNegative(long value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+            {
+                if (value < 0)
+                {
+                    ThrowArgumentOutOfRangeException(paramName);
+                }
+            }
+
             public static void ThrowIfLessThan<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null) where T : IComparable<T>
             {
                 if (value.CompareTo(other) < 0)
+                {
+                    ThrowArgumentOutOfRangeException(paramName);
+                }
+            }
+
+            public static void ThrowIfLessThanOrEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null) where T : IComparable<T>
+            {
+                if (value.CompareTo(other) <= 0)
                 {
                     ThrowArgumentOutOfRangeException(paramName);
                 }

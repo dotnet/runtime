@@ -442,7 +442,9 @@ namespace System.Numerics
         /// <summary>Explicitly converts a <see cref="decimal" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        public static explicit operator BFloat16(decimal value) => (BFloat16)(float)value;
+        // Round through double, not float: decimal -> double is correctly rounded and double (53-bit significand)
+        // -> BFloat16 is an innocuous double rounding (53 >= 2 * 8 + 2), so the result is correctly rounded.
+        public static explicit operator BFloat16(decimal value) => (BFloat16)(double)value;
 
         /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -1940,21 +1942,21 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out BFloat16 result, out int charsConsumed)
+        static bool INumberBase<BFloat16>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out BFloat16 result, out int charsConsumed)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BFloat16 result, out int charsConsumed)
+        static bool INumberBase<BFloat16>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BFloat16 result, out int charsConsumed)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BFloat16 result, out int bytesConsumed)
+        static bool INumberBase<BFloat16>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BFloat16 result, out int bytesConsumed)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed);

@@ -562,7 +562,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,  // Transition to preemptive mode in reverse P/Invoke epilog, frame is the first argument
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.
 
-    CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
+    CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and dispatch cell
     CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT,  // Dispatch a non-generic interface method from this pointer and dispatch cell
     CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT,  // Resolve a non-generic interface method from this pointer and dispatch cell
 
@@ -1786,6 +1786,9 @@ enum CorInfoContinuationFlags
     // If this bit is set the continuation context is a TaskScheduler that
     // we should continue on.
     CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 1 << 2,
+    // If this bit is set this is an await of valueTask.AsTask()
+    // (common pattern when returning a value-task in an async version)
+    CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK = 1 << 3,
 
     // The flags encode where in the continuation various members are stored.
     // If the encoded index is 0, it means no such member is present.

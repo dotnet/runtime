@@ -4538,6 +4538,11 @@ struct AsyncCallInfo
     // records that behavior.
     ::ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
 
+    // Is this 'await valueTask.AsTask()'? These come with special semantics as
+    // they no longer transparently forward continuation context handling to an
+    // underlying IValueTaskSource, if present.
+    bool IsValueTaskAsTask = false;
+
     // Tail awaits do not generate suspension points and the JIT instead
     // directly returns the callee's continuation to the caller.
     bool IsTailAwait = false;
@@ -6777,6 +6782,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     ClassLayout* GetLayout(Compiler* compiler) const;
 
     NamedIntrinsic GetHWIntrinsicId() const;
+
+#ifdef TARGET_WASM
+    GenTree* GetImmOp() const;
+#endif // TARGET_WASM
 
     //---------------------------------------------------------------------------------------
     // ChangeHWIntrinsicId: Change the intrinsic id for this node.

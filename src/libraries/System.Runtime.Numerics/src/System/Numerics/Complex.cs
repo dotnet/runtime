@@ -832,18 +832,21 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Complex result, out int charsConsumed)
-            => TryParse(s.AsSpan(), style, provider, out result, out charsConsumed);
+        static bool INumberBase<Complex>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Complex result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            return Complex<double>.TryParse(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out charsConsumed);
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex result, out int bytesConsumed)
+        static bool INumberBase<Complex>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex result, out int bytesConsumed)
         {
             Unsafe.SkipInit(out result);
             return Complex<double>.TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out bytesConsumed);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex result, out int charsConsumed)
+        static bool INumberBase<Complex>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex result, out int charsConsumed)
         {
             Unsafe.SkipInit(out result);
             return Complex<double>.TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out charsConsumed);
