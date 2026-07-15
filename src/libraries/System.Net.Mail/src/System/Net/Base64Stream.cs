@@ -77,57 +77,52 @@ namespace System.Net
             base.Close();
         }
 
-        public unsafe int DecodeBytes(Span<byte> buffer)
+        public int DecodeBytes(Span<byte> buffer)
         {
-            fixed (byte* pBuffer = buffer)
+            int source = 0;
+            int destination = 0;
+
+            while (source < buffer.Length)
             {
-                byte* start = pBuffer;
-                byte* source = start;
-                byte* dest = start;
-                byte* end = start + buffer.Length;
-
-                while (source < end)
+                //space and tab are ok because folding must include a whitespace char.
+                if (buffer[source] == '\r' || buffer[source] == '\n' || buffer[source] == '=' || buffer[source] == ' ' || buffer[source] == '\t')
                 {
-                    //space and tab are ok because folding must include a whitespace char.
-                    if (*source == '\r' || *source == '\n' || *source == '=' || *source == ' ' || *source == '\t')
-                    {
-                        source++;
-                        continue;
-                    }
-
-                    byte s = Base64DecodeMap[*source];
-
-                    if (s == InvalidBase64Value)
-                    {
-                        throw new FormatException(SR.MailBase64InvalidCharacter);
-                    }
-
-                    switch (ReadState.Pos)
-                    {
-                        case 0:
-                            ReadState.Val = (byte)(s << 2);
-                            ReadState.Pos++;
-                            break;
-                        case 1:
-                            *dest++ = (byte)(ReadState.Val + (s >> 4));
-                            ReadState.Val = unchecked((byte)(s << 4));
-                            ReadState.Pos++;
-                            break;
-                        case 2:
-                            *dest++ = (byte)(ReadState.Val + (s >> 2));
-                            ReadState.Val = unchecked((byte)(s << 6));
-                            ReadState.Pos++;
-                            break;
-                        case 3:
-                            *dest++ = (byte)(ReadState.Val + s);
-                            ReadState.Pos = 0;
-                            break;
-                    }
                     source++;
+                    continue;
                 }
 
-                return (int)(dest - start);
+                byte s = Base64DecodeMap[buffer[source]];
+
+                if (s == InvalidBase64Value)
+                {
+                    throw new FormatException(SR.MailBase64InvalidCharacter);
+                }
+
+                switch (ReadState.Pos)
+                {
+                    case 0:
+                        ReadState.Val = (byte)(s << 2);
+                        ReadState.Pos++;
+                        break;
+                    case 1:
+                        buffer[destination++] = (byte)(ReadState.Val + (s >> 4));
+                        ReadState.Val = unchecked((byte)(s << 4));
+                        ReadState.Pos++;
+                        break;
+                    case 2:
+                        buffer[destination++] = (byte)(ReadState.Val + (s >> 2));
+                        ReadState.Val = unchecked((byte)(s << 6));
+                        ReadState.Pos++;
+                        break;
+                    case 3:
+                        buffer[destination++] = (byte)(ReadState.Val + s);
+                        ReadState.Pos = 0;
+                        break;
+                }
+                source++;
             }
+
+            return destination;
         }
 
         public int EncodeBytes(ReadOnlySpan<byte> buffer) =>
