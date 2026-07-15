@@ -40,16 +40,9 @@ namespace System.Net.Http
             target.Headers.AddHeaders(source.Headers);
 
             // Append our encoding to the Content-Encoding header (supports stacking per HTTP spec).
-            // The 99% case is that the inner content has no Content-Encoding, so take the fast path
-            // that allocates less and only materialize the collection when we actually need to stack.
-            if (target.Headers.Contains(KnownHeaders.ContentEncoding.Descriptor))
-            {
-                target.Headers.ContentEncoding.Add(encoding);
-            }
-            else
-            {
-                target.Headers.TryAddWithoutValidation(KnownHeaders.ContentEncoding.Descriptor, encoding);
-            }
+            // Always use TryAddWithoutValidation so we append the new encoding without re-parsing or
+            // validating any existing Content-Encoding values the inner content may have added.
+            target.Headers.TryAddWithoutValidation(KnownHeaders.ContentEncoding.Descriptor, encoding);
 
             // Remove Content-Length since we don't know the compressed size upfront.
             target.Headers.ContentLength = null;
