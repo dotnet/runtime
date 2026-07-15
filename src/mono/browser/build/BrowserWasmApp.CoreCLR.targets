@@ -91,6 +91,7 @@
 
   <!-- Fallback exported runtime methods and functions for the emcc link step.
        Used when the workload path is active and native.wasm.targets is not available.
+       TODO-WASM https://github.com/dotnet/runtime/issues/126100#issuecomment-4925516500: Keep this list in sync with eng/native.wasm.targets.
        When building in-tree, native.wasm.targets is imported AFTER this target (below)
        and its GenerateEmccExports definition wins (MSBuild last-definition-wins). -->
   <Target Name="GenerateEmccExports"
