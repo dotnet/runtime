@@ -688,20 +688,33 @@ namespace System.Net
                     if (channelBinding != null)
                     {
                         // If a TLS channel binding token (cbt) is available then get the pointer
-                        // to the application specific data.
-                        int appDataOffset = sizeof(SecChannelBindings);
-                        Debug.Assert(appDataOffset < channelBinding.Size);
-                        IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
-                        int cbtAppDataSize = channelBinding.Size - appDataOffset;
-                        status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
-                                                                            credentialsHandle,
-                                                                            ref contextHandle,
-                                                                            cbtAppData,
-                                                                            cbtAppDataSize,
-                                                                            incomingBlob,
-                                                                            ref token,
-                                                                            out outputFlags,
-                                                                            out isNtlmUsed);
+                        // to the application specific data. The handle is ref-counted to prevent it
+                        // from being released while the native call is in progress.
+                        bool refAdded = false;
+                        try
+                        {
+                            channelBinding.DangerousAddRef(ref refAdded);
+                            int appDataOffset = sizeof(SecChannelBindings);
+                            Debug.Assert(appDataOffset < channelBinding.Size);
+                            IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
+                            int cbtAppDataSize = channelBinding.Size - appDataOffset;
+                            status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
+                                                                                credentialsHandle,
+                                                                                ref contextHandle,
+                                                                                cbtAppData,
+                                                                                cbtAppDataSize,
+                                                                                incomingBlob,
+                                                                                ref token,
+                                                                                out outputFlags,
+                                                                                out isNtlmUsed);
+                        }
+                        finally
+                        {
+                            if (refAdded)
+                            {
+                                channelBinding.DangerousRelease();
+                            }
+                        }
                     }
                     else
                     {
