@@ -543,12 +543,6 @@ PALEXPORT int32_t SystemNative_FChMod(intptr_t fd, int32_t mode);
 PALEXPORT int32_t SystemNative_FSync(intptr_t fd, int32_t useFullFSync);
 
 /**
- * Returns 1 if the file descriptor refers to a file on a network file system (NFS, SMB, CIFS, SMB2),
- * 0 otherwise. On non-macOS platforms, always returns 0.
- */
-PALEXPORT int32_t SystemNative_IsNetworkFileSystem(intptr_t fd);
-
-/**
  * Changes the advisory lock status on a given File Descriptor
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set

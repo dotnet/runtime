@@ -1713,37 +1713,8 @@ static uint32_t FileSystemNameSupportsLocking(const char* fileSystemName)
     }
     return 1;
 }
-
-#ifdef TARGET_OSX
-// Returns 1 if the file descriptor is on a network file system (e.g., NFS, SMB, CIFS).
-// These file systems don't reliably support F_FULLFSYNC and may discard pending writes.
-// See https://github.com/dotnet/runtime/issues/124722.
-static int32_t IsNetworkFileSystem(int fileDescriptor)
-{
-    struct statfs statfsArgs;
-    int statfsRes;
-    while ((statfsRes = fstatfs(fileDescriptor, &statfsArgs)) == -1 && errno == EINTR);
-    if (statfsRes == -1)
-    {
-        // Cannot determine the file system type; skip F_FULLFSYNC to avoid potential data loss.
-        return 1;
-    }
-    // FileSystemNameSupportsLocking returns 0 for network file systems (NFS, CIFS, SMB, SMB2).
-    return !FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
-}
-#endif
 #endif
 #endif /* TARGET_WASI */
-
-int32_t SystemNative_IsNetworkFileSystem(intptr_t fd)
-{
-#ifdef TARGET_OSX
-    return IsNetworkFileSystem(ToFileDescriptor(fd));
-#else
-    (void)fd;
-    return 0;
-#endif
-}
 
 // LOCK_SH does not work well for write access on nfs/cifs/samba. For example, writes are dropped silently.
 // See https://github.com/dotnet/runtime/issues/44546 and https://github.com/dotnet/runtime/issues/53182.
