@@ -190,7 +190,8 @@ namespace System.Diagnostics
         /// <summary>Gets the time the associated process was started.</summary>
         /// <remarks>
         /// On Windows, this property can be read after the process exits.
-        /// On Unix, it can be read after exit only if it was accessed while the process was running.
+        /// On Unix, accessing this property caches its value. A cached value can be read after the process exits,
+        /// but the first access after exit throws <see cref="InvalidOperationException"/>.
         /// </remarks>
         /// <exception cref="InvalidOperationException">
         /// No process is associated with this object, or the process exited on Unix before the property was accessed.
