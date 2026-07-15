@@ -77,8 +77,8 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         if (addRefValue == tearOffAddRef)
         {
             // Standard CCW IP: apply ThisMask to get the aligned ComCallWrapper pointer.
-            ulong thisMask = _target.ReadGlobalPointer(Constants.Globals.CCWThisMask).Value;
-            ccw = new TargetPointer(interfacePointer & thisMask);
+            TargetNUInt thisMask = new(_target.ReadGlobalPointer(Constants.Globals.CCWThisMask).Value);
+            ccw = new TargetPointer(interfacePointer & thisMask.Value);
         }
         else if (addRefValue == tearOffSimple || addRefValue == tearOffSimpleInner)
         {

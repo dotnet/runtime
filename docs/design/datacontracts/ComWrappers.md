@@ -46,7 +46,7 @@ TargetPointer GetComWrappersRCWForObject(TargetPointer obj);
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | `ComWrappersVtablePtrs` | TargetPointer | Pointer to struct containing ComWrappers-related function pointers |
-| `DispatchThisPtrMask` | `nuint` | Used to mask low bits of CCW pointer to the nearest valid address from which to read a managed object wrapper |
+| `DispatchThisPtrMask` | TargetPointer | Used to mask low bits of CCW pointer to the nearest valid address from which to read a managed object wrapper |
 
 ### Managed types used
 

@@ -295,7 +295,7 @@ Global variables used:
 | `HandlesPerBlock` | uint | GC | Number of handles in each handle block |
 | `BlockInvalid` | byte | GC | Sentinel value indicating an invalid handle block index |
 | `HandleSegmentSize` | uint | GC | Size of a handle table segment |
-| `DebugDestroyedHandleValue` | `nuint` | GC | Sentinel handle value used for destroyed handles |
+| `DebugDestroyedHandleValue` | TargetPointer | GC | Sentinel handle value used for destroyed handles |
 | `FeatureCOMInterop` | byte | VM | Non-zero when COM interop support is enabled |
 | `FeatureComWrappers` | byte | VM | Non-zero when `ComWrappers` support is enabled |
 | `FeatureObjCMarshal` | byte | VM | Non-zero when Objective-C marshal support is enabled |

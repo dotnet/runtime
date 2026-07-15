@@ -103,7 +103,7 @@ The contract depends on the following globals
 | `GCThread` | TargetPointer | A pointer to the GC thread |
 | `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects |
 | `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | byte | Number of unused slots in noncollectible TLS array |
-| `PtrArrayOffsetToDataArray` | `nuint` | Offset from PtrArray class address to start of enclosed data array |
+| `PtrArrayOffsetToDataArray` | TargetPointer | Offset from PtrArray class address to start of enclosed data array |
 
 The contract additionally depends on these data descriptors
 
