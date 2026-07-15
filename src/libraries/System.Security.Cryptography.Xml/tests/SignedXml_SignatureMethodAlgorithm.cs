@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             SignedXml signedXml = BuildSignedXmlWithManyEncryptedElements(aes, rsa, encryptedElementCount);
 
-            // Document is processed fully without throwing a CryptographiException
+            // Document is processed fully without throwing a CryptographicException
             Assert.Throws<NullReferenceException>(() => signedXml.CheckSignature(rsa));
         }
 
