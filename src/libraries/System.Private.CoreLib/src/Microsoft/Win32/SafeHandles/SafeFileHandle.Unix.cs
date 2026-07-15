@@ -42,18 +42,19 @@ namespace Microsoft.Win32.SafeHandles
         private NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
         private NullableBool _isAsync /* = NullableBool.Undefined */;
         // Lazily initialized on Apple platforms (macOS, iOS, tvOS, Mac Catalyst).
-        // True = use F_FULLFSYNC (file system supports locking, i.e., is local).
-        // False = skip F_FULLFSYNC (file system does not support locking, i.e., is a network FS such as NFS/SMB/CIFS).
-        // Stays Undefined until first queried; UseFullFSync treats Undefined as True (safe default).
+        // True = use F_FULLFSYNC.
+        // False = skip F_FULLFSYNC because the probe indicates the file system should avoid it
+        // (e.g., NFS/SMB/CIFS/SMB2, or when the probe fails).
+        // Stays Undefined until first queried; UseFullFSync treats Undefined as True.
         // See https://github.com/dotnet/runtime/issues/124722.
         private NullableBool _useFullFsync /* = NullableBool.Undefined */;
         private bool _deleteOnClose;
         private bool _isLocked;
 
-        // Returns true when F_FULLFSYNC should be attempted (the file is on a local file system or
-        // the file system type is unknown). Returns false only when the file is confirmed to be on a
-        // network file system where F_FULLFSYNC can silently discard writes. The value is only used
-        // on Apple platforms; native code ignores it on other platforms.
+        // Returns true when F_FULLFSYNC should be attempted. Returns false when
+        // FileSystemSupportsLocking(LOCK_SH, accessWrite: true) reports the file system as unsupported
+        // for this probe, which includes known network file systems and probe failures.
+        // The value is only used on Apple platforms; native code ignores it on other platforms.
         // Lazily computed and cached on first access to avoid a syscall for callers that never flush to disk.
         internal bool UseFullFSync
         {
