@@ -774,11 +774,16 @@ namespace System.Net.Security.Tests
                 Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions()
                 {
                     TargetHost = serverCert.GetNameInfo(X509NameType.SimpleName, false),
-                    ClientCertificates = new X509CertificateCollection() { clientCert }
+                    ClientCertificates = new X509CertificateCollection() { clientCert },
+                    // Force TLS 1.2 so the test exercises renegotiation rather than TLS 1.3 post-handshake auth.
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck
                 }, CancellationToken.None);
                 Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions()
                 {
-                    ServerCertificate = serverCert
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck
                 }, CancellationToken.None);
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);

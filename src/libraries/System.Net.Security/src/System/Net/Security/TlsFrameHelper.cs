@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
-using System.Diagnostics;
 using System.Globalization;
 using System.Security.Authentication;
 using System.Text;
@@ -233,9 +232,11 @@ namespace System.Net.Security
                 return false;
             }
 
-            // This will not fail since we have enough data.
-            bool gotHeader = TryGetFrameHeader(frame, ref info.Header);
-            Debug.Assert(gotHeader);
+            if (!TryGetFrameHeader(frame, ref info.Header))
+            {
+                // Unknown or malformed frame format.
+                return false;
+            }
 
             info.SupportedVersions = info.Header.Version;
 
