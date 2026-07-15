@@ -90,6 +90,7 @@ export function setLoaderGlobals (
     };
     const lh: Partial<LoaderHelpers> = {
         gitHash,
+        buildId: "",
         config: globalObjects.module.config,
         diagnosticTracing: false,
 

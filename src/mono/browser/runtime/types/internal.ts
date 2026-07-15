@@ -115,6 +115,9 @@ export interface AssetEntryInternal extends AssetEntry {
 
 export type LoaderHelpers = {
     gitHash: string,
+    // Value of the WebAssembly "build_id" custom section of dotnet.native.wasm, as a lowercase hex string.
+    // Empty when the module has no build_id section (e.g. non-relinked runtime packs before build_id is baked in).
+    buildId: string,
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
 

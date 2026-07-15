@@ -736,6 +736,40 @@ function fileName (name: string) {
     return name.substring(lastIndexOfSlash);
 }
 
+// Reads the WebAssembly "build_id" custom section from a compiled module and returns it as a lowercase
+// hex string. Returns "" when the module has no build_id section.
+// The section payload is a WebAssembly vec(u8): a ULEB128 byte count followed by that many raw bytes.
+function extractBuildId (compiledModule: WebAssembly.Module): string {
+    try {
+        const sections = WebAssembly.Module.customSections(compiledModule, "build_id");
+        if (!sections || sections.length === 0) {
+            return "";
+        }
+        const bytes = new Uint8Array(sections[0]);
+        // Decode the ULEB128 length prefix.
+        let count = 0;
+        let shift = 0;
+        let pos = 0;
+        while (pos < bytes.length) {
+            const b = bytes[pos++];
+            count |= (b & 0x7f) << shift;
+            if ((b & 0x80) === 0) {
+                break;
+            }
+            shift += 7;
+        }
+        const end = Math.min(pos + count, bytes.length);
+        let hex = "";
+        for (let i = pos; i < end; i++) {
+            hex += bytes[i].toString(16).padStart(2, "0");
+        }
+        return hex;
+    } catch (err) {
+        mono_log_debug(() => `Failed to read build_id custom section: ${err}`);
+        return "";
+    }
+}
+
 export async function streamingCompileWasm () {
     try {
         const wasmModuleAsset = resolve_single_asset_path("dotnetwasm");
@@ -763,6 +797,7 @@ export async function streamingCompileWasm () {
         wasmModuleAsset.pendingDownload = null as any; // GC
         wasmModuleAsset.buffer = null as any; // GC
         wasmModuleAsset.moduleExports = null as any; // GC
+        loaderHelpers.buildId = extractBuildId(compiledModule);
         loaderHelpers.wasmCompilePromise.promise_control.resolve(compiledModule);
     } catch (err) {
         loaderHelpers.wasmCompilePromise.promise_control.reject(err);

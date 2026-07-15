@@ -43,6 +43,14 @@
     <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.native.wasm</_WasmOutputFileName>
 
     <WasmEnableStreamingResponse Condition="'$(WasmEnableStreamingResponse)' == ''">true</WasmEnableStreamingResponse>
+
+    <!-- WebAssembly tool-conventions custom sections (https://github.com/WebAssembly/tool-conventions).
+         producers: emitted into the relinked dotnet.native.wasm to record the .NET toolchain.
+         build_id:  emitted by wasm-ld via the build-id linker flag. Set $(WasmNativeBuildId) to a hex
+                    value to pin a specific id; otherwise a random UUID is generated for each native
+                    build. Setting $(WasmNativeBuildId) forces a native build. -->
+    <WasmEmitProducersSection Condition="'$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
+    <WasmEmitBuildId Condition="'$(WasmEmitBuildId)' == ''">true</WasmEmitBuildId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -326,6 +334,11 @@
       <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
+
+      <!-- build_id: pin a specific value when $(WasmNativeBuildId) is set, otherwise let wasm-ld
+           generate a random UUID for each native build. -->
+      <_WasmBuildIdLinkArg Condition="'$(WasmEmitBuildId)' == 'true' and '$(WasmNativeBuildId)' != ''">-Wl,--build-id=0x$(WasmNativeBuildId.Replace('0x', '').Replace('0X', ''))</_WasmBuildIdLinkArg>
+      <_WasmBuildIdLinkArg Condition="'$(WasmEmitBuildId)' == 'true' and '$(WasmNativeBuildId)' == ''">-Wl,--build-id=uuid</_WasmBuildIdLinkArg>
     </PropertyGroup>
 
     <ItemGroup>
@@ -361,6 +374,7 @@
       <_EmccLinkStepArgs Include="@(_EmccLDFlags)" />
       <_EmccLinkStepArgs Include="@(_EmccLDSFlags)" />
       <_EmccLinkStepArgs Include="--emit-symbol-map" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
+      <_EmccLinkStepArgs Condition="'$(_WasmBuildIdLinkArg)' != ''" Include="$(_WasmBuildIdLinkArg)" />
 
       <_EmccLinkStepArgs Include="--%(_WasmExtraJSFile.Kind) &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' != ''" />
       <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" />
@@ -408,6 +422,18 @@
 
   <Target Name="_OnError_WasmLinkDotNet_UndefinedSymbols">
     <Error Text="Use '-p:WasmAllowUndefinedSymbols=true' to allow undefined symbols" />
+  </Target>
+
+  <!-- Emit the WebAssembly 'producers' custom section into the relinked dotnet.native.wasm.
+       The 'build_id' section is emitted directly by wasm-ld via the build-id link flag. -->
+  <Target Name="_BrowserWasmWriteMetadataSections"
+          AfterTargets="_BrowserWasmLinkDotNet"
+          Condition="'$(WasmEmitProducersSection)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.native.wasm')">
+    <WasmWriteMetadataSections
+        WasmModulePath="$(_WasmIntermediateOutputPath)dotnet.native.wasm"
+        RuntimeName="Mono"
+        ProductVersion="$(ProductVersion)"
+        EmitProducersSection="$(WasmEmitProducersSection)" />
   </Target>
 
   <Target Name="_CheckEmccIsExpectedVersion" BeforeTargets="_CheckToolchainIsExpectedVersion" Condition="'$(_WasmStrictVersionMatch)' == 'true'">

@@ -56,6 +56,11 @@
 
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
+
+    <!-- WebAssembly tool-conventions custom sections (https://github.com/WebAssembly/tool-conventions).
+         See BrowserWasmApp.targets for details. Setting $(WasmNativeBuildId) forces a native build. -->
+    <WasmEmitProducersSection Condition="'$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
+    <WasmEmitBuildId Condition="'$(WasmEmitBuildId)' == ''">true</WasmEmitBuildId>
   </PropertyGroup>
 
   <!-- Diagnostics: transform Mono-style WasmPerformanceInstrumentation property into CoreCLR env vars.
@@ -91,6 +96,10 @@
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmWriteMetadataSections"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
 
   <!-- Allow running/debugging from VS -->
   <ItemGroup>
@@ -110,7 +119,12 @@
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(EnableDiagnostics)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmPerformanceInstrumentation)' != ''">true</WasmBuildNative>
+      <!-- Pinning a specific build_id via $(WasmNativeBuildId) requires a native (re)link. -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmNativeBuildId)' != ''">true</WasmBuildNative>
     </PropertyGroup>
+
+    <Error Condition="'$(WasmBuildNative)' == 'false' and '$(WasmNativeBuildId)' != ''"
+           Text="WasmBuildNative is required because %24(WasmNativeBuildId)=$(WasmNativeBuildId), but WasmBuildNative is already set to 'false'." />
 
     <!-- When publishing a trimmed app, default to relinking in Release, matching the Mono
          path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets). This is what bakes the
@@ -750,6 +764,11 @@
 
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />
+
+      <!-- build_id: pin a specific value when $(WasmNativeBuildId) is set, otherwise let wasm-ld
+           generate a random UUID for each native build. -->
+      <_EmccLinkStepArgs Condition="'$(WasmEmitBuildId)' == 'true' and '$(WasmNativeBuildId)' != ''" Include="-Wl,--build-id=0x$(WasmNativeBuildId.Replace('0x', '').Replace('0X', ''))" />
+      <_EmccLinkStepArgs Condition="'$(WasmEmitBuildId)' == 'true' and '$(WasmNativeBuildId)' == ''" Include="-Wl,--build-id=uuid" />
     </ItemGroup>
 
     <!-- Collect all link dependencies for incremental build -->
@@ -788,6 +807,18 @@
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" />
     </ItemGroup>
+  </Target>
+
+  <!-- Emit the WebAssembly 'producers' custom section into the relinked dotnet.native.wasm.
+       The 'build_id' section is emitted directly by wasm-ld via the build-id link flag. -->
+  <Target Name="_CoreCLRWriteMetadataSections"
+          AfterTargets="_CoreCLRLinkNative"
+          Condition="'$(WasmEmitProducersSection)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.native.wasm')">
+    <WasmWriteMetadataSections
+        WasmModulePath="$(_WasmIntermediateOutputPath)dotnet.native.wasm"
+        RuntimeName="CoreCLR"
+        ProductVersion="$(ProductVersion)"
+        EmitProducersSection="$(WasmEmitProducersSection)" />
   </Target>
 
   <!-- ======================== Complete Native Build ======================== -->

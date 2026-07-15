@@ -102,7 +102,11 @@ public class WasmWriteMetadataSections : Task
         var result = new byte[hex.Length / 2];
         for (int i = 0; i < result.Length; i++)
         {
+#if NETFRAMEWORK
+            if (!byte.TryParse(hex.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result[i]))
+#else
             if (!byte.TryParse(hex.AsSpan(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result[i]))
+#endif
                 return false;
         }
 
