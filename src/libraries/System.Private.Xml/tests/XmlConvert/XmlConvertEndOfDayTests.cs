@@ -111,7 +111,7 @@ namespace System.Xml.Tests
                     new DateTimeOffset(DateTime.MinValue, offset);
 
                 DateTimeOffset actual = XmlConvert.ToDateTimeOffset("0001-01-01T00:00:00");
-                Assert.True(expected.EqualsExact(actual));
+                Assert.True(expected.EqualsExact(actual), $"Expected: {expected}, Actual: {actual}");
             }, timeZoneId, expectMinValue.ToString());
         }
 
@@ -136,7 +136,7 @@ namespace System.Xml.Tests
                     new DateTimeOffset(DateTime.MaxValue, offset);
 
                 DateTimeOffset actual = XmlConvert.ToDateTimeOffset("9999-12-31T23:59:59.9999999");
-                Assert.True(expected.EqualsExact(actual));
+                Assert.True(expected.EqualsExact(actual), $"Expected: {expected}, Actual: {actual}");
             }, timeZoneId, expectMaxValue.ToString());
         }
 
