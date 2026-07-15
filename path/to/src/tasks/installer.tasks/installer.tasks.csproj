@@ -1,0 +1,16 @@
+# Update the project file to include the necessary dependencies for Mutex handling
+from typing import List
+
+class ProjectFile:
+    def __init__(self):
+        self.dependencies = []
+
+    def add_dependency(self, dependency: str):
+        self.dependencies.append(dependency)
+
+    def get_dependencies(self) -> List[str]:
+        return self.dependencies
+
+project_file = ProjectFile()
+project_file.add_dependency("System.Threading")
+print(project_file.get_dependencies())
