@@ -15,7 +15,7 @@ namespace System.Net.Http
     {
         private const string Encoding = "gzip";
 
-        private readonly CompressedContentCore _core;
+        private readonly HttpContent _content;
         private readonly ZLibCompressionOptions? _compressionOptions;
         private readonly CompressionLevel _compressionLevel;
 
@@ -31,7 +31,7 @@ namespace System.Net.Http
             CompressedContentCore.ValidateCompressionLevel(compressionLevel, nameof(compressionLevel));
 
             _compressionLevel = compressionLevel;
-            _core = new CompressedContentCore(content, CreateCompressionStream);
+            _content = content;
             CompressedContentCore.InitializeHeaders(this, content, Encoding);
         }
 
@@ -47,18 +47,18 @@ namespace System.Net.Http
             ArgumentNullException.ThrowIfNull(compressionOptions);
 
             _compressionOptions = compressionOptions;
-            _core = new CompressedContentCore(content, CreateCompressionStream);
+            _content = content;
             CompressedContentCore.InitializeHeaders(this, content, Encoding);
         }
 
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
-            _core.SerializeToStream(stream, context, cancellationToken);
+            CompressedContentCore.SerializeToStream(_content, CreateCompressionStream(stream), context, cancellationToken);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
-            _core.SerializeToStreamAsync(stream, context, CancellationToken.None);
+            CompressedContentCore.SerializeToStreamAsync(_content, CreateCompressionStream(stream), context, CancellationToken.None);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
-            _core.SerializeToStreamAsync(stream, context, cancellationToken);
+            CompressedContentCore.SerializeToStreamAsync(_content, CreateCompressionStream(stream), context, cancellationToken);
 
         protected internal override bool TryComputeLength(out long length)
         {
@@ -73,7 +73,7 @@ namespace System.Net.Http
         {
             if (disposing)
             {
-                _core.Dispose();
+                _content.Dispose();
             }
 
             base.Dispose(disposing);

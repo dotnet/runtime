@@ -10,20 +10,11 @@ using System.Threading.Tasks;
 namespace System.Net.Http
 {
     /// <summary>
-    /// Shared implementation for the per-algorithm compressed content types. Holds the inner content and
-    /// drives serialization through a caller-provided factory that wraps the output stream in a compression stream.
+    /// Shared helpers for the per-algorithm compressed content types. Provides header initialization,
+    /// argument validation, and serialization that copies the inner content through a compression stream.
     /// </summary>
-    internal sealed class CompressedContentCore
+    internal static class CompressedContentCore
     {
-        private readonly HttpContent _originalContent;
-        private readonly Func<Stream, Stream> _createCompressionStream;
-
-        public CompressedContentCore(HttpContent originalContent, Func<Stream, Stream> createCompressionStream)
-        {
-            _originalContent = originalContent;
-            _createCompressionStream = createCompressionStream;
-        }
-
         public static void ValidateCompressionLevel(CompressionLevel compressionLevel, string paramName)
         {
             // Validate up front so an invalid enum value fails fast at construction time rather than
@@ -48,21 +39,20 @@ namespace System.Net.Http
             target.Headers.ContentLength = null;
         }
 
-        public void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        public static void SerializeToStream(HttpContent originalContent, Stream compressionStream, TransportContext? context, CancellationToken cancellationToken)
         {
-            using Stream compressionStream = _createCompressionStream(stream);
-            _originalContent.CopyTo(compressionStream, context, cancellationToken);
-        }
-
-        public async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
-        {
-            Stream compressionStream = _createCompressionStream(stream);
-            await using (compressionStream.ConfigureAwait(false))
+            using (compressionStream)
             {
-                await _originalContent.CopyToAsync(compressionStream, context, cancellationToken).ConfigureAwait(false);
+                originalContent.CopyTo(compressionStream, context, cancellationToken);
             }
         }
 
-        public void Dispose() => _originalContent.Dispose();
+        public static async Task SerializeToStreamAsync(HttpContent originalContent, Stream compressionStream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            await using (compressionStream.ConfigureAwait(false))
+            {
+                await originalContent.CopyToAsync(compressionStream, context, cancellationToken).ConfigureAwait(false);
+            }
+        }
     }
 }
