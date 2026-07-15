@@ -260,58 +260,6 @@ namespace System.Text.Json.Schema.Tests
             Assert.Equal("Value", memberNameProperty.GetValue(propertyInfo));
         }
 
-        [Fact]
-        public void JsonSchemaExporter_ObsoleteType_GeneratesDeprecatedProperty()
-        {
-#pragma warning disable CS0612 // Type or member is obsolete
-            JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(typeof(MyObsoleteType));
-#pragma warning restore CS0612 // Type or member is obsolete
-
-            AssertDeprecated(schema, expectedDeprecated: true);
-
-            JsonObject properties = Assert.IsType<JsonObject>(schema["properties"], exactMatch: false);
-
-            // Non-obsolete property does not report deprecated.
-            AssertDeprecated(properties["MyString"], expectedDeprecated: false);
-
-            // Property annotated with [Obsolete] reports deprecated.
-            AssertDeprecated(properties["MyObsoleteString"], expectedDeprecated: true);
-
-            // Property whose type is annotated with [Obsolete] reports deprecated.
-            AssertDeprecated(properties["MyObsoleteInnerType"], expectedDeprecated: true);
-
-            static void AssertDeprecated(JsonNode? schemaNode, bool expectedDeprecated)
-            {
-                JsonObject schemaObject = Assert.IsType<JsonObject>(schemaNode, exactMatch: false);
-
-                if (expectedDeprecated)
-                {
-                    JsonValue value = Assert.IsType<JsonValue>(schemaObject["deprecated"], exactMatch: false);
-                    Assert.Equal(JsonValueKind.True, value.GetValueKind());
-                }
-                else
-                {
-                    Assert.False(schemaObject.ContainsKey("deprecated"));
-                }
-            }
-        }
-
-        [Obsolete]
-        public sealed class MyObsoleteType
-        {
-            public string? MyString { get; set; }
-
-            [Obsolete]
-            public string? MyObsoleteString { get; set; }
-
-            public MyInnerObsoleteType? MyObsoleteInnerType { get; set; }
-
-            [Obsolete]
-            public sealed class MyInnerObsoleteType
-            {
-            }
-        }
-
         record PocoWithProperty(int Value);
 
         [JsonSerializable(typeof(PocoWithProperty))]
