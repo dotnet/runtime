@@ -1254,7 +1254,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__RUNTIME_HELPERS,
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
-        CLASS__MULTICAST_DELEGATE,
         CLASS__METHODBASEINVOKER,
         CLASS__INITHELPERS,
         CLASS__STATICSHELPERS,

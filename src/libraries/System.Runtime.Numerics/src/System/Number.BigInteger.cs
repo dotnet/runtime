@@ -21,7 +21,7 @@ namespace System
                                                            | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
                                                            | NumberStyles.AllowThousands | NumberStyles.AllowExponent
                                                            | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier
-                                                           | NumberStyles.AllowBinarySpecifier | NumberStyles.AllowTrailingInvalidCharacters);
+                                                           | NumberStyles.AllowBinarySpecifier);
 
         private static nuint[]? s_cachedPowersOf1e9;
 
@@ -42,10 +42,10 @@ namespace System
 
         internal static bool TryValidateParseStyleInteger(NumberStyles style, [NotNullWhen(false)] out ArgumentException? e)
         {
-            // Check for undefined flags or using AllowHexSpecifier/AllowBinarySpecifier each with anything other than AllowLeadingWhite/AllowTrailingWhite/AllowTrailingInvalidCharacters.
+            // Check for undefined flags or using AllowHexSpecifier/AllowBinarySpecifier each with anything other than AllowLeadingWhite/AllowTrailingWhite.
             if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0 &&
-                (style & ~(NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters)) != 0 &&
-                (style & ~(NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters)) != 0)
+                (style & ~NumberStyles.HexNumber) != 0 &&
+                (style & ~NumberStyles.BinaryNumber) != 0)
             {
                 e = new ArgumentException((style & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles : SR.Argument_InvalidHexBinaryStyle, nameof(style));
                 return false;
@@ -63,6 +63,26 @@ namespace System
                 throw e; // TryParse still throws ArgumentException on invalid NumberStyles
             }
 
+            return TryParseBigIntegerCore(value, style, info, out result, out elementsConsumed);
+        }
+
+        // Used by the INumberBase.TryParsePartial implementations. The user-provided style is validated first so the
+        // internal-only AllowTrailingInvalidCharacters sentinel can't be smuggled in through a public entry point; it
+        // is only layered on afterwards, once the style is known to be valid.
+        internal static ParsingStatus TryParseBigIntegerPartial<TChar>(ReadOnlySpan<TChar> value, NumberStyles style, NumberFormatInfo info, out BigInteger result, out int elementsConsumed)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (!TryValidateParseStyleInteger(style, out ArgumentException? e))
+            {
+                throw e; // TryParsePartial still throws ArgumentException on invalid NumberStyles
+            }
+
+            return TryParseBigIntegerCore(value, style | AllowTrailingInvalidCharacters, info, out result, out elementsConsumed);
+        }
+
+        private static ParsingStatus TryParseBigIntegerCore<TChar>(ReadOnlySpan<TChar> value, NumberStyles style, NumberFormatInfo info, out BigInteger result, out int elementsConsumed)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             {
                 return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerHexParser<TChar>, TChar>(value, style, out result, out elementsConsumed);
@@ -131,7 +151,7 @@ namespace System
                 throw e;
             }
 
-            ParsingStatus status = TryParseBigInteger(value, style, info, out BigInteger result, out _);
+            ParsingStatus status = TryParseBigIntegerCore(value, style, info, out BigInteger result, out _);
 
             if (status != ParsingStatus.OK)
             {
@@ -187,7 +207,7 @@ namespace System
 
             // If anything remains after the digits and their trailing whitespace, the input is
             // only valid when trailing invalid characters are explicitly allowed.
-            if ((trailingStart != value.Length) && ((style & NumberStyles.AllowTrailingInvalidCharacters) == 0))
+            if ((trailingStart != value.Length) && ((style & AllowTrailingInvalidCharacters) == 0))
             {
                 goto FailExit;
             }

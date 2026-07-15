@@ -1089,20 +1089,14 @@ public sealed unsafe partial class SOSDacImpl
                 // array MTs
                 else if (rtsContract.IsArray(foundTypeHandle, out _))
                     data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
-                else
+                else if (rtsContract.HasTypeParam(foundTypeHandle))
                 {
-                    try
-                    {
-                        // value typedescs
-                        TypeHandle paramTypeHandle = rtsContract.GetTypeParam(foundTypeHandle);
-                        data->MTOfType = paramTypeHandle.Address.ToClrDataAddress(_target);
-                    }
-                    catch (ArgumentException)
-                    {
-                        // non-array MTs
-                        data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
-                    }
+                    // value typedescs
+                    TypeHandle paramTypeHandle = rtsContract.GetTypeParam(foundTypeHandle);
+                    data->MTOfType = paramTypeHandle.Address.ToClrDataAddress(_target);
                 }
+                else
+                    data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
             }
             catch (VirtualReadException)
             {
@@ -1642,7 +1636,7 @@ public sealed unsafe partial class SOSDacImpl
                     StrongReference = h.StrongReference ? 1 : 0,
                     RefCount = h.RefCount,
                     JupiterRefCount = 0,
-                    IsPegged = h.IsPegged ? 1 : 0,
+                    IsPegged = 0,
                 };
             }
 
