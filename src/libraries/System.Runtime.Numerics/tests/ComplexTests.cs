@@ -201,6 +201,95 @@ namespace System.Numerics.Tests
             }
         }
 
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        {
+            // value, expectedReal, expectedImaginary, expectedCharsConsumed
+            yield return new object[] { "<1.5; 2.5>", 1.5, 2.5, 10 };
+            yield return new object[] { "<1.5; 2.5>abc", 1.5, 2.5, 10 };
+            yield return new object[] { "<0; 0>xyz", 0.0, 0.0, 6 };
+            yield return new object[] { "<-1.5; -2.5>!!!", -1.5, -2.5, 12 };
+
+            // A trailing separator followed by another value stops after the first closing bracket.
+            yield return new object[] { "<100; 200>; <300; 400>", 100.0, 200.0, 10 };
+
+            // Leading whitespace is included in the consumed count (absolute index of the closing bracket).
+            yield return new object[] { "  <1; 2>abc", 1.0, 2.0, 8 };
+
+            // Trailing whitespace before an invalid character is consumed when AllowTrailingWhite is set (part of NumberStyles.Float).
+            yield return new object[] { "<1; 2>  x", 1.0, 2.0, 8 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters(string value, double expectedReal, double expectedImaginary, int expectedCharsConsumed)
+        {
+            const NumberStyles Style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+            IFormatProvider provider = CultureInfo.InvariantCulture;
+
+            Complex expected = new Complex(expectedReal, expectedImaginary);
+            Complex result;
+            int charsConsumed;
+
+            Assert.True(NumberBaseHelper<Complex>.TryParse(value, Style, provider, out result, out charsConsumed));
+            Assert.Equal(expected, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            Assert.True(NumberBaseHelper<Complex>.TryParse(value.AsSpan(), Style, provider, out result, out charsConsumed));
+            Assert.Equal(expected, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            byte[] utf8Value = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(NumberBaseHelper<Complex>.TryParse(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
+            Assert.Equal(expected, result);
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        {
+            // Empty and non-complex inputs
+            yield return new object[] { "" };
+            yield return new object[] { "not a complex" };
+
+            // Missing structural characters
+            yield return new object[] { "<1; 2" };
+            yield return new object[] { "1; 2>" };
+            yield return new object[] { "<1, 2>" };
+
+            // An invalid character within a component is never allowed, even with AllowTrailingInvalidCharacters,
+            // because the components are delimited by ';' and '>'.
+            yield return new object[] { "<1.5x; 2.5>" };
+            yield return new object[] { "<1.5; 2.5x>" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value)
+        {
+            const NumberStyles Style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+            IFormatProvider provider = CultureInfo.InvariantCulture;
+
+            Complex result;
+            int charsConsumed;
+
+            Assert.False(NumberBaseHelper<Complex>.TryParse(value, Style, provider, out result, out charsConsumed));
+            Assert.Equal(Complex.Zero, result);
+            Assert.Equal(0, charsConsumed);
+
+            Assert.False(NumberBaseHelper<Complex>.TryParse(value.AsSpan(), Style, provider, out result, out charsConsumed));
+            Assert.Equal(Complex.Zero, result);
+            Assert.Equal(0, charsConsumed);
+
+            byte[] utf8Value = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.False(NumberBaseHelper<Complex>.TryParse(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
+            Assert.Equal(Complex.Zero, result);
+            Assert.Equal(0, bytesConsumed);
+        }
+
         public static IEnumerable<object[]> Valid_2_TestData()
         {
             foreach (double real in s_validDoubleValues)
@@ -2253,6 +2342,340 @@ namespace System.Numerics.Tests
             return
                 double.IsNegativeInfinity(d1) == double.IsNegativeInfinity(d2) &&
                 double.IsPositiveInfinity(d1) == double.IsPositiveInfinity(d2);
+        }
+    }
+
+    public class ComplexTests_Generic
+    {
+        [Theory]
+        [InlineData(0.0, 0.0)]
+        [InlineData(1.0, 2.0)]
+        [InlineData(-1.5, 3.5)]
+        [InlineData(double.NaN, double.NaN)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity)]
+        public static void Constructor_Double(double real, double imaginary)
+        {
+            var c = new Complex<double>(real, imaginary);
+            Assert.Equal(real, c.Real);
+            Assert.Equal(imaginary, c.Imaginary);
+        }
+
+        [Theory]
+        [InlineData(0.0f, 0.0f)]
+        [InlineData(1.0f, 2.0f)]
+        [InlineData(-1.5f, 3.5f)]
+        public static void Constructor_Float(float real, float imaginary)
+        {
+            var c = new Complex<float>(real, imaginary);
+            Assert.Equal(real, c.Real);
+            Assert.Equal(imaginary, c.Imaginary);
+        }
+
+        [Fact]
+        public static void StaticFields_Double()
+        {
+            Assert.Equal(0.0, Complex<double>.Zero.Real);
+            Assert.Equal(0.0, Complex<double>.Zero.Imaginary);
+
+            Assert.Equal(1.0, Complex<double>.One.Real);
+            Assert.Equal(0.0, Complex<double>.One.Imaginary);
+
+            Assert.Equal(0.0, Complex<double>.ImaginaryOne.Real);
+            Assert.Equal(1.0, Complex<double>.ImaginaryOne.Imaginary);
+
+            Assert.True(double.IsNaN(Complex<double>.NaN.Real));
+            Assert.True(double.IsNaN(Complex<double>.NaN.Imaginary));
+
+            Assert.True(double.IsInfinity(Complex<double>.Infinity.Real));
+            Assert.True(double.IsInfinity(Complex<double>.Infinity.Imaginary));
+        }
+
+        [Theory]
+        [InlineData(2.0, 1.0, 3.0, 2.0, 5.0, 3.0)]
+        [InlineData(1.0, -1.0, -1.0, 1.0, 0.0, 0.0)]
+        public static void Add_Double(double r1, double i1, double r2, double i2, double expectedReal, double expectedImaginary)
+        {
+            var c1 = new Complex<double>(r1, i1);
+            var c2 = new Complex<double>(r2, i2);
+            var result = c1 + c2;
+            Assert.Equal(expectedReal, result.Real);
+            Assert.Equal(expectedImaginary, result.Imaginary);
+        }
+
+        [Theory]
+        [InlineData(5.0, 3.0, 2.0, 1.0, 3.0, 2.0)]
+        [InlineData(1.0, 1.0, 1.0, 1.0, 0.0, 0.0)]
+        public static void Subtract_Double(double r1, double i1, double r2, double i2, double expectedReal, double expectedImaginary)
+        {
+            var c1 = new Complex<double>(r1, i1);
+            var c2 = new Complex<double>(r2, i2);
+            var result = c1 - c2;
+            Assert.Equal(expectedReal, result.Real);
+            Assert.Equal(expectedImaginary, result.Imaginary);
+        }
+
+        [Theory]
+        [InlineData(1.0, 2.0, 3.0, 4.0, -5.0, 10.0)]   // (1+2i)(3+4i) = 3+4i+6i+8i^2 = (3-8)+(4+6)i = -5+10i
+        [InlineData(1.0, 0.0, 2.0, 0.0, 2.0, 0.0)]
+        public static void Multiply_Double(double r1, double i1, double r2, double i2, double expectedReal, double expectedImaginary)
+        {
+            var c1 = new Complex<double>(r1, i1);
+            var c2 = new Complex<double>(r2, i2);
+            var result = c1 * c2;
+            Assert.Equal(expectedReal, result.Real, 10);
+            Assert.Equal(expectedImaginary, result.Imaginary, 10);
+        }
+
+        [Theory]
+        [InlineData(1.0, 2.0)]
+        [InlineData(-3.0, 4.0)]
+        [InlineData(0.0, -5.0)]
+        public static void Conjugate_Double(double real, double imaginary)
+        {
+            var c = new Complex<double>(real, imaginary);
+            var conj = Complex<double>.Conjugate(c);
+            Assert.Equal(real, conj.Real);
+            Assert.Equal(-imaginary, conj.Imaginary);
+        }
+
+        [Fact]
+        public static void Abs_Double()
+        {
+            Assert.Equal(5.0, Complex<double>.Abs(new Complex<double>(3.0, 4.0)), 10);
+            Assert.Equal(0.0, Complex<double>.Abs(Complex<double>.Zero));
+            Assert.Equal(1.0, Complex<double>.Abs(Complex<double>.One), 10);
+        }
+
+        [Fact]
+        public static void Abs_Float()
+        {
+            Assert.Equal(5.0f, Complex<float>.Abs(new Complex<float>(3.0f, 4.0f)), 5);
+            Assert.Equal(0.0f, Complex<float>.Abs(Complex<float>.Zero));
+        }
+
+        [Fact]
+        public static void FromPolarCoordinates_Double()
+        {
+            var c = Complex<double>.FromPolarCoordinates(1.0, 0.0);
+            Assert.Equal(1.0, c.Real, 10);
+            Assert.Equal(0.0, c.Imaginary, 10);
+
+            var c2 = Complex<double>.FromPolarCoordinates(2.0, Math.PI / 2);
+            Assert.Equal(0.0, c2.Real, 10);
+            Assert.Equal(2.0, c2.Imaginary, 10);
+        }
+
+        [Fact]
+        public static void GetMagnitude_GetPhase_Double()
+        {
+            var c = new Complex<double>(3.0, 4.0);
+            Assert.Equal(5.0, c.GetMagnitude(), 10);
+            Assert.Equal(Math.Atan2(4.0, 3.0), c.GetPhase(), 10);
+        }
+
+        [Fact]
+        public static void Log_Exp_Double()
+        {
+            // exp(log(z)) == z for non-zero z
+            var z = new Complex<double>(3.0, 4.0);
+            var logZ = Complex<double>.Log(z);
+            var expLogZ = Complex<double>.Exp(logZ);
+            Assert.Equal(z.Real, expLogZ.Real, 10);
+            Assert.Equal(z.Imaginary, expLogZ.Imaginary, 10);
+        }
+
+        [Fact]
+        public static void Sqrt_Double()
+        {
+            // sqrt(z)^2 == z for non-negative real z
+            var z = new Complex<double>(4.0, 0.0);
+            var sqrtZ = Complex<double>.Sqrt(z);
+            Assert.Equal(2.0, sqrtZ.Real, 10);
+            Assert.Equal(0.0, sqrtZ.Imaginary, 10);
+
+            // sqrt(-1) == i
+            var minusOne = new Complex<double>(-1.0, 0.0);
+            var sqrtMinusOne = Complex<double>.Sqrt(minusOne);
+            Assert.Equal(0.0, sqrtMinusOne.Real, 10);
+            Assert.Equal(1.0, sqrtMinusOne.Imaginary, 10);
+        }
+
+        [Fact]
+        public static void IsPredicates_Double()
+        {
+            Assert.True(Complex<double>.IsFinite(new Complex<double>(1.0, 2.0)));
+            Assert.False(Complex<double>.IsFinite(new Complex<double>(double.PositiveInfinity, 0.0)));
+            Assert.True(Complex<double>.IsInfinity(new Complex<double>(double.PositiveInfinity, 0.0)));
+            Assert.False(Complex<double>.IsInfinity(new Complex<double>(1.0, 2.0)));
+            Assert.True(Complex<double>.IsNaN(new Complex<double>(double.NaN, 0.0)));
+            Assert.False(Complex<double>.IsNaN(new Complex<double>(1.0, 2.0)));
+            Assert.True(Complex<double>.IsRealNumber(new Complex<double>(1.0, 0.0)));
+            Assert.False(Complex<double>.IsRealNumber(new Complex<double>(1.0, 2.0)));
+            Assert.True(Complex<double>.IsComplexNumber(new Complex<double>(1.0, 2.0)));
+            Assert.False(Complex<double>.IsComplexNumber(new Complex<double>(1.0, 0.0)));
+            Assert.True(Complex<double>.IsImaginaryNumber(new Complex<double>(0.0, 1.0)));
+            Assert.False(Complex<double>.IsImaginaryNumber(new Complex<double>(1.0, 1.0)));
+        }
+
+        [Fact]
+        public static void Equality_Double()
+        {
+            var c1 = new Complex<double>(1.0, 2.0);
+            var c2 = new Complex<double>(1.0, 2.0);
+            var c3 = new Complex<double>(1.0, 3.0);
+
+            Assert.True(c1 == c2);
+            Assert.False(c1 == c3);
+            Assert.False(c1 != c2);
+            Assert.True(c1 != c3);
+            Assert.True(c1.Equals(c2));
+            Assert.False(c1.Equals(c3));
+            Assert.Equal(c1.GetHashCode(), c2.GetHashCode());
+        }
+
+        [Fact]
+        public static void ToString_And_Parse_Double()
+        {
+            var c = new Complex<double>(1.5, -2.5);
+            string s = c.ToString();
+            Assert.True(Complex<double>.TryParse(s, null, out Complex<double> parsed));
+            Assert.Equal(c.Real, parsed.Real);
+            Assert.Equal(c.Imaginary, parsed.Imaginary);
+        }
+
+        [Fact]
+        public static void ImplicitConversion_Double()
+        {
+            Complex<double> c = 3.14;
+            Assert.Equal(3.14, c.Real);
+            Assert.Equal(0.0, c.Imaginary);
+        }
+
+        [Fact]
+        public static void CreateChecked_Saturating_Truncating_Double()
+        {
+            // CreateChecked from int -> Complex<double>
+            var c = Complex<double>.CreateChecked(42);
+            Assert.Equal(42.0, c.Real);
+            Assert.Equal(0.0, c.Imaginary);
+
+            // CreateSaturating: a large value that overflows Half should saturate to infinity
+            var cHalf = Complex<Half>.CreateSaturating(double.MaxValue);
+            Assert.True(Half.IsInfinity(cHalf.Real));
+            Assert.Equal(Half.Zero, cHalf.Imaginary);
+
+            // CreateTruncating: long.MaxValue -> float is finite (9.223372e+18f)
+            var cTrunc = Complex<float>.CreateTruncating(long.MaxValue);
+            Assert.True(float.IsFinite(cTrunc.Real));
+            Assert.Equal(0.0f, cTrunc.Imaginary);
+        }
+
+        [Fact]
+        public static void Negate_Double()
+        {
+            var c = new Complex<double>(3.0, -4.0);
+            var neg = -c;
+            Assert.Equal(-3.0, neg.Real);
+            Assert.Equal(4.0, neg.Imaginary);
+        }
+
+        [Fact]
+        public static void Increment_Decrement_Double()
+        {
+            var c = new Complex<double>(1.0, 2.0);
+            c++;
+            Assert.Equal(2.0, c.Real);
+            Assert.Equal(2.0, c.Imaginary);
+            c--;
+            Assert.Equal(1.0, c.Real);
+            Assert.Equal(2.0, c.Imaginary);
+        }
+
+        [Fact]
+        public static void MaxMagnitude_MinMagnitude_Double()
+        {
+            var big = new Complex<double>(3.0, 4.0);   // |big| = 5
+            var small = new Complex<double>(1.0, 0.0); // |small| = 1
+
+            Assert.Equal(big, Complex<double>.MaxMagnitude(big, small));
+            Assert.Equal(small, Complex<double>.MinMagnitude(big, small));
+        }
+
+        [Fact]
+        public static void Trig_Double()
+        {
+            // sin(0 + 0i) = 0
+            var zero = new Complex<double>(0.0, 0.0);
+            var sinZero = Complex<double>.Sin(zero);
+            Assert.Equal(0.0, sinZero.Real, 10);
+            Assert.Equal(0.0, sinZero.Imaginary, 10);
+
+            // cos(0 + 0i) = 1
+            var cosZero = Complex<double>.Cos(zero);
+            Assert.Equal(1.0, cosZero.Real, 10);
+            Assert.Equal(0.0, cosZero.Imaginary, 10);
+        }
+
+        [Fact]
+        public static void Reciprocal_Double()
+        {
+            // 1 / (1 + 0i) = 1 + 0i
+            var one = Complex<double>.One;
+            var recip = Complex<double>.Reciprocal(one);
+            Assert.Equal(1.0, recip.Real, 10);
+            Assert.Equal(0.0, recip.Imaginary, 10);
+
+            // 1 / (2 + 0i) = 0.5 + 0i
+            var two = new Complex<double>(2.0, 0.0);
+            var recipTwo = Complex<double>.Reciprocal(two);
+            Assert.Equal(0.5, recipTwo.Real, 10);
+            Assert.Equal(0.0, recipTwo.Imaginary, 10);
+        }
+
+        [Fact]
+        public static void Pow_Double()
+        {
+            // (1 + 0i)^2 = 1 + 0i
+            var one = Complex<double>.One;
+            var powered = Complex<double>.Pow(one, 2.0);
+            Assert.Equal(1.0, powered.Real, 10);
+            Assert.Equal(0.0, powered.Imaginary, 10);
+
+            // (2 + 0i)^3 = 8 + 0i
+            var two = new Complex<double>(2.0, 0.0);
+            var cubed = Complex<double>.Pow(two, 3.0);
+            Assert.Equal(8.0, cubed.Real, 10);
+            Assert.Equal(0.0, cubed.Imaginary, 10);
+        }
+
+        [Fact]
+        public static void Log10_Double()
+        {
+            // log10(10 + 0i) ≈ 1
+            var ten = new Complex<double>(10.0, 0.0);
+            var log10 = Complex<double>.Log10(ten);
+            Assert.Equal(1.0, log10.Real, 10);
+            Assert.Equal(0.0, log10.Imaginary, 10);
+        }
+
+        [Fact]
+        public static void FloatType_BasicArithmetic()
+        {
+            var a = new Complex<float>(1.0f, 2.0f);
+            var b = new Complex<float>(3.0f, 4.0f);
+
+            var sum = a + b;
+            Assert.Equal(4.0f, sum.Real);
+            Assert.Equal(6.0f, sum.Imaginary);
+
+            var diff = b - a;
+            Assert.Equal(2.0f, diff.Real);
+            Assert.Equal(2.0f, diff.Imaginary);
+
+            // (1+2i)(3+4i) = -5+10i
+            var product = a * b;
+            Assert.Equal(-5.0f, product.Real, 5);
+            Assert.Equal(10.0f, product.Imaginary, 5);
         }
     }
 }

@@ -360,7 +360,10 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
     insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE;
 
 #ifdef DEBUG
-    checkRMWRegisters(intrinEmbMask, targetReg);
+    if (isRMW)
+    {
+        checkRMWRegisters(intrinEmbMask, targetReg);
+    }
 #endif
 
     // Setup instruction options and handle special cases.
@@ -1423,7 +1426,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // fmov (scalar) zeros the upper bits and is not safe to use
                 assert(!intrin.op3->isContainedFltOrDblImmed());
 
-                assert(targetReg != op3Reg);
+                // The mov above copies op1 into targetReg and the ins below then reads op3. That is
+                // only unsafe when targetReg == op3Reg but targetReg != op1Reg, as the mov would then
+                // clobber op3 before it is read. LSRA marks op3 delayFree, so a distinct op3 can never
+                // share the def register; targetReg == op3Reg is only reachable when op3 aliases op1
+                // (e.g. Vector.Create(x, ..., x, ...) after a floating-point CreateScalarUnsafe is
+                // elided into a bare scalar), in which case the mov is skipped and op3 is preserved.
+                assert((targetReg != op3Reg) || (targetReg == op1Reg));
 
                 HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 

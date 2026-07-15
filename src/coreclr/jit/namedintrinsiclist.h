@@ -100,6 +100,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_op_Inequality,
     NI_System_Type_GetTypeFromHandle,
     NI_System_Type_GetGenericTypeDefinition,
+    NI_System_Activator_CreateInstance_T,
     NI_System_Array_Clone,
     NI_System_Array_GetLength,
     NI_System_Array_GetLowerBound,
@@ -172,8 +173,11 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Threading_Tasks_ValueTask_FromResult,
     NI_System_Threading_Tasks_ValueTask_get_CompletedTask,
+    NI_System_Threading_Tasks_ValueTask__ctor,
+    NI_System_Threading_Tasks_ValueTask_AsTask,
 
     NI_System_Threading_Tasks_ValueTask_1__ctor,
+    NI_System_Threading_Tasks_ValueTask_1_AsTask,
 
     // These two are special marker IDs so that we still get the inlining profitability boost
     NI_System_Numerics_Intrinsic,

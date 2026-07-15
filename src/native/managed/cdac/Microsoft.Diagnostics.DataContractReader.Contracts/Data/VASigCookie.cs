@@ -7,6 +7,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class VASigCookie : IData<VASigCookie>
 {
     [Field] public uint SizeOfArgs { get; }
-    [Field] public TargetPointer SignaturePointer { get; }
-    [Field] public uint SignatureLength { get; }
+    [Field] public Signature Signature { get; }
 }
