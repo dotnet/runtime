@@ -386,68 +386,68 @@ interface AssetEntry {
      */
     pendingDownload?: LoadingResource;
 }
-type SingleAssetBehaviors = 
-/**
- * The binary of the .NET runtime.
- */
-"dotnetwasm"
-/**
- * The javascript module for loader.
- */
- | "js-module-dotnet"
-/**
- * The javascript module for diagnostic server and client.
- */
- | "js-module-diagnostics"
-/**
- * The javascript module for runtime.
- */
- | "js-module-runtime"
-/**
- * The javascript module for emscripten.
- */
- | "js-module-native"
-/**
- * Typically dotnet.boot.js
- */
- | "manifest"
-/**
- * The debugging symbols
- */
- | "symbols";
-type AssetBehaviors = SingleAssetBehaviors | 
-/**
- * Load asset as a managed resource assembly.
- */
-"resource"
-/**
- * Load asset as a managed assembly.
- */
- | "assembly"
-/**
- * Load asset as a managed debugging information.
- */
- | "pdb"
-/**
- * Store asset into the native heap.
- */
- | "heap"
-/**
- * Load asset as an ICU data archive.
- */
- | "icu"
-/**
- * Load asset into the virtual filesystem (for fopen, File.Open, etc).
- */
- | "vfs"
-/**
- * The javascript module that came from nuget package .
- */
- | "js-module-library-initializer"
-/**
- * Managed assembly packaged as Webcil v 1.0
- */
- | "webcil";
+type SingleAssetBehaviors =
+    /**
+     * The binary of the .NET runtime.
+     */
+    "dotnetwasm"
+    /**
+     * The javascript module for loader.
+     */
+    | "js-module-dotnet"
+    /**
+     * The javascript module for diagnostic server and client.
+     */
+    | "js-module-diagnostics"
+    /**
+     * The javascript module for runtime.
+     */
+    | "js-module-runtime"
+    /**
+     * The javascript module for emscripten.
+     */
+    | "js-module-native"
+    /**
+     * Typically dotnet.boot.js
+     */
+    | "manifest"
+    /**
+     * The debugging symbols
+     */
+    | "symbols";
+type AssetBehaviors = SingleAssetBehaviors |
+    /**
+     * Load asset as a managed resource assembly.
+     */
+    "resource"
+    /**
+     * Load asset as a managed assembly.
+     */
+    | "assembly"
+    /**
+     * Load asset as a managed debugging information.
+     */
+    | "pdb"
+    /**
+     * Store asset into the native heap.
+     */
+    | "heap"
+    /**
+     * Load asset as an ICU data archive.
+     */
+    | "icu"
+    /**
+     * Load asset into the virtual filesystem (for fopen, File.Open, etc).
+     */
+    | "vfs"
+    /**
+     * The javascript module that came from nuget package .
+     */
+    | "js-module-library-initializer"
+    /**
+     * Managed assembly packaged as Webcil v 1.0
+     */
+    | "webcil";
 declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.
@@ -705,6 +705,7 @@ type RuntimeAPI = {
     runtimeBuildInfo: {
         productVersion: string;
         gitHash: string;
+        buildId: string;
         buildConfiguration: string;
         wasmEnableThreads: boolean;
         wasmEnableSIMD: boolean;

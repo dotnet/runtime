@@ -60,7 +60,7 @@
     <!-- WebAssembly tool-conventions custom sections (https://github.com/WebAssembly/tool-conventions).
          See BrowserWasmApp.targets for details. Setting $(WasmNativeBuildId) forces a native build. -->
     <WasmEmitProducersSection Condition="'$(WasmEmitProducersSection)' == ''">true</WasmEmitProducersSection>
-    <WasmEmitBuildId Condition="'$(WasmEmitBuildId)' == ''">true</WasmEmitBuildId>
+    <_WasmNormalizedBuildId Condition="'$(WasmNativeBuildId)' != ''">$(WasmNativeBuildId.Replace('0x', '').Replace('0X', '').ToLowerInvariant())</_WasmNormalizedBuildId>
   </PropertyGroup>
 
   <!-- Diagnostics: transform Mono-style WasmPerformanceInstrumentation property into CoreCLR env vars.
@@ -96,7 +96,7 @@
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmWriteMetadataSections"
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmEmitProducersObject"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
@@ -441,6 +441,8 @@
       <EmscriptenEnvVars Include="EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
+      <!-- build_id value exposed on runtimeBuildInfo.buildId; kept in sync with the wasm-ld - -build-id flag. -->
+      <EmscriptenEnvVars Include="WASM_BUILD_ID=$(_WasmNormalizedBuildId)" Condition="'$(_WasmNormalizedBuildId)' != ''" />
     </ItemGroup>
   </Target>
 
@@ -765,10 +767,12 @@
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />
 
-      <!-- build_id: pin a specific value when $(WasmNativeBuildId) is set, otherwise let wasm-ld
-           generate a random UUID for each native build. -->
-      <_EmccLinkStepArgs Condition="'$(WasmEmitBuildId)' == 'true' and '$(WasmNativeBuildId)' != ''" Include="-Wl,--build-id=0x$(WasmNativeBuildId.Replace('0x', '').Replace('0X', ''))" />
-      <_EmccLinkStepArgs Condition="'$(WasmEmitBuildId)' == 'true' and '$(WasmNativeBuildId)' == ''" Include="-Wl,--build-id=uuid" />
+      <!-- build_id: only emitted when $(WasmNativeBuildId) is set to a hex value; wasm-ld writes the
+           'build_id' custom section carrying these raw bytes. -->
+      <_EmccLinkStepArgs Condition="'$(_WasmNormalizedBuildId)' != ''" Include="-Wl,--build-id=0x$(_WasmNormalizedBuildId)" />
+
+      <!-- producers: a linkable object that wasm-ld merges into the 'producers' custom section. -->
+      <_EmccLinkStepArgs Condition="'$(WasmEmitProducersSection)' == 'true'" Include="&quot;$(_WasmIntermediateOutputPath)dotnet-producers.o&quot;" />
     </ItemGroup>
 
     <!-- Collect all link dependencies for incremental build -->
@@ -776,6 +780,7 @@
       <_WasmLinkDependencies Include="@(_WasmNativeFileForLinking)" />
       <_WasmLinkDependencies Include="@(_CoreCLRNativeLibs)" />
       <_WasmLinkDependencies Include="@(_CoreCLRJsLibrary)" />
+      <_WasmLinkDependencies Condition="'$(WasmEmitProducersSection)' == 'true'" Include="$(_WasmIntermediateOutputPath)dotnet-producers.o" />
       <_WasmLinkDependencies Include="$(_WasmLinkRsp)" />
     </ItemGroup>
 
@@ -809,16 +814,16 @@
     </ItemGroup>
   </Target>
 
-  <!-- Emit the WebAssembly 'producers' custom section into the relinked dotnet.native.wasm.
-       The 'build_id' section is emitted directly by wasm-ld via the build-id link flag. -->
-  <Target Name="_CoreCLRWriteMetadataSections"
-          AfterTargets="_CoreCLRLinkNative"
-          Condition="'$(WasmEmitProducersSection)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.native.wasm')">
-    <WasmWriteMetadataSections
-        WasmModulePath="$(_WasmIntermediateOutputPath)dotnet.native.wasm"
+  <!-- Emit a linkable object carrying the WebAssembly 'producers' custom section, so wasm-ld merges
+       .NET toolchain info into dotnet.native.wasm. The 'build_id' section is emitted by wasm-ld via
+       the - -build-id link flag (only when $(WasmNativeBuildId) is set). -->
+  <Target Name="_CoreCLREmitProducersObject"
+          BeforeTargets="_CoreCLRWriteLinkRsp"
+          Condition="'$(WasmEmitProducersSection)' == 'true'">
+    <WasmEmitProducersObject
+        OutputPath="$(_WasmIntermediateOutputPath)dotnet-producers.o"
         RuntimeName="CoreCLR"
-        ProductVersion="$(ProductVersion)"
-        EmitProducersSection="$(WasmEmitProducersSection)" />
+        ProductVersion="$(ProductVersion)" />
   </Target>
 
   <!-- ======================== Complete Native Build ======================== -->

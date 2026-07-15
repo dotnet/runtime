@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -21,6 +23,7 @@ public static class WasmCustomSectionWriter
 {
     public const string ProducersSectionName = "producers";
     public const string BuildIdSectionName = "build_id";
+    public const string LinkingSectionName = "linking";
 
     // The three well-known producers field names.
     public const string ProducersFieldLanguage = "language";
@@ -28,6 +31,9 @@ public static class WasmCustomSectionWriter
     public const string ProducersFieldSdk = "sdk";
 
     private const uint WasmMagic = 0x6d736100u; // "\0asm"
+    private const uint WasmModuleVersion = 1;
+    // Metadata version of the tool-conventions "linking" section that marks a relocatable object.
+    private const uint WasmObjectMetadataVersion = 2;
     private const byte CustomSectionId = 0;
 
     /// <summary>
@@ -46,6 +52,32 @@ public static class WasmCustomSectionWriter
         public string Field { get; }
         public string Name { get; }
         public string Version { get; }
+    }
+
+    /// <summary>
+    /// Appends fresh <c>producers</c> and/or <c>build_id</c> custom sections to <paramref name="output"/>
+    /// at the current position. The caller is responsible for ensuring these are written after the
+    /// module's <c>name</c> section (as the tool-conventions spec requires for <c>producers</c>). This is
+    /// the low-level primitive used by producers that build their own module bytes (e.g. the webcil
+    /// wasm wrapper and the ReadyToRun wasm object writer).
+    /// </summary>
+    /// <param name="output">Stream positioned at the end of the module body.</param>
+    /// <param name="producers">Producers values to write. May be <see langword="null"/>/empty to skip.</param>
+    /// <param name="buildId">Raw build id bytes. May be <see langword="null"/>/empty to skip.</param>
+    public static void AppendMetadataSections(Stream output, IEnumerable<ProducerValue>? producers, byte[]? buildId)
+    {
+        if (output is null)
+            ThrowArgumentNull(nameof(output));
+
+        if (producers is not null)
+        {
+            var list = new List<ProducerValue>(producers);
+            if (list.Count > 0)
+                WriteProducersSection(output, list);
+        }
+
+        if (buildId is not null && buildId.Length > 0)
+            WriteBuildIdSection(output, buildId);
     }
 
     /// <summary>
@@ -153,6 +185,59 @@ public static class WasmCustomSectionWriter
             WriteBuildIdSection(ms, buildId);
 
         return ms.ToArray();
+    }
+
+    /// <summary>
+    /// Writes a minimal relocatable WebAssembly object file (<c>.o</c>) that carries only a
+    /// <c>producers</c> custom section. Passing this object as a link input lets <c>wasm-ld</c> merge
+    /// the .NET tool information into the final module's <c>producers</c> section, alongside the
+    /// entries clang/LLVM already contribute. This mirrors how <c>build_id</c> is produced by the
+    /// linker itself (via <c>--build-id</c>), keeping both custom sections linker-driven.
+    /// </summary>
+    public static void WriteProducersObject(string objectPath, IEnumerable<ProducerValue> producers)
+    {
+        if (objectPath is null)
+            ThrowArgumentNull(nameof(objectPath));
+        if (producers is null)
+            ThrowArgumentNull(nameof(producers));
+
+        File.WriteAllBytes(objectPath, BuildProducersObject(producers));
+    }
+
+    /// <summary>
+    /// In-memory variant of <see cref="WriteProducersObject(string, IEnumerable{ProducerValue})"/>.
+    /// </summary>
+    public static byte[] BuildProducersObject(IEnumerable<ProducerValue> producers)
+    {
+        if (producers is null)
+            ThrowArgumentNull(nameof(producers));
+
+        var values = new List<ProducerValue>(producers);
+
+        using var ms = new MemoryStream(256);
+        WriteUInt32LE(ms, WasmMagic);
+        WriteUInt32LE(ms, WasmModuleVersion);
+        // The "linking" section (even with no subsections) marks the file as a relocatable object,
+        // which is what wasm-ld requires in order to consume and merge our producers section.
+        WriteLinkingSection(ms);
+        WriteProducersSection(ms, values);
+        return ms.ToArray();
+    }
+
+    private static void WriteLinkingSection(Stream output)
+    {
+        using var payload = new MemoryStream();
+        WriteName(payload, LinkingSectionName);
+        WriteULEB128(payload, WasmObjectMetadataVersion);
+        WriteCustomSection(output, payload.ToArray());
+    }
+
+    private static void WriteUInt32LE(Stream output, uint value)
+    {
+        output.WriteByte((byte)(value & 0xff));
+        output.WriteByte((byte)((value >> 8) & 0xff));
+        output.WriteByte((byte)((value >> 16) & 0xff));
+        output.WriteByte((byte)((value >> 24) & 0xff));
     }
 
     private static void ReadProducers(byte[] bytes, int pos, int end, List<ProducerValue> into)

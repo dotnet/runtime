@@ -16,47 +16,46 @@ Specs:
 
 | Section     | Purpose                                                                 | How it is produced |
 |-------------|-------------------------------------------------------------------------|--------------------|
-| `producers` | Static telemetry about the toolchain that produced the module.          | Written by a managed post-link MSBuild task. |
-| `build_id`  | A value that is (with high probability) unique per build, used to correlate a module with its symbols/sources. | Emitted by `wasm-ld` via the `--build-id` linker flag. |
+| `producers` | Static telemetry about the toolchain that produced the module.          | A small linkable object is passed to `wasm-ld`, which merges it into the module's `producers` section. |
+| `build_id`  | A value used to correlate a module with its symbols/sources.            | Emitted by `wasm-ld` via the `--build-id` linker flag. |
 
-The two sections are independent: `producers` is deterministic toolchain metadata, whereas `build_id`
-is intended to change whenever the produced binary changes.
+Both sections are **linker-driven**: they are produced by/through `wasm-ld` during the native link,
+rather than by rewriting the module after the fact.
 
-## Scope of the prototype
+## Scope
 
 - Applies to **application** builds that relink the native runtime (`WasmBuildNative=true`), for both
   **Mono** and **CoreCLR** browser-wasm runtimes (in-tree targets only).
-- Non-native app builds (which consume a prebuilt `dotnet.native.wasm` from the runtime pack) keep
-  whatever the runtime pack shipped. Baking a git-hash `build_id` into the runtime pack at
-  runtime-build time is future work (see "Open questions").
+- The **default** `dotnet.native.wasm` shipped in the runtime pack (consumed by non-relinking app
+  builds) is intended to carry a `build_id` equal to the runtime git hash, stamped at runtime-build
+  time and surfaced the same way the git hash is (see [Default runtime pack](#default-runtime-pack)).
 
 ## `build_id`
 
-`build_id` is emitted by the WebAssembly linker. `wasm-ld` accepts:
+`build_id` is emitted by the WebAssembly linker. `wasm-ld` accepts, among others:
 
 ```
---build-id                 # default algorithm (sha1)
---build-id=uuid            # random UUID per link
 --build-id=0x<hexstring>   # a caller-specified value
+--build-id=uuid            # random UUID per link
 --build-id=fast|sha1|none
 ```
 
 Behavior:
 
-- When the app does **not** set `$(WasmNativeBuildId)`, the link uses `--build-id=uuid`, so each native
-  build gets a fresh random id (answer to "use a GUID for native builds which didn't specify it").
-- When the app sets `$(WasmNativeBuildId)` to a hex string, the link uses `--build-id=0x<hex>` to pin
-  that exact value.
+- `build_id` is emitted **only** when the app sets `$(WasmNativeBuildId)` to a hex string; the link
+  then uses `--build-id=0x<hex>` to pin that exact value. There is intentionally **no** implicit
+  random-per-build id.
 - Setting `$(WasmNativeBuildId)` **forces a native build**. If `WasmBuildNative=false` is also set, the
   build fails with an error, because a specific `build_id` can only be applied by relinking.
 
-Emitting `build_id` can be disabled with `$(WasmEmitBuildId)=false`.
-
 ## `producers`
 
-The `producers` section records the toolchain. Per the spec it must appear at most once, so the writer
-**merges** into any existing `producers` section (e.g. one already emitted by clang/LLVM/Emscripten)
-rather than adding a second one. .NET contributes:
+The `producers` section records the toolchain. Per the spec it must appear at most once. `wasm-ld`
+already **merges** the `producers` sections found in its input objects (clang/LLVM contribute
+`language`/`processed-by` automatically). `wasm-ld` has no command-line option to inject additional
+`producers` entries, so .NET contributes its entries by handing `wasm-ld` a tiny **relocatable wasm
+object** whose only meaningful content is a `producers` custom section. `wasm-ld` merges it with the
+rest, keeping the section single. .NET contributes:
 
 - `language`: `C#`
 - `processed-by`: the runtime name (`Mono` or `CoreCLR`) with the product version
@@ -64,13 +63,16 @@ rather than adding a second one. .NET contributes:
 
 Emitting `producers` can be disabled with `$(WasmEmitProducersSection)=false`.
 
+> Note: emscripten runs `wasm-opt` after the link. Binaryen preserves the `producers` section by
+> default, so the merged entries survive optimization; this should be verified end-to-end by a real relink.
+
 ## Implementation
 
-- `src/tasks/Microsoft.NET.WebAssembly.Webcil/WasmCustomSectionWriter.cs` – a reusable managed writer
-  that parses a wasm module and writes/merges the `producers` and `build_id` custom sections.
-- `src/tasks/WasmAppBuilder/WasmWriteMetadataSections.cs` – the MSBuild task wrapping the writer. It
-  runs **after** the link step (and thus after `wasm-opt`), so the `producers` section it adds is not
-  stripped by optimization.
+- `src/tasks/Microsoft.NET.WebAssembly.Webcil/WasmCustomSectionWriter.cs` – a reusable managed writer.
+  `WriteProducersObject` emits a minimal relocatable wasm object (module header + an empty `linking`
+  section that marks it as an object + the `producers` custom section).
+- `src/tasks/WasmAppBuilder/WasmEmitProducersObject.cs` – the MSBuild task wrapping the writer. It runs
+  **before** the link and writes `dotnet-producers.o`, which is added to the link inputs.
 - MSBuild wiring:
   - Mono: `src/mono/browser/build/BrowserWasmApp.targets` (+ shared logic in
     `src/mono/wasm/build/WasmApp.Common.targets`).
@@ -78,30 +80,42 @@ Emitting `producers` can be disabled with `$(WasmEmitProducersSection)=false`.
 
 ## JavaScript exposure
 
-The `build_id` is read back from the compiled module at load time using
-`WebAssembly.Module.customSections(module, "build_id")` and exposed as a lowercase hex string on the
-runtime API:
+`build_id` is **not** read back from the compiled module. It is exposed on `runtimeBuildInfo.buildId`
+through the same two-channel mechanism used for options such as `wasmEnableSIMD` (both channels are fed
+by the `WASM_BUILD_ID` environment variable, kept in sync with the `--build-id` flag):
+
+- **Default `dotnet.*.js` build** (no relink): a rollup constant (`consts:buildId`) baked into
+  `dotnet.js`/`dotnet.runtime.js` at runtime-pack build time provides the value.
+- **Application re-link**: the (re)linked native module carries the value via the emscripten `.lib.js`
+  footer, which reads `process.env.WASM_BUILD_ID` at link time. When present, this overrides the rollup
+  constant (which cannot change on a relink, since `dotnet.runtime.js` is not rebuilt):
+  - Mono: the footer emits it onto `emscriptenBuildOptions.buildId`; `passEmscriptenInternals` copies it
+    onto `runtimeBuildInfo.buildId`.
+  - CoreCLR: the footer exposes it on the `$DOTNET` object; the native module init copies it onto
+    `runtimeBuildInfo.buildId`.
 
 ```js
 const { runtimeBuildInfo } = await dotnet.create();
-console.log(runtimeBuildInfo.buildId); // "" when the module has no build_id section
+console.log(runtimeBuildInfo.buildId); // "" when no build_id was stamped
 ```
+
+## Default runtime pack
+
+The default `dotnet.native.wasm` in the runtime pack is linked by the core native build. To give it a
+stable `build_id` equal to the runtime git hash, that build sets `$(WasmNativeBuildId)` to the git hash
+(so `--build-id` stamps the section) and passes the matching `WASM_BUILD_ID` into both the rollup
+constant and the native footer, so `runtimeBuildInfo.buildId` reports the same value the way the git
+hash is reported. When a value is not
+stamped, `runtimeBuildInfo.buildId` is `""`, accurately reflecting the absence of a `build_id` section.
 
 ## MSBuild properties
 
 | Property                     | Default | Meaning |
 |------------------------------|---------|---------|
-| `WasmEmitBuildId`            | `true`  | Emit the `build_id` section (via the `--build-id` link flag). |
-| `WasmEmitProducersSection`   | `true`  | Emit/merge the `producers` section (via the post-link task). |
-| `WasmNativeBuildId`          | (unset) | Hex string to pin the `build_id`. Forces a native build. |
+| `WasmEmitProducersSection`   | `true`  | Emit/merge the `producers` section (via a linkable object). |
+| `WasmNativeBuildId`          | (unset) | Hex string to stamp as the `build_id`. Forces a native build. Empty means no `build_id` section. |
 
 ## Open questions / future work
 
-- **`wasm-opt` and custom sections.** `wasm-opt` may drop unknown custom sections during optimization.
-  The `producers` section is added after `wasm-opt` so it survives; the linker-emitted `build_id` runs
-  before `wasm-opt`. If it is stripped, an alternative is to also write `build_id` via the post-link
-  task (which would additionally give MSBuild a known id value to expose without reading it back).
-- **Non-native builds.** Provide a shared `build_id` for apps that do not relink (e.g. the VMR/runtime
-  git hash baked into the runtime pack `dotnet.native.wasm` at runtime-build time).
 - **Upstream registration.** The `processed-by`/`sdk` values are not yet registered with the
   tool-conventions repository.

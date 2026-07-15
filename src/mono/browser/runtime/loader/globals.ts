@@ -57,7 +57,7 @@ export const globalObjectsRoot: GlobalObjects = {
 
 setLoaderGlobals(globalObjectsRoot);
 
-export function setLoaderGlobals (
+export function setLoaderGlobals(
     globalObjects: GlobalObjects,
 ) {
     if (_loaderModuleLoaded) {
@@ -90,7 +90,6 @@ export function setLoaderGlobals (
     };
     const lh: Partial<LoaderHelpers> = {
         gitHash,
-        buildId: "",
         config: globalObjects.module.config,
         diagnosticTracing: false,
 
@@ -143,7 +142,7 @@ export function setLoaderGlobals (
 // this will abort the program if the condition is false
 // see src\mono\browser\runtime\rollup.config.js
 // we inline the condition, because the lambda could allocate closure on hot path otherwise
-export function mono_assert (condition: unknown, messageFactory: string | (() => string)): asserts condition {
+export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (condition) return;
     const message = "Assert failed: " + (typeof messageFactory === "function"
         ? messageFactory()
