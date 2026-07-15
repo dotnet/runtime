@@ -1693,6 +1693,45 @@ namespace Internal.JitInterface
             return type.IsIntrinsic;
         }
 
+        private bool isEnumerableAndEnumerator(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            if (type is not DefType defType)
+            {
+                return false;
+            }
+
+            TypeSystemContext context = type.Context;
+            MetadataType iEnumerableType = context.SystemModule.GetKnownType("System.Collections.Generic"u8, "IEnumerable`1"u8);
+            MetadataType iEnumeratorType = context.SystemModule.GetKnownType("System.Collections.Generic"u8, "IEnumerator`1"u8);
+
+            for (int i = 0; i < defType.RuntimeInterfaces.Length; i++)
+            {
+                DefType interfaceType = defType.RuntimeInterfaces[i];
+
+                if (!interfaceType.HasInstantiation || !interfaceType.HasSameTypeDefinition(iEnumerableType))
+                {
+                    continue;
+                }
+
+                TypeDesc enumerableArg = interfaceType.Instantiation[0];
+
+                for (int j = 0; j < defType.RuntimeInterfaces.Length; j++)
+                {
+                    DefType otherInterfaceType = defType.RuntimeInterfaces[j];
+
+                    if (otherInterfaceType.HasInstantiation && otherInterfaceType.HasSameTypeDefinition(iEnumeratorType) &&
+                        (otherInterfaceType.Instantiation[0] == enumerableArg))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* sig, ref bool pSuppressGCTransition)
         {
             pSuppressGCTransition = false;

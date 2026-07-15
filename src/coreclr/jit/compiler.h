@@ -661,7 +661,7 @@ public:
     unsigned char lvRedefinedInEmbeddedStatement : 1; // Local has redefinitions inside embedded statements that
                                                       // disqualify it from local copy prop.
 
-    unsigned char lvIsEnumerator : 1; // Local is assigned exact class where : IEnumerable<T> via GDV
+    unsigned char lvIsEnumerator : 1; // Local is assigned an enumerator-like object tracked by conditional EA.
 
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
@@ -5102,8 +5102,19 @@ protected:
         unsigned m_likelihood;
     };
 
+    struct IteratorGdvInfo
+    {
+        unsigned m_enumeratorLocal;
+        unsigned m_likelihood;
+    };
+
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> VarToUnsignedMap;
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, InferredGdvEntry> VarToLikelyClassMap;
+    typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, unsigned>
+        ClassHandleToUnsignedMap;
+    typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, IteratorGdvInfo>
+        ClassHandleToIteratorGdvInfoMap;
 
     // Maps are only set on the root instance.
     //
@@ -5133,6 +5144,51 @@ protected:
         }
 
         return compiler->impEnumeratorLikelyTypeMap;
+    }
+
+    ClassHandleToIteratorGdvInfoMap* impIteratorGdvInfoMap = nullptr;
+    bool hasIteratorGdvInfoMap() { return impInlineRoot()->impIteratorGdvInfoMap != nullptr; }
+    ClassHandleToIteratorGdvInfoMap* getImpIteratorGdvInfoMap()
+    {
+        Compiler* compiler = impInlineRoot();
+        if (compiler->impIteratorGdvInfoMap == nullptr)
+        {
+            CompAllocator alloc(compiler->getAllocator(CMK_Generic));
+            compiler->impIteratorGdvInfoMap = new (alloc) ClassHandleToIteratorGdvInfoMap(alloc);
+        }
+
+        return compiler->impIteratorGdvInfoMap;
+    }
+
+    ClassHandleToUnsignedMap* impAllocationClassCountMap = nullptr;
+    bool hasAllocationClassCountMap() { return impInlineRoot()->impAllocationClassCountMap != nullptr; }
+    ClassHandleToUnsignedMap* getImpAllocationClassCountMap()
+    {
+        Compiler* compiler = impInlineRoot();
+        if (compiler->impAllocationClassCountMap == nullptr)
+        {
+            CompAllocator alloc(compiler->getAllocator(CMK_Generic));
+            compiler->impAllocationClassCountMap = new (alloc) ClassHandleToUnsignedMap(alloc);
+        }
+
+        return compiler->impAllocationClassCountMap;
+    }
+
+    VarToUnsignedMap* impGetEnumeratorReceiverToEnumeratorMap = nullptr;
+    bool hasGetEnumeratorReceiverToEnumeratorMap()
+    {
+        return impInlineRoot()->impGetEnumeratorReceiverToEnumeratorMap != nullptr;
+    }
+    VarToUnsignedMap* getImpGetEnumeratorReceiverToEnumeratorMap()
+    {
+        Compiler* compiler = impInlineRoot();
+        if (compiler->impGetEnumeratorReceiverToEnumeratorMap == nullptr)
+        {
+            CompAllocator alloc(compiler->getAllocator(CMK_Generic));
+            compiler->impGetEnumeratorReceiverToEnumeratorMap = new (alloc) VarToUnsignedMap(alloc);
+        }
+
+        return compiler->impGetEnumeratorReceiverToEnumeratorMap;
     }
 
     bool hasUpdatedTypeLocals = false;

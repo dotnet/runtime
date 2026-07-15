@@ -1,0 +1,46 @@
+<Project>
+  <PropertyGroup>
+    <CrossGenTest>false</CrossGenTest>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <InterpreterIncompatible>true</InterpreterIncompatible>
+    <BatchCLRTestEnvironmentCompatibilityCheck>
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF "%DOTNET_TieredCompilation%"=="0" goto :IteratorCeaIncompatible
+IF "%COMPlus_TieredCompilation%"=="0" goto :IteratorCeaIncompatible
+IF "%DOTNET_TieredPGO%"=="0" goto :IteratorCeaIncompatible
+IF "%COMPlus_TieredPGO%"=="0" goto :IteratorCeaIncompatible
+IF NOT "%DOTNET_JitStress%"=="" goto :IteratorCeaIncompatible
+IF NOT "%DOTNET_JitStressRegs%"=="" goto :IteratorCeaIncompatible
+IF NOT "%DOTNET_JITMinOpts%"=="" goto :IteratorCeaIncompatible
+IF NOT "%DOTNET_TailcallStress%"=="" goto :IteratorCeaIncompatible
+goto :IteratorCeaCompatible
+:IteratorCeaIncompatible
+  ECHO SKIPPING EXECUTION BECAUSE ITERATOR CEA TESTS REQUIRE TIERED PGO AND NON-STRESS JIT SETTINGS
+  popd
+  Exit /b 0
+:IteratorCeaCompatible
+    </BatchCLRTestEnvironmentCompatibilityCheck>
+    <BashCLRTestEnvironmentCompatibilityCheck>
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [[ ( "$DOTNET_TieredCompilation" == "0" ) || ( "$COMPlus_TieredCompilation" == "0" ) || ( "$DOTNET_TieredPGO" == "0" ) || ( "$COMPlus_TieredPGO" == "0" ) || ( ! -z "$DOTNET_JitStress" ) || ( ! -z "$DOTNET_JitStressRegs" ) || ( ! -z "$DOTNET_JITMinOpts" ) || ( ! -z "$DOTNET_TailcallStress" ) ]]
+then
+  echo "SKIPPING EXECUTION BECAUSE ITERATOR CEA TESTS REQUIRE TIERED PGO AND NON-STRESS JIT SETTINGS"
+  popd
+  exit 0
+fi
+    </BashCLRTestEnvironmentCompatibilityCheck>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="IteratorConditionalEscapeCase.cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitObjectStackAllocationConditionalEscape" Value="1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="IteratorConditionalEscapeCommon.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

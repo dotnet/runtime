@@ -274,6 +274,10 @@ public:
     void dmpIsIntrinsicType(DWORDLONG key, DWORD value);
     bool repIsIntrinsicType(CORINFO_CLASS_HANDLE cls);
 
+    void recIsEnumerableAndEnumerator(CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpIsEnumerableAndEnumerator(DWORDLONG key, DWORD value);
+    bool repIsEnumerableAndEnumerator(CORINFO_CLASS_HANDLE cls);
+
     void recGetFieldClass(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE result);
     void dmpGetFieldClass(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetFieldClass(CORINFO_FIELD_HANDLE field);
@@ -1219,6 +1223,7 @@ enum mcPackets
     Packet_GetAsyncOtherVariant = 237,
     Packet_GetAwaitReturnCall = 238,
     Packet_GetAddressAlignment = 239,
+    Packet_IsEnumerableAndEnumerator = 240,
 };
 
 void SetDebugDumpVariables();

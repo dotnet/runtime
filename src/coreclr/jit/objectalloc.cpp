@@ -428,13 +428,27 @@ void ObjectAllocator::PrepareAnalysis()
     // If we are going to do any conditional escape analysis, determine
     // how much extra BV space we'll need.
     //
-    bool const hasEnumeratorLocals = m_compiler->hasImpEnumeratorGdvLocalMap();
-
-    if (hasEnumeratorLocals)
+    unsigned enumeratorLocalCount = 0;
+    if (m_compiler->hasImpEnumeratorGdvLocalMap())
     {
-        unsigned const enumeratorLocalCount = m_compiler->getImpEnumeratorGdvLocalMap()->GetCount();
-        assert(enumeratorLocalCount > 0);
+        enumeratorLocalCount += m_compiler->getImpEnumeratorGdvLocalMap()->GetCount();
+    }
+    if (m_compiler->hasIteratorGdvInfoMap() && m_compiler->hasAllocationClassCountMap())
+    {
+        Compiler::ClassHandleToIteratorGdvInfoMap* const gdvInfoMap  = m_compiler->getImpIteratorGdvInfoMap();
+        Compiler::ClassHandleToUnsignedMap* const allocationCountMap = m_compiler->getImpAllocationClassCountMap();
+        for (CORINFO_CLASS_HANDLE const clsHnd : Compiler::ClassHandleToIteratorGdvInfoMap::KeyIteration(gdvInfoMap))
+        {
+            unsigned allocationCount = 0;
+            if (allocationCountMap->Lookup(clsHnd, &allocationCount))
+            {
+                enumeratorLocalCount += allocationCount;
+            }
+        }
+    }
 
+    if (enumeratorLocalCount > 0)
+    {
         // For now, disable conditional escape analysis with OSR
         // since the dominance picture is muddled at this point.
         //
@@ -2361,7 +2375,15 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 if (isEnumeratorLocal)
                 {
                     JITDUMP("Enumerator V%02u passed to call...\n", lclNum);
-                    canLclVarEscapeViaParentStack = !CheckForGuardedUse(block, parent, lclNum);
+                    if (IsLinqIteratorCloneThisUse(call, tree, lclNum, block))
+                    {
+                        JITDUMP("... LINQ iterator Clone this does not escape\n");
+                        canLclVarEscapeViaParentStack = false;
+                    }
+                    else
+                    {
+                        canLclVarEscapeViaParentStack = !CheckForGuardedUse(block, parent, lclNum);
+                    }
                 }
                 break;
             }
@@ -3450,6 +3472,193 @@ GenTree* ObjectAllocator::IsGuard(BasicBlock* block, GuardInfo* info)
 }
 
 //------------------------------------------------------------------------------
+// IsLinqIteratorCloneThisUse - see if this use is the "this" argument to a LINQ
+//    iterator Clone call.
+//
+// Arguments:
+//    call   - call using the local
+//    tree   - local use
+//    lclNum - local being read
+//
+// Returns:
+//    true if this is the "this" argument to Clone on a conditionally tracked
+//    LINQ iterator allocation.
+//
+bool ObjectAllocator::IsLinqIteratorCloneThisUse(GenTreeCall* call, GenTree* tree, unsigned lclNum, BasicBlock* block)
+{
+    unsigned pseudoIndex = BAD_VAR_NUM;
+    if (!m_EnumeratorLocalToPseudoIndexMap.TryGetValue(lclNum, &pseudoIndex))
+    {
+        return false;
+    }
+
+    if (call->IsHelperCall() || (call->gtCallMethHnd == nullptr))
+    {
+        return false;
+    }
+
+    CallArg* const thisArg = call->gtArgs.FindWellKnownArg(WellKnownArg::ThisPointer);
+    if ((thisArg == nullptr) || (thisArg->GetEarlyNode() != tree))
+    {
+        return false;
+    }
+
+    if (!IsLinqIteratorCloneMethod(call->gtCallMethHnd))
+    {
+        return false;
+    }
+
+    CloneInfo* info = nullptr;
+    if (m_CloneMap.Lookup(pseudoIndex, &info))
+    {
+        if (info->m_linqIteratorCloneBlocks == nullptr)
+        {
+            CompAllocator alloc(m_compiler->getAllocator(CMK_ObjectAllocator));
+            info->m_linqIteratorCloneBlocks = new (alloc) jitstd::vector<BasicBlock*>(alloc);
+        }
+
+        bool alreadyRecorded = false;
+        for (BasicBlock* const existingBlock : *info->m_linqIteratorCloneBlocks)
+        {
+            if (existingBlock == block)
+            {
+                alreadyRecorded = true;
+                break;
+            }
+        }
+
+        if (!alreadyRecorded)
+        {
+            JITDUMP("Recording LINQ iterator Clone block " FMT_BB " for fast-path pruning\n", block->bbNum);
+            info->m_linqIteratorCloneBlocks->push_back(block);
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+// IsLinqIteratorCloneMethod - see if this is a LINQ iterator Clone method.
+//
+// Arguments:
+//    method - method in question
+//
+// Returns:
+//    true if method is Clone():System.Linq.Enumerable.Iterator<T> on a type that
+//    derives from the private System.Linq.Enumerable.Iterator<T> base class.
+//
+bool ObjectAllocator::IsLinqIteratorCloneMethod(CORINFO_METHOD_HANDLE method)
+{
+    const char* className              = nullptr;
+    const char* namespaceName          = nullptr;
+    const char* enclosingClassNames[1] = {nullptr};
+    const char* methodName =
+        m_compiler->info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames,
+                                                                ArrLen(enclosingClassNames));
+
+    if ((namespaceName == nullptr) || (strcmp(namespaceName, "System.Linq") != 0) ||
+        (enclosingClassNames[0] == nullptr) || (strcmp(enclosingClassNames[0], "Enumerable") != 0) ||
+        (methodName == nullptr) || (strcmp(methodName, "Clone") != 0))
+    {
+        return false;
+    }
+
+    CORINFO_SIG_INFO sig;
+    m_compiler->info.compCompHnd->getMethodSig(method, &sig);
+    if (!sig.hasThis() || sig.hasExplicitThis() || (sig.numArgs != 0) || (sig.retType != CORINFO_TYPE_CLASS) ||
+        !IsLinqIteratorClass(sig.retTypeClass))
+    {
+        return false;
+    }
+
+    CORINFO_CLASS_HANDLE methodClass = m_compiler->info.compCompHnd->getMethodClass(method);
+    return IsLinqIteratorClass(methodClass);
+}
+
+//------------------------------------------------------------------------------
+// IsLinqIteratorClass - see if this type is a LINQ iterator type.
+//
+// Arguments:
+//    cls - type in question
+//
+// Returns:
+//    true if cls is or derives from the private System.Linq.Enumerable.Iterator<T>
+//    base class.
+//
+bool ObjectAllocator::IsLinqIteratorClass(CORINFO_CLASS_HANDLE cls)
+{
+    for (CORINFO_CLASS_HANDLE currentClass = cls; currentClass != NO_CLASS_HANDLE;
+         currentClass                      = m_compiler->info.compCompHnd->getParentType(currentClass))
+    {
+        const char* className = m_compiler->info.compCompHnd->getClassNameFromMetadata(currentClass, nullptr);
+
+        if ((className != nullptr) && (strcmp(className, "Iterator`1") == 0))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+// PruneLinqIteratorClonePath - prune conditional edges into a LINQ iterator
+//    Clone block in the cloned fast path.
+//
+// Arguments:
+//    cloneBlock - block containing the Clone call
+//
+// Notes:
+//    In the cloned fast path, the selected iterator allocation is fresh and is
+//    known to be used as the GetEnumerator receiver. LINQ Iterator<T>.GetEnumerator
+//    therefore returns "this"; the cold Clone arm is unreachable in the fast path.
+//
+void ObjectAllocator::PruneLinqIteratorClonePath(BasicBlock* cloneBlock)
+{
+    CompAllocator             alloc(m_compiler->getAllocator(CMK_ObjectAllocator));
+    jitstd::vector<FlowEdge*> edgesToRemove(alloc);
+
+    for (FlowEdge* predEdge = m_compiler->BlockPredsWithEH(cloneBlock); predEdge != nullptr;
+         predEdge           = predEdge->getNextPredEdge())
+    {
+        BasicBlock* const predBlock = predEdge->getSourceBlock();
+        if (!predBlock->KindIs(BBJ_COND))
+        {
+            continue;
+        }
+
+        FlowEdge* const trueEdge  = predBlock->GetTrueEdge();
+        FlowEdge* const falseEdge = predBlock->GetFalseEdge();
+        if ((trueEdge->getDestinationBlock() == cloneBlock) && (falseEdge->getDestinationBlock() != cloneBlock))
+        {
+            edgesToRemove.push_back(trueEdge);
+        }
+        else if ((falseEdge->getDestinationBlock() == cloneBlock) && (trueEdge->getDestinationBlock() != cloneBlock))
+        {
+            edgesToRemove.push_back(falseEdge);
+        }
+    }
+
+    for (FlowEdge* const removedEdge : edgesToRemove)
+    {
+        BasicBlock* const predBlock = removedEdge->getSourceBlock();
+        FlowEdge* const   retainedEdge =
+            (removedEdge == predBlock->GetTrueEdge()) ? predBlock->GetFalseEdge() : predBlock->GetTrueEdge();
+
+        JITDUMP("Pruning LINQ iterator Clone path from " FMT_BB " to " FMT_BB "; retaining " FMT_BB "\n",
+                predBlock->bbNum, cloneBlock->bbNum, retainedEdge->getDestinationBlock()->bbNum);
+
+        GenTree* const jumpTree = predBlock->lastStmt()->GetRootNode();
+        assert(jumpTree->OperIs(GT_JTRUE));
+
+        m_compiler->fgRemoveRefPred(removedEdge);
+        predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+        predBlock->lastStmt()->SetRootNode(jumpTree->gtGetOp1());
+        m_compiler->fgRepairProfileCondToUncond(predBlock, retainedEdge, removedEdge);
+    }
+}
+
+//------------------------------------------------------------------------------
 // CheckForGuardedUse - see if this use of lclNum is controlled by a failing
 //    GDV check that we're tracking as part of conditional escape.
 //
@@ -3492,7 +3701,21 @@ bool ObjectAllocator::CheckForGuardedUse(BasicBlock* block, GenTree* tree, unsig
 
     // Verify this appearance is under the same guard
     //
-    if ((info.m_local == lclNum) && (pseudoGuardInfo->m_local == lclNum) && (info.m_type == pseudoGuardInfo->m_type))
+    const bool isMainEnumeratorLocal        = (pseudoGuardInfo->m_local == lclNum);
+    bool       isGetEnumeratorProducerLocal = false;
+
+    if (!isMainEnumeratorLocal && m_compiler->hasGetEnumeratorReceiverToEnumeratorMap())
+    {
+        unsigned producedEnumeratorLocal = BAD_VAR_NUM;
+        if (m_compiler->getImpGetEnumeratorReceiverToEnumeratorMap()->Lookup(lclNum, &producedEnumeratorLocal) &&
+            (producedEnumeratorLocal == pseudoGuardInfo->m_local))
+        {
+            isGetEnumeratorProducerLocal = true;
+        }
+    }
+
+    if ((info.m_local == lclNum) && (isMainEnumeratorLocal || isGetEnumeratorProducerLocal) &&
+        (info.m_type == pseudoGuardInfo->m_type))
     {
         // If so, track this as an assignment pseudoIndex = ...
         //
@@ -3563,13 +3786,46 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
         //
         Compiler::NodeToUnsignedMap* const map             = m_compiler->getImpEnumeratorGdvLocalMap();
         unsigned                           enumeratorLocal = BAD_VAR_NUM;
+        CORINFO_CLASS_HANDLE const         allocClassHnd   = data->AsAllocObj()->gtAllocObjClsHnd;
+
+        if (!map->Lookup(data, &enumeratorLocal) && m_compiler->hasIteratorGdvInfoMap() &&
+            m_compiler->info.compCompHnd->isEnumerableAndEnumerator(allocClassHnd))
+        {
+            if (block->hasProfileWeight() && (block->getBBWeight(m_compiler) == 0))
+            {
+                JITDUMP("Not flagging iterator allocation [%06u] (%s): zero-weight allocation block\n",
+                        m_compiler->dspTreeID(data), m_compiler->eeGetClassName(allocClassHnd));
+                return;
+            }
+
+            Compiler::IteratorGdvInfo gdvInfo;
+            if (m_compiler->getImpIteratorGdvInfoMap()->Lookup(allocClassHnd, &gdvInfo))
+            {
+                if (gdvInfo.m_enumeratorLocal == BAD_VAR_NUM)
+                {
+                    enumeratorLocal = lclNum;
+                }
+                else
+                {
+                    enumeratorLocal = gdvInfo.m_enumeratorLocal;
+                }
+
+                JITDUMP("Flagging interesting iterator allocation [%06u] (%s, likelihood %u) for enumerator "
+                        "cloning via V%02u\n",
+                        m_compiler->dspTreeID(data), m_compiler->eeGetClassName(allocClassHnd), gdvInfo.m_likelihood,
+                        enumeratorLocal);
+                map->Set(data, enumeratorLocal);
+                m_compiler->Metrics.EnumeratorGDV++;
+            }
+        }
+
         if (map->Lookup(data, &enumeratorLocal))
         {
             // If it turns out we can't stack allocate this new object even if it does not escape,
             // then don't bother setting up tracking. Note length here is just set to a nominal
             // value that won't cause failure. We will do the real length check later if we decide to allocate.
             //
-            CORINFO_CLASS_HANDLE clsHnd = data->AsAllocObj()->gtAllocObjClsHnd;
+            CORINFO_CLASS_HANDLE clsHnd = allocClassHnd;
             const char*          reason = nullptr;
             unsigned             size   = 0;
             unsigned             length = TARGET_POINTER_SIZE;
@@ -3720,6 +3976,7 @@ bool ObjectAllocator::CheckForEnumeratorUse(unsigned lclNum, unsigned dstLclNum)
     const bool added = m_EnumeratorLocalToPseudoIndexMap.AddOrUpdate(dstLclNum, pseudoIndex);
 
     assert(added);
+    m_compiler->lvaGetDesc(dstLclNum)->lvIsEnumerator = true;
 
     JITDUMP("Enumerator allocation: will also track accesses to V%02u via", dstLclNum);
     JITDUMPEXEC(DumpIndex(pseudoIndex));
@@ -4250,13 +4507,27 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
                 ev->m_isUseTemp = true;
             }
 
-            // We don't expect to see allocTemps or useTemps in guards
+            // We don't expect to see allocTemps or useTemps in guards, except for
+            // a GetEnumerator receiver that produces the main enumerator local.
             //
             if (a->m_isGuard)
             {
-                JITDUMP("Unexpected: %s temp V%02u is GDV guard at " FMT_BB "\n", ev->m_isAllocTemp ? "alloc" : "use",
-                        a->m_lclNum, a->m_block->bbNum);
-                return false;
+                bool isExpectedProducerGuard = false;
+                if (ev->m_isAllocTemp && m_compiler->hasGetEnumeratorReceiverToEnumeratorMap())
+                {
+                    unsigned producedEnumeratorLocal = BAD_VAR_NUM;
+                    isExpectedProducerGuard =
+                        m_compiler->getImpGetEnumeratorReceiverToEnumeratorMap()->Lookup(a->m_lclNum,
+                                                                                         &producedEnumeratorLocal) &&
+                        (producedEnumeratorLocal == info->m_local);
+                }
+
+                if (!isExpectedProducerGuard)
+                {
+                    JITDUMP("Unexpected: %s temp V%02u is GDV guard at " FMT_BB "\n",
+                            ev->m_isAllocTemp ? "alloc" : "use", a->m_lclNum, a->m_block->bbNum);
+                    return false;
+                }
             }
         }
 
@@ -4323,6 +4594,22 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
 
             if (!m_compiler->m_domTree->Dominates(domCheckBlock, a->m_block))
             {
+                if (BitVecOps::IsMember(&traits, visitedBlocks, a->m_block->bbID))
+                {
+                    JITDUMP("Allowing alloc temp V%02u %s in " FMT_BB " not dominated by %s " FMT_BB
+                            " because it lies in the cloned fast path region\n",
+                            a->m_lclNum, a->m_isDef ? "def" : "use", a->m_block->bbNum, domCheckBlockName,
+                            domCheckBlock->bbNum);
+                    continue;
+                }
+
+                if (a->m_isDef)
+                {
+                    JITDUMP("Ignoring alloc temp V%02u def in " FMT_BB " not dominated by %s " FMT_BB "\n", a->m_lclNum,
+                            a->m_block->bbNum, domCheckBlockName, domCheckBlock->bbNum);
+                    continue;
+                }
+
                 JITDUMP("Alloc temp V%02u %s in " FMT_BB " not dominated by %s " FMT_BB "\n", a->m_lclNum,
                         a->m_isDef ? "def" : "use", a->m_block->bbNum, domCheckBlockName, domCheckBlock->bbNum);
                 return false;
@@ -4614,6 +4901,18 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
         m_compiler->optSetMappedBlockTargets(block, newBlock, &map);
     }
 
+    if (info->m_linqIteratorCloneBlocks != nullptr)
+    {
+        for (BasicBlock* const block : *info->m_linqIteratorCloneBlocks)
+        {
+            BasicBlock* newBlock = nullptr;
+            if (map.Lookup(block, &newBlock))
+            {
+                PruneLinqIteratorClonePath(newBlock);
+            }
+        }
+    }
+
     // Fix up any enclosing EH extents
     //
     if (enclosingEHRegion != 0)
@@ -4777,7 +5076,14 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
             else
             {
                 const bool isCloned = map.Lookup(a->m_block, &newBlock);
-                assert(isCloned && (newBlock != nullptr));
+                if (!isCloned)
+                {
+                    assert(a->m_isDef);
+                    JITDUMP("Not updating V%02u def in non-cloned " FMT_BB "\n", a->m_lclNum, a->m_block->bbNum);
+                    continue;
+                }
+
+                assert(newBlock != nullptr);
 
                 JITDUMP("Updating V%02u %s in " FMT_BB " (clone of " FMT_BB ") to V%02u\n", a->m_lclNum,
                         a->m_isDef ? "def" : "use", newBlock->bbNum, a->m_block->bbNum, newEnumeratorLocal);

@@ -540,6 +540,9 @@ CorInfoWasmType getWasmLowering(
 uint32_t getAddressAlignment(
           void* address) override;
 
+bool isEnumerableAndEnumerator(
+          CORINFO_CLASS_HANDLE cls) override;
+
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
 

@@ -297,6 +297,14 @@ bool interceptor_ICJI::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
     return temp;
 }
 
+bool interceptor_ICJI::isEnumerableAndEnumerator(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isEnumerableAndEnumerator");
+    bool temp = original_ICorJitInfo->isEnumerableAndEnumerator(cls);
+    mc->recIsEnumerableAndEnumerator(cls, temp);
+    return temp;
+}
+
 // return the entry point calling convention for any of the following
 // - a P/Invoke
 // - a method marked with UnmanagedCallersOnly

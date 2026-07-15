@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="IteratorConditionalEscapeTestBase.props" />
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);ITERATOR_CEA_DEFAULT_IF_EMPTY_EMPTY_LIST</DefineConstants>
+  </PropertyGroup>
+</Project>

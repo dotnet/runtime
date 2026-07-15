@@ -3209,6 +3209,13 @@ public:
     virtual uint32_t getAddressAlignment(
             void* address
             ) = 0;
+
+    // Return true if the given class implements both IEnumerable<T> and IEnumerator<T>
+    // for some T. This is a candidate signal only; it does not imply GetEnumerator
+    // returns "this".
+    virtual bool isEnumerableAndEnumerator(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
 };
 
 /*****************************************************************************

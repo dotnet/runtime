@@ -1713,6 +1713,29 @@ bool MethodContext::repIsIntrinsicType(CORINFO_CLASS_HANDLE cls)
     return value != 0;
 }
 
+void MethodContext::recIsEnumerableAndEnumerator(CORINFO_CLASS_HANDLE cls, bool result)
+{
+    if (IsEnumerableAndEnumerator == nullptr)
+        IsEnumerableAndEnumerator = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD     value = result ? 1 : 0;
+
+    IsEnumerableAndEnumerator->Add(key, value);
+    DEBUG_REC(dmpIsEnumerableAndEnumerator(key, value));
+}
+void MethodContext::dmpIsEnumerableAndEnumerator(DWORDLONG key, DWORD value)
+{
+    printf("IsEnumerableAndEnumerator key cls-%016" PRIX64 ", value-%u", key, value);
+}
+bool MethodContext::repIsEnumerableAndEnumerator(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(IsEnumerableAndEnumerator, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpIsEnumerableAndEnumerator(key, value));
+    return value != 0;
+}
+
 void MethodContext::recAsCorInfoType(CORINFO_CLASS_HANDLE cls, CorInfoType result)
 {
     if (AsCorInfoType == nullptr)

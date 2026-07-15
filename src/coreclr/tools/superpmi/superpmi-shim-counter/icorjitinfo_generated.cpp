@@ -1051,6 +1051,13 @@ uint32_t interceptor_ICJI::getAddressAlignment(
     return original_ICorJitInfo->getAddressAlignment(address);
 }
 
+bool interceptor_ICJI::isEnumerableAndEnumerator(
+          CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("isEnumerableAndEnumerator");
+    return original_ICorJitInfo->isEnumerableAndEnumerator(cls);
+}
+
 uint32_t interceptor_ICJI::getThreadTLSIndex(
           void** ppIndirection)
 {
