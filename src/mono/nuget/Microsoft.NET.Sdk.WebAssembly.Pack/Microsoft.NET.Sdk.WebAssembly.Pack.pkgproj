@@ -16,6 +16,12 @@
       <PackageFile Include="$(SdkTargetsPath)" TargetPath="Sdk" />
 
       <_WasmAppHostFiles Include="$(WasmAppHostDir)\*" TargetPath="WasmAppHost" />
+      <!-- The Blazor Gateway (browser dev server) payload is copied into a BlazorGateway subfolder of the
+           WasmAppHost output, so it must be packed recursively while preserving that folder structure. The
+           RecursiveDir metadata is applied in a separate transform because it is not populated when referenced
+           on the same wildcard Include. -->
+      <_WasmAppHostGatewayFiles Include="$(WasmAppHostDir)\BlazorGateway\**\*" />
+      <_WasmAppHostFiles Include="@(_WasmAppHostGatewayFiles)" TargetPath="WasmAppHost\BlazorGateway\%(RecursiveDir)" />
       <PackageFile Include="@(_WasmAppHostFiles)" />
     </ItemGroup>
 
