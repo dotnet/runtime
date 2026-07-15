@@ -12514,7 +12514,22 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "IsSurrogate",
        "AddByteOffset",
        "IndexOfAnyChar",
-       "NullRef"
+       "NullRef",
+       "AllCharsInUInt64AreAscii",
+       "BulkMoveWithWriteBarrier",
+       "CheckAsyncTaskInProgress",
+       "CheckFileCall",
+       "CheckName",
+       "CheckOriginalRuntimeType",
+       "Clear",
+       "CompareExchange",
+       "GetChars",
+       "GetConsoleEncoding",
+       "GetConstructorList",
+       "GetEncoder",
+       "TryGetSpan",
+       "MemoryCopy",
+       "Read"
 
 
     };
@@ -12575,12 +12590,11 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         { "System.Diagnostics.Tracing.Statics",".cctor"},
         { "OrdinalComparer",".ctor"},
         { "System.Collections.Generic.List`1[Char]",".cctor"},
-        { "System.Collections.Generic.Dictionary`2[Char,__Canon]:.ctor"},
+        { "System.Collections.Generic.Dictionary`2[Char,__Canon]",".ctor"},
         { "System.Diagnostics.Tracing.EventSourceInitHelper",".cctor"},
         { "System.Collections.Generic.List`1[__Canon]",".cctor"},
         { "OverrideEventProvider",".ctor"},
         { "System.Diagnostics.Tracing.EventPipeEventProvider",".ctor"},
-        { "System.Runtime.InteropServices.GCHandle",".ctor"},
 	{ "System.Reflection.MethodBase",".ctor"},
 	{ "System.Reflection.MemberInfo",".ctor"},
 	{ "System.Reflection.ConstructorInfo",".ctor"},
@@ -12588,7 +12602,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
 	{ "IntroducedMethodEnumerator",".ctor"},
 	{ "Filter",".ctor"},
 	{ "System.MdUtf8String",".ctor"},
-	{ "MemberInfoCache`1[__Canon]:.ctor"},
 
     };
 
