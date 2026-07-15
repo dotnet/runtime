@@ -4843,7 +4843,7 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            Dictionary<ulong, uint> expectedElements = elements.ToDictionary(tuple => tuple.Address.ToClrDataAddress(_target).Value, tuple => tuple.Index);
+            Dictionary<ulong, uint> expectedElements = elements.ToDictionary(tuple => tuple.Address.ToClrDataAddress(_target).Value, tuple => EcmaMetadataUtils.GetRowId(tuple.Index));
             expectedElements.Add(default, 0);
             void* tokenDebug = GCHandle.ToIntPtr(GCHandle.Alloc(expectedElements)).ToPointer();
             delegate* unmanaged<uint, ulong, void*, void> callbackDebugPtr = &TraverseModuleMapCallback;

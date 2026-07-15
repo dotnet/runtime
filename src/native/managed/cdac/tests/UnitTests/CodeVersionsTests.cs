@@ -92,14 +92,14 @@ internal static class MockExtensions
                 ModuleLookupMapKind.MethodDefToILCodeVersioningState,
                 It.IsAny<uint>(),
                 out It.Ref<TargetNUInt>.IsAny))
-        .Returns<Contracts.ModuleHandle, ModuleLookupMapKind, uint, TargetNUInt>((_, _, token, flags) =>
+        .Returns<Contracts.ModuleHandle, ModuleLookupMapKind, uint, TargetNUInt>((_, kind, token, flags) =>
         {
             flags = new TargetNUInt(0);
             if (module.MethodDefToILCodeVersioningStateTable.TryGetValue(EcmaMetadataUtils.GetRowId(token), out TargetPointer value))
             {
                 return value;
             }
-            throw new InvalidOperationException($"No token found for 0x{token:x}");
+            throw new InvalidOperationException($"No token found for 0x{token:x} in lookup map {kind}");
         });
     }
 
