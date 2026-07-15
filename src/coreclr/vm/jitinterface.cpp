@@ -12512,7 +12512,18 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "AllCharsInUInt64AreAscii",
        "BulkMoveWithWriteBarrier",
        "CheckAsyncTaskInProgress",
-       "CheckFileCall"
+       "CheckFileCall",
+       "CheckName",
+       "CheckOriginalRuntimeType",
+       "Clear",
+       "CompareExchange",
+       "GetChars",
+       "GetConsoleEncoding",
+       "GetConstructorList",
+       "GetEncoder",
+       "TryGetSpan",
+       "MemoryCopy",
+       "Read"
 
 
     };
