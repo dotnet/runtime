@@ -432,6 +432,10 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 
         while (true)
         {
+            if (totalSize > 100000000 || dataSize > 100000000)
+            {
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CLDB_E_FILE_CORRUPT)!;
+            }
             if (dataSize > 0)
             {
                 segments.Add((segData, dataSize));

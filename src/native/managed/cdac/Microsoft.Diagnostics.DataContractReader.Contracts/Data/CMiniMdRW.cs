@@ -17,7 +17,7 @@ internal sealed partial class CMiniMdRW : IData<CMiniMdRW>
     [FieldAddress] public TargetPointer BlobHeap { get; }
     [FieldAddress] public TargetPointer UserStringHeap { get; }
     [FieldAddress] public TargetPointer GuidHeap { get; }
-    public TargetPointer[] TableSegments { get; private set; }
+    public ImmutableArray<TargetPointer> TableSegments { get; private set; }
 
     [MemberNotNull(nameof(TableSegments))]
     partial void OnInit(Target target, TargetPointer address)
@@ -26,10 +26,11 @@ internal sealed partial class CMiniMdRW : IData<CMiniMdRW>
         uint tableStride = target.GetTypeInfo(DataType.TableRW).Size
             ?? throw new InvalidOperationException("TableRW size is required to index the tables array.");
 
-        TableSegments = new TargetPointer[tableCount];
+        var tableSegments = new TargetPointer[tableCount];
         for (int i = 0; i < tableCount; i++)
         {
-            TableSegments[i] = Tables + (ulong)i * tableStride;
+            tableSegments[i] = Tables + (ulong)i * tableStride;
         }
+        TableSegments = ImmutableArray.Create(tableSegments);
     }
 }
