@@ -11,10 +11,8 @@ set(WASIHOST_SOURCES
     ./wasihost.cpp
 )
 
-# Reuse the corerun pal (path handling, CORE_ROOT/TPA directory enumeration, absolute-path
-# resolution) so the host's assembly discovery stays identical to the validated corerun-based host.
-# The header is self-contained (only <config.h> and minipal headers), so no corerun runtime object
-# is linked into this archive.
+# Reuse the corerun pal header (path/CORE_ROOT/TPA helpers); it's header-only, so no corerun object
+# is linked here.
 set(WASIHOST_CORERUN_DIR ${CLR_REPO_ROOT_DIR}/src/coreclr/hosts/corerun)
 
 add_library(WasiHost-Static
@@ -23,10 +21,8 @@ add_library(WasiHost-Static
 )
 set_target_properties(WasiHost-Static PROPERTIES OUTPUT_NAME WasiHost CLEAN_DIRECT_OUTPUT 1)
 
-# The shared corerun pal header compiles the wasi paths against the emulated wasi-libc facilities
-# (mmap/getpid/signal/process-clocks). The coreclr build sets these globally for wasi; the corehost
-# build does not, so set them here. The matching -lwasi-emulated-* libraries are supplied at the
-# per-app relink (src/mono/wasi/build/WasiApp.CoreCLR.targets).
+# The coreclr build sets these wasi emulation defines globally; the corehost build does not. The
+# matching -lwasi-emulated-* libraries are supplied at the per-app relink.
 if (CLR_CMAKE_TARGET_WASI)
     target_compile_definitions(WasiHost-Static PRIVATE
         _WASI_EMULATED_MMAN
@@ -41,8 +37,6 @@ target_include_directories(WasiHost-Static PRIVATE
     ${CLR_SRC_NATIVE_DIR}        # minipal/*.h
 )
 
-# The runtime static libraries (coreclr_static, System.Native, minipal, ...) and the app-generated
-# callhelpers are NOT linked here; they are supplied at the per-app relink from the runtime pack
-# (src/mono/wasi/build/WasiApp.CoreCLR.targets), which pulls this archive whole-archive so
-# main()/_start are included.
+# The runtime static libraries and the app-generated callhelpers are supplied at the per-app relink
+# (src/mono/wasi/build/WasiApp.CoreCLR.targets), which pulls this archive whole-archive for main().
 install(TARGETS WasiHost-Static DESTINATION sharedFramework COMPONENT runtime)
