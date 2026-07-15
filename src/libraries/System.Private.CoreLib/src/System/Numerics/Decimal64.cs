@@ -343,6 +343,17 @@ namespace System.Numerics
         // Explicit conversions to Decimal64
         //
 
+        /// <summary>Explicitly converts a <see cref="System.IntPtr" /> value to its nearest representable <see cref="System.Numerics.Decimal64" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal64" /> value.</returns>
+        public static explicit operator Decimal64(nint value) => new Decimal64(Number.ConvertIntegerToDecimalIeee754<Decimal64, ulong, nint>(value));
+
+        /// <summary>Explicitly converts a <see cref="System.UIntPtr" /> value to its nearest representable <see cref="System.Numerics.Decimal64" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal64" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator Decimal64(nuint value) => new Decimal64(Number.ConvertIntegerToDecimalIeee754<Decimal64, ulong, nuint>(value));
+
         /// <summary>Explicitly converts a <see cref="long" /> value to its nearest representable <see cref="System.Numerics.Decimal64" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal64" /> value.</returns>
@@ -611,17 +622,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal64" /> value.</returns>
         [CLSCompliant(false)]
         public static implicit operator Decimal64(uint value) => new Decimal64(Number.ConvertIntegerToDecimalIeee754<Decimal64, ulong, uint>(value));
-
-        /// <summary>Implicitly converts a <see cref="System.IntPtr" /> value to its nearest representable <see cref="System.Numerics.Decimal64" /> value.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal64" /> value.</returns>
-        public static implicit operator Decimal64(nint value) => new Decimal64(Number.ConvertIntegerToDecimalIeee754<Decimal64, ulong, nint>(value));
-
-        /// <summary>Implicitly converts a <see cref="System.UIntPtr" /> value to its nearest representable <see cref="System.Numerics.Decimal64" /> value.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal64" /> value.</returns>
-        [CLSCompliant(false)]
-        public static implicit operator Decimal64(nuint value) => new Decimal64(Number.ConvertIntegerToDecimalIeee754<Decimal64, ulong, nuint>(value));
 
         //
         // Implicit conversions from Decimal64
@@ -1081,12 +1081,12 @@ namespace System.Numerics
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                result = (nint)(object)value;
+                result = (Decimal64)(nint)(object)value;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                result = (nuint)(object)value;
+                result = (Decimal64)(nuint)(object)value;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
