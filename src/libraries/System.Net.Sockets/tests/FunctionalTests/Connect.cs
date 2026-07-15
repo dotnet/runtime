@@ -17,9 +17,6 @@ namespace System.Net.Sockets.Tests
     {
         public Connect(ITestOutputHelper output) : base(output) {}
 
-        public static bool IsSingleConnectExposeHandleSupported =>
-            !(PlatformDetection.IsAppleMobile && PlatformDetection.IsCoreCLR);
-
         [OuterLoop]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // async SocketTestServer requires threads
         [MemberData(nameof(Loopbacks))]
@@ -285,7 +282,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(nameof(IsSingleConnectExposeHandleSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task SingleConnect_ExposeHandle_SecondAttemptThrowsPNSEOnUnix()
         {
