@@ -281,37 +281,6 @@ namespace System.Net.Sockets.Tests
             Assert.True(c.Connected);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
-        public async Task SingleConnect_ExposeHandle_SecondAttemptThrowsPNSEOnUnix()
-        {
-            int port = -1;
-            using PortBlocker portBlocker = new PortBlocker(() =>
-            {
-                Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                port = s.BindToAnonymousPort(IPAddress.Loopback);
-                return s;
-            });
-
-            using Socket c = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            _ = c.SafeHandle; // Expose the handle.
-
-            IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, port);
-
-            // No listeners, the first connect should fail.
-            await Assert.ThrowsAsync<SocketException>(() => ConnectAsync(c, ep));
-
-            // Start listening so connecting should be possible.
-            Socket listeningSocket = portBlocker.MainSocket;
-            listeningSocket.Listen();
-            _ = listeningSocket.AcceptAsync();
-
-            // The second attempt throws PNSE on Unix.
-            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => ConnectAsync(c, ep));
-        }
-
         [ConditionalFact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
@@ -587,6 +556,37 @@ namespace System.Net.Sockets.Tests
     {
         protected Connect_NonParallel(ITestOutputHelper output) : base(output)
         {
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        public async Task SingleConnect_ExposeHandle_SecondAttemptThrowsPNSEOnUnix()
+        {
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                s.BindToAnonymousPort(IPAddress.Loopback);
+                return s;
+            });
+
+            IPEndPoint ep = (IPEndPoint)portBlocker.MainSocket.LocalEndPoint!;
+            portBlocker.MainSocket.Dispose();
+
+            using Socket c = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            _ = c.SafeHandle; // Expose the handle.
+
+            // The released endpoint rejects the first connect promptly.
+            await Assert.ThrowsAsync<SocketException>(() => ConnectAsync(c, ep));
+
+            using Socket listeningSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listeningSocket.Bind(ep);
+            listeningSocket.Listen();
+            _ = listeningSocket.AcceptAsync();
+
+            // The second attempt throws PNSE on Unix.
+            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => ConnectAsync(c, ep));
         }
 
         [ConditionalTheory]
