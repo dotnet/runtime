@@ -173,7 +173,7 @@ namespace {Namespace}
             if (LargestVectorSize < Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() ||
                  LargestVectorSize < Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>())
             {
-                throw new ArgumentException("Invalid value of alignment");
+                throw new ArgumentException("Invalid value of LargestVectorSize");
             }
 
             _dataTable = new DataTable(_data1, new {RetBaseType}[RetElementCount], LargestVectorSize);

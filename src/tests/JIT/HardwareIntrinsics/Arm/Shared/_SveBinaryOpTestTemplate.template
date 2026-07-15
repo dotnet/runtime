@@ -131,7 +131,7 @@ namespace {Namespace}
                  LargestVectorSize < Unsafe.SizeOf<Vector<{Op2BaseType}>>() ||
                  LargestVectorSize < Unsafe.SizeOf<Vector<{RetBaseType}>>())
             {
-                throw new ArgumentException("Invalid value of alignment");
+                throw new ArgumentException("Invalid value of LargestVectorSize");
             }
 
             _pinnedOp1 = new TestLibrary.Vectors.PinnedVector<{Op1BaseType}>(_fld1, LargestVectorSize);
