@@ -1203,6 +1203,26 @@ namespace Microsoft.Extensions.Options.Tests
             ValidateOptionsResult result = await validator.ValidateAsync(Options.DefaultName, options);
             Assert.True(result.Succeeded);
         }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_ReportsInvalidItemAfterNullElement()
+        {
+            var options = new ParentWithEnumeratedItems
+            {
+                Items = new List<EnumeratedChildOptions?>
+                {
+                    new() { Name = "first" },
+                    null,
+                    new() { Name = null },
+                }
+            };
+
+            var validator = new DataAnnotationValidateOptions<ParentWithEnumeratedItems>(Options.DefaultName);
+            ValidateOptionsResult result = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(result.Failed);
+            Assert.Contains("ParentWithEnumeratedItems.Items[2]", result.FailureMessage);
+            Assert.DoesNotContain("[1]", result.FailureMessage);
+        }
 #endif // NET11_0_OR_GREATER
     }
 }
