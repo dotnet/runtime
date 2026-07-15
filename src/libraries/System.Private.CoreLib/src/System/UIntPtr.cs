@@ -1170,6 +1170,30 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        static bool INumberBase<nuint>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nuint result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nuint, nuint_t>(ref result), out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        static bool INumberBase<nuint>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nuint result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nuint, nuint_t>(ref result), out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        static bool INumberBase<nuint>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out nuint result, out int bytesConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nuint, nuint_t>(ref result), out bytesConsumed) == Number.ParsingStatus.OK;
+        }
+
         //
         // IShiftOperators
         //

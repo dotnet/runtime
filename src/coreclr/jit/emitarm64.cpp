@@ -4596,18 +4596,17 @@ void emitter::emitIns_R_R(instruction     ins,
                 fmt = IF_DV_2M;
                 break;
             }
-            if (ins == INS_cnt)
-            {
-                // Doesn't have general register version(s)
-                break;
-            }
-
+            // INS_cnt on general registers requires FEAT_CSSC; fall through to the DR_2G encoding.
+            assert((ins != INS_cnt) || m_compiler->compIsaSupportedDebugOnly(InstructionSet_Cssc));
             FALLTHROUGH;
 
+        case INS_ctz:
         case INS_rev:
             assert(insOptsNone(opt));
             assert(isGeneralRegister(reg1));
             assert(isGeneralRegister(reg2));
+            // INS_ctz on general registers requires FEAT_CSSC.
+            assert((ins != INS_ctz) || m_compiler->compIsaSupportedDebugOnly(InstructionSet_Cssc));
             if (ins == INS_rev32)
             {
                 assert(size == EA_8BYTE);
@@ -15017,8 +15016,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     // First load/store tmpReg with the large offset constant
                     codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
                     // Then add the base register
-                    //      rd = rd + base
-                    emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, memBase->GetRegNum());
+                    //      rd = base + rd
+                    emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), tmpReg);
 
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
                     noway_assert(tmpReg != index->GetRegNum());
@@ -18093,6 +18092,15 @@ bool emitter::TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber
     }
 
     void* sym = prevId->idAddr()->iiaAddr;
+
+    // PAGEOFFSET_12L encodes the :lo12: page offset scaled by 8, so the reloc target must be at
+    // least 8-byte aligned. Only fold when the VM guarantees that alignment for 'sym' (e.g. in
+    // NativeAOT a byte-packed non-GC static region may be only 4-byte aligned, which the linker
+    // rejects for R_AARCH64_LDST64_ABS_LO12_NC).
+    if (m_compiler->eeGetAddressAlignment(sym) < 8)
+    {
+        return false;
+    }
 
     // Drop the "add"; the preceding "adrp" already put the page base of 'sym' into reg1.
     emitRemoveLastInstruction();

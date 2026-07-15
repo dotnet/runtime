@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -24,6 +25,49 @@ namespace System.Tests
         // will use CrossPlatformMachineEpsilon / 10 and expected result in the format of x.xxxxxx will
         // use CrossPlatformMachineEpsilon * 10.
         private static Half CrossPlatformMachineEpsilon => (Half)3.90625e-03f;
+
+        public static IEnumerable<object[]> ExplicitConversion_FromDecimal_TestData()
+        {
+            // The conversion must be correctly rounded. Several of these values round differently when the
+            // conversion goes through float first (double rounding), since float's 24-bit significand only
+            // just meets the 2 * 11 + 2 bound needed for the second rounding to Half to be innocuous.
+            yield return new object[] { 29.101563197521766818810399014m, (ushort)0x4F47 };
+            yield return new object[] { 31.61718659002636828475762054m, (ushort)0x4FE7 };
+            yield return new object[] { -0.2764892618124898818101803106m, (ushort)0xB46D };
+            yield return new object[] { 2174.9999823571306366729268181m, (ushort)0x683F };
+            yield return new object[] { -11.800781577718180009007584962m, (ushort)0xC9E7 };
+            yield return new object[] { -19752.000968250648361227086248m, (ushort)0xF4D3 };
+
+            // Subnormal, subnormal/normal boundary, and overflow.
+            yield return new object[] { 0.00003m, (ushort)0x01F7 };
+            yield return new object[] { 0.00003051758m, (ushort)0x0200 };
+            yield return new object[] { 100000m, (ushort)0x7C00 };
+            yield return new object[] { -100000m, (ushort)0xFC00 };
+        }
+
+        [Theory]
+        [MemberData(nameof(ExplicitConversion_FromDecimal_TestData))]
+        public static void ExplicitConversion_FromDecimal(decimal value, ushort expectedBits)
+        {
+            Half actual = (Half)value;
+            Assert.Equal(expectedBits, BitConverter.HalfToUInt16Bits(actual));
+        }
+
+        [Theory]
+        [InlineData((ushort)0x0000)] // +zero
+        [InlineData((ushort)0x3C00)] // 1
+        [InlineData((ushort)0x3555)] // ~0.333
+        [InlineData((ushort)0x0001)] // Epsilon (min positive subnormal)
+        [InlineData((ushort)0x03FF)] // max subnormal
+        [InlineData((ushort)0x0400)] // min normal
+        [InlineData((ushort)0x7BFF)] // MaxValue
+        [InlineData((ushort)0xC900)] // -10
+        public static void ExplicitConversion_ToDecimal_RoundTrips(ushort bits)
+        {
+            // Every finite Half value is exactly representable as a decimal, so Half -> decimal -> Half is lossless.
+            Half value = BitConverter.UInt16BitsToHalf(bits);
+            Assert.Equal(value, (Half)(decimal)value);
+        }
 
         [Fact]
         public static void Epsilon()
@@ -549,19 +593,6 @@ namespace System.Tests
 
             foreach ((float original, Half expected) in data)
             {
-                // WASM on Mono lowers `float.Min` / `float.Max` through `f32.min` / `f32.max`
-                // (and `float.IsNaN(...)` branches through `f32.add`). The WebAssembly spec
-                // permits NaN-payload canonicalization on these ops but doesn't require it --
-                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
-                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
-                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
-                // trip through the software conversion path in that environment. Gated on
-                // Mono specifically since other WASM runtimes don't share this lowering.
-                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
-                // be removed once the conversion path either avoids the canonicalizing ops
-                // or the host engines start preserving NaN payloads.
-                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && float.IsNaN(original))
-                    continue;
                 yield return new object[] { original, expected };
             }
         }
@@ -571,6 +602,21 @@ namespace System.Tests
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)f;
+
+            // The software `float`->`Half` conversion routes the value through `f32.abs`/`f32.min`/
+            // `f32.max`/`f32.add`, and the WebAssembly spec permits (but doesn't require) host engines
+            // to canonicalize NaN payloads on those ops -- the V8 engine used on CI does. The sign is
+            // still carried through the integer ALU, so a canonicalized result is `sign | 0x7E00`.
+            // Accept that as the expected value on WASM. See https://github.com/dotnet/runtime/issues/103347.
+            if (PlatformDetection.IsWasm && Half.IsNaN(expected))
+            {
+                ushort canonical = (ushort)((BitConverter.HalfToUInt16Bits(expected) & 0x8000) | 0x7E00);
+                if (BitConverter.HalfToUInt16Bits(h) == canonical)
+                {
+                    expected = h;
+                }
+            }
+
             AssertExtensions.Equal(expected, h);
         }
 
@@ -669,6 +715,122 @@ namespace System.Tests
         public static void ExplicitConversion_FromDouble(double d, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)d;
+            AssertExtensions.Equal(expected, h);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromInt32_TestData()
+        {
+            (int, Half)[] data =
+            {
+                (0, BitConverter.UInt16BitsToHalf(0x0000)),
+                (2048, BitConverter.UInt16BitsToHalf(0x6800)), // 2^11 exact
+                (2049, BitConverter.UInt16BitsToHalf(0x6800)), // rounds to even (lower)
+                (2050, BitConverter.UInt16BitsToHalf(0x6801)), // exact
+                (2051, BitConverter.UInt16BitsToHalf(0x6802)), // rounds to even (higher)
+                (4097, BitConverter.UInt16BitsToHalf(0x6C00)), // rounds lower
+                (4098, BitConverter.UInt16BitsToHalf(0x6C00)), // rounds to even
+                (4100, BitConverter.UInt16BitsToHalf(0x6C01)), // exact
+                (65504, BitConverter.UInt16BitsToHalf(0x7BFF)), // largest finite
+                (65519, BitConverter.UInt16BitsToHalf(0x7BFF)), // rounds down to largest finite
+                (65520, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (int.MaxValue, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (-2049, BitConverter.UInt16BitsToHalf(0xE800)), // rounds to even (toward zero)
+                (-65520, BitConverter.UInt16BitsToHalf(0xFC00)), // overflow to negative infinity
+                (int.MinValue, BitConverter.UInt16BitsToHalf(0xFC00)), // overflow to negative infinity
+            };
+
+            foreach ((int original, Half expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromInt32_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromInt32(int i, Half expected)
+        {
+            Half h = (Half)i;
+            AssertExtensions.Equal(expected, h);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromUInt32_TestData()
+        {
+            (uint, Half)[] data =
+            {
+                (0, BitConverter.UInt16BitsToHalf(0x0000)),
+                (2049, BitConverter.UInt16BitsToHalf(0x6800)), // rounds to even (lower)
+                (65504, BitConverter.UInt16BitsToHalf(0x7BFF)), // largest finite
+                (65519, BitConverter.UInt16BitsToHalf(0x7BFF)), // rounds down to largest finite
+                (65520, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (0x8000_0000, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (uint.MaxValue, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+            };
+
+            foreach ((uint original, Half expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromUInt32_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromUInt32(uint i, Half expected)
+        {
+            Half h = (Half)i;
+            AssertExtensions.Equal(expected, h);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromInt64_TestData()
+        {
+            (long, Half)[] data =
+            {
+                (0, BitConverter.UInt16BitsToHalf(0x0000)),
+                (2049, BitConverter.UInt16BitsToHalf(0x6800)), // rounds to even (lower)
+                (65519, BitConverter.UInt16BitsToHalf(0x7BFF)), // rounds down to largest finite
+                (65520, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (0x1_0000_0000, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (long.MaxValue, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (-2049, BitConverter.UInt16BitsToHalf(0xE800)), // rounds to even (toward zero)
+                (long.MinValue, BitConverter.UInt16BitsToHalf(0xFC00)), // overflow to negative infinity
+            };
+
+            foreach ((long original, Half expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromInt64_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromInt64(long i, Half expected)
+        {
+            Half h = (Half)i;
+            AssertExtensions.Equal(expected, h);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromUInt64_TestData()
+        {
+            (ulong, Half)[] data =
+            {
+                (0, BitConverter.UInt16BitsToHalf(0x0000)),
+                (2049, BitConverter.UInt16BitsToHalf(0x6800)), // rounds to even (lower)
+                (65519, BitConverter.UInt16BitsToHalf(0x7BFF)), // rounds down to largest finite
+                (65520, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (0x1_0000_0000, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (ulong.MaxValue, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+            };
+
+            foreach ((ulong original, Half expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromUInt64_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromUInt64(ulong i, Half expected)
+        {
+            Half h = (Half)i;
             AssertExtensions.Equal(expected, h);
         }
 
@@ -788,6 +950,12 @@ namespace System.Tests
             // Various representations
             yield return new object[] { "0xA.0p0", NumberStyles.HexFloat, invariantFormat, 10.0f };
             yield return new object[] { "0x.1p4", NumberStyles.HexFloat, invariantFormat, 1.0f };
+
+            // Special values (Infinity/NaN) are supported with HexFloat
+            yield return new object[] { "Infinity", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "+Infinity", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "-Infinity", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
+            yield return new object[] { "NaN", NumberStyles.HexFloat, invariantFormat, float.NaN };
         }
 
         [Theory]
@@ -873,8 +1041,6 @@ namespace System.Tests
             yield return new object[] { "0x1.0p0garbage", NumberStyles.HexFloat, null, typeof(FormatException) }; // Trailing garbage
             yield return new object[] { "+-0x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double sign
             yield return new object[] { "0x1.0p+-1", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double exponent sign
-            yield return new object[] { "NaN", NumberStyles.HexFloat, null, typeof(FormatException) }; // NaN not valid for HexFloat
-            yield return new object[] { "Infinity", NumberStyles.HexFloat, null, typeof(FormatException) }; // Infinity not valid for HexFloat
             yield return new object[] { "0xX1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double X
             yield return new object[] { "x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0 before x
             yield return new object[] { "0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
@@ -2449,6 +2615,126 @@ namespace System.Tests
             // Test another subnormal value: 0x0200 (half of max subnormal)
             Half subnormal = BitConverter.UInt16BitsToHalf(0x0200);
             Assert.Equal(-15, Half.ILogB(subnormal));
+        }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        {
+            // Basic Half parsing with trailing invalid characters
+            yield return new object[] { "123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)123.45, 6 };
+            yield return new object[] { "1.5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)1.5, 3 };
+            yield return new object[] { "0.123abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)0.123, 5 };
+
+            // With leading whitespace
+            yield return new object[] { "  12.5abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)12.5, 6 };
+
+            // With signs
+            yield return new object[] { "+12.5abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)12.5, 5 };
+            yield return new object[] { "-45.5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)(-45.5), 5 };
+
+            // With exponent
+            yield return new object[] { "1.5e2abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)1.5e2, 5 };
+
+            // Special values
+            yield return new object[] { "Infinityabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 8 };
+            yield return new object[] { "-Infinityxyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NegativeInfinity, 9 };
+            yield return new object[] { "NaNabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NaN, 3 };
+
+            // Special values always consume surrounding whitespace (independent of AllowLeadingWhite/AllowTrailingWhite) before stopping on the first non-whitespace invalid character
+            yield return new object[] { "Infinity   ", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 11 };
+            yield return new object[] { "Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 10 };
+            yield return new object[] { "+Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 11 };
+            yield return new object[] { "-Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NegativeInfinity, 11 };
+            yield return new object[] { "NaN  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NaN, 5 };
+
+            // AllowTrailingWhite has no effect on special values; the surrounding whitespace is still consumed
+            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite) | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 10 };
+
+            // Valid number without trailing characters
+            yield return new object[] { "123.45", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)123.45, 6 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, Half expectedValue, int expectedCharsConsumed)
+        {
+            Half result;
+            int charsConsumed;
+
+            // Test string overload with charsConsumed
+            Assert.True(NumberBaseHelper<Half>.TryParse(value, style, provider, out result, out charsConsumed));
+            if (Half.IsNaN(expectedValue))
+            {
+                Assert.True(Half.IsNaN(result));
+            }
+            else
+            {
+                Assert.Equal(expectedValue, result);
+            }
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.True(NumberBaseHelper<Half>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            if (Half.IsNaN(expectedValue))
+            {
+                Assert.True(Half.IsNaN(result));
+            }
+            else
+            {
+                Assert.Equal(expectedValue, result);
+            }
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(NumberBaseHelper<Half>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            if (Half.IsNaN(expectedValue))
+            {
+                Assert.True(Half.IsNaN(result));
+            }
+            else
+            {
+                Assert.Equal(expectedValue, result);
+            }
+            // For ASCII characters, bytes consumed should equal chars consumed
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        {
+            // Empty string
+            yield return new object[] { "", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
+
+            // Only invalid characters (no valid number)
+            yield return new object[] { "abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        {
+            Half result;
+            int charsConsumed;
+
+            // Test string overload with charsConsumed
+            Assert.False(NumberBaseHelper<Half>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal((Half)0.0, result);
+            Assert.Equal(0, charsConsumed);
+
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.False(NumberBaseHelper<Half>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal((Half)0.0, result);
+            Assert.Equal(0, charsConsumed);
+
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.False(NumberBaseHelper<Half>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal((Half)0.0, result);
+            Assert.Equal(0, bytesConsumed);
         }
     }
 }

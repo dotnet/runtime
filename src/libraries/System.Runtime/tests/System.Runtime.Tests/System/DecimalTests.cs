@@ -62,30 +62,36 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Ctor_Float_TestData()
         {
-            yield return new object[] { 123456789.123456f, new int[] { 123456800, 0, 0, 0 } };
-            yield return new object[] { 2.0123456789123456f, new int[] { 2012346, 0, 0, 393216 } };
+            yield return new object[] { 123456789.123456f, new int[] { 123456792, 0, 0, 0 } };
+            yield return new object[] { 2.0123456789123456f, new int[] { -875096961, 384330476, 109, 1376256 } };
             yield return new object[] { 2E-28f, new int[] { 2, 0, 0, 1835008 } };
             yield return new object[] { 2E-29f, new int[] { 0, 0, 0, 0 } };
-            yield return new object[] { 2E28f, new int[] { 536870912, 2085225666, 1084202172, 0 } };
+            yield return new object[] { 2E28f, new int[] { 0, 0, 1084202112, 0 } };
             yield return new object[] { 1.5f, new int[] { 15, 0, 0, 65536 } };
             yield return new object[] { 0f, new int[] { 0, 0, 0, 0 } };
             yield return new object[] { float.Parse("-0.0", CultureInfo.InvariantCulture), new int[] { 0, 0, 0, 0 } };
 
-            yield return new object[] { 1000000.1f, new int[] { 1000000, 0, 0, 0 } };
-            yield return new object[] { 100000.1f, new int[] { 1000001, 0, 0, 65536 } };
-            yield return new object[] { 10000.1f, new int[] { 100001, 0, 0, 65536 } };
-            yield return new object[] { 1000.1f, new int[] { 10001, 0, 0, 65536 } };
-            yield return new object[] { 100.1f, new int[] { 1001, 0, 0, 65536 } };
-            yield return new object[] { 10.1f, new int[] { 101, 0, 0, 65536 } };
-            yield return new object[] { 1.1f, new int[] { 11, 0, 0, 65536 } };
+            yield return new object[] { 1000000.1f, new int[] { 1000000125, 0, 0, 196608 } };
+            yield return new object[] { 100000.1f, new int[] { -726364343, 232, 0, 458752 } };
+            yield return new object[] { 10000.1f, new int[] { 1415744287, 2328, 0, 589824 } };
+            yield return new object[] { 1000.1f, new int[] { 903398831, 2328539, 0, 851968 } };
+            yield return new object[] { 100.1f, new int[] { 1924567103, -1964332589, 0, 1114112 } };
+            yield return new object[] { 10.1f, new int[] { 941681113, 2041059417, 5, 1245184 } };
+            yield return new object[] { 1.1f, new int[] { 736553673, 481370989, 5963, 1507328 } };
             yield return new object[] { 1f, new int[] { 1, 0, 0, 0 } };
-            yield return new object[] { 0.1f, new int[] { 1, 0, 0, 65536 } };
-            yield return new object[] { 0.01f, new int[] { 10, 0, 0, 196608 } };
-            yield return new object[] { 0.001f, new int[] { 1, 0, 0, 196608 } };
-            yield return new object[] { 0.0001f, new int[] { 10, 0, 0, 327680 } };
-            yield return new object[] { 0.00001f, new int[] { 10, 0, 0, 393216 } };
+            yield return new object[] { 0.1f, new int[] { 369308857, -243924598, 5421010, 1769472 } };
+            yield return new object[] { 0.01f, new int[] { 419115242, -1111286336, 5421010, 1835008 } };
+            yield return new object[] { 0.001f, new int[] { -504298085, 480998421, 542101, 1835008 } };
+            yield return new object[] { 0.0001f, new int[] { -673569463, 460655912, 54210, 1835008 } };
+            yield return new object[] { 0.00001f, new int[] { 1221133243, 46065591, 5421, 1835008 } };
             yield return new object[] { 0.0000000000000000000000000001f, new int[] { 1, 0, 0, 1835008 } };
             yield return new object[] { 0.00000000000000000000000000001f, new int[] { 0, 0, 0, 0 } };
+
+            // Magnitudes that round to zero must produce the canonical Decimal zero (positive, scale 0),
+            // never a signed or scaled zero, regardless of the sign of the input.
+            yield return new object[] { -2E-29f, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { float.Epsilon, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { -float.Epsilon, new int[] { 0, 0, 0, 0 } };
         }
 
         [Theory]
@@ -176,38 +182,44 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Ctor_Double_TestData()
         {
-            yield return new object[] { 123456789.123456, new int[] { -2045800064, 28744, 0, 393216 } };
-            yield return new object[] { 2.0123456789123456, new int[] { -1829795549, 46853, 0, 917504 } };
+            yield return new object[] { 123456789.123456, new int[] { 320956445, -521069915, 669260594, 1310720 } };
+            yield return new object[] { 2.0123456789123456, new int[] { 984009685, 1865266894, 1090894778, 1835008 } };
             yield return new object[] { 2E-28, new int[] { 2, 0, 0, 1835008 } };
             yield return new object[] { 2E-29, new int[] { 0, 0, 0, 0 } };
-            yield return new object[] { 2E28, new int[] { 536870912, 2085225666, 1084202172, 0 } };
+            yield return new object[] { 2E28, new int[] { 0, 2085225472, 1084202172, 0 } };
             yield return new object[] { 1.5, new int[] { 15, 0, 0, 65536 } };
             yield return new object[] { 0, new int[] { 0, 0, 0, 0 } };
             yield return new object[] { double.Parse("-0.0", CultureInfo.InvariantCulture), new int[] { 0, 0, 0, 0 } };
 
-            yield return new object[] { 100000000000000.1, new int[] { 276447232, 23283, 0, 0 } };
-            yield return new object[] { 10000000000000.1, new int[] { 276447233, 23283, 0, 65536 } };
-            yield return new object[] { 1000000000000.1, new int[] { 1316134913, 2328, 0, 65536 } };
-            yield return new object[] { 100000000000.1, new int[] { -727379967, 232, 0, 65536 } };
-            yield return new object[] { 10000000000.1, new int[] { 1215752193, 23, 0, 65536 } };
-            yield return new object[] { 1000000000.1, new int[] { 1410065409, 2, 0, 65536 } };
-            yield return new object[] { 100000000.1, new int[] { 1000000001, 0, 0, 65536 } };
-            yield return new object[] { 10000000.1, new int[] { 100000001, 0, 0, 65536 } };
-            yield return new object[] { 1000000.1, new int[] { 10000001, 0, 0, 65536 } };
-            yield return new object[] { 100000.1, new int[] { 1000001, 0, 0, 65536 } };
-            yield return new object[] { 10000.1, new int[] { 100001, 0, 0, 65536 } };
-            yield return new object[] { 1000.1, new int[] { 10001, 0, 0, 65536 } };
-            yield return new object[] { 100.1, new int[] { 1001, 0, 0, 65536 } };
-            yield return new object[] { 10.1, new int[] { 101, 0, 0, 65536 } };
-            yield return new object[] { 1.1, new int[] { 11, 0, 0, 65536 } };
+            yield return new object[] { 100000000000000.1, new int[] { -1981274977, -1966660860, 0, 327680 } };
+            yield return new object[] { 10000000000000.1, new int[] { -1204819169, 434162106, 542, 589824 } };
+            yield return new object[] { 1000000000000.1, new int[] { 269993391, 370410033, 542101, 851968 } };
+            yield return new object[] { 100000000000.1, new int[] { 1615233513, -590846009, 5421010, 983040 } };
+            yield return new object[] { 10000000000.1, new int[] { 1055397730, 1065895986, 542101086, 1179648 } };
+            yield return new object[] { 1000000000.1, new int[] { 977194654, 1275443532, 542101086, 1245184 } };
+            yield return new object[] { 100000000.1, new int[] { -758842506, -924048166, 542101086, 1310720 } };
+            yield return new object[] { 10000000.1, new int[] { -1231413974, -1444126665, 542101091, 1376256 } };
+            yield return new object[] { 1000000.1, new int[] { -1193913798, 1945022448, 542101140, 1441792 } };
+            yield return new object[] { 100000.1, new int[] { 1220031087, 1476775075, 542101628, 1507328 } };
+            yield return new object[] { 10000.1, new int[] { -1165287547, 1089266688, 542106507, 1572864 } };
+            yield return new object[] { 1000.1, new int[] { -1584991309, 1509150595, 542155296, 1638400 } };
+            yield return new object[] { 100.1, new int[] { 11443904, 1413022501, 542643187, 1703936 } };
+            yield return new object[] { 10.1, new int[] { 1009591096, 451743457, 547522097, 1769472 } };
+            yield return new object[] { 1.1, new int[] { -1014028300, -571112596, 596311194, 1835008 } };
             yield return new object[] { 1, new int[] { 1, 0, 0, 0 } };
-            yield return new object[] { 0.1, new int[] { 1, 0, 0, 65536 } };
-            yield return new object[] { 0.01, new int[] { 1, 0, 0, 131072 } };
-            yield return new object[] { 0.001, new int[] { 1, 0, 0, 196608 } };
-            yield return new object[] { 0.0001, new int[] { 1, 0, 0, 262144 } };
-            yield return new object[] { 0.00001, new int[] { 1, 0, 0, 327680 } };
+            yield return new object[] { 0.1, new int[] { -726076801, -1613725623, 54210108, 1835008 } };
+            yield return new object[] { 0.01, new int[] { 1611906123, -590869293, 5421010, 1835008 } };
+            yield return new object[] { 0.001, new int[] { 1449680801, 370409800, 542101, 1835008 } };
+            yield return new object[] { 0.0001, new int[] { -1545913784, 466537709, 54210, 1835008 } };
+            yield return new object[] { 0.00001, new int[] { -151203247, 46653770, 5421, 1835008 } };
             yield return new object[] { 0.0000000000000000000000000001, new int[] { 1, 0, 0, 1835008 } };
             yield return new object[] { 0.00000000000000000000000000001, new int[] { 0, 0, 0, 0 } };
+
+            // Magnitudes that round to zero must produce the canonical Decimal zero (positive, scale 0),
+            // never a signed or scaled zero, regardless of the sign of the input.
+            yield return new object[] { -2E-29, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { double.Epsilon, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { -double.Epsilon, new int[] { 0, 0, 0, 0 } };
         }
 
         [Theory]
@@ -227,6 +239,28 @@ namespace System.Tests
         [InlineData(double.NegativeInfinity)]
         public void Ctor_LargeDouble_ThrowsOverlowException(double value)
         {
+            Assert.Throws<OverflowException>(() => new decimal(value));
+        }
+
+        [Theory]
+        // Large-exponent values whose exact integer form exceeds 96 bits must overflow. The low mantissa bit
+        // ensures the exact value is not representable and that a naive left shift would wrap past 128 bits.
+        [InlineData(0x47F0_0000_0000_0001L)] // (2^52 + 1) * 2^76, the exact value spans 129 bits
+        [InlineData(0x4630_0000_0000_0001L)] // (2^52 + 1) * 2^48, the exact value spans 101 bits
+        [InlineData(unchecked((long)0xC7F0_0000_0000_0001UL))] // negative counterpart of the first case
+        public void Ctor_LargeDoubleBits_ThrowsOverflowException(long bits)
+        {
+            double value = BitConverter.Int64BitsToDouble(bits);
+            Assert.Throws<OverflowException>(() => new decimal(value));
+        }
+
+        [Theory]
+        // Large-exponent float values whose exact integer form exceeds 96 bits must overflow.
+        [InlineData(0x7F00_0001)] // (2^23 + 1) * 2^104, the exact value spans 128 bits
+        [InlineData(unchecked((int)0xFF00_0001))] // negative counterpart
+        public void Ctor_LargeFloatBits_ThrowsOverflowException(int bits)
+        {
+            float value = BitConverter.Int32BitsToSingle(bits);
             Assert.Throws<OverflowException>(() => new decimal(value));
         }
 
@@ -1490,6 +1524,55 @@ namespace System.Tests
             Assert.Equal(-f, decimal.ToSingle((decimal)-f));
         }
 
+        [Theory]
+        [InlineData("0")]
+        [InlineData("1.23")]
+        [InlineData("10000000000000.099609375")]
+        [InlineData("79228162514264337593543950335")] // decimal.MaxValue
+        [InlineData("-79228162514264337593543950335")] // decimal.MinValue
+        [InlineData("0.0000000000000000000000000001")] // smallest positive decimal
+        [InlineData("1.2299999999999999822364316060")]
+        public static void ToFloatingPoint_IsCorrectlyRounded(string value)
+        {
+            decimal d = decimal.Parse(value, CultureInfo.InvariantCulture);
+            string exact = d.ToString(CultureInfo.InvariantCulture);
+
+            // The decimal's exact value is preserved by ToString, so parsing it back gives the
+            // correctly-rounded floating-point result to compare against.
+            Assert.Equal(double.Parse(exact, CultureInfo.InvariantCulture), decimal.ToDouble(d));
+            Assert.Equal(float.Parse(exact, CultureInfo.InvariantCulture), decimal.ToSingle(d));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(1.23)]
+        [InlineData(-1.23)]
+        [InlineData(10000000000000.099609375)]
+        [InlineData(79228162514264328797450928128.0)]
+        [InlineData(0.001)]
+        [InlineData(2.0123456789123456)]
+        public static void FromDouble_MatchesParsedExpansion(double value)
+        {
+            // Per https://github.com/dotnet/runtime/issues/72135, the cast must match parsing the
+            // full base-10 expansion of the value rather than truncating to 15 digits.
+            decimal expected = decimal.Parse(value.ToString("G99", CultureInfo.InvariantCulture), NumberStyles.Float, CultureInfo.InvariantCulture);
+            Assert.Equal(expected, (decimal)value);
+        }
+
+        [Theory]
+        [InlineData(0.0f)]
+        [InlineData(1.23f)]
+        [InlineData(-1.23f)]
+        [InlineData(2.0123456789f)]
+        [InlineData(0.001f)]
+        public static void FromSingle_MatchesParsedExpansion(float value)
+        {
+            // Per https://github.com/dotnet/runtime/issues/72135, the cast must match parsing the
+            // full base-10 expansion of the value rather than truncating to 7 digits.
+            decimal expected = decimal.Parse(value.ToString("G99", CultureInfo.InvariantCulture), NumberStyles.Float, CultureInfo.InvariantCulture);
+            Assert.Equal(expected, (decimal)value);
+        }
+
         [Fact]
         public static void ToUInt16()
         {
@@ -2433,6 +2516,101 @@ namespace System.Tests
                     }
                 }
             }
+        }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        {
+            // Basic decimal parsing with trailing invalid characters
+            yield return new object[] { "123.45abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45m, 6 };
+            yield return new object[] { "456.78xyz", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 456.78m, 6 };
+            yield return new object[] { "0.123abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 0.123m, 5 };
+
+            // With leading whitespace
+            yield return new object[] { "  123.45abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45m, 8 };
+
+            // With signs
+            yield return new object[] { "+123.45abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45m, 7 };
+            yield return new object[] { "-456.78xyz", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, -456.78m, 7 };
+
+            // Integer without decimal point
+            yield return new object[] { "123abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123m, 3 };
+
+            // With thousands separator
+            NumberFormatInfo customFormat = new NumberFormatInfo() { NumberGroupSeparator = "," };
+            yield return new object[] { "1,234abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, customFormat, 1234m, 5 };
+
+            // Max and min values with trailing characters
+            yield return new object[] { "79228162514264337593543950335abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 79228162514264337593543950335m, 29 };
+            yield return new object[] { "-79228162514264337593543950335xyz", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, -79228162514264337593543950335m, 30 };
+
+            // Valid number without trailing characters
+            yield return new object[] { "123.45", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45m, 6 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, decimal expectedValue, int expectedCharsConsumed)
+        {
+            decimal result;
+            int charsConsumed;
+
+            // Test string overload with charsConsumed
+            Assert.True(NumberBaseHelper<decimal>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.True(NumberBaseHelper<decimal>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(NumberBaseHelper<decimal>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(expectedValue, result);
+            // For ASCII characters, bytes consumed should equal chars consumed
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        {
+            // Empty string
+            yield return new object[] { "", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
+
+            // Only invalid characters (no valid number)
+            yield return new object[] { "abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
+
+            // Overflow
+            yield return new object[] { "79228162514264337593543950336abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        {
+            decimal result;
+            int charsConsumed;
+
+            // Test string overload with charsConsumed
+            Assert.False(NumberBaseHelper<decimal>.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(0m, result);
+            Assert.Equal(0, charsConsumed);
+
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.False(NumberBaseHelper<decimal>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(0m, result);
+            Assert.Equal(0, charsConsumed);
+
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.False(NumberBaseHelper<decimal>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(0m, result);
+            Assert.Equal(0, bytesConsumed);
         }
     }
 }

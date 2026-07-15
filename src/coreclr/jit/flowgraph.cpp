@@ -758,7 +758,11 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
         case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
         case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
-            type = TYP_I_IMPL;
+            // In async calls we model these helpers as byrefs to get "killed
+            // across suspensions" behavior for free, while also properly
+            // ensuring derived addresses are byref typed and are treated
+            // similarly.
+            type = impInlineRoot()->compIsAsync() ? TYP_BYREF : TYP_I_IMPL;
             break;
 
         case CORINFO_HELP_INITCLASS:

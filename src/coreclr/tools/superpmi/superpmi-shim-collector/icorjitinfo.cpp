@@ -1382,11 +1382,11 @@ void interceptor_ICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
     mc->recGetAsyncInfo(pAsyncInfo);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg)
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
 {
     mc->cr->AddCall("getAwaitReturnCall");
-    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitReturnCall(callerHandle, instArg);
-    mc->recGetAwaitReturnCall(callerHandle, instArg, result);
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitReturnCall(callerHandle, contextHandle, instArg);
+    mc->recGetAwaitReturnCall(callerHandle, contextHandle, instArg, result);
     return result;
 }
 
@@ -2040,6 +2040,14 @@ CorInfoReloc interceptor_ICJI::getRelocTypeHint(void* target)
     mc->cr->AddCall("getRelocTypeHint");
     CorInfoReloc result = original_ICorJitInfo->getRelocTypeHint(target);
     mc->recGetRelocTypeHint(target, result);
+    return result;
+}
+
+uint32_t interceptor_ICJI::getAddressAlignment(void* address)
+{
+    mc->cr->AddCall("getAddressAlignment");
+    uint32_t result = original_ICorJitInfo->getAddressAlignment(address);
+    mc->recGetAddressAlignment(address, result);
     return result;
 }
 
