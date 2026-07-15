@@ -11,6 +11,8 @@
 
 #ifdef TARGET_WASM
 #include <pinvoke_override.hpp>
+#include <unistd.h>
+#include <cstdlib>
 #endif // TARGET_WASM
 
 #ifdef TARGET_BROWSER
@@ -867,6 +869,18 @@ static int self_test();
 
 int MAIN(const int argc, const char_t* argv[])
 {
+#ifdef TARGET_WASM
+    // The WasmFS node backend maps the virtual root "/" onto the host filesystem, but the process
+    // starts with its working directory set to "/", which is typically not writable on the host.
+    // libCorerun.js publishes the host process working directory via CORERUN_HOST_CWD; switch to it
+    // so relative file operations (for example the test harness temp log) land in a writable location.
+    const char* host_cwd = getenv("CORERUN_HOST_CWD");
+    if (host_cwd != nullptr && host_cwd[0] != '\0' && chdir(host_cwd) != 0)
+    {
+        pal::fprintf(stderr, W("corerun: failed to set working directory to '%s'\n"), host_cwd);
+    }
+#endif // TARGET_WASM
+
     configuration config{};
     if (!parse_args(argc, argv, config))
         return EXIT_FAILURE;

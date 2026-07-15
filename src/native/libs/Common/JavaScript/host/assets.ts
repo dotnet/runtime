@@ -10,21 +10,8 @@ const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof Web
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
 
 export function registerPdbBytes(bytes: Uint8Array, virtualPath: string) {
-    const lastSlash = virtualPath.lastIndexOf("/");
-    let parentDirectory = lastSlash > 0
-        ? virtualPath.substring(0, lastSlash)
-        : browserVirtualAppBase;
-    let fileName = lastSlash > 0 ? virtualPath.substring(lastSlash + 1) : virtualPath;
-    if (fileName.startsWith("/")) {
-        fileName = fileName.substring(1);
-    }
-    if (!parentDirectory.startsWith("/")) {
-        parentDirectory = browserVirtualAppBase + parentDirectory;
-    }
-
-    _ems_.dotnetLogger.debug(`Registering PDB '${fileName}' in directory '${parentDirectory}'`);
-    _ems_.FS.createPath("/", parentDirectory, true, true);
-    _ems_.FS.createDataFile(parentDirectory, fileName, bytes, true /* canRead */, true /* canWrite */, true /* canOwn */);
+    _ems_.dotnetLogger.debug(`Registering PDB '${virtualPath}'`);
+    writeFileToVfs(bytes, virtualPath);
 }
 
 export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortName: string) {
@@ -133,23 +120,8 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
     const virtualName: string = typeof (asset.virtualPath) === "string"
         ? asset.virtualPath
         : asset.name;
-    const lastSlash = virtualName.lastIndexOf("/");
-    let parentDirectory = (lastSlash > 0)
-        ? virtualName.substring(0, lastSlash)
-        : browserVirtualAppBase;
-    let fileName = (lastSlash > 0)
-        ? virtualName.substring(lastSlash + 1)
-        : virtualName;
-    if (fileName.startsWith("/")) {
-        fileName = fileName.substring(1);
-    }
-    if (!parentDirectory.startsWith("/")) {
-        parentDirectory = browserVirtualAppBase + parentDirectory;
-    }
-
-    _ems_.dotnetLogger.debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
-    _ems_.FS.createPath("/", parentDirectory, true, true);
-    _ems_.FS.createDataFile(parentDirectory, fileName, bytes, true /* canRead */, true /* canWrite */, true /* canOwn */);
+    _ems_.dotnetLogger.debug(`Creating VFS file '${virtualName}'`);
+    writeFileToVfs(bytes, virtualName);
 }
 
 export async function instantiateWasm(wasmPromise: Promise<Response>, imports: WebAssembly.Imports): Promise<{ instance: WebAssembly.Instance; module: WebAssembly.Module; }> {
@@ -185,5 +157,36 @@ export async function instantiateWasm(wasmPromise: Promise<Response>, imports: W
             res.isStreamingOk = false;
         }
         return res;
+    }
+}
+
+function writeFileToVfs(bytes: Uint8Array, virtualPath: string) {
+    const fullPath = virtualPath.startsWith("/") ? virtualPath : browserVirtualAppBase + virtualPath;
+    const pathPtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(fullPath) as any;
+    let dataPtr = 0;
+    try {
+        if (bytes.length > 0) {
+            const sp = _ems_.stackSave();
+            try {
+                const dataPtrPtr = _ems_.stackAlloc(sizeOfPtr);
+                if (_ems_._posix_memalign(dataPtrPtr as any, 16, bytes.length)) {
+                    throw new Error("posix_memalign failed");
+                }
+                dataPtr = _ems_.HEAPU32[dataPtrPtr as any >>> 2];
+            } finally {
+                _ems_.stackRestore(sp);
+            }
+            _ems_.HEAPU8.set(bytes, dataPtr >>> 0);
+        }
+
+        const rc = _ems_._BrowserHost_WriteFileToVfs(pathPtr, dataPtr, bytes.length);
+        if (rc !== 0) {
+            throw new Error(`Failed to write file '${fullPath}' to the virtual filesystem`);
+        }
+    } finally {
+        if (dataPtr) {
+            _ems_._free(dataPtr as any);
+        }
+        _ems_._free(pathPtr);
     }
 }

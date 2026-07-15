@@ -2,7 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <cstdio>
+#include <cstdint>
+#include <cstring>
+#include <cerrno>
+#include <climits>
 #include <vector>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #include <pal.h>
 #include <minipal/utils.h>
@@ -154,4 +161,83 @@ extern "C" int BrowserHost_ShutdownDotnet(int exit_code)
     }
 
     return latched_exit_code;
+}
+
+// Create all missing parent directories of the given path (equivalent to `mkdir -p` of
+// the dirname). Best-effort: existing directories (EEXIST) are ignored; a subsequent
+// open()/chdir() surfaces any real failure.
+static void BrowserHost_EnsureParentDirs(const char* path)
+{
+    char tmp[PATH_MAX];
+    size_t len = strlen(path);
+    if (len == 0 || len >= sizeof(tmp))
+    {
+        return;
+    }
+    memcpy(tmp, path, len + 1);
+    for (char* p = tmp + 1; *p != '\0'; ++p)
+    {
+        if (*p == '/')
+        {
+            *p = '\0';
+            if (mkdir(tmp, 0755) != 0 && errno != EEXIST)
+            {
+                // best-effort
+            }
+            *p = '/';
+        }
+    }
+}
+
+// Write bytes to a file in the (WASMFS) virtual filesystem, creating any missing parent
+// directories. This replaces the JS FS.createPath + FS.createDataFile pattern so the
+// JavaScript FS API (and -sFORCE_FILESYSTEM) is not required on the browser host.
+extern "C" int BrowserHost_WriteFileToVfs(const char* path, const void* data, int32_t length)
+{
+    BrowserHost_EnsureParentDirs(path);
+
+    int fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (fd < 0)
+    {
+        std::fprintf(stderr, "BrowserHost_WriteFileToVfs: open('%s') failed - errno %d\n", path, errno);
+        return -1;
+    }
+
+    const uint8_t* cursor = static_cast<const uint8_t*>(data);
+    int32_t remaining = length;
+    while (remaining > 0)
+    {
+        ssize_t written = write(fd, cursor, static_cast<size_t>(remaining));
+        if (written < 0)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            std::fprintf(stderr, "BrowserHost_WriteFileToVfs: write('%s') failed - errno %d\n", path, errno);
+            close(fd);
+            return -1;
+        }
+        cursor += written;
+        remaining -= static_cast<int32_t>(written);
+    }
+
+    close(fd);
+    return 0;
+}
+
+// Create (mkdir -p) and change into the working directory. Replaces FS.createPath + FS.chdir.
+extern "C" int BrowserHost_SetWorkingDirectory(const char* path)
+{
+    BrowserHost_EnsureParentDirs(path);
+    if (mkdir(path, 0755) != 0 && errno != EEXIST)
+    {
+        // best-effort; chdir() below surfaces a real failure
+    }
+    if (chdir(path) != 0)
+    {
+        std::fprintf(stderr, "BrowserHost_SetWorkingDirectory: chdir('%s') failed - errno %d\n", path, errno);
+        return -1;
+    }
+    return 0;
 }
