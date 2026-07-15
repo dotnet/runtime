@@ -94,9 +94,9 @@ namespace System.Net.Mime
                         byte b1 = HexDecodeMap[buffer[source]];
                         byte b2 = HexDecodeMap[buffer[source + 1]];
                         if (b1 == 255)
-                            throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source]));
                         if (b2 == 255)
-                            throw new FormatException(SR.Format(SR.InvalidHexDigit, b2));
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source + 1]));
 
                         buffer[destination++] = (byte)((b1 << 4) + b2);
                     }
@@ -111,9 +111,9 @@ namespace System.Net.Mime
                         byte b1 = HexDecodeMap[ReadState.Byte];
                         byte b2 = HexDecodeMap[buffer[source]];
                         if (b1 == 255)
-                            throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)ReadState.Byte));
                         if (b2 == 255)
-                            throw new FormatException(SR.Format(SR.InvalidHexDigit, b2));
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source]));
                         buffer[destination++] = (byte)((b1 << 4) + b2);
                     }
                     source++;
@@ -164,9 +164,9 @@ namespace System.Net.Mime
                                 byte b1 = HexDecodeMap[buffer[source + 1]];
                                 byte b2 = HexDecodeMap[buffer[source + 2]];
                                 if (b1 == 255)
-                                    throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
+                                    throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source + 1]));
                                 if (b2 == 255)
-                                    throw new FormatException(SR.Format(SR.InvalidHexDigit, b2));
+                                    throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source + 2]));
 
                                 buffer[destination++] = (byte)((b1 << 4) + b2);
                             }
