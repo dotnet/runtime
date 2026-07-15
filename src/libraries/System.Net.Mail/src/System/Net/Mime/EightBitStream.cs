@@ -131,26 +131,23 @@ namespace System.Net.Mime
                     continue;
                 }
 
-                // Just regular seven bit data
+                // Regular data byte, pass it through unchanged.
                 WriteState.Append(buffer[i]);
             }
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Close()
         {
-            try
+            if (_lastWriteEndedWithCr)
             {
-                if (disposing && _lastWriteEndedWithCr)
-                {
-                    // write the delayed CR
-                    _lastWriteEndedWithCr = false;
-                    BaseStream.WriteByte((byte)'\r');
-                }
+                // Write the delayed CR before the underlying stream is closed.
+                // DelegatedStream.Close() closes the underlying stream, so this
+                // must happen before we delegate to the base implementation.
+                _lastWriteEndedWithCr = false;
+                BaseStream.WriteByte((byte)'\r');
             }
-            finally
-            {
-                base.Dispose(disposing);
-            }
+
+            base.Close();
         }
 
         public override async ValueTask DisposeAsync()
