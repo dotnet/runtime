@@ -21,7 +21,7 @@ public class Runtime_72808
     {
         try
         {
-            Problem(null);
+            unsafe { Problem(null); }
         }
         catch (NullReferenceException)
         {
