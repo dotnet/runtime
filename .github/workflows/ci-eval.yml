@@ -8,7 +8,20 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-workflow-eval-${{ github.event.issue.number }}
+  group: >-
+    ${{
+      github.repository == 'dotnet/runtime' &&
+      github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER","MEMBER"]'), github.event.comment.author_association) &&
+      (
+        github.event.comment.body == '/ci-scan eval' || startsWith(github.event.comment.body, '/ci-scan eval ') ||
+        github.event.comment.body == '/ci-fix eval' || startsWith(github.event.comment.body, '/ci-fix eval ') ||
+        github.event.comment.body == '/ci-feedback eval' || startsWith(github.event.comment.body, '/ci-feedback eval ') ||
+        github.event.comment.body == '/ci-eval' || startsWith(github.event.comment.body, '/ci-eval ')
+      ) &&
+      format('ci-workflow-eval-{0}', github.event.issue.number) ||
+      format('ci-workflow-eval-ignored-{0}', github.run_id)
+    }}
   cancel-in-progress: true
 
 jobs:
@@ -26,14 +39,31 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
+      pull-requests: write
+      statuses: write
     steps:
+      - name: Set pending status
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data: pr } = await github.rest.pulls.get({
+              owner, repo, pull_number: context.issue.number,
+            });
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha: pr.head.sha, state: 'pending',
+              context: 'ci-workflow-eval',
+              target_url: `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              description: 'CI workflow eval is running',
+            });
+
       - name: Acknowledge the command
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
+            const { owner, repo } = context.repo;
             await github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner, repo: context.repo.repo,
-              comment_id: context.payload.comment.id, content: 'eyes',
+              owner, repo, comment_id: context.payload.comment.id, content: 'eyes',
             });
 
   pat_pool:
@@ -66,17 +96,48 @@ jobs:
           COPILOT_PAT_7: ${{ secrets.COPILOT_PAT_7 }}
           COPILOT_PAT_8: ${{ secrets.COPILOT_PAT_8 }}
           COPILOT_PAT_9: ${{ secrets.COPILOT_PAT_9 }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
         run: |
           PAT_NUMBERS=()
-          for i in $(seq 0 9); do
-            var="COPILOT_PAT_${i}"
-            if [ -n "${!var}" ]; then
-              PAT_NUMBERS+=("${i}")
+          PAT_VALUES=(
+            "$COPILOT_PAT_0" "$COPILOT_PAT_1" "$COPILOT_PAT_2" "$COPILOT_PAT_3" "$COPILOT_PAT_4"
+            "$COPILOT_PAT_5" "$COPILOT_PAT_6" "$COPILOT_PAT_7" "$COPILOT_PAT_8" "$COPILOT_PAT_9"
+          )
+          for i in {0..9}; do
+            token="${PAT_VALUES[$i]}"
+            if [ -n "$token" ]; then
+              response="$RUNNER_TEMP/copilot-pat-${i}.json"
+              if ! status=$(curl --silent --write-out '%{http_code}' \
+                --header "Authorization: Bearer $token" \
+                --header "Accept: application/vnd.github+json" \
+                --output "$response" \
+                https://api.github.com/user); then
+                status=000
+              fi
+              if [ "$status" = 200 ]; then
+                PAT_NUMBERS+=("${i}")
+              else
+                echo "::warning::Ignoring COPILOT_PAT_${i}: authentication check failed (HTTP ${status})."
+              fi
+              rm -f "$response"
             fi
           done
           if [ ${#PAT_NUMBERS[@]} -eq 0 ]; then
-            echo "::notice::No PAT pool entries set — falling back to COPILOT_GITHUB_TOKEN."
-            exit 0
+            response="$RUNNER_TEMP/copilot-github-token.json"
+            if [ -n "$COPILOT_GITHUB_TOKEN" ] &&
+              status=$(curl --silent --write-out '%{http_code}' \
+                --header "Authorization: Bearer $COPILOT_GITHUB_TOKEN" \
+                --header "Accept: application/vnd.github+json" \
+                --output "$response" \
+                https://api.github.com/user) &&
+              [ "$status" = 200 ]; then
+              echo "::notice::No valid PAT pool entries found — using COPILOT_GITHUB_TOKEN."
+              rm -f "$response"
+              exit 0
+            fi
+            rm -f "$response"
+            echo "::error::No valid Copilot token is available."
+            exit 1
           fi
           PAT_INDEX=$(( RANDOM % ${#PAT_NUMBERS[@]} ))
           PAT_NUMBER="${PAT_NUMBERS[$PAT_INDEX]}"
@@ -105,6 +166,7 @@ jobs:
     outputs:
       guard_run: ${{ steps.guard.outputs.run }}
       guard_reason: ${{ steps.guard.outputs.reason }}
+      head_sha: ${{ steps.guard.outputs.head_sha }}
     steps:
       - name: Select the spec(s) from the command
         id: sel
@@ -147,6 +209,7 @@ jobs:
             });
             const headRepo = pr.head.repo ? pr.head.repo.full_name : null;
             const base = `${owner}/${repo}`;
+            core.setOutput('head_sha', pr.head.sha);
             if (headRepo !== base) {
               core.setOutput('run', 'false');
               core.setOutput('reason',
@@ -290,6 +353,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
+      pull-requests: write
+      statuses: write
     steps:
       - name: Download the report
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -312,7 +377,11 @@ jobs:
             if (process.env.GUARD_RUN === 'true') {
               const header = '> [!NOTE]\n> AI/Copilot-generated eval report (Vally), triggered by a maintainer eval command.\n\n';
               let report = '_eval report unavailable_';
-              try { report = fs.readFileSync(path.join(process.env.RUNNER_TEMP, 'vally', 'report.md'), 'utf8'); } catch {}
+              try {
+                report = fs.readFileSync(path.join(process.env.RUNNER_TEMP, 'vally', 'report.md'), 'utf8');
+              } catch {
+                core.warning('The eval report artifact is unavailable.');
+              }
               body = `${marker}\n${header}${report}`;
             } else {
               body = `${marker}\n${process.env.GUARD_REASON || '_eval skipped_'}`;
@@ -326,3 +395,49 @@ jobs:
             } else {
               await github.rest.issues.createComment({ owner, repo, issue_number, body });
             }
+
+      - name: Set final status
+        if: always()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          EVAL_RESULT: ${{ needs.eval.result }}
+          GUARD_RUN: ${{ needs.eval.outputs.guard_run }}
+          HEAD_SHA: ${{ needs.eval.outputs.head_sha }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            let report = '';
+            let reportUnavailable = false;
+            try {
+              report = fs.readFileSync(path.join(process.env.RUNNER_TEMP, 'vally', 'report.md'), 'utf8');
+            } catch {
+              reportUnavailable = true;
+            }
+            const { owner, repo } = context.repo;
+            const evalResult = process.env.EVAL_RESULT;
+            const authenticationFailed = report.includes('Authentication failed');
+            let headSha = process.env.HEAD_SHA;
+            if (!headSha) {
+              const { data: pr } = await github.rest.pulls.get({
+                owner, repo, pull_number: context.issue.number,
+              });
+              headSha = pr.head.sha;
+            }
+            const passed = process.env.GUARD_RUN === 'true' &&
+              evalResult === 'success' &&
+              !report.includes('❌ failed') &&
+              !reportUnavailable;
+            const failed = process.env.GUARD_RUN === 'true' &&
+              evalResult === 'failure' &&
+              !authenticationFailed &&
+              !reportUnavailable;
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha: headSha,
+              state: passed ? 'success' : failed ? 'failure' : 'error',
+              context: 'ci-workflow-eval',
+              target_url: `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              description: passed ? 'All selected evals passed' :
+                failed ? 'One or more selected evals failed' :
+                'CI workflow eval could not complete',
+            });
