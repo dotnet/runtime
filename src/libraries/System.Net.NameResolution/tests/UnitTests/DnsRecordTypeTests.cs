@@ -48,9 +48,9 @@ public class DnsRecordTypeTests
 
     private static DnsRecord GetAnswerRecord(byte[] response)
     {
-        DnsMessageReader.TryCreate(response, out var reader);
-        reader.TryReadQuestion(out _);
-        reader.TryReadRecord(out var record);
+        Assert.True(DnsMessageReader.TryCreate(response, out var reader));
+        Assert.True(reader.TryReadQuestion(out _));
+        Assert.True(reader.TryReadRecord(out var record));
         return record;
     }
 

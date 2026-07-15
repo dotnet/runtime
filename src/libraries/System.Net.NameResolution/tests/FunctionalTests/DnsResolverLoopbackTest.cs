@@ -126,7 +126,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Contains(result.Records, a => a.Address.ToString() == "fd00::1");
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_IPv4Only_ReturnsOnlyV4(bool async)
@@ -143,7 +143,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("10.0.0.2", record.Address.ToString());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_IPv6Only_ReturnsOnlyV6(bool async)
@@ -159,7 +159,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("fd00::1", record.Address.ToString());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_AddressFamilyV4_QueriesOnlyA(bool async)
@@ -174,7 +174,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("192.0.2.7", record.Address.ToString());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_HasTtl(bool async)
@@ -191,7 +191,7 @@ namespace System.Net.NameResolution.Tests
                 $"Unexpected TTL: {record.Ttl}");
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_Nxdomain_ReturnsNxDomain(bool async)
@@ -221,7 +221,7 @@ namespace System.Net.NameResolution.Tests
 #endif
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_NoData_ReturnsNoErrorWithEmptyRecords(bool async)
@@ -250,7 +250,7 @@ namespace System.Net.NameResolution.Tests
 #endif
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_NoData_And_Nxdomain_AreDistinguishable(bool async)
@@ -284,7 +284,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- SRV ----
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveSrv_ReturnsRecords(bool async)
@@ -309,7 +309,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal((ushort)20, s2.Priority);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveSrv_IncludesAdditionalAddresses(bool async)
@@ -334,7 +334,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(2, s2.Addresses.Count);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveSrv_NoAdditionalAddresses(bool async)
@@ -352,7 +352,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- MX / TXT / CNAME / PTR / NS ----
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveMx_ReturnsRecords(bool async)
@@ -372,7 +372,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Single(result.Records, m => m.Exchange == "mail2.test" && m.Preference == 20);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveTxt_ReturnsValues(bool async)
@@ -390,7 +390,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Contains(result.Records, t => t.Values.Count == 2 && t.Values[0] == "part1" && t.Values[1] == "part2");
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveCName_ReturnsCanonicalName(bool async)
@@ -406,7 +406,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("canonical.test", record.CanonicalName);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolvePtr_ReturnsName(bool async)
@@ -422,7 +422,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("host.test", record.Name);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveNs_ReturnsRecords(bool async)
@@ -466,7 +466,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- Cancellation while a query is in flight ----
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         public async Task ResolveAddresses_CancellationInFlight_Throws()
         {
             using SemaphoreSlim queryReceived = new(0, 1);
@@ -497,7 +497,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- Telemetry ----
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_RecordsDurationMetric_CoversQueryTime(bool async)
