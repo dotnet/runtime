@@ -783,21 +783,30 @@ int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 #endif /* HAVE_FCHMOD */
 }
 
+#ifdef TARGET_OSX
+static int32_t IsNetworkFileSystem(int fileDescriptor);
+#endif
+
 int32_t SystemNative_FSync(intptr_t fd)
 {
     int fileDescriptor = ToFileDescriptor(fd);
 
     int32_t result;
 #ifdef TARGET_OSX
-    while ((result = fcntl(fileDescriptor, F_FULLFSYNC)) < 0 && errno == EINTR);
-    if (result >= 0)
+    // F_FULLFSYNC is not supported on network file systems (e.g., NFS, SMB, CIFS) and may cause
+    // pending writes to be discarded. See https://github.com/dotnet/runtime/issues/124722.
+    if (!IsNetworkFileSystem(fileDescriptor))
     {
-        return result;
-    }
+        while ((result = fcntl(fileDescriptor, F_FULLFSYNC)) < 0 && errno == EINTR);
+        if (result >= 0)
+        {
+            return result;
+        }
 
-    // F_FULLFSYNC is not supported on all file systems and handle types (e.g.,
-    // network file systems, read-only handles). Fall back to fsync.
-    // For genuine I/O errors (e.g., EIO), fsync will also fail and propagate the error.
+        // F_FULLFSYNC is not supported on all file systems and handle types (e.g.,
+        // network file systems, read-only handles). Fall back to fsync.
+        // For genuine I/O errors (e.g., EIO), fsync will also fail and propagate the error.
+    }
 #endif
     while ((result = fsync(fileDescriptor)) < 0 && errno == EINTR);
     return result;
@@ -1708,6 +1717,19 @@ static uint32_t FileSystemNameSupportsLocking(const char* fileSystemName)
     }
     return 1;
 }
+
+#ifdef TARGET_OSX
+// Returns 1 if the file descriptor is on a network file system (e.g., NFS, SMB, CIFS).
+// These file systems don't reliably support F_FULLFSYNC and may discard pending writes.
+// See https://github.com/dotnet/runtime/issues/124722.
+static int32_t IsNetworkFileSystem(int fileDescriptor)
+{
+    struct statfs statfsArgs;
+    int statfsRes;
+    while ((statfsRes = fstatfs(fileDescriptor, &statfsArgs)) == -1 && errno == EINTR);
+    return (statfsRes != -1) && !FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
+}
+#endif
 #endif
 #endif /* TARGET_WASI */
 
