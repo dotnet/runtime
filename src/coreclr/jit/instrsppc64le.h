@@ -108,6 +108,7 @@ INST(fmul,        "fmul",         0,      A_FORM,       0xFC000032)  // Floating
 INST(fdivs,       "fdivs",        0,      A_FORM,       0xEC000024)  // Floating Divide Single
 INST(fdiv,        "fdiv",         0,      A_FORM,       0xFC000024)  // Floating Divide Double
 INST(fmr,         "fmr",          0,      X_FORM,       0xFC000090)  // Floating Move Register
+INST(fneg,        "fneg",         0,      X_FORM,       0xFC000050)  // Floating Negate
 INST(fcmpu,       "fcmpu",        0,      X_FORM,       0xFC000000)  // Floating Compare Unordered
 INST(fcmpo,       "fcmpo",        0,      X_FORM,       0xFC000020)  // Floating Compare Ordered
 INST(frsp,        "frsp",         0,      X_FORM,       0xFC000018)  // Floating Round to Single Precision
@@ -133,6 +134,7 @@ INST(extsh,       "extsh",        0,      X_FORM,       0x7C000734)  // Extend S
 INST(extsw,       "extsw",        0,      X_FORM,       0x7C0007B4)  // Extend Sign Word
  
 // Integer arithmetic instructions
+INST(neg,         "neg",          0,      XO_FORM,      0x7C0000D0)  // Negate
 INST(add,         "add",          0,      XO_FORM,      0x7C000214)  // Add
 INST(subf,        "subf",         0,      XO_FORM,      0x7C000050)  // Subtract From
 INST(mulld,       "mulld",        0,      XO_FORM,      0x7C0001D2)  // Multiply Low Doubleword

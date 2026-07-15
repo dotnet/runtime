@@ -419,9 +419,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForShift(treeNode);
     	    break;
 
-	case GT_NOT:
+	       case GT_NEG:
+	       case GT_NOT:
 	           genConsumeRegs(treeNode->gtGetOp1());
-	    genCodeForNOT(treeNode->AsOp());
+	           genCodeForNegNot(treeNode);
 	           break;
 
 	case GT_STORE_BLK:
@@ -670,25 +671,50 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genCodeForNOT: Generate code for GT_NOT (bitwise NOT)
+// genCodeForNegNot: Generate code for GT_NEG and GT_NOT.
 //
 // Arguments:
-//    treeNode - tree node (GT_NOT)
+//    tree - the GT_NEG or GT_NOT node
 //
-void CodeGen::genCodeForNOT(GenTreeOp* treeNode)
+// GT_NEG on integer types:  neg  rD, rA
+// GT_NEG on float types:    fneg fD, fB
+// GT_NOT on integer types:  nor  rA, rS, rS  (bitwise NOT: ~A = A NOR A)
+//
+void CodeGen::genCodeForNegNot(GenTree* tree)
 {
-    assert(treeNode->OperIs(GT_NOT));
-    
-    regNumber targetReg = treeNode->GetRegNum();
-    GenTree*  op1       = treeNode->gtGetOp1();
-    regNumber op1reg    = op1->GetRegNum();  // Already consumed by genConsumeOperands()
-    
-    emitAttr attr = emitActualTypeSize(treeNode);
-    
-    // PowerPC implements NOT as NOR with itself: ~A = A NOR A
-    GetEmitter()->emitIns_R_R_R(INS_nor, attr, targetReg, op1reg, op1reg);
-    
-    genProduceReg(treeNode);
+    assert(tree->OperIs(GT_NEG, GT_NOT));
+
+    regNumber targetReg  = tree->GetRegNum();
+    GenTree*  op1        = tree->gtGetOp1();
+    regNumber op1reg     = op1->GetRegNum(); // already consumed by caller
+    emitAttr  attr       = emitActualTypeSize(tree);
+
+    assert(!tree->isContained());
+    assert(targetReg != REG_NA);
+
+    if (tree->OperIs(GT_NEG))
+    {
+        if (varTypeIsFloating(tree->TypeGet()))
+        {
+            // fneg fD, fB — flip the sign bit of a floating-point value
+            assert(emitter::isFloatReg(targetReg));
+            assert(emitter::isFloatReg(op1reg));
+            GetEmitter()->emitIns_R_R(INS_fneg, attr, targetReg, op1reg);
+        }
+        else
+        {
+            // neg rD, rA — two's-complement negation
+            GetEmitter()->emitIns_R_R(INS_neg, attr, targetReg, op1reg);
+        }
+    }
+    else
+    {
+        // GT_NOT: bitwise complement — PowerPC has no single NOT instruction;
+        // implement as NOR rA, rS, rS  (A NOR A == ~A)
+        GetEmitter()->emitIns_R_R_R(INS_nor, attr, targetReg, op1reg, op1reg);
+    }
+
+    genProduceReg(tree);
 }
 
 

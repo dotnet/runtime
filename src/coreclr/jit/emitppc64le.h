@@ -132,6 +132,8 @@
 // Floating-point move instruction (X-form)
 // Format: opcode(6) | fD(5) | 0(5) | fB(5) | XO(10) | Rc(1)
 #define ppc_fmr(c,D,B)     ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (72 << 1) | 0)
+// fneg fD, fB  — negate a floating-point register
+#define ppc_fneg(c,D,B)    ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (40 << 1) | 0)
 
 // Floating-point round to single precision (X-form)
 // Format: opcode(6) | fD(5) | 0(5) | fB(5) | XO(10) | Rc(1)
@@ -165,7 +167,9 @@
 
 // Integer arithmetic instructions (XO-form)
 // Format: opcode(6) | rD(5) | rA(5) | rB(5) | OE(1) | XO(9) | Rc(1)
-#define ppc_add(c,D,A,B)   ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (266 << 1) | 0) 
+// neg rD, rA  (rB field is 0)
+#define ppc_neg(c,D,A)     ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | (0 << 11) | (0 << 10) | (104 << 1) | 0)
+#define ppc_add(c,D,A,B)   ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (266 << 1) | 0)
 #define ppc_subf(c,D,A,B)  ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (40 << 1) | 0)  
 #define ppc_mulld(c,D,A,B) ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (233 << 1) | 0)
 #define ppc_mullw(c,D,A,B) ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (235 << 1) | 0) 
