@@ -130,8 +130,9 @@
     </ItemGroup>
 
     <!-- Mono-only build tooling (AOT compiler, cross, Mono targets tasks). A CoreCLR
-         build does not produce these, and CoreCLR-WASI library tests run the prebuilt
-         corerun.wasm bundle rather than relinking, so they are not needed. -->
+         build does not produce these, and the CoreCLR-WASI corerun relink happens at
+         build time with the wasi-sdk (not the Mono AOT/cross tooling), so these Mono
+         runtime payloads are not needed on Helix. -->
     <ItemGroup Condition="'$(RuntimeFlavor)' != 'CoreCLR'">
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"       Destination="build/wasm-shared" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"         Destination="build/WasmAppBuilder" />

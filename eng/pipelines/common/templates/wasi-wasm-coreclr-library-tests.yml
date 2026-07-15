@@ -20,10 +20,11 @@ jobs:
 #
 # Bring-up leg: smoke-only and non-gating (rolling alwaysRun). WasiApp.CoreCLR.targets
 # performs a per-app native relink so a test's own [UnmanagedCallersOnly] reverse thunks
-# are generated + linked into corerun; with that relink + the nested-type thunk-key fix
-# (dotnet/runtime#130739) the interpreter discovers and runs the suite (validated locally:
-# 9930 System.Runtime.Tests cases). #130634 (cold portable-entry-point publication) only
-# affects a future R2R-enabled leg, not this pure-interpreter smoke.
+# are generated + linked into corerun; with that relink + the nested-type reverse-thunk
+# key fix (also filed standalone as dotnet/runtime#130740; the remaining enclosing-type
+# collision limitation is tracked by #130739) the interpreter discovers and runs the suite
+# (validated locally: 9930 System.Runtime.Tests cases). #130634 (cold portable-entry-point
+# publication) only affects a future R2R-enabled leg, not this pure-interpreter smoke.
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
