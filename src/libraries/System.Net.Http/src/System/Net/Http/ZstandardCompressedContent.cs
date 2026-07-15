@@ -18,6 +18,17 @@ namespace System.Net.Http
     {
         private const string Encoding = "zstd";
 
+        // RFC 9659 requires zstd decoders for the "zstd" content coding to support a window size of at
+        // least 8 MB (2^23) and recommends that encoders not produce frames requiring a larger window.
+        // Some compression levels (notably CompressionLevel.SmallestSize) would otherwise select a larger
+        // window, producing payloads that a conformant server would reject. See RFC 9659, Section 3.
+        private const int RfcMaxWindowLog2 = 23;
+        private static readonly ZstandardCompressionOptions s_SmallestSizeRfcOptions = new ZstandardCompressionOptions
+        {
+            Quality = ZstandardCompressionOptions.MaxQuality,
+            WindowLog2 = RfcMaxWindowLog2
+        };
+
         private readonly HttpContent _content;
         private readonly ZstandardCompressionOptions? _compressionOptions;
         private readonly CompressionLevel _compressionLevel;
@@ -33,7 +44,16 @@ namespace System.Net.Http
             ArgumentNullException.ThrowIfNull(content);
             CompressedContentCore.ValidateCompressionLevel(compressionLevel, nameof(compressionLevel));
 
-            _compressionLevel = compressionLevel;
+            if (compressionLevel == CompressionLevel.SmallestSize)
+            {
+                // use RFC-compliant options for SmallestSize to avoid producing frames that a conformant server would reject
+                _compressionOptions = s_SmallestSizeRfcOptions;
+            }
+            else
+            {
+                _compressionLevel = compressionLevel;
+            }
+
             _content = content;
             CompressedContentCore.InitializeHeaders(this, content, Encoding);
         }

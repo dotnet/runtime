@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -105,14 +106,20 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData("br")]
-        [InlineData("zstd")]
-        public async Task BrotliZstd_SerializeToStream_WithCompressionLevel_RoundTrips(string encoding)
+        [InlineData("br", CompressionLevel.NoCompression)]
+        [InlineData("br", CompressionLevel.Fastest)]
+        [InlineData("br", CompressionLevel.Optimal)]
+        [InlineData("br", CompressionLevel.SmallestSize)]
+        [InlineData("zstd", CompressionLevel.NoCompression)]
+        [InlineData("zstd", CompressionLevel.Fastest)]
+        [InlineData("zstd", CompressionLevel.Optimal)]
+        [InlineData("zstd", CompressionLevel.SmallestSize)]
+        public async Task BrotliZstd_SerializeToStream_WithCompressionLevel_RoundTrips(string encoding, CompressionLevel compressionLevel)
         {
-            byte[] original = Encoding.UTF8.GetBytes(new string('a', 4096));
+            byte[] original = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("The quick brown fox jumps over the lazy dog. ", 4096)));
             HttpContent content = encoding == "br"
-                ? new BrotliCompressedContent(new ByteArrayContent(original), CompressionLevel.SmallestSize)
-                : new ZstandardCompressedContent(new ByteArrayContent(original), CompressionLevel.SmallestSize);
+                ? new BrotliCompressedContent(new ByteArrayContent(original), compressionLevel)
+                : new ZstandardCompressedContent(new ByteArrayContent(original), compressionLevel);
 
             Assert.Equal(original, DecompressBrotliOrZstd(await SerializeAsync(content, async: true), encoding));
         }
@@ -145,7 +152,8 @@ namespace System.Net.Http.Functional.Tests
             using Stream decompressor = encoding switch
             {
                 "br" => new BrotliStream(source, CompressionMode.Decompress),
-                "zstd" => new ZstandardStream(source, CompressionMode.Decompress),
+                // RFC 9659 requires the "zstd" content coding to be decodable with an 8 MB (2^23) window.
+                "zstd" => new ZstandardStream(source, new ZstandardDecompressionOptions { MaxWindowLog2 = 23 }),
                 _ => throw new ArgumentOutOfRangeException(nameof(encoding))
             };
 
