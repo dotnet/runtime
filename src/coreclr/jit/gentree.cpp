@@ -6801,11 +6801,18 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_PRIMITIVE_SaturateToUInt8:
                         case NI_PRIMITIVE_SaturateToUInt16:
                         {
-                            // Single instruction (e.g. SSAT/USAT on Arm32) or a short
-                            // compare/select sequence on other targets without saturating
-                            // ALU ops.
+#if defined(TARGET_ARM)
+                            // Single SSAT/USAT instruction.
                             costEx = 1;
                             costSz = 4;
+#else
+                            // Targets without saturating ALU ops (e.g. RISC-V64, LoongArch64)
+                            // expand this into a normalize, two bound materializations, and two
+                            // compare/branch/move pairs (~7 instructions), so it is materially
+                            // more expensive.
+                            costEx = 7;
+                            costSz = 28;
+#endif
                             break;
                         }
 
