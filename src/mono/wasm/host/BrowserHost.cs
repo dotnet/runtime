@@ -16,7 +16,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.AppHost.DevServer;
-using Microsoft.WebAssembly.Diagnostics;
 
 #nullable enable
 
@@ -24,6 +23,7 @@ namespace Microsoft.WebAssembly.AppHost;
 
 internal sealed class BrowserHost
 {
+    private static readonly string[] s_gatewayInternalUrls = new[] { "http://127.0.0.1:0" };
     private readonly ILogger _logger;
     private readonly BrowserArguments _args;
 
@@ -34,27 +34,20 @@ internal sealed class BrowserHost
     }
 
     public static async Task<int> InvokeAsync(CommonConfiguration commonArgs,
-                                              ILoggerFactory loggerFactory,
+                                              ILoggerFactory _,
                                               ILogger logger,
                                               CancellationToken token)
     {
         var args = new BrowserArguments(commonArgs);
         args.Validate();
         var host = new BrowserHost(args, logger);
-        await host.RunAsync(loggerFactory, token);
+        await host.RunAsync(token);
 
         return 0;
     }
 
-    private async Task RunAsync(ILoggerFactory loggerFactory, CancellationToken token)
+    private async Task RunAsync(CancellationToken token)
     {
-        if (_args.CommonConfig.Debugging && !_args.CommonConfig.UseStaticWebAssets)
-        {
-            ProxyOptions options = _args.CommonConfig.ToProxyOptions();
-            _ = Task.Run(() => DebugProxyHost.RunDebugProxyAsync(options, Array.Empty<string>(), loggerFactory, token), token)
-                    .ConfigureAwait(false);
-        }
-
         Dictionary<string, string> envVars = new();
         if (_args.CommonConfig.HostProperties.EnvironmentVariables is not null)
         {
@@ -65,7 +58,7 @@ internal sealed class BrowserHost
         var runArgsJson = new RunArgumentsJson(applicationArguments: _args.AppArgs,
                                                runtimeArguments: _args.CommonConfig.RuntimeArguments,
                                                environmentVariables: envVars,
-                                               forwardConsole: _args.ForwardConsoleOutput ?? false,
+                                               forwardConsole: false,
                                                debugging: _args.CommonConfig.Debugging);
         runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
 
@@ -103,43 +96,41 @@ internal sealed class BrowserHost
 
     private async Task<(ServerURLs, IHost)> StartWebServerAsync(BrowserArguments args, string[] urls, CancellationToken token)
     {
-        Func<WebSocket, Task>? onConsoleConnected = null;
-        if (args.ForwardConsoleOutput ?? false)
-        {
-            WasmTestMessagesProcessor logProcessor = new(_logger);
-            onConsoleConnected = socket => RunConsoleMessagesPump(socket, logProcessor!, token);
-        }
-
-        // If we are using the new browser template, serve the app through the shared Blazor Gateway.
         if (args.CommonConfig.UseStaticWebAssets)
         {
-            if (onConsoleConnected is not null)
+            // WebAssembly SDK apps are served by the shared Blazor Gateway.
+            if (AppHostDevServer.IsUploadEndpointRequested)
             {
-                // Browser console forwarding is provided in-process by the legacy web server. The Blazor Gateway
-                // does not expose the /console WebSocket yet; this is expected to be added upstream. See
-                // https://github.com/dotnet/runtime/issues/122144.
-                _logger.LogWarning("Browser console output forwarding is not available when serving through the Blazor Gateway.");
+                // The test-only /upload endpoint must be same-origin with the app, but the (preview) Gateway
+                // cannot reverse-proxy. So run the Gateway on an internal loopback address and put an in-process
+                // dev server on the public urls that hosts /upload and forwards everything else to the Gateway.
+                DevServerOptions gatewayOptions = CreateDevServerOptions(args, s_gatewayInternalUrls);
+                (ServerURLs gatewayUrls, IHost gatewayHost) = await GatewayServer.StartAsync(gatewayOptions, _logger, token);
+
+                var frontOptions = new DevServerRunOptions(
+                    Urls: urls,
+                    ForwardToUrl: gatewayUrls.Http,
+                    ContentRootPath: null,
+                    UseCrossOriginPolicy: false,
+                    OwnedHost: gatewayHost);
+                return await AppHostDevServer.StartAsync(frontOptions, _logger, token);
             }
 
-            DevServerOptions devServerOptions = CreateDevServerOptions(args, urls, onConsoleConnected);
-            return await DevServer.GatewayServer.StartAsync(devServerOptions, _logger, token);
+            DevServerOptions devServerOptions = CreateDevServerOptions(args, urls);
+            return await GatewayServer.StartAsync(devServerOptions, _logger, token);
         }
 
-        // Otherwise for old template, use web server
-        WebServerOptions webServerOptions = CreateWebServerOptions(args, urls, onConsoleConnected);
-        return await WebServer.StartAsync(webServerOptions, _logger, token);
+        // Apps that are not built with the WebAssembly SDK have no static web assets manifest for the Gateway,
+        // so serve their files directly (e.g. runtime test-runner apps launched via `dotnet run`).
+        var fileServerOptions = new DevServerRunOptions(
+            Urls: urls,
+            ForwardToUrl: null,
+            ContentRootPath: Path.GetFullPath(args.CommonConfig.AppPath),
+            UseCrossOriginPolicy: args.CommonConfig.ApplyCopHeaders);
+        return await AppHostDevServer.StartAsync(fileServerOptions, _logger, token);
     }
 
-    private static WebServerOptions CreateWebServerOptions(BrowserArguments args, string[] urls, Func<WebSocket, Task>? onConsoleConnected) => new
-    (
-        OnConsoleConnected: onConsoleConnected,
-        ContentRootPath: Path.GetFullPath(args.CommonConfig.AppPath),
-        WebServerUseCors: true,
-        WebServerUseCrossOriginPolicy: args.CommonConfig.ApplyCopHeaders,
-        Urls: urls
-    );
-
-    private static DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls, Func<WebSocket, Task>? onConsoleConnected)
+    private static DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls)
     {
         const string staticWebAssetsV1Extension = ".StaticWebAssets.xml";
         const string staticWebAssetsV2Extension = ".staticwebassets.runtime.json";
@@ -156,17 +147,17 @@ internal sealed class BrowserHost
             var staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV2Extension);
             if (File.Exists(staticWebAssetsPath))
             {
-                devServerOptions = CreateDevServerOptions(args, urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(args, urls, staticWebAssetsPath, endpointsManifest);
             }
             else
             {
                 staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV1Extension);
                 if (File.Exists(staticWebAssetsPath))
-                    devServerOptions = CreateDevServerOptions(args, urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
+                    devServerOptions = CreateDevServerOptions(args, urls, staticWebAssetsPath, endpointsManifest);
             }
 
             if (devServerOptions == null)
-                devServerOptions = CreateDevServerOptions(args, urls, mainAssemblyPath, endpointsManifest, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(args, urls, mainAssemblyPath, endpointsManifest);
         }
         else
         {
@@ -178,7 +169,7 @@ internal sealed class BrowserHost
             var endpointsManifest = FindFirstFileWithExtension(appPath, ".staticwebassets.endpoints.json");
 
             if (staticWebAssetsPath != null)
-                devServerOptions = CreateDevServerOptions(args, urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(args, urls, staticWebAssetsPath, endpointsManifest);
 
             if (devServerOptions == null)
                 throw new CommandLineException($"Please, provide mainAssembly in hostProperties of runtimeconfig. Alternatively leave the static web assets manifest ('*{staticWebAssetsV2Extension}') in the build output directory '{appPath}' .");
@@ -187,9 +178,8 @@ internal sealed class BrowserHost
         return devServerOptions;
     }
 
-    private static DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls, string staticWebAssetsPath, string? endpointsManifest, Func<WebSocket, Task>? onConsoleConnected) => new
+    private static DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls, string staticWebAssetsPath, string? endpointsManifest) => new
     (
-        OnConsoleConnected: onConsoleConnected,
         StaticWebAssetsPath: staticWebAssetsPath,
         StaticWebAssetsEndpointsPath: endpointsManifest,
         WebServerUseCors: true,
@@ -199,52 +189,6 @@ internal sealed class BrowserHost
 
     private static string? FindFirstFileWithExtension(string directory, string extension)
         => Directory.EnumerateFiles(directory, "*" + extension).FirstOrDefault();
-
-    private async Task RunConsoleMessagesPump(WebSocket socket, WasmTestMessagesProcessor messagesProcessor, CancellationToken token)
-    {
-        byte[] buff = new byte[4000];
-        var mem = new MemoryStream();
-        try
-        {
-            while (!token.IsCancellationRequested)
-            {
-                if (socket.State != WebSocketState.Open)
-                {
-                    _logger.LogError($"Console websocket is no longer open");
-                    break;
-                }
-
-                WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token).ConfigureAwait(false);
-                if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    // tcs.SetResult(false);
-                    return;
-                }
-
-                mem.Write(buff, 0, result.Count);
-
-                if (result.EndOfMessage)
-                {
-                    string? line = Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
-                    line += Environment.NewLine;
-
-                    messagesProcessor.Invoke(line);
-                    mem.SetLength(0);
-                    mem.Seek(0, SeekOrigin.Begin);
-                }
-            }
-        }
-        catch (OperationCanceledException oce)
-        {
-            if (!token.IsCancellationRequested)
-                _logger.LogDebug($"RunConsoleMessagesPump cancelled: {oce}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Console pump failed: {ex}");
-            throw;
-        }
-    }
 
     private string[] BuildUrls(ServerURLs serverURLs, IEnumerable<string> passThroughArguments)
     {

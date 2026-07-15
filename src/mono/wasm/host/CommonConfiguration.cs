@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using Microsoft.WebAssembly.Diagnostics;
 
 namespace Microsoft.WebAssembly.AppHost;
 
@@ -107,21 +106,6 @@ internal sealed class CommonConfiguration
 
         hostArgsList.AddRange(HostConfig.HostArguments);
         HostArguments = hostArgsList;
-    }
-
-    public ProxyOptions ToProxyOptions()
-    {
-        ProxyOptions options = new();
-        if (HostProperties.ChromeProxyPort is not null)
-            options.DevToolsProxyPort = HostProperties.ChromeProxyPort.Value;
-        if (HostProperties.ChromeDebuggingPort is not null)
-            options.DevToolsDebugPort = HostProperties.ChromeDebuggingPort.Value;
-        if (HostProperties.FirefoxProxyPort is not null)
-            options.FirefoxProxyPort = HostProperties.FirefoxProxyPort.Value;
-        if (HostProperties.FirefoxDebuggingPort is not null)
-            options.FirefoxDebugPort = HostProperties.FirefoxDebuggingPort.Value;
-        options.LogPath = ".";
-        return options;
     }
 
     public static void CheckPathOrInAppPath(string appPath, string? path, string argName)

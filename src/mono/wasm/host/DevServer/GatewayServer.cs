@@ -23,10 +23,9 @@ namespace Microsoft.WebAssembly.AppHost.DevServer;
 /// (https://github.com/dotnet/runtime/issues/122144).
 ///
 /// The Gateway serves static web assets (including the SPA fallback when the app is built with
-/// StaticWebAssetSpaFallbackEnabled) from the generated endpoints manifest. Runtime/testing specific behaviors
-/// that the in-process dev server used to provide - browser console forwarding (<c>/console</c>), cross-origin
-/// isolation headers (COOP/COEP) and the <c>DEVSERVER_UPLOAD_PATH</c> upload endpoint - are not yet provided by
-/// the Gateway and are expected to be added upstream.
+/// StaticWebAssetSpaFallbackEnabled) from the generated endpoints manifest. Cross-origin isolation headers
+/// (COOP/COEP) needed by multi-threaded runtimes are baked into that endpoints manifest at build time (see
+/// Microsoft.NET.Sdk.WebAssembly.CrossOriginIsolation.targets), so the Gateway emits them with no host code.
 /// </summary>
 internal static class GatewayServer
 {

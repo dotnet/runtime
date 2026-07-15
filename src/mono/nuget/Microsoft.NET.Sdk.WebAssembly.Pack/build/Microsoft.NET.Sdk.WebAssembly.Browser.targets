@@ -1320,4 +1320,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <TrimmerRootAssembly Include="$(AssemblyName)" RootMode="all" />
     </ItemGroup>
   </Target>
+
+  <!-- Build-time cross-origin isolation (COEP/COOP) headers for multi-threaded WebAssembly. -->
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.CrossOriginIsolation.targets" />
 </Project>

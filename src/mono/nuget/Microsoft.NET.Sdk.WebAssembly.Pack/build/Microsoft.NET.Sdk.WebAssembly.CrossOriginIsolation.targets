@@ -1,0 +1,106 @@
+<!--
+***********************************************************************************************
+Microsoft.NET.Sdk.WebAssembly.CrossOriginIsolation.targets
+
+Build-time cross-origin isolation headers for multi-threaded WebAssembly.
+
+Multi-threaded WebAssembly needs SharedArrayBuffer, which the browser only grants to a
+cross-origin isolated document: the host document AND the framework scripts that bootstrap
+the runtime must be served with 'Cross-Origin-Embedder-Policy: require-corp' and
+'Cross-Origin-Opener-Policy: same-origin'. We bake those headers into the StaticWebAssets
+endpoint manifest at BUILD TIME, so any host that serves the manifest via MapStaticAssets
+(the Blazor Gateway that 'dotnet run' launches included) emits them with no host code and no
+runtime middleware. This replaces the runtime COOP/COEP middleware the in-process dev server
+used to provide (https://github.com/dotnet/aspnetcore/issues/67814).
+
+Mechanism: the StaticWebAssets SDK ships the UpdateStaticWebAssetEndpoints task (the same one
+ScopedCss/JSModules use to append response headers/properties). We append COEP/COOP to the
+framework .js/.mjs endpoints (excluding blazor.web.js / blazor.server.js) and to every endpoint
+that serves the host .html document (all routes, including the SPA fallback), then swap the
+updated endpoints back into @(StaticWebAssetEndpoint) before the manifest is written.
+
+Gating: on by default when the app is multi-threaded ($(WasmEnableThreads) == 'true'), which is
+exactly when SharedArrayBuffer (and therefore cross-origin isolation) is required. Set
+$(WasmEnableCrossOriginIsolation) explicitly to override.
+***********************************************************************************************
+-->
+<Project ToolsVersion="14.0">
+
+  <PropertyGroup>
+    <WasmEnableCrossOriginIsolation Condition="'$(WasmEnableCrossOriginIsolation)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableCrossOriginIsolation>
+    <WasmEnableCrossOriginIsolation Condition="'$(WasmEnableCrossOriginIsolation)' == ''">false</WasmEnableCrossOriginIsolation>
+  </PropertyGroup>
+
+  <Target Name="_AddWasmCrossOriginIsolationHeaders"
+          BeforeTargets="GenerateStaticWebAssetsManifest"
+          DependsOnTargets="ResolveProjectStaticWebAssets"
+          Condition="'$(WasmEnableCrossOriginIsolation)' == 'true'">
+
+    <!--
+      Group 1 - framework module scripts: _framework/*.js|.mjs, excluding blazor.web.js /
+      blazor.server.js (those belong to Blazor Web/Server, not the multi-threaded WASM runtime).
+      For a StaticWebAssetEndpoint the Route IS the Identity (ItemSpec); there is no separate Route
+      metadata, so we batch on %(Identity). This covers both the fingerprinted and the
+      non-fingerprinted route of each asset.
+    -->
+    <ItemGroup>
+      <_WasmCoiEndpoint Include="@(StaticWebAssetEndpoint)"
+                        Condition="$([System.String]::Copy('%(StaticWebAssetEndpoint.Identity)').StartsWith('_framework/')) and
+                                   ($([System.String]::Copy('%(StaticWebAssetEndpoint.Identity)').EndsWith('.js')) or
+                                    $([System.String]::Copy('%(StaticWebAssetEndpoint.Identity)').EndsWith('.mjs'))) and
+                                   !$([System.String]::Copy('%(StaticWebAssetEndpoint.Identity)').EndsWith('blazor.web.js')) and
+                                   !$([System.String]::Copy('%(StaticWebAssetEndpoint.Identity)').EndsWith('blazor.server.js'))" />
+    </ItemGroup>
+
+    <!--
+      Group 2 - the host document(s): every endpoint (all routes, including the SPA fallback route)
+      that serves an .html asset. Matching by asset (via FilterStaticWebAssetEndpoints) instead of by
+      route makes this robust to the document being served at "/", "index.html" or the SPA fallback.
+    -->
+    <ItemGroup>
+      <_WasmCoiHtmlAsset Include="@(StaticWebAsset)"
+                         Condition="'%(StaticWebAsset.AssetKind)' != 'Publish' and '%(StaticWebAsset.Extension)' == '.html'" />
+    </ItemGroup>
+
+    <FilterStaticWebAssetEndpoints Condition="'@(_WasmCoiHtmlAsset)' != ''"
+                                   Endpoints="@(StaticWebAssetEndpoint)"
+                                   Assets="@(_WasmCoiHtmlAsset)"
+                                   Filters="">
+      <Output TaskParameter="FilteredEndpoints" ItemName="_WasmCoiEndpoint" />
+    </FilterStaticWebAssetEndpoints>
+
+    <!-- Two append operations, one per header. The item spec is the operation type ("Append"). -->
+    <ItemGroup>
+      <_WasmCoiOperation Include="Append">
+        <UpdateTarget>Header</UpdateTarget>
+        <Name>Cross-Origin-Embedder-Policy</Name>
+        <Value>require-corp</Value>
+      </_WasmCoiOperation>
+      <_WasmCoiOperation Include="Append">
+        <UpdateTarget>Header</UpdateTarget>
+        <Name>Cross-Origin-Opener-Policy</Name>
+        <Value>same-origin</Value>
+      </_WasmCoiOperation>
+    </ItemGroup>
+
+    <UpdateStaticWebAssetEndpoints Condition="'@(_WasmCoiEndpoint)' != ''"
+                                   EndpointsToUpdate="@(_WasmCoiEndpoint)"
+                                   AllEndpoints="@(StaticWebAssetEndpoint)"
+                                   Operations="@(_WasmCoiOperation)">
+      <Output TaskParameter="UpdatedEndpoints" ItemName="_WasmCoiUpdatedEndpoint" />
+    </UpdateStaticWebAssetEndpoints>
+
+    <!--
+      Remove the endpoints for the affected routes and add the updated ones back in. Required by the
+      task contract (it returns same-route siblings, e.g. gzip/br, so none are lost).
+    -->
+    <ItemGroup Condition="'@(_WasmCoiUpdatedEndpoint)' != ''">
+      <StaticWebAssetEndpoint Remove="@(_WasmCoiUpdatedEndpoint)" />
+      <StaticWebAssetEndpoint Include="@(_WasmCoiUpdatedEndpoint)" />
+    </ItemGroup>
+
+    <Message Importance="normal"
+             Text="[CrossOriginIsolation] Applied COEP/COOP headers to @(_WasmCoiEndpoint->Distinct()->Count()) endpoint variant(s) across the framework scripts and host document." />
+  </Target>
+
+</Project>

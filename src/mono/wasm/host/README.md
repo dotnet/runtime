@@ -12,11 +12,20 @@ the SPA fallback, are served from the generated static web assets endpoints mani
 WebAssembly SDK enables `StaticWebAssetSpaFallbackEnabled` by default for root apps, so `index.html` is served
 as the fallback route (e.g. for `/`), matching the fallback the in-process dev server used to provide.
 
-Some runtime/testing behaviors the previous in-process dev server provided are not yet available through the
-Gateway and are expected to be added upstream: browser console output forwarding (`/console` WebSocket),
-cross-origin isolation headers (COOP/COEP) for multi-threaded runtimes, WebAssembly debugging, and the
-`DEVSERVER_UPLOAD_PATH` file upload endpoint. Scenarios relying on these will regress until the upstream gaps
-are closed. See [dotnet/runtime#122144](https://github.com/dotnet/runtime/issues/122144).
+Some runtime/testing behaviors the previous in-process dev server provided are handled without adding code to
+the shared Gateway (see [dotnet/aspnetcore#67814](https://github.com/dotnet/aspnetcore/issues/67814)):
+
+- **Cross-origin isolation headers (COOP/COEP)** for multi-threaded runtimes are baked into the static web
+  assets endpoints manifest at build time (see `Microsoft.NET.Sdk.WebAssembly.CrossOriginIsolation.targets`),
+  so the Gateway emits them via `MapStaticAssets` with no host code. Enabled by default when
+  `WasmEnableThreads` is `true`; override with `WasmEnableCrossOriginIsolation`.
+- **Browser console forwarding (`/console` WebSocket)** and the **`DEVSERVER_UPLOAD_PATH` upload endpoint
+  (`POST /upload/{filename}`)** are hosted in-process by WasmAppHost and reached through the Gateway's built-in
+  YARP reverse proxy, which is pointed back at them via command-line configuration. These dev/test-only
+  endpoints are only started when needed (console forwarding requested, or the upload environment variables set).
+
+WebAssembly debugging is not yet available through the Gateway and is expected to be added upstream. See
+[dotnet/runtime#122144](https://github.com/dotnet/runtime/issues/122144).
 
 ## Command line arguments
 
