@@ -185,16 +185,16 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TryFindAncestorWithSameTypeDefinition_MatchesDefinitionAndRejectsInvalidMatches(MockTarget.Architecture arch)
+    public void TryGetBaseClassInstantiation_MatchesBaseDefinitionAndRejectsInvalidMatches(MockTarget.Architecture arch)
     {
-        TargetPointer child = default;
-        TargetPointer matchingAncestor = default;
-        TargetPointer definingType = default;
-        TargetPointer unrelatedType = default;
-        TargetPointer differentModuleDefinition = default;
-        TargetPointer zeroRidChild = default;
-        TargetPointer zeroRidDefinition = default;
-        TargetPointer cycleType = default;
+        TargetPointer derivedType = default;
+        TargetPointer matchingBaseInstantiation = default;
+        TargetPointer baseType = default;
+        TargetPointer unrelatedBaseType = default;
+        TargetPointer differentModuleBaseType = default;
+        TargetPointer zeroRidDerivedType = default;
+        TargetPointer zeroRidBaseType = default;
+        TargetPointer cycleDerivedType = default;
         TestPlaceholderTarget target = CreateTarget(
             arch,
             rtsBuilder =>
@@ -214,56 +214,56 @@ public class MethodTableTests
                     return methodTable;
                 }
 
-                definingType = AddType("Definition", 42).Address;
-                matchingAncestor = AddType("MatchingAncestor", 42, rtsBuilder.SystemObjectMethodTable.Address).Address;
-                child = AddType("Child", 43, matchingAncestor.Value).Address;
-                unrelatedType = AddType("Unrelated", 44).Address;
-                differentModuleDefinition = AddType("DifferentModuleDefinition", 42, module: Module + 1).Address;
-                TargetPointer zeroRidAncestor = AddType("ZeroRidAncestor", 0, rtsBuilder.SystemObjectMethodTable.Address).Address;
-                zeroRidChild = AddType("ZeroRidChild", 45, zeroRidAncestor.Value).Address;
-                zeroRidDefinition = AddType("ZeroRidDefinition", 0).Address;
+                baseType = AddType("BaseType", 42).Address;
+                matchingBaseInstantiation = AddType("MatchingBaseInstantiation", 42, rtsBuilder.SystemObjectMethodTable.Address).Address;
+                derivedType = AddType("DerivedType", 43, matchingBaseInstantiation.Value).Address;
+                unrelatedBaseType = AddType("UnrelatedBaseType", 44).Address;
+                differentModuleBaseType = AddType("DifferentModuleBaseType", 42, module: Module + 1).Address;
+                TargetPointer zeroRidBaseInstantiation = AddType("ZeroRidBaseInstantiation", 0, rtsBuilder.SystemObjectMethodTable.Address).Address;
+                zeroRidDerivedType = AddType("ZeroRidDerivedType", 45, zeroRidBaseInstantiation.Value).Address;
+                zeroRidBaseType = AddType("ZeroRidBaseType", 0).Address;
                 MockMethodTable cycleFirst = AddType("CycleFirst", 46);
                 MockMethodTable cycleSecond = AddType("CycleSecond", 47, cycleFirst.Address);
                 cycleFirst.ParentMethodTable = cycleSecond.Address;
-                cycleType = cycleFirst.Address;
+                cycleDerivedType = cycleFirst.Address;
             });
 
         IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
-        Assert.True(rts.TryFindAncestorWithSameTypeDefinition(
-            rts.GetTypeHandle(child),
-            rts.GetTypeHandle(definingType),
-            out TypeHandle ancestor));
-        Assert.Equal(matchingAncestor, ancestor.Address);
+        Assert.True(rts.TryGetBaseClassInstantiation(
+            rts.GetTypeHandle(derivedType),
+            rts.GetTypeHandle(baseType),
+            out TypeHandle baseInstantiation));
+        Assert.Equal(matchingBaseInstantiation, baseInstantiation.Address);
 
-        Assert.True(rts.TryFindAncestorWithSameTypeDefinition(
-            rts.GetTypeHandle(zeroRidDefinition),
-            rts.GetTypeHandle(zeroRidDefinition),
-            out ancestor));
-        Assert.Equal(zeroRidDefinition, ancestor.Address);
+        Assert.True(rts.TryGetBaseClassInstantiation(
+            rts.GetTypeHandle(zeroRidBaseType),
+            rts.GetTypeHandle(zeroRidBaseType),
+            out baseInstantiation));
+        Assert.Equal(zeroRidBaseType, baseInstantiation.Address);
 
-        Assert.False(rts.TryFindAncestorWithSameTypeDefinition(
-            rts.GetTypeHandle(child),
-            rts.GetTypeHandle(unrelatedType),
-            out ancestor));
-        Assert.True(ancestor.IsNull);
+        Assert.False(rts.TryGetBaseClassInstantiation(
+            rts.GetTypeHandle(derivedType),
+            rts.GetTypeHandle(unrelatedBaseType),
+            out baseInstantiation));
+        Assert.True(baseInstantiation.IsNull);
 
-        Assert.False(rts.TryFindAncestorWithSameTypeDefinition(
-            rts.GetTypeHandle(child),
-            rts.GetTypeHandle(differentModuleDefinition),
-            out ancestor));
-        Assert.True(ancestor.IsNull);
+        Assert.False(rts.TryGetBaseClassInstantiation(
+            rts.GetTypeHandle(derivedType),
+            rts.GetTypeHandle(differentModuleBaseType),
+            out baseInstantiation));
+        Assert.True(baseInstantiation.IsNull);
 
-        Assert.False(rts.TryFindAncestorWithSameTypeDefinition(
-            rts.GetTypeHandle(zeroRidChild),
-            rts.GetTypeHandle(zeroRidDefinition),
-            out ancestor));
-        Assert.True(ancestor.IsNull);
+        Assert.False(rts.TryGetBaseClassInstantiation(
+            rts.GetTypeHandle(zeroRidDerivedType),
+            rts.GetTypeHandle(zeroRidBaseType),
+            out baseInstantiation));
+        Assert.True(baseInstantiation.IsNull);
 
-        Assert.False(rts.TryFindAncestorWithSameTypeDefinition(
-            rts.GetTypeHandle(cycleType),
-            rts.GetTypeHandle(unrelatedType),
-            out ancestor));
-        Assert.True(ancestor.IsNull);
+        Assert.False(rts.TryGetBaseClassInstantiation(
+            rts.GetTypeHandle(cycleDerivedType),
+            rts.GetTypeHandle(unrelatedBaseType),
+            out baseInstantiation));
+        Assert.True(baseInstantiation.IsNull);
     }
 
     [Theory]

@@ -116,7 +116,10 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
     public virtual bool IsCollectible(TypeHandle typeHandle);
-    public virtual bool TryFindAncestorWithSameTypeDefinition(TypeHandle type, TypeHandle definingType, out TypeHandle ancestor);
+    // Walks the class parent chain of derivedType, inclusive, to find the exact runtime
+    // instantiation whose module and TypeDef RID match baseType. Returns false and sets
+    // baseInstantiation to default when there is no match or the chain is detected as corrupt.
+    public virtual bool TryGetBaseClassInstantiation(TypeHandle derivedType, TypeHandle baseType, out TypeHandle baseInstantiation);
     public virtual bool ContainsGenericVariables(TypeHandle typeHandle);
     public virtual bool HasTypeParam(TypeHandle typeHandle);
 
@@ -980,27 +983,29 @@ Contracts used:
         return typeHandle.Flags.IsCollectible;
     }
 
-    private bool HasSameTypeDefinition(TypeHandle type, TypeHandle definingType)
+    private bool HasSameTypeDefinition(TypeHandle candidateType, TypeHandle baseType)
     {
-        if (type.Address == definingType.Address)
+        if (candidateType.Address == baseType.Address)
             return true;
 
-        uint typeRid = GetRowId(GetTypeDefToken(type));
-        uint definingTypeRid = GetRowId(GetTypeDefToken(definingType));
-        return typeRid != 0
-            && typeRid == definingTypeRid
-            && GetModule(type) == GetModule(definingType);
+        uint candidateTypeRid = GetRowId(GetTypeDefToken(candidateType));
+        uint baseTypeRid = GetRowId(GetTypeDefToken(baseType));
+        return candidateTypeRid != 0
+            && candidateTypeRid == baseTypeRid
+            && GetModule(candidateType) == GetModule(baseType);
     }
 
-    public bool TryFindAncestorWithSameTypeDefinition(TypeHandle type, TypeHandle definingType, out TypeHandle ancestor)
+    public bool TryGetBaseClassInstantiation(TypeHandle derivedType, TypeHandle baseType, out TypeHandle baseInstantiation)
     {
-        TypeHandle current = type;
+        const int MaxParentWalkIterations = 8096;
+
+        TypeHandle current = derivedType;
         TargetPointer previous = TargetPointer.Null;
-        for (int i = 0; i < 1000 && !current.IsNull; i++)
+        for (int i = 0; i < MaxParentWalkIterations && !current.IsNull; i++)
         {
-            if (HasSameTypeDefinition(current, definingType))
+            if (HasSameTypeDefinition(current, baseType))
             {
-                ancestor = current;
+                baseInstantiation = current;
                 return true;
             }
 
@@ -1012,7 +1017,7 @@ Contracts used:
             current = GetTypeHandle(next);
         }
 
-        ancestor = default;
+        baseInstantiation = default;
         return false;
     }
 

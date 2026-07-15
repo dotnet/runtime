@@ -226,7 +226,18 @@ public interface IRuntimeTypeSystem : IContract
     bool IsGenericTypeDefinition(TypeHandle typeHandle) => throw new NotImplementedException();
     bool ContainsGenericVariables(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsCollectible(TypeHandle typeHandle) => throw new NotImplementedException();
-    bool TryFindAncestorWithSameTypeDefinition(TypeHandle type, TypeHandle definingType, out TypeHandle ancestor) => throw new NotImplementedException();
+    /// <summary>
+    /// Walks the class parent chain of <paramref name="derivedType"/> to find the exact runtime
+    /// instantiation whose module and TypeDef RID match <paramref name="baseType"/>.
+    /// </summary>
+    /// <param name="derivedType">The type at which to begin the inclusive parent-chain walk.</param>
+    /// <param name="baseType">The type whose module and TypeDef RID identify the base class to find.</param>
+    /// <param name="baseInstantiation">The matching runtime instantiation, or <see langword="default"/> on failure.</param>
+    /// <returns>
+    /// <see langword="true"/> if a matching instantiation is found; otherwise, <see langword="false"/>
+    /// when there is no match or the parent chain is detected as corrupt.
+    /// </returns>
+    bool TryGetBaseClassInstantiation(TypeHandle derivedType, TypeHandle baseType, out TypeHandle baseInstantiation) => throw new NotImplementedException();
 
     bool HasTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
 

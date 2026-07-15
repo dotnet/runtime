@@ -1075,29 +1075,29 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsCollectible(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsCollectible;
 
-    private bool HasSameTypeDefinition(TypeHandle type, TypeHandle definingType)
+    private bool HasSameTypeDefinition(TypeHandle candidateType, TypeHandle baseType)
     {
-        if (type.Address == definingType.Address)
+        if (candidateType.Address == baseType.Address)
             return true;
 
-        uint typeRid = EcmaMetadataUtils.GetRowId(GetTypeDefToken(type));
-        uint definingTypeRid = EcmaMetadataUtils.GetRowId(GetTypeDefToken(definingType));
-        return typeRid != 0
-            && typeRid == definingTypeRid
-            && GetModule(type) == GetModule(definingType);
+        uint candidateTypeRid = EcmaMetadataUtils.GetRowId(GetTypeDefToken(candidateType));
+        uint baseTypeRid = EcmaMetadataUtils.GetRowId(GetTypeDefToken(baseType));
+        return candidateTypeRid != 0
+            && candidateTypeRid == baseTypeRid
+            && GetModule(candidateType) == GetModule(baseType);
     }
 
-    public bool TryFindAncestorWithSameTypeDefinition(TypeHandle type, TypeHandle definingType, out TypeHandle ancestor)
+    public bool TryGetBaseClassInstantiation(TypeHandle derivedType, TypeHandle baseType, out TypeHandle baseInstantiation)
     {
         const int MaxParentWalkIterations = 8096;
 
-        TypeHandle current = type;
+        TypeHandle current = derivedType;
         TargetPointer previous = TargetPointer.Null;
         for (int i = 0; i < MaxParentWalkIterations && !current.IsNull; i++)
         {
-            if (HasSameTypeDefinition(current, definingType))
+            if (HasSameTypeDefinition(current, baseType))
             {
-                ancestor = current;
+                baseInstantiation = current;
                 return true;
             }
 
@@ -1109,7 +1109,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             current = GetTypeHandle(next);
         }
 
-        ancestor = default;
+        baseInstantiation = default;
         return false;
     }
 

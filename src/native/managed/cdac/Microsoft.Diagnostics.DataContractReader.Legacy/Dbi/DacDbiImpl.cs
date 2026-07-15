@@ -3098,11 +3098,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     else
                     {
                         // AcquiresInstMethodTableFromThis: token is some MethodTable*; it may be a
-                        // subclass, so walk the parent chain to find the exact declaring class.
+                        // subclass, so walk its class parent chain to find the exact runtime
+                        // instantiation of the declaring class.
                         TypeHandle thFromThis = rts.GetTypeHandle(new TargetPointer(genericsToken));
-                        if (rts.TryFindAncestorWithSameTypeDefinition(thFromThis, thRepMt, out TypeHandle thMatch))
+                        if (rts.TryGetBaseClassInstantiation(thFromThis, thRepMt, out TypeHandle thDeclaringTypeInstantiation))
                         {
-                            thSpecificClass = thMatch;
+                            thSpecificClass = thDeclaringTypeInstantiation;
                             isExact = true;
                         }
                     }
@@ -3122,8 +3123,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             // Project the specific class onto the method's declaring class to get the class instantiation.
             TypeHandle thSpecMethodMt = rts.GetTypeHandle(rts.GetMethodTable(pSpecificMethod));
-            ReadOnlySpan<TypeHandle> classInst = rts.TryFindAncestorWithSameTypeDefinition(thSpecificClass, thSpecMethodMt, out TypeHandle thMatchingParent)
-                ? rts.GetInstantiation(thMatchingParent)
+            ReadOnlySpan<TypeHandle> classInst = rts.TryGetBaseClassInstantiation(thSpecificClass, thSpecMethodMt, out TypeHandle thBaseInstantiation)
+                ? rts.GetInstantiation(thBaseInstantiation)
                 : ReadOnlySpan<TypeHandle>.Empty;
             ReadOnlySpan<TypeHandle> methodInst = rts.GetGenericMethodInstantiation(pSpecificMethod);
 

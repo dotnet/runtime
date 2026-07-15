@@ -161,8 +161,8 @@ public struct TypeNameBuilder
     public static TypeHandle GetExactOwningType(IRuntimeTypeSystem runtimeTypeSystem, TypeHandle possiblyDerivedType, MethodDescHandle method)
     {
         TypeHandle approxOwner = runtimeTypeSystem.GetTypeHandle(runtimeTypeSystem.GetMethodTable(method));
-        if (runtimeTypeSystem.TryFindAncestorWithSameTypeDefinition(possiblyDerivedType, approxOwner, out TypeHandle exactOwner))
-            return exactOwner;
+        if (runtimeTypeSystem.TryGetBaseClassInstantiation(possiblyDerivedType, approxOwner, out TypeHandle baseInstantiation))
+            return baseInstantiation;
 
         throw new InvalidOperationException("Invalid parent type");
     }
