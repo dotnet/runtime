@@ -26,6 +26,49 @@ namespace System.Tests
         // use CrossPlatformMachineEpsilon * 10.
         private static Half CrossPlatformMachineEpsilon => (Half)3.90625e-03f;
 
+        public static IEnumerable<object[]> ExplicitConversion_FromDecimal_TestData()
+        {
+            // The conversion must be correctly rounded. Several of these values round differently when the
+            // conversion goes through float first (double rounding), since float's 24-bit significand only
+            // just meets the 2 * 11 + 2 bound needed for the second rounding to Half to be innocuous.
+            yield return new object[] { 29.101563197521766818810399014m, (ushort)0x4F47 };
+            yield return new object[] { 31.61718659002636828475762054m, (ushort)0x4FE7 };
+            yield return new object[] { -0.2764892618124898818101803106m, (ushort)0xB46D };
+            yield return new object[] { 2174.9999823571306366729268181m, (ushort)0x683F };
+            yield return new object[] { -11.800781577718180009007584962m, (ushort)0xC9E7 };
+            yield return new object[] { -19752.000968250648361227086248m, (ushort)0xF4D3 };
+
+            // Subnormal, subnormal/normal boundary, and overflow.
+            yield return new object[] { 0.00003m, (ushort)0x01F7 };
+            yield return new object[] { 0.00003051758m, (ushort)0x0200 };
+            yield return new object[] { 100000m, (ushort)0x7C00 };
+            yield return new object[] { -100000m, (ushort)0xFC00 };
+        }
+
+        [Theory]
+        [MemberData(nameof(ExplicitConversion_FromDecimal_TestData))]
+        public static void ExplicitConversion_FromDecimal(decimal value, ushort expectedBits)
+        {
+            Half actual = (Half)value;
+            Assert.Equal(expectedBits, BitConverter.HalfToUInt16Bits(actual));
+        }
+
+        [Theory]
+        [InlineData((ushort)0x0000)] // +zero
+        [InlineData((ushort)0x3C00)] // 1
+        [InlineData((ushort)0x3555)] // ~0.333
+        [InlineData((ushort)0x0001)] // Epsilon (min positive subnormal)
+        [InlineData((ushort)0x03FF)] // max subnormal
+        [InlineData((ushort)0x0400)] // min normal
+        [InlineData((ushort)0x7BFF)] // MaxValue
+        [InlineData((ushort)0xC900)] // -10
+        public static void ExplicitConversion_ToDecimal_RoundTrips(ushort bits)
+        {
+            // Every finite Half value is exactly representable as a decimal, so Half -> decimal -> Half is lossless.
+            Half value = BitConverter.UInt16BitsToHalf(bits);
+            Assert.Equal(value, (Half)(decimal)value);
+        }
+
         [Fact]
         public static void Epsilon()
         {
@@ -550,19 +593,6 @@ namespace System.Tests
 
             foreach ((float original, Half expected) in data)
             {
-                // WASM on Mono lowers `float.Min` / `float.Max` through `f32.min` / `f32.max`
-                // (and `float.IsNaN(...)` branches through `f32.add`). The WebAssembly spec
-                // permits NaN-payload canonicalization on these ops but doesn't require it --
-                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
-                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
-                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
-                // trip through the software conversion path in that environment. Gated on
-                // Mono specifically since other WASM runtimes don't share this lowering.
-                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
-                // be removed once the conversion path either avoids the canonicalizing ops
-                // or the host engines start preserving NaN payloads.
-                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && float.IsNaN(original))
-                    continue;
                 yield return new object[] { original, expected };
             }
         }
@@ -572,6 +602,21 @@ namespace System.Tests
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)f;
+
+            // The software `float`->`Half` conversion routes the value through `f32.abs`/`f32.min`/
+            // `f32.max`/`f32.add`, and the WebAssembly spec permits (but doesn't require) host engines
+            // to canonicalize NaN payloads on those ops -- the V8 engine used on CI does. The sign is
+            // still carried through the integer ALU, so a canonicalized result is `sign | 0x7E00`.
+            // Accept that as the expected value on WASM. See https://github.com/dotnet/runtime/issues/103347.
+            if (PlatformDetection.IsWasm && Half.IsNaN(expected))
+            {
+                ushort canonical = (ushort)((BitConverter.HalfToUInt16Bits(expected) & 0x8000) | 0x7E00);
+                if (BitConverter.HalfToUInt16Bits(h) == canonical)
+                {
+                    expected = h;
+                }
+            }
+
             AssertExtensions.Equal(expected, h);
         }
 
@@ -670,6 +715,122 @@ namespace System.Tests
         public static void ExplicitConversion_FromDouble(double d, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)d;
+            AssertExtensions.Equal(expected, h);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromInt32_TestData()
+        {
+            (int, Half)[] data =
+            {
+                (0, BitConverter.UInt16BitsToHalf(0x0000)),
+                (2048, BitConverter.UInt16BitsToHalf(0x6800)), // 2^11 exact
+                (2049, BitConverter.UInt16BitsToHalf(0x6800)), // rounds to even (lower)
+                (2050, BitConverter.UInt16BitsToHalf(0x6801)), // exact
+                (2051, BitConverter.UInt16BitsToHalf(0x6802)), // rounds to even (higher)
+                (4097, BitConverter.UInt16BitsToHalf(0x6C00)), // rounds lower
+                (4098, BitConverter.UInt16BitsToHalf(0x6C00)), // rounds to even
+                (4100, BitConverter.UInt16BitsToHalf(0x6C01)), // exact
+                (65504, BitConverter.UInt16BitsToHalf(0x7BFF)), // largest finite
+                (65519, BitConverter.UInt16BitsToHalf(0x7BFF)), // rounds down to largest finite
+                (65520, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (int.MaxValue, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (-2049, BitConverter.UInt16BitsToHalf(0xE800)), // rounds to even (toward zero)
+                (-65520, BitConverter.UInt16BitsToHalf(0xFC00)), // overflow to negative infinity
+                (int.MinValue, BitConverter.UInt16BitsToHalf(0xFC00)), // overflow to negative infinity
+            };
+
+            foreach ((int original, Half expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromInt32_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromInt32(int i, Half expected)
+        {
+            Half h = (Half)i;
+            AssertExtensions.Equal(expected, h);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromUInt32_TestData()
+        {
+            (uint, Half)[] data =
+            {
+                (0, BitConverter.UInt16BitsToHalf(0x0000)),
+                (2049, BitConverter.UInt16BitsToHalf(0x6800)), // rounds to even (lower)
+                (65504, BitConverter.UInt16BitsToHalf(0x7BFF)), // largest finite
+                (65519, BitConverter.UInt16BitsToHalf(0x7BFF)), // rounds down to largest finite
+                (65520, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (0x8000_0000, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (uint.MaxValue, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+            };
+
+            foreach ((uint original, Half expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromUInt32_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromUInt32(uint i, Half expected)
+        {
+            Half h = (Half)i;
+            AssertExtensions.Equal(expected, h);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromInt64_TestData()
+        {
+            (long, Half)[] data =
+            {
+                (0, BitConverter.UInt16BitsToHalf(0x0000)),
+                (2049, BitConverter.UInt16BitsToHalf(0x6800)), // rounds to even (lower)
+                (65519, BitConverter.UInt16BitsToHalf(0x7BFF)), // rounds down to largest finite
+                (65520, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (0x1_0000_0000, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (long.MaxValue, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (-2049, BitConverter.UInt16BitsToHalf(0xE800)), // rounds to even (toward zero)
+                (long.MinValue, BitConverter.UInt16BitsToHalf(0xFC00)), // overflow to negative infinity
+            };
+
+            foreach ((long original, Half expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromInt64_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromInt64(long i, Half expected)
+        {
+            Half h = (Half)i;
+            AssertExtensions.Equal(expected, h);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromUInt64_TestData()
+        {
+            (ulong, Half)[] data =
+            {
+                (0, BitConverter.UInt16BitsToHalf(0x0000)),
+                (2049, BitConverter.UInt16BitsToHalf(0x6800)), // rounds to even (lower)
+                (65519, BitConverter.UInt16BitsToHalf(0x7BFF)), // rounds down to largest finite
+                (65520, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (0x1_0000_0000, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (ulong.MaxValue, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+            };
+
+            foreach ((ulong original, Half expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromUInt64_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromUInt64(ulong i, Half expected)
+        {
+            Half h = (Half)i;
             AssertExtensions.Equal(expected, h);
         }
 

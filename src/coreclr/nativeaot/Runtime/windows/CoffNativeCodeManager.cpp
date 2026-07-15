@@ -1213,7 +1213,9 @@ bool RhRegisterOSModule(void * pModule,
 
     pCoffNativeCodeManager.SuppressRelease();
 
+#ifdef FEATURE_EVENT_TRACE
     ETW::LoaderLog::ModuleLoad(pModule);
+#endif // FEATURE_EVENT_TRACE
 
     return true;
 }

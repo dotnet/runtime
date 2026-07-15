@@ -2274,10 +2274,9 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_Vector_AsVector3:
         case NI_Vector_ToScalar:
         {
-            // genOperandDesc looks through a contained CreateScalar/CreateScalarUnsafe to the operand it
-            // wraps, which may itself live in a register (e.g. Vector128.CreateScalarUnsafe(x).ToScalar()).
-            // We therefore use the descriptor's containment - not op1 directly - to decide instruction
-            // selection: only a true memory operand can be read with a plain integer load.
+            // op1 may be a contained memory operand or live in a register. We use the descriptor's
+            // containment - not op1 directly - to decide instruction selection: only a true memory
+            // operand can be read with a plain integer load.
             OperandDesc op1Desc = genOperandDesc(ins, op1);
 
             if (op1Desc.IsContained())

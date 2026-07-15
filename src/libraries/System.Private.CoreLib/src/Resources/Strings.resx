@@ -1935,10 +1935,7 @@
     <value>Valid values are between {0} and {1}, inclusive.</value>
   </data>
   <data name="ArgumentOutOfRange_RoundingDigits" xml:space="preserve">
-    <value>Rounding digits must be between 0 and 15, inclusive.</value>
-  </data>
-  <data name="ArgumentOutOfRange_RoundingDigits_MathF" xml:space="preserve">
-    <value>Rounding digits must be between 0 and 6, inclusive.</value>
+    <value>Rounding digits must be greater than or equal to 0.</value>
   </data>
   <data name="ArgumentOutOfRange_SmallCapacity" xml:space="preserve">
     <value>capacity was less than the current size.</value>
