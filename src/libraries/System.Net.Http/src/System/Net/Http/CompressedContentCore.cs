@@ -19,7 +19,7 @@ namespace System.Net.Http
         {
             // Validate up front so an invalid enum value fails fast at construction time rather than
             // deferring the exception to the serialization path when the request is being sent.
-            if (compressionLevel is < CompressionLevel.Optimal or > CompressionLevel.SmallestSize)
+            if (compressionLevel is not (CompressionLevel.Optimal or CompressionLevel.Fastest or CompressionLevel.NoCompression or CompressionLevel.SmallestSize))
             {
                 throw new ArgumentOutOfRangeException(paramName);
             }
