@@ -67,7 +67,7 @@ target_compile_definitions(cee_wks_mergeable PUBLIC CORECLR_EMBEDDED)
 
 target_compile_definitions(cee_wks_core PRIVATE GC_DESCRIPTOR)
 
-if (FEATURE_PERFTRACING_DISABLE_THREADS)
+if (FEATURE_PERFTRACING AND FEATURE_PERFTRACING_DISABLE_THREADS)
   target_compile_definitions(cee_wks_core PRIVATE PERFTRACING_DISABLE_THREADS)
 endif()
 

@@ -356,6 +356,12 @@ namespace System
             }
         }
 
+        internal object GetTargetForSingleCastInstanceDelegate()
+        {
+            Debug.Assert(HasSingleTarget && Target == _target && _target != null);
+            return _target;
+        }
+
         // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed.
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.CreateDelegate(type, firstArgument, method, throwOnBindFailure);
 
@@ -688,7 +694,7 @@ namespace System
             return new Delegate[] { this };
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null)
                 return false;
@@ -743,7 +749,7 @@ namespace System
             return object.ReferenceEquals(_target, d._target);
         }
 
-        public override int GetHashCode()
+        public sealed override int GetHashCode()
         {
             if (_helperObject is Wrapper[] invocationList)
             {

@@ -36,6 +36,7 @@
     <Compile Include="..\..\Common\Compiler\AsyncContinuationType.cs" Link="Compiler\AsyncContinuationType.cs" />
     <Compile Include="..\..\Common\Compiler\AsyncMethodVariant.cs" Link="Compiler\AsyncMethodVariant.cs" />
     <Compile Include="..\..\Common\Compiler\AsyncMethodVariant.Mangling.cs" Link="Compiler\AsyncMethodVariant.Mangling.cs" />
+    <Compile Include="..\..\Common\Compiler\CachingVirtualMethodAlgorithm.cs" Link="Compiler\CachingVirtualMethodAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Async.cs" Link="Compiler\CompilerTypeSystemContext.Async.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Wasm.cs" Link="Compiler\CompilerTypeSystemContext.Wasm.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
@@ -313,6 +314,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\FuncletKind.cs" Link="Compiler\DependencyAnalysis\FuncletKind.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectDumper.cs" Link="Compiler\DependencyAnalysis\IObjectDumper.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" Link="Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IPCodeSymbolNode.cs" Link="Compiler\DependencyAnalysis\IPCodeSymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISortableNode.cs" Link="Compiler\DependencyAnalysis\ISortableNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISymbolNode.cs" Link="Compiler\DependencyAnalysis\ISymbolNode.cs" />
@@ -583,7 +585,6 @@
     <Compile Include="Compiler\DependencyAnalysis\GenericDictionaryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericLookupResult.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ProxyTypeMapRequestNode.cs" />

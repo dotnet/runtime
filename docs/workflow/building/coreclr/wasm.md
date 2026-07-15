@@ -71,7 +71,7 @@ In script below please replace `/path/to/runtime/` by a **absolute unix path** t
 cp ./artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net11.0/*.dll ./artifacts/bin/coreclr/browser.wasm.Debug/IL
 cp helloworld.dll ./artifacts/bin/coreclr/browser.wasm.Debug/IL
 cd ./artifacts/bin/coreclr/browser.wasm.Debug/
-node ./corerun.js -c /path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL /path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll
+node --experimental-wasm-exnref ./corerun.js -c /path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL /path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll
 ```
 
 ### Console Testing with corehost
@@ -82,7 +82,7 @@ You can also run the corehost directly in Node.js:
 cp ./artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net11.0/*.dll ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
 cp helloworld.dll ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
 cd ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
-node ./main.mjs
+node --experimental-wasm-exnref ./main.mjs
 ```
 
 ## Debugging
@@ -146,8 +146,7 @@ In config below please replace `/path/to/runtime/` by a **absolute unix path** t
                     "<node_internals>/**"
                 ],
                 "runtimeArgs": [
-                    "--stack-trace-limit=10000",
-                    "--experimental-wasm-exnref"
+                    "--stack-trace-limit=10000"
                 ],
                 "args": [
                     "HelloWorld.dll"
