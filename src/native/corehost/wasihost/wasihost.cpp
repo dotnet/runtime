@@ -157,10 +157,12 @@ int main(int argc, char* argv[])
 
     string_t exe_path = pal::get_exe_path();
 
-    // argv[1] is the managed entry assembly; argv[2..] are passed to it.
+    // argv[1] is the managed entry assembly; argv[2..] are passed to it. Copy the slice into a
+    // const char* vector rather than casting char** to const char**.
     string_t entry_assembly = pal::get_absolute_path(argv[1]);
-    int entry_argc = argc - 2;
-    const char** entry_argv = entry_argc > 0 ? (const char**)&argv[2] : nullptr;
+    std::vector<const char*> entry_argv;
+    for (int i = 2; i < argc; ++i)
+        entry_argv.push_back(argv[i]);
 
     string_t app_path;
     {
@@ -257,8 +259,8 @@ int main(int argc, char* argv[])
     result = coreclr_execute_assembly(
         host_handle,
         domain_id,
-        entry_argc,
-        entry_argv,
+        (int)entry_argv.size(),
+        entry_argv.data(),
         entry_assembly.c_str(),
         (unsigned int*)&exit_code);
     if (result < 0)
