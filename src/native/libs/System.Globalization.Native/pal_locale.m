@@ -38,7 +38,6 @@ char* DetectDefaultAppleLocaleName(void)
 
 #if defined(APPLE_HYBRID_GLOBALIZATION)
 
-// Helper: extracts the language code (prefix before first '-', '_', or '@') from a locale name.
 static NSString* GetLanguageCode(NSString *localeName)
 {
     NSRange separatorRange = [localeName rangeOfCharacterFromSet:
@@ -48,19 +47,18 @@ static NSString* GetLanguageCode(NSString *localeName)
     return localeName;
 }
 
-// Counts the number of locale subtag separators ('-' or '_') in a string.
-static NSUInteger CountSegmentSeparators(NSString *localeName)
+static bool ShouldPreserveNorwegianLanguageCode(NSString *localeName, NSLocale *canonicalLocale)
 {
-    NSUInteger count = 0;
-    for (NSUInteger i = 0; i < localeName.length; i++)
-    {
-        unichar c = [localeName characterAtIndex:i];
-        if (c == '-' || c == '_')
-            count++;
-        else if (c == '@')
-            break; // keywords are not subtags
-    }
-    return count;
+    return [GetLanguageCode(localeName) caseInsensitiveCompare:@"no"] == NSOrderedSame &&
+        [canonicalLocale.languageCode isEqualToString:@"nb"];
+}
+
+static NSString* GetLocaleIdentifier(NSString *localeName, NSLocale *canonicalLocale)
+{
+    NSString *value = canonicalLocale.localeIdentifier;
+    return ShouldPreserveNorwegianLanguageCode(localeName, canonicalLocale) ?
+        [@"no" stringByAppendingString:[value substringFromIndex:2]] :
+        value;
 }
 
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
@@ -69,35 +67,12 @@ const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
     {
         NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
-        NSString *canonicalId = currentLocale.localeIdentifier;
+        NSString *value = GetLocaleIdentifier(locName, currentLocale);
 
-        if (canonicalId.length == 0)
+        if (value.length == 0)
             return strdup("");
 
-        // Apple's Foundation canonicalizes some language codes differently from ICU:
-        // e.g., "no" -> "nb", "iw" -> "he", "in" -> "id", "tl" -> "fil".
-        // To maintain cross-platform consistency with ICU/Windows behavior,
-        // preserve the original language code when Apple changes it.
-        // Only apply when the locale structure is preserved (same segment count),
-        // to avoid corrupting grandfathered tags like "zh-min-nan" -> "nan".
-        NSString *inputLang = GetLanguageCode(locName);
-        NSString *canonLang = GetLanguageCode(canonicalId);
-
-        if ([inputLang caseInsensitiveCompare:canonLang] != NSOrderedSame &&
-            CountSegmentSeparators(locName) == CountSegmentSeparators(canonicalId))
-        {
-            // Apple changed the language code. Reconstruct with the original (lowercased).
-            NSString *suffix = @"";
-            NSRange canonSepRange = [canonicalId rangeOfCharacterFromSet:
-                [NSCharacterSet characterSetWithCharactersInString:@"-_@"]];
-            if (canonSepRange.location != NSNotFound)
-                suffix = [canonicalId substringFromIndex:canonSepRange.location];
-
-            NSString *result = [[inputLang lowercaseString] stringByAppendingString:suffix];
-            return strdup([result UTF8String]);
-        }
-
-        return strdup([canonicalId UTF8String]);
+        return strdup([value UTF8String]);
     }
 }
 
@@ -292,30 +267,17 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
                 break;
             case LocaleString_Iso639LanguageTwoLetterName:
             {
-                // Use the language code from the input locale name to avoid Apple's
-                // canonicalization (e.g., "no" -> "nb"). The input preserves the original.
-                NSString *inputLang = GetLanguageCode(locName);
-                NSString *nativeLang = [currentLocale objectForKey:NSLocaleLanguageCode];
-                if (nativeLang != nil && [inputLang caseInsensitiveCompare:nativeLang] != NSOrderedSame)
-                    value = [inputLang lowercaseString];
-                else
-                    value = nativeLang;
+                value = ShouldPreserveNorwegianLanguageCode(locName, currentLocale) ?
+                    @"no" :
+                    currentLocale.languageCode;
                 break;
             }
             case LocaleString_Iso639LanguageThreeLetterName:
             {
-                NSString *inputLang = GetLanguageCode(locName);
-                NSString *nativeLang = [currentLocale objectForKey:NSLocaleLanguageCode];
-                NSString *lowercased = nil;
-                const char *twoLetterCode;
-                if (nativeLang != nil && [inputLang caseInsensitiveCompare:nativeLang] != NSOrderedSame)
-                {
-                    lowercased = [inputLang lowercaseString];
-                    twoLetterCode = [lowercased UTF8String];
-                }
-                else
-                    twoLetterCode = nativeLang == nil ? "" : [nativeLang UTF8String];
-                return strdup(getISO3LanguageByLangCode(twoLetterCode));
+                NSString *languageCode = ShouldPreserveNorwegianLanguageCode(locName, currentLocale) ?
+                    @"no" :
+                    currentLocale.languageCode;
+                return languageCode == nil ? strdup("") : strdup(getISO3LanguageByLangCode([languageCode UTF8String]));
             }
             case LocaleString_Iso3166CountryName:
                 value = [currentLocale objectForKey:NSLocaleCountryCode];
@@ -343,7 +305,8 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             case LocaleString_ParentName:
             {
                 char localeNameTemp[FULLNAME_CAPACITY];
-                const char* lName = [currentLocale.localeIdentifier UTF8String];
+                NSString *localeIdentifier = GetLocaleIdentifier(locName, currentLocale);
+                const char* lName = [localeIdentifier UTF8String];
                 GetParent(lName, localeNameTemp, FULLNAME_CAPACITY);
                 return strdup(localeNameTemp);
             }
@@ -911,4 +874,3 @@ int32_t GlobalizationNative_IsPredefinedLocaleNative(const char* localeName)
     }
 }
 #endif
-

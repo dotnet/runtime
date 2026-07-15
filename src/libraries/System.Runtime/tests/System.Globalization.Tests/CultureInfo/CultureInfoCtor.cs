@@ -441,6 +441,20 @@ namespace System.Globalization.Tests
             Assert.Equal(cultureName, culture.ToString(), ignoreCase: true);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [InlineData("no", "no", "no", "nor", "")]
+        [InlineData("no-NO", "no-NO", "no", "nor", "no")]
+        [InlineData("iw", "he", "he", "heb", "")]
+        public void Ctor_String_HybridAppleLanguageNames(string name, string expectedName, string expectedTwoLetterName, string expectedThreeLetterName, string expectedParentName)
+        {
+            CultureInfo culture = new CultureInfo(name);
+
+            Assert.Equal(expectedName, culture.Name);
+            Assert.Equal(expectedTwoLetterName, culture.TwoLetterISOLanguageName);
+            Assert.Equal(expectedThreeLetterName, culture.ThreeLetterISOLanguageName);
+            Assert.Equal(expectedParentName, culture.Parent.Name);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         public void Ctor_String_Invalid()
         {
