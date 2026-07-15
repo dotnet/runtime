@@ -282,6 +282,12 @@
       <!-- app callhelper .o goes here, in place of libcoreclr_gen_static.a -->
       <_WasiHostLibsPre Include="%(_WasiCallHelperSource.ObjectFile)" />
       <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libnativeresourcestring.a" />
+      <!-- Deliberately NOT linking libgcinfo_unix_wasm.a (which browser's relink does):
+           it exports only the gcinfo ENCODER helpers (GcInfoArrayList), used when emitting
+           GC info (JIT/crossgen). The interp host never encodes; the gcinfo DECODER used by
+           runtime GC stackwalks (TGcInfoDecoder<Wasm32GcInfoEncoding>) is folded into
+           libcoreclr_static.a as weak symbols. This matches the authoritative wasi corerun
+           CMake link line, which also omits it and runs the full CoreCLR-WASI runtime suite. -->
       <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" />
       <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a" />
       <_WasiHostLibsPre Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a" />
