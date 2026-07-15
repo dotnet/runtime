@@ -37,14 +37,67 @@ char* DetectDefaultAppleLocaleName(void)
 }
 
 #if defined(APPLE_HYBRID_GLOBALIZATION)
+
+// Helper: extracts the language code (prefix before first '-', '_', or '@') from a locale name.
+static NSString* GetLanguageCode(NSString *localeName)
+{
+    NSRange separatorRange = [localeName rangeOfCharacterFromSet:
+        [NSCharacterSet characterSetWithCharactersInString:@"-_@"]];
+    if (separatorRange.location != NSNotFound)
+        return [localeName substringToIndex:separatorRange.location];
+    return localeName;
+}
+
+// Counts the number of locale subtag separators ('-' or '_') in a string.
+static NSUInteger CountSegmentSeparators(NSString *localeName)
+{
+    NSUInteger count = 0;
+    for (NSUInteger i = 0; i < localeName.length; i++)
+    {
+        unichar c = [localeName characterAtIndex:i];
+        if (c == '-' || c == '_')
+            count++;
+        else if (c == '@')
+            break; // keywords are not subtags
+    }
+    return count;
+}
+
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
 {
     @autoreleasepool
     {
         NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
-        const char* value = [currentLocale.localeIdentifier UTF8String];
-        return strdup(value);
+        NSString *canonicalId = currentLocale.localeIdentifier;
+
+        if (canonicalId.length == 0)
+            return strdup("");
+
+        // Apple's Foundation canonicalizes some language codes differently from ICU:
+        // e.g., "no" -> "nb", "iw" -> "he", "in" -> "id", "tl" -> "fil".
+        // To maintain cross-platform consistency with ICU/Windows behavior,
+        // preserve the original language code when Apple changes it.
+        // Only apply when the locale structure is preserved (same segment count),
+        // to avoid corrupting grandfathered tags like "zh-min-nan" -> "nan".
+        NSString *inputLang = GetLanguageCode(locName);
+        NSString *canonLang = GetLanguageCode(canonicalId);
+
+        if ([inputLang caseInsensitiveCompare:canonLang] != NSOrderedSame &&
+            CountSegmentSeparators(locName) == CountSegmentSeparators(canonicalId))
+        {
+            // Apple changed the language code. Reconstruct with the original (lowercased).
+            NSString *suffix = @"";
+            NSRange canonSepRange = [canonicalId rangeOfCharacterFromSet:
+                [NSCharacterSet characterSetWithCharactersInString:@"-_@"]];
+            if (canonSepRange.location != NSNotFound)
+                suffix = [canonicalId substringFromIndex:canonSepRange.location];
+
+            NSString *result = [[inputLang lowercaseString] stringByAppendingString:suffix];
+            return strdup([result UTF8String]);
+        }
+
+        return strdup([canonicalId UTF8String]);
     }
 }
 
@@ -238,12 +291,31 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
                 value = numberFormatter.minusSign;
                 break;
             case LocaleString_Iso639LanguageTwoLetterName:
-                value = [currentLocale objectForKey:NSLocaleLanguageCode];
+            {
+                // Use the language code from the input locale name to avoid Apple's
+                // canonicalization (e.g., "no" -> "nb"). The input preserves the original.
+                NSString *inputLang = GetLanguageCode(locName);
+                NSString *nativeLang = [currentLocale objectForKey:NSLocaleLanguageCode];
+                if (nativeLang != nil && [inputLang caseInsensitiveCompare:nativeLang] != NSOrderedSame)
+                    value = [inputLang lowercaseString];
+                else
+                    value = nativeLang;
                 break;
+            }
             case LocaleString_Iso639LanguageThreeLetterName:
             {
-                NSString *iso639_2 = [currentLocale objectForKey:NSLocaleLanguageCode];
-                return iso639_2 == nil ? strdup("") : strdup(getISO3LanguageByLangCode([iso639_2 UTF8String]));
+                NSString *inputLang = GetLanguageCode(locName);
+                NSString *nativeLang = [currentLocale objectForKey:NSLocaleLanguageCode];
+                NSString *lowercased = nil;
+                const char *twoLetterCode;
+                if (nativeLang != nil && [inputLang caseInsensitiveCompare:nativeLang] != NSOrderedSame)
+                {
+                    lowercased = [inputLang lowercaseString];
+                    twoLetterCode = [lowercased UTF8String];
+                }
+                else
+                    twoLetterCode = nativeLang == nil ? "" : [nativeLang UTF8String];
+                return strdup(getISO3LanguageByLangCode(twoLetterCode));
             }
             case LocaleString_Iso3166CountryName:
                 value = [currentLocale objectForKey:NSLocaleCountryCode];

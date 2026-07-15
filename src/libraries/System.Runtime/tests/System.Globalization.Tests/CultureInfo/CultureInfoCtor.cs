@@ -356,6 +356,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "zu", new [] { "zu" }};
             yield return new object[] { "zu-ZA", new [] { "zu-ZA" }};
             yield return new object[] { CultureInfo.CurrentCulture.Name, new [] { CultureInfo.CurrentCulture.Name } };
+            yield return new object[] { "no", new [] { "no" } };
 
             if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
@@ -366,7 +367,6 @@ namespace System.Globalization.Tests
                 yield return new object[] { "ha-Latn", new [] { "ha-Latn" }};
                 yield return new object[] { "ha-Latn-NG", new [] { "ha-Latn-NG" }};
                 yield return new object[] { "mn-Cyrl", new [] { "mn-Cyrl" }};
-                yield return new object[] { "no", new [] { "no" } };
                 yield return new object[] { "sr-Cyrl", new [] { "sr-Cyrl" } };
                 yield return new object[] { "sr-Cyrl-BA", new [] { "sr-Cyrl-BA" }};
                 yield return new object[] { "sr-Cyrl-CS", new [] { "sr-Cyrl-CS" }};
