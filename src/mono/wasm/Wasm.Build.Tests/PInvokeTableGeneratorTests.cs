@@ -182,10 +182,11 @@ namespace Wasm.Build.Tests
         public async Task UnmanagedCallersOnly_Nested(Configuration config, bool aot)
         {
             // Regression coverage for the wasm reverse-P/Invoke (native-to-interp) thunk key of a
-            // nested [UnmanagedCallersOnly] type on both runtimes. Reflection reports the enclosing
-            // namespace for a nested type while the runtime reads the (empty) metadata namespace; if
-            // PInvokeCollector emits the reflection namespace the key never matches, so the lookup
-            // returns null - CoreCLR asserts on the first cold ldftn and Mono traps as "null function".
+            // nested [UnmanagedCallersOnly] type. Reflection reports the enclosing namespace for a
+            // nested type while the runtime reads the (empty) metadata namespace; if PInvokeCollector
+            // emits the reflection namespace the key never matches, so the lookup returns null -
+            // CoreCLR asserts on the first cold ldftn and Mono traps as "null function". Executed on
+            // browser-wasm in CI for both the Mono and CoreCLR generators (the wasi leg is build-only).
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_nested");
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNested.cs"));
