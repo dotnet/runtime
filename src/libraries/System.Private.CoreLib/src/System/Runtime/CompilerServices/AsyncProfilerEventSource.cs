@@ -160,26 +160,26 @@ namespace System.Runtime.CompilerServices
     // Activity does not construct the event source; the source is built only when a session enables it.
     internal static class AsyncProfilerTraceIdKeyword
     {
-        private static bool s_enabled;
+        private static int s_enabled;
         private static Action<bool>? s_subscriber;
 
         // True while any session has the trace-id keyword enabled. Read on the synchronous emit path as a
         // cheap guard against a keyword-off race between a CurrentChanged transition and its emit.
-        internal static bool Enabled => Volatile.Read(ref s_enabled);
+        internal static bool Enabled => Volatile.Read(ref s_enabled) != 0;
 
         // Installs the CurrentChanged (un)subscribe callback on first use of Activity, then syncs it to the
         // current state so a keyword enabled before Activity was first used still subscribes.
         internal static void Register(Action<bool> callback)
         {
-            s_subscriber = callback;
-            callback(Volatile.Read(ref s_enabled));
+            Interlocked.Exchange(ref s_subscriber, callback);
+            callback(Volatile.Read(ref s_enabled) != 0);
         }
 
         // Drives the subscription from OnEventCommand so change-points flow only while the keyword is enabled.
         internal static void Set(bool enabled)
         {
-            Volatile.Write(ref s_enabled, enabled);
-            s_subscriber?.Invoke(enabled);
+            Interlocked.Exchange(ref s_enabled, enabled ? 1 : 0);
+            Volatile.Read(ref s_subscriber)?.Invoke(enabled);
         }
     }
 }

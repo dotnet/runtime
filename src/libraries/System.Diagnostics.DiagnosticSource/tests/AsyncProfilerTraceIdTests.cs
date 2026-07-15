@@ -39,10 +39,24 @@ namespace System.Diagnostics.Tests
 
         private const EventKeywords AsyncAndTraceIdKeywords = AsyncContextKeywords | TraceIdChangedKeyword;
 
+        // Ensures AsyncProfilerEventSource exists before a listener attaches. Reading Activity.Current runs
+        // Activity's static init (registering the synchronous trace-id bridge) but does not construct the event
+        // source; the source is built the first time the async instrumentation synchronizes its flags
+        // (AsyncInstrumentation.SynchronizeFlags touches AsyncProfilerEventSource.Log), which happens at the
+        // first real await in the process. Forcing one here keeps each test self-contained: the listener
+        // created next captures the source in OnEventSourceCreated regardless of incidental prior async usage.
+        private static void EnsureAsyncProfilerSourceConstructed()
+        {
+            _ = Activity.Current;
+            ForceAwait().GetAwaiter().GetResult();
+
+            static async Task ForceAwait() => await Task.Yield();
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AsyncChangePoint_EmitsTraceIdIntoTimeline()
         {
-            _ = Activity.Current; // materialize the source before the listener attaches
+            EnsureAsyncProfilerSourceConstructed();
 
             using var listener = new ChangePointListener();
             Assert.NotNull(listener.Source);
@@ -71,7 +85,7 @@ namespace System.Diagnostics.Tests
             // Once an async flow leaves the W3C activity (Activity.Current becomes null), an all-zero
             // change-point is emitted so a consumer knows the trace is no longer active on that thread and a
             // recycled thread cannot inherit a stale trace id.
-            _ = Activity.Current;
+            EnsureAsyncProfilerSourceConstructed();
 
             using var listener = new ChangePointListener();
             Assert.NotNull(listener.Source);
@@ -99,7 +113,7 @@ namespace System.Diagnostics.Tests
         {
             // A purely synchronous span on a dedicated (non-async) thread must still produce a change-point,
             // proving the synchronous producer feeds the same timeline as the asynchronous one.
-            _ = Activity.Current;
+            EnsureAsyncProfilerSourceConstructed();
 
             using var listener = new ChangePointListener();
             Assert.NotNull(listener.Source);
@@ -123,7 +137,7 @@ namespace System.Diagnostics.Tests
             // The TraceId keyword is decoupled from the async keywords: enabling only it (no async
             // instrumentation) must still deliver the synchronous change-points, which requires the buffer
             // carrier to be enabled under the TraceId keyword.
-            _ = Activity.Current;
+            EnsureAsyncProfilerSourceConstructed();
 
             using var listener = new ChangePointListener();
             Assert.NotNull(listener.Source);
@@ -144,7 +158,7 @@ namespace System.Diagnostics.Tests
         {
             // Enabling the async keywords without the TraceId keyword must not emit any TraceId change-point,
             // and the Activity.CurrentChanged bridge must not subscribe.
-            _ = Activity.Current;
+            EnsureAsyncProfilerSourceConstructed();
 
             using var listener = new ChangePointListener();
             Assert.NotNull(listener.Source);
@@ -169,7 +183,7 @@ namespace System.Diagnostics.Tests
             // producers stamp the same Stopwatch clock and key on the OS thread id, a merged per-thread
             // timeline resolves the nested synchronous trace id at the moment it was active -- which is only
             // possible if the two producers fold into one ordered stream.
-            _ = Activity.Current;
+            EnsureAsyncProfilerSourceConstructed();
 
             using var listener = new ChangePointListener();
             Assert.NotNull(listener.Source);

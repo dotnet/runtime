@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
@@ -147,9 +148,9 @@ namespace System.Diagnostics.Tests
                 return;
             }
 
-            ulong osThreadId = BitConverter.ToUInt64(block, OsThreadIdOffset);
-            uint eventCount = BitConverter.ToUInt32(block, EventCountOffset);
-            ulong timestamp = BitConverter.ToUInt64(block, StartTimestampOffset);
+            ulong osThreadId = BinaryPrimitives.ReadUInt64LittleEndian(block.AsSpan(OsThreadIdOffset));
+            uint eventCount = BinaryPrimitives.ReadUInt32LittleEndian(block.AsSpan(EventCountOffset));
+            ulong timestamp = BinaryPrimitives.ReadUInt64LittleEndian(block.AsSpan(StartTimestampOffset));
 
             int pos = HeaderSize;
             for (uint i = 0; i < eventCount && pos < block.Length; i++)
@@ -166,7 +167,7 @@ namespace System.Diagnostics.Tests
                 int payloadLength = prefix switch
                 {
                     PayloadPrefix.Byte => block[pos],
-                    PayloadPrefix.UShort => BitConverter.ToUInt16(block, pos),
+                    PayloadPrefix.UShort => BinaryPrimitives.ReadUInt16LittleEndian(block.AsSpan(pos)),
                     _ => 0,
                 };
                 pos += (int)prefix;
