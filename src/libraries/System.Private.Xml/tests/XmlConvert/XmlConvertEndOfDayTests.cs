@@ -92,8 +92,8 @@ namespace System.Xml.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [InlineData("Pacific/Kiritimati", true)]
-        [InlineData("America/Los_Angeles", false)]
+        [InlineData("Etc/GMT-14", true)]
+        [InlineData("Etc/GMT+8", false)]
         public static void ToDateTimeOffset_MinValue_Unspecified_UsesExpectedBoundaryValue(string timeZoneId, bool expectMinValue)
         {
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (timeZoneId, expectMinValueString) =>
@@ -116,8 +116,8 @@ namespace System.Xml.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [InlineData("Pacific/Kiritimati", false)]
-        [InlineData("America/Los_Angeles", true)]
+        [InlineData("Etc/GMT-14", false)]
+        [InlineData("Etc/GMT+8", true)]
         public static void ToDateTimeOffset_MaxValue_Unspecified_UsesExpectedBoundaryValue(string timeZoneId, bool expectMaxValue)
         {
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (timeZoneId, expectMaxValueString) =>
