@@ -233,7 +233,10 @@ int main(int argc, char* argv[])
     s_property_keys.push_back("NATIVE_DLL_SEARCH_DIRECTORIES");
     s_property_values.push_back(native_search_dirs.str());
 
-    host_runtime_contract host_contract = {
+    // Static storage: the contract must stay valid for the process lifetime (the runtime may call
+    // back through it any time after coreclr_initialize), and its address is handed to the runtime
+    // via HOST_RUNTIME_CONTRACT below. Mirrors browserhost's static host_contract.
+    static host_runtime_contract host_contract = {
         sizeof(host_runtime_contract),
         nullptr,
         &get_runtime_property,
