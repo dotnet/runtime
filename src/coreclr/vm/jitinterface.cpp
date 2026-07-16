@@ -7626,6 +7626,9 @@ namespace
                 if (compared[i] == pField)
                     return false;
             }
+
+            if (numCompared >= fieldCount)
+                return false;
             compared[numCompared++] = pField;
 
             if (!records && leftLoad == CEE_LDFLD)
