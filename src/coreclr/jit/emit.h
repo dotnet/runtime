@@ -396,7 +396,15 @@ struct insGroup
 //  Since it is incorrect for us to be jumping across funclet prolog/epilogs
 //  we will use the following estimate as the maximum placeholder size.
 //
+#ifdef TARGET_POWERPC64
+// PPC64LE epilogs: 6 fixed instructions (24 bytes) + callee-saved registers
+// Callee-saved: R14-R31 (18 regs * 8 bytes) + F14-F31 (18 regs * 8 bytes)
+// Max estimate: 24 + 18*8 + 18*8 = 24 + 144 + 144 = 312 bytes
+// Use 320 for safety margin
+#define MAX_PLACEHOLDER_IG_SIZE 320
+#else
 #define MAX_PLACEHOLDER_IG_SIZE 256
+#endif
 
 #if defined(_MSC_VER) && defined(TARGET_ARM)
 #pragma pack(pop)

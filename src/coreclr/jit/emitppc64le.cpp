@@ -901,10 +901,18 @@ void emitter::emitIns_R_R(instruction     ins,
             break;
             
         case INS_fmr:
-            // Floating-point move register - fmr fD, fB
+        case INS_fneg:
+            // Floating-point move/negate register - fmr/fneg fD, fB
             assert(isFloatReg(reg1));
             assert(isFloatReg(reg2));
-            fmt = IF_RR_1A;  // Will set proper format later
+            fmt = IF_RR_1A;
+            break;
+
+        case INS_neg:
+            // Negate integer register - neg rD, rA
+            assert(isGeneralRegister(reg1));
+            assert(isGeneralRegister(reg2));
+            fmt = IF_RR_1A;
             break;
  
         case INS_frsp:
@@ -1718,6 +1726,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            ppc_fmr(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
            break;
 
+       case INS_fneg:
+           // fneg fD, fB - Floating Negate
+           ppc_fneg(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_neg:
+           // neg rD, rA - Negate (two-register form; rB field unused)
+           ppc_neg(dstRW, id->idReg1(), id->idReg2());
+           break;
+
        case INS_frsp:
            // frsp fD, fB - Floating Round to Single Precision
            ppc_frsp(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
@@ -1871,7 +1889,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 else
                 {
                     // Normal case: jump table data at emitTotalCodeSize + dataOffs
-                    targetOffset = emitTotalCodeSize + dataOffs;
+                    // The data section is aligned to TARGET_POINTER_SIZE by the runtime
+                    size_t alignedCodeSize = AlignUp(emitTotalCodeSize, TARGET_POINTER_SIZE);
+                    targetOffset = alignedCodeSize + dataOffs;
                 }
                 
                 // Calculate offset from bcl PC to target
@@ -1924,7 +1944,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 else
                 {
                     // Normal case: jump table data at emitTotalCodeSize + dataOffs
-                    targetOffset = emitTotalCodeSize + dataOffs;
+                    // The data section is aligned to TARGET_POINTER_SIZE by the runtime
+                    size_t alignedCodeSize = AlignUp(emitTotalCodeSize, TARGET_POINTER_SIZE);
+                    targetOffset = alignedCodeSize + dataOffs;
                 }
                 
                 // Calculate offset from bcl PC to target
