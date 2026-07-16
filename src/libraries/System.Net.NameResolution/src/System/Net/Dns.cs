@@ -452,45 +452,6 @@ namespace System.Net
         }
 
         /// <summary>
-<<<<<<< HEAD
-        /// Normalizes the fully-qualified form of localhost ("localhost." with a single trailing dot)
-        /// to plain "localhost" so it resolves identically to "localhost". Other names are returned unchanged.
-        /// </summary>
-        /// <remarks>
-        /// Per RFC 6761 Section 6.3 (https://www.rfc-editor.org/rfc/rfc6761#section-6.3) the trailing dot
-        /// is DNS root notation that denotes the same name. This applies to all platforms (the RFC is
-        /// platform-agnostic), but it only changes behavior on resolvers that do not strip the trailing
-        /// dot themselves: e.g. Android's getaddrinfo("localhost.") fails while getaddrinfo("localhost")
-        /// succeeds via /etc/hosts, whereas glibc/Windows already resolve both to loopback.
-        ///
-        /// We normalize toward "localhost" (not "localhost.") deliberately: "localhost" is the form the
-        /// OS resolver can satisfy, so this fixes the failing platforms without regressing the others.
-        /// </remarks>
-        private static string NormalizeLocalhostName(string hostName) =>
-            hostName.Equals(LocalhostWithTrailingDot, StringComparison.OrdinalIgnoreCase) ? Localhost : hostName;
-
-        /// <summary>
-        /// Checks if the given host name is a subdomain of localhost (e.g., "foo.localhost" or
-        /// "foo.localhost."). Plain "localhost" and "localhost." return false.
-        /// </summary>
-        /// <remarks>
-        /// RFC 6761 Section 6.3 ("Domain Name Reservation Considerations for 'localhost.'",
-        /// https://www.rfc-editor.org/rfc/rfc6761#section-6.3) states:
-        /// "The domain 'localhost.' and any names falling within '.localhost.' are special" and
-        /// "Name resolution APIs and libraries SHOULD recognize localhost names as special and
-        /// SHOULD always return the IP loopback address for address queries [...]".
-        /// The OS resolver may have no entry for "*.localhost" subdomains, so when it fails or returns
-        /// no addresses for one we fall back to resolving plain "localhost". Plain "localhost"/"localhost."
-        /// are excluded: they resolve directly (the latter after <see cref="NormalizeLocalhostName"/>), and
-        /// the fallback target itself is not a subdomain so the fallback cannot recurse on itself.
-        /// </remarks>
-        private static bool IsLocalhostSubdomain(string hostName)
-        {
-            // Strip a single trailing dot (DNS root notation) for the length comparison.
-            int length = hostName.EndsWith('.') ? hostName.Length - 1 : hostName.Length;
-
-            // Must be longer than "localhost" (i.e. a subdomain, not "localhost"/"localhost." themselves).
-=======
         /// Checks if the given host name should fall back to "localhost" when resolution fails or returns no addresses.
         /// Fully qualified "localhost." and localhost subdomains return true; plain "localhost" returns false.
         /// </summary>
@@ -510,7 +471,6 @@ namespace System.Net
             }
 
             // Subdomains must be longer than "localhost".
->>>>>>> origin/main
             return length > Localhost.Length && IsReservedName(hostName, Localhost);
         }
 
@@ -536,9 +496,6 @@ namespace System.Net
         {
             ValidateHostName(hostName);
 
-            // RFC 6761 Section 6.3: "localhost." is the fully-qualified form of "localhost"; resolve it identically.
-            hostName = NormalizeLocalhostName(hostName);
-
             if (!ValidateAddressFamily(ref addressFamily, hostName, justAddresses, out object? resultOnFailure))
             {
                 Debug.Assert(!activityOrDefault.HasValue);
@@ -563,13 +520,8 @@ namespace System.Net
 
                 if (errorCode != SocketError.Success)
                 {
-<<<<<<< HEAD
-                    // RFC 6761 Section 6.3: If a localhost subdomain fails, fall back to resolving plain "localhost".
-                    if (IsLocalhostSubdomain(hostName))
-=======
                     // RFC 6761 Section 6.3: If a localhost name fails, fall back to resolving plain "localhost".
                     if (ShouldFallbackToLocalhost(hostName))
->>>>>>> origin/main
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost name resolution failed, falling back to 'localhost'");
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: CreateException(errorCode, nativeErrorCode));
@@ -583,13 +535,8 @@ namespace System.Net
                 }
                 else if (addresses.Length == 0 && ShouldFallbackToLocalhost(hostName))
                 {
-<<<<<<< HEAD
-                    // RFC 6761 Section 6.3: If a localhost subdomain returns empty addresses, fall back to plain "localhost".
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain returned empty, falling back to 'localhost'");
-=======
                     // RFC 6761 Section 6.3: If a localhost name returns empty addresses, fall back to plain "localhost".
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost name returned empty, falling back to 'localhost'");
->>>>>>> origin/main
                     NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: justAddresses ? addresses : (object)new IPHostEntry { AddressList = addresses, HostName = newHostName!, Aliases = aliases }, exception: null);
                     fallbackToLocalhost = true;
                 }
@@ -763,9 +710,6 @@ namespace System.Net
                 // Validate hostname before any processing
                 ValidateHostName(hostName);
 
-                // RFC 6761 Section 6.3: "localhost." is the fully-qualified form of "localhost"; resolve it identically.
-                hostName = NormalizeLocalhostName(hostName);
-
                 // RFC 6761 Section 6.4: "invalid" domains must return NXDOMAIN.
                 if (TryHandleRfc6761InvalidDomain(hostName, out SocketException? invalidDomainException))
                 {
@@ -864,13 +808,8 @@ namespace System.Net
                 {
                     result = await ((Task<T>)task).ConfigureAwait(false);
 
-<<<<<<< HEAD
-                    // RFC 6761 Section 6.3: If a localhost subdomain returns empty addresses, fall back to plain "localhost".
-                    if (isLocalhostSubdomain && result is IPAddress[] addresses && addresses.Length == 0)
-=======
                     // RFC 6761 Section 6.3: If a localhost name returns empty addresses, fall back to plain "localhost".
                     if (shouldFallbackToLocalhost && result is IPAddress[] addresses && addresses.Length == 0)
->>>>>>> origin/main
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost name returned empty, falling back to 'localhost'");
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: null);
@@ -892,13 +831,8 @@ namespace System.Net
                 }
                 catch (SocketException ex) when (shouldFallbackToLocalhost && !fallbackOccurred)
                 {
-<<<<<<< HEAD
-                    // RFC 6761 Section 6.3: If a localhost subdomain fails, fall back to resolving plain "localhost".
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain resolution failed, falling back to 'localhost'");
-=======
                     // RFC 6761 Section 6.3: If a localhost name fails, fall back to resolving plain "localhost".
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost name resolution failed, falling back to 'localhost'");
->>>>>>> origin/main
                     NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: ex);
                     fallbackOccurred = true;
 

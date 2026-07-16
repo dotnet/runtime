@@ -421,14 +421,8 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAnyAsync<Exception>(() => Dns.GetHostEntryAsync(hostName));
         }
 
-<<<<<<< HEAD
-        // "localhost." (fully-qualified form with trailing dot) is equivalent to plain "localhost"
-        // and must resolve to loopback, either directly via the OS resolver or via the RFC 6761
-        // fallback to plain "localhost" when the OS resolver doesn't handle the trailing dot.
-=======
         // "localhost." is equivalent to plain "localhost".
         // The OS resolver is tried first, falling back to plain "localhost" if resolution fails or returns no addresses.
->>>>>>> origin/main
         [Fact]
         public async Task DnsGetHostEntry_LocalhostWithTrailingDot_ReturnsLoopback()
         {
