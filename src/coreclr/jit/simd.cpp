@@ -314,6 +314,17 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         {
                             return TYP_UNDEF;
                         }
+
+                        // Vector<T>'s length is target-dependent, so under a cross-targeting altjit (e.g.
+                        // SuperPMI replaying a context captured for a target with a different Vector<T>
+                        // length) our size can disagree with the VM's. Treat it as a regular struct then,
+                        // keeping every size query consistent with the VM rather than emitting SIMD codegen
+                        // against a mismatched size.
+                        if (size != info.compCompHnd->getClassSize(typeHnd))
+                        {
+                            assert(!info.compMatchedVM);
+                            return TYP_UNDEF;
+                        }
                         break;
                     }
 
