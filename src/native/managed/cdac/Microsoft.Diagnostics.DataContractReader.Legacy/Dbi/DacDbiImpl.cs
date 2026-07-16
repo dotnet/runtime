@@ -4770,7 +4770,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     TypeHandle enclosingTypeHandle = rts.GetTypeHandle(enclosingMT);
                     TargetPointer enclosingModulePtr = rts.GetModule(enclosingTypeHandle);
                     Contracts.ModuleHandle enclosingModuleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(enclosingModulePtr);
-                    MetadataReader enclosingMdReader = ecmaMetadataContract.GetMetadata(enclosingModuleHandle)!;
+                    MetadataReader enclosingMdReader = ecmaMetadataContract.GetMetadata(enclosingModuleHandle)
+                        ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
                     FieldDefinitionHandle fieldDefHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)memberDef);
                     FieldDefinition fieldDef = enclosingMdReader.GetFieldDefinition(fieldDefHandle);
 

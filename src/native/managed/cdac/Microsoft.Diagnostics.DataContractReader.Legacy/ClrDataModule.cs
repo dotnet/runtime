@@ -298,7 +298,8 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             // start: find the type.
             ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_address);
-            MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+            MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)
+                ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
             EnumMethodDefinitions emd = new(reader, flags, (nuint)handleLocal);
             emd.Start(fullName);
