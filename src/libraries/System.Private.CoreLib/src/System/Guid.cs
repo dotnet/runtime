@@ -1081,28 +1081,9 @@ namespace System
 
         // Returns true if and only if the guid represented
         //  by o is the same as this instance.
-        public override bool Equals([NotNullWhen(true)] object? o) => o is Guid g && EqualsCore(this, g);
+        public override bool Equals([NotNullWhen(true)] object? o) => o is Guid g && this == g;
 
-        public bool Equals(Guid g) => EqualsCore(this, g);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool EqualsCore(in Guid left, in Guid right)
-        {
-            if (Vector128.IsHardwareAccelerated)
-            {
-                return Unsafe.BitCast<Guid, Vector128<byte>>(left) == Unsafe.BitCast<Guid, Vector128<byte>>(right);
-            }
-
-            ref int rA = ref Unsafe.AsRef(in left._a);
-            ref int rB = ref Unsafe.AsRef(in right._a);
-
-            // Compare each element
-
-            return rA == rB
-                && Unsafe.Add(ref rA, 1) == Unsafe.Add(ref rB, 1)
-                && Unsafe.Add(ref rA, 2) == Unsafe.Add(ref rB, 2)
-                && Unsafe.Add(ref rA, 3) == Unsafe.Add(ref rB, 3);
-        }
+        public bool Equals(Guid g) => this == g;
 
         private static int GetResult(uint me, uint them) => me < them ? -1 : 1;
 
@@ -1179,9 +1160,13 @@ namespace System
             return 0;
         }
 
-        public static bool operator ==(Guid a, Guid b) => EqualsCore(a, b);
+        // Field-wise so the runtime can prove Guid is bitwise-equatable (see RuntimeHelpers.IsBitwiseEquatable);
+        // the JIT vectorizes this and the flag lights up the memcmp fast paths in the BCL.
+        public static bool operator ==(Guid a, Guid b) =>
+            a._a == b._a && a._b == b._b && a._c == b._c && a._d == b._d && a._e == b._e && a._f == b._f &&
+            a._g == b._g && a._h == b._h && a._i == b._i && a._j == b._j && a._k == b._k;
 
-        public static bool operator !=(Guid a, Guid b) => !EqualsCore(a, b);
+        public static bool operator !=(Guid a, Guid b) => !(a == b);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int HexsToChars<TChar>(TChar* guidChars, int a, int b) where TChar : unmanaged, IUtfChar<TChar>
