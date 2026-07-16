@@ -10493,7 +10493,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                             }
 
-                            TryMakeSrcContainedOrRegOptional(node, op2);
+                            if (!op2->isContained())
+                            {
+                                TryMakeSrcContainedOrRegOptional(node, op2);
+                            }
                             break;
                         }
 
