@@ -369,7 +369,7 @@ namespace System.Diagnostics.Tests
 
                 using Process child = Process.Start(psi)!;
                 string output = child.StandardOutput.ReadToEnd().Trim();
-                Assert.True(child.WaitForExit(30_000));
+                Assert.True(child.WaitForExit(WaitInMS));
                 Assert.Equal(0, child.ExitCode);
                 Assert.Equal(value, output);
 
