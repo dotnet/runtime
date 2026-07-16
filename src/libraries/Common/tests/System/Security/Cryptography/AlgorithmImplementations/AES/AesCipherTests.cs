@@ -1068,7 +1068,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             Assert.Equal(s_helloBytes, decrypted);
         }
 
-        private void RandomKeyRoundtrip(Aes aes)
+        private static void RandomKeyRoundtrip(Aes aes)
         {
             byte[] decryptedBytes;
             byte[] encryptedBytes;

@@ -9,10 +9,7 @@
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CreateTransformCompat.cs" />
     <Compile Include="CspParametersTests.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.Security.Cryptography\tests\ShimHelpers.cs"
-             Link="ShimHelpers.Shared.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
              Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"

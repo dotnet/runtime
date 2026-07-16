@@ -716,6 +716,7 @@
     <Compile Include="AesCryptoServiceProviderTests.cs" />
     <Compile Include="AesTestRegistration.Cng.cs" />
     <Compile Include="CngHelpers.cs" />
+    <Compile Include="CreateTransformCompat.cs" />
     <Compile Include="DESCryptoServiceProviderProvider.cs" />
     <Compile Include="DESCryptoServiceProviderTests.cs" />
     <Compile Include="DESTestRegistration.Csp.cs" />
@@ -872,6 +873,7 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
     <Compile Include="AesCryptoServiceProviderTests.cs" />
+    <Compile Include="CreateTransformCompat.cs" />
     <Compile Include="DESCryptoServiceProviderProvider.cs" />
     <Compile Include="DESCryptoServiceProviderTests.cs" />
     <Compile Include="DESTestRegistration.Csp.cs" />

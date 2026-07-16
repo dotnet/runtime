@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
-    public class DESCryptoServiceProviderTests
+    public static class DESCryptoServiceProviderTests
     {
         private static readonly byte[] KnownGoodKey = "87FF0737F868378F".HexToByteArray();
 

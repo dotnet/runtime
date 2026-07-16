@@ -530,7 +530,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        private void ValidateTransformProperties(Aes aes, ICryptoTransform transform)
+        private static void ValidateTransformProperties(Aes aes, ICryptoTransform transform)
         {
             Assert.NotNull(transform);
             Assert.Equal(aes.BlockSize, transform.InputBlockSize * 8);
@@ -538,7 +538,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             Assert.True(transform.CanTransformMultipleBlocks);
         }
 
-        private void VerifyKeyGeneration(Aes aes)
+        private static void VerifyKeyGeneration(Aes aes)
         {
             int keySize = aes.KeySize;
             aes.GenerateKey();

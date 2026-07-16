@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
     /// <summary>
     /// Since TripleDESCryptoServiceProvider wraps TripleDES from Algorithms assembly, we only test minimally here.
     /// </summary>
-    public class TripleDESCryptoServiceProviderTests
+    public static class TripleDESCryptoServiceProviderTests
     {
         [Fact]
         public static void VerifyDefaults()

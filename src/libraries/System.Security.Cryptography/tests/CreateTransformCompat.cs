@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using Test.Cryptography;
+using System.Security.Cryptography.Encryption.RC2.Tests;
 using Xunit;
 
 namespace System.Security.Cryptography.Csp.Tests
@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Csp.Tests
             yield return new object[] { typeof(DESCryptoServiceProvider), 9 };
             yield return new object[] { typeof(DESCryptoServiceProvider), 13 };
 
-            if (PlatformSupport.IsRC2Supported)
+            if (RC2Provider.IsSupported)
             {
                 yield return new object[] { typeof(RC2CryptoServiceProvider), 9 };
                 yield return new object[] { typeof(RC2CryptoServiceProvider), 17 };
