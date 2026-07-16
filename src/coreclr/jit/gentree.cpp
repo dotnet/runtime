@@ -2547,27 +2547,12 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
         return false;
     }
 
-#if FEATURE_MULTIREG_RET
-    if (!c1->gtReturnTypeDesc.Equals(c2->gtReturnTypeDesc))
-    {
-        return false;
-    }
-#endif
-
-    if ((c1->gtArgs.HasThisPointer() != c2->gtArgs.HasThisPointer()) ||
-        (c1->gtArgs.HasRetBuffer() != c2->gtArgs.HasRetBuffer()) || (c1->gtArgs.IsVarArgs() != c2->gtArgs.IsVarArgs()))
+    if (c1->gtArgs.IsVarArgs() != c2->gtArgs.IsVarArgs())
     {
         return false;
     }
 
-    if (c1->IsUnmanaged() && (c1->GetUnmanagedCallConv() != c2->GetUnmanagedCallConv()))
-    {
-        return false;
-    }
-
-    // Explicit tail call candidates have call-site-specific signature and token
-    // information that is consumed when they are transformed.
-    if (c1->IsTailPrefixedCall())
+    if (c1->GetUnmanagedCallConv() != c2->GetUnmanagedCallConv())
     {
         return false;
     }
@@ -2636,14 +2621,9 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     }
 
     auto sameArgMetadata = [](CallArg* a1, CallArg* a2) {
-        if ((a1->GetSignatureType() != a2->GetSignatureType()) || (a1->GetWellKnownArg() != a2->GetWellKnownArg()))
-        {
-            return false;
-        }
-
-        ClassLayout* l1 = a1->GetSignatureLayout();
-        ClassLayout* l2 = a2->GetSignatureLayout();
-        return (l1 == l2) || ((l1 != nullptr) && (l2 != nullptr) && ClassLayout::AreCompatible(l1, l2));
+        return (a1->GetSignatureType() == a2->GetSignatureType()) &&
+               (a1->GetSignatureClassHandle() == a2->GetSignatureClassHandle()) &&
+               (a1->GetWellKnownArg() == a2->GetWellKnownArg());
     };
 
     {
@@ -2665,26 +2645,6 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
             }
 
             if (!Compare(i1->GetLateNode(), i2->GetLateNode()))
-            {
-                return false;
-            }
-        }
-
-        if ((i1 != end1) || (i2 != end2))
-        {
-            return false;
-        }
-    }
-
-    {
-        CallArgs::LateArgIterator i1   = c1->gtArgs.LateArgs().begin();
-        CallArgs::LateArgIterator end1 = c1->gtArgs.LateArgs().end();
-        CallArgs::LateArgIterator i2   = c2->gtArgs.LateArgs().begin();
-        CallArgs::LateArgIterator end2 = c2->gtArgs.LateArgs().end();
-
-        for (; (i1 != end1) && (i2 != end2); ++i1, ++i2)
-        {
-            if (!sameArgMetadata(i1.GetArg(), i2.GetArg()) || !Compare(i1->GetLateNode(), i2->GetLateNode()))
             {
                 return false;
             }
