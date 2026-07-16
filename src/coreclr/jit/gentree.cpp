@@ -27169,6 +27169,69 @@ GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
     return gtNewSimdZipNode(type, even, odd, simdBaseType, simdSize, false);
 }
 
+#if defined(TARGET_WASM)
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdWasmTwoSourceShuffleNode: Builds a two-source constant permute for WASM
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    op1                 - The first source vector (logical lanes 0 .. simdCount - 1)
+//    op2                 - The second source vector (logical lanes simdCount .. 2 * simdCount - 1)
+//    selectors           - simdCount lane selectors, each in [0, 2 * simdCount)
+//    simdBaseType        - The base type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    A node that, for each result lane i, selects logical lane selectors[i] from the concatenation
+//    of op1 and op2
+//
+// Remarks:
+//    WASM's only native two-source constant permute (i8x16.shuffle) has no codegen path to source
+//    its immediate selectors, so express the permute as two single-source shuffles -- each scatters
+//    the lanes drawn from one operand into place while out-of-range indices zero-fill the rest --
+//    combined with a bitwise OR.
+//
+GenTree* Compiler::gtNewSimdWasmTwoSourceShuffleNode(
+    var_types type, GenTree* op1, GenTree* op2, const uint32_t* selectors, var_types simdBaseType, unsigned simdSize)
+{
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    uint32_t  simdCount = getSIMDVectorLength(simdSize, simdBaseType);
+    var_types indexType = getIndexTypeForShuffle(simdBaseType);
+
+    GenTreeVecCon* indices1 = gtNewVconNode(type);
+    GenTreeVecCon* indices2 = gtNewVconNode(type);
+
+    for (uint32_t index = 0; index < simdCount; index++)
+    {
+        uint32_t selector = selectors[index];
+        assert(selector < (2 * simdCount));
+
+        // The operand that does not supply this lane gets an out-of-range index so it zero-fills.
+        if (selector < simdCount)
+        {
+            indices1->SetElementIntegral(indexType, index, selector);
+            indices2->SetElementIntegral(indexType, index, simdCount);
+        }
+        else
+        {
+            indices1->SetElementIntegral(indexType, index, simdCount);
+            indices2->SetElementIntegral(indexType, index, selector - simdCount);
+        }
+    }
+
+    assert(IsValidForShuffle(indices1, simdSize, simdBaseType, nullptr, false));
+    assert(IsValidForShuffle(indices2, simdSize, simdBaseType, nullptr, false));
+
+    GenTree* scatter1 = gtNewSimdShuffleNode(type, op1, indices1, simdBaseType, simdSize, false);
+    GenTree* scatter2 = gtNewSimdShuffleNode(type, op2, indices2, simdBaseType, simdSize, false);
+
+    return gtNewSimdBinOpNode(GT_OR, type, scatter1, scatter2, simdBaseType, simdSize);
+}
+#endif // TARGET_WASM
+
 //----------------------------------------------------------------------------------------------
 // Compiler::gtNewSimdConcatNode: Creates a new simd ConcatLowerLower/... node
 //
@@ -27251,8 +27314,20 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
                                         simdSize);
     }
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdConcatNode");
-    return nullptr;
+    // WASM has no native cross-vector concat. The lower result half comes from op1 and the upper
+    // from op2, so build the selectors and let the shared two-source shuffle scatter them.
+
+    uint32_t selectors[16];
+    uint32_t half       = elementCount / 2;
+    uint32_t leftStart  = leftUpper ? half : 0;
+    uint32_t rightStart = rightUpper ? half : 0;
+
+    for (uint32_t index = 0; index < elementCount; index++)
+    {
+        selectors[index] = (index < half) ? (leftStart + index) : (elementCount + rightStart + (index - half));
+    }
+
+    return gtNewSimdWasmTwoSourceShuffleNode(type, op1, op2, selectors, simdBaseType, simdSize);
 #elif !defined(TARGET_ARM64)
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -27398,33 +27473,19 @@ GenTree* Compiler::gtNewSimdZipNode(
     NamedIntrinsic intrinsic = upper ? NI_AdvSimd_Arm64_ZipHigh : NI_AdvSimd_Arm64_ZipLow;
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
 #elif defined(TARGET_WASM)
-    // WASM lacks a native interleave, and the result draws from two vectors so a single-source
-    // shuffle can't express it directly. Scatter each operand's elements into disjoint lanes with
-    // a single-source shuffle -- out-of-range indices zero-fill the gaps -- and OR the results.
+    // WASM lacks a native interleave. Even lanes come from op1 and odd lanes from op2, so build the
+    // selectors and let the shared two-source shuffle scatter them.
 
-    var_types indexType = getIndexTypeForShuffle(simdBaseType);
-    uint32_t  base      = upper ? (simdCount / 2) : 0;
-
-    GenTreeVecCon* indices1 = gtNewVconNode(type);
-    GenTreeVecCon* indices2 = gtNewVconNode(type);
+    uint32_t selectors[16];
+    uint32_t base = upper ? (simdCount / 2) : 0;
 
     for (uint32_t index = 0; index < simdCount; index++)
     {
-        // Even lanes come from op1, odd lanes from op2; the other operand gets an out-of-range
-        // index so it contributes a zero to that lane.
         uint32_t element = base + (index / 2);
-
-        indices1->SetElementIntegral(indexType, index, ((index & 1) == 0) ? element : simdCount);
-        indices2->SetElementIntegral(indexType, index, ((index & 1) == 0) ? simdCount : element);
+        selectors[index] = ((index & 1) == 0) ? element : (simdCount + element);
     }
 
-    assert(IsValidForShuffle(indices1, simdSize, simdBaseType, nullptr, false));
-    assert(IsValidForShuffle(indices2, simdSize, simdBaseType, nullptr, false));
-
-    GenTree* scatter1 = gtNewSimdShuffleNode(type, op1, indices1, simdBaseType, simdSize, false);
-    GenTree* scatter2 = gtNewSimdShuffleNode(type, op2, indices2, simdBaseType, simdSize, false);
-
-    return gtNewSimdBinOpNode(GT_OR, type, scatter1, scatter2, simdBaseType, simdSize);
+    return gtNewSimdWasmTwoSourceShuffleNode(type, op1, op2, selectors, simdBaseType, simdSize);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
@@ -27615,40 +27676,20 @@ GenTree* Compiler::gtNewSimdUnzipNode(
             : gtNewSimdHWIntrinsicNode(type, lower, NI_Vector_ToVector512Unsafe, simdBaseType, simdSize / 2);
     return gtNewSimdWithUpperNode(type, result, higher, simdBaseType, simdSize);
 #elif defined(TARGET_WASM)
-    // WASM lacks a native deinterleave. The even/odd elements are gathered from both operands, so
-    // scatter each operand into its half with a single-source shuffle -- out-of-range indices
-    // zero-fill the other half -- and OR the results.
+    // WASM lacks a native deinterleave. The lower result half gathers op1's even/odd elements and
+    // the upper half gathers op2's, so build the selectors and let the shared two-source shuffle
+    // scatter them.
 
-    var_types indexType = getIndexTypeForShuffle(simdBaseType);
-    uint32_t  half      = simdCount / 2;
-    uint32_t  start     = odd ? 1 : 0;
-
-    GenTreeVecCon* indices1 = gtNewVconNode(type);
-    GenTreeVecCon* indices2 = gtNewVconNode(type);
+    uint32_t selectors[16];
+    uint32_t half  = simdCount / 2;
+    uint32_t start = odd ? 1 : 0;
 
     for (uint32_t index = 0; index < simdCount; index++)
     {
-        if (index < half)
-        {
-            // Lower half gathers op1's even/odd elements; op2 zero-fills here.
-            indices1->SetElementIntegral(indexType, index, start + (2 * index));
-            indices2->SetElementIntegral(indexType, index, simdCount);
-        }
-        else
-        {
-            // Upper half gathers op2's even/odd elements; op1 zero-fills here.
-            indices1->SetElementIntegral(indexType, index, simdCount);
-            indices2->SetElementIntegral(indexType, index, start + (2 * (index - half)));
-        }
+        selectors[index] = (index < half) ? (start + (2 * index)) : (simdCount + start + (2 * (index - half)));
     }
 
-    assert(IsValidForShuffle(indices1, simdSize, simdBaseType, nullptr, false));
-    assert(IsValidForShuffle(indices2, simdSize, simdBaseType, nullptr, false));
-
-    GenTree* scatter1 = gtNewSimdShuffleNode(type, op1, indices1, simdBaseType, simdSize, false);
-    GenTree* scatter2 = gtNewSimdShuffleNode(type, op2, indices2, simdBaseType, simdSize, false);
-
-    return gtNewSimdBinOpNode(GT_OR, type, scatter1, scatter2, simdBaseType, simdSize);
+    return gtNewSimdWasmTwoSourceShuffleNode(type, op1, op2, selectors, simdBaseType, simdSize);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM

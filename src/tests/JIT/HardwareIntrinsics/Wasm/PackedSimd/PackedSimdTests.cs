@@ -546,6 +546,42 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void ConcatTest()
+    {
+        // Opaque operands force the shuffle + OR concat rather than constant folding.
+
+        Vector128<int> li = Opaque(Vector128.Create(1, 2, 3, 4));
+        Vector128<int> ri = Opaque(Vector128.Create(5, 6, 7, 8));
+        Assert.Equal(Vector128.Create(1, 2, 5, 6), Vector128.ConcatLowerLower(li, ri));
+        Assert.Equal(Vector128.Create(3, 4, 5, 6), Vector128.ConcatUpperLower(li, ri));
+        Assert.Equal(Vector128.Create(1, 2, 7, 8), Vector128.ConcatLowerUpper(li, ri));
+        Assert.Equal(Vector128.Create(3, 4, 7, 8), Vector128.ConcatUpperUpper(li, ri));
+
+        Vector128<float> lf = Opaque(Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f));
+        Vector128<float> rf = Opaque(Vector128.Create(5.0f, 6.0f, 7.0f, 8.0f));
+        Assert.Equal(Vector128.Create(1.0f, 2.0f, 5.0f, 6.0f), Vector128.ConcatLowerLower(lf, rf));
+        Assert.Equal(Vector128.Create(3.0f, 4.0f, 7.0f, 8.0f), Vector128.ConcatUpperUpper(lf, rf));
+
+        Vector128<long> ll = Opaque(Vector128.Create(10L, 20L));
+        Vector128<long> rl = Opaque(Vector128.Create(30L, 40L));
+        Assert.Equal(Vector128.Create(10L, 30L), Vector128.ConcatLowerLower(ll, rl));
+        Assert.Equal(Vector128.Create(20L, 40L), Vector128.ConcatUpperUpper(ll, rl));
+        Assert.Equal(Vector128.Create(20L, 30L), Vector128.ConcatUpperLower(ll, rl));
+
+        Vector128<short> ls = Opaque(Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8));
+        Vector128<short> rs = Opaque(Vector128.Create((short)9, 10, 11, 12, 13, 14, 15, 16));
+        Assert.Equal(Vector128.Create((short)1, 2, 3, 4, 9, 10, 11, 12), Vector128.ConcatLowerLower(ls, rs));
+        Assert.Equal(Vector128.Create((short)5, 6, 7, 8, 13, 14, 15, 16), Vector128.ConcatUpperUpper(ls, rs));
+
+        Vector128<byte> lb = Opaque(Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
+        Vector128<byte> rb = Opaque(Vector128.Create((byte)16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31));
+        Assert.Equal(Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 16, 17, 18, 19, 20, 21, 22, 23),
+                     Vector128.ConcatLowerLower(lb, rb));
+        Assert.Equal(Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 24, 25, 26, 27, 28, 29, 30, 31),
+                     Vector128.ConcatUpperUpper(lb, rb));
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);

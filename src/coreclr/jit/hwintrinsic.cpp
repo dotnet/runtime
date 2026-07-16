@@ -5842,11 +5842,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         assert(sig->numArgs == 2);
         assert(retNode == nullptr);
 
-#if defined(TARGET_WASM)
-        // TODO-WASM-SIMD: Implement NI_Vector_Concat - Need Shuffle
-        return nullptr;
-#endif
-
         op2 = impSIMDPopStack();
         op1 = impSIMDPopStack();
 
