@@ -1489,7 +1489,7 @@ namespace System
 
             if (TDecimal.IsNaN(bits))
             {
-                return bits;
+                return PropagateNaN<TDecimal, TValue>(bits, bits);
             }
 
             if (TDecimal.IsInfinity(bits))
@@ -1583,7 +1583,7 @@ namespace System
 
             if (TDecimal.IsNaN(bits))
             {
-                return bits;
+                return PropagateNaN<TDecimal, TValue>(bits, bits);
             }
 
             if (TDecimal.IsInfinity(bits))

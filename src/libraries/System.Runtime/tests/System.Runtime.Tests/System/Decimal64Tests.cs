@@ -1549,6 +1549,8 @@ namespace System.Tests
         [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // +Infinity
         [InlineData(0xF800000000000000UL, 0xF7FB86F26FC0FFFFUL)] // -Infinity -> -MAXFP
         [InlineData(0xFC00000000000000UL, 0xFC00000000000000UL)] // NaN
+        [InlineData(0x7E00000000001234UL, 0x7C00000000001234UL)] // signaling NaN canonicalized
+        [InlineData(0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL)] // out-of-range NaN payload canonicalized
         public static void BitIncrementTest(ulong bits, ulong expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.BitIncrement(Unsafe.BitCast<ulong, Decimal64>(bits))));
@@ -1567,6 +1569,8 @@ namespace System.Tests
         [InlineData(0x7800000000000000UL, 0x77FB86F26FC0FFFFUL)] // +Infinity -> +MAXFP
         [InlineData(0xF800000000000000UL, 0xF800000000000000UL)] // -Infinity
         [InlineData(0xFC00000000000000UL, 0xFC00000000000000UL)] // NaN
+        [InlineData(0x7E00000000001234UL, 0x7C00000000001234UL)] // signaling NaN canonicalized
+        [InlineData(0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL)] // out-of-range NaN payload canonicalized
         public static void BitDecrementTest(ulong bits, ulong expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.BitDecrement(Unsafe.BitCast<ulong, Decimal64>(bits))));
@@ -1607,6 +1611,8 @@ namespace System.Tests
         [InlineData(0xFC00000000000000UL, 5, 0xFC00000000000000UL)] // NaN
         [InlineData(0x7800000000000000UL, 5, 0x7800000000000000UL)] // +Infinity
         [InlineData(0xF800000000000000UL, 5, 0xF800000000000000UL)] // -Infinity
+        [InlineData(0x7E00000000001234UL, 5, 0x7C00000000001234UL)] // signaling NaN canonicalized
+        [InlineData(0x7C03FFFFFFFFFFFFUL, 5, 0x7C00000000000000UL)] // out-of-range NaN payload canonicalized
         public static void ScaleBTest(ulong bits, int n, ulong expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.ScaleB(Unsafe.BitCast<ulong, Decimal64>(bits), n)));

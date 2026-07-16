@@ -1543,6 +1543,8 @@ namespace System.Tests
         [InlineData(0x7800000000000000UL, 0x0000000000000000UL, 0x7800000000000000UL, 0x0000000000000000UL)] // +Infinity
         [InlineData(0xF800000000000000UL, 0x0000000000000000UL, 0xDFFFED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL)] // -Infinity -> -MAXFP
         [InlineData(0xFC00000000000000UL, 0x0000000000000000UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // NaN
+        [InlineData(0x7E00000000000000UL, 0x0000000000001234UL, 0x7C00000000000000UL, 0x0000000000001234UL)] // signaling NaN canonicalized
+        [InlineData(0x7C003FFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL, 0x7C00000000000000UL, 0x0000000000000000UL)] // out-of-range NaN payload canonicalized
         public static void BitIncrementTest(ulong upper, ulong lower, ulong expectedUpper, ulong expectedLower)
         {
             Decimal128 result = Decimal128.BitIncrement(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(upper, lower)));
@@ -1562,6 +1564,8 @@ namespace System.Tests
         [InlineData(0x7800000000000000UL, 0x0000000000000000UL, 0x5FFFED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL)] // +Infinity -> +MAXFP
         [InlineData(0xF800000000000000UL, 0x0000000000000000UL, 0xF800000000000000UL, 0x0000000000000000UL)] // -Infinity
         [InlineData(0xFC00000000000000UL, 0x0000000000000000UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // NaN
+        [InlineData(0x7E00000000000000UL, 0x0000000000001234UL, 0x7C00000000000000UL, 0x0000000000001234UL)] // signaling NaN canonicalized
+        [InlineData(0x7C003FFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL, 0x7C00000000000000UL, 0x0000000000000000UL)] // out-of-range NaN payload canonicalized
         public static void BitDecrementTest(ulong upper, ulong lower, ulong expectedUpper, ulong expectedLower)
         {
             Decimal128 result = Decimal128.BitDecrement(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(upper, lower)));
@@ -1603,6 +1607,8 @@ namespace System.Tests
         [InlineData(0xFC00000000000000UL, 0x0000000000000000UL, 5, 0xFC00000000000000UL, 0x0000000000000000UL)] // NaN
         [InlineData(0x7800000000000000UL, 0x0000000000000000UL, 5, 0x7800000000000000UL, 0x0000000000000000UL)] // +Infinity
         [InlineData(0xF800000000000000UL, 0x0000000000000000UL, 5, 0xF800000000000000UL, 0x0000000000000000UL)] // -Infinity
+        [InlineData(0x7E00000000000000UL, 0x0000000000001234UL, 5, 0x7C00000000000000UL, 0x0000000000001234UL)] // signaling NaN canonicalized
+        [InlineData(0x7C003FFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL, 5, 0x7C00000000000000UL, 0x0000000000000000UL)] // out-of-range NaN payload canonicalized
         public static void ScaleBTest(ulong upper, ulong lower, int n, ulong expectedUpper, ulong expectedLower)
         {
             Decimal128 result = Decimal128.ScaleB(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(upper, lower)), n);
