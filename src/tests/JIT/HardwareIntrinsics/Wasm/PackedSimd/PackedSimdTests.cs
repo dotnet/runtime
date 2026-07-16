@@ -480,6 +480,72 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void ZipTest()
+    {
+        // Opaque operands force the shuffle + OR interleave rather than constant folding.
+
+        Vector128<int> li = Opaque(Vector128.Create(1, 2, 3, 4));
+        Vector128<int> ri = Opaque(Vector128.Create(5, 6, 7, 8));
+        Assert.Equal(Vector128.Create(1, 5, 2, 6), Vector128.ZipLower(li, ri));
+        Assert.Equal(Vector128.Create(3, 7, 4, 8), Vector128.ZipUpper(li, ri));
+
+        Vector128<float> lf = Opaque(Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f));
+        Vector128<float> rf = Opaque(Vector128.Create(5.0f, 6.0f, 7.0f, 8.0f));
+        Assert.Equal(Vector128.Create(1.0f, 5.0f, 2.0f, 6.0f), Vector128.ZipLower(lf, rf));
+        Assert.Equal(Vector128.Create(3.0f, 7.0f, 4.0f, 8.0f), Vector128.ZipUpper(lf, rf));
+
+        Vector128<long> ll = Opaque(Vector128.Create(10L, 20L));
+        Vector128<long> rl = Opaque(Vector128.Create(30L, 40L));
+        Assert.Equal(Vector128.Create(10L, 30L), Vector128.ZipLower(ll, rl));
+        Assert.Equal(Vector128.Create(20L, 40L), Vector128.ZipUpper(ll, rl));
+
+        Vector128<short> ls = Opaque(Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8));
+        Vector128<short> rs = Opaque(Vector128.Create((short)9, 10, 11, 12, 13, 14, 15, 16));
+        Assert.Equal(Vector128.Create((short)1, 9, 2, 10, 3, 11, 4, 12), Vector128.ZipLower(ls, rs));
+        Assert.Equal(Vector128.Create((short)5, 13, 6, 14, 7, 15, 8, 16), Vector128.ZipUpper(ls, rs));
+
+        Vector128<byte> lb = Opaque(Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
+        Vector128<byte> rb = Opaque(Vector128.Create((byte)16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31));
+        Assert.Equal(Vector128.Create((byte)0, 16, 1, 17, 2, 18, 3, 19, 4, 20, 5, 21, 6, 22, 7, 23),
+                     Vector128.ZipLower(lb, rb));
+        Assert.Equal(Vector128.Create((byte)8, 24, 9, 25, 10, 26, 11, 27, 12, 28, 13, 29, 14, 30, 15, 31),
+                     Vector128.ZipUpper(lb, rb));
+    }
+
+    [Fact]
+    public static unsafe void UnzipTest()
+    {
+        // Opaque operands force the shuffle + OR deinterleave rather than constant folding.
+
+        Vector128<int> li = Opaque(Vector128.Create(1, 2, 3, 4));
+        Vector128<int> ri = Opaque(Vector128.Create(5, 6, 7, 8));
+        Assert.Equal(Vector128.Create(1, 3, 5, 7), Vector128.UnzipEven(li, ri));
+        Assert.Equal(Vector128.Create(2, 4, 6, 8), Vector128.UnzipOdd(li, ri));
+
+        Vector128<float> lf = Opaque(Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f));
+        Vector128<float> rf = Opaque(Vector128.Create(5.0f, 6.0f, 7.0f, 8.0f));
+        Assert.Equal(Vector128.Create(1.0f, 3.0f, 5.0f, 7.0f), Vector128.UnzipEven(lf, rf));
+        Assert.Equal(Vector128.Create(2.0f, 4.0f, 6.0f, 8.0f), Vector128.UnzipOdd(lf, rf));
+
+        Vector128<long> ll = Opaque(Vector128.Create(10L, 20L));
+        Vector128<long> rl = Opaque(Vector128.Create(30L, 40L));
+        Assert.Equal(Vector128.Create(10L, 30L), Vector128.UnzipEven(ll, rl));
+        Assert.Equal(Vector128.Create(20L, 40L), Vector128.UnzipOdd(ll, rl));
+
+        Vector128<short> ls = Opaque(Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8));
+        Vector128<short> rs = Opaque(Vector128.Create((short)9, 10, 11, 12, 13, 14, 15, 16));
+        Assert.Equal(Vector128.Create((short)1, 3, 5, 7, 9, 11, 13, 15), Vector128.UnzipEven(ls, rs));
+        Assert.Equal(Vector128.Create((short)2, 4, 6, 8, 10, 12, 14, 16), Vector128.UnzipOdd(ls, rs));
+
+        Vector128<byte> lb = Opaque(Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
+        Vector128<byte> rb = Opaque(Vector128.Create((byte)16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31));
+        Assert.Equal(Vector128.Create((byte)0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30),
+                     Vector128.UnzipEven(lb, rb));
+        Assert.Equal(Vector128.Create((byte)1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31),
+                     Vector128.UnzipOdd(lb, rb));
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);

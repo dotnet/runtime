@@ -5281,11 +5281,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_Unzip - Need Shuffle
-            return nullptr;
-#endif
-
 #if defined(TARGET_XARCH)
             if (simdSize == 16)
             {
@@ -5426,11 +5421,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_ZipUpper:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_Zip - Need Shuffle
-            return nullptr;
-#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();

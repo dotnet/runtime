@@ -27398,8 +27398,33 @@ GenTree* Compiler::gtNewSimdZipNode(
     NamedIntrinsic intrinsic = upper ? NI_AdvSimd_Arm64_ZipHigh : NI_AdvSimd_Arm64_ZipLow;
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdZipNode");
-    return nullptr;
+    // WASM lacks a native interleave, and the result draws from two vectors so a single-source
+    // shuffle can't express it directly. Scatter each operand's elements into disjoint lanes with
+    // a single-source shuffle -- out-of-range indices zero-fill the gaps -- and OR the results.
+
+    var_types indexType = getIndexTypeForShuffle(simdBaseType);
+    uint32_t  base      = upper ? (simdCount / 2) : 0;
+
+    GenTreeVecCon* indices1 = gtNewVconNode(type);
+    GenTreeVecCon* indices2 = gtNewVconNode(type);
+
+    for (uint32_t index = 0; index < simdCount; index++)
+    {
+        // Even lanes come from op1, odd lanes from op2; the other operand gets an out-of-range
+        // index so it contributes a zero to that lane.
+        uint32_t element = base + (index / 2);
+
+        indices1->SetElementIntegral(indexType, index, ((index & 1) == 0) ? element : simdCount);
+        indices2->SetElementIntegral(indexType, index, ((index & 1) == 0) ? simdCount : element);
+    }
+
+    assert(IsValidForShuffle(indices1, simdSize, simdBaseType, nullptr, false));
+    assert(IsValidForShuffle(indices2, simdSize, simdBaseType, nullptr, false));
+
+    GenTree* scatter1 = gtNewSimdShuffleNode(type, op1, indices1, simdBaseType, simdSize, false);
+    GenTree* scatter2 = gtNewSimdShuffleNode(type, op2, indices2, simdBaseType, simdSize, false);
+
+    return gtNewSimdBinOpNode(GT_OR, type, scatter1, scatter2, simdBaseType, simdSize);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
@@ -27590,8 +27615,40 @@ GenTree* Compiler::gtNewSimdUnzipNode(
             : gtNewSimdHWIntrinsicNode(type, lower, NI_Vector_ToVector512Unsafe, simdBaseType, simdSize / 2);
     return gtNewSimdWithUpperNode(type, result, higher, simdBaseType, simdSize);
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdUnzipNode");
-    return nullptr;
+    // WASM lacks a native deinterleave. The even/odd elements are gathered from both operands, so
+    // scatter each operand into its half with a single-source shuffle -- out-of-range indices
+    // zero-fill the other half -- and OR the results.
+
+    var_types indexType = getIndexTypeForShuffle(simdBaseType);
+    uint32_t  half      = simdCount / 2;
+    uint32_t  start     = odd ? 1 : 0;
+
+    GenTreeVecCon* indices1 = gtNewVconNode(type);
+    GenTreeVecCon* indices2 = gtNewVconNode(type);
+
+    for (uint32_t index = 0; index < simdCount; index++)
+    {
+        if (index < half)
+        {
+            // Lower half gathers op1's even/odd elements; op2 zero-fills here.
+            indices1->SetElementIntegral(indexType, index, start + (2 * index));
+            indices2->SetElementIntegral(indexType, index, simdCount);
+        }
+        else
+        {
+            // Upper half gathers op2's even/odd elements; op1 zero-fills here.
+            indices1->SetElementIntegral(indexType, index, simdCount);
+            indices2->SetElementIntegral(indexType, index, start + (2 * (index - half)));
+        }
+    }
+
+    assert(IsValidForShuffle(indices1, simdSize, simdBaseType, nullptr, false));
+    assert(IsValidForShuffle(indices2, simdSize, simdBaseType, nullptr, false));
+
+    GenTree* scatter1 = gtNewSimdShuffleNode(type, op1, indices1, simdBaseType, simdSize, false);
+    GenTree* scatter2 = gtNewSimdShuffleNode(type, op2, indices2, simdBaseType, simdSize, false);
+
+    return gtNewSimdBinOpNode(GT_OR, type, scatter1, scatter2, simdBaseType, simdSize);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
