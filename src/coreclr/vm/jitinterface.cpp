@@ -7344,8 +7344,8 @@ namespace
     }
 
     // Resolves a method token, including a cross-module MemberRef (a primitive's Equals lives in
-    // CoreLib). Callers only match non-generic methods, so a MethodSpec resolves to its generic
-    // definition -- which never matches -- instead of throwing.
+    // CoreLib). Returns NULL if the token kind is unexpected or resolution fails.
+    // Callers only match non-generic methods, so a MethodSpec resolves to its generic definition.
     MethodDesc* TryResolveMethodToken(Module* pModule, mdToken token)
     {
         STANDARD_VM_CONTRACT;
@@ -7355,8 +7355,21 @@ namespace
             return NULL;
 
         SigTypeContext typeContext;
-        return MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
-            pModule, token, &typeContext, FALSE /* strictMetadataChecks */, FALSE /* allowInstParam */);
+        MethodDesc* pMD = NULL;
+
+        EX_TRY
+        {
+            pMD = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
+                pModule, token, &typeContext, FALSE /* strictMetadataChecks */, FALSE /* allowInstParam */);
+        }
+        EX_CATCH
+        {
+            pMD = NULL;
+            RethrowTerminalExceptions();
+        }
+        EX_END_CATCH
+
+        return pMD;
     }
 
     // Unwraps an unboxing stub (interface dispatch on a value type) to the instance method that has IL.
