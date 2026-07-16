@@ -3900,6 +3900,8 @@ namespace Internal.JitInterface
                     return CorInfoWasmType.CORINFO_WASM_TYPE_F32;
                 case WasmValueType.F64:
                     return CorInfoWasmType.CORINFO_WASM_TYPE_F64;
+                case WasmValueType.V128:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_V128;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
                     return CorInfoWasmType.CORINFO_WASM_TYPE_I32; // unreachable

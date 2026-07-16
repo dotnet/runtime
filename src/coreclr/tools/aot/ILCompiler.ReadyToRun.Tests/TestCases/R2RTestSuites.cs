@@ -98,6 +98,42 @@ public class R2RTestSuites
     }
 
     [Fact]
+    public void WasmSimdModule()
+    {
+        var wasmSimdModule = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmSimdModule),
+            SourceResourceNames = ["Webcil/WasmSimdModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmSimdModule),
+            [
+                new(nameof(WasmSimdModule), [new CrossgenAssembly(wasmSimdModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs =
+                    {
+                        "--targetarch",
+                        "wasm",
+                        "--targetos",
+                        "browser",
+                    },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+            Assert.True(R2RAssert.GetAllMethods(reader).Exists(method =>
+                method.SignatureString.Contains("Echo", StringComparison.Ordinal)));
+        }
+    }
+
+    [Fact]
     public void RuntimeFunctionsSectionSizeExcludesSentinel()
     {
         var lib = new CompiledAssembly

@@ -38,6 +38,14 @@ namespace Internal.JitInterface
 
         public static TypeDesc LowerToAbiType(TypeDesc type)
         {
+            // Vector128<T> is the only SIMD type passed by value as a wasm v128. The other SIMD
+            // types (Vector2/3/4, Vector64<T>, Vector<T>, ...) are not yet handled by the wasm
+            // calling convention and fall through to the generic struct lowering below.
+            if (IsWasmV128Type(type))
+            {
+                return type;
+            }
+
             if (!(type.IsValueType && !type.IsPrimitive))
             {
                 return type;
@@ -87,9 +95,29 @@ namespace Internal.JitInterface
             }
         }
 
+        /// <summary>
+        /// Determines whether a type is <see cref="System.Runtime.Intrinsics.Vector128{T}"/>, the
+        /// only SIMD vector type currently passed and returned by value as a wasm <c>v128</c>. The
+        /// JIT recognizes <c>Vector128&lt;T&gt;</c> as <c>TYP_SIMD16</c> on wasm; the other SIMD
+        /// types (Vector2/3/4, Vector64/256/512&lt;T&gt;, Vector&lt;T&gt;, ...) are not yet handled
+        /// by the wasm calling convention and continue to use the generic struct ABI.
+        /// </summary>
+        public static bool IsWasmV128Type(TypeDesc type)
+        {
+            return type is MetadataType metadataType &&
+                   metadataType.IsIntrinsic &&
+                   metadataType.Namespace == "System.Runtime.Intrinsics"u8 &&
+                   metadataType.Name == "Vector128`1"u8;
+        }
+
         public static WasmValueType LowerType(TypeDesc type)
         {
             WasmValueType pointerType = (type.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
+
+            if (IsWasmV128Type(type))
+            {
+                return WasmValueType.V128;
+            }
 
             TypeDesc abiType = LowerToAbiType(type);
 
@@ -165,7 +193,8 @@ namespace Internal.JitInterface
             'l' => context.GetWellKnownType(WellKnownType.Int64),
             'f' => context.GetWellKnownType(WellKnownType.Single),
             'd' => context.GetWellKnownType(WellKnownType.Double),
-            'V' => throw new NotSupportedException("SIMD types are not supported in this version of the compiler"),
+            'V' => ((CompilerTypeSystemContext)context).CachedV128Type
+                   ?? throw new InvalidOperationException("Encountered 'V' in signature but no v128 type was cached during lowering"),
             _ => throw new InvalidOperationException($"Unknown signature char: {c}")
         };
 
@@ -347,7 +376,12 @@ namespace Internal.JitInterface
             }
             else
             {
-                sigBuilder.Append(WasmValueTypeToSigChar(LowerType(loweredReturnType)));
+                WasmValueType returnWasmType = LowerType(loweredReturnType);
+                if (returnWasmType == WasmValueType.V128)
+                {
+                    ((CompilerTypeSystemContext)returnType.Context).CacheV128Type(loweredReturnType);
+                }
+                sigBuilder.Append(WasmValueTypeToSigChar(returnWasmType));
             }
 
             // Reserve space for potential implicit this, stack pointer parameter, portable entrypoint parameter,
@@ -424,6 +458,10 @@ namespace Internal.JitInterface
                 else
                 {
                     WasmValueType paramWasmType = LowerType(paramType);
+                    if (paramWasmType == WasmValueType.V128)
+                    {
+                        ((CompilerTypeSystemContext)paramType.Context).CacheV128Type(paramType);
+                    }
                     sigBuilder.Append(WasmValueTypeToSigChar(paramWasmType));
                     result.Add(paramWasmType);
                 }
