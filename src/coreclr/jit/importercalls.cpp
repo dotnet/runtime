@@ -3508,6 +3508,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return gtNewNothingNode();
     }
 
+    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync)
+    {
+        JITDUMP("\nExpanding RuntimeHelpers.IsRuntimeAsync to %s early\n", compIsAsync() ? "true" : "false");
+        return compIsAsync() ? gtNewTrue() : gtNewFalse();
+    }
+
     bool betterToExpand = false;
 
     // Allow some lightweight intrinsics in Tier0 which can improve throughput
@@ -3790,13 +3796,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     JITDUMP("\nConverting RuntimeHelpers.IsKnownConstant to:\n");
                     DISPTREE(retNode);
                 }
-                break;
-            }
-
-            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync:
-            {
-                retNode = compIsAsync() ? gtNewTrue() : gtNewFalse();
-                JITDUMP("\nExpanding RuntimeHelpers.IsRuntimeAsync to %s early\n", compIsAsync() ? "true" : "false");
                 break;
             }
 
