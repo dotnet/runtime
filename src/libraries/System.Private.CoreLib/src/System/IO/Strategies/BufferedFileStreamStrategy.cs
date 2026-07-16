@@ -280,11 +280,7 @@ namespace System.IO.Strategies
         {
             AssertBufferArguments(buffer, offset, count);
 
-            ValueTask<int> readResult = ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken);
-
-            return readResult.IsCompletedSuccessfully
-                ? Task.FromResult(readResult.Result)
-                : readResult.AsTask();
+            return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
