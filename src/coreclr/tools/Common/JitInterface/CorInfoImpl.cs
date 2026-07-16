@@ -541,10 +541,7 @@ namespace Internal.JitInterface
                 _actualInstructionSetUnsupported.ExpandInstructionSetByReverseImplication(architecture);
                 _actualInstructionSetUnsupported.Set64BitInstructionSetVariants(architecture);
 
-                InstructionSetSupport actualSupport = new InstructionSetSupport(
-                    _actualInstructionSetSupported,
-                    _actualInstructionSetUnsupported,
-                    architecture);
+                InstructionSetSupport actualSupport = new InstructionSetSupport(_actualInstructionSetSupported, _actualInstructionSetUnsupported, architecture);
                 var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
                 AddPrecodeFixup(node);
             }

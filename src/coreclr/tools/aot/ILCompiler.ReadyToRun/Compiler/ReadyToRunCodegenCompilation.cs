@@ -465,21 +465,13 @@ namespace ILCompiler
                             // as "<assembly>.wasm" (matching the browser/wasi external-assembly probe).
                             standaloneMsilOutputFile = Path.ChangeExtension(standaloneMsilOutputFile, ".wasm");
                         }
-                        RewriteComponentFile(
-                            inputFile: inputFile,
-                            outputFile: standaloneMsilOutputFile,
-                            ownerExecutableName: ownerExecutableName,
-                            compiledMethodDefs: compiledMethodDefs);
+                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName, compiledMethodDefs: compiledMethodDefs);
                     }
                 }
             }
         }
 
-        private void RewriteComponentFile(
-            string inputFile,
-            string outputFile,
-            string ownerExecutableName,
-            HashSet<MethodDesc> compiledMethodDefs)
+        private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName, HashSet<MethodDesc> compiledMethodDefs)
         {
             EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
 
@@ -499,11 +491,7 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
 
-            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with
-            {
-                IsComponentModule = true,
-                CompiledMethodDefs = compiledMethodDefs,
-            };
+            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true, CompiledMethodDefs = compiledMethodDefs };
 
             if (optimizationFlags.StripILBodies)
             {
