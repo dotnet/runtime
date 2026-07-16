@@ -29426,8 +29426,33 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
         }
     }
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdSumNode");
-    return nullptr;
+    // WASM only has V128 and no native horizontal reduction, so reduce via a shuffle + add
+    // tree, reading lane 0 at the end. Using increasing strides keeps the grouping identical
+    // to the software `Sum(lower) + Sum(upper)` fallback, which matters for floating-point
+    // determinism. Indices that walk off the end shuffle in a zero, which is harmless because
+    // only lane 0 is ever read.
+
+    unsigned  vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+    var_types indexType    = getIndexTypeForShuffle(simdBaseType);
+
+    for (unsigned stride = 1; stride < vectorLength; stride *= 2)
+    {
+        GenTree* op1Dup = fgMakeMultiUse(&op1);
+
+        GenTreeVecCon* indices = gtNewVconNode(simdType);
+
+        for (unsigned index = 0; index < vectorLength; index++)
+        {
+            indices->SetElementIntegral(indexType, index, index + stride);
+        }
+
+        assert(IsValidForShuffle(indices, simdSize, simdBaseType, nullptr, false));
+
+        GenTree* shifted = gtNewSimdShuffleNode(simdType, op1, indices, simdBaseType, simdSize, false);
+        op1              = gtNewSimdBinOpNode(GT_ADD, simdType, op1Dup, shifted, simdBaseType, simdSize);
+    }
+
+    return gtNewSimdToScalarNode(type, op1, simdBaseType, simdSize);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64

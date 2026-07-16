@@ -5247,11 +5247,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_Sum - Need Shuffle
-            return nullptr;
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdSumNode(retType, op1, simdBaseType, simdSize);
             break;

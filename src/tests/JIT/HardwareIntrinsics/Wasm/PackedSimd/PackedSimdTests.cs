@@ -466,6 +466,20 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void SumTest()
+    {
+        // Opaque data forces the shuffle + add reduction rather than constant folding.
+
+        Assert.Equal(10, Vector128.Sum(Opaque(Vector128.Create(1, 2, 3, 4))));
+        Assert.Equal(10.0f, Vector128.Sum(Opaque(Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f))));
+        Assert.Equal(30L, Vector128.Sum(Opaque(Vector128.Create(10L, 20L))));
+        Assert.Equal(4.0, Vector128.Sum(Opaque(Vector128.Create(1.5, 2.5))));
+        Assert.Equal((short)36, Vector128.Sum(Opaque(Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8))));
+        Assert.Equal((byte)120,
+                     Vector128.Sum(Opaque(Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15))));
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);
