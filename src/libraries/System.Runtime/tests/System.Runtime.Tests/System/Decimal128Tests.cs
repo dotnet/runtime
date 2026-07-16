@@ -2617,7 +2617,10 @@ namespace System.Tests
 
         public static IEnumerable<object[]> RoundToDigits_TestData()
         {
-            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), 0, MidpointRounding.ToEven, new UInt128(0xFC00000000000000, 0x0000000000000000) }; // NaN passes through
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), 0, MidpointRounding.ToEven, new UInt128(0xFC00000000000000, 0x0000000000000000) }; // canonical NaN passes through
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), 0, MidpointRounding.ToEven, new UInt128(0x7C00000000000000, 0x0000000000001234) }; // signaling NaN -> quiet NaN (payload preserved)
+            yield return new object[] { new UInt128(0x7C003FFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), 3, MidpointRounding.ToZero, new UInt128(0x7C00000000000000, 0x0000000000000000) }; // out-of-range NaN payload cleared
+            yield return new object[] { new UInt128(0xFE00000000000000, 0x0000000000000000), 2, MidpointRounding.ToNegativeInfinity, new UInt128(0xFC00000000000000, 0x0000000000000000) }; // negative signaling NaN -> quiet NaN (sign preserved)
             yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), 3, MidpointRounding.AwayFromZero, new UInt128(0x7800000000000000, 0x0000000000000000) }; // +Inf passes through
             yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), 2, MidpointRounding.ToPositiveInfinity, new UInt128(0xF800000000000000, 0x0000000000000000) }; // -Inf passes through
             yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000019), 0, MidpointRounding.ToEven, new UInt128(0x3040000000000000, 0x0000000000000002) }; // 2.5 -> 2 (ToEven)

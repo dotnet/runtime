@@ -2617,7 +2617,10 @@ namespace System.Tests
 
         public static IEnumerable<object[]> RoundToDigits_TestData()
         {
-            yield return new object[] { 0xFC000000U, 0, MidpointRounding.ToEven, 0xFC000000U }; // NaN passes through
+            yield return new object[] { 0xFC000000U, 0, MidpointRounding.ToEven, 0xFC000000U }; // canonical NaN passes through
+            yield return new object[] { 0x7E001234U, 0, MidpointRounding.ToEven, 0x7C001234U }; // signaling NaN -> quiet NaN (payload preserved)
+            yield return new object[] { 0x7C0FFFFFU, 3, MidpointRounding.ToZero, 0x7C000000U }; // out-of-range NaN payload cleared
+            yield return new object[] { 0xFE000000U, 2, MidpointRounding.ToNegativeInfinity, 0xFC000000U }; // negative signaling NaN -> quiet NaN (sign preserved)
             yield return new object[] { 0x78000000U, 3, MidpointRounding.AwayFromZero, 0x78000000U }; // +Inf passes through
             yield return new object[] { 0xF8000000U, 2, MidpointRounding.ToPositiveInfinity, 0xF8000000U }; // -Inf passes through
             yield return new object[] { 0x32000019U, 0, MidpointRounding.ToEven, 0x32800002U }; // 2.5 -> 2 (ToEven)

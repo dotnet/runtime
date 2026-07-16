@@ -1150,7 +1150,8 @@ namespace System
 
             if (TDecimal.IsNaN(bits))
             {
-                return bits;
+                // Canonicalize so a signaling or out-of-range-payload NaN operand rounds to the canonical quiet NaN.
+                return PropagateNaN<TDecimal, TValue>(bits, bits);
             }
 
             if (TDecimal.IsInfinity(bits))
