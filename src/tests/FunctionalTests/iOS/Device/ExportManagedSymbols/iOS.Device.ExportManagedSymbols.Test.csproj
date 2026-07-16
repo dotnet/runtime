@@ -10,6 +10,8 @@
     <UseConsoleUITemplate>true</UseConsoleUITemplate>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
     <NativeMainSource>$(MSBuildProjectDirectory)/main.m</NativeMainSource>
+    <!-- The servicing test infrastructure will not be updated for newer macOS versions. -->
+    <IgnoreForCI>true</IgnoreForCI>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
