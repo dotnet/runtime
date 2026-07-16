@@ -308,9 +308,13 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             }
         }
 
-        if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) && parentNode->OperIs(GT_NOT, GT_AND_NOT, GT_OR_NOT, GT_XOR_NOT))
+        if (parentNode->OperIs(GT_NOT, GT_AND_NOT, GT_OR_NOT, GT_XOR_NOT))
         {
-            return true;
+            if (IsInvariantInRange(childNode, parentNode))
+            {
+                assert(shiftAmountNode->isContained());
+                return true;
+            }
         }
 
         // TODO: Handle CMN, NEG/NEGS, BIC/BICS, EON, MVN, ORN, TST
@@ -1510,18 +1514,15 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 if (oper == GT_AND)
                 {
-                    oper        = GT_AND_NOT;
                     intrinsicId = NI_AdvSimd_BitwiseClear;
                 }
                 else
                 {
                     assert(oper == GT_OR);
-                    oper        = GT_NONE;
                     intrinsicId = NI_AdvSimd_OrNot;
                 }
 
                 node->ChangeHWIntrinsicId(intrinsicId, op1, op2);
-                oper = GT_AND_NOT;
             }
             break;
         }
