@@ -36120,11 +36120,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     else
     {
         assert(opCount == 3);
-#ifndef TARGET_WASM
-        // TODO-WASM: Implement gtFoldExprHWIntrinsic for Wasm SIMD ternary operations
         switch (ni)
         {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_WASM)
             case NI_Vector_ConditionalSelect:
 #elif defined(TARGET_ARM64)
             case NI_AdvSimd_BitwiseSelect:
@@ -36450,7 +36448,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 break;
             }
         }
-#endif // !defined(TARGET_WASM)
     }
 
 #if FEATURE_MASKED_HW_INTRINSICS

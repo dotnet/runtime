@@ -9602,9 +9602,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 
     switch (ni)
     {
-#ifndef TARGET_WASM
-// TODO-WASM: Implement bitwise select case
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_WASM)
         case NI_Vector_ConditionalSelect:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_BitwiseSelect:
@@ -9670,7 +9668,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
             }
             break;
         }
-#endif // !defined(TARGET_WASM)
 
         case NI_Vector_WithElement:
         {

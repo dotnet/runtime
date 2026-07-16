@@ -802,6 +802,37 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void ConditionalSelectConstantFoldTest()
+    {
+        // A constant mask lets value numbering / gtFoldExprHWIntrinsic fold ConditionalSelect to a
+        // constant vector as (trueValue & mask) | (falseValue & ~mask); the Opaque overloads keep the
+        // runtime BitwiseSelect path covered so both agree.
+
+        var trueValue = Vector128.Create(1, 2, 3, 4);
+        var falseValue = Vector128.Create(5, 6, 7, 8);
+
+        // All-bits-set mask selects trueValue
+        Assert.Equal(trueValue, Vector128.ConditionalSelect(Vector128<int>.AllBitsSet, trueValue, falseValue));
+
+        // Zero mask selects falseValue
+        Assert.Equal(falseValue, Vector128.ConditionalSelect(Vector128<int>.Zero, trueValue, falseValue));
+
+        // Per-lane mix
+        var mask = Vector128.Create(-1, 0, -1, 0);
+        var expected = Vector128.Create(1, 6, 3, 8);
+        Assert.Equal(expected, Vector128.ConditionalSelect(mask, trueValue, falseValue));
+        Assert.Equal(expected, Vector128.ConditionalSelect(Opaque(mask), Opaque(trueValue), Opaque(falseValue)));
+
+        // Sub-lane granularity with bytes
+        var byteMask = Vector128.Create((byte)0xF0, 0x0F, 0xFF, 0x00, 0xF0, 0x0F, 0xFF, 0x00, 0xF0, 0x0F, 0xFF, 0x00, 0xF0, 0x0F, 0xFF, 0x00);
+        var byteTrue = Vector128.Create((byte)0xAA);
+        var byteFalse = Vector128.Create((byte)0x55);
+        var byteExpected = Vector128.Create((byte)0xA5, 0x5A, 0xAA, 0x55, 0xA5, 0x5A, 0xAA, 0x55, 0xA5, 0x5A, 0xAA, 0x55, 0xA5, 0x5A, 0xAA, 0x55);
+        Assert.Equal(byteExpected, Vector128.ConditionalSelect(byteMask, byteTrue, byteFalse));
+        Assert.Equal(byteExpected, Vector128.ConditionalSelect(Opaque(byteMask), Opaque(byteTrue), Opaque(byteFalse)));
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);
