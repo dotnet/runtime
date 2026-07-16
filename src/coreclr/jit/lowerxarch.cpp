@@ -2981,7 +2981,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                 {
                     assert((count == 1) || (count == 2) || (count == 4));
 
-                    if (!TryInvertMask(maskNode, simdSize, simdBaseType))
+                    if (!TryInvertMask(maskNode, simdSize, maskBaseType))
                     {
                         // We weren't able to invert the mask, so we need to do it here, keeping the upper
                         // n-bits clear. If we have 1 element, then the upper 7-bits need to be cleared. If we have
