@@ -17,9 +17,6 @@ using WorkQueue = System.Collections.Concurrent.ConcurrentQueue<object>;
 #else
 using WorkQueue = System.Collections.Generic.Queue<object>;
 #endif
-#if TARGET_WINDOWS
-using IOCompletionPollerEvent = System.Threading.PortableThreadPool.IOCompletionPoller.Event;
-#endif // TARGET_WINDOWS
 
 
 namespace System.Threading
@@ -1112,117 +1109,6 @@ namespace System.Threading
             }
         }
     }
-
-#if TARGET_WINDOWS
-
-    internal sealed class ThreadPoolTypedWorkItemQueue : IThreadPoolWorkItem
-    {
-        // This flag is used for communication between item enqueuing and workers that process the items.
-        // There are two states of this flag:
-        // 0: has no guarantees
-        // 1: means a worker will check work queues and ensure that
-        //    any work items inserted in work queue before setting the flag
-        //    are picked up.
-        //    Note: The state must be cleared by the worker thread _before_
-        //       checking. Otherwise there is a window between finding no work
-        //       and resetting the flag, when the flag is in a wrong state.
-        //       A new work item may be added right before the flag is reset
-        //       without asking for a worker, while the last worker is quitting.
-        private int _hasOutstandingThreadRequest;
-        private readonly ConcurrentQueue<IOCompletionPollerEvent> _workItems = new();
-
-        public int Count => _workItems.Count;
-
-        public void Enqueue(IOCompletionPollerEvent workItem)
-        {
-            BatchEnqueue(workItem);
-            CompleteBatchEnqueue();
-        }
-
-        public void BatchEnqueue(IOCompletionPollerEvent workItem) => _workItems.Enqueue(workItem);
-        public void CompleteBatchEnqueue() => EnsureWorkerScheduled();
-
-        private void EnsureWorkerScheduled()
-        {
-            // Only one worker is requested at a time to mitigate Thundering Herd problem.
-            if (_hasOutstandingThreadRequest == 0 &&
-                Interlocked.Exchange(ref _hasOutstandingThreadRequest, 1) == 0)
-            {
-                // Currently where this type is used, queued work is expected to be processed
-                // at high priority. The implementation could be modified to support different
-                // priorities if necessary.
-                ThreadPool.UnsafeQueueHighPriorityWorkItemInternal(this);
-            }
-        }
-
-        void IThreadPoolWorkItem.Execute()
-        {
-            // We are asking for one worker at a time, thus the state should be 1.
-            Debug.Assert(_hasOutstandingThreadRequest == 1);
-            _hasOutstandingThreadRequest = 0;
-
-            // Checking for items must happen after resetting the processing state.
-            Interlocked.MemoryBarrier();
-
-            if (!_workItems.TryDequeue(out var workItem))
-            {
-                // Discount a work item here to avoid counting this queue processing work item
-                ThreadPoolWorkQueueThreadLocals.threadLocals!.threadLocalCompletionCountNode!.Decrement();
-                return;
-            }
-
-            // The batch that is currently in the queue could have asked only for one worker.
-            // We are going to process a workitem, which may take unknown time or even block.
-            // In a worst case the current workitem will indirectly depend on progress of other
-            // items and that would lead to a deadlock if no one else checks the queue.
-            // We must ensure at least one more worker is coming if the queue is not empty.
-            if (!_workItems.IsEmpty)
-            {
-                EnsureWorkerScheduled();
-            }
-
-            ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.threadLocals!;
-            Debug.Assert(tl != null);
-            Thread currentThread = tl.currentThread;
-            Debug.Assert(currentThread == Thread.CurrentThread);
-            uint completedCount = 0;
-            int startTimeMs = Environment.TickCount;
-            while (true)
-            {
-                workItem.Invoke();
-
-                // This work item processes queued work items until certain conditions are met, and tracks some things:
-                // - Keep track of the number of work items processed, it will be added to the counter later
-                // - Local work items take precedence over all other types of work items, process them first
-                // - This work item should not run for too long. It is processing a specific type of work in batch, but should
-                //   not starve other thread pool work items. Check how long it has been since this work item has started, and
-                //   yield to the thread pool after some time. The threshold used is half of the thread pool's dispatch quantum,
-                //   which the thread pool uses for doing periodic work.
-                if (++completedCount == uint.MaxValue ||
-                    tl.workStealingQueue.CanSteal ||
-                    (uint)(Environment.TickCount - startTimeMs) >= ThreadPoolWorkQueue.DispatchQuantumMs / 2 ||
-                    !_workItems.TryDequeue(out workItem))
-                {
-                    break;
-                }
-
-                // Return to clean ExecutionContext and SynchronizationContext. This may call user code (AsyncLocal value
-                // change notifications).
-                ExecutionContext.ResetThreadPoolThread(currentThread);
-
-                // Reset thread state after all user code for the work item has completed
-                currentThread.ResetThreadPoolThread();
-            }
-
-            // Discount a work item here to avoid counting this queue processing work item
-            if (completedCount > 1)
-            {
-                tl.threadLocalCompletionCountNode!.Add(completedCount - 1);
-            }
-        }
-    }
-
-#endif
 
     public delegate void WaitCallback(object? state);
 
