@@ -213,68 +213,90 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         return codeKind.ToString();
     }
 
+    private sealed class EnumAppDomains : IEnum<TargetPointer>
+    {
+        public IEnumerator<TargetPointer> Enumerator { get; }
+        public nuint LegacyHandle { get; set; }
+        public bool IsExhausted { get; set; }
+
+        public EnumAppDomains(TargetPointer appDomain, nuint legacyHandle)
+        {
+            Enumerator = Enumerable.Repeat(appDomain, 1).GetEnumerator();
+            LegacyHandle = legacyHandle;
+        }
+    }
+
     int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
     {
         int hr = HResults.S_OK;
         int hrLocal = HResults.S_OK;
-        ulong handleLocal = 0;
+        ulong legacyHandle = 0;
+        if (_legacyProcess is not null)
+            hrLocal = _legacyProcess.StartEnumAppDomains(handle is null ? null : &legacyHandle);
+
         try
         {
-            if (_legacyProcess is not null)
-                hrLocal = _legacyProcess.StartEnumAppDomains(handle is null ? null : &handleLocal);
-
             if (handle is null)
                 throw new NullReferenceException();
 
-            *handle = DefaultAppDomainId;
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
+            EnumAppDomains appDomains = new(appDomain, (nuint)legacyHandle);
+            *handle = (ulong)((IEnum<TargetPointer>)appDomains).GetHandle();
+            legacyHandle = 0;
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
+        }
+        finally
+        {
+            if (_legacyProcess is not null && legacyHandle != 0)
+                _legacyProcess.EndEnumAppDomains(legacyHandle);
         }
 
 #if DEBUG
         if (_legacyProcess is not null)
         {
             Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*handle == handleLocal, $"cDAC: {*handle}, DAC: {handleLocal}");
         }
 #endif
         return hr;
     }
 
-    int IXCLRDataProcess.EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain)
+    int IXCLRDataProcess.EnumAppDomain(ulong* handle, DacComNullableByRef<IXCLRDataAppDomain> appDomain)
     {
         int hr = HResults.S_OK;
         int hrLocal = HResults.S_OK;
-        ulong handleLocal = 0;
+        bool validateLegacy = false;
         try
         {
             if (handle is null)
                 throw new NullReferenceException();
+            if (*handle == 0)
+                throw new ArgumentException();
+
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+            if (gcHandle.Target is not EnumAppDomains appDomainsLocal)
+                throw new ArgumentException();
 
             IXCLRDataAppDomain? legacyAppDomain = null;
-            handleLocal = *handle;
             if (_legacyProcess is not null)
             {
-                void* legacyAppDomainPtr = null;
-                hrLocal = _legacyProcess.EnumAppDomain(
-                    &handleLocal,
-                    appDomain is null ? null : &legacyAppDomainPtr);
-                if (appDomain is not null)
-                    legacyAppDomain = ConvertAndReleaseComPointer<IXCLRDataAppDomain>(legacyAppDomainPtr);
+                ulong legacyHandle = appDomainsLocal.LegacyHandle;
+                DacComNullableByRef<IXCLRDataAppDomain> legacyAppDomainOut = new(isNullRef: appDomain.IsNullRef);
+                hrLocal = _legacyProcess.EnumAppDomain(&legacyHandle, legacyAppDomainOut);
+                legacyAppDomain = legacyAppDomainOut.Interface;
+                appDomainsLocal.LegacyHandle = (nuint)legacyHandle;
+                validateLegacy = true;
             }
 
-            if (*handle == DefaultAppDomainId)
-            {
-                if (appDomain is null)
-                    throw new NullReferenceException();
+            if (appDomain.IsNullRef && !appDomainsLocal.IsExhausted)
+                throw new NullReferenceException();
 
-                TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
-                *appDomain = ComInterfaceMarshaller<IXCLRDataAppDomain>.ConvertToUnmanaged(
-                    new ClrDataAppDomain(_target, currentAppDomain, legacyAppDomain));
-                *handle = 0;
+            if (appDomainsLocal.Enumerator.MoveNext())
+            {
+                appDomainsLocal.IsExhausted = true;
+                appDomain.Interface = new ClrDataAppDomain(_target, appDomainsLocal.Enumerator.Current, legacyAppDomain);
             }
             else
             {
@@ -287,11 +309,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
 
 #if DEBUG
-        if (_legacyProcess is not null)
+        if (_legacyProcess is not null && validateLegacy)
         {
             Debug.ValidateHResult(hr, hrLocal);
-            if (handle is not null)
-                Debug.Assert(*handle == handleLocal, $"cDAC: {*handle}, DAC: {handleLocal}");
         }
 #endif
         return hr;
@@ -300,42 +320,21 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.EndEnumAppDomains(ulong handle)
     {
         int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacyProcess is not null)
-        {
-            int hrLocal = _legacyProcess.EndEnumAppDomains(handle);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
-        return hr;
-    }
-
-    int IXCLRDataProcess.GetAppDomainByUniqueID(ulong id, /*IXCLRDataAppDomain*/ void** appDomain)
-    {
-        int hr = HResults.S_OK;
         int hrLocal = HResults.S_OK;
         try
         {
-            IXCLRDataAppDomain? legacyAppDomain = null;
-            if (_legacyProcess is not null)
-            {
-                void* legacyAppDomainPtr = null;
-                hrLocal = _legacyProcess.GetAppDomainByUniqueID(
-                    id,
-                    appDomain is null ? null : &legacyAppDomainPtr);
-                if (appDomain is not null)
-                    legacyAppDomain = ConvertAndReleaseComPointer<IXCLRDataAppDomain>(legacyAppDomainPtr);
-            }
-
-            if (id != DefaultAppDomainId)
+            if (handle == 0)
                 throw new ArgumentException();
 
-            if (appDomain is null)
-                throw new NullReferenceException();
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
+            if (gcHandle.Target is not EnumAppDomains appDomains)
+                throw new ArgumentException();
 
-            TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
-            *appDomain = ComInterfaceMarshaller<IXCLRDataAppDomain>.ConvertToUnmanaged(
-                new ClrDataAppDomain(_target, currentAppDomain, legacyAppDomain));
+            ((IEnum<TargetPointer>)appDomains).Dispose();
+            gcHandle.Free();
+
+            if (_legacyProcess is not null && appDomains.LegacyHandle != 0)
+                hrLocal = _legacyProcess.EndEnumAppDomains(appDomains.LegacyHandle);
         }
         catch (System.Exception ex)
         {
@@ -349,19 +348,36 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         return hr;
     }
 
-    private static T? ConvertAndReleaseComPointer<T>(void* pointer) where T : class
+    int IXCLRDataProcess.GetAppDomainByUniqueID(ulong id, DacComNullableByRef<IXCLRDataAppDomain> appDomain)
     {
-        if (pointer is null)
-            return null;
-
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
         try
         {
-            return ComInterfaceMarshaller<T>.ConvertToManaged(pointer);
+            IXCLRDataAppDomain? legacyAppDomain = null;
+            if (_legacyProcess is not null)
+            {
+                DacComNullableByRef<IXCLRDataAppDomain> legacyAppDomainOut = new(isNullRef: appDomain.IsNullRef);
+                hrLocal = _legacyProcess.GetAppDomainByUniqueID(id, legacyAppDomainOut);
+                legacyAppDomain = legacyAppDomainOut.Interface;
+            }
+
+            if (id != DefaultAppDomainId)
+                throw new ArgumentException();
+
+            TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
+            appDomain.Interface = new ClrDataAppDomain(_target, currentAppDomain, legacyAppDomain);
         }
-        finally
+        catch (System.Exception ex)
         {
-            ComInterfaceMarshaller<T>.Free(pointer);
+            hr = ex.HResult;
         }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
+        return hr;
     }
 
     int IXCLRDataProcess.StartEnumAssemblies(ulong* handle)

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
@@ -13,59 +12,64 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class ClrDataProcessAppDomainTests
 {
-    private static readonly MockTarget.Architecture s_arch = new() { IsLittleEndian = true, Is64Bit = true };
-
-    [Fact]
-    public void EnumAppDomains_UsesSingleDomainHandleProgression()
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumAppDomains_UsesSingleElementEnumeration(MockTarget.Architecture arch)
     {
         TargetPointer appDomainAddress = new(0x4000);
         var loader = new Mock<ILoader>();
         loader.Setup(l => l.GetAppDomain()).Returns(appDomainAddress);
 
-        IXCLRDataProcess process = CreateProcess(loader: loader);
+        IXCLRDataProcess process = CreateProcess(arch, loader);
         ulong handle;
         Assert.Equal(HResults.S_OK, process.StartEnumAppDomains(&handle));
-        Assert.Equal(1u, handle);
+        Assert.NotEqual(0u, handle);
+        ulong enumHandle = handle;
 
-        void* appDomainPointer = null;
-        Assert.Equal(HResults.S_OK, process.EnumAppDomain(&handle, &appDomainPointer));
-        Assert.Equal(0u, handle);
-        Assert.NotEqual(0, (nint)appDomainPointer);
-        IXCLRDataAppDomain appDomain = ComInterfaceMarshaller<IXCLRDataAppDomain>.ConvertToManaged(appDomainPointer);
-        ComInterfaceMarshaller<IXCLRDataAppDomain>.Free(appDomainPointer);
+        Assert.Equal(
+            HResults.E_POINTER,
+            process.EnumAppDomain(&handle, new DacComNullableByRef<IXCLRDataAppDomain>(isNullRef: true)));
+        Assert.Equal(enumHandle, handle);
+
+        DacComNullableByRef<IXCLRDataAppDomain> appDomainOut = new(isNullRef: false);
+        Assert.Equal(HResults.S_OK, process.EnumAppDomain(&handle, appDomainOut));
+        Assert.Equal(enumHandle, handle);
+        IXCLRDataAppDomain appDomain = Assert.IsType<ClrDataAppDomain>(appDomainOut.Interface);
         ulong id;
         Assert.Equal(HResults.S_OK, appDomain.GetUniqueID(&id));
         Assert.Equal(1u, id);
 
-        appDomainPointer = null;
-        Assert.Equal(HResults.S_FALSE, process.EnumAppDomain(&handle, &appDomainPointer));
-        Assert.Equal(0, (nint)appDomainPointer);
-        Assert.Equal(HResults.S_FALSE, process.EnumAppDomain(&handle, null));
+        DacComNullableByRef<IXCLRDataAppDomain> exhaustedOut = new(isNullRef: false);
+        Assert.Equal(HResults.S_FALSE, process.EnumAppDomain(&handle, exhaustedOut));
+        Assert.Equal(enumHandle, handle);
+        Assert.Equal(HResults.S_FALSE, process.EnumAppDomain(&handle, new DacComNullableByRef<IXCLRDataAppDomain>(isNullRef: true)));
         Assert.Equal(HResults.S_OK, process.EndEnumAppDomains(handle));
     }
 
-    [Fact]
-    public void GetAppDomainByUniqueID_AcceptsOnlyOne()
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetAppDomainByUniqueID_AcceptsOnlyOne(MockTarget.Architecture arch)
     {
         TargetPointer appDomainAddress = new(0x4000);
         var loader = new Mock<ILoader>();
         loader.Setup(l => l.GetAppDomain()).Returns(appDomainAddress);
 
-        IXCLRDataProcess process = CreateProcess(loader: loader);
-        void* appDomainPointer = null;
-        Assert.Equal(HResults.S_OK, process.GetAppDomainByUniqueID(1, &appDomainPointer));
-        Assert.NotEqual(0, (nint)appDomainPointer);
-        ComInterfaceMarshaller<IXCLRDataAppDomain>.Free(appDomainPointer);
+        IXCLRDataProcess process = CreateProcess(arch, loader);
+        DacComNullableByRef<IXCLRDataAppDomain> appDomainOut = new(isNullRef: false);
+        Assert.Equal(HResults.S_OK, process.GetAppDomainByUniqueID(1, appDomainOut));
+        Assert.NotNull(appDomainOut.Interface);
 
-        appDomainPointer = null;
-        Assert.Equal(HResults.E_INVALIDARG, process.GetAppDomainByUniqueID(2, &appDomainPointer));
-        Assert.Equal(0, (nint)appDomainPointer);
-        Assert.Equal(HResults.E_INVALIDARG, process.GetAppDomainByUniqueID(2, null));
+        Assert.Equal(
+            HResults.E_INVALIDARG,
+            process.GetAppDomainByUniqueID(2, new DacComNullableByRef<IXCLRDataAppDomain>(isNullRef: false)));
+        Assert.Equal(
+            HResults.E_INVALIDARG,
+            process.GetAppDomainByUniqueID(2, new DacComNullableByRef<IXCLRDataAppDomain>(isNullRef: true)));
     }
 
-    private static IXCLRDataProcess CreateProcess(Mock<ILoader> loader)
+    private static IXCLRDataProcess CreateProcess(MockTarget.Architecture arch, Mock<ILoader> loader)
     {
-        var builder = new TestPlaceholderTarget.Builder(s_arch)
+        var builder = new TestPlaceholderTarget.Builder(arch)
             .UseReader((ulong _, Span<byte> _) => -1);
         builder.AddMockContract(loader);
         return new SOSDacImpl(builder.Build(), legacyObj: null);
