@@ -497,12 +497,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _genericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
-                return new GenericCompositionNode(details, constructed: false);
+                return new GenericCompositionNode(details, metadataEnabled: false);
             });
 
-            _constructedGenericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
+            _metadataEnabledGenericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
-                return new GenericCompositionNode(details, constructed: true);
+                return new GenericCompositionNode(details, metadataEnabled: true);
             });
 
             _genericVariances = new NodeCache<GenericVarianceDetails, GenericVarianceNode>((GenericVarianceDetails details) =>
@@ -817,6 +817,14 @@ namespace ILCompiler.DependencyAnalysis
                 return NecessaryTypeSymbol(type);
         }
 
+        public IEETypeNode MaximallyMetadataEnabledType(TypeDesc type)
+        {
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                return NecessaryTypeSymbol(type);
+            else
+                return MetadataTypeSymbol(type);
+        }
+
         private NodeCache<TypeDesc, IEETypeNode> _importedTypeSymbols;
 
         private IEETypeNode ImportedEETypeSymbol(TypeDesc type)
@@ -966,11 +974,11 @@ namespace ILCompiler.DependencyAnalysis
             return _genericCompositions.GetOrAdd(details);
         }
 
-        private NodeCache<Instantiation, GenericCompositionNode> _constructedGenericCompositions;
+        private NodeCache<Instantiation, GenericCompositionNode> _metadataEnabledGenericCompositions;
 
-        internal ISymbolNode ConstructedGenericComposition(Instantiation details)
+        internal ISymbolNode MetadataEnabledGenericComposition(Instantiation details)
         {
-            return _constructedGenericCompositions.GetOrAdd(details);
+            return _metadataEnabledGenericCompositions.GetOrAdd(details);
         }
 
         private NodeCache<GenericVarianceDetails, GenericVarianceNode> _genericVariances;

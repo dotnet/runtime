@@ -45,13 +45,13 @@ namespace ILCompiler.DependencyAnalysis
                 if (factory.Target.SupportsRelativePointers)
                 {
                     builder.EmitReloc(factory.MaximallyConstructableType(targetMethod.OwningType), RelocType.IMAGE_REL_BASED_RELPTR32);
-                    builder.EmitReloc(factory.ConstructedGenericComposition(targetMethod.Instantiation), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    builder.EmitReloc(factory.MetadataEnabledGenericComposition(targetMethod.Instantiation), RelocType.IMAGE_REL_BASED_RELPTR32);
                     builder.EmitInt(flagsAndToken);
                 }
                 else
                 {
                     builder.EmitPointerReloc(factory.MaximallyConstructableType(targetMethod.OwningType));
-                    builder.EmitPointerReloc(factory.ConstructedGenericComposition(targetMethod.Instantiation));
+                    builder.EmitPointerReloc(factory.MetadataEnabledGenericComposition(targetMethod.Instantiation));
                     builder.EmitNaturalInt(flagsAndToken);
                 }
 
@@ -93,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis
             factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref result, factory, GetMethodForMetadata(targetMethod, out _));
 
             result.Add(factory.MaximallyConstructableType(targetMethod.OwningType), "Owning type of GVM decl");
-            result.Add(factory.ConstructedGenericComposition(targetMethod.Instantiation), "GVM instantiation info");
+            result.Add(factory.MetadataEnabledGenericComposition(targetMethod.Instantiation), "GVM instantiation info");
 
             return result;
         }
