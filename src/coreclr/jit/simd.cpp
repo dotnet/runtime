@@ -320,10 +320,12 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         // length) our size can disagree with the VM's. Treat it as a regular struct then,
                         // keeping every size query consistent with the VM rather than emitting SIMD codegen
                         // against a mismatched size.
-                        if (size != info.compCompHnd->getClassSize(typeHnd))
+                        if (!info.compMatchedVM)
                         {
-                            assert(!info.compMatchedVM);
-                            return TYP_UNDEF;
+                            if (size != info.compCompHnd->getClassSize(typeHnd))
+                            {
+                                return TYP_UNDEF;
+                            }
                         }
                         break;
                     }
