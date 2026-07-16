@@ -176,10 +176,10 @@ int main(int argc, char* argv[])
 
     string_t tpa_list = build_tpa(core_root, core_libs);
 
-    s_property_keys.push_back("TRUSTED_PLATFORM_ASSEMBLIES");
+    s_property_keys.push_back(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES);
     s_property_values.push_back(tpa_list);
 
-    s_property_keys.push_back("APP_PATHS");
+    s_property_keys.push_back(HOST_PROPERTY_APP_PATHS);
     s_property_values.push_back(app_path);
 
     // NATIVE_DLL_SEARCH_DIRECTORIES is intentionally not set: on wasi native libraries are
@@ -187,14 +187,12 @@ int main(int argc, char* argv[])
     // the runtime's native-library search runs, and wasm has no shared-library/dlopen support, so
     // the search directories can never contribute a load.
 
-    // Static: the contract must outlive coreclr_initialize (the runtime keeps its address). The
-    // pinvoke_override field is forwarded to PInvokeOverride::SetPInvokeOverride by the runtime.
-    static host_runtime_contract host_contract = {
-        sizeof(host_runtime_contract),
-        nullptr,
-        &get_runtime_property,
-        nullptr,
-        &callhelpers_pinvoke_override };
+    // Static: the contract must outlive coreclr_initialize (the runtime keeps its address). Assign
+    // fields by name (not positionally) so contract layout changes can't mis-wire the callbacks.
+    // The pinvoke_override field is forwarded to PInvokeOverride::SetPInvokeOverride by the runtime.
+    static host_runtime_contract host_contract = { sizeof(host_runtime_contract), nullptr };
+    host_contract.get_runtime_property = &get_runtime_property;
+    host_contract.pinvoke_override = &callhelpers_pinvoke_override;
     {
         std::stringstream ss;
         ss << "0x" << std::hex << (size_t)(&host_contract);
