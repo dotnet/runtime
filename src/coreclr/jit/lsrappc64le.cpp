@@ -306,8 +306,25 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             {
                 sourceMask = genSingleTypeRegMask(argNode->GetRegNumByIdx(sourceRegCount));
             }
+            else
+            {
+                // For fields that go to the stack, we need to ensure the value stays in a register
+                // until PUTARG_SPLIT stores it. Use the internal register we allocated earlier.
+                // The register allocator will ensure this register remains live.
+                sourceMask = RBM_NONE; // Let LSRA choose, but mark as delayFree below
+            }
+            
+            // Build the use and get the RefPosition
+            RefPosition* useRefPosition = BuildUse(node, sourceMask);
+            
+            // For stack-bound fields (sourceRegCount >= gtNumRegs), mark as delayFree to ensure
+            // the value remains in the register until PUTARG_SPLIT completes
+            if (sourceRegCount >= argNode->gtNumRegs)
+            {
+                setDelayFree(useRefPosition);
+            }
+            
             sourceRegCount++;
-            BuildUse(node, sourceMask);
         }
         srcCount += sourceRegCount;
         assert(src->isContained());
