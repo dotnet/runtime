@@ -40,12 +40,14 @@ namespace System.Net.Http
         /// <see cref="HttpRequestMessage.ConnectionId"/> stamped on requests sent over the connection. It can be used
         /// to associate caller state (for example, the resolved address used) with the connection and to correlate it
         /// with the requests it serves, so that state can be recovered later (for example when deciding on eviction).
+        /// </summary>
+        /// <remarks>
         /// When establishing the transport for an HTTP CONNECT proxy tunnel, this id identifies that transport
         /// connection to the proxy; the tunneled connection layered over it serves the requests and carries a distinct
         /// id, which is the one reported to <see cref="SocketsHttpHandler.ShouldEvictConnection"/> and stamped on those
         /// requests. A <see cref="SocketsHttpHandler.PlaintextStreamFilter"/> runs on each hop and surfaces both: this
         /// (transport) id on the CONNECT hop and the tunneled connection's id on the subsequent hop.
-        /// </summary>
+        /// </remarks>
         [Experimental(Experimentals.SocketsHttpHandlerExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public long ConnectionId => _connectionId;
     }

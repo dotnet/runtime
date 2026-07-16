@@ -135,13 +135,16 @@ namespace System.Net.Http
         /// reported through EventSource telemetry and the id passed to
         /// <see cref="SocketsHttpHandler.ShouldEvictConnection"/> for the connection that served the request, allowing
         /// a caller to correlate a request with that connection. It also matches the id surfaced to a custom
-        /// <see cref="SocketsHttpHandler.ConnectCallback"/>, except when the request is served over an HTTP CONNECT
-        /// proxy tunnel: there the callback observes the tunnel's underlying transport connection to the proxy, whose
-        /// id differs from this one (which identifies the tunneled connection that carried the request). Both ids remain
-        /// observable through a <see cref="SocketsHttpHandler.PlaintextStreamFilter"/>, which runs once per hop and
-        /// reports the transport connection's id for the CONNECT hop and this id for the tunneled hop. When a request
-        /// is sent over multiple connections (for example after a redirect or a retry), the value reflects the most
-        /// recent attempt.
+        /// <see cref="SocketsHttpHandler.ConnectCallback"/>. When a request is sent over multiple connections (for
+        /// example after a redirect or a retry), the value reflects the most recent attempt.
+        /// <para>
+        /// HTTP CONNECT proxy tunnels are an exception to the correlation with a custom
+        /// <see cref="SocketsHttpHandler.ConnectCallback"/>: when the request is served over such a tunnel, the callback
+        /// observes the tunnel's underlying transport connection to the proxy, whose id differs from this one (which
+        /// identifies the tunneled connection that carried the request). Both ids remain observable through a
+        /// <see cref="SocketsHttpHandler.PlaintextStreamFilter"/>, which runs once per hop and reports the transport
+        /// connection's id for the CONNECT hop and this id for the tunneled hop.
+        /// </para>
         /// <para>
         /// These correlations apply only when the request is handled by <see cref="SocketsHttpHandler"/>. Another
         /// <see cref="HttpMessageHandler"/> may never set this value, or may assign it a different meaning.

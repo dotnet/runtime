@@ -57,13 +57,16 @@ namespace System.Net.Http
         /// <see cref="EventSource"/> telemetry and the <see cref="HttpRequestMessage.ConnectionId"/> stamped on
         /// requests sent over the connection. It also matches the
         /// <see cref="SocketsHttpConnectionContext.ConnectionId"/> seen by a custom
-        /// <see cref="SocketsHttpHandler.ConnectCallback"/>, except for an HTTP CONNECT proxy tunnel, where the
-        /// callback observes the underlying transport connection to the proxy while this id identifies the tunneled
-        /// connection that served the requests. Both ids remain observable through a
-        /// <see cref="SocketsHttpHandler.PlaintextStreamFilter"/>, which runs on each hop and reports the transport
-        /// id for the CONNECT hop and this id for the tunneled hop. It allows the eviction decision to be correlated
+        /// <see cref="SocketsHttpHandler.ConnectCallback"/>. It allows the eviction decision to be correlated
         /// with the requests the connection served.
         /// </summary>
+        /// <remarks>
+        /// For an HTTP CONNECT proxy tunnel the id seen by a custom <see cref="SocketsHttpHandler.ConnectCallback"/>
+        /// differs from this one: the callback observes the underlying transport connection to the proxy while this id
+        /// identifies the tunneled connection that served the requests. Both ids remain observable through a
+        /// <see cref="SocketsHttpHandler.PlaintextStreamFilter"/>, which runs on each hop and reports the transport
+        /// id for the CONNECT hop and this id for the tunneled hop.
+        /// </remarks>
         public long ConnectionId { get; }
 
         /// <summary>
