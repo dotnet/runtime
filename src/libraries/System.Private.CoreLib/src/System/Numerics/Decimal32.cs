@@ -16,6 +16,7 @@ namespace System.Numerics
           IEquatable<Decimal32>,
           IFloatingPointConstants<Decimal32>,
           INumberBase<Decimal32>,
+          ISignedNumber<Decimal32>,
           ISpanFormattable,
           ISpanParsable<Decimal32>,
           IMinMaxValue<Decimal32>,

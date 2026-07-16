@@ -14,6 +14,7 @@ namespace System.Numerics
           IEquatable<Decimal128>,
           IFloatingPointConstants<Decimal128>,
           INumberBase<Decimal128>,
+          ISignedNumber<Decimal128>,
           ISpanFormattable,
           ISpanParsable<Decimal128>,
           IMinMaxValue<Decimal128>,
