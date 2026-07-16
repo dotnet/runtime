@@ -862,6 +862,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
         public static Decimal128 BitIncrement(Decimal128 x) => new Decimal128(Number.BitIncrementDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        public static Decimal128 FusedMultiplyAdd(Decimal128 left, Decimal128 right, Decimal128 addend) => new Decimal128(Number.FusedMultiplyAddDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower), new UInt128(addend._upper, addend._lower)));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Decimal128 x) => Number.ILogBDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower));
 

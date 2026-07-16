@@ -900,6 +900,214 @@ namespace System
         }
 
         /// <summary>
+        /// Computes <c>(left × right) + addend</c> for three IEEE 754 decimal values represented by their raw bit
+        /// patterns, rounds the exact result once (round-to-nearest, ties-to-even), and returns its bit pattern.
+        /// </summary>
+        /// <remarks>
+        /// The exact product coefficient (up to twice the format precision) is computed at double integer width, so the
+        /// product is never rounded before the addend is combined with it. The product and addend are aligned to a
+        /// common exponent within a window wide enough to preserve every digit that can influence the result (including
+        /// the deepest cancellation); digits below the window are folded into a sticky flag and the aligned coefficients
+        /// are fed into the shared word-level rounding path, producing the same result as a single rounding of the exact
+        /// value. This mirrors the mathematical behavior of the Intel reference implementation; a faithful port of its
+        /// reciprocal-multiply rounding is a possible future performance optimization.
+        /// </remarks>
+        internal static TValue FusedMultiplyAddDecimalIeee754<TDecimal, TValue>(TValue x, TValue y, TValue z)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // This code is based on `bid32_fma`, `bid64_fma`, and `bid128_fma` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // A NaN operand propagates its (quieted) payload. The Intel reference inspects the operands in the order
+            // y, then z, then x, so the first NaN in that order supplies the sign and payload of the result.
+            if (TDecimal.IsNaN(y))
+            {
+                return PropagateNaN<TDecimal, TValue>(y, y);
+            }
+
+            if (TDecimal.IsNaN(z))
+            {
+                return PropagateNaN<TDecimal, TValue>(z, z);
+            }
+
+            if (TDecimal.IsNaN(x))
+            {
+                return PropagateNaN<TDecimal, TValue>(x, x);
+            }
+
+            // The product sign is the exclusive-or of the factor signs, including zeros and infinities.
+            bool productSign = TDecimal.IsNegative(x) ^ TDecimal.IsNegative(y);
+
+            bool xInfinity = TDecimal.IsInfinity(x);
+            bool yInfinity = TDecimal.IsInfinity(y);
+
+            if (xInfinity || yInfinity)
+            {
+                // Infinity multiplied by zero is invalid (NaN); the Intel reference emits the canonical quiet NaN.
+                bool otherZero = (xInfinity && !yInfinity && TValue.IsZero(UnpackDecimalIeee754<TDecimal, TValue>(y).Significand))
+                              || (yInfinity && !xInfinity && TValue.IsZero(UnpackDecimalIeee754<TDecimal, TValue>(x).Significand));
+
+                if (otherZero)
+                {
+                    return TDecimal.NaNMask;
+                }
+
+                // The product is an infinity. Adding an infinity of the opposite sign is invalid (NaN); every other
+                // addend leaves the product's infinity unchanged (canonicalized).
+                if (TDecimal.IsInfinity(z) && (TDecimal.IsNegative(z) != productSign))
+                {
+                    return TDecimal.NaNMask;
+                }
+
+                return productSign ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            // The product is finite. A finite product plus an infinite addend is that infinity (canonicalized).
+            if (TDecimal.IsInfinity(z))
+            {
+                return TDecimal.IsNegative(z) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            DecodedDecimalIeee754<TValue> dx = UnpackDecimalIeee754<TDecimal, TValue>(x);
+            DecodedDecimalIeee754<TValue> dy = UnpackDecimalIeee754<TDecimal, TValue>(y);
+            DecodedDecimalIeee754<TValue> dz = UnpackDecimalIeee754<TDecimal, TValue>(z);
+
+            int productExponent = dx.UnbiasedExponent + dy.UnbiasedExponent;
+            bool productZero = TValue.IsZero(dx.Significand) || TValue.IsZero(dy.Significand);
+
+            bool addendSign = dz.Signed;
+            int addendExponent = dz.UnbiasedExponent;
+            TValue addendSignificand = dz.Significand;
+            bool addendZero = TValue.IsZero(addendSignificand);
+
+            if (productZero)
+            {
+                // A zero product reduces the result to the addend at the preferred (smaller) exponent, matching the
+                // zero handling in addition (the product's preferred exponent is the sum of the factor exponents).
+                if (addendZero)
+                {
+                    bool bothNegative = productSign == addendSign && productSign;
+                    return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(bothNegative, TValue.Zero, Math.Min(productExponent, addendExponent));
+                }
+
+                if (productExponent >= addendExponent)
+                {
+                    return z;
+                }
+
+                int addendDigits = TDecimal.CountDigits(addendSignificand);
+                int pad = Math.Min(addendExponent - productExponent, TDecimal.Precision - addendDigits);
+
+                // The product's exponent can be far below the minimum quantum, so bound the padding so the
+                // result stays at or above it; a zero product cannot push the exact addend into subnormal range.
+                pad = Math.Min(pad, addendExponent - TDecimal.MinAdjustedExponent);
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(addendSign, addendSignificand * TDecimal.Power10(pad), addendExponent - pad);
+            }
+
+            // The exact product coefficient occupies up to twice the format precision and is held at double width.
+            WideMultiply(dx.Significand, dy.Significand, out TValue productHigh, out TValue productLow);
+            int productDigits = WideDigitCount<TDecimal, TValue>(productHigh, productLow);
+
+            if (addendZero)
+            {
+                // Adding a zero lowers the preferred exponent toward the addend's exponent, bounded by the product
+                // exponent; the alignment below realizes it by scaling the product's coefficient up (padding zeros).
+                addendExponent = Math.Min(addendExponent, productExponent);
+            }
+
+            int productMsd = productExponent + productDigits - 1;
+            int addendDigitsCount = addendZero ? 0 : TDecimal.CountDigits(addendSignificand);
+            int addendMsd = addendZero ? int.MinValue : addendExponent + addendDigitsCount - 1;
+
+            int maxMsd = Math.Max(productMsd, addendMsd);
+            int minLsd = Math.Min(productExponent, addendExponent);
+
+            // Retain a window wide enough to hold the full product (up to 2*Precision digits) plus guard digits, which
+            // also covers the deepest possible cancellation. When the operands are far enough apart that the window
+            // cannot reach the lower one, its digits fall below the retained range and only contribute stickiness.
+            int retain = (2 * TDecimal.Precision) + 2;
+            int commonExponent = Math.Max(minLsd, maxMsd - retain + 1);
+
+            bool sticky = false;
+
+            TValue aHigh = productHigh;
+            TValue aLow = productLow;
+            AlignWideToCommonExponent<TDecimal, TValue>(ref aHigh, ref aLow, productExponent, commonExponent, ref sticky);
+
+            TValue bHigh = TValue.Zero;
+            TValue bLow = addendSignificand;
+
+            if (!addendZero)
+            {
+                AlignWideToCommonExponent<TDecimal, TValue>(ref bHigh, ref bLow, addendExponent, commonExponent, ref sticky);
+            }
+
+            bool resultSign;
+            TValue resultHigh;
+            TValue resultLow;
+
+            if (productSign == addendSign)
+            {
+                // Magnitudes add.
+                resultHigh = aHigh + bHigh;
+                resultLow = aLow + bLow;
+
+                if (resultLow < aLow)
+                {
+                    resultHigh += TValue.One;
+                }
+
+                resultSign = productSign;
+            }
+            else
+            {
+                int comparison = WideCompare(aHigh, aLow, bHigh, bLow);
+
+                if (comparison == 0)
+                {
+                    // The retained magnitudes cancel exactly. Capping only drops digits when the operands are far
+                    // enough apart that one strictly dominates, so an exact cancellation here carries no sticky tail
+                    // and yields +0 under round-to-nearest.
+                    return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(false, TValue.Zero, commonExponent);
+                }
+
+                if (comparison > 0)
+                {
+                    WideSubtract(aHigh, aLow, bHigh, bLow, out resultHigh, out resultLow);
+                    resultSign = productSign;
+                }
+                else
+                {
+                    WideSubtract(bHigh, bLow, aHigh, aLow, out resultHigh, out resultLow);
+                    resultSign = addendSign;
+                }
+
+                if (sticky)
+                {
+                    // The dropped tail belongs to the smaller (subtrahend) magnitude, so the exact difference is one
+                    // unit smaller with a non-zero fractional remainder retained in the sticky flag for rounding.
+                    if (TValue.IsZero(resultLow))
+                    {
+                        resultHigh -= TValue.One;
+                    }
+
+                    resultLow -= TValue.One;
+                }
+            }
+
+            if (TValue.IsZero(resultHigh) && TValue.IsZero(resultLow) && !sticky)
+            {
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(false, TValue.Zero, commonExponent);
+            }
+
+            return NumberToDecimalIeee754BitsFromWide<TDecimal, TValue>(resultSign, resultHigh, resultLow, commonExponent, sticky);
+        }
+
+        /// <summary>
         /// Divides two IEEE 754 decimal values represented by their raw bit patterns and returns the
         /// bit pattern of the correctly rounded (round-to-nearest, ties-to-even) quotient.
         /// </summary>
@@ -1524,6 +1732,114 @@ namespace System
 
             low = (lowLow & lowMask) | ((cross & lowMask) << half);
             high = highHigh + (lowHigh >> half) + (highLow >> half) + (cross >> half);
+        }
+
+        /// <summary>
+        /// Multiplies the double-width value in (<paramref name="high"/>, <paramref name="low"/>) by a single-limb
+        /// <paramref name="factor"/> in place. The caller guarantees the scaled result still fits two limbs.
+        /// </summary>
+        private static void WideMultiplyByLimb<TValue>(ref TValue high, ref TValue low, TValue factor)
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            WideMultiply(low, factor, out TValue lowHigh, out TValue lowLow);
+            WideMultiply(high, factor, out TValue highHigh, out TValue highLow);
+
+            TValue newHigh = highLow + lowHigh;
+
+            // The result fits two limbs by construction: the high limb never carries out and `high * factor` never
+            // spills past the second limb.
+            Debug.Assert(TValue.IsZero(highHigh));
+            Debug.Assert(newHigh >= highLow);
+
+            high = newHigh;
+            low = lowLow;
+        }
+
+        /// <summary>
+        /// Scales the double-width value in (<paramref name="high"/>, <paramref name="low"/>) up by
+        /// <c>10^<paramref name="power"/></c> in place, multiplying by the largest single-limb power of ten each step.
+        /// The caller guarantees the scaled result still fits two limbs.
+        /// </summary>
+        private static void WideScaleByPow10<TDecimal, TValue>(ref TValue high, ref TValue low, int power)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            int highestTableExponent = TDecimal.Precision - 1;
+
+            while (power > 0)
+            {
+                int chunk = Math.Min(power, highestTableExponent);
+                WideMultiplyByLimb(ref high, ref low, TDecimal.Power10(chunk));
+                power -= chunk;
+            }
+        }
+
+        /// <summary>
+        /// Drops the <paramref name="dropCount"/> least-significant decimal digits from the double-width value in
+        /// (<paramref name="high"/>, <paramref name="low"/>) in place, folding every dropped digit into
+        /// <paramref name="sticky"/>. Used to align an addition operand whose low digits fall below the retained window,
+        /// where all dropped digits lie below the rounding position and therefore only contribute stickiness.
+        /// </summary>
+        private static void WideDropLowDigits<TValue>(ref TValue high, ref TValue low, int dropCount, ref bool sticky)
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            for (int i = 0; i < dropCount; i++)
+            {
+                if (TValue.IsZero(high) && TValue.IsZero(low))
+                {
+                    break;
+                }
+
+                sticky |= WideDivideByTen(ref high, ref low) != 0;
+            }
+        }
+
+        /// <summary>
+        /// Aligns the double-width coefficient in (<paramref name="high"/>, <paramref name="low"/>), whose value is
+        /// <c>coefficient·10^<paramref name="exponent"/></c>, to <paramref name="commonExponent"/> in place. A larger
+        /// exponent scales the coefficient up (exact); a smaller exponent drops the low digits into
+        /// <paramref name="sticky"/>.
+        /// </summary>
+        private static void AlignWideToCommonExponent<TDecimal, TValue>(ref TValue high, ref TValue low, int exponent, int commonExponent, ref bool sticky)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (exponent > commonExponent)
+            {
+                WideScaleByPow10<TDecimal, TValue>(ref high, ref low, exponent - commonExponent);
+            }
+            else if (exponent < commonExponent)
+            {
+                WideDropLowDigits(ref high, ref low, commonExponent - exponent, ref sticky);
+            }
+        }
+
+        /// <summary>
+        /// Compares two double-width magnitudes, returning a negative value, zero, or a positive value according to
+        /// whether the first is less than, equal to, or greater than the second.
+        /// </summary>
+        private static int WideCompare<TValue>(TValue leftHigh, TValue leftLow, TValue rightHigh, TValue rightLow)
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            int highComparison = leftHigh.CompareTo(rightHigh);
+            return highComparison != 0 ? highComparison : leftLow.CompareTo(rightLow);
+        }
+
+        /// <summary>
+        /// Subtracts the double-width magnitude (<paramref name="rightHigh"/>, <paramref name="rightLow"/>) from
+        /// (<paramref name="leftHigh"/>, <paramref name="leftLow"/>), which the caller guarantees is the larger.
+        /// </summary>
+        private static void WideSubtract<TValue>(TValue leftHigh, TValue leftLow, TValue rightHigh, TValue rightLow, out TValue high, out TValue low)
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            high = leftHigh - rightHigh;
+
+            if (leftLow < rightLow)
+            {
+                high -= TValue.One;
+            }
+
+            low = leftLow - rightLow;
         }
 
         /// <summary>

@@ -1606,6 +1606,25 @@ namespace System.Tests
             Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.ScaleB(Unsafe.BitCast<uint, Decimal32>(bits), n)));
         }
 
+        [Theory]
+        [InlineData(0x32800002U, 0x32800003U, 0x32800004U, 0x3280000AU)] // 2 * 3 + 4 = 10
+        [InlineData(0x2F8F4241U, 0x2F8F4241U, 0xAF8F4242U, 0x2C800001U)] // 1.000001 * 1.000001 - 1.000002 = 1E-12 (fused)
+        [InlineData(0x35000000U, 0x33800003U, 0x31000007U, 0x31000007U)] // 0E5 * 3E2 + 7E-3
+        [InlineData(0x32800003U, 0x32800004U, 0x32800000U, 0x3280000CU)] // 3 * 4 + 0 = 12
+        [InlineData(0x32800002U, 0x32800003U, 0xB2800006U, 0x32800000U)] // 2 * 3 + (-6) = +0
+        [InlineData(0xB2800002U, 0x32800003U, 0x32800006U, 0x32800000U)] // -2 * 3 + 6 = +0
+        [InlineData(0x32800003U, 0x7C001234U, 0x32800004U, 0x7C001234U)] // 3 * qNaN(0x1234) + 4 -> qNaN
+        [InlineData(0x7C000011U, 0x32800002U, 0x7C000022U, 0x7C000022U)] // qNaN(x) * 2 + qNaN(z) -> z payload
+        [InlineData(0x32800002U, 0x78000000U, 0x32800003U, 0x78000000U)] // 2 * +Inf + 3 = +Inf
+        [InlineData(0xB2800002U, 0x78000000U, 0x32800003U, 0xF8000000U)] // -2 * +Inf + 3 = -Inf
+        [InlineData(0x32800000U, 0x78000000U, 0x32800005U, 0x7C000000U)] // 0 * +Inf + 5 -> qNaN
+        [InlineData(0x32800002U, 0x78000000U, 0xF8000000U, 0x7C000000U)] // 2 * +Inf + (-Inf) -> qNaN
+        public static void FusedMultiplyAddTest(uint x, uint y, uint z, uint expected)
+        {
+            Decimal32 result = Decimal32.FusedMultiplyAdd(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y), Unsafe.BitCast<uint, Decimal32>(z));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
+        }
+
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32BitDecrement), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void BitDecrement_IntelReferenceVectors(uint value, uint expected)
@@ -1632,6 +1651,14 @@ namespace System.Tests
         public static void ScaleB_IntelReferenceVectors(uint value, int n, uint expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.ScaleB(Unsafe.BitCast<uint, Decimal32>(value), n)));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32FusedMultiplyAdd), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void FusedMultiplyAdd_IntelReferenceVectors(uint x, uint y, uint z, uint expected)
+        {
+            Decimal32 result = Decimal32.FusedMultiplyAdd(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y), Unsafe.BitCast<uint, Decimal32>(z));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]

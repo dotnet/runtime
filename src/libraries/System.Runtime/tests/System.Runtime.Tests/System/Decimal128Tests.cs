@@ -1609,6 +1609,27 @@ namespace System.Tests
             Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>(result));
         }
 
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000003UL, 0x3040000000000000UL, 0x0000000000000004UL, 0x3040000000000000UL, 0x000000000000000AUL)] // 2 * 3 + 4 = 10
+        [InlineData(0x3034000000000000UL, 0x00000000000F4241UL, 0x3034000000000000UL, 0x00000000000F4241UL, 0xB034000000000000UL, 0x00000000000F4242UL, 0x3028000000000000UL, 0x0000000000000001UL)] // 1.000001 * 1.000001 - 1.000002 = 1E-12 (fused)
+        [InlineData(0x304A000000000000UL, 0x0000000000000000UL, 0x3044000000000000UL, 0x0000000000000003UL, 0x303A000000000000UL, 0x0000000000000007UL, 0x303A000000000000UL, 0x0000000000000007UL)] // 0E5 * 3E2 + 7E-3
+        [InlineData(0x3040000000000000UL, 0x0000000000000003UL, 0x3040000000000000UL, 0x0000000000000004UL, 0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x000000000000000CUL)] // 3 * 4 + 0 = 12
+        [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000003UL, 0xB040000000000000UL, 0x0000000000000006UL, 0x3040000000000000UL, 0x0000000000000000UL)] // 2 * 3 + (-6) = +0
+        [InlineData(0xB040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000003UL, 0x3040000000000000UL, 0x0000000000000006UL, 0x3040000000000000UL, 0x0000000000000000UL)] // -2 * 3 + 6 = +0
+        [InlineData(0x3040000000000000UL, 0x0000000000000003UL, 0x7C00000000000000UL, 0x0000000000001234UL, 0x3040000000000000UL, 0x0000000000000004UL, 0x7C00000000000000UL, 0x0000000000001234UL)] // 3 * qNaN(0x1234) + 4 -> qNaN
+        [InlineData(0x7C00000000000000UL, 0x0000000000000011UL, 0x3040000000000000UL, 0x0000000000000002UL, 0x7C00000000000000UL, 0x0000000000000022UL, 0x7C00000000000000UL, 0x0000000000000022UL)] // qNaN(x) * 2 + qNaN(z) -> z payload
+        [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x7800000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000003UL, 0x7800000000000000UL, 0x0000000000000000UL)] // 2 * +Inf + 3 = +Inf
+        [InlineData(0xB040000000000000UL, 0x0000000000000002UL, 0x7800000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000003UL, 0xF800000000000000UL, 0x0000000000000000UL)] // -2 * +Inf + 3 = -Inf
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0x7800000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000005UL, 0x7C00000000000000UL, 0x0000000000000000UL)] // 0 * +Inf + 5 -> qNaN
+        [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x7800000000000000UL, 0x0000000000000000UL, 0xF800000000000000UL, 0x0000000000000000UL, 0x7C00000000000000UL, 0x0000000000000000UL)] // 2 * +Inf + (-Inf) -> qNaN
+        public static void FusedMultiplyAddTest(ulong xUpper, ulong xLower, ulong yUpper, ulong yLower, ulong zUpper, ulong zLower, ulong expectedUpper, ulong expectedLower)
+        {
+            Decimal128 x = Unsafe.BitCast<UInt128, Decimal128>(new UInt128(xUpper, xLower));
+            Decimal128 y = Unsafe.BitCast<UInt128, Decimal128>(new UInt128(yUpper, yLower));
+            Decimal128 z = Unsafe.BitCast<UInt128, Decimal128>(new UInt128(zUpper, zLower));
+            Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.FusedMultiplyAdd(x, y, z)));
+        }
+
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128BitDecrement), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void BitDecrement_IntelReferenceVectors(UInt128 value, UInt128 expected)
@@ -1635,6 +1656,14 @@ namespace System.Tests
         public static void ScaleB_IntelReferenceVectors(UInt128 value, int n, UInt128 expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(Decimal128.ScaleB(Unsafe.BitCast<UInt128, Decimal128>(value), n)));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128FusedMultiplyAdd), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void FusedMultiplyAdd_IntelReferenceVectors(UInt128 x, UInt128 y, UInt128 z, UInt128 expected)
+        {
+            Decimal128 result = Decimal128.FusedMultiplyAdd(Unsafe.BitCast<UInt128, Decimal128>(x), Unsafe.BitCast<UInt128, Decimal128>(y), Unsafe.BitCast<UInt128, Decimal128>(z));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]

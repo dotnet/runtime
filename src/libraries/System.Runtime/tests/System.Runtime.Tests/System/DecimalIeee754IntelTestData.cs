@@ -129,6 +129,12 @@ namespace System.Tests
         private static readonly HashSet<string> s_bid64ILogB = new() { "bid64_ilogb" };
         private static readonly HashSet<string> s_bid128ILogB = new() { "bid128_ilogb" };
 
+        // FusedMultiplyAdd. Every reference row is exercised, including NaN payload propagation and the invalid
+        // operations (0*Inf, Inf + opposite Inf) that quiet to the canonical NaN; all results match bit-exact.
+        private static readonly HashSet<string> s_bid32Fma = new() { "bid32_fma" };
+        private static readonly HashSet<string> s_bid64Fma = new() { "bid64_fma" };
+        private static readonly HashSet<string> s_bid128Fma = new() { "bid128_fma" };
+
         /// <summary>
         /// Gets a value indicating whether the Intel <c>readtest.in</c> reference vectors are available,
         /// gating the theories that consume them.
@@ -662,6 +668,39 @@ namespace System.Tests
                 if (TryParseBid128(fields[2], out UInt128 value) && !IsInvalidFlagged(fields[4]) && int.TryParse(fields[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int expected))
                 {
                     yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32FusedMultiplyAdd()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Fma))
+            {
+                if ((fields.Length >= 6) && TryParseBid32(fields[2], out uint x) && TryParseBid32(fields[3], out uint y) && TryParseBid32(fields[4], out uint z) && TryParseBid32(fields[5], out uint expected))
+                {
+                    yield return new object[] { x, y, z, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64FusedMultiplyAdd()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Fma))
+            {
+                if ((fields.Length >= 6) && TryParseBid64(fields[2], out ulong x) && TryParseBid64(fields[3], out ulong y) && TryParseBid64(fields[4], out ulong z) && TryParseBid64(fields[5], out ulong expected))
+                {
+                    yield return new object[] { x, y, z, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128FusedMultiplyAdd()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Fma))
+            {
+                if ((fields.Length >= 6) && TryParseBid128(fields[2], out UInt128 x) && TryParseBid128(fields[3], out UInt128 y) && TryParseBid128(fields[4], out UInt128 z) && TryParseBid128(fields[5], out UInt128 expected))
+                {
+                    yield return new object[] { x, y, z, expected };
                 }
             }
         }
