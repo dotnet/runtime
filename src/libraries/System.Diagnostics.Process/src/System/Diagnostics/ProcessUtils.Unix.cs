@@ -158,7 +158,7 @@ namespace System.Diagnostics
                 }
             }
             // filename is a uri
-            else if (Uri.TryCreate(filename, UriKind.Absolute, out Uri? uri))
+            else if (System.Uri.TryCreate(filename, System.UriKind.Absolute, out System.Uri? uri))
             {
                 if (uri.IsFile && uri.Host == "" && File.Exists(uri.LocalPath))
                 {

@@ -15,6 +15,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Environment.get_HasBeenModified</Target>
+    <Target>M:System.Environment.get_HasEnvironmentVariablesBeenModified</Target>
   </Suppression>
 </Suppressions>

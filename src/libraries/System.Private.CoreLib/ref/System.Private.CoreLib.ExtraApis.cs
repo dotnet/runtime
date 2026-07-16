@@ -8,7 +8,8 @@ namespace System
 {
     public static partial class Environment
     {
-        public static bool HasBeenModified { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static bool HasEnvironmentVariablesBeenModified { get { throw null; } }
     }
 }
 namespace System.Runtime.Serialization

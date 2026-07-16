@@ -428,7 +428,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private static IDictionary<string, string?>? GetEnvironmentVariables(ProcessStartInfo startInfo)
         {
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || Environment.HasBeenModified)
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || Environment.HasEnvironmentVariablesBeenModified)
             {
                 return startInfo.Environment;
             }

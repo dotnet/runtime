@@ -281,6 +281,64 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void TestEnvironmentOfChildProcess_SeesParentEnvironmentVariableSetBeforeStart()
+        {
+            const string Name = "TestEnvironmentOfChildProcess_ParentSetBeforeStart";
+            string value = "\x1234" + Environment.NewLine + "\x5678";
+            string? previousValue = Environment.GetEnvironmentVariable(Name);
+
+            try
+            {
+                Process p = CreateProcess(static (variableName, expectedValue) =>
+                {
+                    return Environment.GetEnvironmentVariable(variableName) == expectedValue ?
+                        RemoteExecutor.SuccessExitCode :
+                        1;
+                }, Name, value);
+
+                Environment.SetEnvironmentVariable(Name, value);
+
+                p.Start();
+                Assert.True(p.WaitForExit(WaitInMS));
+                Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(Name, previousValue);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void TestEnvironmentOfChildProcess_SeesParentEnvironmentVariableRemovalBeforeStart()
+        {
+            const string Name = "TestEnvironmentOfChildProcess_ParentRemoveBeforeStart";
+            string? previousValue = Environment.GetEnvironmentVariable(Name);
+
+            try
+            {
+                Process p = CreateProcess(static variableName =>
+                {
+                    return Environment.GetEnvironmentVariable(variableName) is null ?
+                        RemoteExecutor.SuccessExitCode :
+                        1;
+                }, Name);
+
+                Environment.SetEnvironmentVariable(Name, "temporary-value");
+                Environment.SetEnvironmentVariable(Name, null);
+
+                p.Start();
+                Assert.True(p.WaitForExit(WaitInMS));
+                Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(Name, previousValue);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EnvironmentNullValue()
         {
             const string NullEnvVar = "TestEnvironmentOfChildProcess_Null";
