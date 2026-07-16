@@ -34,10 +34,11 @@ namespace System.IO.Pipelines
         {
             MinimumSegmentSize = minimumSegmentSize == -1 ? DefaultMinimumSegmentSize : minimumSegmentSize;
 
-            // Cap the per-pipe segment-object pool to bound memory in degenerate cases.
+            // Cap the per-pipe segment-object pool to bound memory in edge cases.
             // Buffers are returned to the MemoryPool on Reset() before a segment is pooled, so a
-            // pooled BufferSegment holds no buffer and is ~96 bytes on 64-bit. The cap therefore
-            // costs at most ~24 KB per pipe (256 * ~96 bytes); the backing memory is pooled separately.
+            // pooled BufferSegment holds no bytes buffers and itself is ~96 bytes on 64-bit.
+            // The cap therefore costs at most ~24 KB per pipe (256 * ~96 bytes);
+            // the backing memory is pooled separately.
             //
             // Normal pipes never approach this cap. The pool only grows to the peak number of
             // simultaneously-live segments, which for a throttled pipe is roughly

@@ -37,8 +37,8 @@ namespace System.IO.Pipelines
         private readonly PipeOptions _options;
 
         // This lock protects the shared state between the writer and reader (most of this class).
-        // On .NET 9+ use System.Threading.Lock, which is faster than Monitor on object; older
-        // targets (netstandard2.0, .NET Framework) fall back to a plain object + Monitor.
+        // On .NET 9+ use System.Threading.Lock, as a monitor lock here tends to inflate into Lock anyways.
+        // Older targets (netstandard2.0, .NET Framework) fall back to a plain object + Monitor.
 #if NET9_0_OR_GREATER
         private readonly System.Threading.Lock _sync = new();
         private System.Threading.Lock SyncObj => _sync;
@@ -193,8 +193,8 @@ namespace System.IO.Pipelines
             // Note we deliberately do NOT acquire a BufferSegment here. The segment pool is a
             // single-producer/single-consumer queue, so an unused segment could not be safely
             // returned from this thread. Segments are taken (GetOrCreateSegment) only under the
-            // lock, at the exact point we are certain to use them. Acquiring via SPSC should be
-            // too cheap to bother that it happens under lock.
+            // lock, at the exact point we are certain to use them. Acquiring via SPSC is relatively
+            // cheap though.
             object? prerented = null;
             if (_writingHeadMemory.Length == 0 || _writingHeadMemory.Length < sizeHint)
             {
@@ -419,7 +419,7 @@ namespace System.IO.Pipelines
 
         internal void Advance(int bytes)
         {
-            // While writing is active, the writer thread exclusively owns _writingHead,
+            // While writing is active, the writer thread (us) exclusively owns _writingHead,
             // _writingHeadMemory, _writingHeadBytesBuffered and _unflushedBytes: the reader
             // only releases/observes them when writing is NOT active. So the bounds check and
             // AdvanceCore need no lock in that state.
@@ -440,8 +440,8 @@ namespace System.IO.Pipelines
             }
             else
             {
-                // Cold path (e.g. Advance(0) with no prior GetMemory): preserve exact original
-                // semantics under the lock.
+                // Cold path (e.g. Advance(0) with no prior GetMemory): use lock,
+                // to get exclusive access to the writing head.
                 lock (SyncObj)
                 {
                     if ((uint)bytes > (uint)_writingHeadMemory.Length)
