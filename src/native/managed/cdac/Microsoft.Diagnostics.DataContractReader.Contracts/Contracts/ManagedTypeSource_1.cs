@@ -95,7 +95,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
     public bool TryGetTypeHandle(string fullyQualifiedName, out ITypeHandle typeHandle)
     {
-        if (_typeHandleCache.TryGetValue(fullyQualifiedName, out var cached))
+        if (_typeHandleCache.TryGetValue(fullyQualifiedName, out ITypeHandle? cached))
         {
             typeHandle = cached;
             return !typeHandle.IsNull;

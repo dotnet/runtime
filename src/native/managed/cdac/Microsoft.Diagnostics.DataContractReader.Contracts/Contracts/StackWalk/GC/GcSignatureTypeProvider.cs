@@ -87,7 +87,7 @@ internal sealed class GcSignatureTypeProvider
     {
         try
         {
-            var instantiation = _target.Contracts.RuntimeTypeSystem.GetGenericMethodInstantiation(genericContext.MethodContext);
+            ReadOnlySpan<ITypeHandle> instantiation = _target.Contracts.RuntimeTypeSystem.GetGenericMethodInstantiation(genericContext.MethodContext);
             if ((uint)index >= (uint)instantiation.Length)
                 return GcTypeKind.Ref;
             return ClassifyTypeHandle(instantiation[index]);
