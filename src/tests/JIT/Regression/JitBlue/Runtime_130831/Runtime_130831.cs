@@ -3,20 +3,22 @@
 
 namespace Runtime_130831;
 
+using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
 public static class Runtime_130831
 {
-    // xunit's Assert.Equal for float/double compares bitwise, so it distinguishes -0.0 from +0.0.
+    // Compare the exact bit pattern: Double/Single.Equals treat -0.0 and +0.0 as equal,
+    // so a plain Assert.Equal would not observe a wrong-signed-zero result.
     [Fact]
     public static void TestEntryPoint()
     {
-        Assert.Equal(-0.0, MinNegZeroConst(+0.0));
-        Assert.Equal(-0.0, MinNumberZeroConst(-0.0));
+        Assert.Equal(BitConverter.DoubleToInt64Bits(-0.0), BitConverter.DoubleToInt64Bits(MinNegZeroConst(+0.0)));
+        Assert.Equal(BitConverter.DoubleToInt64Bits(-0.0), BitConverter.DoubleToInt64Bits(MinNumberZeroConst(-0.0)));
 
-        Assert.Equal(-0.0f, MinNegZeroConst(+0.0f));
-        Assert.Equal(-0.0f, MinNumberZeroConst(-0.0f));
+        Assert.Equal(BitConverter.SingleToInt32Bits(-0.0f), BitConverter.SingleToInt32Bits(MinNegZeroConst(+0.0f)));
+        Assert.Equal(BitConverter.SingleToInt32Bits(-0.0f), BitConverter.SingleToInt32Bits(MinNumberZeroConst(-0.0f)));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
