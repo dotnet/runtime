@@ -273,8 +273,6 @@ DEFINE_FIELD(ENC_HELPER,            OBJECT_REFERENCE,       _objectReference)
 
 DEFINE_CLASS(ENCODING,              Text,                   Encoding)
 
-DEFINE_CLASS(RUNE,                  Text,                   Rune)
-
 DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)

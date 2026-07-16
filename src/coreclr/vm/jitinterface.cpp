@@ -7289,29 +7289,39 @@ static bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
 
 namespace
 {
-    // The IL opcodes the field-wise Equals scanner matches. It only accepts the exact shapes the C#
-    // compiler emits for a field-wise comparison, so a small literal table suffices.
-    enum ILByte : BYTE
-    {
-        IL_LDARG_0      = 0x02,
-        IL_LDARG_1      = 0x03,
-        IL_LDC_I4_0     = 0x16,
-        IL_CALL         = 0x28,
-        IL_RET          = 0x2A,
-        IL_BRFALSE_S    = 0x2C,
-        IL_BNE_UN_S     = 0x33,
-        IL_CALLVIRT     = 0x6F,
-        IL_LDOBJ        = 0x71,
-        IL_LDFLD        = 0x7B,
-        IL_LDFLDA       = 0x7C,
-        IL_PREFIX1      = 0xFE, // ceq is encoded as 0xFE 0x01
-        IL_CEQ_2ND      = 0x01,
-    };
-
     mdToken ReadILToken(const BYTE* pIL)
     {
         LIMITED_METHOD_CONTRACT;
         return (mdToken)((uint32_t)pIL[0] | ((uint32_t)pIL[1] << 8) | ((uint32_t)pIL[2] << 16) | ((uint32_t)pIL[3] << 24));
+    }
+
+    // Reads a conditional branch that Roslyn emits in either short form (1-byte signed offset) or long
+    // form (4-byte signed offset); a body larger than a signed-byte range forces the long form (e.g. the
+    // field-wise Equals of a type with many fields). On a match, sets 'target' to the absolute
+    // destination, advances 'ip' past the instruction, and returns true.
+    bool TryReadBranch(const BYTE* pIL, unsigned codeSize, unsigned& ip, BYTE shortOp, BYTE longOp, int& target)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        if (ip < codeSize && pIL[ip] == shortOp)
+        {
+            if (ip + 2 > codeSize)
+                return false;
+            target = (int)(ip + 2) + (int)(signed char)pIL[ip + 1];
+            ip += 2;
+            return true;
+        }
+
+        if (ip < codeSize && pIL[ip] == longOp)
+        {
+            if (ip + 5 > codeSize)
+                return false;
+            target = (int)(ip + 5) + (int)ReadILToken(pIL + ip + 1);
+            ip += 5;
+            return true;
+        }
+
+        return false;
     }
 
     // Resolves an in-module FieldDef token. Returns NULL for anything else (e.g. a MemberRef,
@@ -7561,7 +7571,7 @@ namespace
             // Optional records lead-in: 'call EqualityComparer<F>::get_Default' before the operands.
             mdToken getDefaultTok = mdTokenNil;
             bool records = false;
-            if (ip + 5 <= codeSize && pIL[ip] == IL_CALL)
+            if (ip + 5 <= codeSize && pIL[ip] == CEE_CALL)
             {
                 getDefaultTok = ReadILToken(pIL + ip + 1);
                 records = true;
@@ -7570,18 +7580,18 @@ namespace
 
             // Left operand: ldarg.0; ldfld/ldflda F. Records and inline '==' load by value; the
             // '.Equals' call form loads by address.
-            if (ip + 6 > codeSize || pIL[ip] != IL_LDARG_0)
+            if (ip + 6 > codeSize || pIL[ip] != CEE_LDARG_0)
                 return false;
             BYTE leftLoad = pIL[ip + 1];
-            if (leftLoad != IL_LDFLD && leftLoad != IL_LDFLDA)
+            if (leftLoad != CEE_LDFLD && leftLoad != CEE_LDFLDA)
                 return false;
-            if (records && leftLoad != IL_LDFLD)
+            if (records && leftLoad != CEE_LDFLD)
                 return false;
             mdToken leftFieldTok = ReadILToken(pIL + ip + 2);
             ip += 6;
 
             // Right operand: ldarg.1; ldfld F.
-            if (ip + 6 > codeSize || pIL[ip] != IL_LDARG_1 || pIL[ip + 1] != IL_LDFLD)
+            if (ip + 6 > codeSize || pIL[ip] != CEE_LDARG_1 || pIL[ip + 1] != CEE_LDFLD)
                 return false;
             mdToken rightFieldTok = ReadILToken(pIL + ip + 2);
             ip += 6;
@@ -7605,25 +7615,22 @@ namespace
             }
             compared[numCompared++] = pField;
 
-            if (!records && leftLoad == IL_LDFLD)
+            if (!records && leftLoad == CEE_LDFLD)
             {
                 // Inline '==': only integer-like primitives (and enums) are memcmp-equivalent.
                 if (!IsBitwiseComparableField(pField))
                     return false;
 
-                if (ip < codeSize && pIL[ip] == IL_BNE_UN_S)
+                int target;
+                if (TryReadBranch(pIL, codeSize, ip, CEE_BNE_UN_S, CEE_BNE_UN, target))
                 {
                     // Non-final field: branch to the shared 'return false'.
-                    if (ip + 2 > codeSize)
-                        return false;
-                    int target = (int)(ip + 2) + (int)(signed char)pIL[ip + 1];
                     if (falseTarget == -1)
                         falseTarget = target;
                     else if (falseTarget != target)
                         return false;
-                    ip += 2;
                 }
-                else if (ip + 3 <= codeSize && pIL[ip] == IL_PREFIX1 && pIL[ip + 1] == IL_CEQ_2ND && pIL[ip + 2] == IL_RET)
+                else if (ip + 3 <= codeSize && pIL[ip] == CEE_PREFIX1 && pIL[ip + 1] == (CEE_CEQ & 0xFF) && pIL[ip + 2] == CEE_RET)
                 {
                     // Final field: ceq; ret.
                     ip += 3;
@@ -7640,7 +7647,7 @@ namespace
             if (records)
             {
                 // callvirt EqualityComparer<F>::Equals(!0, !0).
-                if (ip + 5 > codeSize || pIL[ip] != IL_CALLVIRT)
+                if (ip + 5 > codeSize || pIL[ip] != CEE_CALLVIRT)
                     return false;
                 MethodDesc* pGetDefault = TryResolveMethodToken(pModule, getDefaultTok);
                 MethodDesc* pEquals = TryResolveMethodToken(pModule, ReadILToken(pIL + ip + 1));
@@ -7650,7 +7657,7 @@ namespace
             else
             {
                 // '.Equals' call form: a primitive's own Equals, or a nested type's field-wise Equals.
-                if (ip + 5 > codeSize || pIL[ip] != IL_CALL)
+                if (ip + 5 > codeSize || pIL[ip] != CEE_CALL)
                     return false;
                 MethodDesc* pCallee = TryResolveMethodToken(pModule, ReadILToken(pIL + ip + 1));
                 if (!IsPrimitiveEqualsCall(pCallee, pField) && !IsNestedFieldwiseEquatable(pCallee, pField))
@@ -7658,19 +7665,16 @@ namespace
             }
             ip += 5;
 
-            // The Equals call already yields a bool: brfalse.s to the shared tail, or ret if final.
-            if (ip < codeSize && pIL[ip] == IL_BRFALSE_S)
+            // The Equals call already yields a bool: brfalse to the shared tail, or ret if final.
+            int target;
+            if (TryReadBranch(pIL, codeSize, ip, CEE_BRFALSE_S, CEE_BRFALSE, target))
             {
-                if (ip + 2 > codeSize)
-                    return false;
-                int target = (int)(ip + 2) + (int)(signed char)pIL[ip + 1];
                 if (falseTarget == -1)
                     falseTarget = target;
                 else if (falseTarget != target)
                     return false;
-                ip += 2;
             }
-            else if (ip < codeSize && pIL[ip] == IL_RET)
+            else if (ip < codeSize && pIL[ip] == CEE_RET)
             {
                 ip += 1;
                 sawFinalUnit = true;
@@ -7686,8 +7690,8 @@ namespace
         {
             if ((int)ip != falseTarget ||
                 ip + 2 != codeSize ||
-                pIL[ip] != IL_LDC_I4_0 ||
-                pIL[ip + 1] != IL_RET)
+                pIL[ip] != CEE_LDC_I4_0 ||
+                pIL[ip + 1] != CEE_RET)
             {
                 return false;
             }
@@ -7733,11 +7737,11 @@ namespace
 
                 // 02 71 <T:4> 03 28 <op_Equality:4> 2A
                 if (pIL != NULL && codeSize == 13 &&
-                    pIL[0] == IL_LDARG_0 &&
-                    pIL[1] == IL_LDOBJ && ReadILToken(pIL + 2) == valueTypeMT->GetCl() &&
-                    pIL[6] == IL_LDARG_1 &&
-                    pIL[7] == IL_CALL &&
-                    pIL[12] == IL_RET)
+                    pIL[0] == CEE_LDARG_0 &&
+                    pIL[1] == CEE_LDOBJ && ReadILToken(pIL + 2) == valueTypeMT->GetCl() &&
+                    pIL[6] == CEE_LDARG_1 &&
+                    pIL[7] == CEE_CALL &&
+                    pIL[12] == CEE_RET)
                 {
                     MethodDesc* pOpEquality = TryResolveInModuleMethodDef(pEqualsMD->GetModule(), ReadILToken(pIL + 8));
                     if (pOpEquality != NULL &&
@@ -7764,26 +7768,39 @@ bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
         return false;
     }
 
-    Instantiation inst(&typeHandle, 1);
-    TypeHandle iequatableOfSelf = TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst);
-
-    if (!typeHandle.CanCastTo(iequatableOfSelf))
+    // Scanning resolves field/method tokens and can force type loads, any of which may throw on bad or
+    // incomplete metadata. Constant folding must be conservative, so trap and fold to 'false' on failure.
+    bool result = false;
+    EX_TRY
     {
-        // No IEquatable<T> of its own: bitwise equality is safe if the fields are bit-comparable and
-        // there is no custom object.Equals override.
-        return CanCompareBitsOrUseFastGetHashCode(methodTable);
-    }
+        Instantiation inst(&typeHandle, 1);
+        TypeHandle iequatableOfSelf = TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst);
 
-    // Has IEquatable<T>.Equals: bitwise only if that Equals is a plain field-wise memcmp equivalent.
-    // UnwrapStub turns the value-type interface dispatch into the underlying instance method.
-    MethodDesc* pEqualsMD = UnwrapStub(methodTable->GetMethodDescForInterfaceMethod(
-        iequatableOfSelf, CoreLibBinder::GetMethod(METHOD__IEQUATABLEGENERIC__EQUALS), FALSE /* throwOnConflict */));
-    if (pEqualsMD == NULL)
+        if (!typeHandle.CanCastTo(iequatableOfSelf))
+        {
+            // No IEquatable<T> of its own: bitwise equality is safe if the fields are bit-comparable and
+            // there is no custom object.Equals override.
+            result = CanCompareBitsOrUseFastGetHashCode(methodTable);
+        }
+        else
+        {
+            // Has IEquatable<T>.Equals: bitwise only if that Equals is a plain field-wise memcmp equivalent.
+            // UnwrapStub turns the value-type interface dispatch into the underlying instance method.
+            MethodDesc* pEqualsMD = UnwrapStub(methodTable->GetMethodDescForInterfaceMethod(
+                iequatableOfSelf, CoreLibBinder::GetMethod(METHOD__IEQUATABLEGENERIC__EQUALS), FALSE /* throwOnConflict */));
+            if (pEqualsMD != NULL)
+            {
+                result = IsFieldwiseEqualsBitwiseEquivalent(methodTable, pEqualsMD);
+            }
+        }
+    }
+    EX_CATCH
     {
-        return false;
+        result = false;
     }
+    EX_END_CATCH
 
-    return IsFieldwiseEqualsBitwiseEquivalent(methodTable, pEqualsMD);
+    return result;
 }
 
 static bool getILIntrinsicImplementationForRuntimeHelpers(
@@ -7812,28 +7829,16 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
 
         // Ideally we could detect automatically whether a type is trivially equatable
         // (i.e., its operator == could be implemented via memcmp). The best we can do
-        // for now is hardcode a list of known supported types and then also include anything
-        // that doesn't provide its own object.Equals override / IEquatable<T> implementation.
+        // for now is check a few known-good shapes and then also include anything the
+        // field-wise scanner proves memcmp-equivalent.
         // n.b. This doesn't imply that the type's CompareTo method can be memcmp-implemented,
         // as a method like CompareTo may need to take a type's signedness into account.
-
-        if (methodTable == CoreLibBinder::GetClass(CLASS__BOOLEAN)
-            || methodTable == CoreLibBinder::GetClass(CLASS__BYTE)
-            || methodTable == CoreLibBinder::GetClass(CLASS__SBYTE)
-            || methodTable == CoreLibBinder::GetClass(CLASS__CHAR)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT16)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT16)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT32)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT32)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT64)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT64)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INT128)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINT128)
-            || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
-            || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
-            || methodTable == CoreLibBinder::GetClass(CLASS__GUID)
-            || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
-            || methodTable->IsEnum()
+        //
+        // Integer-like primitives, native ints, and enums are memcmp-comparable but their Equals
+        // isn't field-wise (one side is the raw primitive arg), so they're matched by element type.
+        // Everything else -- including Guid, Rune, Int128, and UInt128 -- is proven by IsBitwiseEquatable,
+        // which scans the type's IEquatable<T>.Equals for a field-wise shape.
+        if (IsBitwiseComparablePrimitive(methodTable->GetInternalCorElementType())
             || IsBitwiseEquatable(typeHandle, methodTable))
         {
             methInfo->ILCode = const_cast<BYTE*>(returnTrue);

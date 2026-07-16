@@ -319,6 +319,39 @@ namespace Internal.IL.Stubs
         }
 
         /// <summary>
+        /// Determines whether <paramref name="type"/> is bitwise-equatable: an unmanaged, tightly-packed
+        /// type whose equality is provably a bitwise (memcmp) comparison. This is the single authority
+        /// behind <see cref="System.Runtime.CompilerServices.RuntimeHelpers.IsBitwiseEquatable{T}"/> and
+        /// mirrors the CoreCLR VM's determination.
+        /// </summary>
+        public static bool IsBitwiseEquatable(TypeDesc type)
+        {
+            // Integer-like primitives, enums, native ints, and pointers are memcmp-comparable.
+            if (IsBitwiseComparablePrimitive(type))
+                return true;
+
+            if (type is not MetadataType mdType || !mdType.IsValueType)
+                return false;
+
+            bool? equatable = ImplementsIEquatable(mdType.GetTypeDefinition());
+            if (!equatable.HasValue)
+                return false;
+
+            if (equatable.Value)
+            {
+                // Value type that implements IEquatable<T> of self: bitwise-equatable when it is tightly
+                // packed and its Equals is a plain field-wise comparison.
+                return IsIEquatableEqualsFieldwise(mdType);
+            }
+
+            // Value type that can use memcmp and that doesn't override object.Equals or implement
+            // IEquatable<T>.Equals.
+            MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null);
+            return mdType.FindVirtualFunctionTargetMethodOnObjectType(objectEquals).OwningType != mdType
+                && CanCompareValueTypeBits(mdType, objectEquals);
+        }
+
+        /// <summary>
         /// Determines whether a value type's <see cref="System.IEquatable{T}"/> implementation of self is a
         /// plain field-wise comparison that is equivalent to a bitwise (memcmp) comparison. This lets a type
         /// that implements IEquatable&lt;T&gt; still be reported as bitwise-equatable when its Equals does
@@ -511,9 +544,10 @@ namespace Internal.IL.Stubs
                         return false;
 
                     ILOpcode compareOpcode = reader.ReadILOpcode();
-                    if (compareOpcode == ILOpcode.bne_un_s)
+                    if (compareOpcode == ILOpcode.bne_un_s || compareOpcode == ILOpcode.bne_un)
                     {
-                        // Non-final field: `bne.un.s FALSE` jumps to the shared `return false` tail.
+                        // Non-final field: `bne.un[.s] FALSE` jumps to the shared `return false` tail. A
+                        // body larger than a signed-byte range uses the long form.
                         int target = reader.ReadBranchDestination(compareOpcode);
                         if (falseTarget == -1)
                             falseTarget = target;
@@ -554,9 +588,9 @@ namespace Internal.IL.Stubs
                         return false;
                 }
 
-                // The Equals call already yields a bool: `brfalse.s` to the shared tail, or `ret` if final.
+                // The Equals call already yields a bool: `brfalse[.s]` to the shared tail, or `ret` if final.
                 ILOpcode terminator = reader.ReadILOpcode();
-                if (terminator == ILOpcode.brfalse_s)
+                if (terminator == ILOpcode.brfalse_s || terminator == ILOpcode.brfalse)
                 {
                     int target = reader.ReadBranchDestination(terminator);
                     if (falseTarget == -1)
