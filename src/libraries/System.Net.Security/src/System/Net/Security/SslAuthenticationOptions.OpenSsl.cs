@@ -15,19 +15,6 @@ namespace System.Net.Security
         // that don't include the OpenSSL interop sources.
         internal System.Runtime.InteropServices.SafeHandle? SafeSslHandle { get; set; }
 
-        // Hook invoked by OpenSSL's CertVerifyCallback to drive remote
-        // certificate validation. Set by SslStream and by standalone TlsSession
-        // so both flows share the same callback plumbing.
-        internal delegate bool VerifyRemoteCertificateCallback(
-            X509Certificate2? certificate,
-            X509Chain? chain,
-            SslCertificateTrust? trust,
-            ref ProtocolToken alertToken,
-            ref SslPolicyErrors sslPolicyErrors,
-            out X509ChainStatusFlags chainStatus);
-
-        internal VerifyRemoteCertificateCallback? RemoteCertificateValidator { get; set; }
-
         // Pre-allocated SSL_CTX owned by a TlsContext and shared by every TlsSession
         // it produces. When set, Interop.OpenSsl.AllocateSslHandle uses this handle
         // directly and bypasses the global SslContextCacheKey lookup. Unset for the

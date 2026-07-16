@@ -330,7 +330,7 @@ namespace System.Net.Security
             if (!_externalValidationPending)
             {
                 throw new InvalidOperationException(
-                    $"{nameof(AcceptWithDefaultValidation)} can only be called when certificate validation is pending.");
+                    SR.Format(SR.net_tlssession_validation_not_pending, nameof(AcceptWithDefaultValidation)));
             }
 
             // Build a fresh X509Chain locally and seed it with the peer-sent intermediates.
@@ -407,7 +407,7 @@ namespace System.Net.Security
             if (!_externalValidationPending)
             {
                 throw new InvalidOperationException(
-                    $"{nameof(SetRemoteCertificateValidationResult)} can only be called when certificate validation is pending.");
+                    SR.Format(SR.net_tlssession_validation_not_pending, nameof(SetRemoteCertificateValidationResult)));
             }
 
             _externalValidationPending = false;
@@ -743,7 +743,7 @@ namespace System.Net.Security
             if (_externalValidationPending)
             {
                 throw new InvalidOperationException(
-                    "External certificate validation result has not been recorded. Call SetRemoteCertificateValidationResult or AcceptWithDefaultValidation first.");
+                    SR.net_tlssession_validation_result_not_recorded);
             }
         }
 
@@ -1280,7 +1280,7 @@ namespace System.Net.Security
                     if (needed > plaintext.Length)
                     {
                         throw new InvalidOperationException(
-                            $"Plaintext buffer too small: needed {needed}, got {plaintext.Length}.");
+                            SR.Format(SR.net_tlssession_plaintext_buffer_too_small, needed, plaintext.Length));
                     }
                     if (decLeftoverLength > 0)
                     {
@@ -1362,7 +1362,7 @@ namespace System.Net.Security
             if (produced > plaintext.Length)
             {
                 throw new InvalidOperationException(
-                    $"Plaintext buffer too small: needed {produced}, got {plaintext.Length}.");
+                    SR.Format(SR.net_tlssession_plaintext_buffer_too_small, produced, plaintext.Length));
             }
 
             if (decLeftoverLength > 0)

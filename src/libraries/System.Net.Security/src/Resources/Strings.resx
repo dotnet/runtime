@@ -464,6 +464,15 @@
   <data name="net_tlssession_not_socket_bound" xml:space="preserve">
     <value>Session is not socket-bound.</value>
   </data>
+  <data name="net_tlssession_validation_not_pending" xml:space="preserve">
+    <value>{0} can only be called when certificate validation is pending.</value>
+  </data>
+  <data name="net_tlssession_validation_result_not_recorded" xml:space="preserve">
+    <value>External certificate validation result has not been recorded. Call SetRemoteCertificateValidationResult or AcceptWithDefaultValidation first.</value>
+  </data>
+  <data name="net_tlssession_plaintext_buffer_too_small" xml:space="preserve">
+    <value>Plaintext buffer too small: needed {0}, got {1}.</value>
+  </data>
   <data name="net_ssl_trust_store" xml:space="preserve">
     <value>Only LocalMachine stores are supported on Windows.</value>
   </data>

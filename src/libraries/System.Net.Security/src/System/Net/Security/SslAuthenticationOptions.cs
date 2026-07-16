@@ -11,6 +11,21 @@ namespace System.Net.Security
 {
     internal sealed partial class SslAuthenticationOptions : IDisposable
     {
+        // Hook invoked by OpenSSL's CertVerifyCallback to drive remote
+        // certificate validation. Set by SslStream and by standalone TlsSession
+        // so both flows share the same callback plumbing. Declared on the
+        // cross-platform partial so the delegate type is resolvable in test
+        // projects (unit-test fakes) that compile SslStream.cs on non-Linux
+        // targets where the OpenSSL partial file isn't included.
+        internal delegate bool VerifyRemoteCertificateCallback(
+            X509Certificate2? certificate,
+            X509Chain? chain,
+            SslCertificateTrust? trust,
+            ref ProtocolToken alertToken,
+            ref SslPolicyErrors sslPolicyErrors,
+            out X509ChainStatusFlags chainStatus);
+
+        internal VerifyRemoteCertificateCallback? RemoteCertificateValidator { get; set; }
 
         internal const X509RevocationMode DefaultRevocationMode = X509RevocationMode.NoCheck;
 

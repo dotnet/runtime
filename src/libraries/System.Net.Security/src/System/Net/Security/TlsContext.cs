@@ -13,9 +13,20 @@ namespace System.Net.Security
     /// determined by which factory is used.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Holds the resolved options bag. Session caches are reused on supported
     /// platforms; each <see cref="TlsSession"/> gets its own native context
     /// allocated lazily on the first handshake call.
+    /// </para>
+    /// <para>
+    /// Lifetime: it is safe to dispose the <see cref="TlsContext"/> while
+    /// <see cref="TlsSession"/> instances created from it are still in use.
+    /// The underlying native TLS context (e.g. OpenSSL <c>SSL_CTX</c>, SChannel
+    /// credentials handle) is reference-counted at the native layer, so each
+    /// live session keeps it alive until the session itself is disposed.
+    /// After the context is disposed, however, attempts to create new sessions
+    /// from it throw <see cref="ObjectDisposedException"/>.
+    /// </para>
     /// </remarks>
     [Experimental(Experimentals.LowLevelTlsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed partial class TlsContext : IDisposable
