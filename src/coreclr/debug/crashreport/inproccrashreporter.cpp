@@ -374,7 +374,8 @@ public:
 
     void CreateReport(
         int signal,
-        void* context);
+        void* context,
+        bool serialize);
 
     void SetCrashKind(InProcCrashReportCrashKind crashKind);
     void BeginStackOverflowTrace(uint64_t crashingTid, uint32_t totalFrameCount);
@@ -602,25 +603,29 @@ public:
 void
 InProcCrashReporter::CreateReport(
     int signal,
-    void* context)
+    void* context,
+    bool serialize)
 {
     static LONGLONG s_generatingThreadId = 0;
 
-    // INFTIM is not defined when including pal.h; -1 is the equivalent poll() "wait forever" timeout.
-    const int PollWaitForever = -1;
-
-    LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
-    LONGLONG previousThreadId = InterlockedCompareExchange64(&s_generatingThreadId, currentThreadId, 0);
-    if (previousThreadId != 0)
+    if (serialize)
     {
-        if (previousThreadId == currentThreadId)
-        {
-            return;
-        }
+        // INFTIM is not defined when including pal.h; -1 is the equivalent poll() "wait forever" timeout.
+        const int PollWaitForever = -1;
 
-        while (true)
+        LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
+        LONGLONG previousThreadId = InterlockedCompareExchange64(&s_generatingThreadId, currentThreadId, 0);
+        if (previousThreadId != 0)
         {
-            poll(nullptr, 0, PollWaitForever);
+            if (previousThreadId == currentThreadId)
+            {
+                return;
+            }
+
+            while (true)
+            {
+                poll(nullptr, 0, PollWaitForever);
+            }
         }
     }
 
@@ -854,7 +859,7 @@ InProcCrashReporter::EndStackOverflowTrace()
 }
 
 void
-InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
+InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool serialize)
 {
     (void)siginfo;
 
@@ -864,7 +869,7 @@ InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
         return;
     }
 
-    reporter->CreateReport(signal, context);
+    reporter->CreateReport(signal, context, serialize);
 }
 
 void

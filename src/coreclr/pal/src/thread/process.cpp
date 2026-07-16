@@ -1930,7 +1930,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
     PINPROCCRASHREPORT_CALLBACK callback = g_inProcCrashReportCallback;
     if (callback != nullptr)
     {
-        callback(signal, siginfo, context);
+        callback(signal, siginfo, context, serialize);
         minipal_log_write_fatal("Aborting process.\n");
         return;
     }

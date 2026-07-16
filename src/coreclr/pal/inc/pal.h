@@ -273,7 +273,7 @@ PAL_SetLogManagedCallstackForSignalCallback(
 /// itself has no source-level dependency on the in-proc reporter library;
 /// it only knows about this callback ABI.
 /// </summary>
-typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context);
+typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context, bool serialize);
 
 PALIMPORT
 VOID
