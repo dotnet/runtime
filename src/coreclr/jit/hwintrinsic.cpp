@@ -3886,11 +3886,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_Dot - Need Shuffle
-            return nullptr;
-#endif
-
 #if defined(TARGET_ARM64)
             if (varTypeIsLong(simdBaseType))
             {
@@ -3903,7 +3898,12 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_WASM)
+            // WASM has no native horizontal reduction, so import as Sum(left * right).
+            retNode = gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
+            retNode = gtNewSimdSumNode(retType, retNode, simdBaseType, simdSize);
+            break;
+#elif defined(TARGET_XARCH)
             if ((simdSize == 64) || varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType))
             {
                 // The lowering for Dot doesn't handle these cases, so import as Sum(left * right)

@@ -613,6 +613,36 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void DotTest()
+    {
+        // Opaque operands force the Sum(left * right) reduction rather than constant folding.
+
+        Vector128<int> ai = Opaque(Vector128.Create(1, 2, 3, 4));
+        Vector128<int> bi = Opaque(Vector128.Create(5, 6, 7, 8));
+        Assert.Equal(1 * 5 + 2 * 6 + 3 * 7 + 4 * 8, Vector128.Dot(ai, bi));
+
+        Vector128<float> af = Opaque(Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f));
+        Vector128<float> bf = Opaque(Vector128.Create(5.0f, 6.0f, 7.0f, 8.0f));
+        Assert.Equal(1.0f * 5 + 2.0f * 6 + 3.0f * 7 + 4.0f * 8, Vector128.Dot(af, bf));
+
+        Vector128<long> al = Opaque(Vector128.Create(2L, 3L));
+        Vector128<long> bl = Opaque(Vector128.Create(4L, 5L));
+        Assert.Equal(2L * 4 + 3L * 5, Vector128.Dot(al, bl));
+
+        Vector128<double> ad = Opaque(Vector128.Create(1.5, 2.5));
+        Vector128<double> bd = Opaque(Vector128.Create(3.5, 4.5));
+        Assert.Equal(1.5 * 3.5 + 2.5 * 4.5, Vector128.Dot(ad, bd));
+
+        Vector128<short> ash = Opaque(Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8));
+        Vector128<short> bsh = Opaque(Vector128.Create((short)1, 1, 1, 1, 1, 1, 1, 1));
+        Assert.Equal((short)(1 + 2 + 3 + 4 + 5 + 6 + 7 + 8), Vector128.Dot(ash, bsh));
+
+        Vector128<byte> ab = Opaque(Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8));
+        Vector128<byte> bb = Opaque(Vector128.Create((byte)1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1));
+        Assert.Equal((byte)((1 + 2 + 3 + 4 + 5 + 6 + 7 + 8) * 2), Vector128.Dot(ab, bb));
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);
