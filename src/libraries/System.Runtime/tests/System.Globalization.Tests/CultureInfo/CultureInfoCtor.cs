@@ -441,7 +441,7 @@ namespace System.Globalization.Tests
             Assert.Equal(cultureName, culture.ToString(), ignoreCase: true);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [InlineData("no", "no", "no", "nor", "")]
         [InlineData("no-NO", "no-NO", "no", "nor", "no")]
         public void Ctor_String_NorwegianLanguageNames(string name, string expectedName, string expectedTwoLetterName, string expectedThreeLetterName, string expectedParentName)
