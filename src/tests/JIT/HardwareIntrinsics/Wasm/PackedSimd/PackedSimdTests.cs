@@ -783,6 +783,25 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void ExtractMostSignificantBitsConstantFoldTest()
+    {
+        // A constant input lets value numbering fold ExtractMostSignificantBits to an integer constant;
+        // the Opaque overloads keep the runtime path covered so both agree.
+
+        Assert.Equal(0b1010u, Vector128.Create(0, -1, 0, -1).ExtractMostSignificantBits());
+        Assert.Equal(0b1010u, Opaque(Vector128.Create(0, -1, 0, -1)).ExtractMostSignificantBits());
+
+        Assert.Equal(0b0101u, Vector128.Create(-1, 0, -1, 0).ExtractMostSignificantBits());
+
+        var bytes = Vector128.Create((byte)0x80, 0, 0x80, 0, 0x80, 0, 0x80, 0, 0x80, 0, 0x80, 0, 0x80, 0, 0x80, 0);
+        Assert.Equal(0b0101010101010101u, bytes.ExtractMostSignificantBits());
+        Assert.Equal(0b0101010101010101u, Opaque(bytes).ExtractMostSignificantBits());
+
+        Assert.Equal(0b10u, Vector128.Create(0.0, -1.0).ExtractMostSignificantBits());
+        Assert.Equal(0b01u, Vector128.Create(-1.0, 0.0).ExtractMostSignificantBits());
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);

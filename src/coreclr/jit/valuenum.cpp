@@ -8291,7 +8291,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 #endif
             {
 
-#ifdef FEATURE_MASKED_HW_INTRINSICS
+#if defined(FEATURE_MASKED_HW_INTRINSICS) || defined(TARGET_WASM)
                 simdmask_t simdMaskVal;
 
                 switch (simdSize)
@@ -8332,10 +8332,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 assert(elemCount <= 32);
 
                 return VNForIntCon(static_cast<int32_t>(mask));
-#elif defined(TARGET_WASM)
-                NYI_WASM_SIMD("Vector128_ExtractMostSignificantBits");
-                break;
-#endif // FEATURE_MASKED_HW_INTRINSICS
+#endif // FEATURE_MASKED_HW_INTRINSICS || TARGET_WASM
             }
 
 #ifdef TARGET_XARCH
