@@ -1306,15 +1306,17 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 bool           profileInconsistent = false;
                 for (unsigned i = 0; i < targetCnt; i++)
                 {
-                    FlowEdge* const edge          = uniqueSuccs[i];
-                    weight_t const  oldEdgeWeight = edge->getLikelyWeight();
+                    FlowEdge* const edge = uniqueSuccs[i];
                     edge->setLikelihood(newLikelihood * edge->getDupCount());
-                    weight_t const newEdgeWeight = edge->getLikelyWeight();
 
                     if (afterDefaultCondBlock->hasProfileWeight())
                     {
+                        // Recompute the target's weight from its incoming edges rather than adjusting
+                        // it incrementally: the earlier default-peel scaled afterDefaultCondBlock's
+                        // weight but left the switch targets' weights stale, so an incremental update
+                        // would accumulate on top of a stale value (see #130785).
                         BasicBlock* const targetBlock = edge->getDestinationBlock();
-                        targetBlock->increaseBBProfileWeight(newEdgeWeight - oldEdgeWeight);
+                        targetBlock->setBBProfileWeight(targetBlock->computeIncomingWeight());
                         profileInconsistent |= (targetBlock->NumSucc() > 0);
                     }
                 }
