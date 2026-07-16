@@ -27366,10 +27366,11 @@ GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
 //    of op1 and op2
 //
 // Remarks:
-//    WASM's only native two-source constant permute (i8x16.shuffle) has no codegen path to source
-//    its immediate selectors, so express the permute as two single-source shuffles -- each scatters
-//    the lanes drawn from one operand into place while out-of-range indices zero-fill the rest --
-//    combined with a bitwise OR.
+//    The general shuffle IR is single-source; WASM's native two-source constant permute
+//    (i8x16.shuffle) is only reachable via the WASM-specific PackedSimd.Shuffle intrinsic.
+//    To stay in the general, foldable representation, express the permute as two single-source
+//    shuffles -- each scatters the lanes drawn from one operand into place while out-of-range
+//    indices zero-fill the rest -- combined with a bitwise OR.
 //
 GenTree* Compiler::gtNewSimdWasmTwoSourceShuffleNode(
     var_types type, GenTree* op1, GenTree* op2, const uint32_t* selectors, var_types simdBaseType, unsigned simdSize)
