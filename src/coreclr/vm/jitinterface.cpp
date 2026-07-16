@@ -7724,12 +7724,17 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
+        // Generic value types are out of scope: their Equals bodies can carry TypeSpec/MethodSpec
+        // tokens needing a type context to resolve. Bail before any layout inspection.
+        if (valueTypeMT->HasInstantiation())
+        {
+            return false;
+        }
+
         // First-pass restrictions that keep the scan simple and unquestionably safe: the type must be
-        // unmanaged (so a byte-wise compare is meaningful), non-generic (so IL tokens stay in-module),
-        // tightly packed (no padding anywhere -- the flag is transitive -- else memcmp inspects bytes
-        // Equals ignores), and not an inline array.
+        // unmanaged (so a byte-wise compare is meaningful), tightly packed (no padding anywhere -- the
+        // flag is transitive -- else memcmp inspects bytes Equals ignores), and not an inline array.
         if (valueTypeMT->ContainsGCPointers() ||
-            valueTypeMT->HasInstantiation() ||
             valueTypeMT->IsNotTightlyPacked() ||
             valueTypeMT->GetClass()->IsInlineArray())
         {

@@ -358,6 +358,11 @@ namespace Internal.IL.Stubs
         /// </summary>
         public static bool IsIEquatableEqualsFieldwise(MetadataType type)
         {
+            // Generic value types are out of scope: keep the field-wise scan to non-generic types.
+            // Bail before any layout inspection.
+            if (type.HasInstantiation)
+                return false;
+
             // The type's layout must be tightly packed (no padding gaps and no overlapping fields) so
             // that a byte-wise compare never inspects bytes the field-wise Equals ignores. This is
             // checked at every level of the recursion, matching the CoreCLR VM.
