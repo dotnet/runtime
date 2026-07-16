@@ -1889,7 +1889,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 else
                 {
                     // Normal case: jump table data at emitTotalCodeSize + dataOffs
-                    targetOffset = emitTotalCodeSize + dataOffs;
+                    // The data section is aligned to TARGET_POINTER_SIZE by the runtime
+                    size_t alignedCodeSize = AlignUp(emitTotalCodeSize, TARGET_POINTER_SIZE);
+                    targetOffset = alignedCodeSize + dataOffs;
                 }
                 
                 // Calculate offset from bcl PC to target
@@ -1942,7 +1944,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 else
                 {
                     // Normal case: jump table data at emitTotalCodeSize + dataOffs
-                    targetOffset = emitTotalCodeSize + dataOffs;
+                    // The data section is aligned to TARGET_POINTER_SIZE by the runtime
+                    size_t alignedCodeSize = AlignUp(emitTotalCodeSize, TARGET_POINTER_SIZE);
+                    targetOffset = alignedCodeSize + dataOffs;
                 }
                 
                 // Calculate offset from bcl PC to target
