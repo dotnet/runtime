@@ -231,6 +231,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "nb-NO", new [] { "nb-NO" } };
             yield return new object[] { "ne", new [] { "ne" }};
             yield return new object[] { "ne-NP", new [] { "ne-NP" }};
+            yield return new object[] { "no", new [] { "no" } };
             yield return new object[] { "nl", new [] { "nl" } };
             yield return new object[] { "nl-BE", new [] { "nl-BE" } };
             yield return new object[] { "nl-NL", new [] { "nl-NL" } };
@@ -356,7 +357,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "zu", new [] { "zu" }};
             yield return new object[] { "zu-ZA", new [] { "zu-ZA" }};
             yield return new object[] { CultureInfo.CurrentCulture.Name, new [] { CultureInfo.CurrentCulture.Name } };
-            yield return new object[] { "no", new [] { "no" } };
 
             if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
@@ -441,11 +441,10 @@ namespace System.Globalization.Tests
             Assert.Equal(cultureName, culture.ToString(), ignoreCase: true);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [Theory]
         [InlineData("no", "no", "no", "nor", "")]
         [InlineData("no-NO", "no-NO", "no", "nor", "no")]
-        [InlineData("iw", "he", "he", "heb", "")]
-        public void Ctor_String_HybridAppleLanguageNames(string name, string expectedName, string expectedTwoLetterName, string expectedThreeLetterName, string expectedParentName)
+        public void Ctor_String_NorwegianLanguageNames(string name, string expectedName, string expectedTwoLetterName, string expectedThreeLetterName, string expectedParentName)
         {
             CultureInfo culture = new CultureInfo(name);
 

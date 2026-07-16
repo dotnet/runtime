@@ -38,7 +38,7 @@ char* DetectDefaultAppleLocaleName(void)
 
 #if defined(APPLE_HYBRID_GLOBALIZATION)
 
-static NSString* GetLanguageCode(NSString *localeName)
+static NSString* GetLanguageSubtag(NSString *localeName)
 {
     NSRange separatorRange = [localeName rangeOfCharacterFromSet:
         [NSCharacterSet characterSetWithCharactersInString:@"-_@"]];
@@ -47,18 +47,32 @@ static NSString* GetLanguageCode(NSString *localeName)
     return localeName;
 }
 
-static bool ShouldPreserveNorwegianLanguageCode(NSString *localeName, NSLocale *canonicalLocale)
+static NSString* GetLocaleLanguageCode(NSString *localeName, NSLocale *canonicalLocale)
 {
-    return [GetLanguageCode(localeName) caseInsensitiveCompare:@"no"] == NSOrderedSame &&
-        [canonicalLocale.languageCode isEqualToString:@"nb"];
+    NSString *languageSubtag = GetLanguageSubtag(localeName);
+    if ([languageSubtag caseInsensitiveCompare:@"no"] == NSOrderedSame &&
+        [canonicalLocale.languageCode isEqualToString:@"nb"])
+    {
+        return @"no";
+    }
+
+    return canonicalLocale.languageCode;
 }
 
 static NSString* GetLocaleIdentifier(NSString *localeName, NSLocale *canonicalLocale)
 {
-    NSString *value = canonicalLocale.localeIdentifier;
-    return ShouldPreserveNorwegianLanguageCode(localeName, canonicalLocale) ?
-        [@"no" stringByAppendingString:[value substringFromIndex:2]] :
-        value;
+    NSString *canonicalLanguageCode = canonicalLocale.languageCode;
+    NSString *languageCode = GetLocaleLanguageCode(localeName, canonicalLocale);
+    NSString *localeIdentifier = canonicalLocale.localeIdentifier;
+
+    if (languageCode == nil ||
+        canonicalLanguageCode == nil ||
+        [languageCode isEqualToString:canonicalLanguageCode])
+    {
+        return localeIdentifier;
+    }
+
+    return [languageCode stringByAppendingString:[localeIdentifier substringFromIndex:canonicalLanguageCode.length]];
 }
 
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
@@ -267,16 +281,12 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
                 break;
             case LocaleString_Iso639LanguageTwoLetterName:
             {
-                value = ShouldPreserveNorwegianLanguageCode(locName, currentLocale) ?
-                    @"no" :
-                    currentLocale.languageCode;
+                value = GetLocaleLanguageCode(locName, currentLocale);
                 break;
             }
             case LocaleString_Iso639LanguageThreeLetterName:
             {
-                NSString *languageCode = ShouldPreserveNorwegianLanguageCode(locName, currentLocale) ?
-                    @"no" :
-                    currentLocale.languageCode;
+                NSString *languageCode = GetLocaleLanguageCode(locName, currentLocale);
                 return languageCode == nil ? strdup("") : strdup(getISO3LanguageByLangCode([languageCode UTF8String]));
             }
             case LocaleString_Iso3166CountryName:
