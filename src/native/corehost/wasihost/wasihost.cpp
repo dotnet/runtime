@@ -230,11 +230,12 @@ int main(int argc, char* argv[])
     coreclr_set_error_writer(nullptr);
 
     // The static ICU shim needs icudt.dat preloaded before managed globalization inits, otherwise it
-    // falls back to invariant (mirrors the browser JS host's wasm_load_icu_data). Skipped for
-    // invariant relinks (weak symbol null) and tolerant of a missing file.
+    // falls back to invariant (mirrors the browser JS host's wasm_load_icu_data). icudt.dat is a
+    // framework asset, so load it from core_root. Skipped for invariant relinks (weak symbol null)
+    // and tolerant of a missing file.
     if (GlobalizationNative_LoadICUData != nullptr)
     {
-        string_t icu_data_path = app_path;
+        string_t icu_data_path = core_root;
         icu_data_path.append(W("icudt.dat"));
         GlobalizationNative_LoadICUData(icu_data_path.c_str());
     }
