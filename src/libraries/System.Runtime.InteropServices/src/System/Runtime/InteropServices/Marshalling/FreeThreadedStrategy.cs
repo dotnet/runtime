@@ -21,7 +21,6 @@ namespace System.Runtime.InteropServices.Marshalling
 
         unsafe int IIUnknownStrategy.QueryInterface(void* thisPtr, in Guid handle, out void* ppObj)
         {
-            AssertFreeThreaded(thisPtr);
             int hr = Marshal.QueryInterface((nint)thisPtr, handle, out nint ppv);
             if (hr < 0)
             {
@@ -36,7 +35,9 @@ namespace System.Runtime.InteropServices.Marshalling
 
         unsafe int IIUnknownStrategy.Release(void* thisPtr)
         {
-            AssertFreeThreaded(thisPtr);
+            // Avoid checking if the instance is free-threaded here,
+            // since this method can be called from the GC finalizer thread
+            // and we need to QI, which may not be safe if the object is not free-threaded.
             return Marshal.Release((nint)thisPtr);
         }
 
