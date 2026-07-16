@@ -2500,9 +2500,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnviron.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SetEnv.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.SetEnv.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>

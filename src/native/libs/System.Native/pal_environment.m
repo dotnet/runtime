@@ -18,16 +18,6 @@ char* SystemNative_GetEnv(const char* variable)
     return getenv(variable);
 }
 
-int32_t SystemNative_SetEnv(const char* variable, const char* value)
-{
-    return setenv(variable, value, 1);
-}
-
-int32_t SystemNative_UnsetEnv(const char* variable)
-{
-    return unsetenv(variable);
-}
-
 static char *empty_key_value_pair = "=";
 
 static void get_environ_helper(const void *key, const void *value, void *context)

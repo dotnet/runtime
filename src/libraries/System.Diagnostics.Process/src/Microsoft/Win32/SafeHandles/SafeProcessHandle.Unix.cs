@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
@@ -427,13 +428,19 @@ namespace Microsoft.Win32.SafeHandles
 
         private static IDictionary<string, string?>? GetEnvironmentVariables(ProcessStartInfo startInfo)
         {
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst())
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() ||
+                OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ||
+                GetEnvironmentHasBeenModified(null))
             {
                 return startInfo.Environment;
             }
 
             return startInfo._environmentVariables;
         }
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_HasBeenModified")]
+        private static extern bool GetEnvironmentHasBeenModified(
+            [UnsafeAccessorType("System.Environment, System.Private.CoreLib")] object? _);
 
         private static SafeProcessHandle ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,

@@ -297,8 +297,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetPlatformSIGSTOP)
     DllImportEntry(SystemNative_GetGroups)
     DllImportEntry(SystemNative_GetEnv)
-    DllImportEntry(SystemNative_SetEnv)
-    DllImportEntry(SystemNative_UnsetEnv)
     DllImportEntry(SystemNative_GetEnviron)
     DllImportEntry(SystemNative_FreeEnviron)
     DllImportEntry(SystemNative_GetGroupName)
