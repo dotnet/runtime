@@ -11,11 +11,7 @@ using TestLibrary;
 
 public unsafe class StackallocTests
 {
-    public static bool IsMonoOrNativeAot =>
-        PlatformDetection.IsMonoRuntime ||
-        Utilities.IsNativeAot;
-
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/84398", typeof(StackallocTests), nameof(IsMonoOrNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/84398", typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreCLR))]
     [Fact]
     public static int TestEntryPoint()
     {
