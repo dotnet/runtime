@@ -73,7 +73,5 @@ submit-tests-helix:
 		$(_MSBUILD_WASM_BUILD_ARGS) \
 		$(MSBUILD_ARGS)
 
-build-dbg-proxy:
-	$(DOTNET) build $(TOP)/src/mono/browser/debugger/wasiDebugHost $(MSBUILD_ARGS)
 build-app-host:
 	$(DOTNET) build $(TOP)/src/mono/wasm/host $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)

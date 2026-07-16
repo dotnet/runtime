@@ -4,7 +4,7 @@ WasmAppHost is used when `dotnet run` executes for projects targeting wasm.
 
 ## Command line arguments
 
-- **--debug** | **-d**: Whether to start debug server. [More on debugging](../debugger/debugger.md).
+- **--debug** | **-d**: Whether to enable runtime debugging.
 - **--host** | **-h**: A host configuration name.
 - **--runtime-config** | **-r**: A path for the runtimeconfig.json to use.
 
@@ -15,10 +15,6 @@ The `runtimeconfig.template.json` is a template that used by the .NET runtime to
 - `webServerPort`: A port number to start HTTP server on, defaults to `9000`.
 - `perHostConfig`: An array of configuration per host type.
 - `defaultConfig`: A name of the default per-host configuration.
-- `firefoxProxyPort`: A port number where Mono debug proxy for Firefox is listening.
-- `firefoxDebuggingPort`: A port number where Firefox is listening for remote debugging.
-- `chromeProxyPort`: A port number where Mono debug proxy for Chrome is listening.
-- `chromeDebuggingPort`: A port number where Chrome is listening for remote debugging.
 
 ## Per host configuration
 

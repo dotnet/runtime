@@ -7,7 +7,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using Microsoft.WebAssembly.Diagnostics;
 
 namespace Microsoft.WebAssembly.AppHost;
 
@@ -55,20 +54,5 @@ internal sealed class RunConfiguration
         if (!Enum.TryParse(HostConfig.HostString, ignoreCase: true, out WasmHost wasmHost))
             throw new Exception($"Unknown host {HostConfig.HostString} in config named {HostConfig.Name}");
         Host = wasmHost;
-    }
-
-    public ProxyOptions ToProxyOptions()
-    {
-        ProxyOptions options = new();
-        if (HostProperties.ChromeProxyPort is not null)
-            options.DevToolsProxyPort = HostProperties.ChromeProxyPort.Value;
-        if (HostProperties.ChromeDebuggingPort is not null)
-            options.DevToolsDebugPort = HostProperties.ChromeDebuggingPort.Value;
-        if (HostProperties.FirefoxProxyPort is not null)
-            options.FirefoxProxyPort = HostProperties.FirefoxProxyPort.Value;
-        if (HostProperties.FirefoxDebuggingPort is not null)
-            options.FirefoxDebugPort = HostProperties.FirefoxDebuggingPort.Value;
-        options.LogPath = ".";
-        return options;
     }
 }

@@ -22,7 +22,7 @@ const wasmEnableThreads = process.env.WasmEnableThreads === "true" ? true : fals
 const wasmEnableSIMD = process.env.WASM_ENABLE_SIMD === "1" ? true : false;
 const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "1" ? true : false;
 const wasmEnableJsInteropByValue = process.env.ENABLE_JS_INTEROP_BY_VALUE == "1" ? true : false;
-// because of stack walk at src/mono/browser/debugger/BrowserDebugProxy/MonoProxy.cs
+// keep the debugger agent message function names for the debugger agent stack walk
 // and unit test at with timers.mjs
 const keep_fnames = /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data|mono_wasm_fire_debugger_agent_message_with_data_to_pause|mono_wasm_schedule_timer_tick)/;
 const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment)/;

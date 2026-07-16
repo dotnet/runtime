@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using Microsoft.WebAssembly.Diagnostics;
 
 namespace Microsoft.WebAssembly.AppHost;
 
@@ -42,7 +41,7 @@ internal sealed class CommonConfiguration
         List<string> hostArgsList = new();
         var options = new OptionSet
         {
-            { "debug|d", "Start debug server", _ => Debugging = true },
+            { "debug|d", "Enable runtime debugging", _ => Debugging = true },
             { "host|h=", "Host config name", v => hostArg = v },
             { "runtime-config|r=", "runtimeconfig.json path for the app", v => RuntimeConfigPath = v },
             { "extra-host-arg=", "Extra argument to be passed to the host", hostArgsList.Add },
@@ -107,21 +106,6 @@ internal sealed class CommonConfiguration
 
         hostArgsList.AddRange(HostConfig.HostArguments);
         HostArguments = hostArgsList;
-    }
-
-    public ProxyOptions ToProxyOptions()
-    {
-        ProxyOptions options = new();
-        if (HostProperties.ChromeProxyPort is not null)
-            options.DevToolsProxyPort = HostProperties.ChromeProxyPort.Value;
-        if (HostProperties.ChromeDebuggingPort is not null)
-            options.DevToolsDebugPort = HostProperties.ChromeDebuggingPort.Value;
-        if (HostProperties.FirefoxProxyPort is not null)
-            options.FirefoxProxyPort = HostProperties.FirefoxProxyPort.Value;
-        if (HostProperties.FirefoxDebuggingPort is not null)
-            options.FirefoxDebugPort = HostProperties.FirefoxDebuggingPort.Value;
-        options.LogPath = ".";
-        return options;
     }
 
     public static void CheckPathOrInAppPath(string appPath, string? path, string argName)

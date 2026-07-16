@@ -20,10 +20,6 @@ internal sealed record WasmHostProperties(
      string MainAssembly,
      string[] RuntimeArguments,
      IDictionary<string, string>? EnvironmentVariables,
-     int? FirefoxProxyPort,
-     int? FirefoxDebuggingPort,
-     int? ChromeProxyPort,
-     int? ChromeDebuggingPort,
      int WebServerPort = 0)
 {
     // using an explicit property because the deserializer doesn't like
