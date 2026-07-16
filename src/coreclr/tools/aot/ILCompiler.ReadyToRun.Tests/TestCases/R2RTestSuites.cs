@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection.PortableExecutable;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
@@ -130,12 +131,45 @@ public class R2RTestSuites
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
 
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
-            foreach (string name in new[] { "Echo", "ThroughLocal", "Store", "CallEcho" })
+
+            // Each method's compiled body must actually use the wasm v128 (0x7B) valtype for its
+            // Vector128<int> parameter, and for its return when it returns one. A regression that
+            // reverts to the by-ref i32 ABI would produce no v128 in the signature at all.
+            const byte WasmV128 = 0x7B;
+
+            // (method name, expects v128 return). All four take a Vector128<int> by value; Store
+            // returns void (its 'ref Vector128<int>' destination is an i32 pointer).
+            foreach ((string name, bool expectsV128Return) in
+                     new[] { ("Echo", true), ("ThroughLocal", true), ("Store", false), ("CallEcho", true) })
             {
+                ReadyToRunMethod method = Assert.Single(
+                    methods, m => m.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+
+                WebcilImageReader.WasmFunctionInfo body = ResolveWasmBody(reader, webcilReader, method);
+
                 Assert.True(
-                    methods.Exists(method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal)),
-                    $"Expected compiled method '{name}' in the wasm SIMD module.");
+                    body.ParamTypes.Contains(WasmV128),
+                    $"'{name}' should take a wasm v128 parameter; params were {Format(body.ParamTypes)}.");
+
+                Assert.True(
+                    body.ResultTypes.Contains(WasmV128) == expectsV128Return,
+                    $"'{name}' v128 return expectation was {expectsV128Return}; results were {Format(body.ResultTypes)}.");
             }
+
+            static string Format(IReadOnlyList<byte> valTypes) =>
+                $"[{string.Join(",", valTypes.Select(b => $"0x{b:X2}"))}]";
+        }
+
+        static WebcilImageReader.WasmFunctionInfo ResolveWasmBody(
+            ReadyToRunReader reader, WebcilImageReader webcilReader, ReadyToRunMethod method)
+        {
+            uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)method.EntryPointRuntimeFunctionId);
+            int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
+            Assert.True(functionIndex >= 0, $"Could not resolve wasm table index {tableIndex} to a function body.");
+
+            WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
+            Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
+            return body.Value;
         }
     }
 
