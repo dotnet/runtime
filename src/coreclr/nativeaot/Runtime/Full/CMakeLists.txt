@@ -99,15 +99,15 @@ endif()
 target_compile_definitions(Runtime.GC.Server PRIVATE FEATURE_SVR_GC SERVER_GC)
 set_target_properties(Runtime.GC.Server PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
 
-if (CLR_CMAKE_TARGET_WIN32)
-  # Embed debug info in the object files (/Z7) rather than referencing an external
+if (MSVC)
+  # Embed debug info in the object files rather than referencing an external
   # compiler PDB. CMake does not assign a compile PDB to OBJECT libraries, so the
   # objects archived into Runtime.WorkstationGC/Runtime.ServerGC would otherwise
   # reference a vc140.pdb that is absent when these static libs are statically
   # linked by the AOT compiler publish projects, producing LNK4099.
-  target_compile_options(Runtime.GC.Workstation PRIVATE /Z7)
-  target_compile_options(Runtime.GC.Server PRIVATE /Z7)
-endif (CLR_CMAKE_TARGET_WIN32)
+  set_target_properties(Runtime.GC.Workstation PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+  set_target_properties(Runtime.GC.Server PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+endif (MSVC)
 
 add_library(Runtime.WorkstationGC STATIC
     ${COMMON_RUNTIME_SOURCES}
