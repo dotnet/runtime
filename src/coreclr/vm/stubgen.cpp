@@ -1526,11 +1526,6 @@ void ILCodeStream::EmitLDC_R8(double dConst)
 #endif // TARGET_64BIT
     Emit(CEE_LDC_R8, 1, (UINT_PTR)value.u);
 }
-void ILCodeStream::EmitLDELEM(int token)
-{
-    WRAPPER_NO_CONTRACT;
-    Emit(CEE_LDELEM, -1, token);
-}
 void ILCodeStream::EmitLDELEMA(int token)
 {
     WRAPPER_NO_CONTRACT;

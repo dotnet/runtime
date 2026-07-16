@@ -50,7 +50,7 @@ namespace System
 
         public object? Target =>
             TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
-                ? invocations[^1].Delegate!.Target
+                ? invocations[^1].Value!.Target
                 : IsClosed ? _target : null;
 
         private unsafe MethodDesc* MethodDesc
@@ -121,7 +121,7 @@ namespace System
             Delegate[] invocationList = new Delegate[invocations.Length];
             for (int i = 0; i < invocations.Length; i++)
             {
-                invocationList[i] = invocations[i].Delegate!;
+                invocationList[i] = invocations[i].Value!;
             }
             return invocationList;
         }
@@ -140,7 +140,7 @@ namespace System
 
             Debug.Assert(invocationList.Length > 1);
             Debug.Assert((uint)invocationList.Length >= (nuint)_extraData);
-            Debug.Assert(invocationList[0].Delegate is not null);
+            Debug.Assert(invocationList[0].Value is not null);
 
             invocations = new ReadOnlySpan<Wrapper>(invocationList, 0, (int)_extraData);
             return true;
@@ -152,7 +152,7 @@ namespace System
             if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
             {
                 if ((uint)index < (uint)invocations.Length)
-                    return invocations[index].Delegate;
+                    return invocations[index].Value;
             }
             else if (index == 0)
             {
@@ -259,7 +259,7 @@ namespace System
         protected virtual MethodInfo GetMethodImpl()
         {
             return TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
-                ? invocations[^1].Delegate!.Method
+                ? invocations[^1].Value!.Method
                 : _helperObject as MethodInfo ?? GetMethodImplUncached();
         }
 
@@ -622,11 +622,11 @@ namespace System
 
         internal struct Wrapper(Delegate? value) : IEquatable<Wrapper>
         {
-            internal Delegate? Delegate = value;
+            internal Delegate? Value = value;
 
-            public bool Equals(Wrapper other) => Delegate!.Equals(other.Delegate);
+            public bool Equals(Wrapper other) => Value!.Equals(other.Value);
             public override bool Equals(object? obj) => obj is Wrapper other && Equals(other);
-            public override int GetHashCode() => Delegate!.GetHashCode();
+            public override int GetHashCode() => Value!.GetHashCode();
         }
 
         private unsafe Delegate NewMulticastDelegate(Wrapper[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
@@ -704,7 +704,7 @@ namespace System
                 Span<Wrapper> newInvocations = resultList.AsSpan(invocationList.Length, followList.Length);
                 for (int i = 0; i < followList.Length; i++)
                 {
-                    if (TrySetSlot(ref newInvocations[i].Delegate, followList[i].Delegate!))
+                    if (TrySetSlot(ref newInvocations[i].Value, followList[i].Value!))
                         continue;
 
                     resultList = null;
@@ -757,7 +757,7 @@ namespace System
 
                 // Special case - only one value left, either at the beginning or the end
                 if (invocationList.Length == 2)
-                    return invocationList[1 - index].Delegate;
+                    return invocationList[1 - index].Value;
 
                 Wrapper[] list = DeleteFromInvocationList(invocationList, index, 1);
                 return NewMulticastDelegate(list, invocationList.Length - 1, true);
@@ -781,7 +781,7 @@ namespace System
                         return null;
                     case 1:
                         // Special case - only one value left, either at the beginning or the end
-                        return invocationList[i == 0 ? ^1 : 0].Delegate;
+                        return invocationList[i == 0 ? ^1 : 0].Value;
                     default:
                         Wrapper[] list = DeleteFromInvocationList(invocationList, i, otherInvocations.Length);
                         return NewMulticastDelegate(list, newCount, true);

@@ -1006,7 +1006,6 @@ public:
     void EmitLDC        (DWORD_PTR uConst);
     void EmitLDC_R4     (float fConst);
     void EmitLDC_R8     (double dConst);
-    void EmitLDELEM     (int token);
     void EmitLDELEMA    (int token);
     void EmitLDELEM_REF ();
     void EmitLDFLD      (int token);
