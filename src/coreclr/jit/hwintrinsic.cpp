@@ -4834,11 +4834,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_Reverse - Need Shuffle
-            return nullptr;
-#endif
-
 #if defined(TARGET_XARCH)
             if ((simdSize == 64) && varTypeIsByte(simdBaseType))
             {
