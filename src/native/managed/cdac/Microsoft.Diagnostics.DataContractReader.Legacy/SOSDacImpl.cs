@@ -467,7 +467,60 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetAssemblyLocation(ClrDataAddress assembly, int count, char* location, uint* pNeeded)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetAssemblyLocation(assembly, count, location, pNeeded) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (assembly == 0
+                || (location is null && pNeeded is null)
+                || (location is not null && count <= 0))
+            {
+                throw new ArgumentException();
+            }
+
+            ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(assembly.ToTargetPointer(_target));
+            string path = loader.GetPath(handle);
+            uint bufferSize = location is null ? 0 : checked((uint)count);
+            OutputBufferHelpers.CopyStringToBuffer(location, bufferSize, pNeeded, path);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            char[] locationLocal = new char[count > 0 ? count : 1];
+            uint neededLocal = 0;
+            int hrLocal;
+            fixed (char* locationLocalPtr = locationLocal)
+            {
+                hrLocal = _legacyImpl.GetAssemblyLocation(
+                    assembly,
+                    count,
+                    location is null ? null : locationLocalPtr,
+                    pNeeded is null ? null : &neededLocal);
+            }
+
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                if (pNeeded is not null)
+                    Debug.Assert(*pNeeded == neededLocal, $"cDAC: {*pNeeded}, DAC: {neededLocal}");
+
+                if (location is not null && count > 0)
+                {
+                    int compareLength = (int)Math.Min((uint)count, neededLocal);
+                    Debug.Assert(
+                        new ReadOnlySpan<char>(location, compareLength).SequenceEqual(locationLocal.AsSpan(0, compareLength)));
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? modules, uint* pNeeded)
     {
         int hr = HResults.S_OK;
