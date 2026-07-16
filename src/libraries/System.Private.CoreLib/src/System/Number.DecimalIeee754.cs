@@ -1025,8 +1025,10 @@ namespace System
         /// The result carries the sign of the dividend, has magnitude strictly less than <c>|y|</c>, and is always
         /// exact. It is computed at the IEEE 754 preferred exponent <c>min(exp(x), exp(y))</c> by reducing the
         /// dividend coefficient modulo the divisor coefficient. Every intermediate value stays within a single limb:
-        /// the running remainder is always below the divisor, so scaling it up one decimal digit at a time and taking
-        /// the remainder never overflows. This mirrors the special-case handling of the Intel reference implementation.
+        /// the running remainder is always below the divisor, so each step scales it up by as many trailing zeros as
+        /// keep the product within the integer width (capped at the largest cached power of ten) before taking the
+        /// remainder again, stopping once the remainder reaches zero. This mirrors the behavior of the Intel reference
+        /// implementation.
         /// </remarks>
         internal static TValue RemainderDecimalIeee754<TDecimal, TValue>(TValue left, TValue right)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
