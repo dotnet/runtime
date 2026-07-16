@@ -8,6 +8,10 @@ parameters:
   shouldContinueOnError: false
   extraBuildArgs: ''
   useHelixMonitor: false
+  # The wasm-tools workload manifest includes the CoreCLR browser-wasm runtime pack, so
+  # installing the workload for testing requires that pack in the local feed. Only pipelines
+  # that build the CoreCLR browser-wasm runtime (e.g. runtime.yml) can stage it here.
+  includeCoreClrRuntimePack: false
 
 jobs:
 
@@ -45,9 +49,13 @@ jobs:
           - ${{ if eq(platform, 'browser_wasm') }}:
             - build_browser_wasm_linux_Release_MultiThreaded_BuildOnly
             - build_browser_wasm_linux_Release_SingleThreaded_BuildOnly
+            - ${{ if eq(parameters.includeCoreClrRuntimePack, true) }}:
+              - build_browser_wasm_linux_Release_CoreCLR
           - ${{ if eq(platform, 'browser_wasm_win') }}:
             - build_browser_wasm_windows_Release_MultiThreaded_BuildOnly
             - build_browser_wasm_windows_Release_SingleThreaded_BuildOnly
+            - ${{ if eq(parameters.includeCoreClrRuntimePack, true) }}:
+              - build_browser_wasm_windows_Release_CoreCLR
         isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
         testGroup: innerloop
         nameSuffix: WasmBuildTests
@@ -85,6 +93,26 @@ jobs:
               Contents: packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.*
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
+
+          # Download the CoreCLR runtime pack. The wasm-tools workload manifest now includes
+          # the CoreCLR browser-wasm runtime pack, so installing the workload for testing
+          # requires the pack to be present in the local package feed.
+          - ${{ if eq(parameters.includeCoreClrRuntimePack, true) }}:
+            - task: DownloadBuildArtifacts@0
+              displayName: Download built nugets for CoreCLR runtime
+              inputs:
+                buildType: current
+                artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR
+                downloadType: single
+                downloadPath: '$(Build.SourcesDirectory)/artifacts'
+
+            - task: CopyFiles@2
+              displayName: Copy CoreCLR runtime pack
+              inputs:
+                SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR'
+                Contents: packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.browser-wasm.*
+                TargetFolder: '$(Build.SourcesDirectory)/artifacts'
+                CleanTargetFolder: false
 
           # Download WBT
           - task: DownloadBuildArtifacts@0
@@ -126,7 +154,12 @@ jobs:
             parameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
-              extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+              # WBT (buildwasmapps) fans out into several sendtohelixhelp.proj invocations
+              # (Workloads/Webcil/Fingerprinting/Bundler combos). sendtohelix.proj already builds
+              # them with BuildInParallel=true, but that only parallelizes when the msbuild running
+              # it has multiple nodes. /maxcpucount lets the Helix jobs be sent (and waited on)
+              # concurrently instead of one-send-then-wait-for-completion serially (see issue #118938).
+              extraHelixArguments: /p:BrowserHost=$(_hostedOs) /maxcpucount:8
               scenarios:
               - buildwasmapps
               useHelixMonitor: ${{ parameters.useHelixMonitor }}

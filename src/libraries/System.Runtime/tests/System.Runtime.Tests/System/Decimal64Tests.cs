@@ -1464,9 +1464,9 @@ namespace System.Tests
             Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        public static IEnumerable<object[]> TryParsePartial_TestData()
         {
-            NumberStyles style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+            NumberStyles style = NumberStyles.Float;
 
             // Trailing invalid characters after a valid number
             yield return new object[] { "123abc", style, CultureInfo.InvariantCulture, Decimal64.Parse("123", CultureInfo.InvariantCulture), 3 };
@@ -1490,30 +1490,30 @@ namespace System.Tests
             yield return new object[] { "NaN  x", style, CultureInfo.InvariantCulture, Decimal64.NaN, 5 };
 
             // AllowTrailingWhite has no effect on special values; the surrounding whitespace is still consumed
-            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite) | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Decimal64.PositiveInfinity, 10 };
+            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite), CultureInfo.InvariantCulture, Decimal64.PositiveInfinity, 10 };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, Decimal64 expected, int expectedCharsConsumed)
+        [MemberData(nameof(TryParsePartial_TestData))]
+        public static void TryParsePartial(string value, NumberStyles style, IFormatProvider provider, Decimal64 expected, int expectedCharsConsumed)
         {
-            Assert.True(Decimal64.TryParse(value, style, provider, out Decimal64 result, out int charsConsumed));
+            Assert.True(Decimal64.TryParsePartial(value, style, provider, out Decimal64 result, out int charsConsumed));
             Assert.Equal(expected, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
-            Assert.True(Decimal64.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.True(Decimal64.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(expected, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
             byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(value);
-            Assert.True(Decimal64.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
+            Assert.True(Decimal64.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
             Assert.Equal(expected, result);
             Assert.Equal(expectedCharsConsumed, bytesConsumed);
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        public static IEnumerable<object[]> TryParsePartial_Invalid_TestData()
         {
-            NumberStyles style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+            NumberStyles style = NumberStyles.Float;
 
             yield return new object[] { "", style, CultureInfo.InvariantCulture };
             yield return new object[] { "abc", style, CultureInfo.InvariantCulture };
@@ -1521,17 +1521,17 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        [MemberData(nameof(TryParsePartial_Invalid_TestData))]
+        public static void TryParsePartial_Invalid(string value, NumberStyles style, IFormatProvider provider)
         {
-            Assert.False(Decimal64.TryParse(value, style, provider, out Decimal64 result, out int charsConsumed));
+            Assert.False(Decimal64.TryParsePartial(value, style, provider, out Decimal64 result, out int charsConsumed));
             Assert.Equal(0, charsConsumed);
 
-            Assert.False(Decimal64.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.False(Decimal64.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(0, charsConsumed);
 
             byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(value);
-            Assert.False(Decimal64.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
+            Assert.False(Decimal64.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
             Assert.Equal(0, bytesConsumed);
         }
 
@@ -1625,6 +1625,150 @@ namespace System.Tests
             };
 
             Assert.Equal(expected, result);
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64FromInteger), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ConvertFromInteger_IntelReferenceVectors(string integerType, string operand, ulong expected)
+        {
+            Decimal64 result = integerType switch
+            {
+                "int32" => (Decimal64)int.Parse(operand, CultureInfo.InvariantCulture),
+                "int64" => (Decimal64)long.Parse(operand, CultureInfo.InvariantCulture),
+                "uint32" => (Decimal64)DecimalIeee754IntelTestData.ParseUInt32(operand),
+                "uint64" => (Decimal64)DecimalIeee754IntelTestData.ParseUInt64(operand),
+                _ => throw new InvalidOperationException($"Unexpected integer type '{integerType}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64ToInteger), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ConvertToInteger_IntelReferenceVectors(string integerType, ulong value, string expected)
+        {
+            Decimal64 v = Unsafe.BitCast<ulong, Decimal64>(value);
+
+            switch (integerType)
+            {
+                case "int8": Assert.Equal(sbyte.Parse(expected, CultureInfo.InvariantCulture), (sbyte)v); break;
+                case "int16": Assert.Equal(short.Parse(expected, CultureInfo.InvariantCulture), (short)v); break;
+                case "int32": Assert.Equal(int.Parse(expected, CultureInfo.InvariantCulture), (int)v); break;
+                case "int64": Assert.Equal(long.Parse(expected, CultureInfo.InvariantCulture), (long)v); break;
+                case "uint8": Assert.Equal(DecimalIeee754IntelTestData.ParseUInt8(expected), (byte)v); break;
+                case "uint16": Assert.Equal(DecimalIeee754IntelTestData.ParseUInt16(expected), (ushort)v); break;
+                case "uint32": Assert.Equal(DecimalIeee754IntelTestData.ParseUInt32(expected), (uint)v); break;
+                case "uint64": Assert.Equal(DecimalIeee754IntelTestData.ParseUInt64(expected), (ulong)v); break;
+                default: throw new InvalidOperationException($"Unexpected integer type '{integerType}'.");
+            }
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64ToBinary), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ConvertToBinary_IntelReferenceVectors(string binaryType, ulong value, ulong expected)
+        {
+            Decimal64 v = Unsafe.BitCast<ulong, Decimal64>(value);
+
+            switch (binaryType)
+            {
+                case "binary32": Assert.Equal((uint)expected, BitConverter.SingleToUInt32Bits((float)v)); break;
+                case "binary64": Assert.Equal(expected, BitConverter.DoubleToUInt64Bits((double)v)); break;
+                default: throw new InvalidOperationException($"Unexpected binary type '{binaryType}'.");
+            }
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64FromBinary), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ConvertFromBinary_IntelReferenceVectors(string binaryType, ulong value, ulong expected)
+        {
+            Decimal64 result = binaryType switch
+            {
+                "binary32" => (Decimal64)BitConverter.UInt32BitsToSingle((uint)value),
+                "binary64" => (Decimal64)BitConverter.UInt64BitsToDouble(value),
+                _ => throw new InvalidOperationException($"Unexpected binary type '{binaryType}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64Cross), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ConvertFromDecimal_IntelReferenceVectors(string decimalType, UInt128 value, ulong expected)
+        {
+            Decimal64 result = decimalType switch
+            {
+                "bid32" => (Decimal64)Unsafe.BitCast<uint, Decimal32>((uint)value),
+                "bid128" => (Decimal64)Unsafe.BitCast<UInt128, Decimal128>(value),
+                _ => throw new InvalidOperationException($"Unexpected decimal type '{decimalType}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
+        }
+
+        [Theory]
+        [InlineData("0", 0x31C0000000000000UL)]
+        [InlineData("0.00", 0x3180000000000000UL)]
+        [InlineData("1", 0x31C0000000000001UL)]
+        [InlineData("1.00", 0x3180000000000064UL)]
+        [InlineData("-1", 0xB1C0000000000001UL)]
+        [InlineData("-1.00", 0xB180000000000064UL)]
+        [InlineData("0.5", 0x31A0000000000005UL)]
+        [InlineData("-0.5", 0xB1A0000000000005UL)]
+        [InlineData("123.456", 0x316000000001E240UL)]
+        [InlineData("-123.456", 0xB16000000001E240UL)]
+        [InlineData("3.14159265358979", 0x30011DB9E76A2483UL)]
+        [InlineData("79228162514264337593543950335", 0x337C25C268497682UL)]
+        [InlineData("-79228162514264337593543950335", 0xB37C25C268497682UL)]
+        [InlineData("0.0000000000000000000000000001", 0x2E40000000000001UL)]
+        [InlineData("12345678901234567890123456789", 0x336462D53C8ABAC1UL)]
+        [InlineData("9999999", 0x31C000000098967FUL)]
+        [InlineData("10000000", 0x31C0000000989680UL)]
+        [InlineData("2.5", 0x31A0000000000019UL)]
+        [InlineData("0.1", 0x31A0000000000001UL)]
+        [InlineData("0.2", 0x31A0000000000002UL)]
+        [InlineData("0.3", 0x31A0000000000003UL)]
+        public static void ConvertFromSystemDecimalTest(string value, ulong expected)
+        {
+            decimal d = decimal.Parse(value, CultureInfo.InvariantCulture);
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>((Decimal64)d));
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x00000000, 0x00000000, 0x00000000, 0, false)]
+        [InlineData(0x3180000000000000UL, 0x00000000, 0x00000000, 0x00000000, 2, false)]
+        [InlineData(0x31C0000000000001UL, 0x00000001, 0x00000000, 0x00000000, 0, false)]
+        [InlineData(0x3180000000000064UL, 0x00000064, 0x00000000, 0x00000000, 2, false)]
+        [InlineData(0xB1C0000000000001UL, 0x00000001, 0x00000000, 0x00000000, 0, true)]
+        [InlineData(0xB180000000000064UL, 0x00000064, 0x00000000, 0x00000000, 2, true)]
+        [InlineData(0x31A0000000000005UL, 0x00000005, 0x00000000, 0x00000000, 1, false)]
+        [InlineData(0xB1A0000000000005UL, 0x00000005, 0x00000000, 0x00000000, 1, true)]
+        [InlineData(0x316000000001E240UL, 0x0001E240, 0x00000000, 0x00000000, 3, false)]
+        [InlineData(0xB16000000001E240UL, 0x0001E240, 0x00000000, 0x00000000, 3, true)]
+        [InlineData(0x30011DB9E76A2483UL, 0xE76A2483, 0x00011DB9, 0x00000000, 14, false)]
+        [InlineData(0x2E40000000000001UL, 0x00000001, 0x00000000, 0x00000000, 28, false)]
+        [InlineData(0x31C000000098967FUL, 0x0098967F, 0x00000000, 0x00000000, 0, false)]
+        [InlineData(0x31C0000000989680UL, 0x00989680, 0x00000000, 0x00000000, 0, false)]
+        [InlineData(0x31A0000000000019UL, 0x00000019, 0x00000000, 0x00000000, 1, false)]
+        [InlineData(0x31A0000000000001UL, 0x00000001, 0x00000000, 0x00000000, 1, false)]
+        [InlineData(0x31A0000000000002UL, 0x00000002, 0x00000000, 0x00000000, 1, false)]
+        [InlineData(0x31A0000000000003UL, 0x00000003, 0x00000000, 0x00000000, 1, false)]
+        public static void ConvertToSystemDecimalTest(ulong value, uint lo, uint mid, uint hi, byte scale, bool isNegative)
+        {
+            decimal expected = new decimal((int)lo, (int)mid, (int)hi, isNegative, scale);
+            decimal actual = (decimal)Unsafe.BitCast<ulong, Decimal64>(value);
+
+            Assert.Equal(expected, actual);
+            Assert.Equal(decimal.GetBits(expected), decimal.GetBits(actual));
+        }
+
+        [Fact]
+        public static void ConvertToSystemDecimalThrowsTest()
+        {
+            Assert.Throws<OverflowException>(() => (decimal)Decimal64.NaN);
+            Assert.Throws<OverflowException>(() => (decimal)Decimal64.PositiveInfinity);
+            Assert.Throws<OverflowException>(() => (decimal)Decimal64.NegativeInfinity);
+            Assert.Throws<OverflowException>(() => (decimal)Decimal64.MaxValue);
+            Assert.Throws<OverflowException>(() => (decimal)Decimal64.MinValue);
         }
 
         [Fact]
@@ -2309,6 +2453,89 @@ namespace System.Tests
         public static void ClampNativeMinGreaterThanMaxTest()
         {
             Assert.Throws<ArgumentException>(() => Decimal64.ClampNative(Decimal64.One, Unsafe.BitCast<ulong, Decimal64>(0x31C000000000000AUL), Unsafe.BitCast<ulong, Decimal64>(0x31C0000000000001UL)));
+        }
+
+        [Fact]
+        public static void CreateFromSourceTest()
+        {
+            // Create* forwards to the widening conversion operators, so bit-for-bit equality with
+            // the corresponding operator confirms the dispatch. The conversion math itself is
+            // covered exhaustively by the Intel reference vectors above.
+            Assert.Equal(Unsafe.BitCast<Decimal64, ulong>((Decimal64)123), Unsafe.BitCast<Decimal64, ulong>(Decimal64.CreateChecked<int>(123)));
+            Assert.Equal(Unsafe.BitCast<Decimal64, ulong>((Decimal64)123), Unsafe.BitCast<Decimal64, ulong>(Decimal64.CreateSaturating<int>(123)));
+            Assert.Equal(Unsafe.BitCast<Decimal64, ulong>((Decimal64)123), Unsafe.BitCast<Decimal64, ulong>(Decimal64.CreateTruncating<int>(123)));
+
+            Assert.Equal(Unsafe.BitCast<Decimal64, ulong>((Decimal64)(byte)255), Unsafe.BitCast<Decimal64, ulong>(Decimal64.CreateChecked<byte>(255)));
+            Assert.Equal(Unsafe.BitCast<Decimal64, ulong>((Decimal64)(-5L)), Unsafe.BitCast<Decimal64, ulong>(Decimal64.CreateChecked<long>(-5)));
+            Assert.Equal(Unsafe.BitCast<Decimal64, ulong>((Decimal64)1.5f), Unsafe.BitCast<Decimal64, ulong>(Decimal64.CreateChecked<float>(1.5f)));
+            Assert.Equal(Unsafe.BitCast<Decimal64, ulong>((Decimal64)1.5), Unsafe.BitCast<Decimal64, ulong>(Decimal64.CreateChecked<double>(1.5)));
+            Assert.Equal(Unsafe.BitCast<Decimal64, ulong>((Decimal64)1.5m), Unsafe.BitCast<Decimal64, ulong>(Decimal64.CreateChecked<decimal>(1.5m)));
+
+            // The same type is returned unchanged, preserving the exact cohort member.
+            Decimal64 value = (Decimal64)123456;
+            Assert.Equal(Unsafe.BitCast<Decimal64, ulong>(value), Unsafe.BitCast<Decimal64, ulong>(Decimal64.CreateChecked<Decimal64>(value)));
+
+            // Cross-decimal conversions forward to the widening / narrowing operators.
+            Assert.Equal(Unsafe.BitCast<Decimal64, ulong>((Decimal64)(Decimal32)123), Unsafe.BitCast<Decimal64, ulong>(Decimal64.CreateChecked<Decimal32>((Decimal32)123)));
+            Assert.Equal(Unsafe.BitCast<Decimal64, ulong>((Decimal64)(Decimal128)123), Unsafe.BitCast<Decimal64, ulong>(Decimal64.CreateChecked<Decimal128>((Decimal128)123)));
+        }
+
+        [Fact]
+        public static void CreateToIntegerCheckedTest()
+        {
+            // The reverse direction (int.CreateChecked(Decimal64)) routes through Decimal64's
+            // TryConvertToChecked, which throws on overflow, NaN, or infinity.
+            Assert.Equal(123, int.CreateChecked((Decimal64)123));
+
+            Assert.Throws<OverflowException>(() => byte.CreateChecked((Decimal64)300));
+            Assert.Throws<OverflowException>(() => byte.CreateChecked((Decimal64)(-1)));
+            Assert.Throws<OverflowException>(() => byte.CreateChecked(Decimal64.NaN));
+            Assert.Throws<OverflowException>(() => byte.CreateChecked(Decimal64.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => byte.CreateChecked(Decimal64.NegativeInfinity));
+
+            // A negative value in the open interval (-1, 0) truncates toward zero into range, so a
+            // checked conversion to an unsigned target returns zero rather than throwing, matching
+            // checked((byte)(-0.5)) and the binary floating-point to integer conversions.
+            Assert.Equal((byte)0, byte.CreateChecked((Decimal64)(-0.5m)));
+        }
+
+        [Fact]
+        public static void CreateToIntegerSaturatingTest()
+        {
+            // TryConvertToSaturating and TryConvertToTruncating share the saturating integer
+            // operators: NaN becomes zero and out-of-range values clamp to the target's bounds.
+            Assert.Equal((byte)200, byte.CreateSaturating((Decimal64)200));
+            Assert.Equal(byte.MaxValue, byte.CreateSaturating((Decimal64)300));
+            Assert.Equal((byte)0, byte.CreateSaturating((Decimal64)(-1)));
+            Assert.Equal((byte)0, byte.CreateSaturating(Decimal64.NaN));
+            Assert.Equal(byte.MaxValue, byte.CreateSaturating(Decimal64.PositiveInfinity));
+            Assert.Equal((byte)0, byte.CreateSaturating(Decimal64.NegativeInfinity));
+
+            // Truncating toward zero drops the fractional part.
+            Assert.Equal(123, int.CreateTruncating((Decimal64)123.9m));
+            Assert.Equal(byte.MaxValue, byte.CreateTruncating((Decimal64)300));
+        }
+
+        [Fact]
+        public static void CreateToSystemDecimalTest()
+        {
+            // Saturating clamps to System.Decimal's range and maps NaN to zero.
+            Assert.Equal(1.5m, decimal.CreateSaturating((Decimal64)1.5m));
+            Assert.Equal(decimal.MaxValue, decimal.CreateSaturating(Decimal64.MaxValue));
+            Assert.Equal(decimal.MinValue, decimal.CreateSaturating(Decimal64.MinValue));
+            Assert.Equal(0.0m, decimal.CreateSaturating(Decimal64.NaN));
+
+            // The nearest Decimal64 to decimal.MaxValue/MinValue rounds just outside System.Decimal's
+            // range, so saturating and truncating must clamp rather than overflow the (decimal) cast.
+            Assert.Equal(decimal.MaxValue, decimal.CreateSaturating((Decimal64)decimal.MaxValue));
+            Assert.Equal(decimal.MinValue, decimal.CreateSaturating((Decimal64)decimal.MinValue));
+            Assert.Equal(decimal.MaxValue, decimal.CreateTruncating((Decimal64)decimal.MaxValue));
+            Assert.Equal(decimal.MinValue, decimal.CreateTruncating((Decimal64)decimal.MinValue));
+
+            // Checked throws when the value cannot be represented, matching the (decimal) operator.
+            Assert.Equal(1.5m, decimal.CreateChecked((Decimal64)1.5m));
+            Assert.Throws<OverflowException>(() => decimal.CreateChecked(Decimal64.MaxValue));
+            Assert.Throws<OverflowException>(() => decimal.CreateChecked(Decimal64.NaN));
         }
     }
 }

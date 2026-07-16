@@ -48,7 +48,12 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
-            extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+            # WBT (buildwasmapps) fans out into several sendtohelixhelp.proj invocations
+            # (Workloads/Webcil/Fingerprinting/Bundler combos). sendtohelix.proj already builds
+            # them with BuildInParallel=true, but that only parallelizes when the msbuild running
+            # it has multiple nodes. /maxcpucount lets the Helix jobs be sent (and waited on)
+            # concurrently instead of one-send-then-wait-for-completion serially (see issue #118938).
+            extraHelixArguments: /p:BrowserHost=$(_hostedOs) /maxcpucount:8
             scenarios:
             - buildwasmapps
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
