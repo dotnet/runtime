@@ -934,6 +934,10 @@ uint64_t    gc_heap::loh_alloc_since_cg = 0;
 
 BOOL        gc_heap::elevation_requested = FALSE;
 
+#ifdef RESPECT_LARGE_ALIGNMENT
+BOOL        gc_heap::plug_requires_large_align = TRUE;
+#endif //RESPECT_LARGE_ALIGNMENT
+
 BOOL        gc_heap::last_gc_before_oom = FALSE;
 
 BOOL        gc_heap::sufficient_gen0_space_p = FALSE;

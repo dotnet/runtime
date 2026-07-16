@@ -3507,6 +3507,12 @@ private:
     PER_HEAP_FIELD_SINGLE_GC int condemned_generation_num;
     PER_HEAP_FIELD_SINGLE_GC BOOL blocking_collection;
     PER_HEAP_FIELD_SINGLE_GC BOOL elevation_requested;
+#ifdef RESPECT_LARGE_ALIGNMENT
+    // Set per-plug during plan: TRUE only when the plug contains an object that actually
+    // requires 2 * DATA_ALIGNMENT alignment. Gates residue-preservation padding so plugs
+    // with no such object compact freely (pay-for-play) instead of preserving accidental alignment.
+    PER_HEAP_FIELD_SINGLE_GC BOOL plug_requires_large_align;
+#endif //RESPECT_LARGE_ALIGNMENT
 
     PER_HEAP_FIELD_SINGLE_GC mark_queue_t mark_queue;
 
@@ -6258,6 +6264,13 @@ public:
     //
     // swept_in_plan_p can be folded into gen_num.
     bool            swept_in_plan_p;
+#ifdef RESPECT_LARGE_ALIGNMENT
+    // Set when this region held a 2 * DATA_ALIGNMENT object as of the last GC. Lets the
+    // plan phase skip the per-object alignment probe for gen2 regions known to be clean:
+    // gen2 regions only receive objects via GC placement, which sets this, so a clear flag
+    // proves the region has no alignment-constrained object to preserve during compaction.
+    bool            contains_large_align;
+#endif //RESPECT_LARGE_ALIGNMENT
     int             plan_gen_num;
     int             old_card_survived;
     int             pinned_survived;
@@ -6695,6 +6708,13 @@ bool& heap_segment_swept_in_plan (heap_segment* inst)
 {
     return inst->swept_in_plan_p;
 }
+#ifdef RESPECT_LARGE_ALIGNMENT
+inline
+bool& heap_segment_large_align (heap_segment* inst)
+{
+    return inst->contains_large_align;
+}
+#endif //RESPECT_LARGE_ALIGNMENT
 inline
 int& heap_segment_plan_gen_num (heap_segment* inst)
 {
