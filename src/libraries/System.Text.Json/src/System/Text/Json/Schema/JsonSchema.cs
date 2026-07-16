@@ -23,6 +23,7 @@ namespace System.Text.Json.Schema
         internal const string AnyOfPropertyName = "anyOf";
         internal const string ConstPropertyName = "const";
         internal const string DefaultPropertyName = "default";
+        internal const string ContentEncodingPropertyName = "contentEncoding";
         internal const string MinLengthPropertyName = "minLength";
         internal const string MaxLengthPropertyName = "maxLength";
 
@@ -95,6 +96,9 @@ namespace System.Text.Json.Schema
         public int? MaxLength { get => _maxLength; set { VerifyMutable(); _maxLength = value; } }
         private int? _maxLength;
 
+        public string? ContentEncoding { get => _contentEncoding; set { VerifyMutable(); _contentEncoding = value; } }
+        private string? _contentEncoding;
+
         public JsonSchemaExporterContext? ExporterContext { get; set; }
 
         public int KeywordCount
@@ -124,6 +128,7 @@ namespace System.Text.Json.Schema
                 Count(HasDefaultValue);
                 Count(MinLength != null);
                 Count(MaxLength != null);
+                Count(ContentEncoding != null);
 
                 return count;
 
@@ -253,6 +258,11 @@ namespace System.Text.Json.Schema
             if (MaxLength is int maxLength)
             {
                 objSchema.Add(MaxLengthPropertyName, (JsonNode)maxLength);
+            }
+
+            if (ContentEncoding != null)
+            {
+                objSchema.Add(ContentEncodingPropertyName, ContentEncoding);
             }
 
             return CompleteSchema(objSchema);
