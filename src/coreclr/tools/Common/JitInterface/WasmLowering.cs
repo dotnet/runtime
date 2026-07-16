@@ -104,10 +104,8 @@ namespace Internal.JitInterface
         /// </summary>
         private static bool IsWasmV128Type(TypeDesc type)
         {
-            return type is MetadataType metadataType &&
-                   metadataType.IsIntrinsic &&
-                   metadataType.Namespace == "System.Runtime.Intrinsics"u8 &&
-                   metadataType.Name == "Vector128`1"u8;
+            return type.IsIntrinsic &&
+                   Internal.TypeSystem.Interop.InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type);
         }
 
         public static WasmValueType LowerType(TypeDesc type)
