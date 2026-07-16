@@ -90,7 +90,7 @@ static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size TRANSITION_HELPER
     return AllocateObject(pMT, 0, size TRANSITION_HELPER_ARG_HELPER_PASSTHRU);
 }
 
-#if defined(FEATURE_64BIT_ALIGNMENT)
+#if defined(FEATURE_2XPTR_ALIGNMENT)
 static Object* NewArrayFastAlign2xPtrCore(MethodTable* pMT, INT_PTR size TRANSITION_HELPER_ARG_DECL)
 {
     FCALL_CONTRACT;
@@ -154,7 +154,7 @@ FCIMPL2(Object*, RhpNewArrayFastAlign2xPtr, MethodTable* pMT, INT_PTR size)
     return NewArrayFastAlign2xPtrCore(pMT, size TRANSITION_HELPER_ARG_PREPARED);
 }
 FCIMPLEND
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size);
 FCIMPL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size)
@@ -222,7 +222,7 @@ FCIMPL1(Object*, RhpNewFast, MethodTable* pMT)
 }
 FCIMPLEND
 
-#if defined(FEATURE_64BIT_ALIGNMENT)
+#if defined(FEATURE_2XPTR_ALIGNMENT)
 EXTERN_C FCDECL1(Object*, RhpNewFastAlign2xPtr, MethodTable* pMT);
 FCIMPL1(Object*, RhpNewFastAlign2xPtr, MethodTable* pMT)
 {
@@ -304,7 +304,7 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
     return AllocateObject(pMT, GC_ALLOC_ALIGN_2XPTR | GC_ALLOC_ALIGN_2XPTR_BIAS, 0 TRANSITION_HELPER_ARG_PREPARED);
 }
 FCIMPLEND
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
 #define MAX_STRING_LENGTH 0x3FFFFFDF
 

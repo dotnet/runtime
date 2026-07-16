@@ -135,7 +135,7 @@ FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, intptr_t numElements)
 }
 FCIMPLEND
 
-#if defined(FEATURE_64BIT_ALIGNMENT)
+#if defined(FEATURE_2XPTR_ALIGNMENT)
 
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 

@@ -183,7 +183,7 @@ public interface IRuntimeTypeSystem : IContract
     // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
     // src/coreclr/vm/class.cpp.
     bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize) => throw new NotImplementedException();
-    // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
+    // True if the type requires 2 * pointer-size alignment on platforms that don't provide it by default (FEATURE_2XPTR_ALIGNMENT)
     bool RequiresAlign2xPtr(TypeHandle typeHandle) => throw new NotImplementedException();
     // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
     // (used to decide how a struct is passed in registers), or false if the type has no such

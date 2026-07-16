@@ -952,7 +952,9 @@ public:
 #if defined(FEATURE_2XPTR_ALIGNMENT) && !defined(FEATURE_NATIVEAOT)
         if (pMT->RequiresAlign2xPtr())
         {
-            _ASSERTE((((size_t)this) & 0x7) == (pMT->IsValueType() ? 4U : 0U));
+            // Value types carry a bias of DATA_ALIGNMENT so the payload -- not the object
+            // reference -- lands on the 2 * DATA_ALIGNMENT boundary; reference types have no bias.
+            _ASSERTE((((size_t)this) & (2 * DATA_ALIGNMENT - 1)) == (pMT->IsValueType() ? DATA_ALIGNMENT : 0U));
         }
 #endif // FEATURE_2XPTR_ALIGNMENT
 

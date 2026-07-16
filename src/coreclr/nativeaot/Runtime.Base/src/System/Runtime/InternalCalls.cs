@@ -86,7 +86,7 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object RhpNewArrayFast(MethodTable* pEEType, nint length);
 
-#if FEATURE_64BIT_ALIGNMENT
+#if FEATURE_2XPTR_ALIGNMENT
         [RuntimeImport(RuntimeLibrary, "RhpNewFastAlign2xPtr")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object RhpNewFastAlign2xPtr(MethodTable * pEEType);  // BEWARE: not for finalizable objects!
@@ -102,7 +102,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpNewFastMisalign")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object RhpNewFastMisalign(MethodTable * pEEType);
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpGcSafeZeroMemory")]

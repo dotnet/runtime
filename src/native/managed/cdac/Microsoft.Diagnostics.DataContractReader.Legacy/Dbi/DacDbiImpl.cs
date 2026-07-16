@@ -2233,7 +2233,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
         try
         {
-            // Some 32-bit platform ABIs require 64-bit alignment (FEATURE_64BIT_ALIGNMENT).
+            // Some 32-bit platform ABIs require 64-bit alignment (FEATURE_2XPTR_ALIGNMENT).
             if (arch == RuntimeInfoArchitecture.Arm || arch == RuntimeInfoArchitecture.Wasm)
             {
                 Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
