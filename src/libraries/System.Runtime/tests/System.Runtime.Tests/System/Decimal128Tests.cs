@@ -1674,6 +1674,29 @@ namespace System.Tests
             Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>(result));
         }
 
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000004UL, 0x3040000000000000UL, 0x0000000000000002UL)] // sqrt(4) = 2
+        [InlineData(0x3040000000000000UL, 0x0000000000000009UL, 0x3040000000000000UL, 0x0000000000000003UL)] // sqrt(9) = 3
+        [InlineData(0x3040000000000000UL, 0x0000000000000064UL, 0x3040000000000000UL, 0x000000000000000AUL)] // sqrt(100) = 10
+        [InlineData(0x3044000000000000UL, 0x0000000000000004UL, 0x3042000000000000UL, 0x0000000000000002UL)] // sqrt(4E2) = 2E1 (even exponent halves)
+        [InlineData(0x3038000000000000UL, 0x0000000000000009UL, 0x303C000000000000UL, 0x0000000000000003UL)] // sqrt(9E-4) = 3E-2
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL, 0x3040000000000000UL, 0x0000000000000001UL)] // sqrt(1) = 1
+        [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x2FFE45B9E278CDF8UL, 0xB43E0F0F10148022UL)] // sqrt(2) inexact, rounded to 34 digits
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000000UL)] // sqrt(+0) = +0
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL, 0xB040000000000000UL, 0x0000000000000000UL)] // sqrt(-0) = -0 (sign preserved)
+        [InlineData(0x304A000000000000UL, 0x0000000000000000UL, 0x3044000000000000UL, 0x0000000000000000UL)] // sqrt(0E5) = 0E2 (preferred exponent floor(5/2))
+        [InlineData(0xB040000000000000UL, 0x0000000000000004UL, 0x7C00000000000000UL, 0x0000000000000000UL)] // sqrt(-4) = NaN (invalid)
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL, 0x7800000000000000UL, 0x0000000000000000UL)] // sqrt(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL, 0x7C00000000000000UL, 0x0000000000000000UL)] // sqrt(-Infinity) = NaN (invalid)
+        [InlineData(0xFC00000000000000UL, 0x0000000000000000UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // sqrt(NaN) = NaN
+        [InlineData(0xFC00000000000000UL, 0x0000000000001234UL, 0xFC00000000000000UL, 0x0000000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC00400000000000UL, 0x0000000000000000UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // out-of-range NaN payload cleared
+        public static void SqrtTest(ulong valueUpper, ulong valueLower, ulong expectedUpper, ulong expectedLower)
+        {
+            Decimal128 result = Decimal128.Sqrt(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(valueUpper, valueLower)));
+            Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
 
         [Theory]
         [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000003UL, 0x3040000000000000UL, 0x0000000000000004UL, 0x3040000000000000UL, 0x000000000000000AUL)] // 2 * 3 + 4 = 10
@@ -1769,6 +1792,13 @@ namespace System.Tests
             Decimal128 r = Unsafe.BitCast<UInt128, Decimal128>(right);
 
             Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(Decimal128.Ieee754Remainder(l, r)));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128Sqrt), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void Sqrt_IntelReferenceVectors(UInt128 value, UInt128 expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(Decimal128.Sqrt(Unsafe.BitCast<UInt128, Decimal128>(value))));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]

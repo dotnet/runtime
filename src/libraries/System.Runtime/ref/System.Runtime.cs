@@ -11587,6 +11587,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Decimal128 ScaleB(System.Numerics.Decimal128 x, int n) { throw null; }
         public static int Sign(System.Numerics.Decimal128 value) { throw null; }
+        public static System.Numerics.Decimal128 Sqrt(System.Numerics.Decimal128 x) { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal128>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal128>.GetExponentShortestBitLength() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal128>.GetSignificandBitLength() { throw null; }
@@ -11787,6 +11788,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Decimal32 ScaleB(System.Numerics.Decimal32 x, int n) { throw null; }
         public static int Sign(System.Numerics.Decimal32 value) { throw null; }
+        public static System.Numerics.Decimal32 Sqrt(System.Numerics.Decimal32 x) { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal32>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal32>.GetExponentShortestBitLength() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal32>.GetSignificandBitLength() { throw null; }
@@ -11985,6 +11987,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Decimal64 ScaleB(System.Numerics.Decimal64 x, int n) { throw null; }
         public static int Sign(System.Numerics.Decimal64 value) { throw null; }
+        public static System.Numerics.Decimal64 Sqrt(System.Numerics.Decimal64 x) { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal64>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal64>.GetExponentShortestBitLength() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal64>.GetSignificandBitLength() { throw null; }

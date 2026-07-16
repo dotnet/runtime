@@ -1476,6 +1476,74 @@ namespace System
             return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, remainder, resultExponent);
         }
 
+        internal static TValue SqrtDecimalIeee754<TDecimal, TValue>(TValue value)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>, IMinMaxValue<TValue>
+        {
+            // This code is based on `bid32_sqrt`, `bid64_sqrt`, and `bid128_sqrt` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (TDecimal.IsNaN(value))
+            {
+                return PropagateNaN<TDecimal, TValue>(value, value);
+            }
+
+            bool sign = TDecimal.IsNegative(value);
+
+            if (TDecimal.IsInfinity(value))
+            {
+                // sqrt(+Infinity) is +Infinity; sqrt(-Infinity) is invalid and produces the canonical quiet NaN.
+                return sign ? TDecimal.NaNMask : TDecimal.PositiveInfinity;
+            }
+
+            DecodedDecimalIeee754<TValue> a = UnpackDecimalIeee754<TDecimal, TValue>(value);
+
+            // The exact result keeps its preferred exponent, floor(e / 2), for both zeros and perfect squares.
+            int idealExponent = a.UnbiasedExponent >> 1;
+
+            if (TValue.IsZero(a.Significand))
+            {
+                // sqrt(+/-0) is a signed zero, preserving the sign per IEEE 754.
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(sign, TValue.Zero, idealExponent);
+            }
+
+            if (sign)
+            {
+                // sqrt of a negative, non-zero value is invalid and produces the canonical quiet NaN.
+                return TDecimal.NaNMask;
+            }
+
+            // Factor the value as coefficient * 10^(2 * idealExponent) by folding one power of ten into the
+            // coefficient when the exponent is odd, so its square root is sqrt(coefficient) * 10^idealExponent.
+            TValue coefficient = a.Significand;
+
+            if ((a.UnbiasedExponent & 1) != 0)
+            {
+                coefficient *= TDecimal.Power10(1);
+            }
+
+            (TValue exactRoot, bool isPerfectSquare) = WideSqrt<TDecimal, TValue>(TValue.Zero, coefficient);
+
+            if (isPerfectSquare)
+            {
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(sign, exactRoot, idealExponent);
+            }
+
+            // Otherwise scale the coefficient up by an even power of ten so its integer square root carries
+            // Precision + 1 digits: one guard digit past the format precision for a single correct rounding.
+            int guard = TDecimal.Precision + 1 - ((TDecimal.CountDigits(coefficient) + 1) / 2);
+
+            TValue high = TValue.Zero;
+            TValue low = coefficient;
+            WideScaleByPow10<TDecimal, TValue>(ref high, ref low, guard * 2);
+
+            (TValue root, bool exact) = WideSqrt<TDecimal, TValue>(high, low);
+            return NumberToDecimalIeee754BitsFromWide<TDecimal, TValue>(sign, TValue.Zero, root, idealExponent - guard, !exact);
+        }
+
         /// <summary>
         /// Rounds a finite value to <paramref name="digits"/> fractional digits under <paramref name="mode"/>.
         /// The value is <c>coefficient * 10^exponent</c>; when its quantum exponent is already at or above
@@ -2046,6 +2114,45 @@ namespace System
             }
 
             return count + TDecimal.CountDigits(low);
+        }
+
+        /// <summary>
+        /// Computes the integer square root of the double-width value (<paramref name="high"/>, <paramref name="low"/>),
+        /// returning <c>floor(sqrt(value))</c> and whether the value is a perfect square. The root fits a single limb
+        /// because the input spans at most twice the limb width, so its square root spans at most one.
+        /// </summary>
+        private static (TValue Root, bool IsExact) WideSqrt<TDecimal, TValue>(TValue high, TValue low)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // Binary long-division square root: consume the input two bits at a time from the most-significant end,
+            // appending a bit to the root when the trial subtrahend `2 * root + 1` fits the running remainder. The
+            // remainder stays below `2 * root`, and the coefficients here never exceed Precision + 1 digits, so the
+            // root, remainder, and trial subtrahend all fit a single limb even for the 128-bit format.
+            int limbBits = TValue.Zero.GetByteCount() * 8;
+            TValue three = TValue.CreateTruncating(3);
+
+            TValue root = TValue.Zero;
+            TValue remainder = TValue.Zero;
+
+            for (int pair = limbBits - 1; pair >= 0; pair--)
+            {
+                int shift = pair * 2;
+                TValue twoBits = (shift >= limbBits) ? ((high >> (shift - limbBits)) & three) : ((low >> shift) & three);
+
+                remainder = (remainder << 2) | twoBits;
+                root <<= 1;
+
+                TValue trial = (root << 1) | TValue.One;
+
+                if (remainder >= trial)
+                {
+                    remainder -= trial;
+                    root += TValue.One;
+                }
+            }
+
+            return (root, TValue.IsZero(remainder));
         }
 
         /// <summary>

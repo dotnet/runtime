@@ -107,6 +107,12 @@ namespace System.Tests
         private static readonly HashSet<string> s_bid64Remainder = new() { "bid64_rem" };
         private static readonly HashSet<string> s_bid128Remainder = new() { "bid128_rem" };
 
+        // Square root (Sqrt). Every reference row is exercised, including NaN payload propagation, sqrt(+Infinity),
+        // and the invalid operations (sqrt of a negative value) that quiet to the canonical NaN.
+        private static readonly HashSet<string> s_bid32Sqrt = new() { "bid32_sqrt" };
+        private static readonly HashSet<string> s_bid64Sqrt = new() { "bid64_sqrt" };
+        private static readonly HashSet<string> s_bid128Sqrt = new() { "bid128_sqrt" };
+
         // Round to an integral value under each rounding mode, mapping onto the .NET Round/Ceiling/Floor/Truncate
         // surface. `round_integral_exact` takes the mode from the rounding-context column, so only its
         // round-to-nearest-even (rnd == 0) rows are consumed here; the mode-named variants ignore that column.
@@ -540,6 +546,39 @@ namespace System.Tests
                 if (TryParseBid128(fields[2], out UInt128 left) && TryParseBid128(fields[3], out UInt128 right) && TryParseBid128(fields[4], out UInt128 expected))
                 {
                     yield return new object[] { left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32Sqrt()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Sqrt))
+            {
+                if (TryParseBid32(fields[2], out uint value) && TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64Sqrt()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Sqrt))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128Sqrt()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Sqrt))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { value, expected };
                 }
             }
         }

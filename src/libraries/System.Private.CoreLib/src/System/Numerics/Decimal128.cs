@@ -874,6 +874,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
         public static Decimal128 ScaleB(Decimal128 x, int n) => new Decimal128(Number.ScaleBDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), n));
 
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        public static Decimal128 Sqrt(Decimal128 x) => new Decimal128(Number.SqrtDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
         /// <returns>The absolute of <paramref name="value" />.</returns>

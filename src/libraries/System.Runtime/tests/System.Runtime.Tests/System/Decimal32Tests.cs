@@ -1671,6 +1671,28 @@ namespace System.Tests
             Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
         }
 
+        [Theory]
+        [InlineData(0x32800004U, 0x32800002U)] // sqrt(4) = 2
+        [InlineData(0x32800009U, 0x32800003U)] // sqrt(9) = 3
+        [InlineData(0x32800064U, 0x3280000AU)] // sqrt(100) = 10
+        [InlineData(0x33800004U, 0x33000002U)] // sqrt(4E2) = 2E1 (even exponent halves)
+        [InlineData(0x30800009U, 0x31800003U)] // sqrt(9E-4) = 3E-2
+        [InlineData(0x32800001U, 0x32800001U)] // sqrt(1) = 1
+        [InlineData(0x32800002U, 0x2F959446U)] // sqrt(2) = 1.414214 (inexact, rounded)
+        [InlineData(0x32800000U, 0x32800000U)] // sqrt(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // sqrt(-0) = -0 (sign preserved)
+        [InlineData(0x35000000U, 0x33800000U)] // sqrt(0E5) = 0E2 (preferred exponent floor(5/2))
+        [InlineData(0xB2800004U, 0x7C000000U)] // sqrt(-4) = NaN (invalid)
+        [InlineData(0x78000000U, 0x78000000U)] // sqrt(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0x7C000000U)] // sqrt(-Infinity) = NaN (invalid)
+        [InlineData(0xFC000000U, 0xFC000000U)] // sqrt(NaN) = NaN
+        [InlineData(0xFC001234U, 0xFC001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared
+        public static void SqrtTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Sqrt(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
 
         [Theory]
         [InlineData(0x32800002U, 0x32800003U, 0x32800004U, 0x3280000AU)] // 2 * 3 + 4 = 10
@@ -1764,6 +1786,13 @@ namespace System.Tests
             Decimal32 r = Unsafe.BitCast<uint, Decimal32>(right);
 
             Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Ieee754Remainder(l, r)));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32Sqrt), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void Sqrt_IntelReferenceVectors(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Sqrt(Unsafe.BitCast<uint, Decimal32>(value))));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
