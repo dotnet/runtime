@@ -519,9 +519,43 @@ GenTree* Lowering::LowerCast(GenTree* tree)
 // Return Value:
 //    None.
 //
+// Notes:
+//    PPC64LE has no native ROL instruction.  We convert GT_ROL into GT_ROR
+//    by adjusting the shift count, exactly as ARM64 does.
+//
+//    For a constant rotate-left by n bits of a W-bit value:
+//      ROL(x, n)  ==  ROR(x, W - n)
+//
+//    For a variable rotate-left by rN:
+//      ROL(x, rN) ==  ROR(x, -rN)   (hardware masks to W bits automatically)
+//
 void Lowering::LowerRotate(GenTree* tree)
 {
-    _ASSERTE(!"NYI");
+    if (tree->OperGet() == GT_ROL)
+    {
+        // There is no ROL instruction on PPC64LE. Convert ROL into ROR.
+        GenTree* rotatedValue        = tree->AsOp()->gtOp1;
+        unsigned rotatedValueBitSize = genTypeSize(rotatedValue->gtType) * 8;
+        GenTree* rotateLeftIndexNode = tree->AsOp()->gtOp2;
+
+        if (rotateLeftIndexNode->IsCnsIntOrI())
+        {
+            ssize_t rotateLeftIndex                    = rotateLeftIndexNode->AsIntCon()->gtIconVal;
+            ssize_t rotateRightIndex                   = rotatedValueBitSize - rotateLeftIndex;
+            rotateLeftIndexNode->AsIntCon()->gtIconVal = rotateRightIndex;
+        }
+        else
+        {
+            // Variable amount: negate the count; the rotate instruction
+            // will mask it to [0, W-1] so -n mod W == W-n.
+            GenTree* tmp =
+                comp->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
+            BlockRange().InsertAfter(rotateLeftIndexNode, tmp);
+            tree->AsOp()->gtOp2 = tmp;
+        }
+        tree->ChangeOper(GT_ROR);
+    }
+    ContainCheckShiftRotate(tree->AsOp());
 }
 
 

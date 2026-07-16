@@ -1151,18 +1151,20 @@ void emitter::emitIns_R_R_I(instruction ins,
     insFormat fmt = IF_NONE;
     switch (ins)
     {
-        case INS_ld:   fmt = IF_LS_2C; break;  // ld  rD, disp(rA)
-        case INS_lwa:  fmt = IF_LS_2E; break;  // lwa rD, disp(rA)
-        case INS_std:  fmt = IF_LS_2D; break;  // std rS, disp(rA)
-        case INS_lwz:  fmt = IF_LS_2A; break;  // lwz rD, disp(rA)
-        case INS_stw:  fmt = IF_LS_2B; break;  // stw rS, disp(rA)
-        case INS_lfs:  fmt = IF_LS_2G; break;  // lfs fD, disp(rA)
-        case INS_lfd:  fmt = IF_LS_2H; break;  // lfd fD, disp(rA)
-        case INS_stfs: fmt = IF_LS_2I; break;  // stfs fS, disp(rA)
-        case INS_stfd: fmt = IF_LS_2J; break;  // stfd fS, disp(rA)
-        case INS_addi: fmt = IF_RI_1C; break;  // addi rD, rA, imm16
-        case INS_ori:  fmt = IF_RI_1D; break;  // ori rD, rA, imm16
-        default:       fmt = IF_LS_2A; break;  // Default to lwz format
+        case INS_ld:    fmt = IF_LS_2C; break;  // ld  rD, disp(rA)
+        case INS_lwa:   fmt = IF_LS_2E; break;  // lwa rD, disp(rA)
+        case INS_std:   fmt = IF_LS_2D; break;  // std rS, disp(rA)
+        case INS_lwz:   fmt = IF_LS_2A; break;  // lwz rD, disp(rA)
+        case INS_stw:   fmt = IF_LS_2B; break;  // stw rS, disp(rA)
+        case INS_lfs:   fmt = IF_LS_2G; break;  // lfs fD, disp(rA)
+        case INS_lfd:   fmt = IF_LS_2H; break;  // lfd fD, disp(rA)
+        case INS_stfs:  fmt = IF_LS_2I; break;  // stfs fS, disp(rA)
+        case INS_stfd:  fmt = IF_LS_2J; break;  // stfd fS, disp(rA)
+        case INS_addi:  fmt = IF_RI_1C; break;  // addi rD, rA, imm16
+        case INS_ori:   fmt = IF_RI_1D; break;  // ori rD, rA, imm16
+        case INS_rotrd: fmt = IF_RI_1D; break;  // rotrd rD, rS, imm (rldicl-based)
+        case INS_rotrw: fmt = IF_RI_1D; break;  // rotrw rD, rS, imm (rlwinm-based)
+        default:        fmt = IF_LS_2A; break;  // Default to lwz format
     }
     
     id->idInsFmt(fmt);
@@ -1234,17 +1236,20 @@ void emitter::emitIns_R_R_R(instruction ins,
             break;
 
 	// Shift instructions (register-based)
-        case INS_sld:
-        case INS_srd:
-        case INS_srad:
-        case INS_slw:
-        case INS_srw:
-        case INS_sraw:
-            assert(isGeneralRegister(reg1));
-            assert(isGeneralRegister(reg2));
-            assert(isGeneralRegister(reg3));
-            assert(size == EA_4BYTE || size == EA_8BYTE);
-            break;
+	       case INS_sld:
+	       case INS_srd:
+	       case INS_srad:
+	       case INS_slw:
+	       case INS_srw:
+	       case INS_sraw:
+	       // Register rotate instructions (rldcl / rlwnm)
+	       case INS_rldcl:
+	       case INS_rlwnm:
+	           assert(isGeneralRegister(reg1));
+	           assert(isGeneralRegister(reg2));
+	           assert(isGeneralRegister(reg3));
+	           assert(size == EA_4BYTE || size == EA_8BYTE);
+	           break;
 	// Indexed Load/Store instructions (X-form) - Phase 4A
         case INS_lbzx:
         case INS_lhzx:
@@ -1333,8 +1338,11 @@ void emitter::emitIns_R_R_R(instruction ins,
     case INS_slw:
     case INS_srw:
     case INS_sraw:
-        fmt = IF_RR_2A; 
-	break;    
+    // Register rotate instructions (rldcl / rlwnm)
+    case INS_rldcl:
+    case INS_rlwnm:
+        fmt = IF_RR_2A;
+        break;
     // Indexed Load/Store (X-form) - Phase 4A
     case INS_lbzx:
     case INS_lhzx:
@@ -1991,6 +1999,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            // srdi rA, rS, n (pseudo-op: rldicl)
            ppc_srdi (dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
            break;
+       case INS_rotrd:
+           // rotrd rA, rS, n  — rotate right doubleword immediate (rldicl rA, rS, (64-n)&63, 0)
+           ppc_rotrd(dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+           break;
+       case INS_rotrw:
+           // rotrw rA, rS, n  — rotate right word immediate (rlwinm rA, rS, (32-n)&31, 0, 31)
+           ppc_rotrw(dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+           break;
        
         // Register-based shifts
 	case INS_sld:
@@ -2014,8 +2030,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     	   break;
 
 	case INS_sraw:
-    	   ppc_sraw(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
-    	   break;
+	    	   ppc_sraw(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+	    	   break;
+
+	case INS_rldcl:
+	          // rldcl rA, rS, rB, 0  — register-based ROR 64-bit
+	          ppc_rldcl(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+	          break;
+
+	case INS_rlwnm:
+	          // rlwnm rA, rS, rB, 0, 31  — register-based ROR 32-bit
+	          ppc_rlwnm(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+	          break;
 
 	// Immediate-based shifts
 	case INS_sradi:
@@ -2454,7 +2480,11 @@ const char* emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id
 	case INS_sradi:   return "sradi   ";
 	case INS_slwi:    return "slwi    ";
 	case INS_srwi:    return "srwi    ";
-	case INS_srawi:   return "srawi   ";			  
+	case INS_srawi:   return "srawi   ";
+	case INS_rotrd:   return "rotrd   ";
+	case INS_rotrw:   return "rotrw   ";
+	case INS_rldcl:   return "rldcl   ";
+	case INS_rlwnm:   return "rlwnm   ";
 	case INS_cmpd:    return "cmpd    ";
 	case INS_cmpdi:   return "cmpdi   ";
 	case INS_lbz:     return "lbz     ";

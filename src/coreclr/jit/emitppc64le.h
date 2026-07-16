@@ -56,6 +56,16 @@
 #define ppc_rldicl(c,A,S,n,b) ppc_emit32(c, (30 << 26) | ((S) << 21) | ((A) << 16) | (((n) & 0x1f) << 11) | (((b) & 0x1f) << 6) | ((((n) & 0x20) >> 5) << 1) | ((((b) & 0x20) >> 5) << 5) | (0 << 2))
 #define ppc_sldi(c,A,S,n)  ppc_rldicr(c, A, S, n, 63 - (n))
 #define ppc_srdi(c,A,S,n)  ppc_rldicl(c, A, S, 64 - (n), (n))
+// Rotate Right Doubleword Immediate: rldicl rA, rS, (64-n)&63, 0  — full 64-bit rotation
+#define ppc_rotrd(c,A,S,n) ppc_rldicl(c, A, S, (64 - (n)) & 63, 0)
+// Rotate Right Word Immediate: rlwinm rA, rS, (32-n)&31, 0, 31  — full 32-bit rotation
+#define ppc_rotrw(c,A,S,n) ppc_emit32(c, (21 << 26) | ((S) << 21) | ((A) << 16) | (((32 - (n)) & 31) << 11) | (0 << 6) | (31 << 1) | 0)
+// Rotate Left Doubleword then Clear Left (register amount): rldcl rA, rS, rB, 0 (MDS-form)
+// Used for register-based ROR64: caller negates count so this becomes a left-rotate by (64 - original_n)
+#define ppc_rldcl(c,A,S,B) ppc_emit32(c, (30 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (0 << 6) | (8 << 1) | 0)
+// Rotate Left Word then AND with Mask (register amount): rlwnm rA, rS, rB, 0, 31 (M-form)
+// Used for register-based ROR32: caller negates count so this becomes a left-rotate by (32 - original_n)
+#define ppc_rlwnm(c,A,S,B) ppc_emit32(c, (23 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (0 << 6) | (31 << 1) | 0)
 
 // Register-based shift instructions (X-form)
 #define ppc_sld(c,A,S,B)   ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (27 << 1) | 0)
