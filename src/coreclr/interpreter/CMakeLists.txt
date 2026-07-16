@@ -47,7 +47,7 @@ add_library_clr(clrinterpreter_objects OBJECT ${INTERPRETER_SOURCES})
 
 target_include_directories(clrinterpreter_objects PRIVATE ../jitshared)
 
-if (FEATURE_PERFTRACING_DISABLE_THREADS)
+if (FEATURE_PERFTRACING AND FEATURE_PERFTRACING_DISABLE_THREADS)
   target_compile_definitions(clrinterpreter_objects PRIVATE PERFTRACING_DISABLE_THREADS)
 endif()
 

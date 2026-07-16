@@ -551,6 +551,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
         Frame *     pFrame     = pThread->GetFrame();
         AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
+        // cStubFrame entries have no DT_CONTEXT buffer; leave ctx as NULL so consumers
+        // (and the cDAC cross-check, which sets ctx = 0) don't observe a garbage value.
+        frameData.ctx = NULL;
         frameData.eType = Debugger_STRData::cStubFrame;
 
         while (pFrame != FRAME_TOP)
@@ -581,7 +584,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
             frameData.stubFrame.frameType = GetInternalFrameType(pFrame);
             if (frameData.stubFrame.frameType != STUBFRAME_NONE)
             {
-                frameData.fp = FramePointer::MakeFramePointer(PTR_HOST_TO_TADDR(pFrame));
+                frameData.fp = PTR_TO_CORDB_ADDRESS(PTR_HOST_TO_TADDR(pFrame));
 
                 frameData.vmCurrentAppDomainToken.SetHostPtr(pAppDomain);
 
@@ -761,7 +764,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
     // do common initialization of Debugger_STRData for both managed stack frames and explicit frames
     //
 
-    pFrameData->fp = GetFramePointerWorker(pIter);
+    pFrameData->fp = PTR_TO_CORDB_ADDRESS(GetFramePointerWorker(pIter).GetSPValue());
 
     pFrameData->vmCurrentAppDomainToken.SetHostPtr(AppDomain::GetCurrentDomain());
 
@@ -963,7 +966,7 @@ void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
         // to the ExInfo when we are checking if a particular frame is the parent frame.
         //
 
-        pJITFuncData->fpParentOrSelf = FramePointer::MakeFramePointer(sfParent.SP);
+        pJITFuncData->fpParentOrSelf = PTR_TO_CORDB_ADDRESS(sfParent.SP);
         pJITFuncData->parentNativeOffset = dwParentOffset;
     }
     else
@@ -976,7 +979,7 @@ void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
         // to the ExInfo when we are checking if a particular frame is the parent frame.
         //
 
-        pJITFuncData->fpParentOrSelf = FramePointer::MakeFramePointer(sfSelf.SP);
+        pJITFuncData->fpParentOrSelf = PTR_TO_CORDB_ADDRESS(sfSelf.SP);
         pJITFuncData->parentNativeOffset = 0;
     }
 }

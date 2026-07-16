@@ -268,7 +268,25 @@ fi
     </ItemGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
+      <!-- WASI corerun.wasm needs to be launched under wasmtime. The wasm
+           exception handling proposal must be enabled, both the CORE_ROOT
+           and the per-test bin directory must be preopened so corerun can
+           probe for CoreLib (in CORE_ROOT, via $CORE_ROOT=/core) and load
+           the test dll (in the cwd, mapped to / so the bare relative name
+           resolves there). Globalization is forced to invariant because
+           no ICU data is staged in the test layout.
+           DOTNET_WASI_PRINT_EXIT_CODE=1 opts corerun into printing the
+           managed Main return value on stderr; see the WASI launch
+           block below and the matching block in corerun.cpp. wasmtime
+           is expected to already be on PATH (provisioned via
+           wasi-provisioning.targets or installed manually). -->
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y --dir "$PWD::/" --dir "$CORE_ROOT::/core" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true --env DOTNET_WASI_PRINT_EXIT_CODE=1 "$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
       <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMins</WatcherRunFile>
+      <!-- WASI has no watchdog binary in Core_Root (skipped in
+           src/coreclr/CMakeLists.txt for wasm targets); use coreutils
+           timeout instead. Wasmtime is a normal host process so this
+           kills it cleanly. -->
+      <WatcherRunFile Condition="'$(TargetOS)' == 'wasi'">timeout --preserve-status "${_WatcherTimeoutMins}m"</WatcherRunFile>
 
       <!-- CoreCLR on browser defaults to running tests with Node.js -->
       <BashDefaultRunWithNodeJS Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'"><![CDATA[
@@ -277,7 +295,7 @@ if [ -z "${RunWithNodeJS:-}" ] ; then
 fi
 ]]></BashDefaultRunWithNodeJS>
 
-      <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
+      <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'browser'"><![CDATA[
 $(CLRTestBashPreCommands)
 $(BashDefaultRunWithNodeJS)
 if [ ! -z ${RunCrossGen2+x} ]%3B then
@@ -305,7 +323,7 @@ fi
    ]]>
       </CLRTestBashPreCommands>
 
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android' And '$(TargetOS)' != 'wasi'">
     <![CDATA[
 _DebuggerArgsSeparator=
 if [[ "$_DebuggerFullPath" == *lldb* ]];
@@ -340,6 +358,67 @@ echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
 $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
 
 CLRTestExitCode=$?
+
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  ReleaseLock
+fi
+      ]]></BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'wasi'">
+    <![CDATA[
+# WASI Preview 2's component-model exit channel (wasi:cli/exit) cannot
+# carry an arbitrary integer — wasmtime maps any non-zero managed return
+# to host exit code 1. When DOTNET_WASI_PRINT_EXIT_CODE=1 (set by
+# CLRTestRunFile above), corerun prints a "WASM EXIT <n>" line on stderr
+# at shutdown. This mirrors Mono's wasi runtime contract
+# (src/mono/wasi/runtime/main.c, parsed by
+# src/mono/wasm/host/wasi/WasiEngineHost.cs). We run under wasmtime, tee
+# stderr to a temp file, and grep the marker back out as the test's
+# effective exit code.
+_DebuggerArgsSeparator=
+if [[ "$_DebuggerFullPath" == *lldb* ]];
+then
+  _DebuggerArgsSeparator=--
+elif [[ "$_DebuggerFullPath" == *gdb* ]]
+then
+  _DebuggerArgsSeparator=--args
+fi
+
+if [ ! -z "$CLRCustomTestLauncher" ];
+then
+    LAUNCHER="$CLRCustomTestLauncher $PWD/"
+elif [ "$_RunWithWatcher" == 1 ];
+then
+    LAUNCHER="$(WatcherRunFile) $(CLRTestRunFile)"
+else
+    LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
+fi
+
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  TakeLock
+fi
+
+if [ ! -z "$RunInterpreter" ]; then
+  if [ -z "$DOTNET_InterpMode" ]; then
+    export DOTNET_Interpreter='$(AssemblyName)!*'
+  fi
+fi
+
+_WasiStderr=%24(mktemp -t corerun-stderr.XXXXXX)
+echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
+$LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}" 2> >(tee "$_WasiStderr" >&2)
+_WasiHostExit=$?
+
+# Prefer the corerun-printed exit code: if the marker is missing (corerun
+# itself crashed / failed before reaching shutdown), fall back to the
+# wasmtime host exit code so failures are still surfaced. Matches the
+# regex used by src/mono/wasm/host/wasi/WasiEngineHost.cs:
+# /^WASM EXIT (-?\d+)$/.
+CLRTestExitCode=%24(awk '/^WASM EXIT -?[0-9]+$/{val=$3} END{print val}' "$_WasiStderr")
+rm -f "$_WasiStderr"
+if [ -z "$CLRTestExitCode" ]%3B then
+    echo "WARNING: corerun did not print a WASM EXIT marker. Using wasmtime host exit code $_WasiHostExit."
+    CLRTestExitCode=$_WasiHostExit
+fi
 
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   ReleaseLock
@@ -404,7 +483,7 @@ else
     echo CLRTestExecutionArguments: ${CLRTestExecutionArguments[@]}
     echo node version: `node -v`
     echo Timeout in ms: $__TestTimeout
-    cmd=( node --stack-size=8192 --experimental-wasm-exnref "${CORE_ROOT}/corerun.js" -c "${CORE_ROOT}" "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
+    cmd=( node --experimental-wasm-exnref --stack-size=8192 "${CORE_ROOT}/corerun.js" -c "${CORE_ROOT}" "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
     echo Running: "${cmd[@]}"
     run_with_timeout $__TestTimeout "${cmd[@]}"
 fi
