@@ -204,7 +204,7 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame* pFrame
     if (IsDoNotTriggerGcSet())
     {
         // We expect this scenario only when EE is stopped.
-        ASSERT(ThreadStore::IsTrapThreadsRequested() || IsGCSpecial());
+        ASSERT(ThreadStore::IsTrapThreadsRequested());
         // no need to do anything
         return true;
     }

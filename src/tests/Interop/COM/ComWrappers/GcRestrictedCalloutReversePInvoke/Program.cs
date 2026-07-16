@@ -7,54 +7,60 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using ComWrappersTests.Common;
+using Xunit;
 
-ComWrappers.RegisterForTrackerSupport(TrackerComWrappers.Instance);
-
-IntPtr trackerObject = MockReferenceTrackerRuntime.CreateTrackerObject();
-object wrapper = TrackerComWrappers.Instance.GetOrCreateObjectForComInstance(trackerObject, CreateObjectFlags.TrackerObject);
-Marshal.Release(trackerObject);
-
-// dotnet/runtime#110683
-// Before the runtime fix, assertion-enabled NativeAOT runtimes can fail with
-// ASSERT(ThreadStore::IsTrapThreadsRequested()) when this managed GC restricted
-// callout is reverse-invoked on a background GC thread.
-ForceBackgroundGen2Collection(timeout: TimeSpan.FromSeconds(30));
-GC.KeepAlive(wrapper);
-
-return 100;
-
-static void ForceBackgroundGen2Collection(TimeSpan timeout)
+public class Program
 {
-    int initialGen2Collections = GC.CollectionCount(2);
-    using AllocationPressure pressure = new();
-    pressure.Start();
-
-    Stopwatch stopwatch = Stopwatch.StartNew();
-    bool observedConcurrentGen2 = false;
-
-    while (stopwatch.Elapsed < timeout)
+    [Fact]
+    public static void TestEntryPoint()
     {
-        int previousGen2Collections = GC.CollectionCount(2);
-        GC.Collect(2, GCCollectionMode.Forced, blocking: false, compacting: false);
+        ComWrappers.RegisterForTrackerSupport(TrackerComWrappers.Instance);
 
-        if (!SpinWait.SpinUntil(() => GC.CollectionCount(2) > previousGen2Collections, TimeSpan.FromMilliseconds(500)))
-        {
-            continue;
-        }
+        IntPtr trackerObject = MockReferenceTrackerRuntime.CreateTrackerObject();
+        object wrapper = TrackerComWrappers.Instance.GetOrCreateObjectForComInstance(trackerObject, CreateObjectFlags.TrackerObject);
+        Marshal.Release(trackerObject);
 
-        GCMemoryInfo memoryInfo = GC.GetGCMemoryInfo();
-        if (memoryInfo.Generation == 2 && memoryInfo.Concurrent)
-        {
-            observedConcurrentGen2 = true;
-            break;
-        }
+        // dotnet/runtime#110683
+        // Before the runtime fix, assertion-enabled NativeAOT runtimes can fail with
+        // ASSERT(ThreadStore::IsTrapThreadsRequested()) when this managed GC restricted
+        // callout is reverse-invoked on a background GC thread.
+        ForceBackgroundGen2Collection(timeout: TimeSpan.FromSeconds(30));
+        GC.KeepAlive(wrapper);
     }
 
-    pressure.Stop();
-
-    if (!observedConcurrentGen2)
+    private static void ForceBackgroundGen2Collection(TimeSpan timeout)
     {
-        throw new Exception($"Timed out after {timeout} waiting for a concurrent Gen2 GC. Initial count: {initialGen2Collections}, final count: {GC.CollectionCount(2)}.");
+        int initialGen2Collections = GC.CollectionCount(2);
+        using AllocationPressure pressure = new();
+        pressure.Start();
+
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        bool observedConcurrentGen2 = false;
+
+        while (stopwatch.Elapsed < timeout)
+        {
+            int previousGen2Collections = GC.CollectionCount(2);
+            GC.Collect(2, GCCollectionMode.Forced, blocking: false, compacting: false);
+
+            if (!SpinWait.SpinUntil(() => GC.CollectionCount(2) > previousGen2Collections, TimeSpan.FromMilliseconds(500)))
+            {
+                continue;
+            }
+
+            GCMemoryInfo memoryInfo = GC.GetGCMemoryInfo();
+            if (memoryInfo.Generation == 2 && memoryInfo.Concurrent)
+            {
+                observedConcurrentGen2 = true;
+                break;
+            }
+        }
+
+        pressure.Stop();
+
+        if (!observedConcurrentGen2)
+        {
+            throw new Exception($"Timed out after {timeout} waiting for a concurrent Gen2 GC. Initial count: {initialGen2Collections}, final count: {GC.CollectionCount(2)}.");
+        }
     }
 }
 
