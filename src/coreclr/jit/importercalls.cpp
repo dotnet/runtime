@@ -3518,6 +3518,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         {
             // This one is just `return true/false`
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync:
 
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
 
@@ -3789,6 +3790,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     JITDUMP("\nConverting RuntimeHelpers.IsKnownConstant to:\n");
                     DISPTREE(retNode);
                 }
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync:
+            {
+                retNode = compIsAsync() ? gtNewTrue() : gtNewFalse();
+                JITDUMP("\nExpanding RuntimeHelpers.IsRuntimeAsync to %s early\n", compIsAsync() ? "true" : "false");
                 break;
             }
 
@@ -11428,6 +11436,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "IsKnownConstant") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+                            }
+                            else if (strcmp(methodName, "IsRuntimeAsync") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync;
                             }
                             else if (strcmp(methodName, "WriteBarrier") == 0)
                             {
