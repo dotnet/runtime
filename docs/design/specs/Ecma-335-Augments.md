@@ -1032,10 +1032,10 @@ Changes to signatures:
   - Managed pointers which point at the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
   - Null managed pointers are permitted to be dereferenced resulting in a `NullReferenceException`.
 
-### III.1.7.7
+### III.1.7.7 Opt-in restrictions
 Add a new section "III.1.7.7 Opt-in restrictions" under section "III.1.7 Restrictions on CIL code sequences":
 
-Applying the custom attribute `System.Runtime.CompilerServices.RefSafetyRulesAttribute` on an assembly opts the assembly into further restrictions based on the encoded version specified in the attribute. These restrictions permit an optimizing compiler to further optimize certain code patterns.
+Applying the custom attribute `System.Runtime.CompilerServices.RefSafetyRulesAttribute` on an assembly opts the assembly into further restrictions based on the version value specified in the attribute. These restrictions permit an optimizing compiler to further optimize certain code patterns.
 
 Languages may define more rules based on this attribute, but for the purpose of defining valid IL only the following restrictions must be satisfied.
 
