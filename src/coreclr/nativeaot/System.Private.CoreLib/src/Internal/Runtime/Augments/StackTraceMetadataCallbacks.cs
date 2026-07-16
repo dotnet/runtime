@@ -17,7 +17,7 @@ namespace Internal.Runtime.Augments
     [CLSCompliant(false)]
     public abstract class StackTraceMetadataCallbacks
     {
-        public abstract string TryGetMethodStackFrameInfo(IntPtr methodStartAddress, int offset, bool needsFileInfo, out string owningType, out string genericArgs, out string methodSignature, out bool isStackTraceHidden, out string fileName, out int lineNumber);
+        public abstract string TryGetMethodStackFrameInfo(IntPtr methodStartAddress, int offset, bool needsFileInfo, out string owningType, out string genericArgs, out string methodSignature, out bool isStackTraceHidden, out bool isAsync, out string fileName, out int lineNumber);
 
         public abstract DiagnosticMethodInfo TryGetDiagnosticMethodInfoFromStartAddress(IntPtr methodStartAddress);
     }

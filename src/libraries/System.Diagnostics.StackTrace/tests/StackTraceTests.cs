@@ -709,11 +709,7 @@ namespace System.Diagnostics.Tests
                 startIndex = match.Index + match.Length;
             }
 
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/129155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-            if (!PlatformDetection.IsNativeAot)
-            {
-                Assert.DoesNotContain("--- End of stack trace from previous location ---", exceptionText);
-            }
+            Assert.DoesNotContain("--- End of stack trace from previous location ---", exceptionText);
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
