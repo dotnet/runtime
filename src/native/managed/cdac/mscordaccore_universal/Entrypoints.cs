@@ -261,10 +261,11 @@ internal static class Entrypoints
         IntPtr /*IDacDbiInterface::IMetaDataLookup*/ pMetaDataLookup,
         void** iface)
     {
+        // Match the native DAC export (DacDbiInterfaceInstance in dacdbiimpl.cpp), which only
+        // validates the target, base address, and out parameter. The allocator and metadata
+        // lookup pointers are not used by the managed implementation, so don't require them.
         if (pTarget == IntPtr.Zero
             || runtimeBase == 0
-            || pAllocator == IntPtr.Zero
-            || pMetaDataLookup == IntPtr.Zero
             || iface == null)
         {
             return HResults.E_INVALIDARG;
@@ -447,7 +448,7 @@ internal static class Entrypoints
                 $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
         }
 
-        return ContractDescriptorTarget.Create(
+        if (!ContractDescriptorTarget.TryCreate(
             contractAddress,
             (address, buffer) =>
             {
@@ -465,11 +466,19 @@ internal static class Entrypoints
                     return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
                 }
             },
+            (threadId, context) => HResults.E_NOTIMPL,
             (ulong size, out ulong allocatedAddress) =>
             {
                 allocatedAddress = 0;
                 return HResults.E_NOTIMPL;
             },
-            [Contracts.CoreCLRContracts.Register]);
+            [Contracts.CoreCLRContracts.Register],
+            out ContractDescriptorTarget? target))
+        {
+            throw new InvalidOperationException(
+                $"Failed to create a {nameof(ContractDescriptorTarget)} from the contract descriptor at 0x{contractAddress:x}.");
+        }
+
+        return target!;
     }
 }
