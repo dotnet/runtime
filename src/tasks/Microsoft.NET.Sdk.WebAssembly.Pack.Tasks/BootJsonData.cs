@@ -270,6 +270,7 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, AdditionalAsset> runtimeAssets { get; set; }
 
+    // this field this only for Mono
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, ResourceHashesByNameDictionary> coreVfs { get; set; }
 
