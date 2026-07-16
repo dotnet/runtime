@@ -105,8 +105,8 @@ namespace System.Text.Json
 
         /// <summary>
         /// Returns the pooled backing array (if any) to the shared <see cref="ArrayPool{T}"/>.
-        /// Must be called exactly once per top-level (de)serialization operation, after the
-        /// <see cref="ReadStack"/> is no longer in use, including on exceptional code paths.
+        /// Call after the <see cref="ReadStack"/> is no longer in use, including on exceptional
+        /// deserialization paths. Calling multiple times has no effect.
         /// </summary>
         public void Dispose()
         {
