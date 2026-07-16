@@ -10,6 +10,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 {
     using RC2 = System.Security.Cryptography.RC2;
 
+    [ConditionalClass(typeof(RC2Provider), nameof(RC2Provider.IsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract partial class RC2CipherTests
     {

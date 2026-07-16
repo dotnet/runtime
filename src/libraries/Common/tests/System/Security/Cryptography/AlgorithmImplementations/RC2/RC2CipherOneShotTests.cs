@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.RC2.Tests
 {
+    [ConditionalClass(typeof(RC2Provider), nameof(RC2Provider.IsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class RC2CipherOneShotTests : SymmetricOneShotBase
     {
