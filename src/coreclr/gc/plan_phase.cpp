@@ -3962,7 +3962,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif // FEATURE_STRUCTALIGN
 
 #ifdef RESPECT_LARGE_ALIGNMENT
-                    if (probe_large_align && !pinned_plug_p &&
+                    if (probe_large_align && !pinned_plug_p && !plug_has_large_align &&
                         ((CObjectHeader*)xl)->GetMethodTable()->RequiresAlign2xPtr())
                     {
                         plug_has_large_align = TRUE;
