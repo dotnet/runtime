@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!value.HasValue)
             {
-                throw new ArgumentNullException(nameof(value));
+                throw new ArgumentException(SR.Argument_StringSegmentHasNoValue, nameof(value));
             }
 
             ArgumentNullException.ThrowIfNull(separators);

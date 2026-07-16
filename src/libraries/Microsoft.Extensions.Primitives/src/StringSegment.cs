@@ -670,7 +670,6 @@ namespace Microsoft.Extensions.Primitives
         // out of range. The signed value is re-validated here so the exception reports the actual
         // argument (e.g. -1) rather than its unsigned wrap-around, with an enriched message.
         [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowArgumentOutOfRangeExclusive(int value, int exclusiveMax, [CallerArgumentExpression(nameof(value))] string? paramName = null)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(value, 0, paramName);
@@ -679,7 +678,6 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowArgumentOutOfRangeInclusive(int value, int inclusiveMax, [CallerArgumentExpression(nameof(value))] string? paramName = null)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(value, 0, paramName);
@@ -723,12 +721,7 @@ namespace Microsoft.Extensions.Primitives
 
             Exception GetInvalidArgumentsException(bool hasValue)
             {
-                if (!hasValue)
-                {
-                    return new ArgumentOutOfRangeException(offsetOrStart);
-                }
-
-                if (offset < 0)
+                if (!hasValue || offset < 0)
                 {
                     return new ArgumentOutOfRangeException(offsetOrStart);
                 }

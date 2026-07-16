@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.Primitives
             ArgumentOutOfRangeException.ThrowIfGreaterThan(count, value.Length - offset, nameof(offset));
             if (Capacity - _offset < count)
             {
-                throw new InvalidOperationException(SR.Format(SR.Capacity_NotEnough, value.Length, Capacity - _offset));
+                throw new InvalidOperationException(SR.Format(SR.Capacity_NotEnough, count, Capacity - _offset));
             }
 
             fixed (char* destination = _value)
