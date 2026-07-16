@@ -142,25 +142,6 @@ endif()
 
 install_clr(TARGETS corerun DESTINATIONS . COMPONENT hosts)
 
-# WASI: also build the host as a STATIC archive (libWasiHost.a) so a per-app relink can
-# re-link corerun with app-generated callhelpers (replacing the baked coreclr_gen_static),
-# mirroring the browser BrowserHost-Static / libBrowserHost.a pattern used by
-# BrowserWasmApp.CoreCLR.targets. The runtime static libraries (coreclr_static, System.Native,
-# ...) are NOT linked here; they are supplied at relink time from the runtime pack.
-# See https://github.com/dotnet/runtime/issues/130129.
-if (CLR_CMAKE_TARGET_WASI)
-    add_library(WasiHost-Static STATIC
-        corerun.cpp
-        dotenv.cpp
-        ./wasm/pinvoke_override.cpp
-        native.rc
-    )
-    set_target_properties(WasiHost-Static PROPERTIES OUTPUT_NAME WasiHost CLEAN_DIRECT_OUTPUT 1)
-    target_include_directories(WasiHost-Static PRIVATE ./wasm/)
-    target_link_libraries(WasiHost-Static PRIVATE minipal)
-    install_clr(TARGETS WasiHost-Static DESTINATIONS sharedFramework COMPONENT runtime)
-endif()
-
 # If there's a dynamic ASAN runtime, then install it in the directory where we put our executable.
 if (NOT "${ASAN_RUNTIME}" STREQUAL "")
     install(FILES ${ASAN_RUNTIME} DESTINATION .)

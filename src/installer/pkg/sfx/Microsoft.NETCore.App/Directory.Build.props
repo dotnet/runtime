@@ -271,8 +271,6 @@
     <PlatformManifestFileEntry Include="libgcinfo_unix_wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libminipal.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libnativeresourcestring.a" IsNative="true" />
-    <!-- WASI host static archive for per-app relink (see corerun/CMakeLists.txt WasiHost-Static). -->
-    <PlatformManifestFileEntry Include="libWasiHost.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libBrowserHost.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libBrowserHost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="libBrowserHost.js.map" IsNative="true" />

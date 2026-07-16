@@ -3,13 +3,14 @@
   <Import Project="$(MSBuildThisFileDirectory)WasiApp.props" />
 
   <!-- Mirror of src/mono/browser/build/WasmApp.InTree.props: select the runtime
-       flavor. Unlike Mono (which relinks dotnet.wasm per-app), CoreCLR-WASI uses the
-       corerun host, relinked per-app to cover app/test reverse thunks (see
+       flavor. Unlike Mono (which relinks dotnet.wasm per-app), CoreCLR-WASI links the
+       wasihost corehost, per-app, to cover app/test reverse thunks (see
        WasiApp.CoreCLR.targets). -->
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <UseMonoRuntime>false</UseMonoRuntime>
-    <!-- Full ICU globalization: the relinked corerun host preloads icudt.dat (see
-         corerun.cpp / WasiApp.CoreCLR.targets), so the leg no longer needs invariant mode. -->
+    <!-- Full ICU globalization: the wasihost corehost preloads icudt.dat (see
+         src/native/corehost/wasihost / WasiApp.CoreCLR.targets), so the leg no longer needs
+         invariant mode. -->
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">

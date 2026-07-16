@@ -19,8 +19,9 @@ jobs:
 # See https://github.com/dotnet/runtime/issues/130129.
 #
 # Bring-up leg: smoke-only and non-gating (rolling alwaysRun). WasiApp.CoreCLR.targets
-# performs a per-app native relink so a test's own [UnmanagedCallersOnly] reverse thunks
-# are generated + linked into corerun; with that relink + the nested-type reverse-thunk
+# performs a per-app native link of the wasihost corehost so a test's own
+# [UnmanagedCallersOnly] reverse thunks are generated + linked into the host; with that link
+# + the nested-type reverse-thunk
 # key fix (also filed standalone as dotnet/runtime#130740; the remaining enclosing-type
 # collision limitation is tracked by #130739) the interpreter discovers and runs the suite
 # (validated locally: 9930 System.Runtime.Tests cases). #130634 (cold portable-entry-point

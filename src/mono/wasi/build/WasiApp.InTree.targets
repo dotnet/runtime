@@ -9,7 +9,7 @@
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
   <!-- Select the runtime flavor's app-builder targets (mirror of
        src/mono/browser/build/WasmApp.InTree.targets). Mono relinks dotnet.wasm
-       per-app via wasi-sdk; CoreCLR relinks the corerun host per-app (WasiApp.CoreCLR.targets). -->
+       per-app via wasi-sdk; CoreCLR links the wasihost corehost per-app (WasiApp.CoreCLR.targets). -->
   <Import Project="$(MSBuildThisFileDirectory)WasiApp.targets" Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
   <Import Project="$(MSBuildThisFileDirectory)WasiApp.CoreCLR.targets" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
 

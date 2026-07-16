@@ -3,11 +3,12 @@
     CoreCLR-WASI app-builder targets. Sibling of Mono's WasiApp.targets, mirroring the
     browser split (BrowserWasmApp.targets vs BrowserWasmApp.CoreCLR.targets).
 
-    Performs a per-app native relink of the corerun host so reverse P/Invoke thunks for the
-    app/test [UnmanagedCallersOnly] methods are covered (the baked libcoreclr_gen_static.a
+    Performs a per-app native link of the shipping wasihost corehost (libWasiHost.a, from
+    src/native/corehost/wasihost) so reverse P/Invoke thunks for the app/test
+    [UnmanagedCallersOnly] methods are covered (the baked libcoreclr_gen_static.a
     only covers framework top-level UCO callbacks). Runs ManagedToNativeGenerator
     (TargetOS=wasi) over the bundle, compiles the generated callhelpers with the wasi-sdk
-    clang, and relinks corerun from the runtime-pack static archives + the app callhelper .o
+    clang, and links libWasiHost.a from the runtime-pack static archives + the app callhelper .o
     (replacing libcoreclr_gen_static.a) via wasm-component-ld. The wasi:http import that
     System.Net.* pulls in is declared via the component-type link flag
     (WasiHttpWorld_component_type.wit, as Mono does); wasmtime gets -S http from
@@ -28,19 +29,16 @@
   <PropertyGroup>
     <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
     <UseMonoRuntime>false</UseMonoRuntime>
-    <!-- The Mono per-app clang relink (WasmBuildNative) is not used; CoreCLR relinks
-         corerun through its own targets below. -->
+    <!-- The Mono per-app clang relink (WasmBuildNative) is not used; CoreCLR links the
+         wasihost corehost (libWasiHost.a) per-app through its own targets below. -->
     <WasmBuildNative>false</WasmBuildNative>
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
-    <!-- The per-app corerun relink is the whole point of the CoreCLR-WASI test path
-         (thunk coverage). Allow opting out (prebuilt corerun) for debugging. -->
-    <WasiCoreCLRRelinkCoreRun Condition="'$(WasiCoreCLRRelinkCoreRun)' == ''">true</WasiCoreCLRRelinkCoreRun>
   </PropertyGroup>
 
   <!-- Override the same-named target imported above so we do NOT bundle Mono's
-       dotnet.wasm. For the CoreCLR bring-up we run invariant-globalization by default, so
-       no ICU data is bundled; corerun is placed into managed/ by the relink/copy below. -->
+       dotnet.wasm. The wasihost corehost (linked into managed/ as 'corerun' below) is placed
+       next to the framework; icudt.dat is bundled only when not invariant. -->
   <Target Name="_GetWasiGenerateAppBundleDependencies">
     <ItemGroup Condition="'$(InvariantGlobalization)' == 'true' or '$(WasmSingleFileBundle)' == 'true'">
       <ReferenceCopyLocalPaths Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat" />
@@ -59,8 +57,8 @@
 
   <!-- The SDK doesn't resolve a CoreCLR runtime pack for wasi-wasm, so the self-contained
        publish only lands the app's own closure. Copy the framework (pack lib dir) +
-       System.Private.CoreLib.dll (pack native dir) into managed/, next to corerun (relinked
-       below), which finds them via CORE_ROOT. See https://github.com/dotnet/runtime/issues/130129. -->
+       System.Private.CoreLib.dll (pack native dir) into managed/, next to the wasihost host
+       (linked below), which finds them via CORE_ROOT. See https://github.com/dotnet/runtime/issues/130129. -->
   <Target Name="_WasiCopyFrameworkToManaged"
           AfterTargets="_WasiGenerateAppBundle"
           Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
@@ -81,34 +79,24 @@
     <Copy SourceFiles="@(_WasiCoreCLRFrameworkToCopy)"
           DestinationFolder="$(WasmAppDir)managed"
           SkipUnchangedFiles="true" />
-    <!-- Non-invariant: place icudt.dat next to the managed assemblies so the relinked corerun
-         host (which loads it via GlobalizationNative_LoadICUData from the app dir) can find it. -->
+    <!-- Non-invariant: place icudt.dat next to the managed assemblies (CORE_ROOT) so the
+         wasihost corehost, which preloads it before managed globalization initializes, can
+         find it. -->
     <Copy Condition="'$(InvariantGlobalization)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat')"
           SourceFiles="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"
           DestinationFolder="$(WasmAppDir)managed"
           SkipUnchangedFiles="true" />
   </Target>
 
-  <!-- When the relink is disabled, fall back to the prebuilt corerun host from the pack. -->
-  <Target Name="_WasiCopyPrebuiltCoreRun"
-          AfterTargets="_WasiCopyFrameworkToManaged"
-          Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true' and '$(WasiCoreCLRRelinkCoreRun)' != 'true'">
-    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)corerun')"
-           Text="CoreCLR-WASI host 'corerun' not found in the runtime pack native dir: $(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
-    <Copy SourceFiles="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)corerun"
-          DestinationFolder="$(WasmAppDir)managed"
-          SkipUnchangedFiles="true" />
-  </Target>
-
-  <!-- ============================ Per-app corerun relink ============================ -->
+  <!-- ============================ Per-app wasihost link ============================ -->
 
   <Target Name="_WasiCoreCLRRelinkCoreRun"
           AfterTargets="_WasiCopyFrameworkToManaged"
           DependsOnTargets="_SetupWasiSdk"
-          Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true' and '$(WasiCoreCLRRelinkCoreRun)' == 'true'">
+          Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
 
     <Error Condition="'$(_IsToolchainMissing)' == 'true'"
-           Text="$(_ToolchainMissingErrorMessage) The wasi-sdk is required to relink corerun for the CoreCLR-WASI test host." />
+           Text="$(_ToolchainMissingErrorMessage) The wasi-sdk is required to link the wasihost corehost for the CoreCLR-WASI test host." />
 
     <PropertyGroup>
       <_WasiRelinkObjDir>$([MSBuild]::NormalizeDirectory('$(_WasmIntermediateOutputPath)', 'corerun-relink'))</_WasiRelinkObjDir>
@@ -256,10 +244,10 @@
     <Exec Command="&quot;$(_WasiClangxx)&quot; &quot;@$(_WasiRelinkCompileRsp)&quot; -c &quot;%(_WasiCallHelperSource.Identity)&quot; -o &quot;%(_WasiCallHelperSource.ObjectFile)&quot;"
           WorkingDirectory="$(_WasiRelinkObjDir)" />
 
-    <!-- 3. Relink corerun: host archive + runtime-pack static libs + the app callhelper .o
-         (replacing libcoreclr_gen_static.a) + the wasi:http world. Lib set/order (incl. the
-         duplicated libminipal.a and mid-list -lstdc++) mirrors the corerun CMake link line;
-         wasm-ld archive resolution is order-sensitive. -->
+    <!-- 3. Link the wasihost host: host archive (libWasiHost.a) + runtime-pack static libs + the
+         app callhelper .o (replacing libcoreclr_gen_static.a) + the wasi:http world. Lib
+         set/order (incl. the duplicated libminipal.a and mid-list -lstdc++) mirrors the corerun
+         CMake link line; wasm-ld archive resolution is order-sensitive. -->
     <ItemGroup>
       <!-- libWasiHost.a is whole-archive-wrapped below (not here) so main()/_start are
            pulled: wasm-ld only pulls archive members for strong refs, and main is weakly
@@ -325,7 +313,7 @@
     </ItemGroup>
     <WriteLinesToFile Lines="@(_WasiRelinkLinkFlags)" File="$(_WasiRelinkLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
-    <Message Text="Relinking CoreCLR-WASI corerun host with per-app callhelper thunks ..." Importance="High" />
+    <Message Text="Linking CoreCLR-WASI wasihost host with per-app callhelper thunks ..." Importance="High" />
     <Exec Command="&quot;$(_WasiClangxx)&quot; &quot;@$(_WasiRelinkLinkRsp)&quot;"
           WorkingDirectory="$(_WasiRelinkObjDir)" />
 
