@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     {
 #if READYTORUN
         public const string StackPointerName = "stackPointer";
-        public const string ImageBaseName = "memoryBase";
+        public const string ImageBaseName = "imageBase";
         public const string TableBaseName = "tableBase";
 #else
         public const string StackPointerName = "__stack_pointer";
