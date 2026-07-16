@@ -1030,7 +1030,7 @@ namespace System
         /// </remarks>
         internal static TValue RemainderDecimalIeee754<TDecimal, TValue>(TValue left, TValue right)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
-            where TValue : unmanaged, IBinaryInteger<TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>, IMinMaxValue<TValue>
         {
             // This code is based on `bid32_fmod`, `bid64_fmod`, and `bid128_fmod` from Intel(R) Decimal Floating-Point Math Library
             // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
@@ -1077,23 +1077,32 @@ namespace System
                 return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, TValue.Zero, resultExponent);
             }
 
-            TValue ten = TValue.CreateTruncating(10);
             TValue remainder;
 
             if (a.UnbiasedExponent >= b.UnbiasedExponent)
             {
-                // Both coefficients fit a single limb, so reduce `a.Significand * 10^(ea - eb)` modulo `b.Significand`
-                // by scaling the running remainder up one decimal digit at a time. The remainder stays below the
-                // divisor, so `remainder * 10` never exceeds the integer width.
+                // Reduce `a.Significand * 10^(ea - eb)` modulo `b.Significand`. The remainder always stays below the
+                // divisor, so `remainder * 10^chunk` fits the integer width as long as `10^chunk <= MaxValue / divisor`.
+                // Fold that many trailing zeros per step (capped at the largest cached power of ten). Modular
+                // arithmetic lets each step absorb several digits at once, so a small divisor reaches the full cached
+                // power while a large one folds only a handful. Once the remainder hits zero it stays zero, so stop.
                 //
-                // TODO: This scales one decimal digit per iteration, where-as Intel's `bidNN_fmod` scales the dividend
-                // by up to `Precision` digits per iteration. Porting that chunked reduction would cut the loop count
-                // for large exponent gaps at the cost of a wider intermediate for Decimal128.
+                // TODO: A wider intermediate (as Intel's `bidNN_fmod` uses for Decimal128) would let every step fold
+                // the full `Precision` digits regardless of divisor magnitude, shaving the loop count for large gaps.
                 remainder = a.Significand % b.Significand;
 
-                for (int i = 0; i < a.UnbiasedExponent - b.UnbiasedExponent; i++)
+                int chunk = 1;
+                TValue chunkLimit = TValue.MaxValue / b.Significand;
+
+                while ((chunk < TDecimal.Precision - 1) && (TDecimal.Power10(chunk + 1) <= chunkLimit))
                 {
-                    remainder = (remainder * ten) % b.Significand;
+                    chunk++;
+                }
+
+                for (int gap = a.UnbiasedExponent - b.UnbiasedExponent; (gap > 0) && !TValue.IsZero(remainder); gap -= chunk)
+                {
+                    int step = Math.Min(chunk, gap);
+                    remainder = (remainder * TDecimal.Power10(step)) % b.Significand;
                 }
             }
             else
