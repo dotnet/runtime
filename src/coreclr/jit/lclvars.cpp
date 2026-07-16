@@ -1615,7 +1615,7 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
             // We will only promote fields of SIMD types that fit into a SIMD register.
             if (simdBaseType != TYP_UNDEF)
             {
-                if (m_compiler->structSizeMightRepresentSIMDType(simdSize))
+                if (m_compiler->structMightRepresentSIMDType(node.simdTypeHnd))
                 {
                     return m_compiler->getSIMDTypeForSize(simdSize);
                 }

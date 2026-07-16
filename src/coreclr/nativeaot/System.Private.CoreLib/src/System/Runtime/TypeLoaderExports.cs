@@ -96,23 +96,6 @@ namespace System.Runtime
             return v._result;
         }
 
-        public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
-        {
-            if (TryGetFromCache((IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot), out var v))
-                return v._result;
-
-            return GVMLookupForSlotSlow(obj, slot);
-        }
-
-        private static unsafe IntPtr GVMLookupForSlotSlow(object obj, RuntimeMethodHandle slot)
-        {
-            Value v = CacheMiss((IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot),
-                    (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
-                        => RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(new RuntimeTypeHandle((MethodTable*)context), *(RuntimeMethodHandle*)&signature));
-
-            return v._result;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe IntPtr OpenInstanceMethodLookup(IntPtr openResolver, object obj)
         {

@@ -141,6 +141,9 @@
   <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
     <value>Algorithm '{0}' is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_ArgCompositeMLDsaRequiresCompositeMLDsaKey" xml:space="preserve">
+    <value>Keys used with the CompositeMLDsaCng algorithm must have an algorithm group of CompositeMLDsa.</value>
+  </data>
   <data name="Cryptography_ArgMLDsaRequiresMLDsaKey" xml:space="preserve">
     <value>Keys used with the MLDsaCng algorithm must have an algorithm group of MLDsa.</value>
   </data>
