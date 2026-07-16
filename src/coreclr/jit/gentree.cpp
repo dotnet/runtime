@@ -26245,6 +26245,15 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types type,
             op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
         }
 #elif defined(TARGET_WASM)
+        if (isScalar)
+        {
+            simdSize = 16;
+            type     = TYP_SIMD16;
+
+            op1 = gtNewSimdCreateScalarUnsafeNode(type, op1, simdBaseType, simdSize);
+            op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
+        }
+
         if (!isMagnitude && !isNumber)
         {
             intrinsic = isMax ? NI_PackedSimd_Max : NI_PackedSimd_Min;
@@ -26520,6 +26529,15 @@ GenTree* Compiler::gtNewSimdMinMaxNativeNode(
         }
     }
 #elif defined(TARGET_WASM)
+    if (isScalar)
+    {
+        simdSize = 16;
+        type     = TYP_SIMD16;
+
+        op1 = gtNewSimdCreateScalarUnsafeNode(type, op1, simdBaseType, simdSize);
+        op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
+    }
+
     if (varTypeIsFloating(simdBaseType))
     {
         intrinsic = isMax ? NI_PackedSimd_PseudoMax : NI_PackedSimd_PseudoMin;

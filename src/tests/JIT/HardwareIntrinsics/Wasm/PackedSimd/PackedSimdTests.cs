@@ -721,6 +721,36 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void MinMaxScalarTest()
+    {
+        // Scalar Math.Min/Max and the Number/Magnitude variants now lower through the SIMD builders on
+        // WASM by wrapping the operands in a single-element vector and extracting the result.
+
+        Assert.Equal(5.0, Math.Max(Opaque(3.0), Opaque(5.0)));
+        Assert.Equal(3.0, Math.Min(Opaque(3.0), Opaque(5.0)));
+        Assert.Equal(5.0f, Math.Max(Opaque(3.0f), Opaque(5.0f)));
+        Assert.Equal(3.0f, Math.Min(Opaque(3.0f), Opaque(5.0f)));
+
+        // Max/Min propagate NaN.
+        Assert.True(double.IsNaN(Math.Max(Opaque(double.NaN), Opaque(5.0))));
+        Assert.True(double.IsNaN(Math.Min(Opaque(5.0), Opaque(double.NaN))));
+
+        // The Number variants ignore NaN.
+        Assert.Equal(5.0, double.MaxNumber(Opaque(double.NaN), Opaque(5.0)));
+        Assert.Equal(5.0, double.MinNumber(Opaque(double.NaN), Opaque(5.0)));
+        Assert.Equal(5.0, double.MaxNumber(Opaque(3.0), Opaque(5.0)));
+        Assert.Equal(3.0, double.MinNumber(Opaque(3.0), Opaque(5.0)));
+
+        // Magnitude variants compare by absolute value.
+        Assert.Equal(-5.0, double.MaxMagnitude(Opaque(-5.0), Opaque(3.0)));
+        Assert.Equal(3.0, double.MinMagnitude(Opaque(-5.0), Opaque(3.0)));
+
+        // -0.0 is less than +0.0.
+        Assert.False(double.IsNegative(Math.Max(Opaque(-0.0), Opaque(0.0))));
+        Assert.True(double.IsNegative(Math.Min(Opaque(-0.0), Opaque(0.0))));
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);
