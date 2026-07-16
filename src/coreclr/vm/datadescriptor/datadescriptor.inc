@@ -214,10 +214,11 @@ CDAC_TYPE_END(Array)
 
 CDAC_TYPE_BEGIN(Delegate)
 CDAC_TYPE_SIZE(sizeof(DelegateObject))
+CDAC_TYPE_FIELD(Delegate, T_POINTER, HelperObject, cdac_data<DelegateObject>::HelperObject)
 CDAC_TYPE_FIELD(Delegate, T_POINTER, Target, cdac_data<DelegateObject>::Target)
 CDAC_TYPE_FIELD(Delegate, T_POINTER, MethodPtr, cdac_data<DelegateObject>::MethodPtr)
 CDAC_TYPE_FIELD(Delegate, T_POINTER, MethodPtrAux, cdac_data<DelegateObject>::MethodPtrAux)
-CDAC_TYPE_FIELD(Delegate, T_NINT, InvocationCount, cdac_data<DelegateObject>::InvocationCount)
+CDAC_TYPE_FIELD(Delegate, T_NINT, ExtraData, cdac_data<DelegateObject>::ExtraData)
 CDAC_TYPE_END(Delegate)
 
 CDAC_TYPE_BEGIN(TypedByRef)
@@ -523,11 +524,16 @@ CDAC_TYPE_FIELD(ArrayListBlock, T_UINT32, Size, cdac_data<ArrayListBase>::Size)
 CDAC_TYPE_FIELD(ArrayListBlock, T_POINTER, ArrayStart, cdac_data<ArrayListBase>::ArrayStart)
 CDAC_TYPE_END(ArrayListBlock)
 
+CDAC_TYPE_BEGIN(Signature)
+CDAC_TYPE_SIZE(sizeof(Signature))
+CDAC_TYPE_FIELD(Signature, T_POINTER, SignaturePointer, cdac_data<Signature>::SignaturePointer)
+CDAC_TYPE_FIELD(Signature, T_UINT32, SignatureLength, cdac_data<Signature>::SignatureLength)
+CDAC_TYPE_END(Signature)
+
 CDAC_TYPE_BEGIN(VASigCookie)
 CDAC_TYPE_INDETERMINATE(VASigCookie)
 CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SizeOfArgs, offsetof(VASigCookie, sizeOfArgs))
-CDAC_TYPE_FIELD(VASigCookie, T_POINTER, SignaturePointer, cdac_data<VASigCookie>::SignaturePointer)
-CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SignatureLength, cdac_data<VASigCookie>::SignatureLength)
+CDAC_TYPE_FIELD(VASigCookie, TYPE(Signature), Signature, cdac_data<VASigCookie>::Signature)
 CDAC_TYPE_END(VASigCookie)
 
 // RuntimeTypeSystem
@@ -572,7 +578,26 @@ CDAC_TYPE_FIELD(EEClass, T_UINT16, NumStaticFields, cdac_data<EEClass>::NumStati
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_FIELD(EEClass, T_UINT8, BaseSizePadding, cdac_data<EEClass>::BaseSizePadding)
+CDAC_TYPE_FIELD(EEClass, T_POINTER, OptionalFields, cdac_data<EEClass>::OptionalFields)
 CDAC_TYPE_END(EEClass)
+
+CDAC_TYPE_BEGIN(EEClassOptionalFields)
+CDAC_TYPE_INDETERMINATE(EEClassOptionalFields)
+#ifdef UNIX_AMD64_ABI
+CDAC_TYPE_FIELD(EEClassOptionalFields, TYPE(SystemVEightByteRegistersInfo), EightByteRegistersInfo, cdac_data<EEClassOptionalFields>::EightByteRegistersInfo)
+#endif // UNIX_AMD64_ABI
+CDAC_TYPE_END(EEClassOptionalFields)
+
+#ifdef UNIX_AMD64_ABI
+CDAC_TYPE_BEGIN(SystemVEightByteRegistersInfo)
+CDAC_TYPE_INDETERMINATE(SystemVEightByteRegistersInfo)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, NumEightBytes, cdac_data<SystemVEightByteRegistersInfo>::NumEightBytes)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteClassification0, cdac_data<SystemVEightByteRegistersInfo>::EightByteClassification0)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteClassification1, cdac_data<SystemVEightByteRegistersInfo>::EightByteClassification1)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteSize0, cdac_data<SystemVEightByteRegistersInfo>::EightByteSize0)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteSize1, cdac_data<SystemVEightByteRegistersInfo>::EightByteSize1)
+CDAC_TYPE_END(SystemVEightByteRegistersInfo)
+#endif // UNIX_AMD64_ABI
 
 CDAC_TYPE_BEGIN(GenericsDictInfo)
 CDAC_TYPE_INDETERMINATE(GenericsDictInfo)
@@ -705,7 +730,8 @@ CDAC_TYPE_END(NativeCodeSlot)
 
 CDAC_TYPE_BEGIN(AsyncMethodData)
 CDAC_TYPE_SIZE(sizeof(AsyncMethodData))
-CDAC_TYPE_FIELD(AsyncMethodData, T_UINT32, Flags, offsetof(AsyncMethodData, flags))
+CDAC_TYPE_FIELD(AsyncMethodData, T_UINT32, Flags, cdac_data<AsyncMethodData>::Flags)
+CDAC_TYPE_FIELD(AsyncMethodData, TYPE(Signature), Signature, cdac_data<AsyncMethodData>::Signature)
 CDAC_TYPE_END(AsyncMethodData)
 
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
@@ -1681,7 +1707,7 @@ CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
 CDAC_GLOBAL(StressLogEnabled, T_UINT8, 1)
 CDAC_GLOBAL_POINTER(StressLog, &StressLog::theLog)
 CDAC_GLOBAL(StressLogHasModuleTable, T_UINT8, 1)
-CDAC_GLOBAL(StressLogMaxModules, T_UINT64, cdac_offsets<StressLog>::MAX_MODULES)
+CDAC_GLOBAL(StressLogMaxModules, T_NUINT, cdac_offsets<StressLog>::MAX_MODULES)
 CDAC_GLOBAL(StressLogChunkSize, T_UINT32, STRESSLOG_CHUNK_SIZE)
 CDAC_GLOBAL(StressLogValidChunkSig, T_UINT32, StressLogChunk::ValidChunkSig)
 CDAC_GLOBAL(StressLogMaxMessageSize, T_UINT64, (uint64_t)StressMsg::maxMsgSize)
@@ -1768,5 +1794,6 @@ CDAC_GLOBAL_CONTRACT(StackWalk, c1)
 CDAC_GLOBAL_CONTRACT(StressLog, c2)
 CDAC_GLOBAL_CONTRACT(SyncBlock, c1)
 CDAC_GLOBAL_CONTRACT(Thread, c1)
+CDAC_GLOBAL_CONTRACT(WindowsErrorReporting, c1)
 
 CDAC_GLOBALS_END()

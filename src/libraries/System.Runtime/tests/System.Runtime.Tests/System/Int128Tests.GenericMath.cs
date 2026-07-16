@@ -1396,6 +1396,24 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CopySignTest()
+        {
+            Assert.Equal(Zero, NumberHelper<Int128>.CopySign(Zero, One));
+            Assert.Equal(One, NumberHelper<Int128>.CopySign(One, One));
+            Assert.Equal(MaxValue, NumberHelper<Int128>.CopySign(MaxValue, One));
+            Assert.Equal(One, NumberHelper<Int128>.CopySign(NegativeOne, One));
+
+            Assert.Equal(Zero, NumberHelper<Int128>.CopySign(Zero, NegativeOne));
+            Assert.Equal(NegativeOne, NumberHelper<Int128>.CopySign(One, NegativeOne));
+            Assert.Equal(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0001), NumberHelper<Int128>.CopySign(MaxValue, NegativeOne));
+            Assert.Equal(MinValue, NumberHelper<Int128>.CopySign(MinValue, NegativeOne));
+            Assert.Equal(NegativeOne, NumberHelper<Int128>.CopySign(NegativeOne, NegativeOne));
+
+            Assert.Throws<OverflowException>(() => NumberHelper<Int128>.CopySign(MinValue, Zero));
+            Assert.Throws<OverflowException>(() => NumberHelper<Int128>.CopySign(MinValue, One));
+        }
+
+        [Fact]
         public static void MaxTest()
         {
             Assert.Equal(One, NumberHelper<Int128>.Max(Zero, 1));

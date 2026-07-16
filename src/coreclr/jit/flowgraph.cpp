@@ -762,7 +762,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             // across suspensions" behavior for free, while also properly
             // ensuring derived addresses are byref typed and are treated
             // similarly.
-            type = compIsAsync() ? TYP_BYREF : TYP_I_IMPL;
+            type = impInlineRoot()->compIsAsync() ? TYP_BYREF : TYP_I_IMPL;
             break;
 
         case CORINFO_HELP_INITCLASS:

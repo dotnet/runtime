@@ -5010,6 +5010,7 @@ private:
         PREFIX_IS_TASK_AWAIT = 0x00000080,
         PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
         PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT = 0x00000200,
+        PREFIX_IS_ADAPTED_FROM_VALUETASK = 0x00000400,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -5499,6 +5500,9 @@ public:
     bool impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed);
 
     const BYTE* impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal, IL_OFFSET* awaitOffset);
+    bool impMatchAsyncVersionTailCall(const BYTE* codeAddr, const BYTE* codeEndp, int*        prefixFlags, int*        numBytesMatched);
+    bool impMatchStlocLdloca(const BYTE** codeAddr, const BYTE* codeEndp, unsigned* lclNum);
+
     bool impCheckOptimizeAwait(IL_OFFSET awaitOffset);
 
     GenTree* impCastClassOrIsInstToTree(
@@ -9512,6 +9516,13 @@ public:
 
     CORINFO_ASYNC_INFO* eeGetAsyncInfo();
 
+#if defined(TARGET_WASM)
+    CORINFO_WASM_WELLKNOWN_GLOBALS wasmWellKnownGlobals;
+    bool                           wasmWellKnownGlobalsInitialized = false;
+
+    CORINFO_WASM_WELLKNOWN_GLOBALS* eeGetWasmWellKnownGlobals();
+#endif // defined(TARGET_WASM)
+
     // Gets the offset of a SDArray's first element
     static unsigned eeGetArrayDataOffset();
 
@@ -10164,9 +10175,6 @@ private:
         return sizeBytes;
     }
 
-    // Get the number of elements of baseType of SIMD vector given by its size and baseType
-    static int getSIMDVectorLength(unsigned simdSize, var_types baseType);
-
     // Get the number of elements of baseType of SIMD vector given by its type handle
     int getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd);
 
@@ -10174,6 +10182,9 @@ private:
     int getSIMDTypeAlignment(var_types simdType);
 
 public:
+    // Get the number of elements of baseType of SIMD vector given by its size and baseType
+    static int getSIMDVectorLength(unsigned simdSize, var_types baseType);
+
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
     uint32_t getVectorTByteLength()
@@ -10625,12 +10636,36 @@ public:
         return threshold;
     }
 
-    // Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many
-    // structs will fit the criteria.
-    bool structSizeMightRepresentSIMDType(size_t structSize)
+    //---------------------------------------------------------------------------------------------
+    // structMightRepresentSIMDType: Can this class handle be a SIMD type?
+    //
+    // Returns:
+    //   false if it is not possible for this class handle to be a SIMD type, otherwise true.
+    //
+    // Notes:
+    //   SIMD types are currently all value classes annotated with the [Intrinsic] attribute.
+    //   This is a first stage filter, caller should verify exact SIMD types by name.
+    bool structMightRepresentSIMDType(CORINFO_CLASS_HANDLE clsHnd)
     {
+        uint32_t structFlags   = info.compCompHnd->getClassAttribs(clsHnd);
+        uint32_t filteredFlags = structFlags & (CORINFO_FLG_VALUECLASS | CORINFO_FLG_CONTAINS_GC_PTR |
+                                                CORINFO_FLG_BYREF_LIKE | CORINFO_FLG_INTRINSIC_TYPE);
+        uint32_t desiredFlags  = (CORINFO_FLG_VALUECLASS | CORINFO_FLG_INTRINSIC_TYPE);
+
+        if (filteredFlags != desiredFlags)
+        {
+            return false;
+        }
+
+        unsigned structSize = info.compCompHnd->getClassSize(clsHnd);
 #ifdef FEATURE_SIMD
-        return (structSize >= getMinVectorByteLength()) && (structSize <= getMaxVectorByteLength());
+#ifdef TARGET_ARM64
+        const uint32_t max =
+            compOpportunisticallyDependsOn(InstructionSet_VectorT) ? MAX_SVE_REGSIZE_BYTES : FP_REGSIZE_BYTES;
+#else
+        const uint32_t max = getMaxVectorByteLength();
+#endif // TARGET_ARM64
+        return (structSize >= getMinVectorByteLength()) && (structSize <= max);
 #else
         return false;
 #endif // FEATURE_SIMD

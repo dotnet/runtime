@@ -723,6 +723,11 @@ namespace pal
 
     inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
     {
+#ifdef TARGET_WASI
+        // wasi-libc has no dlopen; callers treat false as "not available".
+        (void)path; hMod = nullptr;
+        return false;
+#else
         hMod = (pal::mod_t)dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
         if (hMod == nullptr)
         {
@@ -730,6 +735,7 @@ namespace pal
             return false;
         }
         return true;
+#endif
     }
 
 

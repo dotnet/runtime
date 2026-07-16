@@ -1876,12 +1876,13 @@ private:
                 indir->AsLclFld()->SetLayout(layout);
                 lclNode = indir->AsLclVarCommon();
 
+                // The general invariant in the compiler is that whoever creates a LCL_FLD node after
+                // local morph must mark the associated local DNER. We break this invariant for STRUCT fields, to
+                // allow global morph to transform these into enregisterable LCL_VARs, applying DNER otherwise.
                 if (!indir->TypeIs(TYP_STRUCT))
                 {
-                    // The general invariant in the compiler is that whoever creates a LCL_FLD node after local morph
-                    // must mark the associated local DNER. We break this invariant here, for STRUCT fields, to allow
-                    // global morph to transform these into enregisterable LCL_VARs, applying DNER otherwise.
-                    m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+                    // MorphLocalField reduces to promoted field if possible and marks the local DNER otherwise.
+                    MorphLocalField(lclNode, user);
                 }
                 break;
 

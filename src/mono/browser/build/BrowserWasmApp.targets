@@ -470,7 +470,7 @@
 
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
-      Lines="$(V8ScriptShebang);v8 --experimental-wasm-exnref $(_WasmMainJSFileName) -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
+      Lines="$(V8ScriptShebang);v8 $(_WasmMainJSFileName) -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
       Overwrite="true">
     </WriteLinesToFile>
 
