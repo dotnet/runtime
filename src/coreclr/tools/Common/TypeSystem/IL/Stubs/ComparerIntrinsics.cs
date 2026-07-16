@@ -321,8 +321,7 @@ namespace Internal.IL.Stubs
         /// <summary>
         /// Determines whether <paramref name="type"/> is bitwise-equatable: an unmanaged, tightly-packed
         /// type whose equality is provably a bitwise (memcmp) comparison. This is the single authority
-        /// behind <see cref="System.Runtime.CompilerServices.RuntimeHelpers.IsBitwiseEquatable{T}"/> and
-        /// mirrors the CoreCLR VM's determination.
+        /// behind <see cref="System.Runtime.CompilerServices.RuntimeHelpers.IsBitwiseEquatable{T}"/>.
         /// </summary>
         public static bool IsBitwiseEquatable(TypeDesc type)
         {
@@ -384,7 +383,7 @@ namespace Internal.IL.Stubs
             // Mirrors the CoreCLR VM's MethodTable::IsNotTightlyPacked (negated): a byte-wise compare
             // equals comparing every field only if there is no padding anywhere. That needs the declared
             // fields to exactly cover the instance size (no gaps, no overlap) and every nested value-type
-            // field to itself be tightly packed. The nested check makes this transitive, like the VM flag.
+            // field to itself be tightly packed. The nested check makes this transitive.
             if (type.ContainsGCPointers)
                 return false;
 
@@ -424,7 +423,7 @@ namespace Internal.IL.Stubs
 
         private static MethodDesc GetIEquatableEqualsImplementation(MetadataType type)
         {
-            // Keep token resolution simple by only handling non-generic value types, matching the VM.
+            // Keep token resolution simple by only handling non-generic value types.
             if (type.HasInstantiation)
                 return null;
 

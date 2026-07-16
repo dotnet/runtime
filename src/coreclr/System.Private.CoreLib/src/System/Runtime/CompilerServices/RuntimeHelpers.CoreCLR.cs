@@ -357,7 +357,7 @@ namespace System.Runtime.CompilerServices
         /// unsynchronized concurrent mutation -- already a data race with undefined behavior -- this can observe
         /// a torn value within a single field that a strictly field-wise comparison would not. A torn read cannot
         /// fabricate an invalid managed reference; only the already-undefined total comparison result is affected. This is
-        /// consistent with existing bitwise-based APIs such as <see cref="MemoryExtensions.SequenceEqual{T}(ReadOnlySpan{T}, ReadOnlySpan{T})"/>.
+        /// acceptable for bitwise-based APIs such as <see cref="MemoryExtensions.SequenceEqual{T}(ReadOnlySpan{T}, ReadOnlySpan{T})"/>.
         /// </para>
         /// </remarks>
         [Intrinsic]
