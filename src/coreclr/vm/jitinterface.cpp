@@ -12536,7 +12536,10 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "get_IsInvalid",
        "get_Preamble",
        "GetFileLength",
-       "RotateLeft"
+       "RotateLeft",
+       "get_Target",
+       "get_Count",
+       "GetNonRandomizedHashCode"
 
 
 
