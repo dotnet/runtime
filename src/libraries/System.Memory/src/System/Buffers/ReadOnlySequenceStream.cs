@@ -20,7 +20,6 @@ namespace System.Buffers
         private SequencePosition _position;
         private long _absolutePosition;
         private bool _isDisposed;
-        private CachedCompletedInt32Task _lastReadTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ReadOnlySequenceStream"/> class over the specified <see cref="ReadOnlySequence{Byte}"/>.
@@ -136,7 +135,7 @@ namespace System.Buffers
             }
 
             int n = Read(buffer, offset, count);
-            return _lastReadTask.GetTask(n);
+            return Task.FromResult(n);
         }
 
         /// <inheritdoc/>

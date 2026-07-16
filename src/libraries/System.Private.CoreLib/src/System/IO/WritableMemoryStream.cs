@@ -15,7 +15,6 @@ namespace System.IO
         private int _position;
         private int _length;
         private bool _isOpen;
-        private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WritableMemoryStream"/> class over the specified <see cref="Memory{Byte}"/>.
@@ -133,7 +132,7 @@ namespace System.IO
             }
 
             int n = Read(buffer, offset, count);
-            return _lastReadTask.GetTask(n);
+            return Task.FromResult(n);
         }
 
         /// <inheritdoc/>
@@ -323,7 +322,6 @@ namespace System.IO
         {
             _isOpen = false;
             _memory = default;
-            _lastReadTask = default;
             base.Dispose(disposing);
         }
 

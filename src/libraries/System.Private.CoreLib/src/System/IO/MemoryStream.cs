@@ -32,8 +32,6 @@ namespace System.IO
         private readonly bool _exposable;  // Whether the array can be returned to the user.
         private bool _isOpen;              // Is this stream open or closed?
 
-        private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
-
         public MemoryStream()
             : this(0)
         {
@@ -119,7 +117,6 @@ namespace System.IO
                 _writable = false;
                 _expandable = false;
                 // Don't set buffer to null - allow TryGetBuffer, GetBuffer & ToArray to work.
-                _lastReadTask = default;
             }
         }
 
@@ -373,7 +370,7 @@ namespace System.IO
             try
             {
                 int n = Read(buffer, offset, count);
-                return _lastReadTask.GetTask(n);
+                return Task.FromResult(n);
             }
             catch (OperationCanceledException oce)
             {

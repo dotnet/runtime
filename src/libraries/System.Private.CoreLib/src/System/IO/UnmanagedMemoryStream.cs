@@ -42,7 +42,6 @@ namespace System.IO
         private long _position; // long to allow seeking to any location beyond the length of the stream.
         private FileAccess _access;
         private bool _isOpen;
-        private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
         /// <summary>
         /// Creates a closed stream.
@@ -429,7 +428,7 @@ namespace System.IO
             try
             {
                 int n = Read(buffer, offset, count);
-                return _lastReadTask.GetTask(n);
+                return Task.FromResult(n);
             }
             catch (Exception ex)
             {

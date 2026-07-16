@@ -17,7 +17,6 @@ namespace System.IO
         private ReadOnlyMemory<byte> _memory;
         private int _position;
         private bool _isOpen;
-        private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ReadOnlyMemoryStream"/> class over the specified <see cref="ReadOnlyMemory{Byte}"/>.
@@ -134,7 +133,7 @@ namespace System.IO
             }
 
             int n = Read(buffer, offset, count);
-            return _lastReadTask.GetTask(n);
+            return Task.FromResult(n);
         }
 
         /// <inheritdoc/>
@@ -236,7 +235,6 @@ namespace System.IO
         {
             _isOpen = false;
             _memory = default;
-            _lastReadTask = default;
             base.Dispose(disposing);
         }
 

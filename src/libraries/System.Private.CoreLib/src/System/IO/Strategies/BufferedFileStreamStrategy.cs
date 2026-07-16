@@ -20,8 +20,6 @@ namespace System.IO.Strategies
         private int _writePos;
         private int _readPos;
         private int _readLen;
-        // The last successful Task returned from ReadAsync (perf optimization for successive reads of the same size)
-        private CachedCompletedInt32Task _lastSyncCompletedReadTask;
 
         internal BufferedFileStreamStrategy(FileStreamStrategy strategy, int bufferSize)
         {
@@ -285,7 +283,7 @@ namespace System.IO.Strategies
             ValueTask<int> readResult = ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken);
 
             return readResult.IsCompletedSuccessfully
-                ? _lastSyncCompletedReadTask.GetTask(readResult.Result)
+                ? Task.FromResult(readResult.Result)
                 : readResult.AsTask();
         }
 
