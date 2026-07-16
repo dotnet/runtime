@@ -24,13 +24,15 @@ namespace BitwiseEquatableTests
         [Fact]
         public static void IsBitwiseEquatable_MatchesExpected()
         {
-            // Primitives: '==' and Equals lower to the same bit-for-bit compare.
+            // Primitive: '==' and Equals lower to the same bit-for-bit compare.
             Check<int>(true);
+            // Int128/UInt128: field-wise IEquatable<T>.Equals over two ulong halves.
             Check<Int128>(true);
             Check<UInt128>(true);
-            // A SIMD/Unsafe-backed body isn't a recognized field-wise shape, but Guid is a known
-            // bitwise-equatable type special-cased by the runtime (matching NativeAOT), so it stays true.
+            // Guid is proven field-wise by the scanner (its Equals compares all 11 fields). GuidShape
+            // below covers the same many-field shape (which forces long-form branches) independently.
             Check<Guid>(true);
+            Check<GuidShape>(true);
             // Plain field-wise IEquatable<T>.Equals.
             Check<Point>(true);
             Check<ThreeFields>(true);
@@ -140,6 +142,19 @@ namespace BitwiseEquatableTests
         public readonly long V;
         public bool Equals(OneField o) => V == o.V;
         public override bool Equals(object o) => o is OneField p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    // 11 fields (int, 2x short, 8x byte = 16 bytes, tightly packed) shaped like Guid. Enough fields
+    // that Roslyn emits long-form branches in the field-wise Equals; the scanner must accept those.
+    public readonly struct GuidShape : IEquatable<GuidShape>
+    {
+        public readonly int A; public readonly short B; public readonly short C;
+        public readonly byte D, E, F, G, H, I, J, K;
+        public bool Equals(GuidShape o) =>
+            A == o.A && B == o.B && C == o.C && D == o.D && E == o.E && F == o.F &&
+            G == o.G && H == o.H && I == o.I && J == o.J && K == o.K;
+        public override bool Equals(object o) => o is GuidShape g && Equals(g);
         public override int GetHashCode() => 0;
     }
 
