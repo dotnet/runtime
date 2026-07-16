@@ -100,6 +100,13 @@ namespace System.Tests
         private static readonly HashSet<string> s_bid64Modulus = new() { "bid64_fmod" };
         private static readonly HashSet<string> s_bid128Modulus = new() { "bid128_fmod" };
 
+        // Round-to-nearest IEEE 754 remainder (Ieee754Remainder), not the truncating fmod above. Every reference
+        // row is exercised, including NaN payload propagation and the invalid operations (Inf rem y, x rem 0) that
+        // quiet to the canonical NaN.
+        private static readonly HashSet<string> s_bid32Remainder = new() { "bid32_rem" };
+        private static readonly HashSet<string> s_bid64Remainder = new() { "bid64_rem" };
+        private static readonly HashSet<string> s_bid128Remainder = new() { "bid128_rem" };
+
         // Round to an integral value under each rounding mode, mapping onto the .NET Round/Ceiling/Floor/Truncate
         // surface. `round_integral_exact` takes the mode from the rounding-context column, so only its
         // round-to-nearest-even (rnd == 0) rows are consumed here; the mode-named variants ignore that column.
@@ -496,6 +503,39 @@ namespace System.Tests
         public static IEnumerable<object[]> Decimal128Modulus()
         {
             foreach (string[] fields in EnumerateRows(s_bid128Modulus))
+            {
+                if (TryParseBid128(fields[2], out UInt128 left) && TryParseBid128(fields[3], out UInt128 right) && TryParseBid128(fields[4], out UInt128 expected))
+                {
+                    yield return new object[] { left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32Remainder()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Remainder))
+            {
+                if (TryParseBid32(fields[2], out uint left) && TryParseBid32(fields[3], out uint right) && TryParseBid32(fields[4], out uint expected))
+                {
+                    yield return new object[] { left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64Remainder()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Remainder))
+            {
+                if (TryParseBid64(fields[2], out ulong left) && TryParseBid64(fields[3], out ulong right) && TryParseBid64(fields[4], out ulong expected))
+                {
+                    yield return new object[] { left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128Remainder()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Remainder))
             {
                 if (TryParseBid128(fields[2], out UInt128 left) && TryParseBid128(fields[3], out UInt128 right) && TryParseBid128(fields[4], out UInt128 expected))
                 {

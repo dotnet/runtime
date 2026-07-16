@@ -1347,6 +1347,136 @@ namespace System
         }
 
         /// <summary>
+        /// Computes the round-to-nearest IEEE 754 <c>remainder</c> of two decimal values represented by their raw bit
+        /// patterns: <c>x - y * RoundToNearestEven(x / y)</c>. Unlike the <c>%</c> operator this rounds the quotient to
+        /// the nearest integer (ties to even), so the result magnitude is at most <c>|y| / 2</c> and its sign may differ
+        /// from the dividend.
+        /// </summary>
+        /// <remarks>
+        /// The truncated remainder and its integer quotient are formed exactly at the preferred exponent
+        /// <c>min(exp(x), exp(y))</c> using the same coefficient reduction as the <c>%</c> operator. When twice the
+        /// truncated remainder exceeds the divisor coefficient, or equals it while the quotient is odd, the divisor is
+        /// subtracted and the sign flipped to land on the nearest multiple. Only the final reduction step's quotient
+        /// determines parity: every earlier partial quotient is scaled by a positive power of ten and is therefore even.
+        /// </remarks>
+        internal static TValue Ieee754RemainderDecimalIeee754<TDecimal, TValue>(TValue left, TValue right)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>, IMinMaxValue<TValue>
+        {
+            // This code is based on `bid32_rem`, `bid64_rem`, and `bid128_rem` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (TDecimal.IsNaN(left) || TDecimal.IsNaN(right))
+            {
+                return PropagateNaN<TDecimal, TValue>(left, right);
+            }
+
+            bool resultSign = TDecimal.IsNegative(left);
+
+            if (TDecimal.IsInfinity(left))
+            {
+                // Infinity has no finite remainder; the operation is invalid and produces the canonical quiet NaN.
+                return TDecimal.NaNMask;
+            }
+
+            DecodedDecimalIeee754<TValue> a = UnpackDecimalIeee754<TDecimal, TValue>(left);
+
+            if (TDecimal.IsInfinity(right))
+            {
+                // A finite value has itself as its remainder modulo infinity; re-encode to a canonical form.
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, a.Significand, a.UnbiasedExponent);
+            }
+
+            DecodedDecimalIeee754<TValue> b = UnpackDecimalIeee754<TDecimal, TValue>(right);
+
+            if (TValue.IsZero(b.Significand))
+            {
+                // A remainder with a zero divisor is invalid and produces the canonical quiet NaN.
+                return TDecimal.NaNMask;
+            }
+
+            // The preferred exponent of the remainder is the smaller of the two operand exponents.
+            int resultExponent = Math.Min(a.UnbiasedExponent, b.UnbiasedExponent);
+
+            if (TValue.IsZero(a.Significand))
+            {
+                // Zero modulo any non-zero value is a signed zero at the preferred exponent.
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, TValue.Zero, resultExponent);
+            }
+
+            // `remainder` is the truncated remainder and `divisor` the divisor coefficient, both at the preferred
+            // exponent; `quotientIsOdd` carries the parity of the full integer quotient for the ties-to-even rule.
+            TValue remainder;
+            TValue divisor;
+            bool quotientIsOdd;
+
+            if (a.UnbiasedExponent >= b.UnbiasedExponent)
+            {
+                // Reduce `a.Significand * 10^(ea - eb)` modulo `b.Significand`, folding as many trailing zeros per step
+                // as keep the product within the integer width (capped at the largest cached power of ten). Each step
+                // tracks its quotient; the parity of the last one equals the parity of the full quotient because the
+                // earlier partial quotients are each scaled by a later positive power of ten.
+                divisor = b.Significand;
+
+                TValue quotient = a.Significand / b.Significand;
+                remainder = a.Significand - (quotient * b.Significand);
+
+                int chunk = 1;
+                TValue chunkLimit = TValue.MaxValue / b.Significand;
+
+                while ((chunk < TDecimal.Precision - 1) && (TDecimal.Power10(chunk + 1) <= chunkLimit))
+                {
+                    chunk++;
+                }
+
+                for (int gap = a.UnbiasedExponent - b.UnbiasedExponent; (gap > 0) && !TValue.IsZero(remainder); gap -= chunk)
+                {
+                    int step = Math.Min(chunk, gap);
+                    TValue scaled = remainder * TDecimal.Power10(step);
+
+                    quotient = scaled / b.Significand;
+                    remainder = scaled - (quotient * b.Significand);
+                }
+
+                quotientIsOdd = !TValue.IsZero(quotient & TValue.One);
+            }
+            else
+            {
+                // The divisor is scaled up by `10^(eb - ea)`. Once the scaled divisor has more than one digit beyond the
+                // format precision it exceeds twice the dividend, so the dividend is already the nearest remainder.
+                int gap = b.UnbiasedExponent - a.UnbiasedExponent;
+
+                if (TDecimal.CountDigits(b.Significand) + gap > TDecimal.Precision + 1)
+                {
+                    return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, a.Significand, resultExponent);
+                }
+
+                // The scaled divisor has at most `Precision + 1` digits. Peel one factor of ten so the cached
+                // power-of-ten lookup stays within its table, which only spans exponents below `Precision`.
+                divisor = (b.Significand * TDecimal.Power10(gap - 1)) * TDecimal.Power10(1);
+
+                TValue quotient = a.Significand / divisor;
+                remainder = a.Significand - (quotient * divisor);
+                quotientIsOdd = !TValue.IsZero(quotient & TValue.One);
+            }
+
+            // Round the quotient to nearest, ties to even: move to the nearer multiple of the divisor when the truncated
+            // remainder is past the halfway point, or exactly halfway with an odd quotient. The subtraction flips the sign.
+            TValue twiceRemainder = remainder + remainder;
+
+            if ((twiceRemainder > divisor) || ((twiceRemainder == divisor) && quotientIsOdd))
+            {
+                remainder = divisor - remainder;
+                resultSign = !resultSign;
+            }
+
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, remainder, resultExponent);
+        }
+
+        /// <summary>
         /// Rounds a finite value to <paramref name="digits"/> fractional digits under <paramref name="mode"/>.
         /// The value is <c>coefficient * 10^exponent</c>; when its quantum exponent is already at or above
         /// <c>-digits</c> there is nothing to round and it is returned unchanged. Otherwise the digits below

@@ -1613,6 +1613,66 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x32800003U, 0x32800002U, 0xB2800001U)] // 3 rem 2 = -1 (quotient rounds up to even 2)
+        [InlineData(0x32800005U, 0x32800002U, 0x32800001U)] // 5 rem 2 = 1 (quotient 2, exact half stays)
+        [InlineData(0x32800007U, 0x32800002U, 0xB2800001U)] // 7 rem 2 = -1 (quotient rounds up to even 4)
+        [InlineData(0x3280000BU, 0x32800004U, 0xB2800001U)] // 11 rem 4 = -1 (nearest multiple 12)
+        [InlineData(0xB280000BU, 0x32800004U, 0x32800001U)] // -11 rem 4 = 1 (sign flips)
+        [InlineData(0x3280000AU, 0x32800003U, 0x32800001U)] // 10 rem 3 = 1
+        [InlineData(0x32800009U, 0x32800003U, 0x32800000U)] // 9 rem 3 = +0 (exact multiple)
+        [InlineData(0xB2800009U, 0x32800003U, 0xB2800000U)] // -9 rem 3 = -0
+        [InlineData(0x3280002AU, 0x78000000U, 0x3280002AU)] // finite rem +Infinity = finite
+        [InlineData(0xB280002AU, 0xF8000000U, 0xB280002AU)] // -finite rem -Infinity = -finite
+        [InlineData(0x32800005U, 0x32800000U, 0x7C000000U)] // x rem 0 = NaN
+        [InlineData(0x78000000U, 0x32800005U, 0x7C000000U)] // +Infinity rem finite = NaN
+        [InlineData(0xFC000000U, 0x32800005U, 0xFC000000U)] // NaN rem finite = NaN
+        [InlineData(0x32800005U, 0xFC000000U, 0xFC000000U)] // finite rem NaN = NaN
+        [InlineData(0x7E001234U, 0x32800005U, 0x7C001234U)] // signaling NaN operand quieted
+        [InlineData(0x32800005U, 0x7C0FFFFFU, 0x7C000000U)] // out-of-range NaN payload cleared
+        [InlineData(0x2A800000U, 0x78000000U, 0x2A800000U)]
+        [InlineData(0xF8000000U, 0x28800184U, 0x7C000000U)]
+        [InlineData(0x19804DB0U, 0x953FA8A2U, 0x1503D67EU)]
+        [InlineData(0x8C015A31U, 0x3F000001U, 0x8C015A31U)]
+        [InlineData(0xFC000000U, 0x18014D75U, 0xFC000000U)]
+        [InlineData(0x07000185U, 0xF8000000U, 0x07000185U)]
+        [InlineData(0xC2801E5DU, 0x9B801D8DU, 0x1B800A91U)]
+        [InlineData(0x28910D0DU, 0xFC000000U, 0xFC000000U)]
+        [InlineData(0x2F847E9CU, 0x95800000U, 0x7C000000U)]
+        [InlineData(0x8D000008U, 0xC7000286U, 0x8D000008U)]
+        [InlineData(0xB85EB066U, 0xFC000000U, 0xFC000000U)]
+        [InlineData(0xB6800330U, 0x2B800003U, 0xAB800000U)]
+        [InlineData(0x5307ABF5U, 0x2287FB3AU, 0xA2825F88U)]
+        [InlineData(0x5A800002U, 0x2D800004U, 0x2D800000U)]
+        [InlineData(0xFC000000U, 0xC200219DU, 0xFC000000U)]
+        [InlineData(0x8200772EU, 0x4F000000U, 0x7C000000U)]
+        [InlineData(0x36807027U, 0x90802417U, 0x108000FDU)]
+        [InlineData(0xA680AC17U, 0x14000000U, 0x7C000000U)]
+        [InlineData(0x3E800000U, 0x9380B36AU, 0x13800000U)]
+        [InlineData(0xFC000000U, 0x91811563U, 0xFC000000U)]
+        [InlineData(0xFC000000U, 0x5D6828A0U, 0xFC000000U)]
+        [InlineData(0xFC000000U, 0xBD800004U, 0xFC000000U)]
+        [InlineData(0x0E000000U, 0x9A00A259U, 0x0E000000U)]
+        [InlineData(0x2D800000U, 0xF8000000U, 0x2D800000U)]
+        [InlineData(0x98000248U, 0x59000000U, 0x7C000000U)]
+        [InlineData(0x4A000005U, 0xA5000000U, 0x7C000000U)]
+        [InlineData(0xC80114EEU, 0x88000000U, 0x7C000000U)]
+        [InlineData(0xBC00BDADU, 0x8E000427U, 0x8E000024U)]
+        [InlineData(0x3380395AU, 0x540129BFU, 0x3380395AU)]
+        [InlineData(0xFC000000U, 0x81000C50U, 0xFC000000U)]
+        [InlineData(0xDB0767EFU, 0x86817D0EU, 0x06808DFEU)]
+        [InlineData(0x9E000000U, 0x5B083365U, 0x9E000000U)]
+        [InlineData(0x3C000008U, 0x3D9DCC91U, 0x3C000008U)]
+        [InlineData(0x140005A9U, 0xB8800000U, 0x7C000000U)]
+        [InlineData(0x5D00003DU, 0x2E80001CU, 0xAE80000CU)]
+        [InlineData(0x04005659U, 0xC66EF60AU, 0x04005659U)]
+        public static void Ieee754RemainderTest(uint left, uint right, uint expected)
+        {
+            Decimal32 result = Decimal32.Ieee754Remainder(Unsafe.BitCast<uint, Decimal32>(left), Unsafe.BitCast<uint, Decimal32>(right));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
+        }
+
+
+        [Theory]
         [InlineData(0x32800002U, 0x32800003U, 0x32800004U, 0x3280000AU)] // 2 * 3 + 4 = 10
         [InlineData(0x2F8F4241U, 0x2F8F4241U, 0xAF8F4242U, 0x2C800001U)] // 1.000001 * 1.000001 - 1.000002 = 1E-12 (fused)
         [InlineData(0x35000000U, 0x33800003U, 0x31000007U, 0x31000007U)] // 0E5 * 3E2 + 7E-3
@@ -1694,6 +1754,16 @@ namespace System.Tests
             Decimal32 r = Unsafe.BitCast<uint, Decimal32>(right);
 
             Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(l % r));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32Remainder), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void Ieee754Remainder_IntelReferenceVectors(uint left, uint right, uint expected)
+        {
+            Decimal32 l = Unsafe.BitCast<uint, Decimal32>(left);
+            Decimal32 r = Unsafe.BitCast<uint, Decimal32>(right);
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Ieee754Remainder(l, r)));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]

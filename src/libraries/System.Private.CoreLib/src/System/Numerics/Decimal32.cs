@@ -888,6 +888,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static Decimal32 FusedMultiplyAdd(Decimal32 left, Decimal32 right, Decimal32 addend) => new Decimal32(Number.FusedMultiplyAddDecimalIeee754<Decimal32, uint>(left._value, right._value, addend._value));
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
+        public static Decimal32 Ieee754Remainder(Decimal32 left, Decimal32 right) => new Decimal32(Number.Ieee754RemainderDecimalIeee754<Decimal32, uint>(left._value, right._value));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Decimal32 x) => Number.ILogBDecimalIeee754<Decimal32, uint>(x._value);
 

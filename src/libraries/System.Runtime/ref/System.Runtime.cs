@@ -11468,6 +11468,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 FusedMultiplyAdd(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right, System.Numerics.Decimal128 addend) { throw null; }
         public override int GetHashCode() { throw null; }
         public static int ILogB(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 Ieee754Remainder(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
         public static bool IsEvenInteger(System.Numerics.Decimal128 value) { throw null; }
         public static bool IsFinite(System.Numerics.Decimal128 value) { throw null; }
         public static bool IsInfinity(System.Numerics.Decimal128 value) { throw null; }
@@ -11663,6 +11664,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 FusedMultiplyAdd(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right, System.Numerics.Decimal32 addend) { throw null; }
         public override int GetHashCode() { throw null; }
         public static int ILogB(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 Ieee754Remainder(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
         public static bool IsEvenInteger(System.Numerics.Decimal32 value) { throw null; }
         public static bool IsFinite(System.Numerics.Decimal32 value) { throw null; }
         public static bool IsInfinity(System.Numerics.Decimal32 value) { throw null; }
@@ -11862,6 +11864,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 FusedMultiplyAdd(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right, System.Numerics.Decimal64 addend) { throw null; }
         public override int GetHashCode() { throw null; }
         public static int ILogB(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 Ieee754Remainder(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }
         public static bool IsEvenInteger(System.Numerics.Decimal64 value) { throw null; }
         public static bool IsFinite(System.Numerics.Decimal64 value) { throw null; }
         public static bool IsInfinity(System.Numerics.Decimal64 value) { throw null; }

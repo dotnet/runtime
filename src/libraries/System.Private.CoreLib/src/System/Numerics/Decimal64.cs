@@ -879,6 +879,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static Decimal64 FusedMultiplyAdd(Decimal64 left, Decimal64 right, Decimal64 addend) => new Decimal64(Number.FusedMultiplyAddDecimalIeee754<Decimal64, ulong>(left._value, right._value, addend._value));
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
+        public static Decimal64 Ieee754Remainder(Decimal64 left, Decimal64 right) => new Decimal64(Number.Ieee754RemainderDecimalIeee754<Decimal64, ulong>(left._value, right._value));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Decimal64 x) => Number.ILogBDecimalIeee754<Decimal64, ulong>(x._value);
 
