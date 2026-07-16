@@ -10,4 +10,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal partial class FuncEvalFrame : IData<FuncEvalFrame>
 {
     [Field] public TargetPointer DebuggerEvalPtr { get; }
+    [Field] public TargetCodePointer ReturnAddress { get; }
 }

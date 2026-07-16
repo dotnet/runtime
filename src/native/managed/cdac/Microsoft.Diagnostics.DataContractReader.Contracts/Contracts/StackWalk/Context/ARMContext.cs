@@ -44,7 +44,7 @@ internal struct ARMContext : IPlatformContext
         set => Sp = (uint)value.Value;
     }
 
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Pc);
         set => Pc = (uint)value.Value;
@@ -64,6 +64,7 @@ internal struct ARMContext : IPlatformContext
         unwinder.Unwind(ref this);
     }
 
+    public void UnsetSingleStepFlag() { }
     public bool TrySetRegister(string name, TargetNUInt value)
     {
         if (name.Equals("r0", StringComparison.OrdinalIgnoreCase)) { R0 = (uint)value.Value; return true; }

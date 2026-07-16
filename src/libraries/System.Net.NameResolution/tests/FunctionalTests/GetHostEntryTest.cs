@@ -256,6 +256,22 @@ namespace System.Net.NameResolution.Tests
         }
 
         [Theory]
+        [InlineData("\0")]
+        [InlineData("\0host")]
+        [InlineData("host\0")]
+        [InlineData("ho\0st")]
+        [InlineData("host\0name")]
+        public async Task DnsGetHostEntry_NullCharacterInName_ThrowsArgumentException(string hostNameOrAddress)
+        {
+            Assert.Throws<ArgumentException>(() => Dns.GetHostEntry(hostNameOrAddress));
+            Assert.Throws<ArgumentException>(() => Dns.GetHostAddresses(hostNameOrAddress));
+            await Assert.ThrowsAsync<ArgumentException>(() => Dns.GetHostEntryAsync(hostNameOrAddress));
+            await Assert.ThrowsAsync<ArgumentException>(() => Dns.GetHostAddressesAsync(hostNameOrAddress));
+            await Assert.ThrowsAsync<ArgumentException>(() => Task.Factory.FromAsync(Dns.BeginGetHostEntry, Dns.EndGetHostEntry, hostNameOrAddress, null));
+            await Assert.ThrowsAsync<ArgumentException>(() => Task.Factory.FromAsync(Dns.BeginGetHostAddresses, Dns.EndGetHostAddresses, hostNameOrAddress, null));
+        }
+
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -405,9 +421,14 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAnyAsync<Exception>(() => Dns.GetHostEntryAsync(hostName));
         }
 
+<<<<<<< HEAD
         // "localhost." (fully-qualified form with trailing dot) is equivalent to plain "localhost"
         // and must resolve to loopback, either directly via the OS resolver or via the RFC 6761
         // fallback to plain "localhost" when the OS resolver doesn't handle the trailing dot.
+=======
+        // "localhost." is equivalent to plain "localhost".
+        // The OS resolver is tried first, falling back to plain "localhost" if resolution fails or returns no addresses.
+>>>>>>> origin/main
         [Fact]
         public async Task DnsGetHostEntry_LocalhostWithTrailingDot_ReturnsLoopback()
         {

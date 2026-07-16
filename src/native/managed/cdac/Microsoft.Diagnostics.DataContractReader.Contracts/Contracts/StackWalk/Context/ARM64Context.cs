@@ -51,7 +51,7 @@ internal struct ARM64Context : IPlatformContext
         readonly get => new(Sp);
         set => Sp = value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Pc);
         set => Pc = value.Value;
@@ -69,6 +69,9 @@ internal struct ARM64Context : IPlatformContext
         ARM64Unwinder unwinder = new(target);
         unwinder.Unwind(ref this);
     }
+
+    // Clears the AArch64 hardware single-step flag (CPSR.SS, bit 0x00200000).
+    public void UnsetSingleStepFlag() => Cpsr &= ~0x00200000u;
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {

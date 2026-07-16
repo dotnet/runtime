@@ -17,7 +17,6 @@ namespace System.Runtime.InteropServices.Tests
     public partial class ComVariantMarshallerTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Null_Marshals_To_Empty()
         {
             Assert.Equal(VarEnum.VT_EMPTY, ComVariantMarshaller.ConvertToUnmanaged(null).VarType);
@@ -25,7 +24,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void DBNull_Marshals_To_Null()
         {
             Assert.Equal(VarEnum.VT_NULL, ComVariantMarshaller.ConvertToUnmanaged(DBNull.Value).VarType);
@@ -267,7 +265,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Date_Marshals_To_DATE()
         {
             // OLE dates do not have time zones and do not support sub-millisecond precision.
@@ -312,8 +309,8 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55742", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Built-in COM / ComWrappers is not supported on WebAssembly")]
         public unsafe void GeneratedComInterfaceType_Marshals_To_UNKNOWN()
         {
             var obj = new ComExposedType();
@@ -330,7 +327,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55742", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Built-in COM / ComWrappers is not supported on WebAssembly")]
         public void UnknownWrapper_Of_GeneratedComInterfaceType_Marshals_To_UNKNOWN()
         {
             var obj = new ComExposedType();

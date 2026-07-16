@@ -39,7 +39,7 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     JNIEnv* env = GetJNIEnv();
 
     X509ChainContext* ret = NULL;
-    INIT_LOCALS(loc, keyStoreType, keyStore, targetSel, params, certList, certStoreType, certStoreParams, certStore);
+    INIT_LOCALS(loc, keyStoreType, keyStore, targetSel, params, certList, certStoreType, certStoreParams, certStore, errorList);
 
     // String keyStoreType = "AndroidCAStore";
     // KeyStore keyStore = KeyStore.getInstance(keyStoreType);
@@ -53,7 +53,9 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     // X509CertSelector targetSel = new X509CertSelector();
     // targetSel.setCertificate(cert);
     loc[targetSel] = (*env)->NewObject(env, g_X509CertSelectorClass, g_X509CertSelectorCtor);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, loc[targetSel], g_X509CertSelectorSetCertificate, cert);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // PKIXBuilderParameters params = new PKIXBuilderParameters(keyStore, targetSelector);
     loc[params] = (*env)->NewObject(
@@ -66,10 +68,13 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     //     certList.add(extraStore[i]);
     // }
     loc[certList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtorWithCapacity, extraStoreLen);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallBooleanMethod(env, loc[certList], g_ArrayListAdd, cert);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     for (int i = 0; i < extraStoreLen; ++i)
     {
         (*env)->CallBooleanMethod(env, loc[certList], g_ArrayListAdd, extraStore[i]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
     // String certStoreType = "Collection";
@@ -78,16 +83,21 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     loc[certStoreType] = make_java_string(env, "Collection");
     loc[certStoreParams] = (*env)->NewObject(
         env, g_CollectionCertStoreParametersClass, g_CollectionCertStoreParametersCtor, loc[certList]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     loc[certStore] = (*env)->CallStaticObjectMethod(
         env, g_CertStoreClass, g_CertStoreGetInstance, loc[certStoreType], loc[certStoreParams]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // params.addCertStore(certStore);
     (*env)->CallVoidMethod(env, loc[params], g_PKIXBuilderParametersAddCertStore, loc[certStore]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[errorList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     ret = xcalloc(1, sizeof(X509ChainContext));
     ret->params = AddGRef(env, loc[params]);
-    ret->errorList = ToGRef(env, (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor));
+    ret->errorList = AddGRef(env, loc[errorList]);
 
 cleanup:
     RELEASE_LOCALS(loc, env);

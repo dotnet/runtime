@@ -30,7 +30,7 @@
 #define XArchIntrinsicConstants_Vaes (1 << 15)
 #define XArchIntrinsicConstants_WaitPkg (1 << 16)
 #define XArchIntrinsicConstants_X86Serialize (1 << 17)
-#define XArchIntrinsicConstants_AVX512Bmm (1 << 18)
+#define XArchIntrinsicConstants_Avx512Bmm (1 << 18)
 #endif // HOST_X86 || HOST_AMD64
 
 #if defined(HOST_ARM64)
@@ -50,6 +50,7 @@
 #define ARM64IntrinsicConstants_SveAes (1 << 13)
 #define ARM64IntrinsicConstants_SveSha3 (1 << 14)
 #define ARM64IntrinsicConstants_SveSm4 (1 << 15)
+#define ARM64IntrinsicConstants_Cssc (1 << 16)
 
 #include <assert.h>
 

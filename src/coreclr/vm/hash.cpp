@@ -79,7 +79,7 @@ BOOL Bucket::InsertValue(const UPTR key, const UPTR value)
 
             // Release store: ensures the value is visible before the
             // key that publishes it. Pairs with the acquire load in
-            // LookupValue/ReplaceValue/DeleteValue.
+            // LookupValue/DeleteValue.
             VolatileStore(&m_rgKeys[i], key);
             return true;
         }
@@ -214,28 +214,6 @@ HashMap::HashMap()
 #endif // _DEBUG
 }
 
-//---------------------------------------------------------------------
-//  void HashMap::Init(unsigned cbInitialSize, CompareFnPtr ptr, bool fAsyncMode)
-//  set the initial size of the hash table and provide the comparison
-//  function pointer
-//
-void HashMap::Init(DWORD cbInitialSize, CompareFnPtr ptr, BOOL fAsyncMode, LockOwner *pLock)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACTL_END
-
-    Compare* pCompare = NULL;
-    if (ptr != NULL)
-    {
-        pCompare = new Compare(ptr);
-    }
-    Init(cbInitialSize, pCompare, fAsyncMode, pLock);
-}
 
 DWORD HashMap::GetNearestIndex(DWORD cbInitialSize)
 {
@@ -274,11 +252,11 @@ DWORD HashMap::GetNearestIndex(DWORD cbInitialSize)
 }
 
 //---------------------------------------------------------------------
-//  void HashMap::Init(unsigned cbInitialSize, Compare* pCompare, bool fAsyncMode)
+//  void HashMap::Init(unsigned cbInitialSize, bool fAsyncMode)
 //  set the initial size of the hash table and provide the comparison
 //  function pointer
 //
-void HashMap::Init(DWORD cbInitialSize, Compare* pCompare, BOOL fAsyncMode, LockOwner *pLock)
+void HashMap::Init(DWORD cbInitialSize, ComparePtr* pCompare, BOOL fAsyncMode, LockOwner *pLock)
 {
     CONTRACTL
     {
@@ -619,20 +597,22 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
     return INVALIDENTRY;
 }
 
-#ifndef DACCESS_COMPILE
-
 //---------------------------------------------------------------------
-//  UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
-//  Replace existing value in the hash table, use the comparison function
-//  to verify the values match
+//  UPTR HashMap::LookupValueByUniqueKey(UPTR key)
+//  Lookup value in the hash table assumes that there is no Comparison function and the keys are unique, returns the value or INVALIDENTRY if not present
 //
-UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
+UPTR HashMap::LookupValueByUniqueKey(UPTR key)
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
 
-    _ASSERTE(OwnLock());
+    _ASSERTE(m_pCompare == NULL); // This function should only be called when no compare function is provided
+#ifndef DACCESS_COMPILE
+    _ASSERTE (m_fAsyncMode || OwnLock());
 
     EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
@@ -640,12 +620,10 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
     // This is necessary in case some other thread
     // replaces m_rgBuckets
     ASSERT (key > DELETED);
+#endif // !DACCESS_COMPILE
 
-    // perform this check during replacing as well
-    ASSERT(value <= VALUE_MASK);
-
-    Bucket* rgBuckets = Buckets(); //atomic fetch
-    DWORD  cbSize = GetSize(rgBuckets);
+    PTR_Bucket rgBuckets = Buckets(); //atomic fetch
+    DWORD cbSize = GetSize(rgBuckets);
 
     UINT seed, incr;
     HashFunction(key, cbSize, seed, incr);
@@ -653,33 +631,20 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
     UPTR ntry;
     for(ntry =0; ntry < cbSize; ntry++)
     {
-        Bucket* pBucket = &rgBuckets[seed % cbSize];
+        PTR_Bucket pBucket = rgBuckets+(seed % cbSize);
         for (unsigned int i = 0; i < SLOTS_PER_BUCKET; i++)
         {
-            // Acquire load: ensures the value load below observes the
-            // value that was stored when this key was first published
-            // via Bucket::InsertValue.
+            // Acquire load: ensures the value load below is ordered
+            // after the key load. Pairs with the release store in
+            // Bucket::InsertValue.
             if (VolatileLoad(&pBucket->m_rgKeys[i]) == key) // keys match
             {
                 UPTR storedVal = pBucket->GetValue(i);
-                // if compare function is provided
-                // dupe keys are possible, check if the value matches,
-                if (CompareValues(value,storedVal))
-                {
-                    ProfileLookup(ntry,storedVal); //no-op in non HASHTABLE_PROFILE code
 
-                    // Plain store the new value, then release-store the
-                    // key to re-publish it. Readers acquire-load the key
-                    // via VolatileLoad(&m_rgKeys[i]), forming a proper
-                    // release-acquire pair on the same address and
-                    // ensuring they observe either the old or fully-
-                    // updated new value.
-                    pBucket->SetValue(value, i);
-                    VolatileStore(&pBucket->m_rgKeys[i], key);
+                ProfileLookup(ntry,storedVal); //no-op in non HASHTABLE_PROFILE code
 
-                    // return the previous stored value
-                    return storedVal;
-                }
+                // return the stored value
+                return storedVal;
             }
         }
 
@@ -694,6 +659,7 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
     return INVALIDENTRY;
 }
 
+#ifndef DACCESS_COMPILE
 //---------------------------------------------------------------------
 //  UPTR HashMap::DeleteValue (UPTR key, UPTR value)
 //  if found mark the entry deleted and return the stored value
@@ -774,21 +740,6 @@ UPTR HashMap::DeleteValue (UPTR key, UPTR value)
 #endif // _DEBUG
 
     return INVALIDENTRY;
-}
-
-
-//---------------------------------------------------------------------
-//  UPTR HashMap::Gethash (UPTR key)
-//  use this for lookups with unique keys
-// don't need to pass an input value to perform the lookup
-//
-UPTR HashMap::Gethash (UPTR key)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    return LookupValue(key,0);
 }
 
 
@@ -1001,7 +952,7 @@ LDone:
             ASSERT (keyv != DELETED);
             if (m_pCompare == NULL && keyv != EMPTY)
             {
-                ASSERT ((Buckets()[nb].GetValue (i)) == Gethash (keyv));
+                ASSERT ((Buckets()[nb].GetValue (i)) == LookupValueByUniqueKey (keyv));
             }
         }
     }

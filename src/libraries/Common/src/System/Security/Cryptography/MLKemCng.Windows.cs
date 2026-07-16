@@ -41,11 +41,7 @@ namespace System.Security.Cryptography
 
             MLKemAlgorithm algorithm = AlgorithmFromHandleImpl(key);
 
-#if SYSTEM_SECURITY_CRYPTOGRAPHY
-            duplicateKey = CngHelpers.Duplicate(key.HandleNoDuplicate, key.IsEphemeral);
-#else
             duplicateKey = key.Duplicate();
-#endif
 
             return algorithm;
         }
@@ -90,13 +86,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-#if SYSTEM_SECURITY_CRYPTOGRAPHY
-            return CngHelpers.Duplicate(_key.HandleNoDuplicate, _key.IsEphemeral);
-#else
-#pragma warning disable CA1416 // only supported on: 'windows'
             return _key.Duplicate();
-#pragma warning restore CA1416 // only supported on: 'windows'
-#endif
         }
 
         /// <inheritdoc/>

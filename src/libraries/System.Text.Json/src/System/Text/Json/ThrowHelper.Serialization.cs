@@ -956,6 +956,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_OpenGenericDerivedTypeCouldNotBeResolved(Type baseType, Type derivedType, string reason)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_OpenGenericDerivedTypeCouldNotBeResolved, derivedType, baseType, reason));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_TypeDicriminatorIdIsAlreadySpecified(Type baseType, object typeDiscriminator)
         {
             throw new InvalidOperationException(SR.Format(SR.Polymorphism_TypeDicriminatorIdIsAlreadySpecified, baseType, typeDiscriminator));

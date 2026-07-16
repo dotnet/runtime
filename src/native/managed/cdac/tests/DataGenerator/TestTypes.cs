@@ -94,6 +94,15 @@ internal sealed partial class TestFieldAddr : IData<TestFieldAddr>
     [FieldAddress("Anchor")] public TargetPointer AnchorAddress { get; }
 }
 
+// 11b. Optional nullable FieldAddress (TargetPointer?). The descriptor is
+// allowed to omit the field; absent => null, present => base + offset.
+[CdacType("TestOptionalFieldAddr")]
+internal sealed partial class TestOptionalFieldAddr : IData<TestOptionalFieldAddr>
+{
+    [Field]        public uint Required { get; }
+    [FieldAddress] public TargetPointer? OptionalAddress { get; }
+}
+
 // 12. UsePropertyName = false with explicit names -- suppresses property name.
 [CdacType("TestNoPropertyName")]
 internal sealed partial class TestNoPropertyName : IData<TestNoPropertyName>

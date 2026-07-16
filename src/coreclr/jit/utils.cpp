@@ -1560,7 +1560,8 @@ void HelperCallProperties::init()
                 break;
 
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
-                isPure     = true;
+                // In runtime async methods, execution may resume on a different thread after suspension.
+                // So managed thread ID is not a constant/pure value, but the helper is still no-throw.
                 exceptions = ExceptionSetFlags::None;
                 break;
 
@@ -1596,9 +1597,12 @@ void HelperCallProperties::init()
                 break;
 
             // GETREFANY is pure up to the value of the struct argument. We
-            // only support that when it is not an implicit byref.
+            // only support that when it is not an implicit byref. The
+            // TypedReference struct (two pointers) is passed by implicit
+            // byref on win-x64 and on wasm (the wasm ABI passes any struct
+            // without a single scalar lowering by reference).
             case CORINFO_HELP_GETREFANY:
-#ifndef WINDOWS_AMD64_ABI
+#if !defined(WINDOWS_AMD64_ABI) && !defined(TARGET_WASM)
                 isPure = true;
 #endif
                 break;

@@ -179,6 +179,7 @@ export function dotnetUpdateInternalsSubscriber() {
             getWasmMemory: table[0],
             getWasmTable: table[1],
             SystemJS_ScheduleDiagnosticServer: table[2],
+            SystemJS_GetMethodName: table[3],
         };
         Object.assign(interop, interopLocal);
     }
@@ -208,7 +209,7 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF8: table[4],
             utf8ToStringRelaxed: table[5],
             zeroRegion: table[6],
-            isSharedArrayBuffer: table[7],
+            arrayBufferNeedsCopy: table[7],
             viewOrCopy: table[8],
             abortBackgroundTimers: table[9],
             abortPosix: table[10],

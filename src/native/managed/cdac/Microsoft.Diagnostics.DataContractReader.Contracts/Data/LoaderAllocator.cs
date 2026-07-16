@@ -17,6 +17,7 @@ internal sealed partial class LoaderAllocator : IData<LoaderAllocator>
     [Field] public TargetPointer? DynamicHelpersStubHeap { get; }
     [Field] public TargetPointer VirtualCallStubManager { get; }
     [Field] public ObjectHandle ObjectHandle { get; }
-
+    [Field] public bool IsCollectible { get; }
+    [Field] public ulong CreationNumber { get; }
     public bool IsAlive => ReferenceCount != 0;
 }

@@ -122,6 +122,14 @@ namespace System.Text.Json.SourceGeneration
 
         public required string? ImmutableCollectionFactoryMethod { get; init; }
 
+        /// <summary>
+        /// The distinct set of <c>[Experimental]</c> diagnostic IDs referenced by this type's generated code
+        /// (the type itself, its serialized members and their types, its constructor and parameters,
+        /// its polymorphic derived types, and its converters). Sorted for stable incremental-cache equality.
+        /// The generated file for this type suppresses each of these IDs.
+        /// </summary>
+        public required ImmutableEquatableArray<string> ExperimentalDiagnosticIds { get; init; }
+
         public bool IsFastPathSupported()
         {
             if (ClassType is ClassType.Union)

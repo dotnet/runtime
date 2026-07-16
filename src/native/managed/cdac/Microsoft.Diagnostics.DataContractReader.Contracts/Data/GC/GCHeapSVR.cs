@@ -27,9 +27,9 @@ internal sealed partial class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
 
     [Field] public OomHistory OomData { get; }
 
-    [Field] public TargetPointer InternalRootArray { get; }
-    [Field] public TargetNUInt InternalRootArrayIndex { get; }
-    [Field(UnderlyingBoolType = typeof(int))] public bool HeapAnalyzeSuccess { get; }
+    [Field] public TargetPointer? InternalRootArray { get; }
+    [Field] public TargetNUInt? InternalRootArrayIndex { get; }
+    [Field(UnderlyingBoolType = typeof(int))] public bool? HeapAnalyzeSuccess { get; }
 
     [FieldAddress] public TargetPointer InterestingData { get; }
     [FieldAddress] public TargetPointer CompactReasons { get; }
