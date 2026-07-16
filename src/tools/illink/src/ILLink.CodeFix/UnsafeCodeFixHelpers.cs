@@ -114,7 +114,7 @@ namespace ILLink.CodeFix
             {
                 EventFieldDeclarationSyntax single = declaration
                     .WithDeclaration(declaration.Declaration.WithVariables(
-                        SyntaxFactory.SingletonSeparatedList(variables[i].WithoutTrivia())))
+                        SyntaxFactory.SingletonSeparatedList(variables[i])))
                     .WithoutTrivia();
 
                 if (unsafeVariables.Contains(variables[i].Identifier.ValueText))
