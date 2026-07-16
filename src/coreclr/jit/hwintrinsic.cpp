@@ -4935,20 +4935,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
 
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Only constant-index Vector.Shuffle is implemented today. Variable
-            // indices and ShuffleNative (which may lower to variable indices) fall back to the
-            // managed implementation for now.
-            if ((intrinsic != NI_Vector_Shuffle) || !impStackTop(0).val->IsCnsVec())
-            {
-                return nullptr;
-            }
-#endif
-
             bool isShuffleNative    = (intrinsic != NI_Vector_Shuffle);
             bool isNonDeterministic = isShuffleNative;
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
             if (isNonDeterministic)
             {
                 isNonDeterministic = genTypeSize(simdBaseType) > 1;

@@ -27748,7 +27748,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
 #elif defined(TARGET_ARM64)
     if ((!isShuffleNative) && (elementSize > 1))
 #elif defined(TARGET_WASM)
-    if (!isShuffleNative)
+    if ((!isShuffleNative) && (elementSize > 1))
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -28222,8 +28222,65 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
 
     retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseType, simdSize);
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdShuffleVariableNode");
-    retNode = op1;
+    assert(simdSize == 16);
+
+    // Swizzle (i8x16.swizzle) operates on byte indices, so for non-byte element types we expand each
+    // element index into the equivalent run of byte indices and then perform a single byte-granular
+    // lookup. e.g., 3 2 1 0 (int) -> 12 13 14 15 8 9 10 11 4 5 6 7 0 1 2 3 (byte)
+    if (elementSize > 1)
+    {
+        // ShiftLeft is only valid on integral types
+        if (varTypeIsFloating(simdBaseType))
+        {
+            if (elementSize == 4)
+            {
+                simdBaseType = TYP_INT;
+            }
+            else
+            {
+                assert(elementSize == 8);
+                simdBaseType = TYP_LONG;
+            }
+        }
+
+        // scale each element index into the byte offset of its low byte (index * elementSize)
+        cnsNode = gtNewIconNode(BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize)), TYP_INT);
+        op2     = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_PackedSimd_ShiftLeft, simdBaseType, simdSize);
+
+        // Swizzle is only valid on byte/sbyte
+        simdBaseType = varTypeIsUnsigned(simdBaseType) ? TYP_UBYTE : TYP_BYTE;
+
+        // broadcast the low byte of each element to every byte of that element
+        simd_t shufCns = {};
+        for (size_t index = 0; index < elementCount; index++)
+        {
+            for (size_t i = 0; i < elementSize; i++)
+            {
+                shufCns.u8[(index * elementSize) + i] = static_cast<uint8_t>(index * elementSize);
+            }
+        }
+
+        cnsNode                        = gtNewVconNode(type);
+        cnsNode->AsVecCon()->gtSimdVal = shufCns;
+
+        op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_PackedSimd_Swizzle, simdBaseType, simdSize);
+
+        // or in the per-byte offset within each element
+        simd_t orCns = {};
+        for (size_t index = 0; index < simdSize; index++)
+        {
+            orCns.u8[index] = static_cast<uint8_t>(index & (elementSize - 1));
+        }
+
+        cnsNode                        = gtNewVconNode(type);
+        cnsNode->AsVecCon()->gtSimdVal = orCns;
+
+        op2 = gtNewSimdBinOpNode(GT_OR, type, op2, cnsNode, simdBaseType, simdSize);
+    }
+
+    // Swizzle selects zero for any byte index that is out of range (>= 16), which matches Shuffle for
+    // byte element indices. Larger element types are normalized by the shared masking step below.
+    retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_PackedSimd_Swizzle, simdBaseType, simdSize);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -28234,7 +28291,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
 #elif defined(TARGET_ARM64)
     if ((!isShuffleNative) && (elementSize > 1))
 #elif defined(TARGET_WASM)
-    if (!isShuffleNative)
+    if ((!isShuffleNative) && (elementSize > 1))
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
