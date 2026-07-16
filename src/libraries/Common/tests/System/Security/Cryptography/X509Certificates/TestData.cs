@@ -4742,7 +4742,11 @@ YvvL0LiXzFyomg==
         //
         // Note that this test cannot be built by Pkcs12Builder, because that type
         // always unifies attribute sets.
-        internal static readonly byte[] DuplicateAttributesPfx = (
+        // Do not hand out the raw bytes for this certificate. Since it has named keys, if they are loaded in a
+        // non-ephemeral keyset then there is a Windows race when loading the PFX where two certificates will share the
+        // private keys, and disposing one certificate will remove the keys out from the other one. We need to only
+        // allow access to this PFX under a serial lock so multiple unit tests don't try to load this at the same time.
+        private static readonly byte[] DuplicateAttributesPfx = (
             "308207760201033082076F06092A864886F70D010701A08207600482075C3082" +
             "07583082043006092A864886F70D010701A08204210482041D30820419308204" +
             "15060B2A864886F70D010C0A0102A08202A6308202A2301C060A2A864886F70D" +
@@ -4803,6 +4807,14 @@ YvvL0LiXzFyomg==
             "007600690064006500721E4E004D006900630072006F0073006F006600740020" +
             "0053006F0066007400770061007200650020004B00650079002000530074006F" +
             "0072006100670065002000500072006F00760069006400650072").HexToByteArray();
+
+        internal static TRet WithDuplicateAttributesPfx<TState, TRet>(TState state, Func<byte[], TState, TRet> callback)
+        {
+            lock (DuplicateAttributesPfx)
+            {
+                return callback(DuplicateAttributesPfx, state);
+            }
+        }
 
         // Uses Placeholder
         internal static readonly byte[] SChannelPfx = (
