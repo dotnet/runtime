@@ -25983,9 +25983,6 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types type,
                     }
                     else
                     {
-                        needsFixup = cnsNode->IsVectorZero();
-                    }
-                    {
                         needsFixup = cnsNode->IsVectorNegativeZero(simdBaseType);
                     }
 
