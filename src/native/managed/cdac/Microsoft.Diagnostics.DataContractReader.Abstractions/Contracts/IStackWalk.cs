@@ -90,12 +90,6 @@ public record struct StackWalkFrameInfo(
     uint ParentNativeOffset = 0,
     TargetPointer AmbientSP = default);
 
-[Flags]
-public enum StackwalkFlag
-{
-    Default = 0,
-}
-
 public interface IStackWalk : IContract
 {
     static string IContract.Name => nameof(StackWalk);

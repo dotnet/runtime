@@ -45,15 +45,7 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(
     bool isFirst = true);
 
 // Gets the thread context at the given stack dataframe.
-byte[] GetRawContext(
-    IStackDataFrameHandle stackDataFrameHandle,
-    StackwalkFlag flags = StackwalkFlag.Default);
-
-[Flags]
-enum StackwalkFlag
-{
-    Default = 0,
-}
+byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
@@ -96,7 +88,7 @@ TargetPointer GetRedirectedContextPointer(ThreadData threadData);
 StackWalkFrameInfo GetCurrentFrameInfo(IStackDataFrameHandle stackDataFrameHandle);
 
 // Returns the exact generic instantiation context token for the current frameless managed frame,
-// including JIT-compiled and interpreted frames, or TargetPointer.Null if it can't be recovered.
+// or TargetPointer.Null if it can't be recovered.
 TargetPointer GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
@@ -503,9 +495,7 @@ The rest of the APIs convey state about the stack walk at a given point which fa
 
 This context is not guaranteed to be complete. Not all capital "F" Frames store the entire context, some only store the IP/SP/FP. Therefore, at points where the context is based on these Frames it will be incomplete.
 ```csharp
-byte[] GetRawContext(
-    IStackDataFrameHandle stackDataFrameHandle,
-    StackwalkFlag flags = StackwalkFlag.Default);
+byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 `GetFrameAddress` gets the address of the current capital "F" Frame. This is only valid if the `IStackDataFrameHandle` is at a point where the context is based on a capital "F" Frame. For example, it is not valid when when the current context was created by using the stack frame unwinder.

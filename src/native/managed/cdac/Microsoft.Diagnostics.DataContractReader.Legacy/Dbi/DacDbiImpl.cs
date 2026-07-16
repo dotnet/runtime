@@ -1900,8 +1900,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 }
             }
 
-            if (pRetVal != null)
-                *pRetVal = (int)ftResult;
+            *pRetVal = (int)ftResult;
         }
         catch (System.Exception ex)
         {

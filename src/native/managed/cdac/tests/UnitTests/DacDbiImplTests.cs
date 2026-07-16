@@ -1275,7 +1275,7 @@ public unsafe class DacDbiImplTests
             int hr = dacDbi.GetStackWalkCurrentFrameInfo(stackWalkHandle, (nint)(&data), &frameType);
 
             Assert.Equal(System.HResults.S_OK, hr);
-            Assert.Equal((int)FrameType.kManagedStackFrame, frameType);
+            Assert.Equal((int)Legacy.FrameType.kManagedStackFrame, frameType);
             Assert.Equal(0UL, data.v.exactGenericArgsToken);
             Assert.Equal(MethodToken, data.v.funcData.funcMetadataToken);
             Assert.Equal(0UL, data.v.funcData.vmAssembly);

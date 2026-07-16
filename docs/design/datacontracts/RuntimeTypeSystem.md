@@ -1458,9 +1458,9 @@ And the following enumeration definitions
     {
         None = 0,
         AsyncCall = 0x1,
-        IsAsyncVariant = 0x4,
-        Thunk = 0x10,
-        ReturnDroppingThunk = 0x20,
+        IsAsyncVariant = 0x2,
+        Thunk = 0x4,
+        ReturnDroppingThunk = 0x8,
     }
 
     [Flags]
