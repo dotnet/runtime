@@ -63,7 +63,23 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     }
     else
     {
-        NYI_WASM_SIMD("!codeGenIsTableDriven");
+        switch (info.id)
+        {
+            case NI_Vector_AsVector128Unsafe:
+            case NI_Vector_AsVector2:
+            case NI_Vector_AsVector3:
+            {
+                // These are pure reinterprets between SIMD widths. Every SIMD type occupies a
+                // full v128 on the value stack, so the consumed operand already is the result and
+                // there is nothing to emit.
+                break;
+            }
+
+            default:
+            {
+                NYI_WASM_SIMD("!codeGenIsTableDriven");
+            }
+        }
     }
 
     WasmProduceReg(node);

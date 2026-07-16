@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Wasm;
@@ -349,6 +350,32 @@ public sealed class PackedSimdTests
         Assert.Equal((byte)200, Vector128.CreateScalarUnsafe(Opaque((byte)200)).ToScalar());
         Assert.Equal(3.5f, Vector128.CreateScalarUnsafe(Opaque(3.5f)).ToScalar());
         Assert.Equal(6.25, Vector128.CreateScalarUnsafe(Opaque(6.25)).ToScalar());
+    }
+
+    [Fact]
+    public static unsafe void Vector2And3ConversionTest()
+    {
+        // Non-constant operands force the reinterpret nodes rather than constant folding.
+
+        Vector128<float> v = Opaque(Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f));
+
+        // Narrowing keeps the lower lanes and drops the rest.
+        Assert.Equal(new Vector2(1.0f, 2.0f), v.AsVector2());
+        Assert.Equal(new Vector3(1.0f, 2.0f, 3.0f), v.AsVector3());
+
+        // AsVector128 widens and zero-fills the upper lanes.
+        Assert.Equal(Vector128.Create(1.0f, 2.0f, 0.0f, 0.0f), Opaque(new Vector2(1.0f, 2.0f)).AsVector128());
+        Assert.Equal(Vector128.Create(1.0f, 2.0f, 3.0f, 0.0f), Opaque(new Vector3(1.0f, 2.0f, 3.0f)).AsVector128());
+
+        // AsVector128Unsafe leaves the upper lanes undefined, so only the lower lanes are guaranteed.
+        Vector128<float> u2 = Opaque(new Vector2(1.0f, 2.0f)).AsVector128Unsafe();
+        Assert.Equal(1.0f, u2.GetElement(0));
+        Assert.Equal(2.0f, u2.GetElement(1));
+
+        Vector128<float> u3 = Opaque(new Vector3(1.0f, 2.0f, 3.0f)).AsVector128Unsafe();
+        Assert.Equal(1.0f, u3.GetElement(0));
+        Assert.Equal(2.0f, u3.GetElement(1));
+        Assert.Equal(3.0f, u3.GetElement(2));
     }
 
     [Fact]

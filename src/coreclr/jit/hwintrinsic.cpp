@@ -3342,11 +3342,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     assert(simdBaseType == TYP_FLOAT);
 
-#if defined(TARGET_WASM)
-                    // TODO-WASM-SIMD: Implement NI_Vector_AsVector128(Vector2) - Need WithElement
-                    return nullptr;
-#endif
-
                     op1 = impSIMDPopStack();
 
                     if (op1->IsCnsVec())
@@ -3380,11 +3375,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 case 12:
                 {
                     assert(simdBaseType == TYP_FLOAT);
-
-#if defined(TARGET_WASM)
-                    // TODO-WASM-SIMD: Implement NI_Vector_AsVector128(Vector3) - Need WithElement
-                    return nullptr;
-#endif
 
                     op1 = impSIMDPopStack();
 
@@ -3446,11 +3436,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(simdBaseType == TYP_FLOAT);
             assert((simdSize == 8) || (simdSize == 12));
 
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_AsVector128Unsafe
-            return nullptr;
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector_AsVector128Unsafe, simdBaseType, simdSize);
             break;
@@ -3461,11 +3446,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert((simdSize == 16) && (simdBaseType == TYP_FLOAT));
             assert((retType == TYP_SIMD8) || (retType == TYP_SIMD12));
-
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_AsVector2/3
-            return nullptr;
-#endif
 
             assert(sig->numArgs == 1);
             op1 = impSIMDPopStack();
