@@ -184,10 +184,16 @@ internal static class DebugInfoHelpers
                     StartOffset = startOffset, EndOffset = endOffset, VarNumber = varNumber, CallReturnValueILOffset = callReturnValueILOffset,
                     Kind = DebugVarLocKind.DoubleStack, BaseRegister = reader.ReadUInt(), StackOffset = ReadEncodedStackOffset(reader, isX86),
                 },
-                // FPSTK and FIXED_VA: consume stream data to keep reader aligned, but no public
-                // DebugVarLocKind exists for these rarely-used location types.
-                VarLocType.VLT_FPSTK => ConsumeAndDefault(reader.ReadUInt(), startOffset, endOffset, varNumber, callReturnValueILOffset),
-                VarLocType.VLT_FIXED_VA => ConsumeAndDefault(reader.ReadUInt(), startOffset, endOffset, varNumber, callReturnValueILOffset),
+                VarLocType.VLT_FPSTK => new DebugVarInfo
+                {
+                    StartOffset = startOffset, EndOffset = endOffset, VarNumber = varNumber, CallReturnValueILOffset = callReturnValueILOffset,
+                    Kind = DebugVarLocKind.FloatingPointStack, IsFloatingPoint = true, FloatingPointStackRegister = reader.ReadUInt(),
+                },
+                VarLocType.VLT_FIXED_VA => new DebugVarInfo
+                {
+                    StartOffset = startOffset, EndOffset = endOffset, VarNumber = varNumber, CallReturnValueILOffset = callReturnValueILOffset,
+                    Kind = DebugVarLocKind.FixedVarArg, FixedVarArgOffset = reader.ReadUInt(),
+                },
                 _ => new DebugVarInfo
                 {
                     StartOffset = startOffset, EndOffset = endOffset, VarNumber = varNumber, CallReturnValueILOffset = callReturnValueILOffset,
@@ -195,11 +201,6 @@ internal static class DebugInfoHelpers
             };
         }
     }
-
-    private static DebugVarInfo ConsumeAndDefault(uint _, uint startOffset, uint endOffset, uint varNumber, uint callReturnValueILOffset) => new()
-    {
-        StartOffset = startOffset, EndOffset = endOffset, VarNumber = varNumber, CallReturnValueILOffset = callReturnValueILOffset,
-    };
 
     private static int ReadEncodedStackOffset(NibbleReader reader, bool isX86)
     {
