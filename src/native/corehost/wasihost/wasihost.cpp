@@ -7,8 +7,12 @@
 // See https://github.com/dotnet/runtime/issues/130129.
 
 #include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <set>
 #include <sstream>
+#include <string>
+#include <vector>
 
 // Shared pal (path handling, CORE_ROOT/TPA helpers); header-only, so no corerun object is linked.
 #include "corerun.hpp"
@@ -160,10 +164,11 @@ int main(int argc, char* argv[])
     native_search_dirs << app_path << pal::env_path_delim;
 
     string_t core_libs = pal::getenv(envvar::coreLibraries);
-    if (!core_libs.empty() && core_libs != app_path)
+    if (!core_libs.empty())
     {
         pal::ensure_trailing_delimiter(core_libs);
-        native_search_dirs << core_libs << pal::env_path_delim;
+        if (core_libs != app_path)
+            native_search_dirs << core_libs << pal::env_path_delim;
     }
 
     // CORE_ROOT locates the framework assemblies for the TPA list (the runtime itself is static on
