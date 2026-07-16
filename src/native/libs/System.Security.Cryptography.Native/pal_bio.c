@@ -127,15 +127,16 @@ int32_t CryptoNative_BioCtrlPending(BIO* bio)
  * operation so those bytes are not lost.
  */
 
-// First field of every custom BIO context is a magic tag identifying the concrete
-// type. The window/spill helpers below use it to reject BIOs that are not ManagedSpanBio
-// (see TryGetManagedSpanBioCtx) instead of type-confusing their context and corrupting the heap.
-#define DOTNET_BIO_TAG_MANAGED_SPAN  0x4D534249u // 'MSBI'
-#define DOTNET_BIO_TAG_SOCKET_REPLAY 0x53524250u // 'SRBP'
+// The window/spill helpers below (BioSetWriteWindow / BioGetWriteResult / BioDrainSpill /
+// BioSetReadWindow / BioClearReadWindow) interpret BIO_get_data() as a ManagedSpanBioCtx*.
+// Calling them on any other BIO type - notably the SocketReplayBio used in the peek /
+// deferred-server path, whose context is smaller - would read and write past the end of
+// that context and corrupt the heap. TryGetManagedSpanBioCtx gates every access on the
+// BIO's registered method type, which is OpenSSL's own type-identity mechanism (each
+// BIO_meth_new call gets a unique index from BIO_get_new_index).
 
 typedef struct
 {
-    uint32_t       tag;
     const uint8_t* readPtr;
     int32_t        readLen;
     int32_t        readPos;
@@ -154,22 +155,26 @@ static ManagedSpanBioCtx* GetManagedSpanBioCtx(BIO* bio)
     return (ManagedSpanBioCtx*)BIO_get_data(bio);
 }
 
+// The BIO type registered via BIO_get_new_index() for ManagedSpanBio; populated at
+// method init and compared against BIO_method_type(bio) to identify our BIO instances.
+static int g_managedSpanBioType = 0;
+
 // Sets *outCtx and returns non-zero only when 'bio' is one of our ManagedSpanBio instances.
-// The window/spill helpers interpret BIO_get_data() as a ManagedSpanBioCtx*; calling them on
-// any other BIO type (e.g. the SocketReplayBio used in the peek/deferred-server path, whose
-// context is smaller) would read and write past the end of that context, corrupting the heap.
-// The tag is the first field of every custom BIO context, so reading it is in-bounds for all
-// of them. Doing the single BIO_get_data() fetch, tag check, and NULL guard here means callers
-// touch the context only after it has been validated, and only load it once.
+// The window/spill helpers interpret BIO_get_data() as a ManagedSpanBioCtx*; calling them
+// on any other BIO type (e.g. the SocketReplayBio, whose context is smaller) would read
+// and write past the end of that context, corrupting the heap. Return zero and let the
+// helper silently no-op in that case — the managed layer sometimes routes fd-mode
+// operations (TlsSocketSession.Shutdown) through the buffered SslStreamPal path today,
+// so this must be defensive rather than fatal until that layering is fixed.
 static int TryGetManagedSpanBioCtx(BIO* bio, ManagedSpanBioCtx** outCtx)
 {
     *outCtx = NULL;
-    if (bio == NULL)
+    if (bio == NULL || BIO_method_type(bio) != g_managedSpanBioType)
     {
         return 0;
     }
     ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
-    if (ctx == NULL || ctx->tag != DOTNET_BIO_TAG_MANAGED_SPAN)
+    if (ctx == NULL)
     {
         return 0;
     }
@@ -328,7 +333,6 @@ static int ManagedSpanBioCreate(BIO* bio)
         return 0;
     }
 
-    ctx->tag = DOTNET_BIO_TAG_MANAGED_SPAN;
     BIO_set_data(bio, ctx);
     BIO_set_init(bio, 1);
     return 1;
@@ -376,6 +380,9 @@ static void ManagedSpanBioMethodInit(void)
         return;
     }
 
+    // Cache the registered type so TryGetManagedSpanBioCtx can validate BIO instances
+    // against BIO_method_type(bio) without ever accessing their context payload.
+    g_managedSpanBioType = index | BIO_TYPE_SOURCE_SINK;
     g_managedSpanBioMethod = method;
 }
 
@@ -522,7 +529,6 @@ int32_t CryptoNative_BioDrainSpill(BIO* bio, void* dst, int32_t dstLen)
 
 typedef struct
 {
-    uint32_t tag;
     uint8_t* prefix;
     int32_t  prefixLen;
     int32_t  prefixCap;
@@ -662,7 +668,6 @@ static int SocketReplayBioCreate(BIO* bio)
         return 0;
     }
 
-    ctx->tag = DOTNET_BIO_TAG_SOCKET_REPLAY;
     ctx->fd = -1;
 
     BIO_set_data(bio, ctx);
