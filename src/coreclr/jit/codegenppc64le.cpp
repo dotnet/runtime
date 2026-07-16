@@ -414,10 +414,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	case GT_LSH:
 	case GT_RSH:
 	case GT_RSZ:
+	case GT_ROL:
 	case GT_ROR:
-    	    genConsumeOperands(treeNode->AsOp());
-            genCodeForShift(treeNode);
-    	    break;
+	   	    genConsumeOperands(treeNode->AsOp());
+	           genCodeForShift(treeNode);
+	   	    break;
 
 	       case GT_NEG:
 	       case GT_NOT:
@@ -2174,7 +2175,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 //
 void CodeGen::genCodeForShift(GenTree* tree)
 {
-    assert(tree->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROR));
+    assert(tree->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROR, GT_ROL));
     
     var_types   targetType = tree->TypeGet();
     genTreeOps  oper       = tree->OperGet();
@@ -2216,7 +2217,10 @@ void CodeGen::genCodeForShift(GenTree* tree)
                 break;
                 
             case GT_ROR:
-                abort();
+                // Rotate right: PPC64LE uses rldicl/rlwinm to implement ROR.
+                // rotrd rA, rS, n  →  rldicl rA, rS, (64-n)&63, 0  (64-bit)
+                // rotrw rA, rS, n  →  rlwinm rA, rS, (32-n)&31, 0, 31 (32-bit)
+                ins = is64Bit ? INS_rotrd : INS_rotrw;
                 break;
                 
             default:
@@ -2249,8 +2253,13 @@ void CodeGen::genCodeForShift(GenTree* tree)
                 break;
                 
             case GT_ROR:
-                abort();
-		break;
+                // Rotate right (register): PPC64LE uses rldcl/rlwnm.
+                // LowerRotate has already converted GT_ROL → GT_ROR by negating
+                // the count, so the register value here is the right-rotate amount.
+                // rldcl rA, rS, rB, 0  rotates left by rB bits with no mask clear,
+                // which is equivalent to ROR when rB = 64 - n (already computed).
+                ins = is64Bit ? INS_rldcl : INS_rlwnm;
+                break;
                 
             default:
                 unreached();

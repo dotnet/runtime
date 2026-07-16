@@ -56,6 +56,10 @@ INST(sradi,       "sradi",        0,      MD_FORM,      0x7C000674)  // Shift Ri
 INST(slwi,        "slwi",         0,      M_FORM,       0x54000000)  // Shift Left Word Immediate (rlwinm)
 INST(srwi,        "srwi",         0,      M_FORM,       0x54000000)  // Shift Right Word Immediate (rlwinm)
 INST(srawi,       "srawi",        0,      X_FORM,       0x7C000670)  // Shift Right Algebraic Word Immediate
+INST(rotrd,       "rotrd",        0,      MD_FORM,      0x78000000)  // Rotate Right Doubleword Immediate (rldicl with mb=0)
+INST(rotrw,       "rotrw",        0,      M_FORM,       0x54000000)  // Rotate Right Word Immediate (rlwinm with mb=0, me=31)
+INST(rldcl,       "rldcl",        0,      MDS_FORM,     0x78000010)  // Rotate Left Doubleword by Count and Clear Left (register ROR 64-bit)
+INST(rlwnm,       "rlwnm",        0,      M_FORM,       0x5C000000)  // Rotate Left Word then AND with Mask (register ROR 32-bit)
 INST(andi,        "andi.",        0,      D_FORM,       0x70000000)  // AND Immediate (with record bit)
 INST(cmpw,	  "cmpw",	  0,	  X_FORM,	0x7C000000) // cmp with L=0
 INST(cmpd,        "cmpd",          0,      X_FORM,       0x7C200000) // cmp with L=1
