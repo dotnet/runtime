@@ -88,7 +88,7 @@ public static class StripILBodies
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool UsesRuntimeCheckedInstructionSet()
     {
-        return X86Aes.IsSupported || ArmAes.IsSupported;
+        return X86Aes.IsSupported || ArmAes.IsSupported || ArmAes.Arm64.IsSupported;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

@@ -528,6 +528,13 @@ public class R2RTestSuites
 
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "PlainStrippableMethod", out string diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "UsesRuntimeCheckedInstructionSet", out diag), diag);
+            Assert.False(
+                R2RAssert.HasFixupKindOnMethod(
+                    reader,
+                    ReadyToRunFixupKind.Check_InstructionSetSupport,
+                    ".UsesRuntimeCheckedInstructionSet(",
+                    out diag),
+                diag);
         }
     }
 

@@ -48,14 +48,6 @@ namespace Internal.TypeSystem
     public partial class TargetDetails
     {
         /// <summary>
-        /// Returns <see langword="true"/> for target OSes where the runtime cannot JIT new code, so ISA support is treated as fixed.
-        /// </summary>
-        public static bool IsFixedInstructionSetPlatform(TargetOS operatingSystem) =>
-            operatingSystem is TargetOS.iOS or TargetOS.tvOS
-                or TargetOS.iOSSimulator or TargetOS.tvOSSimulator
-                or TargetOS.MacCatalyst or TargetOS.Browser or TargetOS.Wasi;
-
-        /// <summary>
         /// Gets the target CPU architecture.
         /// </summary>
         public TargetArchitecture Architecture
