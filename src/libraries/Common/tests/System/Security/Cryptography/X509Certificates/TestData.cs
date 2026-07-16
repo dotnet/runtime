@@ -7,6 +7,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     internal static class TestData
     {
+        private static readonly object s_duplicateAttributePfxLoadLock = new();
+
         internal const string PlaceholderPw = "Placeholder";
 
         public static byte[] MsCertificate = (
@@ -4810,7 +4812,7 @@ YvvL0LiXzFyomg==
 
         internal static TRet WithDuplicateAttributesPfx<TState, TRet>(TState state, Func<byte[], TState, TRet> callback)
         {
-            lock (DuplicateAttributesPfx)
+            lock (s_duplicateAttributePfxLoadLock)
             {
                 return callback(DuplicateAttributesPfx, state);
             }
