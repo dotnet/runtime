@@ -102,7 +102,7 @@ namespace Internal.JitInterface
         /// types (Vector2/3/4, Vector64/256/512&lt;T&gt;, Vector&lt;T&gt;, ...) are not yet handled
         /// by the wasm calling convention and continue to use the generic struct ABI.
         /// </summary>
-        public static bool IsWasmV128Type(TypeDesc type)
+        private static bool IsWasmV128Type(TypeDesc type)
         {
             return type is MetadataType metadataType &&
                    metadataType.IsIntrinsic &&
