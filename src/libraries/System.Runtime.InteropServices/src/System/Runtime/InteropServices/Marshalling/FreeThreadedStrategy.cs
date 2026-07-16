@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices.Marshalling
                     // HRESULT GetUnmarshalClass(REFIID riid, void* pv, DWORD dwDestContext,
                     //                           void* pvDestContext, DWORD mshlflags, CLSID* pCid)
                     var getUnmarshalClass =
-                        (delegate* unmanaged<void*, Guid*, void*, uint, void*, uint, Guid*, int>)((*(void***)pMarshal)[3]);
+                        (delegate* unmanaged[MemberFunction]<void*, Guid*, void*, uint, void*, uint, Guid*, int>)((*(void***)pMarshal)[3]);
 
                     // IID_IUnknown {00000000-0000-0000-C000-000000000046}
                     Guid iidUnknown = new(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
