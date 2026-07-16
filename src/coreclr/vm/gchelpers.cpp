@@ -1280,7 +1280,10 @@ OBJECTREF AllocateObject(MethodTable *pMT
             flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
 #ifdef FEATURE_2XPTR_ALIGNMENT
-        if (pMT->RequiresAlign2xPtr())
+        // Only the small object heap honors 2 * pointer-size alignment; the LOH guarantees 8-byte alignment
+        // and doesn't support biased headers (see GCHeap::Alloc). Large 2xPtr objects therefore fall back to
+        // 8-byte alignment, matching the array allocators which likewise only request it off the old heap.
+        if (pMT->RequiresAlign2xPtr() && !(flags & GC_ALLOC_USER_OLD_HEAP))
         {
             // The last argument to the allocation, indicates whether the alignment should be "biased". This
             // means that the object is allocated so that its header lies exactly between two aligned
