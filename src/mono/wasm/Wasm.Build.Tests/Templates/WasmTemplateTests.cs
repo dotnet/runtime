@@ -102,7 +102,10 @@ namespace Wasm.Build.Tests
                 await using var runner = new BrowserRunner(_testOutput);
                 var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{projectFilePath}\"");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
-                Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+                string output;
+                lock (runner.OutputLines)
+                    output = string.Join(Environment.NewLine, runner.OutputLines);
+                Assert.Contains("Hello, Browser!", output);
             }
 
             {
