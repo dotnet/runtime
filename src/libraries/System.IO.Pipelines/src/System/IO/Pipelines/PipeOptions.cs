@@ -124,11 +124,6 @@ namespace System.IO.Pipelines
         internal bool IsDefaultSharedMemoryPool { get; }
 
         /// <summary>
-        /// The initialize size of the segment pool
-        /// </summary>
-        internal int InitialSegmentPoolSize { get; }
-
-        /// <summary>
         /// The maximum number of segments to pool
         /// </summary>
         internal int MaxSegmentPoolSize { get; }
