@@ -582,6 +582,37 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void CreateAlternatingSequenceTest()
+    {
+        // Opaque operands force the broadcast + zip path rather than a constant vector.
+
+        int ei = Opaque(3);
+        int oi = Opaque(7);
+        Assert.Equal(Vector128.Create(3, 7, 3, 7), Vector128.CreateAlternatingSequence(ei, oi));
+
+        float ef = Opaque(1.5f);
+        float of = Opaque(-2.5f);
+        Assert.Equal(Vector128.Create(1.5f, -2.5f, 1.5f, -2.5f), Vector128.CreateAlternatingSequence(ef, of));
+
+        long el = Opaque(10L);
+        long ol = Opaque(-20L);
+        Assert.Equal(Vector128.Create(10L, -20L), Vector128.CreateAlternatingSequence(el, ol));
+
+        double ed = Opaque(4.25);
+        double od = Opaque(8.5);
+        Assert.Equal(Vector128.Create(4.25, 8.5), Vector128.CreateAlternatingSequence(ed, od));
+
+        short es = Opaque((short)5);
+        short os = Opaque((short)-6);
+        Assert.Equal(Vector128.Create((short)5, -6, 5, -6, 5, -6, 5, -6), Vector128.CreateAlternatingSequence(es, os));
+
+        byte eb = Opaque((byte)1);
+        byte ob = Opaque((byte)2);
+        Assert.Equal(Vector128.Create((byte)1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2),
+                     Vector128.CreateAlternatingSequence(eb, ob));
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);

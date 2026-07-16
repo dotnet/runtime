@@ -3793,14 +3793,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             impSpillSideEffect(true, stackState.esStackDepth -
                                          2 DEBUGARG("Spilling op1 side effects for vector CreateAlternatingSequence"));
 
-#if defined(TARGET_WASM)
-            if (!impStackTop(0).val->OperIsConst() || !impStackTop(1).val->OperIsConst())
-            {
-                // TODO-WASM-SIMD: Implement NI_Vector_CreateAlternatingSequence - Need Shuffle
-                return nullptr;
-            }
-#endif
-
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
