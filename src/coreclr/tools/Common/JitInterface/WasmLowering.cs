@@ -457,7 +457,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    WasmValueType paramWasmType = LowerType(paramType);
+                    WasmValueType paramWasmType = LowerType(loweredParamType);
                     if (paramWasmType == WasmValueType.V128)
                     {
                         ((CompilerTypeSystemContext)paramType.Context).CacheV128Type(paramType);
