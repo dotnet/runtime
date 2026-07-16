@@ -1550,6 +1550,16 @@ namespace System.Tests
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128Modulus), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void op_Modulus_IntelReferenceVectors(UInt128 left, UInt128 right, UInt128 expected)
+        {
+            Decimal128 l = Unsafe.BitCast<UInt128, Decimal128>(left);
+            Decimal128 r = Unsafe.BitCast<UInt128, Decimal128>(right);
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(l % r));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128Comparison), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void op_Comparison_IntelReferenceVectors(string operation, UInt128 left, UInt128 right, bool expected)
         {
@@ -1580,6 +1590,26 @@ namespace System.Tests
             {
                 "abs" => Decimal128.Abs(v),
                 "negate" => -v,
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128RoundIntegral), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void RoundIntegral_IntelReferenceVectors(string operation, UInt128 value, UInt128 expected)
+        {
+            Decimal128 v = Unsafe.BitCast<UInt128, Decimal128>(value);
+
+            Decimal128 result = operation switch
+            {
+                "round_integral_exact" => Decimal128.Round(v, 0, MidpointRounding.ToEven),
+                "round_integral_nearest_even" => Decimal128.Round(v, 0, MidpointRounding.ToEven),
+                "round_integral_nearest_away" => Decimal128.Round(v, 0, MidpointRounding.AwayFromZero),
+                "round_integral_negative" => Decimal128.Floor(v),
+                "round_integral_positive" => Decimal128.Ceiling(v),
+                "round_integral_zero" => Decimal128.Truncate(v),
                 _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
             };
 
