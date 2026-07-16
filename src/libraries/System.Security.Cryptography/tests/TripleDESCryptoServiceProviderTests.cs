@@ -5,7 +5,7 @@ using System.Security.Cryptography.Csp.Tests;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encryption.TripleDES.Tests
+namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 {
     /// <summary>
     /// Since TripleDESCryptoServiceProvider wraps TripleDES from Algorithms assembly, we only test minimally here.

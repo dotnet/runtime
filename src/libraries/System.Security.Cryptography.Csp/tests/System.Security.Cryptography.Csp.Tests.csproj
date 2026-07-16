@@ -25,11 +25,9 @@
              Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
              Link="CommonTest\System\IO\PositionValueStream.cs" />
-    <Compile Include="AesCryptoServiceProviderTests.cs" />
     <Compile Include="MD5CryptoServiceProviderTests.cs" />
     <Compile Include="PasswordDeriveBytesTests.cs" />
     <Compile Include="RNGCryptoServiceProviderTests.cs" />
     <Compile Include="SHAxCryptoServiceProviderTests.cs" />
-    <Compile Include="TripleDESCryptoServiceProviderTests.cs" />
   </ItemGroup>
 </Project>
