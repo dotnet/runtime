@@ -8,6 +8,7 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\Microsoft.Extensions.Caching.Abstractions.csproj" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Remove="TrimmingTests\**" />
   </ItemGroup>
 
 </Project>
