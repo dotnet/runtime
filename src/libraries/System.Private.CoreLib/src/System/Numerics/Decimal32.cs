@@ -340,6 +340,15 @@ namespace System.Numerics
             return new Decimal32(Number.DivideDecimalIeee754<Decimal32, uint>(left._value, right._value));
         }
 
+        /// <summary>Divides two values together to compute their remainder.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <returns>The remainder of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        public static Decimal32 operator %(Decimal32 left, Decimal32 right)
+        {
+            return new Decimal32(Number.RemainderDecimalIeee754<Decimal32, uint>(left._value, right._value));
+        }
+
         //
         // Explicit conversions to Decimal32
         //

@@ -340,6 +340,16 @@ namespace System.Numerics
             return new Decimal128(result);
         }
 
+        /// <summary>Divides two values together to compute their remainder.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <returns>The remainder of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        public static Decimal128 operator %(Decimal128 left, Decimal128 right)
+        {
+            UInt128 result = Number.RemainderDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+            return new Decimal128(result);
+        }
+
         //
         // Explicit conversions to Decimal128
         //

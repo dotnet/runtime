@@ -1016,6 +1016,106 @@ namespace System
         }
 
         /// <summary>
+        /// Computes the truncated remainder (the <c>%</c> operator) of two IEEE 754 decimal values represented by their
+        /// raw bit patterns: <c>x - Truncate(x / y) * y</c>, matching the C# floating-point <c>%</c> operator on
+        /// <see cref="double"/>/<see cref="float"/>/<see cref="Half"/> (and <em>not</em> the round-to-nearest
+        /// IEEE 754 <c>remainder</c> operation).
+        /// </summary>
+        /// <remarks>
+        /// The result carries the sign of the dividend, has magnitude strictly less than <c>|y|</c>, and is always
+        /// exact. It is computed at the IEEE 754 preferred exponent <c>min(exp(x), exp(y))</c> by reducing the
+        /// dividend coefficient modulo the divisor coefficient. Every intermediate value stays within a single limb:
+        /// the running remainder is always below the divisor, so scaling it up one decimal digit at a time and taking
+        /// the remainder never overflows. This mirrors the special-case handling of the Intel reference implementation.
+        /// </remarks>
+        internal static TValue RemainderDecimalIeee754<TDecimal, TValue>(TValue left, TValue right)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // This code is based on `bid32_fmod`, `bid64_fmod`, and `bid128_fmod` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (TDecimal.IsNaN(left) || TDecimal.IsNaN(right))
+            {
+                return PropagateNaN<TDecimal, TValue>(left, right);
+            }
+
+            // The remainder always carries the sign of the dividend.
+            bool resultSign = TDecimal.IsNegative(left);
+
+            if (TDecimal.IsInfinity(left))
+            {
+                // Infinity has no finite remainder; the operation is invalid and produces the canonical quiet NaN.
+                return TDecimal.NaNMask;
+            }
+
+            DecodedDecimalIeee754<TValue> a = UnpackDecimalIeee754<TDecimal, TValue>(left);
+
+            if (TDecimal.IsInfinity(right))
+            {
+                // A finite value has itself as its remainder modulo infinity; re-encode to a canonical form.
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, a.Significand, a.UnbiasedExponent);
+            }
+
+            DecodedDecimalIeee754<TValue> b = UnpackDecimalIeee754<TDecimal, TValue>(right);
+
+            if (TValue.IsZero(b.Significand))
+            {
+                // A remainder with a zero divisor is invalid and produces the canonical quiet NaN.
+                return TDecimal.NaNMask;
+            }
+
+            // The preferred exponent of the remainder is the smaller of the two operand exponents.
+            int resultExponent = Math.Min(a.UnbiasedExponent, b.UnbiasedExponent);
+
+            if (TValue.IsZero(a.Significand))
+            {
+                // Zero modulo any non-zero value is a signed zero at the preferred exponent.
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, TValue.Zero, resultExponent);
+            }
+
+            TValue ten = TValue.CreateTruncating(10);
+            TValue remainder;
+
+            if (a.UnbiasedExponent >= b.UnbiasedExponent)
+            {
+                // Both coefficients fit a single limb, so reduce `a.Significand * 10^(ea - eb)` modulo `b.Significand`
+                // by scaling the running remainder up one decimal digit at a time. The remainder stays below the
+                // divisor, so `remainder * 10` never exceeds the integer width.
+                //
+                // TODO: This scales one decimal digit per iteration, where-as Intel's `bidNN_fmod` scales the dividend
+                // by up to `Precision` digits per iteration. Porting that chunked reduction would cut the loop count
+                // for large exponent gaps at the cost of a wider intermediate for Decimal128.
+                remainder = a.Significand % b.Significand;
+
+                for (int i = 0; i < a.UnbiasedExponent - b.UnbiasedExponent; i++)
+                {
+                    remainder = (remainder * ten) % b.Significand;
+                }
+            }
+            else
+            {
+                // The divisor's coefficient is scaled up by `10^(eb - ea)`. When that scaled divisor cannot fit the
+                // format precision it necessarily exceeds the dividend coefficient, so the dividend is the remainder.
+                int gap = b.UnbiasedExponent - a.UnbiasedExponent;
+
+                if (TDecimal.CountDigits(b.Significand) + gap > TDecimal.Precision)
+                {
+                    remainder = a.Significand;
+                }
+                else
+                {
+                    remainder = a.Significand % (b.Significand * TDecimal.Power10(gap));
+                }
+            }
+
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, remainder, resultExponent);
+        }
+
+        /// <summary>
         /// Computes the scale factor <c>10^<paramref name="exponent"/></c> used to align addition operands. Exponents
         /// within the format's <c>Power10</c> lookup range (<c>0..Precision - 1</c>) come straight from that table,
         /// matching the existing parsing/formatting paths. The slightly larger alignment exponents
