@@ -108,7 +108,7 @@ namespace
 #ifdef FEATURE_2XPTR_ALIGNMENT
             if (pNestedType.RequiresAlign2xPtr())
             {
-                placementInfo.m_alignment = max(8u, placementInfo.m_alignment);
+                placementInfo.m_alignment = max((UINT32)(2 * TARGET_POINTER_SIZE), placementInfo.m_alignment);
             }
 #endif // FEATURE_2XPTR_ALIGNMENT
         }
