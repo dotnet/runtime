@@ -4700,87 +4700,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
             else
             {
-                // gtNewSimdNarrowNode uses the base type of the return for the simdBaseType
-                var_types narrowSimdBaseType;
-
-                GenTreeVecCon* minCns = varTypeIsSigned(simdBaseType) ? gtNewVconNode(retType) : nullptr;
-                GenTreeVecCon* maxCns = gtNewVconNode(retType);
-
-                switch (simdBaseType)
-                {
-                    case TYP_SHORT:
-                    {
-                        minCns->EvaluateBroadcastInPlace<int16_t>(INT8_MIN);
-                        maxCns->EvaluateBroadcastInPlace<int16_t>(INT8_MAX);
-
-                        narrowSimdBaseType = TYP_BYTE;
-                        break;
-                    }
-
-                    case TYP_USHORT:
-                    {
-                        maxCns->EvaluateBroadcastInPlace<uint16_t>(UINT8_MAX);
-                        narrowSimdBaseType = TYP_UBYTE;
-                        break;
-                    }
-
-                    case TYP_INT:
-                    {
-                        minCns->EvaluateBroadcastInPlace<int32_t>(INT16_MIN);
-                        maxCns->EvaluateBroadcastInPlace<int32_t>(INT16_MAX);
-
-                        narrowSimdBaseType = TYP_SHORT;
-                        break;
-                    }
-
-                    case TYP_UINT:
-                    {
-                        maxCns->EvaluateBroadcastInPlace<uint32_t>(UINT16_MAX);
-                        narrowSimdBaseType = TYP_USHORT;
-                        break;
-                    }
-
-                    case TYP_LONG:
-                    {
-                        minCns->EvaluateBroadcastInPlace<int64_t>(INT32_MIN);
-                        maxCns->EvaluateBroadcastInPlace<int64_t>(INT32_MAX);
-
-                        narrowSimdBaseType = TYP_INT;
-                        break;
-                    }
-
-                    case TYP_ULONG:
-                    {
-                        maxCns->EvaluateBroadcastInPlace<uint64_t>(UINT32_MAX);
-                        narrowSimdBaseType = TYP_UINT;
-                        break;
-                    }
-
-                    default:
-                    {
-                        unreached();
-                    }
-                }
-
-                // This does a clamp which is defined as: Min(Max(value, min), max)
-                // which means that we do a max computation if a minimum constant is specified
-                // There will be none specified for unsigned to unsigned narrowing since
-                // they share a lower bound (0) and will already be correct.
-
-                if (minCns != nullptr)
-                {
-                    op1 = gtNewSimdMinMaxNode(retType, op1, minCns, simdBaseType, simdSize, /* isMax */ true,
-                                              /* isMagnitude */ false, /* isNumber */ false);
-                    op2 = gtNewSimdMinMaxNode(retType, op2, gtCloneExpr(minCns), simdBaseType, simdSize,
-                                              /* isMax */ true, /* isMagnitude */ false, /* isNumber */ false);
-                }
-
-                op1 = gtNewSimdMinMaxNode(retType, op1, maxCns, simdBaseType, simdSize, /* isMax */ false,
-                                          /* isMagnitude */ false, /* isNumber */ false);
-                op2 = gtNewSimdMinMaxNode(retType, op2, gtCloneExpr(maxCns), simdBaseType, simdSize,
-                                          /* isMax */ false, /* isMagnitude */ false, /* isNumber */ false);
-
-                retNode = gtNewSimdNarrowNode(retType, op1, op2, narrowSimdBaseType, simdSize);
+                retNode = gtNewSimdNarrowWithSaturationNode(retType, op1, op2, simdBaseType, simdSize);
             }
 #elif defined(TARGET_ARM64)
             op2 = impSIMDPopStack();
@@ -4809,8 +4729,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 retNode   = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseType, simdSize);
             }
 #elif defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_NarrowWithSaturation
-            return nullptr;
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdNarrowWithSaturationNode(retType, op1, op2, simdBaseType, simdSize);
 #else
             unreached();
 #endif

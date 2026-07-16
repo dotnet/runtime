@@ -3636,6 +3636,9 @@ public:
                                  var_types   simdBaseType,
                                  unsigned    simdSize);
 
+    GenTree* gtNewSimdNarrowWithSaturationNode(
+        var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+
     GenTree* gtNewSimdConcatNode(var_types type,
                                  GenTree*  op1,
                                  GenTree*  op2,

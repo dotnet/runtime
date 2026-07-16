@@ -690,6 +690,37 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void NarrowWithSaturationTest()
+    {
+        // Opaque operands force the saturating-narrow builder (clamp to the narrow range then narrow).
+
+        Vector128<short> sh1 = Opaque(Vector128.Create((short)-200, 200, -100, 100, 0, 50, -50, 127));
+        Vector128<short> sh2 = Opaque(Vector128.Create((short)128, 300, -300, 1, -1, 2, -2, 3));
+        Assert.Equal(Vector128.Create((sbyte)-128, 127, -100, 100, 0, 50, -50, 127, 127, 127, -128, 1, -1, 2, -2, 3), Vector128.NarrowWithSaturation(sh1, sh2));
+
+        // Unsigned source values above 0x7FFF must clamp as unsigned magnitude (not be treated as negative).
+        Vector128<ushort> ush1 = Opaque(Vector128.Create((ushort)0, 255, 256, 40000, 0x8000, 0xFFFF, 100, 200));
+        Vector128<ushort> ush2 = Opaque(Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8));
+        Assert.Equal(Vector128.Create((byte)0, 255, 255, 255, 255, 255, 100, 200, 1, 2, 3, 4, 5, 6, 7, 8), Vector128.NarrowWithSaturation(ush1, ush2));
+
+        Vector128<int> i1 = Opaque(Vector128.Create(-40000, 40000, 100, -100));
+        Vector128<int> i2 = Opaque(Vector128.Create(32767, -32768, 32768, -32769));
+        Assert.Equal(Vector128.Create((short)-32768, 32767, 100, -100, 32767, -32768, 32767, -32768), Vector128.NarrowWithSaturation(i1, i2));
+
+        Vector128<long> l1 = Opaque(Vector128.Create(long.MinValue, long.MaxValue));
+        Vector128<long> l2 = Opaque(Vector128.Create(5L, -5L));
+        Assert.Equal(Vector128.Create(int.MinValue, int.MaxValue, 5, -5), Vector128.NarrowWithSaturation(l1, l2));
+
+        Vector128<ulong> ul1 = Opaque(Vector128.Create(0UL, 0xFFFFFFFFFFFFFFFFUL));
+        Vector128<ulong> ul2 = Opaque(Vector128.Create(0x1_0000_0000UL, 7UL));
+        Assert.Equal(Vector128.Create(0u, uint.MaxValue, uint.MaxValue, 7u), Vector128.NarrowWithSaturation(ul1, ul2));
+
+        Vector128<double> d1 = Opaque(Vector128.Create(1.5, 2.5));
+        Vector128<double> d2 = Opaque(Vector128.Create(3.5, 4.5));
+        Assert.Equal(Vector128.Create(1.5f, 2.5f, 3.5f, 4.5f), Vector128.NarrowWithSaturation(d1, d2));
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);

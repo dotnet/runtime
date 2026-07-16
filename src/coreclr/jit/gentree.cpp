@@ -27045,6 +27045,128 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 }
 
 //----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdNarrowWithSaturationNode: Creates a new simd NarrowWithSaturation node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    op1                 - The first operand (narrowed into the lower half of the result)
+//    op2                 - The second operand (narrowed into the upper half of the result)
+//    simdBaseType        - The base type of the source (wider) elements
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created NarrowWithSaturation node
+//
+// Remarks:
+//    This is the portable fallback that clamps each source element to the representable range of the
+//    narrow type and then performs a non-saturating narrow. It is shared by architectures that lack a
+//    dedicated saturating-narrow instruction for the requested case.
+//
+GenTree* Compiler::gtNewSimdNarrowWithSaturationNode(
+    var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
+{
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    assert(op2 != nullptr);
+    assert(op2->TypeIs(type));
+
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    if (varTypeIsFloating(simdBaseType))
+    {
+        // Narrowing double to float already saturates out-of-range magnitudes to +/-infinity, which
+        // matches the managed semantics, so it can reuse the plain narrow.
+        return gtNewSimdNarrowNode(type, op1, op2, TYP_FLOAT, simdSize);
+    }
+
+    // gtNewSimdNarrowNode uses the base type of the return for the simdBaseType
+    var_types narrowSimdBaseType;
+
+    GenTreeVecCon* minCns = varTypeIsSigned(simdBaseType) ? gtNewVconNode(type) : nullptr;
+    GenTreeVecCon* maxCns = gtNewVconNode(type);
+
+    switch (simdBaseType)
+    {
+        case TYP_SHORT:
+        {
+            minCns->EvaluateBroadcastInPlace<int16_t>(INT8_MIN);
+            maxCns->EvaluateBroadcastInPlace<int16_t>(INT8_MAX);
+
+            narrowSimdBaseType = TYP_BYTE;
+            break;
+        }
+
+        case TYP_USHORT:
+        {
+            maxCns->EvaluateBroadcastInPlace<uint16_t>(UINT8_MAX);
+            narrowSimdBaseType = TYP_UBYTE;
+            break;
+        }
+
+        case TYP_INT:
+        {
+            minCns->EvaluateBroadcastInPlace<int32_t>(INT16_MIN);
+            maxCns->EvaluateBroadcastInPlace<int32_t>(INT16_MAX);
+
+            narrowSimdBaseType = TYP_SHORT;
+            break;
+        }
+
+        case TYP_UINT:
+        {
+            maxCns->EvaluateBroadcastInPlace<uint32_t>(UINT16_MAX);
+            narrowSimdBaseType = TYP_USHORT;
+            break;
+        }
+
+        case TYP_LONG:
+        {
+            minCns->EvaluateBroadcastInPlace<int64_t>(INT32_MIN);
+            maxCns->EvaluateBroadcastInPlace<int64_t>(INT32_MAX);
+
+            narrowSimdBaseType = TYP_INT;
+            break;
+        }
+
+        case TYP_ULONG:
+        {
+            maxCns->EvaluateBroadcastInPlace<uint64_t>(UINT32_MAX);
+            narrowSimdBaseType = TYP_UINT;
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    // This does a clamp which is defined as: Min(Max(value, min), max)
+    // which means that we do a max computation if a minimum constant is specified
+    // There will be none specified for unsigned to unsigned narrowing since
+    // they share a lower bound (0) and will already be correct.
+
+    if (minCns != nullptr)
+    {
+        op1 = gtNewSimdMinMaxNode(type, op1, minCns, simdBaseType, simdSize, /* isMax */ true,
+                                  /* isMagnitude */ false, /* isNumber */ false);
+        op2 = gtNewSimdMinMaxNode(type, op2, gtCloneExpr(minCns), simdBaseType, simdSize, /* isMax */ true,
+                                  /* isMagnitude */ false, /* isNumber */ false);
+    }
+
+    op1 = gtNewSimdMinMaxNode(type, op1, maxCns, simdBaseType, simdSize, /* isMax */ false,
+                              /* isMagnitude */ false, /* isNumber */ false);
+    op2 = gtNewSimdMinMaxNode(type, op2, gtCloneExpr(maxCns), simdBaseType, simdSize, /* isMax */ false,
+                              /* isMagnitude */ false, /* isNumber */ false);
+
+    return gtNewSimdNarrowNode(type, op1, op2, narrowSimdBaseType, simdSize);
+}
+
+//----------------------------------------------------------------------------------------------
 // Compiler::gtNewSimdCreateGeometricSequenceNode: Creates a new simd CreateGeometricSequence node
 //
 //  Arguments:
