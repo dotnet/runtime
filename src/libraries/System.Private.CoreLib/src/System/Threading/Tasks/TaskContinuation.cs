@@ -782,23 +782,30 @@ namespace System.Threading.Tasks
             // If we're not allowed to run here, schedule the action
             if (!allowInlining || !IsValidLocationForInlining)
             {
-                // If logging is disabled, we can simply queue the box itself as a custom work
-                // item, and its work item execution will just invoke its MoveNext.  However, if
-                // logging is enabled, there is pre/post-work we need to do around logging to
-                // match what's done for other continuations, and that requires flowing additional
-                // information into the continuation, which we don't want to burden other cases of the
-                // box with... so, in that case we just delegate to the AwaitTaskContinuation-based
-                // path that already handles this, albeit at the expense of allocating the ATC
-                // object, and potentially forcing the box's delegate into existence, when logging
-                // is enabled.
-                if (TplEventSource.Log.IsEnabled())
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
                 {
-                    UnsafeScheduleAction(box.MoveNextAction, prevCurrentTask);
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box, flags);
+                    }
+
+                    // If logging is disabled, we can simply queue the box itself as a custom work
+                    // item, and its work item execution will just invoke its MoveNext.  However, if
+                    // logging is enabled, there is pre/post-work we need to do around logging to
+                    // match what's done for other continuations, and that requires flowing additional
+                    // information into the continuation, which we don't want to burden other cases of the
+                    // box with... so, in that case we just delegate to the AwaitTaskContinuation-based
+                    // path that already handles this, albeit at the expense of allocating the ATC
+                    // object, and potentially forcing the box's delegate into existence, when logging
+                    // is enabled.
+                    if (AsyncInstrumentation.IsEnabled.Tpl(flags))
+                    {
+                        UnsafeScheduleAction(box.MoveNextAction, prevCurrentTask);
+                        return;
+                    }
                 }
-                else
-                {
-                    ThreadPool.UnsafeQueueUserWorkItemInternal(box, preferLocal: true);
-                }
+
+                ThreadPool.UnsafeQueueUserWorkItemInternal(box, preferLocal: true);
                 return;
             }
 

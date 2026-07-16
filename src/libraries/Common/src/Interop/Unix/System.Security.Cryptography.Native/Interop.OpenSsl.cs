@@ -1021,7 +1021,8 @@ internal static partial class Interop
                 try
                 {
                     ProtocolToken alertToken = default;
-                    if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, options.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+                    SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
+                    if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, options.CertificateContext?.Trust, ref alertToken, ref sslPolicyErrors, out X509ChainStatusFlags chainStatus))
                     {
                         Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK);
                         return 1;

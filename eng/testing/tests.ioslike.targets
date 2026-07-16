@@ -3,6 +3,27 @@
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestAppleApp</BundleTestAppTargets>
   </PropertyGroup>
 
+  <!-- NativeAOT library tests: host publish runs trim + ILC and produces a static lib. AppleAppBuilder consumes it in library mode.
+       Functional tests with their own Main stay on the Helix ILC path. -->
+  <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
+    <TestNativeAot>true</TestNativeAot>
+    <TestSingleFile Condition="'$(TestSingleFile)' == ''">true</TestSingleFile>
+    <PublishAotUsingRuntimePack Condition="'$(PublishAotUsingRuntimePack)' == ''">true</PublishAotUsingRuntimePack>
+    <_IsPublishing Condition="'$(_IsPublishing)' == ''">true</_IsPublishing>
+    <NativeLib>Static</NativeLib>
+    <CustomNativeMain>true</CustomNativeMain>
+    <_SuppressNativeLibEventSourceWarning>true</_SuppressNativeLibEventSourceWarning>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.cs" Link="Common\AppleTestRunner\AppleTestRunner.cs" />
+    <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="$(MicrosoftDotNetXHarnessTestRunnersXunitVersion)" />
+
+    <!-- DirectPInvoke for __Internal so ILC emits static references to symbols in the AppleAppBuilder-generated objc main. -->
+    <DirectPInvoke Include="__Internal" />
+  </ItemGroup>
+
   <PropertyGroup>
     <BuildTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(Scenario)' == 'BuildAppleApps'">helix</BuildTestsOn>
     <BuildTestsOn Condition="'$(BuildTestsOnHelix)' == 'true'">helix</BuildTestsOn>
@@ -80,15 +101,12 @@
                    Include="@(AppleAssembliesToBundle)"          TargetDir="extraFiles\%(AppleAssembliesToBundle.RecursiveDir)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(HybridGlobalization)' == 'false'" >
-      <BundleFiles Include="$(MicrosoftNetCoreAppRuntimePackDir)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/icudt.dat"
-                                                                TargetDir="publish" />
-      <BundleFiles Include="$(MicrosoftNetCoreAppRuntimePackDir)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicudata.a"
-                                                                TargetDir="publish" />
-      <BundleFiles Include="$(MicrosoftNetCoreAppRuntimePackDir)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicuuc.a"
-                                                                TargetDir="publish" />
-      <BundleFiles Include="$(MicrosoftNetCoreAppRuntimePackDir)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicui18n.a"
-                                                                TargetDir="publish" />
+    <!-- Ship NativeAOT link inputs for the Helix-side Xcode link step. lib$(AssemblyName).a is already in AppleNativeFilesToBundle. -->
+    <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'">
+      <_NativeAotHelixLinkInputs Include="$(MicrosoftNetCoreAppRuntimePackDir)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/*.a" />
+      <_NativeAotHelixLinkInputs Include="$(CoreCLRAotSdkDir)*.a" />
+      <_NativeAotHelixLinkInputs Include="$(CoreCLRAotSdkDir)*.o" />
+      <BundleFiles Include="@(_NativeAotHelixLinkInputs)" TargetDir="publish\nativeaot-link-inputs" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(DebuggerSupport)' == 'true'">
@@ -129,6 +147,7 @@
       <_ApplePropertyNames Include="MainLibraryFileName" />
       <_ApplePropertyNames Include="MonoEnableLLVM" />
       <_ApplePropertyNames Include="ShouldILStrip" />
+      <_ApplePropertyNames Include="PublishReadyToRunStripILBodies" />
       <_ApplePropertyNames Include="UseConsoleUITemplate" />
       <_ApplePropertyNames Include="UseRuntimeComponents" />
       <_ApplePropertyNames Include="_NetCoreAppToolCurrent" />
@@ -176,11 +195,12 @@
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
 
     <PropertyGroup>
-    <!-- Default for now. If we can remove our ICU and rely on the system one, then HybridGlobalization becomes the default and we can remove checks for it -->
+    <!-- Apple mobile globalization always uses Apple-native APIs and system icucore. HybridGlobalization is kept enabled for linker feature substitution. -->
       <HybridGlobalization>true</HybridGlobalization>
       <IncludesTestRunner Condition="'$(IncludesTestRunner)' == ''">true</IncludesTestRunner>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' != 'false'"></MainLibraryFileName>
 
       <AppleBuildDir>$(PublishDir)</AppleBuildDir>
       <AppleBundleDir>$(BundleDir)</AppleBundleDir>

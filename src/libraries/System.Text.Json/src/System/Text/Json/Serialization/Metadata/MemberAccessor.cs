@@ -31,8 +31,13 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     MemberAccessor value =
 #if NET
-                        // if dynamic code isn't supported, fallback to reflection
-                        RuntimeFeature.IsDynamicCodeSupported ?
+                        // On platforms where dynamic code is supported but not compiled to native code
+                        // (e.g. the Mono interpreter, WASM and iOS), the IL emitted by the Reflection.Emit
+                        // based accessor is only interpreted, offering no throughput benefit over plain
+                        // reflection while still pulling in the Reflection.Emit stack. Gating on
+                        // IsDynamicCodeCompiled (rather than IsDynamicCodeSupported) keeps Reflection.Emit
+                        // on JIT-backed runtimes but lets the trimmer remove it everywhere else.
+                        RuntimeFeature.IsDynamicCodeCompiled ?
                             new ReflectionEmitCachingMemberAccessor() :
                             new ReflectionMemberAccessor();
 #elif NETFRAMEWORK

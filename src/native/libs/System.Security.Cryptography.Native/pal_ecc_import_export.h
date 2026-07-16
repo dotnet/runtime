@@ -16,35 +16,6 @@ typedef enum
 
 
 /*
-Returns the ECC key parameters.
-*/
-PALEXPORT int32_t CryptoNative_GetECKeyParameters(
-    const EC_KEY* key,
-    int32_t includePrivate,
-    const BIGNUM** qx, int32_t* cbQx,
-    const BIGNUM** qy, int32_t* cbQy,
-    const BIGNUM** d, int32_t* cbD);
-
-/*
-Returns the ECC key and curve parameters.
-*/
-PALEXPORT int32_t CryptoNative_GetECCurveParameters(
-    const EC_KEY* key,
-    int32_t includePrivate,
-    ECCurveType* curveType,
-    const BIGNUM** qx, int32_t* cbx,
-    const BIGNUM** qy, int32_t* cby,
-    const BIGNUM** d, int32_t* cbd,
-    const BIGNUM** p, int32_t* cbP,
-    const BIGNUM** a, int32_t* cbA,
-    const BIGNUM** b, int32_t* cbB,
-    const BIGNUM** gx, int32_t* cbGx,
-    const BIGNUM** gy, int32_t* cbGy,
-    const BIGNUM** order, int32_t* cbOrder,
-    const BIGNUM** cofactor, int32_t* cbCofactor,
-    const BIGNUM** seed, int32_t* cbSeed);
-
-/*
 Creates the new EC_KEY instance using the curve oid (friendly name or value) and public key parameters.
 Returns 1 upon success, -1 if oid was not found, otherwise 0.
 */
@@ -64,10 +35,11 @@ PALEXPORT int32_t CryptoNative_EvpPKeyGetEcGroupNid(EVP_PKEY *pkey, int32_t* nid
 
 /*
 Returns the EC key parameters (public coordinates and optional private key) from the given EVP_PKEY.
+Internally dispatches between OpenSSL 3.0 provider API and legacy EC_KEY API.
 Returns 1 upon success, -1 if includePrivate is set but the key has no private component, otherwise 0.
 */
 PALEXPORT int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
-    const EVP_PKEY* pkey,
+    EVP_PKEY* pkey,
     int32_t includePrivate,
     BIGNUM** qx, int32_t* cbQx,
     BIGNUM** qy, int32_t* cbQy,
@@ -155,6 +127,7 @@ PALEXPORT int32_t CryptoNative_EvpPKeyCreateByEcExplicitParameters(
 
 /*
 Returns the ECC curve parameters of the given EVP_PKEY.
+Internally dispatches between OpenSSL 3.0 provider API and legacy EC_KEY API.
 Returns 1 upon success, -1 if includePrivate is set but the key has no private component, otherwise 0.
 */
 PALEXPORT int32_t CryptoNative_EvpPKeyGetEcCurveParameters(

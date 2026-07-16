@@ -112,8 +112,8 @@ private:
     // In these cases all calls are made by the platform equivalent of "call [addr]".
     //
     // DelegateCallSite are particular in that they can come in a variety of forms:
-    // a direct delegate call has a sequence defined by the jit but a multicast or wrapper delegate
-    // are defined in a stub and have a different shape
+    // a direct delegate call has a sequence defined by the jit but a multicast delegate
+    // is defined in a stub and has a different shape
     //
     PTR_PCODE       m_siteAddr;     // Stores the address of an indirection cell
     PCODE           m_returnAddr;

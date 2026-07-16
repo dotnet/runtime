@@ -132,4 +132,10 @@
   <data name="Capacity_NotUsedEntirely" xml:space="preserve">
     <value>Entire reserved capacity was not used. Capacity: '{0}', written '{1}'.</value>
   </data>
+  <data name="InvalidOperation_ConcurrentDisposableSet" xml:space="preserve">
+    <value>The change token callback registration was set concurrently, which is not supported.</value>
+  </data>
+  <data name="InvalidOperation_NullConsumerTask" xml:space="preserve">
+    <value>The change token consumer returned a null task.</value>
+  </data>
 </root>

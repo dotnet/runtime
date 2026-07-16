@@ -6205,7 +6205,7 @@ void emitter::spillIntArgRegsToShadowSlots()
     instrDesc*     id;
     UNATIVE_OFFSET sz;
 
-    assert(m_compiler->compGeneratingProlog);
+    assert(emitGeneratingPrologOrFuncletProlog());
 
     for (argNum = 0; argNum < MAX_REG_ARG; ++argNum)
     {
@@ -7385,42 +7385,6 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
     emitCurIGsize += sz;
 
     emitAdjustStackDepthPushPop(ins);
-}
-
-/*****************************************************************************
- *
- *  Add a "jump through a table" instruction.
- */
-
-void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
-{
-    assert(EA_SIZE(attr) == EA_4BYTE);
-
-    UNATIVE_OFFSET    sz  = 3 + 4;
-    const instruction ins = INS_i_jmp;
-
-    if (IsExtendedReg(reg, attr))
-    {
-        sz += emitGetRexPrefixSize(ins);
-    }
-
-    instrDesc* id = emitNewInstrAmd(attr, base);
-
-    id->idIns(ins);
-    id->idInsFmt(emitInsModeFormat(ins, IF_ARD));
-    id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
-    id->idAddr()->iiaAddrMode.amIndxReg = reg;
-    id->idAddr()->iiaAddrMode.amScale   = emitter::OPSZP;
-
-    if (m_debugInfoSize > 0)
-    {
-        id->idDebugOnlyInfo()->idMemCookie = base;
-    }
-
-    id->idCodeSize(sz);
-
-    dispIns(id);
-    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -12355,59 +12319,14 @@ void emitter::emitDispReloc(ssize_t value) const
  *  Display an address mode.
  */
 
-void emitter::emitDispAddrMode(instrDesc* id, bool noDetail) const
+void emitter::emitDispAddrMode(instrDesc* id) const
 {
     bool    nsep = false;
     ssize_t disp;
 
-    unsigned     jtno = 0;
-    dataSection* jdsc = nullptr;
-
     /* The displacement field is in an unusual place for calls */
 
     disp = (id->idIns() == INS_call) || (id->idIns() == INS_tail_i_jmp) ? emitGetInsCIdisp(id) : emitGetInsAmdAny(id);
-
-    /* Display a jump table label if this is a switch table jump */
-
-    if (id->idIns() == INS_i_jmp)
-    {
-        UNATIVE_OFFSET offs = 0;
-
-        /* Find the appropriate entry in the data section list */
-
-        for (jdsc = emitConsDsc.dsdList, jtno = 0; jdsc; jdsc = jdsc->dsNext)
-        {
-            UNATIVE_OFFSET size = jdsc->dsSize;
-
-            /* Is this a label table? */
-
-            if (size & 1)
-            {
-                size--;
-                jtno++;
-
-                if (offs == id->idDebugOnlyInfo()->idMemCookie)
-                {
-                    break;
-                }
-            }
-
-            offs += size;
-        }
-
-        /* If we've found a matching entry then is a table jump */
-
-        if (jdsc)
-        {
-            if (id->idIsDspReloc())
-            {
-                printf("reloc ");
-            }
-            printf("J_M%03u_DS%02u", m_compiler->compMethodID, (unsigned)id->idDebugOnlyInfo()->idMemCookie);
-
-            disp -= id->idDebugOnlyInfo()->idMemCookie;
-        }
-    }
 
     bool frameRef = false;
 
@@ -12520,33 +12439,6 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail) const
     }
 
     printf("]");
-
-    if (jdsc && !noDetail)
-    {
-        unsigned     cnt = (jdsc->dsSize - 1) / TARGET_POINTER_SIZE;
-        BasicBlock** bbp = jdsc->Blocks();
-
-#ifdef TARGET_AMD64
-#define SIZE_LETTER "Q"
-#else
-#define SIZE_LETTER "D"
-#endif
-        printf("\n\n    J_M%03u_DS%02u LABEL   " SIZE_LETTER "WORD", m_compiler->compMethodID, jtno);
-
-        /* Display the label table (it's stored as "BasicBlock*" values) */
-
-        do
-        {
-            insGroup* lab;
-
-            /* Convert the BasicBlock* value to an IG address */
-
-            lab = (insGroup*)emitCodeGetCookie(*bbp++);
-            assert(lab);
-
-            printf("\n            D" SIZE_LETTER "      %s", emitLabelString(lab));
-        } while (--cnt);
-    }
 }
 
 /*****************************************************************************
@@ -12987,7 +12879,7 @@ void emitter::emitDispIns(
                     printf("%s", sstr);
                 }
 
-                emitDispAddrMode(id, isNew);
+                emitDispAddrMode(id);
                 emitDispShift(ins);
             }
 

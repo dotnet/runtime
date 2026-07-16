@@ -179,8 +179,6 @@ EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase_Helper, MethodTable *pMT);
 EXTERN_C void DoJITFailFast();
 EXTERN_C FCDECL0(void, JIT_FailFast);
 
-FCDECL0(int, JIT_GetCurrentManagedThreadId);
-
 EXTERN_C void ReversePInvokeBadTransition();
 
 #if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
@@ -299,6 +297,7 @@ class CEEInfo : public ICorJitInfo
     void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
 
     void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
+
 public:
 #include "icorjitinfoimpl_generated.h"
     uint32_t getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);
@@ -408,6 +407,12 @@ public:
                                                    MethodDesc * pTemplateMD /* for method-based slots */,
                                                    MethodDesc * pCallerMD,
                                                    CORINFO_LOOKUP *pResultLookup);
+    void FinishComputeRuntimeLookup(
+        SigBuilder& sig,
+        MethodDesc* pCallerMD,
+        CORINFO_LOOKUP* pResultLookup);
+
+    void ComputeRuntimeLookupForAwaitCall(MethodDesc* pCallerMD, MethodDesc* pTypicalAwaitMD, CORINFO_LOOKUP* lookup);
 
 #if defined(FEATURE_GDBJIT)
     CalledMethod * GetCalledMethods() { return m_pCalledMethods; }
@@ -421,6 +426,7 @@ public:
 protected:
     COR_ILMETHOD_DECODER* getMethodInfoWorker(
         MethodDesc* ftn,
+        MethodDesc* ilFtn,
         COR_ILMETHOD_DECODER* header,
         CORINFO_METHOD_INFO* methInfo,
         CORINFO_CONTEXT_HANDLE exactContext = NULL);

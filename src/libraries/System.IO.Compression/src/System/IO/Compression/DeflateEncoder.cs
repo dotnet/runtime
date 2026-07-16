@@ -51,24 +51,24 @@ namespace System.IO.Compression
         /// Initializes a new instance of the <see cref="DeflateEncoder"/> class using the specified quality and window size.
         /// </summary>
         /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression), or -1 to use the default value.</param>
-        /// <param name="windowLog">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9 or -1), or <paramref name="windowLog"/> is not in the valid range (8-15 or -1).</exception>
+        /// <param name="windowLog2">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9 or -1), or <paramref name="windowLog2"/> is not in the valid range (8-15 or -1).</exception>
         /// <exception cref="IOException">Failed to create the <see cref="DeflateEncoder"/> instance.</exception>
-        public DeflateEncoder(int quality, int windowLog)
-            : this(quality, windowLog, CompressionFormat.Deflate)
+        public DeflateEncoder(int quality, int windowLog2)
+            : this(quality, windowLog2, CompressionFormat.Deflate)
         {
         }
 
         /// <summary>
-        /// Internal constructor that accepts quality, windowLog (8-15), and format.
-        /// Validates both parameters and transforms windowLog to windowBits based on format.
+        /// Internal constructor that accepts quality, windowLog2 (8-15), and format.
+        /// Validates both parameters and transforms windowLog2 to windowBits based on format.
         /// </summary>
-        internal DeflateEncoder(int quality, int windowLog, CompressionFormat format)
+        internal DeflateEncoder(int quality, int windowLog2, CompressionFormat format)
         {
             ValidateQuality(quality);
-            ValidateWindowLog(windowLog);
+            ValidateWindowLog(windowLog2);
 
-            int windowBits = CompressionFormatHelper.ResolveWindowBits(windowLog, format);
+            int windowBits = CompressionFormatHelper.ResolveWindowBits(windowLog2, format);
 
             int memLevel = quality == (int)ZLibNative.CompressionLevel.NoCompression
                 ? ZLibNative.Deflate_NoCompressionMemLevel
@@ -88,7 +88,7 @@ namespace System.IO.Compression
         {
             ArgumentNullException.ThrowIfNull(options);
 
-            int windowBits = CompressionFormatHelper.ResolveWindowBits(options.WindowLog, format);
+            int windowBits = CompressionFormatHelper.ResolveWindowBits(options.WindowLog2, format);
 
             int memLevel = options.CompressionLevel == (int)ZLibNative.CompressionLevel.NoCompression
                 ? ZLibNative.Deflate_NoCompressionMemLevel
@@ -110,12 +110,12 @@ namespace System.IO.Compression
             }
         }
 
-        private static void ValidateWindowLog(int windowLog)
+        private static void ValidateWindowLog(int windowLog2)
         {
-            if (windowLog != -1)
+            if (windowLog2 != -1)
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(windowLog, ZLibNative.MinWindowLog, nameof(windowLog));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog, ZLibNative.MaxWindowLog, nameof(windowLog));
+                ArgumentOutOfRangeException.ThrowIfLessThan(windowLog2, ZLibNative.MinWindowLog, nameof(windowLog2));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog2, ZLibNative.MaxWindowLog, nameof(windowLog2));
             }
         }
 
@@ -324,11 +324,11 @@ namespace System.IO.Compression
         /// <param name="destination">When this method returns, a span of bytes where the compressed data is stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
         /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression), or -1 to use the default value.</param>
-        /// <param name="windowLog">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
+        /// <param name="windowLog2">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog)
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog2)
         {
-            using var encoder = new DeflateEncoder(quality, windowLog);
+            using var encoder = new DeflateEncoder(quality, windowLog2);
             OperationStatus status = encoder.Compress(source, destination, out int consumed, out bytesWritten, isFinalBlock: true);
 
             bool success = status == OperationStatus.Done && consumed == source.Length;

@@ -211,19 +211,29 @@ ThePreStubPatchLabel:
         NESTED_END PInvokeImportThunk, _TEXT
 
 // ------------------------------------------------------------------
-// void ResolveWorkerAsmStub(r0, r1, r2, r3, r4:IndirectionCellAndFlags, r12:DispatchToken)
+// void ResolveWorkerAsmStub(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken)
 //
 // The stub dispatch thunk which transfers control to VSD_ResolveWorker.
         NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
-        PROLOG_WITH_TRANSITION_BLOCK
+        // Match what the virtual dispatch slow path has pushed.
+        .save {r3}
 
-        add         r0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+        PROLOG_PUSH  "{r0-r2}"
+
+        PROLOG_WITH_TRANSITION_BLOCK 0, 1, DoNotPushArgRegs
+
         mov         r2, r12                         // token
 
-        // indirection cell in r4 - should be consistent with REG_ARM_STUB_SPECIAL
-        bic         r1, r4, #3          // indirection cell
-        and         r3, r4, #3          // flags
+        // Load the indirection cell and flags
+        ldr         r12, [sp,#(__PWTB_TransitionBlock+12*4)]
+
+        // Spill the actual method argument
+        str         r3, [sp,#(__PWTB_TransitionBlock+12*4)]
+
+        add         r0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+        bic         r1, r12, #3                     // indirection cell
+        and         r3, r12, #3                     // flags
 
         bl          C_FUNC(VSD_ResolveWorker)
 
@@ -235,7 +245,7 @@ ThePreStubPatchLabel:
         NESTED_END ResolveWorkerAsmStub, _TEXT
 
 // ------------------------------------------------------------------
-// void ResolveWorkerChainLookupAsmStub(r0, r1, r2, r3, r4:IndirectionCellAndFlags, r12:DispatchToken)
+// void ResolveWorkerChainLookupAsmStub(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken)
         NESTED_ENTRY ResolveWorkerChainLookupAsmStub, _TEXT, NoHandler
 
         // ARMSTUB TODO: implement chained lookup
