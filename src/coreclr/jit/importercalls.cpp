@@ -3524,7 +3524,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         {
             // This one is just `return true/false`
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
-            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync:
 
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
 
