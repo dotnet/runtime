@@ -29725,7 +29725,9 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
         assert(IsValidForShuffle(indices, simdSize, simdBaseType, nullptr, false));
 
         GenTree* shifted = gtNewSimdShuffleNode(simdType, op1, indices, simdBaseType, simdSize, false);
-        op1              = gtNewSimdBinOpNode(GT_ADD, simdType, op1Dup, shifted, simdBaseType, simdSize);
+        // `shifted` carries the multi-use definition of `op1`, so it must be the first operand to
+        // ensure the store is evaluated before `op1Dup` reads it. Element-wise add is commutative.
+        op1 = gtNewSimdBinOpNode(GT_ADD, simdType, shifted, op1Dup, simdBaseType, simdSize);
     }
 
     return gtNewSimdToScalarNode(type, op1, simdBaseType, simdSize);
