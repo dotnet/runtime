@@ -182,13 +182,6 @@ namespace ILLink.CodeFix
                     continue;
                 }
 
-                if (statement is not null && CanWrapInUnsafeBlock(statement) &&
-                    !DeclaresEscapingLocals(statement))
-                {
-                    AddStatementFix(statementFixes, statement, StatementFix.Wrap());
-                    continue;
-                }
-
                 if (FindExecutableBody(target) is BlockSyntax body && CanWrapInUnsafeBlock(body))
                     fallbackBodies.Add(body);
             }

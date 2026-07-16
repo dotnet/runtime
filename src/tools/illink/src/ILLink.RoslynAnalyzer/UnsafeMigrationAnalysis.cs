@@ -160,6 +160,24 @@ namespace ILLink.RoslynAnalyzer
         public static bool HasSafeModifier(SyntaxNode declaration)
             => GetModifiers(declaration).Any(static modifier => modifier.ValueText == "safe");
 
+        public static ImmutableArray<string> GetUnsafeContractEventVariableNames(
+            EventFieldDeclarationSyntax declaration,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
+        {
+            var builder = ImmutableArray.CreateBuilder<string>();
+            foreach (VariableDeclaratorSyntax variable in declaration.Declaration.Variables)
+            {
+                if (semanticModel.GetDeclaredSymbol(variable, cancellationToken) is IEventSymbol @event &&
+                    RequiresUnsafeContract(@event))
+                {
+                    builder.Add(variable.Identifier.ValueText);
+                }
+            }
+
+            return builder.ToImmutable();
+        }
+
         private static bool ShouldRemoveUnsafeModifier(
             SyntaxNode declaration,
             SemanticModel semanticModel,

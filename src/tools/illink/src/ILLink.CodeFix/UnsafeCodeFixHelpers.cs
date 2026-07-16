@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if DEBUG
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,6 +58,28 @@ namespace ILLink.CodeFix
             foreach (var update in updates)
             {
                 SyntaxNode declaration = changedRoot.GetAnnotatedNodes(annotations[update.Declaration]).Single();
+
+                // A multi-variable event field whose events implement a mix of safe and unsafe contracts
+                // cannot take a single 'unsafe' modifier (it would make the safe events illegally unsafe).
+                // Split it so 'unsafe' is applied only to the variables that require it.
+                if (update.AddUnsafeModifier &&
+                    update.Declaration is EventFieldDeclarationSyntax originalEventField &&
+                    originalEventField.Declaration.Variables.Count > 1)
+                {
+                    ImmutableArray<string> unsafeVariables = UnsafeMigrationAnalysis.GetUnsafeContractEventVariableNames(
+                        originalEventField, semanticModel, cancellationToken);
+                    if (unsafeVariables.Length > 0 &&
+                        unsafeVariables.Length < originalEventField.Declaration.Variables.Count)
+                    {
+                        changedRoot = SplitEventFieldDeclaration(
+                            changedRoot,
+                            (EventFieldDeclarationSyntax)declaration,
+                            [.. unsafeVariables],
+                            generator);
+                        continue;
+                    }
+                }
+
                 SyntaxNode replacement = declaration;
 
                 if (update.AddUnsafeModifier && !UnsafeMigrationAnalysis.HasUnsafeModifier(declaration))
@@ -68,6 +92,43 @@ namespace ILLink.CodeFix
             }
 
             return document.WithSyntaxRoot(changedRoot);
+        }
+
+        private static SyntaxNode SplitEventFieldDeclaration(
+            SyntaxNode root,
+            EventFieldDeclarationSyntax declaration,
+            HashSet<string> unsafeVariables,
+            SyntaxGenerator generator)
+        {
+            SyntaxTriviaList leadingTrivia = declaration.GetLeadingTrivia();
+            SyntaxTriviaList indentation = SyntaxFactory.TriviaList(
+                leadingTrivia
+                    .Reverse()
+                    .TakeWhile(static trivia => trivia.IsKind(SyntaxKind.WhitespaceTrivia))
+                    .Reverse());
+            SyntaxTriviaList trailingTrivia = declaration.GetTrailingTrivia();
+
+            SeparatedSyntaxList<VariableDeclaratorSyntax> variables = declaration.Declaration.Variables;
+            var replacements = new List<EventFieldDeclarationSyntax>(variables.Count);
+            for (int i = 0; i < variables.Count; i++)
+            {
+                EventFieldDeclarationSyntax single = declaration
+                    .WithDeclaration(declaration.Declaration.WithVariables(
+                        SyntaxFactory.SingletonSeparatedList(variables[i].WithoutTrivia())))
+                    .WithoutTrivia();
+
+                if (unsafeVariables.Contains(variables[i].Identifier.ValueText))
+                    single = (EventFieldDeclarationSyntax)AddUnsafeModifier(single, generator);
+
+                replacements.Add(single
+                    .WithLeadingTrivia(i == 0 ? leadingTrivia : indentation)
+                    .WithTrailingTrivia(i == variables.Count - 1
+                        ? trailingTrivia
+                        : SyntaxFactory.TriviaList(SyntaxFactory.ElasticCarriageReturnLineFeed))
+                    .WithAdditionalAnnotations(Formatter.Annotation));
+            }
+
+            return root.ReplaceNode(declaration, replacements);
         }
 
         private static SyntaxNode AddUnsafeModifier(
