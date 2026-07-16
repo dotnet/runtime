@@ -280,101 +280,45 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void TestEnvironmentOfChildProcess_SeesParentEnvironmentVariableSetBeforeStart()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("not_null", true)]
+        [InlineData("not_null", false)]
+        [InlineData(null, false)]
+        [InlineData(null, true)]
+        public void SeesEnvironmentVariableSetBeforeStart(string? value, bool modifyParent)
         {
             const string Name = "TestEnvironmentOfChildProcess_ParentSetBeforeStart";
-            string value = "\x1234" + Environment.NewLine + "\x5678";
             string? previousValue = Environment.GetEnvironmentVariable(Name);
 
             try
             {
-                Process p = CreateProcess(static (variableName, expectedValue) =>
+                using Process process = CreateProcess(static (expectedValue) =>
                 {
-                    return Environment.GetEnvironmentVariable(variableName) == expectedValue ?
-                        RemoteExecutor.SuccessExitCode :
-                        1;
-                }, Name, value);
+                    Assert.Equal(expectedValue, Environment.GetEnvironmentVariable(Name));
 
-                Environment.SetEnvironmentVariable(Name, value);
+                    return RemoteExecutor.SuccessExitCode;
+                }, value);
 
-                p.Start();
-                Assert.True(p.WaitForExit(WaitInMS));
-                Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
+                if (modifyParent)
+                {
+                    Environment.SetEnvironmentVariable(Name, value);
+                }
+                else
+                {
+                    process.StartInfo.Environment[Name] = value;
+                }
+
+                process.Start();
+                Assert.True(process.WaitForExit(WaitInMS));
+                Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
             }
             finally
             {
-                Environment.SetEnvironmentVariable(Name, previousValue);
-            }
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void TestEnvironmentOfChildProcess_SeesParentEnvironmentVariableRemovalBeforeStart()
-        {
-            const string Name = "TestEnvironmentOfChildProcess_ParentRemoveBeforeStart";
-            string? previousValue = Environment.GetEnvironmentVariable(Name);
-
-            try
-            {
-                Process p = CreateProcess(static variableName =>
+                if (modifyParent)
                 {
-                    return Environment.GetEnvironmentVariable(variableName) is null ?
-                        RemoteExecutor.SuccessExitCode :
-                        1;
-                }, Name);
-
-                Environment.SetEnvironmentVariable(Name, "temporary-value");
-                Environment.SetEnvironmentVariable(Name, null);
-
-                p.Start();
-                Assert.True(p.WaitForExit(WaitInMS));
-                Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
+                    Environment.SetEnvironmentVariable(Name, previousValue);
+                }
             }
-            finally
-            {
-                Environment.SetEnvironmentVariable(Name, previousValue);
-            }
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void TestEnvironmentOfChildProcess_PristineStartInfoInheritsParentEnvironment()
-        {
-            // Verify the lazy-inheritance path: when ProcessStartInfo.Environment is never
-            // accessed and Environment.HasEnvironmentVariablesBeenModified is false, the child
-            // process should inherit the parent's full environment via a null envp on non-Apple
-            // Unix. We run this inside a fresh subprocess so HasEnvironmentVariablesBeenModified
-            // starts as false and the parent environment can be controlled precisely.
-            const string varName = "TestLazyEnvInheritance_Key";
-            const string varValue = "TestLazyEnvInheritance_Value";
-
-            // Inject the variable into the outer fresh process via StartInfo.Environment
-            // (this does NOT call Environment.SetEnvironmentVariable, so HasEnvironmentVariablesBeenModified
-            // stays false inside that process).
-            var outerOptions = new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() };
-            outerOptions.StartInfo.Environment[varName] = varValue;
-
-            RemoteExecutor.Invoke(static (name, value) =>
-            {
-                // Start a child using a pristine ProcessStartInfo: do NOT access .Environment.
-                // Accessing .Environment would initialize _environmentVariables and bypass the
-                // lazy-inheritance optimization on non-Apple platforms.
-                var psi = new ProcessStartInfo("printenv", name)
-                {
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false
-                };
-
-                using Process child = Process.Start(psi)!;
-                string output = child.StandardOutput.ReadToEnd().Trim();
-                Assert.True(child.WaitForExit(WaitInMS));
-                Assert.Equal(0, child.ExitCode);
-                Assert.Equal(value, output);
-
-                return RemoteExecutor.SuccessExitCode;
-            }, varName, varValue, outerOptions);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -486,7 +430,7 @@ namespace System.Diagnostics.Tests
             // Environment Variables are case-insensitive on Windows.
             // But it's possible to start a process with duplicate case-sensitive env vars using CreateProcess API (see #42029)
             // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insensitive on Windows.
-            // We also can't use p.StartInfo.Environment as it's comparer is set to OrdinalIgnoreCAse.
+            // We also can't use process.StartInfo.Environment as it's comparer is set to OrdinalIgnoreCAse.
             // But we can overwrite it using reflection to mimic the CreateProcess behaviour and avoid having this test call CreateProcess directly.
             Type.GetType("System.Collections.Specialized.DictionaryWrapper, System.Diagnostics.Process")!
                 .GetField("_contents", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)

@@ -8,7 +8,6 @@ namespace System
 {
     public static partial class Environment
     {
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static bool HasEnvironmentVariablesBeenModified { get { throw null; } }
     }
 }

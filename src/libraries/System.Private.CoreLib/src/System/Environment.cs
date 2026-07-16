@@ -4,7 +4,6 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System
@@ -63,22 +62,6 @@ namespace System
         // Unconditionally return false since .NET Core does not support object finalization during shutdown.
         public static bool HasShutdownStarted => false;
 
-        private static volatile bool s_hasEnvironmentVariablesBeenModified;
-
-        [UnsupportedOSPlatform("windows")]
-        public static bool HasEnvironmentVariablesBeenModified
-        {
-            get
-            {
-                if (OperatingSystem.IsWindows())
-                {
-                    throw new PlatformNotSupportedException();
-                }
-
-                return s_hasEnvironmentVariablesBeenModified;
-            }
-        }
-
         public static string? GetEnvironmentVariable(string variable)
         {
             ArgumentNullException.ThrowIfNull(variable);
@@ -110,10 +93,6 @@ namespace System
         {
             ValidateVariable(variable);
             SetEnvironmentVariableCore(variable, value);
-            if (!OperatingSystem.IsWindows())
-            {
-                s_hasEnvironmentVariablesBeenModified = true;
-            }
         }
 
         public static void SetEnvironmentVariable(string variable, string? value, EnvironmentVariableTarget target)

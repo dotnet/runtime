@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_config.h"
+#include "pal_environment.h"
 #include "pal_process.h"
 #include "pal_signal.h"
 #include "pal_io.h"
@@ -336,16 +337,6 @@ static int32_t ForkAndExecProcessInternal(
     int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
     int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig, int32_t startSuspended);
 
-static char** GetEnviron(void)
-{
-#if HAVE_NSGETENVIRON
-    return *(_NSGetEnviron());
-#else
-    extern char** environ;
-    return environ;
-#endif
-}
-
 #if HAVE_PR_SET_PDEATHSIG
 // Dedicated thread infrastructure for PR_SET_PDEATHSIG.
 //
@@ -586,6 +577,8 @@ static int32_t ForkAndExecProcessInternal(
 #endif
 
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
+    assert(NULL != envp);
+
 #if !HAVE_FORK
     // On MacCatalyst, fork(2) exists in the SDK but is blocked by the kernel at runtime (EPERM).
     // setuid/setgid-based credential changes require fork.
@@ -944,7 +937,7 @@ static int32_t ForkAndExecProcessInternal(
 #endif
 
         // Finally, execute the new process.  execve will not return if it's successful.
-        execve(filename, argv, envp != NULL ? envp : GetEnviron());
+        execve(filename, argv, envp != NULL ? envp : SystemNative_GetEnviron());
         ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno); // execve failed
     }
 
