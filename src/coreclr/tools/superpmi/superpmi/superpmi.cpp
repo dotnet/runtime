@@ -447,6 +447,18 @@ int __cdecl main(int argc, char* argv[])
                         // InitJit already printed a failure message
                         return (int)SpmiResult::JitFailedToInit;
                     }
+
+                    if (jit2->getModule() == jit->getModule())
+                    {
+                        // The baseline and diff JITs resolved to the same loaded module. Because the JIT keeps
+                        // global state (e.g. g_jitHost, JitConfig), sharing a single module between the two
+                        // JitInstances corrupts that state and produces spurious diffs and intermittent crashes.
+                        // Require the two JITs to be distinct files (copy one to a different path if needed).
+                        LogError("The baseline JIT ('%s') and diff JIT ('%s') resolve to the same loaded module. "
+                                 "They must be distinct files; copy one JIT to a different path.",
+                                 o.nameOfJit, o.nameOfJit2);
+                        return (int)SpmiResult::JitFailedToInit;
+                    }
                 }
             }
 
