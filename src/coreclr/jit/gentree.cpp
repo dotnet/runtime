@@ -31103,7 +31103,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(bool* isScalar, bool getE
                 {
                     oper = GT_NEG;
                 }
-                else if (isScalar && op1->IsCnsVec() && op1->AsVecCon()->IsScalarZero(simdBaseType))
+                else if (*isScalar && op1->IsCnsVec() && op1->AsVecCon()->IsScalarZero(simdBaseType))
                 {
                     oper = GT_NEG;
                 }
