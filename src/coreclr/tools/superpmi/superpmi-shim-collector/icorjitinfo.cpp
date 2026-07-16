@@ -1388,11 +1388,11 @@ void interceptor_ICJI::getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* p
     original_ICorJitInfo->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
     mc->recGetWasmWellKnownGlobals(pWellKnownGlobalsOut);
 }
-CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg)
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
 {
     mc->cr->AddCall("getAwaitReturnCall");
-    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitReturnCall(callerHandle, instArg);
-    mc->recGetAwaitReturnCall(callerHandle, instArg, result);
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitReturnCall(callerHandle, contextHandle, instArg);
+    mc->recGetAwaitReturnCall(callerHandle, contextHandle, instArg, result);
     return result;
 }
 

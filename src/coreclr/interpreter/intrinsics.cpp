@@ -170,6 +170,20 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                 !strcmp(className, "ValueTask`1") || !strcmp(className, "ValueTask"))
                 return NI_System_Threading_Tasks_Task_ConfigureAwait;
         }
+        else if (!strcmp(className, "ValueTask"))
+        {
+            if (!strcmp(methodName, ".ctor"))
+                return NI_System_Threading_Tasks_ValueTask__ctor;
+            else if (!strcmp(methodName, "AsTask"))
+                return NI_System_Threading_Tasks_ValueTask_AsTask;
+        }
+        else if (!strcmp(className, "ValueTask`1"))
+        {
+            if (!strcmp(methodName, ".ctor"))
+                return NI_System_Threading_Tasks_ValueTask_1__ctor;
+            else if (!strcmp(methodName, "AsTask"))
+                return NI_System_Threading_Tasks_ValueTask_1_AsTask;
+        }
     }
 
     return NI_Illegal;

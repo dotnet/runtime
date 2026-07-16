@@ -156,6 +156,18 @@ internal sealed class MockEEClass : TypedView
         set => WriteUInt16Field(NumInstanceFieldsFieldName, value);
     }
 
+    public ushort NumStaticFields
+    {
+        get => ReadUInt16Field(NumStaticFieldsFieldName);
+        set => WriteUInt16Field(NumStaticFieldsFieldName, value);
+    }
+
+    public ulong FieldDescList
+    {
+        get => ReadPointerField(FieldDescListFieldName);
+        set => WritePointerField(FieldDescListFieldName, value);
+    }
+
     public ushort NumNonVirtualSlots
     {
         get => ReadUInt16Field(NumNonVirtualSlotsFieldName);
@@ -539,6 +551,22 @@ internal partial class MockDescriptors
             fieldDesc.DWord1 = memberDef & 0x00ffffff; // low 24 bits hold the token RID
             fieldDesc.DWord2 = ((uint)type << 27) | (offset & 0x07ffffff);
             return fieldDesc;
+        }
+
+        // Allocates `count` FieldDescs contiguously (matching the runtime's packed FieldDesc array), each
+        // recording `mtOfEnclosingClass`, and returns the address of the first one.
+        internal TargetPointer AddFieldDescList(ulong mtOfEnclosingClass, int count)
+        {
+            uint size = (uint)FieldDescLayout.Size;
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate((ulong)count * size, "FieldDesc array");
+            for (int i = 0; i < count; i++)
+            {
+                MockFieldDesc fieldDesc = FieldDescLayout.Create(
+                    fragment.Data.AsMemory((int)((uint)i * size), (int)size),
+                    fragment.Address + (uint)i * size);
+                fieldDesc.MTOfEnclosingClass = mtOfEnclosingClass;
+            }
+            return fragment.Address;
         }
 
         private TView Add<TView>(Layout<TView> layout, string name)

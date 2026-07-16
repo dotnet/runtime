@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "jitpch.h"
+#include "hwintrinsic.h"
+
 #ifdef FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
@@ -30,9 +33,19 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
     return InstructionSet_ILLEGAL;
 }
 
-int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id, var_types baseType)
+int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id, unsigned int simdSize, var_types baseType)
 {
-    NYI_WASM_SIMD("lookupImmUpperBound");
+    switch (id)
+    {
+        case NI_PackedSimd_ExtractScalar:
+        case NI_PackedSimd_ReplaceScalar:
+        case NI_PackedSimd_LoadScalarAndInsert:
+        case NI_PackedSimd_StoreSelectedScalar:
+            return Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
+        default:
+            unreached();
+    }
+
     return 0;
 }
 
@@ -256,11 +269,29 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
                                     GenTree**         immOp1Ptr,
                                     GenTree**         immOp2Ptr)
 {
-    if ((sig->numArgs > 0) && HWIntrinsicInfo::isImmOp(intrinsic, impStackTop().val))
+    if (!HWIntrinsicInfo::HasImmediateOperand(intrinsic))
     {
-        // NOTE: The following code assumes that for all intrinsics
-        // taking an immediate operand, that operand will be last.
-        *immOp1Ptr = impStackTop().val;
+        return;
+    }
+
+    // Position of the immediates (in eval order)
+    int imm1Pos = -1;
+    int imm2Pos = -1;
+
+    int numArgs = HWIntrinsicInfo::lookupNumArgs(intrinsic);
+    HWIntrinsicInfo::GetImmOpsPositions(intrinsic, &imm1Pos, &imm2Pos);
+    if (imm1Pos >= 0)
+    {
+        int imm1StackPos = numArgs - imm1Pos;
+        *immOp1Ptr       = impStackTop(imm1StackPos).val;
+        assert(HWIntrinsicInfo::isImmOp(intrinsic, *immOp1Ptr));
+    }
+
+    if (imm2Pos >= 0)
+    {
+        int imm2StackPos = numArgs - imm2Pos;
+        *immOp2Ptr       = impStackTop(imm2StackPos).val;
+        assert(HWIntrinsicInfo::isImmOp(intrinsic, *immOp2Ptr));
     }
 }
 #endif

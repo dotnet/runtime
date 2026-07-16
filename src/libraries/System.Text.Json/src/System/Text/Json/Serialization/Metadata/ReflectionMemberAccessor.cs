@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(constructor.DeclaringType == type && constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(constructor.DeclaringType == type && !constructor.IsStatic);
 
             int parameterCount = constructor.GetParameters().Length;
 
@@ -70,7 +70,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(constructor.DeclaringType == type && constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(constructor.DeclaringType == type && !constructor.IsStatic);
 
             int parameterCount = constructor.GetParameters().Length;
 
@@ -111,7 +111,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(constructor.DeclaringType == type && constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(constructor.DeclaringType == type && !constructor.IsStatic);
             Debug.Assert(constructor.GetParameters().Length == 1);
 
             return value =>
