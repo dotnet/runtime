@@ -161,7 +161,16 @@ namespace ILLink.CodeFix
                     requiresExpression = true;
                 }
 
-                if (!requiresExpression && statement is not null && CanWrapInUnsafeBlock(statement))
+                if (statement is ExpressionStatementSyntax outVarStatement &&
+                    DeclaresEscapingLocals(statement) &&
+                    TryCreateOutVarForwardFix(outVarStatement, semanticModel, out StatementFix outVarFix))
+                {
+                    AddStatementFix(statementFixes, statement, outVarFix);
+                    continue;
+                }
+
+                if (!requiresExpression && statement is not null && CanWrapInUnsafeBlock(statement) &&
+                    !DeclaresEscapingLocals(statement))
                 {
                     AddStatementFix(statementFixes, statement, StatementFix.Wrap());
                     continue;
@@ -173,7 +182,8 @@ namespace ILLink.CodeFix
                     continue;
                 }
 
-                if (statement is not null && CanWrapInUnsafeBlock(statement))
+                if (statement is not null && CanWrapInUnsafeBlock(statement) &&
+                    !DeclaresEscapingLocals(statement))
                 {
                     AddStatementFix(statementFixes, statement, StatementFix.Wrap());
                     continue;
@@ -389,6 +399,16 @@ namespace ILLink.CodeFix
             if (variable.Initializer is not { } initializer)
                 return false;
 
+            // An out-var or pattern variable in the initializer leaks into the enclosing scope; moving the
+            // initializer into an 'unsafe { }' block would hide it. Bail so the caller wraps the initializer
+            // as an 'unsafe(...)' expression instead, which keeps the declaration in place.
+            if (initializer.Value.DescendantNodesAndSelf().OfType<SingleVariableDesignationSyntax>().Any(
+                static designation => designation.Parent is DeclarationExpressionSyntax or DeclarationPatternSyntax or
+                    RecursivePatternSyntax or VarPatternSyntax))
+            {
+                return false;
+            }
+
             if (initializer.Value.DescendantTrivia(descendIntoTrivia: true).Any(IsComment))
                 return false;
 
@@ -444,6 +464,68 @@ namespace ILLink.CodeFix
                 .WithAdditionalAnnotations(Formatter.Annotation);
 
             fix = StatementFix.Forward(forwardDeclaration, assignment);
+            return true;
+        }
+
+        // An out-var declaration ('Foo(out int x);') leaks 'x' into the enclosing scope, so wrapping the
+        // statement in its own 'unsafe { }' block would move 'x' out of scope for later uses. Hoist the
+        // declaration ('int x;') before the block and reference it from the (now scoped) unsafe call.
+        private static bool TryCreateOutVarForwardFix(
+            ExpressionStatementSyntax statement,
+            SemanticModel semanticModel,
+            out StatementFix fix)
+        {
+            fix = default;
+
+            if (HasInteriorDirectives(statement) ||
+                statement.DescendantNodesAndSelf().Any(static node => node is AwaitExpressionSyntax))
+            {
+                return false;
+            }
+
+            // Only handle out-var declarations here; bail on any other leaking designation (e.g. is-pattern
+            // variables) that this rewrite doesn't understand.
+            if (statement.DescendantNodes().Any(static node =>
+                node is SingleVariableDesignationSyntax { Parent: not DeclarationExpressionSyntax }))
+            {
+                return false;
+            }
+
+            DeclarationExpressionSyntax[] outVars = statement.DescendantNodes()
+                .OfType<DeclarationExpressionSyntax>()
+                .Where(static declaration => declaration.Designation is SingleVariableDesignationSyntax)
+                .ToArray();
+
+            if (outVars.Length != 1)
+                return false;
+
+            DeclarationExpressionSyntax outVar = outVars[0];
+            var designation = (SingleVariableDesignationSyntax)outVar.Designation;
+            TypeSyntax type = outVar.Type;
+
+            if (type.IsVar)
+            {
+                if (semanticModel.GetDeclaredSymbol(designation) is not ILocalSymbol { Type: { } localType } ||
+                    localType is IErrorTypeSymbol)
+                {
+                    return false;
+                }
+
+                type = SyntaxFactory.ParseTypeName(localType.ToMinimalDisplayString(semanticModel, statement.SpanStart))
+                    .WithAdditionalAnnotations(Simplifier.Annotation);
+            }
+
+            var forwardDeclaration = SyntaxFactory.LocalDeclarationStatement(
+                SyntaxFactory.VariableDeclaration(
+                    type.WithoutTrivia(),
+                    [SyntaxFactory.VariableDeclarator(designation.Identifier.WithoutTrivia())]))
+                .WithTrailingTrivia(SyntaxFactory.ElasticCarriageReturnLineFeed);
+
+            StatementSyntax rewritten = statement
+                .ReplaceNode(outVar, SyntaxFactory.IdentifierName(designation.Identifier.WithoutTrivia()))
+                .WithoutLeadingTrivia();
+
+            fix = StatementFix.Forward(forwardDeclaration, rewritten);
             return true;
         }
 
@@ -589,8 +671,31 @@ namespace ILLink.CodeFix
             if (expression.DescendantNodesAndSelf().Any(static node => node is AwaitExpressionSyntax))
                 return false;
 
+            // 'unsafe(...)' only parses as a value sub-expression; it can't stand alone as a bare
+            // statement ('unsafe(f());') or wrap an assignment target ('unsafe(*p) = x;').
+            if (IsStatementLevelOrAssignmentTarget(expression))
+                return false;
+
+            // Require a known, non-void value. If the type can't be resolved (e.g. incomplete
+            // semantics), fall back to an 'unsafe { }' block rather than emit an invalid expression.
             ITypeSymbol? type = semanticModel.GetTypeInfo(expression).Type;
-            return type?.SpecialType != SpecialType.System_Void;
+            return type is { SpecialType: not SpecialType.System_Void };
+        }
+
+        private static bool IsStatementLevelOrAssignmentTarget(ExpressionSyntax expression)
+        {
+            if (expression.Parent is ExpressionStatementSyntax)
+                return true;
+
+            for (ExpressionSyntax current = expression;
+                current.Parent is ExpressionSyntax parent;
+                current = parent)
+            {
+                if (parent is AssignmentExpressionSyntax assignment && assignment.Left == current)
+                    return true;
+            }
+
+            return false;
         }
 
         private static ExpressionSyntax? FindFixableExpression(
@@ -629,9 +734,38 @@ namespace ILLink.CodeFix
                     LocalFunctionStatementSyntax or AnonymousFunctionExpressionSyntax);
 
         private static bool CanWrapInUnsafeBlock(SyntaxNode node)
-            => !UnsafeCodeFixHelpers.ContainsDirectives(node) &&
+            => !HasInteriorDirectives(node) &&
                 !node.DescendantNodesAndSelf().Any(static descendant =>
                     descendant is AwaitExpressionSyntax or YieldStatementSyntax);
+
+        // Directives in the node's own leading/trailing trivia are preserved outside the generated
+        // 'unsafe { }' block, so only directives between the node's tokens prevent wrapping it.
+        private static bool HasInteriorDirectives(SyntaxNode node)
+        {
+            int interiorStart = node.GetFirstToken().SpanStart;
+            int interiorEnd = node.GetLastToken().Span.End;
+            foreach (SyntaxTrivia trivia in node.DescendantTrivia())
+            {
+                if (trivia.IsDirective &&
+                    trivia.SpanStart >= interiorStart &&
+                    trivia.SpanStart < interiorEnd)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Out-var and pattern variables leak into the enclosing scope, so a statement that introduces
+        // them can't be moved into its own 'unsafe { }' block without changing where they are visible.
+        private static bool DeclaresEscapingLocals(StatementSyntax statement)
+            => statement.DescendantNodes().Any(static node =>
+                node is SingleVariableDesignationSyntax
+                {
+                    Parent: DeclarationExpressionSyntax or DeclarationPatternSyntax or
+                        RecursivePatternSyntax or VarPatternSyntax
+                });
 
         private static TNode[] RemoveNestedNodes<TNode>(IEnumerable<TNode> nodes)
             where TNode : SyntaxNode
