@@ -179,6 +179,7 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             }
         }
 
+        pCoreCLRFoundAssembly.Free(); // Ensure we don't leak the previous assembly if we had one
         hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly, ppExistingAssemblyOnConflict);
         if (hr == S_OK)
         {

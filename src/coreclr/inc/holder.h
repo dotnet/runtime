@@ -1022,6 +1022,7 @@ struct ReleaseHolderTraits final
         } CONTRACTL_END;
 #else
         STATIC_CONTRACT_NOTHROW;
+        STATIC_CONTRACT_GC_TRIGGERS;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 #endif // ENABLE_EE_CONTRACTS
 

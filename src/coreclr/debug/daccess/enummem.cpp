@@ -1127,8 +1127,8 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
         DebuggingExceptionTrackerList exceptionTrackingInner;
 
         CLRDATA_ENUM        handle;
-        ReleaseHolder<IXCLRDataTask> pIXCLRDataTask(NULL);
-        ReleaseHolder<IXCLRDataExceptionState> pExcepState(NULL);
+        ReleaseHolder<IXCLRDataTask> pIXCLRDataTask;
+        ReleaseHolder<IXCLRDataExceptionState> pExcepState;
         Thread              *pThread = NULL;
 
         // enumerating through each thread
@@ -1150,6 +1150,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
                 DumpManagedExcepObject(flags, pThread->LastThrownObject());
 
                 // Now probe into the exception info
+                pExcepState.Free();
                 status = pIXCLRDataTask->GetCurrentExceptionState(&pExcepState);
                 while (status == S_OK && pExcepState != NULL)
                 {
@@ -1252,6 +1253,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
                 }
 
                 // Now probe into the exception info
+                pExcepState.Free();
                 status = pIXCLRDataTask->GetCurrentExceptionState(&pExcepState);
                 while (status == S_OK && pExcepState != NULL)
                 {

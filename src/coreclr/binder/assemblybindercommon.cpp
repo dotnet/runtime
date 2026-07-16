@@ -903,6 +903,7 @@ namespace BINDER_SPACE
                 SString fileName(pTpaEntry->m_wszILFileName);
 
                 SString getAssemblyDiag;
+                pTPAAssembly.Free(); // Ensure we don't leak the previous assembly if we had one
                 hr = GetAssembly(fileName,
                                     TRUE,  // fIsInTPA
                                     &pTPAAssembly,
