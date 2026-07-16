@@ -2076,7 +2076,8 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         pCode->EmitLoadThis();
         pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__HELPER_OBJECT)));
         pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitLDELEM_REF();
+        pCode->EmitLDELEM(pCode->GetToken(CoreLibBinder::GetClass(CLASS__DELEGATEWRAPPER)));
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATEWRAPPER__DELEGATE)));
 
         // Load the arguments
         for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
