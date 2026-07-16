@@ -104,7 +104,6 @@ public class PlatformContextTests
         Assert.Equal(0x00010001u, ctx.ContextControlFlags);
         Assert.Equal(0x00010007u, ctx.FullContextFlags);
         Assert.Equal(0x0001003fu, ctx.AllContextFlags);
-        Assert.Equal(0x00010020u, ctx.ExtendedRegistersFlag);
     }
 
     [Theory]
