@@ -1464,9 +1464,9 @@ namespace System.Tests
             Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        public static IEnumerable<object[]> TryParsePartial_TestData()
         {
-            NumberStyles style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+            NumberStyles style = NumberStyles.Float;
 
             // Trailing invalid characters after a valid number
             yield return new object[] { "123abc", style, CultureInfo.InvariantCulture, Decimal64.Parse("123", CultureInfo.InvariantCulture), 3 };
@@ -1490,30 +1490,30 @@ namespace System.Tests
             yield return new object[] { "NaN  x", style, CultureInfo.InvariantCulture, Decimal64.NaN, 5 };
 
             // AllowTrailingWhite has no effect on special values; the surrounding whitespace is still consumed
-            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite) | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Decimal64.PositiveInfinity, 10 };
+            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite), CultureInfo.InvariantCulture, Decimal64.PositiveInfinity, 10 };
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, Decimal64 expected, int expectedCharsConsumed)
+        [MemberData(nameof(TryParsePartial_TestData))]
+        public static void TryParsePartial(string value, NumberStyles style, IFormatProvider provider, Decimal64 expected, int expectedCharsConsumed)
         {
-            Assert.True(Decimal64.TryParse(value, style, provider, out Decimal64 result, out int charsConsumed));
+            Assert.True(Decimal64.TryParsePartial(value, style, provider, out Decimal64 result, out int charsConsumed));
             Assert.Equal(expected, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
-            Assert.True(Decimal64.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.True(Decimal64.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(expected, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
 
             byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(value);
-            Assert.True(Decimal64.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
+            Assert.True(Decimal64.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
             Assert.Equal(expected, result);
             Assert.Equal(expectedCharsConsumed, bytesConsumed);
         }
 
-        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        public static IEnumerable<object[]> TryParsePartial_Invalid_TestData()
         {
-            NumberStyles style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+            NumberStyles style = NumberStyles.Float;
 
             yield return new object[] { "", style, CultureInfo.InvariantCulture };
             yield return new object[] { "abc", style, CultureInfo.InvariantCulture };
@@ -1521,17 +1521,17 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
-        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        [MemberData(nameof(TryParsePartial_Invalid_TestData))]
+        public static void TryParsePartial_Invalid(string value, NumberStyles style, IFormatProvider provider)
         {
-            Assert.False(Decimal64.TryParse(value, style, provider, out Decimal64 result, out int charsConsumed));
+            Assert.False(Decimal64.TryParsePartial(value, style, provider, out Decimal64 result, out int charsConsumed));
             Assert.Equal(0, charsConsumed);
 
-            Assert.False(Decimal64.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.False(Decimal64.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(0, charsConsumed);
 
             byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(value);
-            Assert.False(Decimal64.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
+            Assert.False(Decimal64.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
             Assert.Equal(0, bytesConsumed);
         }
 

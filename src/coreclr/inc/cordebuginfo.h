@@ -148,6 +148,23 @@ public:
         REGNUM_R13,
         REGNUM_R14,
         REGNUM_R15,
+        REGNUM_FP_FIRST,
+        REGNUM_XMM0 = REGNUM_FP_FIRST,
+        REGNUM_XMM1,
+        REGNUM_XMM2,
+        REGNUM_XMM3,
+        REGNUM_XMM4,
+        REGNUM_XMM5,
+        REGNUM_XMM6,
+        REGNUM_XMM7,
+        REGNUM_XMM8,
+        REGNUM_XMM9,
+        REGNUM_XMM10,
+        REGNUM_XMM11,
+        REGNUM_XMM12,
+        REGNUM_XMM13,
+        REGNUM_XMM14,
+        REGNUM_XMM15,
 #elif TARGET_LOONGARCH64
         REGNUM_R0,
         REGNUM_RA,
@@ -290,8 +307,12 @@ public:
         signed      vlsOffset;
     };
 
-    // VLT_REG_REG -- TYP_LONG with both uint32_ts enregistred
+    // VLT_REG_REG -- value lives in two registers.
     // eg. RBM_EAXEDX
+    //
+    // vlrrReg1 holds the low part of the value, vlrrReg2 the high part. The
+    // registers may be integer RegNum values or, on platforms that include them
+    // in RegNum, floating-point RegNum values.
 
     struct vlRegReg
     {
