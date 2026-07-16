@@ -14,6 +14,7 @@ using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Threading.Tasks;
 using Xunit;
+using System.Threading.Tasks.Sources;
 
 namespace System.Diagnostics
 {
@@ -229,6 +230,65 @@ namespace System.Diagnostics
         public static async Task EdiInner()
         {
             throw new InvalidOperationException("Exception from EdiInner");
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "ThrowsSoon.cs"
+        public static async Task ThrowsSoon()
+        {
+            Task t = ThrowsSoonInner();
+            Use(t); // Make sure ThrowsSoonInner does not become a real async call
+            await t;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Use(Task t)
+        {
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "ThrowsSoonInner.cs"
+        public static async Task ThrowsSoonInner()
+        {
+            await Task.Delay(50);
+            throw new Exception("Exception from ThrowsSoonInner");
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "ThrowsSoonValueTaskSource.cs"
+        public static async Task ThrowsSoonValueTaskSource()
+        {
+            ValueTask vt = new ValueTask(new ThrowsSoonValueTaskSourceImpl(), 0);
+            await vt;
+        }
+
+        private class ThrowsSoonValueTaskSourceImpl : IValueTaskSource
+        {
+            private bool _isCompleted;
+
+            [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+            public void GetResult(short token)
+            {
+#line 1 "ThrowsSoonValueTaskSourceImpl.cs"
+                throw new Exception("Exception from ThrowsSoonValueTaskSourceImpl");
+            }
+
+            public ValueTaskSourceStatus GetStatus(short token)
+            {
+                return _isCompleted ? ValueTaskSourceStatus.Faulted : ValueTaskSourceStatus.Pending;
+            }
+
+            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+            {
+                Task.Delay(50).ContinueWith(_ =>
+                {
+                    _isCompleted = true;
+                    continuation(state);
+                });
+            }
         }
     }
 }
@@ -664,6 +724,16 @@ namespace System.Diagnostics.Tests
                 @"V2Methods\.Baz\(\)" + FileInfoPattern(@".*Baz.*\.cs:line 4"),
                 @"V2Methods\.Bux\(\)" + FileInfoPattern(@".*Bux.*\.cs:line 6")
             }},
+            {"ThrowsSoon", new[] {
+                @"Exception from ThrowsSoonInner",
+                @"V2Methods\.ThrowsSoonInner\(\)" + FileInfoPattern(@".*ThrowsSoonInner.*\.cs:line 4"),
+                @"V2Methods\.ThrowsSoon\(\)" + FileInfoPattern(@".*ThrowsSoon.*\.cs:line [35]")
+            }},
+            {"ThrowsSoonValueTaskSource", new[] {
+                @"Exception from ThrowsSoonValueTaskSourceImpl",
+                @"V2Methods\.ThrowsSoonValueTaskSourceImpl.GetResult" + FileInfoPattern(@".*ThrowsSoonValueTaskSourceImpl.*\.cs:line 1"),
+                @"V2Methods\.ThrowsSoonValueTaskSource\(\)" + FileInfoPattern(@".*ThrowsSoonValueTaskSource.*\.cs:line 4")
+            }},
             { "EdiOuter", new[] {
                 @"Exception from EdiInner",
                 @"V2Methods\.EdiInner\(\)" + FileInfoPattern(@".*EdiInner.*\.cs:line 3"),
@@ -679,6 +749,8 @@ namespace System.Diagnostics.Tests
             yield return new object[] { () => V2Methods.Quux(), MethodExceptionStrings["Quux"] };
             yield return new object[] { () => V2Methods.Quuux(), MethodExceptionStrings["Quuux"] };
             yield return new object[] { () => V2Methods.Bux(), MethodExceptionStrings["Bux"] };
+            yield return new object[] { () => V2Methods.ThrowsSoon(), MethodExceptionStrings["ThrowsSoon"] };
+            yield return new object[] { () => V2Methods.ThrowsSoonValueTaskSource(), MethodExceptionStrings["ThrowsSoonValueTaskSource"] };
             yield return new object[] { () => V1Methods.EdiOuter(), MethodExceptionStrings["EdiOuter"] };
         }
 
@@ -714,6 +786,8 @@ namespace System.Diagnostics.Tests
             {
                 Assert.DoesNotContain("--- End of stack trace from previous location ---", exceptionText);
             }
+            Assert.DoesNotContain("ResumeTaskContinuation", exceptionText);
+            Assert.DoesNotContain("ResumeValueTaskSourceContinuation", exceptionText);
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

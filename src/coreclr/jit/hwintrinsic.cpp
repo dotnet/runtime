@@ -993,10 +993,10 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_Sve, LAST_NI_Sve },                              // Sve
     { FIRST_NI_Sve2, LAST_NI_Sve2 },                            // Sve2
     { FIRST_NI_Sha3, LAST_NI_Sha3 },                            // Sha3
-    { NI_Illegal, NI_Illegal },                                 //      Sm4
+    { FIRST_NI_Sm4, LAST_NI_Sm4 },                              // Sm4
     { NI_Illegal, NI_Illegal },                                 //      SveAes
     { FIRST_NI_SveSha3, LAST_NI_SveSha3 },                      // SveSha3
-    { NI_Illegal, NI_Illegal },                                 //      SveSm4
+    { FIRST_NI_SveSm4, LAST_NI_SveSm4 },                        // SveSm4
     { NI_Illegal, NI_Illegal },                                 //      Cssc
     { FIRST_NI_ArmBase_Arm64, LAST_NI_ArmBase_Arm64 },          // ArmBase_Arm64
     { FIRST_NI_AdvSimd_Arm64, LAST_NI_AdvSimd_Arm64 },          // AdvSimd_Arm64
@@ -2323,7 +2323,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
         hasFullRangeImm = HWIntrinsicInfo::HasFullRangeImm(intrinsic);
 #elif defined(TARGET_WASM)
-        immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic, simdBaseType);
+        immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic, simdSize, simdBaseType);
 #endif
 
         if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseType, immOp1, mustExpand, immLowerBound, immUpperBound,
@@ -2639,6 +2639,16 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     }
                 }
                 else if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar))
+                {
+                    op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
+                }
+                else
+#elif defined(TARGET_WASM)
+                // On WASM, PackedSimd.ReplaceScalar takes the lane immediate as the middle
+                // (op2) operand: ReplaceScalar(Vector128<T> vector, byte imm, T value). Other
+                // 3-arg PackedSimd immediate intrinsics (LoadScalarAndInsert, StoreSelectedScalar)
+                // put the immediate at op3 and fall through to the default handling below.
+                if (intrinsic == NI_PackedSimd_ReplaceScalar)
                 {
                     op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
                 }

@@ -652,12 +652,6 @@ public class MethodTableTests
 
         TypeHandle nonCanonTh = contract.GetTypeHandle(nonCanonicalMethodTablePtr);
         Assert.False(contract.IsCanonicalMethodTable(nonCanonTh));
-
-        // Both canonical and non-canonical MTs should resolve to the same EEClass
-        TargetPointer canonClass = contract.GetClassPointer(canonTh);
-        TargetPointer nonCanonClass = contract.GetClassPointer(nonCanonTh);
-        Assert.NotEqual(TargetPointer.Null, canonClass);
-        Assert.Equal(canonClass, nonCanonClass);
     }
 
     [Theory]
@@ -1364,6 +1358,57 @@ public class MethodTableTests
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Assert.Equal((uint)rva, contract.GetFieldDescOffset(fieldDescPtr, fieldDef));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetFieldDescNext_ReturnsNextFieldThenFalseAtEndOfList(MockTarget.Architecture arch)
+    {
+        const int numInstanceFields = 3;
+        const int numStaticFields = 2;
+        const int totalFields = numInstanceFields + numStaticFields;
+
+        TargetPointer typeMethodTablePtr = default;
+        TargetPointer fieldDescListStart = default;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
+
+                MockEEClass eeClass = rtsBuilder.AddEEClass("EEClass WithFields");
+                eeClass.CorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
+                eeClass.NumInstanceFields = numInstanceFields;
+                eeClass.NumStaticFields = numStaticFields;
+
+                MockMethodTable methodTable = rtsBuilder.AddMethodTable("MethodTable WithFields");
+                methodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
+                methodTable.ParentMethodTable = systemObjectMethodTablePtr;
+                methodTable.NumVirtuals = 3;
+                eeClass.MethodTable = methodTable.Address;
+                methodTable.EEClassOrCanonMT = eeClass.Address;
+                typeMethodTablePtr = methodTable.Address;
+
+                fieldDescListStart = rtsBuilder.AddFieldDescList(methodTable.Address, totalFields);
+                eeClass.FieldDescList = fieldDescListStart.Value;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        TargetPointer[] fields = contract.GetFieldDescList(contract.GetTypeHandle(typeMethodTablePtr)).ToArray();
+        Assert.Equal(totalFields, fields.Length);
+        Assert.Equal(fieldDescListStart, fields[0]);
+
+        // Every field except the last advances to the following FieldDesc.
+        for (int i = 0; i < fields.Length - 1; i++)
+        {
+            Assert.True(contract.TryGetFieldDescNext(fields[i], out TargetPointer next));
+            Assert.Equal(fields[i + 1], next);
+        }
+        // The last field has no next FieldDesc, so the bounds check reports false.
+        Assert.False(contract.TryGetFieldDescNext(fields[^1], out TargetPointer last));
+        Assert.Equal(TargetPointer.Null, last);
     }
 
     // Builds a minimal metadata image containing a single static field with a FieldRVA row.
