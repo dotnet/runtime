@@ -160,16 +160,9 @@ int main(int argc, char* argv[])
         pal::ensure_trailing_delimiter(app_path);
     }
 
-    pal::stringstream_t native_search_dirs;
-    native_search_dirs << app_path << pal::env_path_delim;
-
     string_t core_libs = pal::getenv(envvar::coreLibraries);
     if (!core_libs.empty())
-    {
         pal::ensure_trailing_delimiter(core_libs);
-        if (core_libs != app_path)
-            native_search_dirs << core_libs << pal::env_path_delim;
-    }
 
     // CORE_ROOT locates the framework assemblies for the TPA list (the runtime itself is static on
     // wasi). On wasi the bundle co-locates the framework with the entry assembly, so default to the
@@ -178,7 +171,6 @@ int main(int argc, char* argv[])
     if (core_root.empty())
         core_root = app_path;
     pal::ensure_trailing_delimiter(core_root);
-    native_search_dirs << core_root << pal::env_path_delim;
 
     string_t exe_path = pal::get_exe_path();
 
@@ -190,8 +182,10 @@ int main(int argc, char* argv[])
     s_property_keys.push_back("APP_PATHS");
     s_property_values.push_back(app_path);
 
-    s_property_keys.push_back("NATIVE_DLL_SEARCH_DIRECTORIES");
-    s_property_values.push_back(native_search_dirs.str());
+    // NATIVE_DLL_SEARCH_DIRECTORIES is intentionally not set: on wasi native libraries are
+    // statically linked and every P/Invoke is resolved by the pinvoke_override (callhelpers) before
+    // the runtime's native-library search runs, and wasm has no shared-library/dlopen support, so
+    // the search directories can never contribute a load.
 
     // Static: the contract must outlive coreclr_initialize (the runtime keeps its address). The
     // pinvoke_override field is forwarded to PInvokeOverride::SetPInvokeOverride by the runtime.

@@ -14,9 +14,7 @@
     <BuildCoreHostDependsOn>GenerateRuntimeVersionFile</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildCoreHostDependsOn);GenerateEmccExports;ResolveRuntimeFilesFromLocalBuild</BuildCoreHostDependsOn>
-    <!-- WASI: the corehost native build (build.sh -os wasi) is driven by gen-buildsys.sh, which
-         requires WASI_SDK_PATH and selects the wasi-sdk-p2 CMake toolchain. Acquire the SDK first
-         and hand its path to the build script below. -->
+    <!-- WASI: the corehost native build needs the wasi-sdk (WASI_SDK_PATH, passed below). -->
     <BuildCoreHostDependsOn Condition="'$(TargetsWasi)' == 'true'">AcquireWasiSdk;$(BuildCoreHostDependsOn)</BuildCoreHostDependsOn>
     <CopyWasmNativeFilesDependsOn Condition="'$(TargetOS)' == 'windows'">BuildCoreHostOnWindows</CopyWasmNativeFilesDependsOn>
     <CopyWasmNativeFilesDependsOn Condition="'$(TargetOS)' != 'windows'">BuildCoreHostOnUnix</CopyWasmNativeFilesDependsOn>
@@ -96,9 +94,7 @@
       <BuildArgs>$(BuildArgs) -cmakeargs "-DCLR_CMAKE_BUILD_HOST_PRODUCT=$(BuildNativeHostProduct.ToUpper())"</BuildArgs>
     </PropertyGroup>
 
-    <!-- WASI: hand the acquired wasi-sdk to gen-buildsys.sh via WASI_SDK_PATH (it selects the
-         wasi-sdk-p2 CMake toolchain from it). Set inside the target so $(RuntimeBuildWasiSdkPath),
-         produced by the AcquireWasiSdk dependency above, is populated. -->
+    <!-- WASI: pass the acquired wasi-sdk to the native build. -->
     <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
       <_CoreHostBuildEnvironmentVariables>WASI_SDK_PATH=$(RuntimeBuildWasiSdkPath)</_CoreHostBuildEnvironmentVariables>
     </PropertyGroup>
@@ -213,11 +209,9 @@
           SkipUnchangedFiles="true" />
   </Target>
 
-  <!-- WASI CoreCLR: stage the host archive (libWasiHost.a) into the runtime pack native dir so the
-       per-app relink (the CoreCLR-WASI app builder) can consume it. Mirrors the browser
-       CopyWasmNativeFiles above; the runtime .a libraries come from the coreclr build. Depends on
-       both host-build targets explicitly (one is skipped by its HostOS condition) so the copy runs
-       after the archive is produced regardless of host OS. -->
+  <!-- WASI CoreCLR: stage libWasiHost.a into the runtime pack native dir for the per-app relink,
+       mirroring the browser CopyWasmNativeFiles above. Depends on both host-build targets (one is
+       skipped by its HostOS condition) so the copy is ordered after the archive on either host. -->
   <Target Name="CopyWasiNativeFiles" AfterTargets="Build" DependsOnTargets="BuildCoreHostOnUnix;BuildCoreHostOnWindows" Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
     <ItemGroup>
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)libWasiHost.a" />

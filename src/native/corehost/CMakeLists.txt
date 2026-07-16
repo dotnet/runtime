@@ -116,8 +116,7 @@ elseif(CLR_CMAKE_TARGET_BROWSER)
     add_subdirectory(hostmisc)
     add_subdirectory(browserhost)
 else() # CLR_CMAKE_TARGET_WASI
-    # The wasi host is a self-contained static archive (libWasiHost.a) linked per-app; it does not
-    # depend on hostmisc (it shares the corerun pal header instead), so only wasihost is built here.
+    # The wasi host is self-contained (shares the corerun pal header, no hostmisc dependency).
     add_subdirectory(wasihost)
 endif()
 
