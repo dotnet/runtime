@@ -253,6 +253,52 @@ internal static class Entrypoints
         return CLRDataCreateInstanceImpl(pIID, pLegacyTarget, pLegacyImpl, iface);
     }
 
+    [UnmanagedCallersOnly(EntryPoint = "DacDbiInterfaceInstance")]
+    private static unsafe int DacDbiInterfaceInstance(
+        IntPtr /*ICorDebugDataTarget*/ pTarget,
+        ulong runtimeBase,
+        IntPtr /*IDacDbiInterface::IAllocator*/ pAllocator,
+        IntPtr /*IDacDbiInterface::IMetaDataLookup*/ pMetaDataLookup,
+        void** iface)
+    {
+        if (pTarget == IntPtr.Zero
+            || runtimeBase == 0
+            || pAllocator == IntPtr.Zero
+            || pMetaDataLookup == IntPtr.Zero
+            || iface == null)
+        {
+            return HResults.E_INVALIDARG;
+        }
+
+        *iface = null;
+
+        try
+        {
+            object dataTarget = ComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged((void*)pTarget)!;
+            if (dataTarget is ICLRRuntimeLocator runtimeLocator)
+            {
+                ulong locatedRuntimeBase;
+                int hr = runtimeLocator.GetRuntimeBase(&locatedRuntimeBase);
+                if (hr < 0)
+                    return hr;
+                if (locatedRuntimeBase != runtimeBase)
+                    return HResults.E_INVALIDARG;
+            }
+
+            ContractDescriptorTarget target = CreateTargetFromCorDebugDataTarget(dataTarget);
+            Legacy.DacDbiImpl impl = new(target, legacyObj: null);
+            *iface = ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
+            return HResults.S_OK;
+        }
+        catch (Exception ex)
+        {
+            if (iface != null)
+                *iface = null;
+            int hr = ex.HResult;
+            return hr < 0 ? hr : HResults.E_FAIL;
+        }
+    }
+
     // Same export name and signature as DAC CLRDataCreateInstance in daccess.cpp
     [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstance")]
     private static unsafe int CLRDataCreateInstance(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, void** iface)
@@ -384,5 +430,46 @@ internal static class Entrypoints
         ComInterfaceMarshaller<IXCLRDataProcess>.Free(ccw);
 
         return 0;
+    }
+
+    private static unsafe ContractDescriptorTarget CreateTargetFromCorDebugDataTarget(object targetObject)
+    {
+        ICorDebugDataTarget dataTarget = targetObject as ICorDebugDataTarget ?? throw new ArgumentException(
+            $"Data target does not implement {nameof(ICorDebugDataTarget)}", nameof(targetObject));
+        ICLRContractLocator contractLocator = targetObject as ICLRContractLocator ?? throw new ArgumentException(
+            $"Data target does not implement {nameof(ICLRContractLocator)}", nameof(targetObject));
+
+        ulong contractAddress;
+        int hr = contractLocator.GetContractDescriptor(&contractAddress);
+        if (hr != 0)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
+        }
+
+        return ContractDescriptorTarget.Create(
+            contractAddress,
+            (address, buffer) =>
+            {
+                fixed (byte* bufferPtr = buffer)
+                {
+                    uint bytesRead;
+                    return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
+                }
+            },
+            (address, buffer) => HResults.E_NOTIMPL,
+            (threadId, contextFlags, bufferToFill) =>
+            {
+                fixed (byte* bufferPtr = bufferToFill)
+                {
+                    return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
+                }
+            },
+            (ulong size, out ulong allocatedAddress) =>
+            {
+                allocatedAddress = 0;
+                return HResults.E_NOTIMPL;
+            },
+            [Contracts.CoreCLRContracts.Register]);
     }
 }
