@@ -842,6 +842,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCreate(node);
         }
 
+        case NI_Vector_CreateScalarUnsafe:
+        {
+            // CreateScalarUnsafe leaves the upper elements undefined, so we can broadcast the value
+            // across every lane. This maps directly to a single splat instruction.
+            node->ChangeHWIntrinsicId(NI_PackedSimd_Splat);
+            return LowerNode(node);
+        }
+
         case NI_Vector_op_Equality:
         {
             assert(category == HW_Category_Helper);

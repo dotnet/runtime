@@ -323,6 +323,34 @@ public sealed class PackedSimdTests
         }
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static T Opaque<T>(T value) => value;
+
+    [Fact]
+    public static unsafe void Vector128CreateScalarTest()
+    {
+        // Non-constant operands force the CreateScalar/CreateScalarUnsafe lowering rather
+        // than constant folding to a vector constant.
+
+        // CreateScalar zero-fills the upper elements.
+        Assert.Equal(Vector128.Create(42, 0, 0, 0), Vector128.CreateScalar(Opaque(42)));
+        Assert.Equal(Vector128.Create(7L, 0L), Vector128.CreateScalar(Opaque(7L)));
+        Assert.Equal(Vector128.Create((short)9, 0, 0, 0, 0, 0, 0, 0),
+                     Vector128.CreateScalar(Opaque((short)9)));
+        Assert.Equal(Vector128.Create((byte)200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+                     Vector128.CreateScalar(Opaque((byte)200)));
+        Assert.Equal(Vector128.Create(3.5f, 0.0f, 0.0f, 0.0f), Vector128.CreateScalar(Opaque(3.5f)));
+        Assert.Equal(Vector128.Create(6.25, 0.0), Vector128.CreateScalar(Opaque(6.25)));
+
+        // CreateScalarUnsafe leaves the upper elements undefined, so only lane 0 is guaranteed.
+        Assert.Equal(42, Vector128.CreateScalarUnsafe(Opaque(42)).ToScalar());
+        Assert.Equal(7L, Vector128.CreateScalarUnsafe(Opaque(7L)).ToScalar());
+        Assert.Equal((short)9, Vector128.CreateScalarUnsafe(Opaque((short)9)).ToScalar());
+        Assert.Equal((byte)200, Vector128.CreateScalarUnsafe(Opaque((byte)200)).ToScalar());
+        Assert.Equal(3.5f, Vector128.CreateScalarUnsafe(Opaque(3.5f)).ToScalar());
+        Assert.Equal(6.25, Vector128.CreateScalarUnsafe(Opaque(6.25)).ToScalar());
+    }
+
     [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {

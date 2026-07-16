@@ -3874,14 +3874,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_WASM)
-            if (!impStackTop(0).val->OperIsConst())
-            {
-                // TODO-WASM-SIMD: Implement NI_Vector_CreateScalar
-                break;
-            }
-#endif
-
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -3890,14 +3882,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_CreateScalarUnsafe:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_WASM)
-            if (!impStackTop(0).val->OperIsConst())
-            {
-                // TODO-WASM-SIMD: Implement NI_Vector_CreateScalarUnsafe
-                break;
-            }
-#endif
 
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarUnsafeNode(retType, op1, simdBaseType, simdSize);
