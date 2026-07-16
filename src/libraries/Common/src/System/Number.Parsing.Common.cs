@@ -10,6 +10,12 @@ namespace System
 {
     internal static partial class Number
     {
+        // Internal-only style bit used by the INumberBase.TryParsePartial implementations to signal that parsing
+        // should stop at the first otherwise-invalid character rather than failing. This is deliberately not a
+        // public NumberStyles value; it is layered on top of the user-provided style after validation. It uses the
+        // highest bit (0x8000_0000) so public flags can keep growing upward without stomping it; see NumberStyles.
+        internal const NumberStyles AllowTrailingInvalidCharacters = unchecked((NumberStyles)0x80000000);
+
         private static unsafe bool TryParseNumber<TChar>(TChar* str, TChar* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -280,7 +286,7 @@ namespace System
 
                     index = ConsumeTrailingNulls(value, index);
 
-                    if ((index == value.Length) || ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0))
+                    if ((index == value.Length) || ((styles & AllowTrailingInvalidCharacters) != 0))
                     {
                         elementsConsumed = index;
                         return true;

@@ -87,11 +87,15 @@ if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
 endif()
 
 add_library(Runtime.GC.Workstation OBJECT ${GC_WKS_SVR_SOURCES})
-add_dependencies(Runtime.GC.Workstation aot_eventing_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.GC.Workstation aot_eventing_headers)
+endif()
 set_target_properties(Runtime.GC.Workstation PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
 
 add_library(Runtime.GC.Server OBJECT ${GC_WKS_SVR_SOURCES})
-add_dependencies(Runtime.GC.Server aot_eventing_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.GC.Server aot_eventing_headers)
+endif()
 target_compile_definitions(Runtime.GC.Server PRIVATE FEATURE_SVR_GC SERVER_GC)
 set_target_properties(Runtime.GC.Server PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
 
@@ -111,7 +115,9 @@ add_library(Runtime.WorkstationGC STATIC
     ${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}
     ${RUNTIME_ARCH_ASM_OBJECTS}
     $<TARGET_OBJECTS:Runtime.GC.Workstation>)
-add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
+endif()
 target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor)
 
 add_library(Runtime.ServerGC STATIC
@@ -121,15 +127,23 @@ add_library(Runtime.ServerGC STATIC
     ${RUNTIME_ARCH_ASM_OBJECTS}
     $<TARGET_OBJECTS:Runtime.GC.Workstation>
     $<TARGET_OBJECTS:Runtime.GC.Server>)
-add_dependencies(Runtime.ServerGC aot_eventing_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.ServerGC aot_eventing_headers)
+endif()
 target_link_libraries(Runtime.ServerGC PRIVATE aotminipal nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor nativeaot_gc_svr_descriptor)
 add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
-add_dependencies(standalonegc-disabled aot_eventing_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(standalonegc-disabled aot_eventing_headers)
+endif()
 add_library(standalonegc-enabled STATIC ${STANDALONEGC_ENABLED_SOURCES})
-add_dependencies(standalonegc-enabled aot_eventing_headers)
-if(CLR_CMAKE_TARGET_WIN32)
-  add_dependencies(standalonegc-disabled aot_etw_headers)
-  add_dependencies(standalonegc-enabled aot_etw_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(standalonegc-enabled aot_eventing_headers)
+endif()
+if(FEATURE_EVENT_TRACE)
+  if(CLR_CMAKE_TARGET_WIN32)
+    add_dependencies(standalonegc-disabled aot_etw_headers)
+    add_dependencies(standalonegc-enabled aot_etw_headers)
+  endif()
 endif()
 
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)

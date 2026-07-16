@@ -163,6 +163,15 @@ namespace System.IO
             }
         }
 
+        internal static void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, ref long fileOffset)
+        {
+            // On Windows, WriteFile writes all requested bytes or throws; no partial-write loop is needed.
+            // Update fileOffset only after a successful write so that callers observing position after a
+            // failure see 0 bytes transferred (which is correct for Windows).
+            WriteAtOffset(handle, buffer, fileOffset);
+            fileOffset += buffer.Length;
+        }
+
         private static unsafe void WriteSyncUsingAsyncHandle(SafeFileHandle fileHandle, ReadOnlySpan<byte> buffer, long fileOffset)
         {
             if (buffer.IsEmpty)

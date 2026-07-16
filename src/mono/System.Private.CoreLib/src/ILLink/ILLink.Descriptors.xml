@@ -335,9 +335,6 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
-		<!-- object.c: mono_runtime_exec_main -->
-		<type fullname="System.STAThreadAttribute" />
-
 		<!-- domain.c: mono_defaults.string_class -->
 		<type fullname="System.String">
 			<!-- object-internals.h: struct _MonoString -->
