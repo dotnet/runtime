@@ -428,19 +428,13 @@ namespace Microsoft.Win32.SafeHandles
 
         private static IDictionary<string, string?>? GetEnvironmentVariables(ProcessStartInfo startInfo)
         {
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() ||
-                OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ||
-                GetEnvironmentHasBeenModified(null))
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || Environment.HasBeenModified)
             {
                 return startInfo.Environment;
             }
 
             return startInfo._environmentVariables;
         }
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_HasBeenModified")]
-        private static extern bool GetEnvironmentHasBeenModified(
-            [UnsafeAccessorType("System.Environment, System.Private.CoreLib")] object? _);
 
         private static SafeProcessHandle ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,

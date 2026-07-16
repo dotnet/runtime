@@ -42,7 +42,6 @@ namespace System
         public static int ProcessorCount { get; } = RuntimeFeature.IsMultithreadingSupported ? GetProcessorCount() : 1;
 
         private static NullableBool s_privilegedProcess;
-        private static bool s_hasBeenModified;
 
         /// <summary>
         /// Gets whether the current process is authorized to perform security-relevant functions.
@@ -63,11 +62,7 @@ namespace System
         // Unconditionally return false since .NET Core does not support object finalization during shutdown.
         public static bool HasShutdownStarted => false;
 
-        public static bool HasBeenModified
-        {
-            get => Volatile.Read(ref s_hasBeenModified);
-            private set => Volatile.Write(ref s_hasBeenModified, value);
-        }
+        public static bool HasBeenModified { get; private set; }
 
         public static string? GetEnvironmentVariable(string variable)
         {
