@@ -1949,6 +1949,9 @@
   <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
     <value>Stream length must be non-negative and less than the maximum array length {0} - origin.</value>
   </data>
+  <data name="ArgumentOutOfRange_StreamPosition" xml:space="preserve">
+    <value>Stream position must be non-negative and less than or equal to {0}.</value>
+  </data>
   <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
   </data>
