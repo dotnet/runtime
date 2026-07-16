@@ -4771,8 +4771,8 @@ public:
     bool IsGCRoot();
 
 #ifdef FEATURE_2XPTR_ALIGNMENT
-    // checks if the type requires 8-byte alignment.
-    // this is not exposed via ICorDebug at present.
+    // Checks if the type requires 2 * pointer-size alignment.
+    // This is not exposed via ICorDebug at present.
     HRESULT RequiresAlign2xPtr(BOOL* isRequired);
 #endif
 
