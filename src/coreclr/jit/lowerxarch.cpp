@@ -555,8 +555,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         return;
     }
 
-    assert(!src->TypeIs(TYP_STRUCT));
-
     // If the child of GT_PUTARG_STK is a constant, we don't need a register to
     // move it to memory (stack location).
     //
@@ -1458,7 +1456,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTreeHWIntrinsic* userIntrin = user->AsHWIntrinsic();
 
                 bool       userIsScalar = false;
-                genTreeOps userOper     = userIntrin->GetOperForHWIntrinsicId(&isScalar);
+                genTreeOps userOper     = userIntrin->GetOperForHWIntrinsicId(&userIsScalar);
 
                 // userIntrin may have re-interpreted the base type
                 //
@@ -1892,7 +1890,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     testIntrinsicId = NI_AVX512_PTESTM;
                 }
 
-                node->Op(1) = op1;
                 BlockRange().Remove(op2);
 
                 LIR::Use op1Use(BlockRange(), &node->Op(1), node);
@@ -6206,7 +6203,7 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
             uint32_t elemSize = genTypeSize(simdBaseType);
 
             GenTreeLclVarCommon* lclVar  = op1->AsLclVarCommon();
-            uint32_t             lclOffs = lclVar->GetLclOffs() + (0 * elemSize);
+            uint32_t             lclOffs = lclVar->GetLclOffs();
             LclVarDsc*           lclDsc  = m_compiler->lvaGetDesc(lclVar);
 
             if (lclDsc->lvDoNotEnregister && (lclOffs <= 0xFFFF) && ((lclOffs + elemSize) <= lclDsc->lvExactSize()))
