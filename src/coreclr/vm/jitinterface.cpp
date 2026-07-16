@@ -12529,7 +12529,14 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "GetEncoder",
        "TryGetSpan",
        "MemoryCopy",
-       "Read"
+       "Read",
+       "get_DefaultSeed",
+       "get_IsMultiDimensionalArray",
+       "get_CtorIsPublic",
+       "get_IsInvalid",
+       "get_Preamble",
+       "GetFileLength"
+
 
 
     };
