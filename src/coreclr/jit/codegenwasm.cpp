@@ -2913,8 +2913,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     // stale global (our caller's SP, above our frame) and overlaps/clobbers our address-taken locals.
     // Publish our shadow SP here so the callee allocates below our frame. This is a net-zero operation
     // on the Wasm operand stack, so it is safe to emit with the call arguments already pushed.
-    if (call->IsUnmanaged() && call->IsSuppressGCTransition() &&
-        (GetStackPointerReg(m_compiler->funCurrentFuncIdx()) != REG_NA))
+    if (call->IsUnmanaged() && call->IsSuppressGCTransition())
     {
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
         GetEmitter()->emitIns_I(INS_global_set, EA_HANDLE_CNS_RELOC,
