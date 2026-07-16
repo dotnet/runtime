@@ -98,14 +98,16 @@ namespace Internal.JitInterface
         /// <summary>
         /// Determines whether a type is <see cref="System.Runtime.Intrinsics.Vector128{T}"/>, the
         /// only SIMD vector type currently passed and returned by value as a wasm <c>v128</c>. The
-        /// JIT recognizes <c>Vector128&lt;T&gt;</c> as <c>TYP_SIMD16</c> on wasm; the other SIMD
-        /// types (Vector2/3/4, Vector64/256/512&lt;T&gt;, Vector&lt;T&gt;, ...) are not yet handled
-        /// by the wasm calling convention and continue to use the generic struct ABI.
+        /// JIT recognizes <c>Vector128&lt;T&gt;</c> as <c>TYP_SIMD16</c> on wasm only when <c>T</c> is
+        /// a primitive numeric type; other SIMD types (Vector2/3/4, Vector64/256/512&lt;T&gt;,
+        /// Vector&lt;T&gt;, ...) and non-primitive instantiations (e.g. the shared <c>__Canon</c> form)
+        /// are not handled by the wasm calling convention and continue to use the generic struct ABI.
         /// </summary>
         private static bool IsWasmV128Type(TypeDesc type)
         {
             return type.IsIntrinsic &&
-                   Internal.TypeSystem.Interop.InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type);
+                   Internal.TypeSystem.Interop.InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type) &&
+                   VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]);
         }
 
         public static WasmValueType LowerType(TypeDesc type)
