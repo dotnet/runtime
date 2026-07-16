@@ -58,6 +58,10 @@ enum StackwalkFlag
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 
+// Returns true if the stack dataframe is an explicit Frame carrying FRAME_ATTR_EXCEPTION
+// (a FaultingExceptionFrame or SoftwareExceptionFrame).
+bool IsExceptionFrame(IStackDataFrameHandle stackDataFrameHandle);
+
 // Gets the Frame name associated with the given Frame identifier. If no matching Frame name found returns an empty string.
 string GetFrameName(TargetPointer frameIdentifier);
 
@@ -494,6 +498,12 @@ If the Frame is not valid, returns `TargetPointer.Null`.
 
 ```csharp
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
+```
+
+
+`IsExceptionFrame` returns true when the `IStackDataFrameHandle` is positioned on an explicit capital "F" Frame that carries `FRAME_ATTR_EXCEPTION` -- that is, a `FaultingExceptionFrame` or `SoftwareExceptionFrame`. It returns false for all other frames.
+```csharp
+bool IsExceptionFrame(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 

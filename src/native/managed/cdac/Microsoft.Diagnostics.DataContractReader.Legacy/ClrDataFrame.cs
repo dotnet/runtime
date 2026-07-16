@@ -34,7 +34,40 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
     // IXCLRDataFrame implementation
     int IXCLRDataFrame.GetFrameType(uint* simpleType, uint* detailedType)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFrameType(simpleType, detailedType) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            // Unlike IXCLRDataStackWalk.GetFrameType, the native IXCLRDataFrame.GetFrameType
+            // dereferences both outputs unconditionally, so a null output yields E_POINTER.
+            if (simpleType is null || detailedType is null)
+                throw new NullReferenceException();
+
+            ClrDataStackWalk.GetFrameTypes(_target, _dataFrame, simpleType, detailedType);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint simpleTypeLocal = 0;
+            uint detailedTypeLocal = 0;
+            int hrLocal = _legacyImpl.GetFrameType(
+                simpleType is null ? null : &simpleTypeLocal,
+                detailedType is null ? null : &detailedTypeLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK && simpleType is not null && detailedType is not null)
+            {
+                Debug.Assert(*simpleType == simpleTypeLocal, $"cDAC: {*simpleType}, DAC: {simpleTypeLocal}");
+                Debug.Assert(*detailedType == detailedTypeLocal, $"cDAC: {*detailedType}, DAC: {detailedTypeLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataFrame.GetContext(
         uint contextFlags,

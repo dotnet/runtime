@@ -14,6 +14,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 {
+    private const uint SimpleFrameUnrecognized = 0x1;
+    private const uint SimpleFrameManagedMethod = 0x2;
+    private const uint SimpleFrameRuntimeUnmanagedCode = 0x8;
+    private const uint DetailedFrameUnrecognized = 0;
+    private const uint DetailedFrameExceptionFilter = 3;
+
     private readonly TargetPointer _threadAddr;
     private readonly uint _flags;
     private readonly Target _target;
@@ -57,6 +63,29 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         => frame.State is StackWalkState.Frameless
                        or StackWalkState.Frame
                        or StackWalkState.SkippedFrame;
+
+    internal static void GetFrameTypes(Target target, IStackDataFrameHandle frame, uint* simpleType, uint* detailedType)
+    {
+        if (simpleType is not null)
+        {
+            *simpleType = frame.State switch
+            {
+                StackWalkState.Frameless => SimpleFrameManagedMethod,
+                StackWalkState.Frame or StackWalkState.SkippedFrame => SimpleFrameRuntimeUnmanagedCode,
+                _ => SimpleFrameUnrecognized,
+            };
+        }
+
+        if (detailedType is not null)
+        {
+            // Native RawGetFrameType reports CLRDATA_DETFRAME_EXCEPTION_FILTER for an explicit
+            // frame carrying FRAME_ATTR_EXCEPTION (FaultingExceptionFrame / SoftwareExceptionFrame),
+            // and CLRDATA_DETFRAME_UNRECOGNIZED otherwise.
+            *detailedType = target.Contracts.StackWalk.IsExceptionFrame(frame)
+                ? DetailedFrameExceptionFilter
+                : DetailedFrameUnrecognized;
+        }
+    }
 
     int IXCLRDataStackWalk.GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, [MarshalUsing(CountElementName = "contextBufSize"), Out] byte[] contextBuf)
     {
@@ -134,7 +163,40 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         return hr;
     }
     int IXCLRDataStackWalk.GetFrameType(uint* simpleType, uint* detailedType)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFrameType(simpleType, detailedType) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (_currentFrameIsValid)
+                GetFrameTypes(_target, _dataFrames.Current, simpleType, detailedType);
+            else
+                hr = HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint simpleTypeLocal = 0;
+            uint detailedTypeLocal = 0;
+            int hrLocal = _legacyImpl.GetFrameType(
+                simpleType is null ? null : &simpleTypeLocal,
+                detailedType is null ? null : &detailedTypeLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                if (simpleType is not null)
+                    Debug.Assert(*simpleType == simpleTypeLocal, $"cDAC: {*simpleType}, DAC: {simpleTypeLocal}");
+                if (detailedType is not null)
+                    Debug.Assert(*detailedType == detailedTypeLocal, $"cDAC: {*detailedType}, DAC: {detailedTypeLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
     int IXCLRDataStackWalk.GetStackSizeSkipped(ulong* stackSizeSkipped)
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetStackSizeSkipped(stackSizeSkipped) : HResults.E_NOTIMPL;
     int IXCLRDataStackWalk.Next()

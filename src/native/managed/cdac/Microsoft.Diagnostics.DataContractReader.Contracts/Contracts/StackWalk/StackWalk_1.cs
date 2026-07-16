@@ -35,7 +35,8 @@ internal partial class StackWalk_1 : IStackWalk
         TargetPointer FrameAddress,
         ThreadData ThreadData,
         bool IsResumableFrame = false,
-        bool IsActiveFrame = false) : IStackDataFrameHandle
+        bool IsActiveFrame = false,
+        bool IsExceptionFrame = false) : IStackDataFrameHandle
     { }
 
     private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData)
@@ -113,7 +114,20 @@ internal partial class StackWalk_1 : IStackWalk
         {
             bool isResumable = IsCurrentFrameResumable();
             bool isActiveFrame = IsFirst && State == StackWalkState.Frameless;
-            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame);
+            bool isExceptionFrame = IsCurrentFrameException();
+            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame, isExceptionFrame);
+        }
+
+        public bool IsCurrentFrameException()
+        {
+            if (State is not (StackWalkState.Frame or StackWalkState.SkippedFrame))
+                return false;
+
+            // FaultingExceptionFrame and SoftwareExceptionFrame are the explicit frames that
+            // carry FRAME_ATTR_EXCEPTION, which native RawGetFrameType maps to
+            // CLRDATA_DETFRAME_EXCEPTION_FILTER.
+            FrameType ft = FrameIter.GetCurrentFrameType();
+            return ft is FrameType.FaultingExceptionFrame or FrameType.SoftwareExceptionFrame;
         }
     }
 
@@ -1039,6 +1053,12 @@ internal partial class StackWalk_1 : IStackWalk
             return handle.FrameAddress;
         }
         return TargetPointer.Null;
+    }
+
+    bool IStackWalk.IsExceptionFrame(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+        return handle.IsExceptionFrame;
     }
 
     TargetCodePointer IStackWalk.GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)

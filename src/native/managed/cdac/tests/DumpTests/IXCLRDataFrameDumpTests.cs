@@ -18,6 +18,21 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "StackWalk";
 
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void GetFrameType_ManagedFrameReturnsManagedMethod(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IXCLRDataFrame frame = new ClrDataFrame(Target, GetFirstFramelessFrame(), legacyImpl: null);
+
+        uint simpleType;
+        uint detailedType;
+        AssertHResult(HResults.S_OK, frame.GetFrameType(&simpleType, &detailedType));
+        Assert.Equal(0x2u, simpleType);
+        Assert.Equal(0u, detailedType);
+    }
+
     // ========== GetContext ==========
 
     [ConditionalTheory]
@@ -504,6 +519,33 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     }
 
     // ========== Helpers ==========
+
+    private IStackDataFrameHandle GetFirstFramelessFrame()
+    {
+        IThread threadContract = Target.Contracts.Thread;
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        TargetPointer thread = threadContract.GetThreadStoreData().FirstThread;
+        while (thread != TargetPointer.Null)
+        {
+            ThreadData threadData = threadContract.GetThreadData(thread);
+            try
+            {
+                foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(threadData))
+                {
+                    if (frame.State == StackWalkState.Frameless)
+                        return frame;
+                }
+            }
+            catch (System.Exception)
+            {
+            }
+
+            thread = threadData.NextThread;
+        }
+
+        Assert.Fail("No frameless managed frame found.");
+        throw new InvalidOperationException("Unreachable");
+    }
 
     private IStackDataFrameHandle GetFirstManagedFrame()
     {
