@@ -1531,6 +1531,44 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0x0000000000000000UL, 0x0000000000000001UL)] // +0 -> +MINFP
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL, 0x0000000000000000UL, 0x0000000000000001UL)] // -0 -> +MINFP
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL, 0x2FFE314DC6448D93UL, 0x38C15B0A00000001UL)] // 1 -> 1.000...001
+        [InlineData(0xB040000000000000UL, 0x0000000000000001UL, 0xAFFDED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL)] // -1 -> -0.999...9
+        [InlineData(0x5FFFED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL, 0x7800000000000000UL, 0x0000000000000000UL)] // +MAXFP -> +Infinity
+        [InlineData(0xDFFFED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL, 0xDFFFED09BEAD87C0UL, 0x378D8E63FFFFFFFEUL)] // -MAXFP steps toward zero
+        [InlineData(0x0000000000000000UL, 0x0000000000000001UL, 0x0000000000000000UL, 0x0000000000000002UL)] // +MINFP
+        [InlineData(0x8000000000000000UL, 0x0000000000000001UL, 0x8000000000000000UL, 0x0000000000000000UL)] // -MINFP -> -0
+        [InlineData(0x2FFFED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL, 0x3000314DC6448D93UL, 0x38C15B0A00000000UL)] // coefficient carry
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL, 0x7800000000000000UL, 0x0000000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL, 0xDFFFED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL)] // -Infinity -> -MAXFP
+        [InlineData(0xFC00000000000000UL, 0x0000000000000000UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // NaN
+        public static void BitIncrementTest(ulong upper, ulong lower, ulong expectedUpper, ulong expectedLower)
+        {
+            Decimal128 result = Decimal128.BitIncrement(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(upper, lower)));
+            Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0x8000000000000000UL, 0x0000000000000001UL)] // +0 -> -MINFP
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL, 0x8000000000000000UL, 0x0000000000000001UL)] // -0 -> -MINFP
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL, 0x2FFDED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL)] // 1 -> 0.999...9
+        [InlineData(0xB040000000000000UL, 0x0000000000000001UL, 0xAFFE314DC6448D93UL, 0x38C15B0A00000001UL)] // -1 -> -1.000...001
+        [InlineData(0x5FFFED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL, 0x5FFFED09BEAD87C0UL, 0x378D8E63FFFFFFFEUL)] // +MAXFP steps toward zero
+        [InlineData(0xDFFFED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL, 0xF800000000000000UL, 0x0000000000000000UL)] // -MAXFP -> -Infinity
+        [InlineData(0x0000000000000000UL, 0x0000000000000001UL, 0x0000000000000000UL, 0x0000000000000000UL)] // +MINFP -> +0
+        [InlineData(0x8000000000000000UL, 0x0000000000000001UL, 0x8000000000000000UL, 0x0000000000000002UL)] // -MINFP
+        [InlineData(0x2FFFED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL, 0x2FFFED09BEAD87C0UL, 0x378D8E63FFFFFFFEUL)] // normal step
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL, 0x5FFFED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL)] // +Infinity -> +MAXFP
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL, 0xF800000000000000UL, 0x0000000000000000UL)] // -Infinity
+        [InlineData(0xFC00000000000000UL, 0x0000000000000000UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // NaN
+        public static void BitDecrementTest(ulong upper, ulong lower, ulong expectedUpper, ulong expectedLower)
+        {
+            Decimal128 result = Decimal128.BitDecrement(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(upper, lower)));
+            Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [Theory]
         [InlineData(0x3040000000000000UL, 0x0000000000000001UL, 0)] // 1
         [InlineData(0x304A000000000000UL, 0x0000000000000001UL, 5)] // 1e5
         [InlineData(0x3040000000000000UL, 0x000000000012D687UL, 6)] // 1234567
@@ -1569,6 +1607,20 @@ namespace System.Tests
         {
             Decimal128 result = Decimal128.ScaleB(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(upper, lower)), n);
             Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128BitDecrement), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void BitDecrement_IntelReferenceVectors(UInt128 value, UInt128 expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(Decimal128.BitDecrement(Unsafe.BitCast<UInt128, Decimal128>(value))));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128BitIncrement), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void BitIncrement_IntelReferenceVectors(UInt128 value, UInt128 expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(Decimal128.BitIncrement(Unsafe.BitCast<UInt128, Decimal128>(value))));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]

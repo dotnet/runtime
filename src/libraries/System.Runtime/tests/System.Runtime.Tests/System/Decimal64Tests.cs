@@ -1537,6 +1537,42 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x31C0000000000000UL, 0x0000000000000001UL)] // +0 -> +MINFP
+        [InlineData(0xB1C0000000000000UL, 0x0000000000000001UL)] // -0 -> +MINFP
+        [InlineData(0x31C0000000000001UL, 0x2FE38D7EA4C68001UL)] // 1 -> 1.000000000000001
+        [InlineData(0xB1C0000000000001UL, 0xEBF386F26FC0FFFFUL)] // -1 -> -0.9999999999999999
+        [InlineData(0x77FB86F26FC0FFFFUL, 0x7800000000000000UL)] // +MAXFP -> +Infinity
+        [InlineData(0xF7FB86F26FC0FFFFUL, 0xF7FB86F26FC0FFFEUL)] // -MAXFP steps toward zero
+        [InlineData(0x0000000000000001UL, 0x0000000000000002UL)] // +MINFP
+        [InlineData(0x8000000000000001UL, 0x8000000000000000UL)] // -MINFP -> -0
+        [InlineData(0x6BFB86F26FC0FFFFUL, 0x30038D7EA4C68000UL)] // coefficient carry
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 0xF7FB86F26FC0FFFFUL)] // -Infinity -> -MAXFP
+        [InlineData(0xFC00000000000000UL, 0xFC00000000000000UL)] // NaN
+        public static void BitIncrementTest(ulong bits, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.BitIncrement(Unsafe.BitCast<ulong, Decimal64>(bits))));
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x8000000000000001UL)] // +0 -> -MINFP
+        [InlineData(0xB1C0000000000000UL, 0x8000000000000001UL)] // -0 -> -MINFP
+        [InlineData(0x31C0000000000001UL, 0x6BF386F26FC0FFFFUL)] // 1 -> 0.9999999999999999
+        [InlineData(0xB1C0000000000001UL, 0xAFE38D7EA4C68001UL)] // -1 -> -1.000000000000001
+        [InlineData(0x77FB86F26FC0FFFFUL, 0x77FB86F26FC0FFFEUL)] // +MAXFP steps toward zero
+        [InlineData(0xF7FB86F26FC0FFFFUL, 0xF800000000000000UL)] // -MAXFP -> -Infinity
+        [InlineData(0x0000000000000001UL, 0x0000000000000000UL)] // +MINFP -> +0
+        [InlineData(0x8000000000000001UL, 0x8000000000000002UL)] // -MINFP
+        [InlineData(0x6BFB86F26FC0FFFFUL, 0x6BFB86F26FC0FFFEUL)] // normal step
+        [InlineData(0x7800000000000000UL, 0x77FB86F26FC0FFFFUL)] // +Infinity -> +MAXFP
+        [InlineData(0xF800000000000000UL, 0xF800000000000000UL)] // -Infinity
+        [InlineData(0xFC00000000000000UL, 0xFC00000000000000UL)] // NaN
+        public static void BitDecrementTest(ulong bits, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.BitDecrement(Unsafe.BitCast<ulong, Decimal64>(bits))));
+        }
+
+        [Theory]
         [InlineData(0x31C0000000000001UL, 0)] // 1
         [InlineData(0x3260000000000001UL, 5)] // 1e5
         [InlineData(0x31C000000012D687UL, 6)] // 1234567
@@ -1574,6 +1610,20 @@ namespace System.Tests
         public static void ScaleBTest(ulong bits, int n, ulong expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.ScaleB(Unsafe.BitCast<ulong, Decimal64>(bits), n)));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64BitDecrement), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void BitDecrement_IntelReferenceVectors(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.BitDecrement(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64BitIncrement), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void BitIncrement_IntelReferenceVectors(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.BitIncrement(Unsafe.BitCast<ulong, Decimal64>(value))));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]

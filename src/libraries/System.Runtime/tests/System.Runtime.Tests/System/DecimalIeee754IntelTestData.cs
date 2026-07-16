@@ -114,6 +114,15 @@ namespace System.Tests
         private static readonly HashSet<string> s_bid64ScaleB = new() { "bid64_scalbn" };
         private static readonly HashSet<string> s_bid128ScaleB = new() { "bid128_scalbn" };
 
+        // BitIncrement/BitDecrement (IEEE 754 nextUp/nextDown). NaN operands are skipped for the same
+        // payload-convention reason as RoundIntegral.
+        private static readonly HashSet<string> s_bid32BitIncrement = new() { "bid32_nextup" };
+        private static readonly HashSet<string> s_bid64BitIncrement = new() { "bid64_nextup" };
+        private static readonly HashSet<string> s_bid128BitIncrement = new() { "bid128_nextup" };
+        private static readonly HashSet<string> s_bid32BitDecrement = new() { "bid32_nextdown" };
+        private static readonly HashSet<string> s_bid64BitDecrement = new() { "bid64_nextdown" };
+        private static readonly HashSet<string> s_bid128BitDecrement = new() { "bid128_nextdown" };
+
         // ILogB. Only finite, non-zero operands are consumed (invalid-flagged rows cover zero/infinity/NaN, where
         // Intel's C99 ilogb sentinels diverge from the .NET int.MinValue/int.MaxValue contract).
         private static readonly HashSet<string> s_bid32ILogB = new() { "bid32_ilogb" };
@@ -520,6 +529,73 @@ namespace System.Tests
                 if (TryParseBid128(fields[2], out UInt128 value) && !IsBid128NaN(value) && TryParseBid128(fields[3], out UInt128 expected))
                 {
                     yield return new object[] { OperationSuffix(fields[0]), value, expected };
+                }
+            }
+        }
+
+        // NaN operands are skipped for the same payload-quieting reason as RoundIntegral.
+        public static IEnumerable<object[]> Decimal32BitIncrement()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32BitIncrement))
+            {
+                if (TryParseBid32(fields[2], out uint value) && !IsBid32NaN(value) && TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64BitIncrement()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64BitIncrement))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && !IsBid64NaN(value) && TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128BitIncrement()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128BitIncrement))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && !IsBid128NaN(value) && TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32BitDecrement()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32BitDecrement))
+            {
+                if (TryParseBid32(fields[2], out uint value) && !IsBid32NaN(value) && TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64BitDecrement()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64BitDecrement))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && !IsBid64NaN(value) && TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128BitDecrement()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128BitDecrement))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && !IsBid128NaN(value) && TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { value, expected };
                 }
             }
         }

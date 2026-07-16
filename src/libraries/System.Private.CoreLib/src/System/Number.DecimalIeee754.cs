@@ -1359,6 +1359,103 @@ namespace System
         }
 
         /// <summary>
+        /// Returns the least value that compares greater than <paramref name="bits"/> (IEEE 754 <c>nextUp</c>). NaN is
+        /// returned unchanged, positive infinity is its own successor, and negative infinity steps to the most negative
+        /// finite value.
+        /// </summary>
+        internal static TValue BitIncrementDecimalIeee754<TDecimal, TValue>(TValue bits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // This code is based on `bid32_nextup`, `bid64_nextup`, and `bid128_nextup` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (TDecimal.IsNaN(bits))
+            {
+                return bits;
+            }
+
+            if (TDecimal.IsInfinity(bits))
+            {
+                return TDecimal.IsNegative(bits)
+                    ? DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: true, TDecimal.MaxSignificand, TDecimal.MaxAdjustedExponent)
+                    : TDecimal.PositiveInfinity;
+            }
+
+            DecodedDecimalIeee754<TValue> a = UnpackDecimalIeee754<TDecimal, TValue>(bits);
+
+            if (TValue.IsZero(a.Significand))
+            {
+                // The successor of any zero is the smallest positive subnormal.
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: false, TValue.One, TDecimal.MinAdjustedExponent);
+            }
+
+            int exponent = a.UnbiasedExponent;
+
+            if (!a.Signed && (a.Significand == TDecimal.MaxSignificand) && (exponent == TDecimal.MaxAdjustedExponent))
+            {
+                // The successor of the largest finite value is positive infinity.
+                return TDecimal.PositiveInfinity;
+            }
+
+            if (a.Signed && (a.Significand == TValue.One) && (exponent == TDecimal.MinAdjustedExponent))
+            {
+                // The successor of the smallest negative subnormal is negative zero.
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: true, TValue.Zero, TDecimal.MinAdjustedExponent);
+            }
+
+            // Pad the coefficient toward the minimum quantum (bounded by the precision and the minimum exponent) so a
+            // single ulp is the smallest representable step at this magnitude.
+            TValue significand = a.Significand;
+            int padding = Math.Min(TDecimal.Precision - TDecimal.CountDigits(significand), exponent - TDecimal.MinAdjustedExponent);
+
+            if (padding > 0)
+            {
+                significand *= TDecimal.Power10(padding);
+                exponent -= padding;
+            }
+
+            if (!a.Signed)
+            {
+                // Stepping away from zero adds one ulp, carrying into the next exponent at the precision boundary.
+                significand += TValue.One;
+
+                if (significand > TDecimal.MaxSignificand)
+                {
+                    significand = TDecimal.Power10(TDecimal.Precision - 1);
+                    exponent++;
+                }
+            }
+            else
+            {
+                // Stepping toward zero subtracts one ulp, borrowing from the next exponent at the precision boundary.
+                significand -= TValue.One;
+
+                if ((significand == (TDecimal.Power10(TDecimal.Precision - 1) - TValue.One)) && (exponent != TDecimal.MinAdjustedExponent))
+                {
+                    significand = TDecimal.MaxSignificand;
+                    exponent--;
+                }
+            }
+
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(a.Signed, significand, exponent);
+        }
+
+        /// <summary>
+        /// Returns the greatest value that compares less than <paramref name="bits"/> (IEEE 754 <c>nextDown</c>),
+        /// computed from the successor identity <c>nextDown(x) = -nextUp(-x)</c>.
+        /// </summary>
+        internal static TValue BitDecrementDecimalIeee754<TDecimal, TValue>(TValue bits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            return BitIncrementDecimalIeee754<TDecimal, TValue>(bits ^ TDecimal.SignMask) ^ TDecimal.SignMask;
+        }
+
+        /// <summary>
         /// Computes the scale factor <c>10^<paramref name="exponent"/></c> used to align addition operands. Exponents
         /// within the format's <c>Power10</c> lookup range (<c>0..Precision - 1</c>) come straight from that table,
         /// matching the existing parsing/formatting paths. The slightly larger alignment exponents
