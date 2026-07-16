@@ -3552,7 +3552,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 intrinsic = NI_AdvSimd_Arm64_ConvertToDoubleScalar;
             }
 #elif defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_ConvertToDouble
+            // WASM SIMD has no i64/u64 to f64 lane conversion, so fall back to the software path
             return nullptr;
 #else
             unreached();
@@ -3601,7 +3601,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #endif
 
 #if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_ConvertToInt64
+            // WASM SIMD has no f64 to i64 lane conversion, so fall back to the software path
             return nullptr;
 #endif
 
@@ -3628,7 +3628,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #endif
 
 #if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_ConvertToInt64Native
+            // WASM SIMD has no f64 to i64 lane conversion, so fall back to the software path
             return nullptr;
 #endif
 
@@ -3744,7 +3744,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #endif
 
 #if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_ConvertToUInt64
+            // WASM SIMD has no f64 to u64 lane conversion, so fall back to the software path
             return nullptr;
 #endif
 
@@ -3771,7 +3771,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #endif
 
 #if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_ConvertToUInt64Native
+            // WASM SIMD has no f64 to u64 lane conversion, so fall back to the software path
             return nullptr;
 #endif
 
@@ -4044,7 +4044,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             impSpillSideEffect(true,
                                stackState.esStackDepth - 2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
 #elif defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_FusedMultiplyAdd
+            // WASM SIMD has no fused-multiply-add; emulating it as a separate multiply and add would
+            // round twice and break the single-rounding guarantee, so fall back to the software path
             return nullptr;
 #endif
 
@@ -4788,7 +4789,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 
 #if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_ShiftLeft
+            // WASM SIMD only supports shift-by-scalar, not a per-lane variable shift, so fall back to
+            // the software path
             return nullptr;
 #endif
 
@@ -4823,7 +4825,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 intrinsic = varTypeIsLong(simdBaseType) ? NI_AdvSimd_ShiftLogicalScalar : NI_AdvSimd_ShiftLogical;
             }
 #elif defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_ShiftLeft
+            // Unreachable: WASM bails out to the software path above, before the operands are popped
             return nullptr;
 #else
             unreached();
