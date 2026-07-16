@@ -1201,9 +1201,9 @@ namespace System
             else
             {
                 TValue divisor = TDecimal.Power10(drop);
-                quotient = a.Significand / divisor;
+                TValue discarded;
+                (quotient, discarded) = TValue.DivRem(a.Significand, divisor);
 
-                TValue discarded = a.Significand - (quotient * divisor);
                 TValue half = five * TDecimal.Power10(drop - 1);
                 discardedComparedToHalf = discarded.CompareTo(half);
                 discardedNonZero = !TValue.IsZero(discarded);
