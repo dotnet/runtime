@@ -339,6 +339,45 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void TestEnvironmentOfChildProcess_PristineStartInfoInheritsParentEnvironment()
+        {
+            // Verify the lazy-inheritance path: when ProcessStartInfo.Environment is never
+            // accessed and Environment.HasEnvironmentVariablesBeenModified is false, the child
+            // process should inherit the parent's full environment via a null envp on non-Apple
+            // Unix. We run this inside a fresh subprocess so HasEnvironmentVariablesBeenModified
+            // starts as false and the parent environment can be controlled precisely.
+            const string varName = "TestLazyEnvInheritance_Key";
+            const string varValue = "TestLazyEnvInheritance_Value";
+
+            // Inject the variable into the outer fresh process via StartInfo.Environment
+            // (this does NOT call Environment.SetEnvironmentVariable, so HasEnvironmentVariablesBeenModified
+            // stays false inside that process).
+            var outerOptions = new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() };
+            outerOptions.StartInfo.Environment[varName] = varValue;
+
+            RemoteExecutor.Invoke(static (name, value) =>
+            {
+                // Start a child using a pristine ProcessStartInfo: do NOT access .Environment.
+                // Accessing .Environment would initialize _environmentVariables and bypass the
+                // lazy-inheritance optimization on non-Apple platforms.
+                var psi = new ProcessStartInfo("printenv", name)
+                {
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false
+                };
+
+                using Process child = Process.Start(psi)!;
+                string output = child.StandardOutput.ReadToEnd().Trim();
+                Assert.True(child.WaitForExit(30_000));
+                Assert.Equal(0, child.ExitCode);
+                Assert.Equal(value, output);
+
+                return RemoteExecutor.SuccessExitCode;
+            }, varName, varValue, outerOptions);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EnvironmentNullValue()
         {
             const string NullEnvVar = "TestEnvironmentOfChildProcess_Null";
