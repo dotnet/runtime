@@ -751,6 +751,38 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void PromotedSimdFieldAccessTest()
+    {
+        // Individually reading and writing Vector2/3/4 fields promotes the local and lowers the field
+        // accesses through GetElement/WithElement rather than memory-based field loads and stores.
+
+        Vector4 v4 = Opaque(new Vector4(1.0f, 2.0f, 3.0f, 4.0f));
+        v4.X += 10.0f;
+        v4.W = v4.Y + v4.Z;
+        Assert.Equal(11.0f, v4.X);
+        Assert.Equal(2.0f, v4.Y);
+        Assert.Equal(3.0f, v4.Z);
+        Assert.Equal(5.0f, v4.W);
+
+        Vector3 v3 = Opaque(new Vector3(1.0f, 2.0f, 3.0f));
+        v3.Y = v3.X + v3.Z;
+        Assert.Equal(1.0f, v3.X);
+        Assert.Equal(4.0f, v3.Y);
+        Assert.Equal(3.0f, v3.Z);
+
+        Vector2 v2 = Opaque(new Vector2(1.0f, 2.0f));
+        v2.X = v2.Y * 2.0f;
+        Assert.Equal(4.0f, v2.X);
+        Assert.Equal(2.0f, v2.Y);
+
+        // Plane embeds a Vector3 Normal in a 16-byte value, exercising the SIMD12 field get/set path.
+        Plane plane = Opaque(new Plane(1.0f, 2.0f, 3.0f, 4.0f));
+        plane.Normal = new Vector3(plane.Normal.X + 10.0f, plane.Normal.Y, plane.Normal.Z);
+        Assert.Equal(new Vector3(11.0f, 2.0f, 3.0f), plane.Normal);
+        Assert.Equal(4.0f, plane.D);
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);
