@@ -15939,6 +15939,13 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         return tree;
     }
 
+    // A COMMA has no fold in this one-const path; bail before the float dispatch
+    // below, which would otherwise misroute it based on op1's unrelated type.
+    if (oper == GT_COMMA)
+    {
+        return tree;
+    }
+
     // Floating-point operators, including compares (which have an integral
     // result but floating-point operands), are handled separately.
     if (varTypeIsFloating(op1))
