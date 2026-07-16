@@ -286,7 +286,7 @@ TargetPointer IThread.IdToThread(uint id)
     TargetPointer idDispenser = target.ReadPointer(idDispenserPointer);
     uint HighestId = target.ReadPointer(idDispenser + /* IdDispenser::HighestId offset */);
     TargetPointer threadPtr = TargetPointer.Null;
-    if (id < HighestId)
+    if (id <= HighestId)
         threadPtr = target.ReadPointer(idDispenser + /* IdDispenser::IdToThread offset + (index into IdToThread array * size of array elements (== size of target pointer)) */);
     return threadPtr;
 }
