@@ -122,6 +122,15 @@ namespace Tracing.Tests.Common
         /// </summary>
         private EventPipeSession _eventPipeSession;
 
+        // The buffer size requested for a session for storing events.
+        private int _circularBufferMB;
+
+        // Controls event writing behavior when buffers are full. Drop the event or Block until there is space available.
+        private EventPipeBufferingMode _bufferingMode;
+
+        // Whether to fail the test if any events are lost. Only Block buffer mode tests are required to retain all events.
+        private bool _failOnEventsLost;
+
         /// <summary>
         /// This is the list of EventPipe providers for the sentinel EventSource that indicates that the process is ready
         /// </summary>
@@ -135,12 +144,17 @@ namespace Tracing.Tests.Common
             Action eventGeneratingAction,
             List<EventPipeProvider> providers,
             int circularBufferMB,
-            Func<EventPipeEventSource, Func<int>> optionalTraceValidator = null)
+            Func<EventPipeEventSource, Func<int>> optionalTraceValidator = null,
+            EventPipeBufferingMode bufferingMode = EventPipeBufferingMode.Drop,
+            bool failOnEventsLost = false)
         {
             _eventGeneratingAction = eventGeneratingAction;
             _expectedEventCounts = expectedEventCounts;
             _testProviders = providers;
+            _circularBufferMB = circularBufferMB;
             _optionalTraceValidator = optionalTraceValidator;
+            _bufferingMode = bufferingMode;
+            _failOnEventsLost = failOnEventsLost;
         }
 
         private int Fail(string message = "")
@@ -218,7 +232,13 @@ namespace Tracing.Tests.Common
                 Logger.logger.Log("Connecting to EventPipe...");
                 try
                 {
-                    _eventPipeSession = client.StartEventPipeSession(_testProviders.Concat(_sentinelProviders), enableRundownProvider);
+                    EventPipeSessionConfiguration config = new(
+                        _testProviders.Concat(_sentinelProviders),
+                        circularBufferSizeMB: _circularBufferMB,
+                        rundownKeyword: enableRundownProvider ? EventPipeSession.DefaultRundownKeyword : 0,
+                        requestStackwalk: true,
+                        bufferingMode: _bufferingMode);
+                    _eventPipeSession = client.StartEventPipeSession(config);
                 }
                 catch (DiagnosticsClientException ex)
                 {
@@ -343,6 +363,11 @@ namespace Tracing.Tests.Common
             Logger.logger.Log("Reader task finished");
             Logger.logger.Log($"Dropped {_droppedEvents} events");
 
+            if (_failOnEventsLost && _droppedEvents > 0)
+            {
+                return Fail($"Expected zero dropped events, but the reader reported {_droppedEvents} dropped events");
+            }
+
             foreach ((string provider, ExpectedEventCount expectedCount) in _expectedEventCounts)
             {
                 if (_actualEventCounts.TryGetValue(provider, out int actualCount))
@@ -438,10 +463,12 @@ namespace Tracing.Tests.Common
             List<EventPipeProvider> providers,
             int circularBufferMB = 1024,
             Func<EventPipeEventSource, Func<int>> optionalTraceValidator = null,
-            bool enableRundownProvider = true)
+            bool enableRundownProvider = true,
+            EventPipeBufferingMode bufferingMode = EventPipeBufferingMode.Drop,
+            bool failOnEventsLost = false)
         {
             Logger.logger.Log("==TEST STARTING==");
-            IpcTraceTest test = new(expectedEventCounts, eventGeneratingAction, providers, circularBufferMB, optionalTraceValidator);
+            IpcTraceTest test = new(expectedEventCounts, eventGeneratingAction, providers, circularBufferMB, optionalTraceValidator, bufferingMode, failOnEventsLost);
             // Runtime delta: surface a clean failure (and log the exception) instead of letting it propagate.
             try
             {
