@@ -51,7 +51,6 @@
     <NestedBuildProperty Include="WasmTestAppendElementOnExit" />
     <NestedBuildProperty Include="WasmTestLogExitCode" />
     <NestedBuildProperty Include="WasmTestAsyncFlushOnExit" />
-    <NestedBuildProperty Include="WasmTestForwardConsole" />
   </ItemGroup>
 
   <Target Name="_ValidateRuntimeFlavorBuild" BeforeTargets="BuildSampleInTree">
