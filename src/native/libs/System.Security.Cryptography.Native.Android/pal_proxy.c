@@ -148,7 +148,9 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
         uint16_t* host = AllocateString(env, (jstring)iter[jhost]);
 
         result[written].type = type;
-        result[written].host = host; // ownership transferred to the result; lifetime ≥ jhost
+        // host is an independent heap copy (see AllocateString), not an alias of the jhost
+        // local ref. Its lifetime is owned by the result array and released by FreeProxyResult.
+        result[written].host = host;
         result[written].port = (int32_t)port;
         written++;
 

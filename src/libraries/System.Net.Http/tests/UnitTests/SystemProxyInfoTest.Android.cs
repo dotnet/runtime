@@ -36,33 +36,82 @@ namespace System.Net.Http.Tests
         }
 
         [Theory]
-        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Direct, null, 0, true, null)]
-        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Http, "proxy.example", 8080, true, "http://proxy.example:8080/")]
-        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Socks, "proxy.example", 1080, true, "socks5://proxy.example:1080/")]
-        [InlineData((Interop.AndroidCrypto.AndroidProxyType)42, "proxy.example", 8080, false, null)]
-        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Http, "", 8080, false, null)]
-        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Http, "proxy.example", 0, false, null)]
-        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Http, "proxy.example", -1, false, null)]
-        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Socks, "proxy.example", 70000, false, null)]
-        public void AndroidPlatformProxy_TryCreateProxyUri_PreservesProxySelectorEntrySemantics(
+        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Direct, null, 0, null)]
+        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Http, "proxy.example", 8080, "http://proxy.example:8080/")]
+        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Socks, "proxy.example", 1080, "socks5://proxy.example:1080/")]
+        [InlineData((Interop.AndroidCrypto.AndroidProxyType)42, "proxy.example", 8080, null)]
+        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Http, "", 8080, null)]
+        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Http, "proxy.example", 0, null)]
+        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Http, "proxy.example", -1, null)]
+        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Socks, "proxy.example", 70000, null)]
+        public void AndroidPlatformProxy_SelectProxyUri_MapsSingleEntry(
             Interop.AndroidCrypto.AndroidProxyType proxyType,
             string? host,
             int port,
-            bool expectedResult,
             string? expectedUri)
         {
             IntPtr hostPtr = host is null ? IntPtr.Zero : Marshal.StringToCoTaskMemUni(host);
             try
             {
-                bool result = AndroidPlatformProxy.TryCreateProxyUri(CreateProxyEntry(proxyType, hostPtr, port), out Uri? proxyUri);
+                Interop.AndroidCrypto.AndroidProxyInfo[] entries = [CreateProxyEntry(proxyType, hostPtr, port)];
 
-                Assert.Equal(expectedResult, result);
+                Uri? proxyUri = AndroidPlatformProxy.SelectProxyUri(entries);
+
                 Assert.Equal(expectedUri, proxyUri?.AbsoluteUri);
             }
             finally
             {
                 Marshal.FreeCoTaskMem(hostPtr);
             }
+        }
+
+        [Fact]
+        public void AndroidPlatformProxy_SelectProxyUri_DirectEntryStopsFallback()
+        {
+            IntPtr hostPtr = Marshal.StringToCoTaskMemUni("proxy.example");
+            try
+            {
+                // DIRECT precedes a usable HTTP entry: ProxySelector ordering means the
+                // selected result is "no proxy", so the later entry must not be used.
+                Interop.AndroidCrypto.AndroidProxyInfo[] entries =
+                [
+                    CreateProxyEntry(Interop.AndroidCrypto.AndroidProxyType.Direct, IntPtr.Zero, 0),
+                    CreateProxyEntry(Interop.AndroidCrypto.AndroidProxyType.Http, hostPtr, 8080),
+                ];
+
+                Assert.Null(AndroidPlatformProxy.SelectProxyUri(entries));
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(hostPtr);
+            }
+        }
+
+        [Fact]
+        public void AndroidPlatformProxy_SelectProxyUri_SkipsUnusableEntries()
+        {
+            IntPtr hostPtr = Marshal.StringToCoTaskMemUni("proxy.example");
+            try
+            {
+                // An unknown proxy type is skipped in favor of the next usable entry.
+                Interop.AndroidCrypto.AndroidProxyInfo[] entries =
+                [
+                    CreateProxyEntry((Interop.AndroidCrypto.AndroidProxyType)42, IntPtr.Zero, 0),
+                    CreateProxyEntry(Interop.AndroidCrypto.AndroidProxyType.Http, hostPtr, 8080),
+                ];
+
+                Assert.Equal("http://proxy.example:8080/", AndroidPlatformProxy.SelectProxyUri(entries)?.AbsoluteUri);
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(hostPtr);
+            }
+        }
+
+        [Fact]
+        public void AndroidPlatformProxy_SelectProxyUri_NoEntriesReturnsNull()
+        {
+            Assert.Null(AndroidPlatformProxy.SelectProxyUri(ReadOnlySpan<Interop.AndroidCrypto.AndroidProxyInfo>.Empty));
         }
 
         private static Interop.AndroidCrypto.AndroidProxyInfo CreateProxyEntry(

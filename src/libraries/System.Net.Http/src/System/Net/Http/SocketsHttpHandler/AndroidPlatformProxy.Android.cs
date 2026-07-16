@@ -53,15 +53,7 @@ namespace System.Net.Http
                 // not implement that interface, so the remaining ProxySelector entries are not
                 // used for automatic fallback: if the chosen proxy is unreachable the caller
                 // sees the connect error rather than an automatic retry.
-                for (int i = 0; i < count; i++)
-                {
-                    if (TryCreateProxyUri(proxies[i], out Uri? proxyUri))
-                    {
-                        return proxyUri;
-                    }
-                }
-
-                return null;
+                return SelectProxyUri(new ReadOnlySpan<Interop.AndroidCrypto.AndroidProxyInfo>(proxies, count));
             }
             finally
             {
@@ -69,26 +61,39 @@ namespace System.Net.Http
             }
         }
 
-        internal static bool TryCreateProxyUri(Interop.AndroidCrypto.AndroidProxyInfo entry, out Uri? proxyUri)
+        internal static Uri? SelectProxyUri(ReadOnlySpan<Interop.AndroidCrypto.AndroidProxyInfo> entries)
+        {
+            foreach (Interop.AndroidCrypto.AndroidProxyInfo entry in entries)
+            {
+                // Java's Proxy.NO_PROXY is represented as Proxy.Type.DIRECT. Preserve
+                // ProxySelector ordering by treating the first DIRECT entry as the selected
+                // result (no proxy) rather than skipping ahead to a later fallback proxy.
+                if ((Interop.AndroidCrypto.AndroidProxyType)entry.Type == Interop.AndroidCrypto.AndroidProxyType.Direct)
+                {
+                    return null;
+                }
+
+                if (TryCreateProxyUri(entry, out Uri? proxyUri))
+                {
+                    return proxyUri;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool TryCreateProxyUri(Interop.AndroidCrypto.AndroidProxyInfo entry, out Uri? proxyUri)
         {
             proxyUri = null;
-
-            Interop.AndroidCrypto.AndroidProxyType type = (Interop.AndroidCrypto.AndroidProxyType)entry.Type;
-
-            if (type == Interop.AndroidCrypto.AndroidProxyType.Direct)
-            {
-                // Java's Proxy.NO_PROXY is represented as Proxy.Type.DIRECT.
-                // Preserve ProxySelector ordering by treating DIRECT as the
-                // selected result rather than skipping to a later fallback proxy.
-                return true;
-            }
 
             // SOCKS is a transport-level proxy protocol (RFC 1928 for SOCKS5).
             // Unlike HTTP CONNECT, SOCKS tunnels arbitrary TCP at the socket
             // layer. SocketsHttpHandler accepts "socks5://" via
             // HttpUtilities.IsSupportedProxyScheme. Android's
             // java.net.Proxy.Type.SOCKS maps to SOCKS5 on modern Android.
-            string? scheme = type switch
+            // DIRECT (java.net.Proxy.NO_PROXY) yields no scheme and is handled by
+            // SelectProxyUri before reaching this helper.
+            string? scheme = (Interop.AndroidCrypto.AndroidProxyType)entry.Type switch
             {
                 Interop.AndroidCrypto.AndroidProxyType.Http => "http",
                 Interop.AndroidCrypto.AndroidProxyType.Socks => "socks5",
