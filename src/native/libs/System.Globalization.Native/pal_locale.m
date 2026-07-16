@@ -49,6 +49,8 @@ static NSString* GetLanguageSubtag(NSString *localeName)
 
 static NSString* GetLocaleLanguageCode(NSString *localeName, NSLocale *canonicalLocale)
 {
+    // Foundation canonicalizes "no" (Norwegian) to "nb" (Norwegian Bokmål), unlike ICU which
+    // keeps "no". Preserve "no" so culture names match Windows/Android (see dotnet/runtime#112249).
     NSString *languageSubtag = GetLanguageSubtag(localeName);
     if ([languageSubtag caseInsensitiveCompare:@"no"] == NSOrderedSame &&
         [canonicalLocale.languageCode isEqualToString:@"nb"])
