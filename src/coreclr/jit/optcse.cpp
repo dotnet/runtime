@@ -1773,6 +1773,9 @@ CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler)
 // Arguments:
 //   tree - tree in question
 //   isReturn - true if tree is part of a return statement
+//   skipCostChecks - true to skip the cost-based profitability checks (which require initialized
+//                    tree costs); used by callers that only need the legality/structural filter and
+//                    may run before costs are set (e.g. loop inversion)
 //
 // Returns:
 //    true if this tree can be a CSE candidate
@@ -1781,7 +1784,7 @@ CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler)
 //   This currently does both legality and profitability checks.
 //   Eventually it should just do legality checks.
 //
-bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
+bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn, bool skipCostChecks)
 {
     // Don't allow CSE of constants if it is disabled
     //
@@ -1833,21 +1836,24 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         return false;
     }
 
-    unsigned cost;
-    if (codeOptKind == Compiler::SMALL_CODE)
-    {
-        cost = tree->GetCostSz();
-    }
-    else
-    {
-        cost = tree->GetCostEx();
-    }
-
     //  Don't bother if the potential savings are very low
     //
-    if (cost < Compiler::MIN_CSE_COST)
+    if (!skipCostChecks)
     {
-        return false;
+        unsigned cost;
+        if (codeOptKind == Compiler::SMALL_CODE)
+        {
+            cost = tree->GetCostSz();
+        }
+        else
+        {
+            cost = tree->GetCostEx();
+        }
+
+        if (cost < Compiler::MIN_CSE_COST)
+        {
+            return false;
+        }
     }
 
     genTreeOps oper = tree->OperGet();
@@ -5722,9 +5728,19 @@ PhaseStatus Compiler::optOptimizeValnumCSEs()
 //
 //   Consults the CSE policy that will be used.
 //
-bool Compiler::optIsCSEcandidate(GenTree* tree, bool isReturn)
+bool Compiler::optIsCSEcandidate(GenTree* tree, bool isReturn, bool skipCostChecks)
 {
-    return optGetCSEheuristic()->ConsiderTree(tree, isReturn);
+    CSE_HeuristicCommon* const heuristic = optGetCSEheuristic();
+
+    // When skipping cost checks the caller only wants the legality/structural filter (e.g. it runs
+    // before tree costs are initialized), so use CanConsiderTree directly rather than the heuristic's
+    // cost-aware ConsiderTree.
+    if (skipCostChecks)
+    {
+        return heuristic->CanConsiderTree(tree, isReturn, /* skipCostChecks */ true);
+    }
+
+    return heuristic->ConsiderTree(tree, isReturn);
 }
 
 #ifdef DEBUG

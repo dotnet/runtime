@@ -1990,40 +1990,39 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     // If the loop is already bottom-tested (has an exiting BBJ_COND latch that is not the IV test)
     // and no induction variable was recognized, only invert when the block that would be duplicated
-    // (condBlock) contains a call or an indirection whose address has no loop-varying local. Classify
-    // condBlock here and record the locals appearing in its indirection address expressions; the
-    // size-check walk below flags whether any of them is assigned in the loop (making the indirection
-    // loop-variant).
-    const bool   bottomTestedNoIV = sawExitingCondLatch && (ivTestBlock == nullptr);
-    bool         condHasCall      = false;
-    bool         condHasIndir     = false;
-    bool         condAddrStored   = false;
+    // (condBlock) contains a loop-invariant hoisting candidate: a CSE-able call, or an indirection,
+    // whose operands (call arguments / indirection address) have no loop-varying local. Once the body
+    // dominates the back-edge such a computation can be hoisted by LICM, which is the benefit that
+    // makes bottom-testing worthwhile. Classify condBlock here and record the candidate operand
+    // locals; the size-check walk below flags whether any of them is assigned in the loop (making the
+    // candidate loop-variant).
+    const bool   bottomTestedNoIV      = sawExitingCondLatch && (ivTestBlock == nullptr);
+    bool         condHasHoistCandidate = false;
+    bool         condCandidateStored   = false;
     BitVecTraits condTraits(lvaCount, this);
-    BitVec       condIndirAddrLocals = BitVecOps::UninitVal();
+    BitVec       condCandidateLocals = BitVecOps::UninitVal();
     if (bottomTestedNoIV)
     {
         assert(analyzedIteration);
 
-        condIndirAddrLocals = BitVecOps::MakeEmpty(&condTraits);
+        condCandidateLocals = BitVecOps::MakeEmpty(&condTraits);
 
         struct CondClassifier : GenTreeVisitor<CondClassifier>
         {
             BitVecTraits* m_traits;
-            BitVec*       m_addrLocals;
-            bool*         m_hasCall;
-            bool*         m_hasIndir;
+            BitVec*       m_candidateLocals;
+            bool*         m_hasCandidate;
 
             enum
             {
                 DoPreOrder = true
             };
 
-            CondClassifier(Compiler* comp, BitVecTraits* traits, BitVec* addrLocals, bool* hasCall, bool* hasIndir)
+            CondClassifier(Compiler* comp, BitVecTraits* traits, BitVec* candidateLocals, bool* hasCandidate)
                 : GenTreeVisitor(comp)
                 , m_traits(traits)
-                , m_addrLocals(addrLocals)
-                , m_hasCall(hasCall)
-                , m_hasIndir(hasIndir)
+                , m_candidateLocals(candidateLocals)
+                , m_hasCandidate(hasCandidate)
             {
             }
 
@@ -2031,7 +2030,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
             {
                 if (tree->OperIsAnyLocal())
                 {
-                    BitVecOps::AddElemD(m_traits, *m_addrLocals, tree->AsLclVarCommon()->GetLclNum());
+                    BitVecOps::AddElemD(m_traits, *m_candidateLocals, tree->AsLclVarCommon()->GetLclNum());
                 }
                 tree->VisitOperands([&](GenTree* op) -> GenTree::VisitResult {
                     CollectLocals(op);
@@ -2044,27 +2043,31 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
                 GenTree* n = *use;
                 if (n->IsCall())
                 {
-                    *m_hasCall = true;
-                    return WALK_ABORT;
+                    // Only a call the CSE heuristic would consider (no persistent side effects, not an
+                    // allocator) is a reuse candidate; LICM/CSE cannot lift a call with side effects,
+                    // so inverting for it buys nothing. Its arguments must also be loop-invariant. Skip
+                    // the cost-based checks: tree costs are not initialized this early.
+                    if (m_compiler->optIsCSEcandidate(n, /* isReturn */ false, /* skipCostChecks */ true))
+                    {
+                        *m_hasCandidate = true;
+                        CollectLocals(n);
+                    }
+                    return WALK_CONTINUE;
                 }
                 if (n->OperIsIndir())
                 {
-                    *m_hasIndir = true;
+                    *m_hasCandidate = true;
                     CollectLocals(n->AsIndir()->Addr());
                 }
                 return WALK_CONTINUE;
             }
         };
 
-        CondClassifier cc(this, &condTraits, &condIndirAddrLocals, &condHasCall, &condHasIndir);
+        CondClassifier cc(this, &condTraits, &condCandidateLocals, &condHasHoistCandidate);
         for (Statement* const stmt : condBlock->Statements())
         {
             GenTree* root = stmt->GetRootNode();
             cc.WalkTree(&root, nullptr);
-            if (condHasCall)
-            {
-                break;
-            }
         }
     }
 
@@ -2143,12 +2146,12 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
                 {
                     *boundsCheckFlag = true;
                 }
-                // Note whether any local appearing in the condition's indirection addresses is stored
-                // in the loop (making that indirection loop-variant).
-                if (bottomTestedNoIV && !condHasCall && tree->OperIsLocalStore() &&
-                    BitVecOps::IsMember(&condTraits, condIndirAddrLocals, tree->AsLclVarCommon()->GetLclNum()))
+                // Note whether any local appearing in a condition hoisting candidate's operands is
+                // stored in the loop (making that candidate loop-variant, hence not hoistable).
+                if (bottomTestedNoIV && !condCandidateStored && tree->OperIsLocalStore() &&
+                    BitVecOps::IsMember(&condTraits, condCandidateLocals, tree->AsLclVarCommon()->GetLclNum()))
                 {
-                    condAddrStored = true;
+                    condCandidateStored = true;
                 }
                 loopSize++;
                 return 1;
@@ -2180,16 +2183,17 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         }
     }
 
-    // Skip the inversion unless the duplicated test carries a benefit: a call, or an indirection off
-    // an address with no loop-varying local. condAddrStored is left conservatively false if the size
-    // walk above was skipped or aborted early, keeping the inversion.
+    // Skip the inversion unless the duplicated test carries a benefit: a loop-invariant hoisting
+    // candidate (a CSE-able call or an indirection whose operands have no loop-varying local), which
+    // LICM can lift once the body dominates the back-edge. condCandidateStored is left conservatively
+    // false if the size walk above was skipped or aborted early, keeping the inversion.
     if (bottomTestedNoIV)
     {
-        const bool keepInverting = condHasCall || (condHasIndir && !condAddrStored);
+        const bool keepInverting = condHasHoistCandidate && !condCandidateStored;
         if (!keepInverting)
         {
             JITDUMP("No loop-inversion for " FMT_LP "; already bottom-tested with no recognized IV and no "
-                    "call or non-loop-varying indirection in the duplicated condition\n",
+                    "loop-invariant hoisting candidate in the duplicated condition\n",
                     loop->GetIndex());
             return false;
         }
