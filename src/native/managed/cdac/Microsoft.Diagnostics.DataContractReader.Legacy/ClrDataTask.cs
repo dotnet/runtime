@@ -12,6 +12,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataTask : IXCLRDataTask
 {
+    private const uint InvalidOSThreadId = 0xbaadf00d;
+
     private readonly TargetPointer _address;
     private readonly Target _target;
     private readonly IXCLRDataTask? _legacyImpl;
@@ -54,9 +56,61 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
         return hr;
     }
     int IXCLRDataTask.GetUniqueID(ulong* id)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetUniqueID(id) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (id is null)
+                throw new NullReferenceException();
+
+            *id = _target.Contracts.Thread.GetThreadData(_address).Id;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ulong idLocal = 0;
+            int hrLocal = _legacyImpl.GetUniqueID(id is null ? null : &idLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK && id is not null)
+                Debug.Assert(*id == idLocal, $"cDAC: {*id}, DAC: {idLocal}");
+        }
+#endif
+        return hr;
+    }
+
     int IXCLRDataTask.GetFlags(uint* flags)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (flags is null)
+                throw new NullReferenceException();
+
+            // CLRDATA_TASK_DEFAULT
+            *flags = 0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint flagsLocal = 0;
+            int hrLocal = _legacyImpl.GetFlags(flags is null ? null : &flagsLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK && flags is not null)
+                Debug.Assert(*flags == flagsLocal, $"cDAC: {*flags}, DAC: {flagsLocal}");
+        }
+#endif
+        return hr;
+    }
     int IXCLRDataTask.IsSameObject(IXCLRDataTask* task)
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameObject(task) : HResults.E_NOTIMPL;
     int IXCLRDataTask.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
@@ -87,7 +141,41 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
     }
 
     int IXCLRDataTask.GetOSThreadID(uint* id)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetOSThreadID(id) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (id is null)
+                throw new NullReferenceException();
+
+            uint osId = (uint)_target.Contracts.Thread.GetThreadData(_address).OSId.Value;
+            if (osId == 0 || osId == InvalidOSThreadId)
+            {
+                *id = 0;
+                hr = HResults.S_FALSE;
+            }
+            else
+            {
+                *id = osId;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint idLocal = 0;
+            int hrLocal = _legacyImpl.GetOSThreadID(id is null ? null : &idLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= 0 && id is not null)
+                Debug.Assert(*id == idLocal, $"cDAC: {*id}, DAC: {idLocal}");
+        }
+#endif
+        return hr;
+    }
     int IXCLRDataTask.GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, byte* contextBuffer)
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetContext(contextFlags, contextBufSize, contextSize, contextBuffer) : HResults.E_NOTIMPL;
     int IXCLRDataTask.SetContext(uint contextSize, byte* context)

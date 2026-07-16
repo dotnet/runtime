@@ -19,6 +19,18 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// </summary>
 public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProcess2
 {
+    private sealed class EnumTasks
+    {
+        public TargetPointer CurrentThread;
+        public ulong LegacyHandle;
+
+        public EnumTasks(TargetPointer currentThread, ulong legacyHandle)
+        {
+            CurrentThread = currentThread;
+            LegacyHandle = legacyHandle;
+        }
+    }
+
     int IXCLRDataProcess.Flush()
     {
         _target.Flush(FlushScope.All);
@@ -31,13 +43,135 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     }
 
     int IXCLRDataProcess.StartEnumTasks(ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumTasks(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        ulong legacyHandle = 0;
+        try
+        {
+            if (_legacyProcess is not null)
+                hrLocal = _legacyProcess.StartEnumTasks(handle is null ? null : &legacyHandle);
+
+            if (handle is null)
+                throw new NullReferenceException();
+
+            *handle = 0;
+            TargetPointer firstThread = _target.Contracts.Thread.GetThreadStoreData().FirstThread;
+            if (firstThread == TargetPointer.Null)
+            {
+                hr = HResults.S_FALSE;
+            }
+            else
+            {
+                GCHandle gcHandle = GCHandle.Alloc(new EnumTasks(firstThread, legacyHandle));
+                *handle = unchecked((ulong)GCHandle.ToIntPtr(gcHandle).ToInt64());
+                legacyHandle = 0;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        finally
+        {
+            if (_legacyProcess is not null && legacyHandle != 0)
+                _legacyProcess.EndEnumTasks(legacyHandle);
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.EnumTask(ulong* handle, DacComNullableByRef<IXCLRDataTask> task)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EnumTask(handle, task) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        try
+        {
+            if (handle is null)
+                throw new NullReferenceException();
+
+            if (*handle == 0)
+            {
+                hr = HResults.S_FALSE;
+            }
+            else
+            {
+                GCHandle gcHandle = GCHandle.FromIntPtr((nint)(*handle));
+                if (gcHandle.Target is not EnumTasks state)
+                    throw new ArgumentException();
+
+                bool outputIsNull = task is null || task.IsNullRef;
+                IXCLRDataTask? legacyTask = null;
+                if (_legacyProcess is not null)
+                {
+                    DacComNullableByRef<IXCLRDataTask> legacyTaskOut = new(isNullRef: outputIsNull);
+                    ulong legacyHandle = state.LegacyHandle;
+                    hrLocal = _legacyProcess.EnumTask(&legacyHandle, legacyTaskOut);
+                    state.LegacyHandle = legacyHandle;
+                    legacyTask = legacyTaskOut.Interface;
+                }
+                if (outputIsNull)
+                    throw new NullReferenceException();
+                DacComNullableByRef<IXCLRDataTask> taskOutput = task ?? throw new NullReferenceException();
+
+                TargetPointer currentThread = state.CurrentThread;
+                Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(currentThread);
+                taskOutput.Interface = new ClrDataTask(currentThread, _target, legacyTask);
+
+                state.CurrentThread = threadData.NextThread;
+                if (state.CurrentThread == TargetPointer.Null)
+                {
+                    gcHandle.Free();
+                    *handle = 0;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.EndEnumTasks(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EndEnumTasks(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        try
+        {
+            if (handle != 0)
+            {
+                GCHandle gcHandle = GCHandle.FromIntPtr((nint)handle);
+                if (gcHandle.Target is not EnumTasks state)
+                    throw new ArgumentException();
+
+                gcHandle.Free();
+                if (_legacyProcess is not null)
+                    hrLocal = _legacyProcess.EndEnumTasks(state.LegacyHandle);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            // Native EndEnumTasks ignores the handle and always succeeds.
+            _ = ex;
+            hr = HResults.S_OK;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.GetTaskByOSThreadID(uint osThreadID, DacComNullableByRef<IXCLRDataTask> task)
     {
@@ -75,7 +209,58 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     }
 
     int IXCLRDataProcess.GetTaskByUniqueID(ulong taskID, DacComNullableByRef<IXCLRDataTask> task)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetTaskByUniqueID(taskID, task) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        try
+        {
+            bool outputIsNull = task is null || task.IsNullRef;
+            IXCLRDataTask? legacyTask = null;
+            if (_legacyProcess is not null)
+            {
+                DacComNullableByRef<IXCLRDataTask> legacyTaskOut = new(isNullRef: outputIsNull);
+                hrLocal = _legacyProcess.GetTaskByUniqueID(taskID, legacyTaskOut);
+                legacyTask = legacyTaskOut.Interface;
+            }
+
+            // Native FindClrThreadByTaskId performs a linear scan of the ThreadStore,
+            // comparing each thread's managed thread id to (DWORD)taskID. IThread.IdToThread
+            // must not be used here: recycled IdDispenser slots can hold free-list integers
+            // rather than Thread pointers, so a dispenser lookup could resolve a bogus thread.
+            IThread threadContract = _target.Contracts.Thread;
+            TargetPointer thread = TargetPointer.Null;
+            TargetPointer current = threadContract.GetThreadStoreData().FirstThread;
+            while (current != TargetPointer.Null)
+            {
+                Contracts.ThreadData threadData = threadContract.GetThreadData(current);
+                if (threadData.Id == (uint)taskID)
+                {
+                    thread = current;
+                    break;
+                }
+                current = threadData.NextThread;
+            }
+
+            if (thread == TargetPointer.Null)
+                throw new ArgumentException();
+
+            if (outputIsNull)
+                throw new NullReferenceException();
+            DacComNullableByRef<IXCLRDataTask> taskOutput = task ?? throw new NullReferenceException();
+
+            taskOutput.Interface = new ClrDataTask(thread, _target, legacyTask);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.GetFlags(uint* flags)
         => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetFlags(flags) : HResults.E_NOTIMPL;
