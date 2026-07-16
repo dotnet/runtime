@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -316,8 +316,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherOneShotTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESContractTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESFactory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESFactory.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESProvider.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESProvider.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DesTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DesTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactoryTests.cs"
@@ -558,7 +558,8 @@
     <Compile Include="DefaultECDsaProvider.cs" />
     <Compile Include="DefaultECDsaTests.cs" />
     <Compile Include="DefaultRSAProvider.cs" />
-    <Compile Include="DESProvider.cs" />
+    <Compile Include="DefaultDESProvider.cs" />
+    <Compile Include="DESTestRegistration.Default.cs" />
     <Compile Include="DESTests.cs" />
     <Compile Include="DSACreateTests.cs" />
     <Compile Include="DSASignatureFormatterTests.cs" />
@@ -744,6 +745,9 @@
     <Compile Include="RC2CryptoServiceProviderProvider.cs" />
     <Compile Include="RC2TestRegistration.Csp.cs" />
     <Compile Include="RC2CryptoServiceProviderTests.cs" />
+    <Compile Include="DESCryptoServiceProviderProvider.cs" />
+    <Compile Include="DESTestRegistration.Csp.cs" />
+    <Compile Include="DESCryptoServiceProviderTests.cs" />
     <Compile Include="ShimHelpers.cs" />
     <Compile Include="TestData.Cng.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs"
@@ -891,6 +895,9 @@
     <Compile Include="RC2CryptoServiceProviderProvider.cs" />
     <Compile Include="RC2TestRegistration.Csp.cs" />
     <Compile Include="RC2CryptoServiceProviderTests.cs" />
+    <Compile Include="DESCryptoServiceProviderProvider.cs" />
+    <Compile Include="DESTestRegistration.Csp.cs" />
+    <Compile Include="DESCryptoServiceProviderTests.cs" />
     <Compile Include="ShimHelpers.cs" />
     <Compile Include="SlhDsaOpenSslConstructionTests.Unix.cs" />
     <Compile Include="SlhDsaOpenSslTests.cs" />

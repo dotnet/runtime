@@ -10,8 +10,10 @@ using Xunit;
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class DesContractTests
+    public abstract class DesContractTests
     {
+        protected abstract DESProvider DESFactory { get; }
+
         [Theory]
         [InlineData(0, true)]
         [InlineData(1, true)]
@@ -24,7 +26,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [InlineData(256, true)]
         [InlineData(128, true)]
         [InlineData(127, true)]
-        public static void InvalidCFBFeedbackSizes(int feedbackSize, bool discoverableInSetter)
+        public void InvalidCFBFeedbackSizes(int feedbackSize, bool discoverableInSetter)
         {
             using (DES des = DESFactory.Create())
             {
@@ -55,7 +57,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
 
         [Theory]
         [InlineData(8)]
-        public static void ValidCFBFeedbackSizes(int feedbackSize)
+        public void ValidCFBFeedbackSizes(int feedbackSize)
         {
             using (DES des = DESFactory.Create())
             {

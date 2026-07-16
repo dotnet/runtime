@@ -26,18 +26,10 @@
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
              Link="CommonTest\System\IO\PositionValueStream.cs" />
     <Compile Include="AesCryptoServiceProviderTests.cs" />
-    <Compile Include="DESCryptoServiceProviderProvider.cs" />
-    <Compile Include="DESCryptoServiceProviderTests.cs" />
     <Compile Include="MD5CryptoServiceProviderTests.cs" />
     <Compile Include="PasswordDeriveBytesTests.cs" />
     <Compile Include="RNGCryptoServiceProviderTests.cs" />
     <Compile Include="SHAxCryptoServiceProviderTests.cs" />
     <Compile Include="TripleDESCryptoServiceProviderTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESFactory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESFactory.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DesTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DesTests.cs" />
   </ItemGroup>
 </Project>
