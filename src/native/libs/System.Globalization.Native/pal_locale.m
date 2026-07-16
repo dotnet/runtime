@@ -69,7 +69,9 @@ static NSString* GetLocaleIdentifier(NSString *localeName, NSLocale *canonicalLo
 
     if (languageCode == nil ||
         canonicalLanguageCode == nil ||
-        [languageCode isEqualToString:canonicalLanguageCode])
+        localeIdentifier == nil ||
+        [languageCode isEqualToString:canonicalLanguageCode] ||
+        localeIdentifier.length < canonicalLanguageCode.length)
     {
         return localeIdentifier;
     }
