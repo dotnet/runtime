@@ -127,9 +127,9 @@ namespace {Namespace}
             _fld2 = TestLibrary.Vectors.GetRandomVector<{Op2BaseType}>();
             _falseFld = _fld2;
 
-            if (LargestVectorSize < Unsafe.SizeOf<Vector<{Op1BaseType}>>() ||
-                 LargestVectorSize < Unsafe.SizeOf<Vector<{Op2BaseType}>>() ||
-                 LargestVectorSize < Unsafe.SizeOf<Vector<{RetBaseType}>>())
+            if (LargestVectorSize < sizeof(Vector<{Op1BaseType}>) ||
+                 LargestVectorSize < sizeof(Vector<{Op2BaseType}>) ||
+                 LargestVectorSize < sizeof(Vector<{RetBaseType}>))
             {
                 throw new ArgumentException("Invalid value of LargestVectorSize");
             }

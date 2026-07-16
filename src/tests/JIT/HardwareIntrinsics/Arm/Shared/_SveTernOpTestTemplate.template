@@ -220,10 +220,10 @@ namespace {Namespace}
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2}; }
             for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = {NextValueOp3}; }
 
-            if (LargestVectorSize < Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() ||
-                 LargestVectorSize < Unsafe.SizeOf<{Op1VectorType}<{Op2BaseType}>>() ||
-                 LargestVectorSize < Unsafe.SizeOf<{Op1VectorType}<{Op3BaseType}>>() ||
-                 LargestVectorSize < Unsafe.SizeOf<{Op1VectorType}<{RetBaseType}>>())
+            if (LargestVectorSize < sizeof({Op1VectorType}<{Op1BaseType}>) ||
+                 LargestVectorSize < sizeof({Op1VectorType}<{Op2BaseType}>) ||
+                 LargestVectorSize < sizeof({Op1VectorType}<{Op3BaseType}>) ||
+                 LargestVectorSize < sizeof({Op1VectorType}<{RetBaseType}>))
             {
                 throw new ArgumentException("Invalid value of LargestVectorSize");
             }

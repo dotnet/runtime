@@ -170,8 +170,8 @@ namespace {Namespace}
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
 
-            if (LargestVectorSize < Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() ||
-                 LargestVectorSize < Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>())
+            if (LargestVectorSize < sizeof({Op1VectorType}<{Op1BaseType}>) ||
+                 LargestVectorSize < sizeof({RetVectorType}<{RetBaseType}>))
             {
                 throw new ArgumentException("Invalid value of LargestVectorSize");
             }
