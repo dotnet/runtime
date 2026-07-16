@@ -251,6 +251,47 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void Vector128GetWithElementTest()
+    {
+        var vi = Vector128.Create(10, 20, 30, 40);
+
+        // GetElement/WithElement with a constant index, and ToScalar (GetElement(0)).
+        Assert.Equal(10, vi.GetElement(0));
+        Assert.Equal(30, vi.GetElement(2));
+        Assert.Equal(10, vi.ToScalar());
+        Assert.Equal(Vector128.Create(10, 20, 99, 40), vi.WithElement(2, 99));
+
+        // Small elements must sign/zero-extend based on the element type.
+        var vsb = Vector128.Create((sbyte)-1, -2, -3, -4, -5, -6, -7, -8,
+                                   -9, -10, -11, -12, -13, -14, -15, -16);
+        Assert.Equal((sbyte)-3, vsb.GetElement(2));
+
+        var vb = Vector128.Create((byte)255, 1, 2, 3, 4, 5, 6, 7,
+                                  8, 9, 10, 11, 12, 13, 14, 15);
+        Assert.Equal((byte)255, vb.GetElement(0));
+
+        // 64-bit and floating-point lanes.
+        var vl = Vector128.Create(1L, 2L);
+        Assert.Equal(2L, vl.GetElement(1));
+        Assert.Equal(Vector128.Create(1L, 42L), vl.WithElement(1, 42L));
+
+        var vf = Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f);
+        Assert.Equal(3.0f, vf.GetElement(2));
+        Assert.Equal(Vector128.Create(1.0f, 2.0f, 7.0f, 4.0f), vf.WithElement(2, 7.0f));
+
+        var vd = Vector128.Create(1.0, 2.0);
+        Assert.Equal(2.0, vd.GetElement(1));
+        Assert.Equal(9.0, vd.WithElement(0, 9.0).ToScalar());
+
+        // A non-constant index exercises the jump-table fallback in codegen.
+        for (int i = 0; i < 4; i++)
+        {
+            Assert.Equal((i + 1) * 10, vi.GetElement(i));
+            Assert.Equal(7, vi.WithElement(i, 7).GetElement(i));
+        }
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);

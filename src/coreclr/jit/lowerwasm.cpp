@@ -866,6 +866,31 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_Vector_GetElement:
+        {
+            // GetElement(vector, index) maps directly to ExtractScalar(vector, imm).
+            node->ChangeHWIntrinsicId(NI_PackedSimd_ExtractScalar);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
+        case NI_Vector_ToScalar:
+        {
+            // ToScalar(vector) is GetElement(vector, 0), i.e. ExtractScalar(vector, 0).
+            GenTree* idx = m_compiler->gtNewIconNode(0);
+            BlockRange().InsertBefore(node, idx);
+            LowerNode(idx);
+
+            node->ResetHWIntrinsicId(NI_PackedSimd_ExtractScalar, m_compiler, node->Op(1), idx);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
+        case NI_Vector_WithElement:
+        {
+            // WithElement(vector, index, value) maps directly to ReplaceScalar(vector, imm, value).
+            node->ChangeHWIntrinsicId(NI_PackedSimd_ReplaceScalar);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
         case NI_PackedSimd_ExtractScalar:
         case NI_PackedSimd_ReplaceScalar:
         {

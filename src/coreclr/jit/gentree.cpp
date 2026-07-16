@@ -30004,7 +30004,9 @@ GenTree* Compiler::gtNewSimdWithElementNode(
 
     hwIntrinsicID = NI_AdvSimd_Insert;
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdWithElementNode");
+    // Keep the platform-neutral NI_Vector_WithElement so that constant folding
+    // (gtFoldExprHWIntrinsic) and value numbering apply; it is rewritten to
+    // NI_PackedSimd_ReplaceScalar during lowering.
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64

@@ -4104,11 +4104,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_GetElement
-            return nullptr;
-#endif
-
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();
 
@@ -5312,11 +5307,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_ToScalar - Need GetElement
-            return nullptr;
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdToScalarNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -5395,11 +5385,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_WithElement:
         {
             assert(sig->numArgs == 3);
-
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_WithElement
-            return nullptr;
-#endif
 
 #if defined(TARGET_X86)
             if (varTypeIsLong(simdBaseType))
