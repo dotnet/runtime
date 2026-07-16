@@ -32,15 +32,20 @@ void InitJITAllocationHelpers()
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, RhpNewPtrArrayFast);
 
-#if defined(FEATURE_2XPTR_ALIGNMENT) && (defined(TARGET_ARM) || defined(TARGET_WASM))
-            // These fast inline allocation stubs handle the alignment fixup themselves and only exist
-            // on 32-bit ARM/WASM. On 64-bit the align helpers keep their portable default backing
-            // (RhpNew / RhpNewVariableSizeObject), which route through RhpGcAlloc -> AllocateObject /
-            // AllocateSzArray and derive GC_ALLOC_ALIGN_2XPTR from the MethodTable, so alignment is honored
-            // without a dedicated stub.
+#if defined(FEATURE_2XPTR_ALIGNMENT)
+#if defined(TARGET_ARM) || defined(TARGET_WASM) || defined(TARGET_AMD64)
+            // These fast inline allocation stubs handle the alignment fixup themselves. On 32-bit
+            // ARM/WASM and on amd64 the scalar boxed/reference align helpers get an inline fast path;
+            // the array align helper only exists on ARM/WASM. Where a dedicated stub isn't installed
+            // the align helpers keep their portable default backing (RhpNew / RhpNewVariableSizeObject),
+            // which route through RhpGcAlloc -> AllocateObject / AllocateSzArray and derive
+            // GC_ALLOC_ALIGN_2XPTR from the MethodTable, so alignment is honored without a stub.
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN_2XPTR, RhpNewFastAlign2xPtr);
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_VC, RhpNewFastMisalign);
+#if defined(TARGET_ARM) || defined(TARGET_WASM)
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN_2XPTR, RhpNewArrayFastAlign2xPtr);
+#endif
+#endif
 #endif
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString), ECall::FastAllocateString);
