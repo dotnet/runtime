@@ -15,6 +15,7 @@ namespace System.Numerics
           IComparable<Decimal32>,
           IEquatable<Decimal32>,
           IFloatingPointConstants<Decimal32>,
+          INumber<Decimal32>,
           INumberBase<Decimal32>,
           ISignedNumber<Decimal32>,
           ISpanFormattable,

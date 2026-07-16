@@ -13,6 +13,7 @@ namespace System.Numerics
           IComparable<Decimal64>,
           IEquatable<Decimal64>,
           IFloatingPointConstants<Decimal64>,
+          INumber<Decimal64>,
           INumberBase<Decimal64>,
           ISignedNumber<Decimal64>,
           ISpanFormattable,
