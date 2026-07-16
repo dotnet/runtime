@@ -65,6 +65,18 @@ namespace System.Security.Cryptography.X509Certificates
         private const int EventId_CrlCacheInMemoryMiss = 51;
         private const int EventId_CrlCacheInMemoryPruned = 52;
         private const int EventId_CrlCacheInMemoryFull = 53;
+        private const int EventId_HttpCacheQuery = 54;
+        private const int EventId_HttpCacheHitFinished = 55;
+        private const int EventId_HttpCacheHitInProgress = 56;
+        private const int EventId_HttpCacheMiss = 57;
+        private const int EventId_HttpCacheFull = 58;
+        private const int EventId_HttpCacheExplicitRemoval = 59;
+        private const int EventId_HttpCacheTimeout = 60;
+        private const int EventId_HttpCacheHitIgnored = 61;
+        private const int EventId_HttpCacheBackgroundRefresh = 62;
+        private const int EventId_HttpCacheBackgroundFailure = 63;
+        private const int EventId_HttpCacheBackgroundSuccess = 64;
+        private const int EventId_HttpCachePruned = 65;
 
         private static string GetCertificateSubject(SafeX509Handle certHandle)
         {
@@ -815,6 +827,150 @@ namespace System.Security.Cryptography.X509Certificates
             if (IsEnabled())
             {
                 WriteEvent(EventId_CrlCacheInMemoryFull, cacheFileName);
+            }
+        }
+
+        [Event(
+            EventId_HttpCacheQuery,
+            Level = EventLevel.Verbose,
+            Message = "Checking the in-memory HTTP cache for '{0}'.")]
+        internal void HttpCacheQuery(string url)
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_HttpCacheQuery, url);
+            }
+        }
+
+        [Event(
+            EventId_HttpCacheHitFinished,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory HTTP cache has a completed entry for the requested URL, {0} byte(s).")]
+        internal void HttpCacheHitFinished(int responseLength)
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_HttpCacheHitFinished, responseLength);
+            }
+        }
+
+        [Event(
+            EventId_HttpCacheHitInProgress,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory HTTP cache has an entry in progress for the requested URL, attaching to it.")]
+        internal void HttpCacheHitInProgress()
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_HttpCacheHitInProgress);
+            }
+        }
+
+        [Event(
+            EventId_HttpCacheHitIgnored,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory cached HTTP response indicates failure, retrying.")]
+        internal void HttpCacheHitIgnored()
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_HttpCacheHitIgnored);
+            }
+        }
+
+        [Event(
+            EventId_HttpCacheFull,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory HTTP cache is full, dismissing '{0}'.")]
+        internal void HttpCacheFull(string uri)
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_HttpCacheFull, uri);
+            }
+        }
+
+        [Event(
+            EventId_HttpCacheMiss,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory HTTP cache has no entry for the requested URL.")]
+        internal void HttpCacheMiss()
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_HttpCacheMiss);
+            }
+        }
+
+        [Event(
+            EventId_HttpCacheBackgroundRefresh,
+            Level = EventLevel.Verbose,
+            Message = "The cached URL was cached {0} seconds ago, initiating background refresh.")]
+        internal void HttpCacheBackgroundRefresh(int ageInSeconds)
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_HttpCacheBackgroundRefresh, ageInSeconds);
+            }
+        }
+
+        [Event(
+            EventId_HttpCacheBackgroundFailure,
+            Level = EventLevel.Verbose,
+            Message = "The background refresh for '{0}' failed, leaving existing entry intact.")]
+        internal void HttpCacheBackgroundFailure(string url)
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_HttpCacheBackgroundFailure, url);
+            }
+        }
+
+        [Event(
+            EventId_HttpCacheBackgroundSuccess,
+            Level = EventLevel.Verbose,
+            Message = "The background refresh for '{0}' succeeded, updated cache.")]
+        internal void HttpCacheBackgroundSuccess(string url)
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_HttpCacheBackgroundSuccess, url);
+            }
+        }
+
+        [Event(
+            EventId_HttpCachePruned,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory HTTP cache was pruned. {0} entries removed, {1} entries remain.")]
+        internal void HttpCachePruned(int prunedCount, int remainingCount)
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_HttpCachePruned, prunedCount, remainingCount);
+            }
+        }
+
+        [Event(
+            EventId_HttpCacheExplicitRemoval,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory HTTP cache entry for '{0}' was explicitly removed.")]
+        internal void HttpCacheExplicitRemoval(string url)
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_HttpCacheExplicitRemoval, url);
+            }
+        }
+
+        [Event(
+            EventId_HttpCacheTimeout,
+            Level = EventLevel.Verbose,
+            Message = "The in-memory HTTP cache had a request that did not complete within the specified timeout.")]
+        internal void HttpCacheTimeout()
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(EventId_HttpCacheTimeout);
             }
         }
     }
