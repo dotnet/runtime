@@ -12,6 +12,7 @@ namespace System.Numerics
         : IComparable,
           IComparable<Decimal64>,
           IEquatable<Decimal64>,
+          IFloatingPointConstants<Decimal64>,
           INumberBase<Decimal64>,
           ISpanFormattable,
           ISpanParsable<Decimal64>,

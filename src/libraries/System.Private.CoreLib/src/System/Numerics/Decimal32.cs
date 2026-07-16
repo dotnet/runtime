@@ -14,6 +14,7 @@ namespace System.Numerics
         : IComparable,
           IComparable<Decimal32>,
           IEquatable<Decimal32>,
+          IFloatingPointConstants<Decimal32>,
           INumberBase<Decimal32>,
           ISpanFormattable,
           ISpanParsable<Decimal32>,
