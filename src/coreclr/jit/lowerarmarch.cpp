@@ -4070,7 +4070,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 // Handle op3
-                if (op3->IsSelectZero() && op2->IsEmbMaskOp())
+                if (op3->IsZeroForSelect() && op2->IsEmbMaskOp())
                 {
                     // When we are merging with zero, we can specialize and avoid instantiating the vector constant.
                     switch (op2->AsHWIntrinsic()->GetHWIntrinsicId())
@@ -4228,7 +4228,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 
             if (nestedOp1->IsTrueMask(cndSelNode->GetSimdBaseType()) &&
                 !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
-                (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsSelectZero()))
+                (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsZeroForSelect()))
             {
                 GenTree* nestedOp2 = nestedCndSel->Op(2);
                 GenTree* nestedOp3 = nestedCndSel->Op(3);

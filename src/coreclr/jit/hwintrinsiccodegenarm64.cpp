@@ -421,7 +421,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
             // targetReg != falseReg: Move falseReg into targetReg.
             if (falseOp->isContained())
             {
-                assert(falseOp->IsSelectZero());
+                assert(falseOp->IsZeroForSelect());
                 if (maskOp->IsTrueMask(intrinCndSel.baseType))
                 {
                     // If maskOp is all-true, no need to move falseReg to targetReg
@@ -459,7 +459,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
             {
                 embOpt = INS_OPTS_SCALABLE_B;
                 // This instruction is zeroing predicated, just use unpredicated mov.
-                assert(falseOp->IsSelectZero());
+                assert(falseOp->IsZeroForSelect());
                 GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, embMaskOp2Reg,
                                                  embOpt, sopt);
                 return;
@@ -570,7 +570,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
         else if (isOptionalEmbMask)
         {
             if (maskOp->IsTrueMask(intrinEmbMask.baseType) ||
-                (!falseOp->IsSelectZero() && (targetReg != falseReg) && (falseReg != embMaskOp1Reg)))
+                (!falseOp->IsZeroForSelect() && (targetReg != falseReg) && (falseReg != embMaskOp1Reg)))
             {
                 // If the embedded instruction supports optional mask operation, and when movprfx is not needed,
                 // use the "unpredicated" version of the instruction.
@@ -691,7 +691,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
 
     // Determine the move option, based on the register usage.
     insSveMovOpts mopt = INS_SVE_MOV_OPTS_UNPRED;
-    if (falseOp->IsSelectZero())
+    if (falseOp->IsZeroForSelect())
     {
         // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
         // destination using /Z.
@@ -1154,7 +1154,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // This handles optimizations for instructions that have
                     // an implicit 'zero' vector of what would be the second operand.
                     if (HWIntrinsicInfo::SupportsContainment(intrin.id) && intrin.op2->isContained() &&
-                        intrin.op2->IsSelectZero())
+                        intrin.op2->IsZeroForSelect())
                     {
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     }
