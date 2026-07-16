@@ -1032,6 +1032,22 @@ Changes to signatures:
   - Managed pointers which point at the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
   - Null managed pointers are permitted to be dereferenced resulting in a `NullReferenceException`.
 
+### III.1.7.7
+Add a new section "III.1.7.7 Opt-in restrictions" under section "III.1.7 Restrictions on CIL code sequences":
+
+Applying the custom attribute `System.Runtime.CompilerServices.RefSafetyRulesAttribute` on an assembly opts the assembly into further restrictions based on the encoded version specified in the attribute. These restrictions permit an optimizing compiler to further optimize certain code patterns.
+
+Languages may define more rules based on this attribute, but for the purpose of defining valid IL only the following restrictions must be satisfied.
+
+#### III.1.7.7.1 (Version 11 and above) Escaping `this` from value type instance methods
+A pointer value is said to escape when it becomes accessible outside the given scope. A pointer escapes if the pointer itself, or pointer value derived from it (for example, by applying a field offset), is stored, returned, or otherwise propagated such that code executing outside the given scope can access it.
+ 
+Valid IL shall ensure that the `this` argument of an instance method on a value type does not escape the method unless at least one of the following conditions holds:
+- The method is annotated with `System.Diagnostics.CodeAnalysis.UnscopedRefAttribute`.
+- The value type instance resides in unmanaged memory, stack-allocated storage or pinned GC heap storage.
+
+This restriction permits an optimizing compiler to eliminate boxing of value types when it is safe to do so.
+
 ## <a name="byreflike-generics"></a> ByRefLike types in generics
 
 ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required. See [ref struct Generic Parameters](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-13.0/ref-struct-interfaces.md#ref-struct-generic-parameters) for C# language counterpart.
