@@ -7797,6 +7797,7 @@ bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
     EX_CATCH
     {
         result = false;
+        RethrowTerminalExceptions();
     }
     EX_END_CATCH
 
