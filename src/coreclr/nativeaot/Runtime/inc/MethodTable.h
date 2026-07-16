@@ -171,7 +171,7 @@ private:
         // This MethodTable is for a Byref-like class (TypedReference, Span<T>, ...)
         IsByRefLikeFlag = 0x0010,
 
-        // This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
+        // This type requires 2 * pointer-size (8-byte) alignment for its fields on certain platforms (ARM32, WASM)
         RequiresAlign2xPtrFlag = 0x1000
     };
 

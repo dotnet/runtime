@@ -5102,7 +5102,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
     return hr;
 }
 
-// returns TRUE if the type requires 8-byte alignment
+// returns TRUE if the type requires 2 * pointer-size alignment
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::RequiresAlign2xPtr(VMPTR_TypeHandle thExact, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;

@@ -108,7 +108,7 @@ namespace
 #ifdef FEATURE_2XPTR_ALIGNMENT
             if (pNestedType.RequiresAlign2xPtr())
             {
-                placementInfo.m_alignment = max((UINT32)(2 * TARGET_POINTER_SIZE), placementInfo.m_alignment);
+                placementInfo.m_alignment = max((UINT32)(2 * DATA_ALIGNMENT), placementInfo.m_alignment);
             }
 #endif // FEATURE_2XPTR_ALIGNMENT
         }
@@ -465,7 +465,7 @@ auto EEClassLayoutInfo::GetNestedFieldFlags(Module* pModule, FieldDesc *pFields,
         // with explicit layout such as Int128/UInt128/Vector128; nested aggregates that merely wrap
         // such a field are caught by the IsAlign2xPtrCandidate propagation above.
         if (!typeHandleMaybe.IsNull()
-            && (size_t)typeHandleMaybe.GetMethodTable()->GetFieldAlignmentRequirement() >= (2 * sizeof(void*)))
+            && (size_t)typeHandleMaybe.GetMethodTable()->GetFieldAlignmentRequirement() >= (2 * DATA_ALIGNMENT))
         {
             flags |= NestedFieldFlags::Align2xPtr;
         }
