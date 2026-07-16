@@ -4561,11 +4561,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_Narrow
-            return nullptr;
-#endif
-
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 

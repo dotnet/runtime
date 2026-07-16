@@ -26571,8 +26571,10 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 
     assert(varTypeIsArithmetic(simdBaseType) && !varTypeIsLong(simdBaseType));
 
+#if !defined(TARGET_WASM)
     GenTree* tmp1;
     GenTree* tmp2;
+#endif
 
 #if defined(TARGET_XARCH)
     GenTree* tmp3;
@@ -27005,10 +27007,38 @@ GenTree* Compiler::gtNewSimdNarrowNode(
         return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_ExtractNarrowingLower, simdBaseType, simdSize);
     }
 #elif defined(TARGET_WASM)
-    tmp1 = nullptr;
-    tmp2 = nullptr;
-    NYI_WASM_SIMD("gtNewSimdNarrowNode");
-    return nullptr;
+    if (varTypeIsFloating(simdBaseType))
+    {
+        assert(simdBaseType == TYP_FLOAT);
+
+        // WASM's f32x4.demote_f64x2_zero narrows each double vector to [f, f, 0, 0], so demote both
+        // operands and interleave their low pairs into a single result.
+        GenTree* lower = gtNewSimdHWIntrinsicNode(type, op1, NI_PackedSimd_ConvertToSingle, TYP_DOUBLE, simdSize);
+        GenTree* upper = gtNewSimdHWIntrinsicNode(type, op2, NI_PackedSimd_ConvertToSingle, TYP_DOUBLE, simdSize);
+
+        uint32_t selectors[4] = {0, 1, 4, 5};
+        return gtNewSimdWasmTwoSourceShuffleNode(type, lower, upper, selectors, TYP_FLOAT, simdSize);
+    }
+
+    // Integer narrowing truncates each wide element to its low bytes. Gather those low bytes from
+    // both operands with a byte-granularity two-source shuffle.
+    uint32_t narrowSize = genTypeSize(simdBaseType);
+    uint32_t wideSize   = narrowSize * 2;
+    uint32_t wideCount  = simdSize / wideSize;
+
+    uint32_t selectors[16];
+
+    for (uint32_t index = 0; index < simdSize; index++)
+    {
+        uint32_t narrowElem = index / narrowSize;
+        uint32_t byteInElem = index % narrowSize;
+        uint32_t srcElem    = (narrowElem < wideCount) ? narrowElem : (narrowElem - wideCount);
+        uint32_t srcBase    = (narrowElem < wideCount) ? 0 : simdSize;
+
+        selectors[index] = srcBase + (srcElem * wideSize) + byteInElem;
+    }
+
+    return gtNewSimdWasmTwoSourceShuffleNode(type, op1, op2, selectors, TYP_UBYTE, simdSize);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64

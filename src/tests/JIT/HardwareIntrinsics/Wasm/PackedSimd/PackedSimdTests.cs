@@ -667,6 +667,29 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void NarrowTest()
+    {
+        // Opaque operands force the narrowing builder (byte-granularity shuffle for integers,
+        // demote + shuffle for double->float) rather than constant folding.
+
+        Vector128<short> sh1 = Opaque(Vector128.Create((short)0x0100, 0x0302, 0x0504, 0x0706, 0x0908, 0x0B0A, 0x0D0C, 0x0F0E));
+        Vector128<short> sh2 = Opaque(Vector128.Create(unchecked((short)0x1110), 0x1312, 0x1514, 0x1716, 0x1918, 0x1B1A, 0x1D1C, 0x1F1E));
+        Assert.Equal(Vector128.Create((byte)0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0x10, 0x12, 0x14, 0x16, 0x18, 0x1A, 0x1C, 0x1E), Vector128.Narrow(sh1, sh2));
+
+        Vector128<int> i1 = Opaque(Vector128.Create(0x00030002, 0x00050004, 0x00070006, 0x00090008));
+        Vector128<int> i2 = Opaque(Vector128.Create(0x000B000A, 0x000D000C, 0x000F000E, 0x00110010));
+        Assert.Equal(Vector128.Create((short)2, 4, 6, 8, 10, 12, 14, 16), Vector128.Narrow(i1, i2));
+
+        Vector128<long> l1 = Opaque(Vector128.Create(0x0000000200000001L, 0x0000000400000003L));
+        Vector128<long> l2 = Opaque(Vector128.Create(0x0000000600000005L, 0x0000000800000007L));
+        Assert.Equal(Vector128.Create(1, 3, 5, 7), Vector128.Narrow(l1, l2));
+
+        Vector128<double> d1 = Opaque(Vector128.Create(1.5, 2.5));
+        Vector128<double> d2 = Opaque(Vector128.Create(3.5, 4.5));
+        Assert.Equal(Vector128.Create(1.5f, 2.5f, 3.5f, 4.5f), Vector128.Narrow(d1, d2));
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);
