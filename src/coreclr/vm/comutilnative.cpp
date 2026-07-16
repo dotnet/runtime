@@ -788,11 +788,8 @@ extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHan
         funcPtr = pMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        // On portable-entrypoint (wasm) targets, RunFinalizers invokes the finalizer via a typed
-        // call_indirect, so the slot's portable entry point must resolve to real code (native R2R
-        // code or a correctly-typed interpreter thunk) rather than the temporary precode. The normal
-        // R2R method-entry fixups perform this for direct calls, but the finalizer slot is fetched
-        // directly here and so must be made callable explicitly, mirroring CallClassConstructor.
+        // RunFinalizers invokes the finalizer via the function pointer, so its portable entrypoint must
+        // resolve to real code if possible.
         MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(funcPtr);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
