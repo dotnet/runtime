@@ -238,14 +238,14 @@ int main(int argc, char* argv[])
         GlobalizationNative_LoadICUData(icu_data_path.c_str());
     }
 
-    int exit_code = 0;
+    unsigned int exit_code = 0;
     result = coreclr_execute_assembly(
         host_handle,
         domain_id,
         (int)entry_argv.size(),
         entry_argv.data(),
         entry_assembly.c_str(),
-        (unsigned int*)&exit_code);
+        &exit_code);
     if (result < 0)
     {
         std::fprintf(stderr, "coreclr_execute_assembly failed - Error: 0x%08x\n", result);
