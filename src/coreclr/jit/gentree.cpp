@@ -30160,8 +30160,23 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, var_typ
 #elif defined(TARGET_WASM)
     if (varTypeIsFloating(simdBaseType))
     {
-        NYI_WASM_SIMD("gtNewSimdWidenUpperNode");
-        return nullptr;
+        assert(simdBaseType == TYP_FLOAT);
+
+        // WASM only has f64x2.promote_low_f32x4, so move the upper two floats into the low lanes
+        // with a shuffle and then promote them; the resulting upper lanes are unused by the promote.
+        var_types      indexType = getIndexTypeForShuffle(simdBaseType);
+        uint32_t       simdCount = getSIMDVectorLength(simdSize, simdBaseType);
+        GenTreeVecCon* indices   = gtNewVconNode(type);
+
+        for (uint32_t index = 0; index < simdCount; index++)
+        {
+            indices->SetElementIntegral(indexType, index, (simdCount / 2) + (index % (simdCount / 2)));
+        }
+
+        assert(IsValidForShuffle(indices, simdSize, simdBaseType, nullptr, false));
+
+        op1 = gtNewSimdShuffleNode(type, op1, indices, simdBaseType, simdSize, false);
+        return gtNewSimdHWIntrinsicNode(type, op1, NI_PackedSimd_ConvertToDoubleLower, simdBaseType, simdSize);
     }
     else if (varTypeIsSigned(simdBaseType))
     {

@@ -643,6 +643,30 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void WidenTest()
+    {
+        // Opaque operands force the widening intrinsics rather than constant folding. The float
+        // WidenUpper is the newly-enabled case (shuffle + promote); the integer forms exercise the
+        // sign/zero-extend widening instructions.
+
+        Vector128<float> f = Opaque(Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f));
+        Assert.Equal(Vector128.Create(1.0, 2.0), Vector128.WidenLower(f));
+        Assert.Equal(Vector128.Create(3.0, 4.0), Vector128.WidenUpper(f));
+
+        Vector128<int> i = Opaque(Vector128.Create(-1, 2, -3, 4));
+        Assert.Equal(Vector128.Create(-1L, 2L), Vector128.WidenLower(i));
+        Assert.Equal(Vector128.Create(-3L, 4L), Vector128.WidenUpper(i));
+
+        Vector128<short> s = Opaque(Vector128.Create((short)-1, 2, -3, 4, -5, 6, -7, 8));
+        Assert.Equal(Vector128.Create(-1, 2, -3, 4), Vector128.WidenLower(s));
+        Assert.Equal(Vector128.Create(-5, 6, -7, 8), Vector128.WidenUpper(s));
+
+        Vector128<byte> b = Opaque(Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+        Assert.Equal(Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8), Vector128.WidenLower(b));
+        Assert.Equal(Vector128.Create((ushort)9, 10, 11, 12, 13, 14, 15, 16), Vector128.WidenUpper(b));
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);

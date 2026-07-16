@@ -5305,14 +5305,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_WASM)
-            if (simdBaseType == TYP_FLOAT)
-            {
-                // TODO-WASM-SIMD - Implement NI_Vector_WidenUpper(float) - Need Shuffle
-                return nullptr;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdWidenUpperNode(retType, op1, simdBaseType, simdSize);
             break;
