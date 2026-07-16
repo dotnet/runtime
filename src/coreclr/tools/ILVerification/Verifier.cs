@@ -233,6 +233,7 @@ namespace ILVerify
                 {
                     Code = VerifierError.BadTypeSpec,
                     Method = methodHandle,
+                    ErrorArguments = Array.Empty<ErrorArgument>(),
                     Message = _stringResourceManager.Value.GetString(nameof(VerifierError.BadTypeSpec), CultureInfo.InvariantCulture)
                 });
             }
@@ -313,6 +314,7 @@ namespace ILVerify
                 {
                     Code = VerifierError.BadTypeSpec,
                     Type = typeHandle,
+                    ErrorArguments = Array.Empty<ErrorArgument>(),
                     Message = $"[MD]: Error: {_stringResourceManager.Value.GetString(nameof(VerifierError.BadTypeSpec), CultureInfo.InvariantCulture)}"
                 });
             }
