@@ -631,19 +631,19 @@ namespace Internal.JitInterface
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFast"u8));
                 case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_FINALIZE:
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFinalizable"u8));
-                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFastAlign8"u8));
-                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFinalizableAlign8"u8));
-                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_VC:
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN_2XPTR:
+                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFastAlign2xPtr"u8));
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_FINALIZE:
+                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFinalizableAlign2xPtr"u8));
+                case CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_VC:
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewFastMisalign"u8));
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_PTR:
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewPtrArrayFast"u8));
-                case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN8:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewArrayFastAlign8"u8));
+                case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN_2XPTR:
+                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewArrayFastAlign2xPtr"u8));
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC:
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpNewArrayFast"u8));
 
@@ -1142,15 +1142,15 @@ namespace Internal.JitInterface
 
             pHasSideEffects = type.HasFinalizer;
 
-            if (type.RequiresAlign8())
+            if (type.RequiresAlign2xPtr())
             {
                 if (type.HasFinalizer)
-                    return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE;
+                    return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_FINALIZE;
 
                 if (type.IsValueType)
-                    return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8_VC;
+                    return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_VC;
 
-                return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN8;
+                return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST_ALIGN_2XPTR;
             }
 
             if (type.HasFinalizer)
@@ -1170,8 +1170,8 @@ namespace Internal.JitInterface
             if (elementType.GetElementSize().AsInt == _compilation.TypeSystemContext.Target.PointerSize)
                 return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_PTR;
 
-            if (type.RequiresAlign8())
-                return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN8;
+            if (type.RequiresAlign2xPtr())
+                return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN_2XPTR;
 
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC;
         }

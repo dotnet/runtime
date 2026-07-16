@@ -1294,7 +1294,7 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
             case CORINFO_HELP_NEWARR_1_VC:
             case CORINFO_HELP_NEWARR_1_PTR:
             case CORINFO_HELP_NEWARR_1_DIRECT:
-            case CORINFO_HELP_NEWARR_1_ALIGN8:
+            case CORINFO_HELP_NEWARR_1_ALIGN_2XPTR:
             {
                 if ((call->gtArgs.CountUserArgs() == 2) && call->gtArgs.GetUserArgByIndex(1)->GetNode()->IsCnsIntOrI())
                 {
@@ -1778,11 +1778,11 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     assert(newArr->GetHelperNum() != CORINFO_HELP_NEWARR_1_MAYBEFROZEN);
 
     const bool         shortLifetime = false;
-    const bool         alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
+    const bool         alignTo2xPtr  = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN_2XPTR;
     const unsigned int lclNum        = m_compiler->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
     LclVarDsc* const   lclDsc        = m_compiler->lvaGetDesc(lclNum);
 
-    if (alignTo8)
+    if (alignTo2xPtr)
     {
         blockSize = AlignUp(blockSize, 8);
     }
@@ -1814,7 +1814,7 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     }
 
 #ifndef TARGET_64BIT
-    lclDsc->lvStructDoubleAlign = alignTo8;
+    lclDsc->lvStructDoubleAlign = alignTo2xPtr;
 #endif
 
     // Mark the newarr call as being "on stack", and add the address

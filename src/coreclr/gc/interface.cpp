@@ -1435,7 +1435,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
 #endif //STRESS_HEAP && !FEATURE_NATIVEAOT
 }
 
-Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags)
+Object* AllocAlign2xPtr(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags)
 {
     CONTRACTL {
         NOTHROW;
@@ -1444,10 +1444,13 @@ Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t 
 
     Object* newAlloc = NULL;
 
-    // Depending on where in the object the payload requiring 8-byte alignment resides we might have to
-    // align the object header on an 8-byte boundary or midway between two such boundaries. The unaligned
-    // case is indicated to the GC via the GC_ALLOC_ALIGN8_BIAS flag.
-    size_t desiredAlignment = (flags & GC_ALLOC_ALIGN8_BIAS) ? 4 : 0;
+    // The alignment we guarantee here is twice the natural (pointer) alignment: 8 bytes on 32-bit,
+    // 16 bytes on 64-bit. Depending on where in the object the payload requiring that alignment
+    // resides we might have to align the object header on such a boundary or midway between two of
+    // them. The unaligned (biased) case is indicated via the GC_ALLOC_ALIGN_2XPTR_BIAS flag; the bias is
+    // exactly one pointer (the object header), i.e. DATA_ALIGNMENT.
+    const size_t alignmentMask = 2 * DATA_ALIGNMENT - 1;
+    size_t desiredAlignment = (flags & GC_ALLOC_ALIGN_2XPTR_BIAS) ? DATA_ALIGNMENT : 0;
 
     // Retrieve the address of the next allocation from the context (note that we're inside the alloc
     // lock at this point).
@@ -1455,11 +1458,11 @@ Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t 
 
     // Will an allocation at this point yield the correct alignment and fit into the remainder of the
     // context?
-    if ((((size_t)result & 7) == desiredAlignment) && ((result + size) <= acontext->alloc_limit))
+    if ((((size_t)result & alignmentMask) == desiredAlignment) && ((result + size) <= acontext->alloc_limit))
     {
         // Yes, we can just go ahead and make the allocation.
         newAlloc = (Object*) hp->allocate (size, acontext, flags);
-        ASSERT(((size_t)newAlloc & 7) == desiredAlignment);
+        ASSERT(((size_t)newAlloc & alignmentMask) == desiredAlignment);
     }
     else
     {
@@ -1470,11 +1473,11 @@ Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t 
         //
         // We allocate both together then decide based on the result whether we'll format the space as
         // free object + real object or real object + free object.
-        ASSERT((Align(min_obj_size) & 7) == 4);
+        ASSERT((Align(min_obj_size) & alignmentMask) == DATA_ALIGNMENT);
         CObjectHeader *freeobj = (CObjectHeader*) hp->allocate (Align(size) + Align(min_obj_size), acontext, flags);
         if (freeobj)
         {
-            if (((size_t)freeobj & 7) == desiredAlignment)
+            if (((size_t)freeobj & alignmentMask) == desiredAlignment)
             {
                 // New allocation has desired alignment, return this one and place the free object at the
                 // end of the allocated space.
@@ -1486,7 +1489,7 @@ Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t 
                 // New allocation is still mis-aligned, format the initial space as a free object and the
                 // rest of the space should be correctly aligned for the real object.
                 newAlloc = (Object*)((uint8_t*)freeobj + Align(min_obj_size));
-                ASSERT(((size_t)newAlloc & 7) == desiredAlignment);
+                ASSERT(((size_t)newAlloc & alignmentMask) == desiredAlignment);
                 if (flags & GC_ALLOC_ZEROING_OPTIONAL)
                 {
                     // clean the syncblock of the aligned object.
@@ -1532,7 +1535,7 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         // support mis-aligned object headers so we can't support biased headers. Luckily for us
         // we've managed to arrange things so the only case where we see a bias is for boxed value types and
         // these can never get large enough to be allocated on the LOH.
-        ASSERT((flags & GC_ALLOC_ALIGN8_BIAS) == 0);
+        ASSERT((flags & GC_ALLOC_ALIGN_2XPTR_BIAS) == 0);
         ASSERT(65536 < loh_size_threshold);
 
         int gen_num = (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? poh_generation : loh_generation;
@@ -1554,9 +1557,9 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
     }
     else
     {
-        if (flags & GC_ALLOC_ALIGN8)
+        if (flags & GC_ALLOC_ALIGN_2XPTR)
         {
-            newAlloc = AllocAlign8 (acontext, hp, size, flags);
+            newAlloc = AllocAlign2xPtr (acontext, hp, size, flags);
         }
         else
         {

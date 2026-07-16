@@ -178,10 +178,10 @@ inline void FATAL_GC_ERROR()
 // turned on.
 #define FEATURE_LOH_COMPACTION
 
-#ifdef FEATURE_64BIT_ALIGNMENT
+#ifdef FEATURE_2XPTR_ALIGNMENT
 // We need the following feature as part of keeping 64-bit types aligned in the GC heap.
 #define RESPECT_LARGE_ALIGNMENT //Preserve double alignment of objects during relocation
-#endif //FEATURE_64BIT_ALIGNMENT
+#endif //FEATURE_2XPTR_ALIGNMENT
 
 #define SHORT_PLUGS //used to keep ephemeral plugs short so they fit better into the oldest generation free items
 
@@ -1533,7 +1533,7 @@ class gc_heap
     friend struct ::alloc_context;
     friend void ProfScanRootsHelper(Object** object, ScanContext *pSC, uint32_t dwFlags);
     friend void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw);
-    friend Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags);
+    friend Object* AllocAlign2xPtr(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags);
     friend class t_join;
     friend class gc_mechanisms;
     friend class seg_free_spaces;

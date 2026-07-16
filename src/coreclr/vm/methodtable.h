@@ -2006,19 +2006,19 @@ public:
         SetFlag(enum_flag_ContainsGCPointers);
     }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-    inline bool RequiresAlign8()
+#ifdef FEATURE_2XPTR_ALIGNMENT
+    inline bool RequiresAlign2xPtr()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return !!GetFlag(enum_flag_RequiresAlign8);
+        return !!GetFlag(enum_flag_RequiresAlign2xPtr);
     }
 
-    inline void SetRequiresAlign8()
+    inline void SetRequiresAlign2xPtr()
     {
         LIMITED_METHOD_CONTRACT;
-        SetFlag(enum_flag_RequiresAlign8);
+        SetFlag(enum_flag_RequiresAlign2xPtr);
     }
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
     //-------------------------------------------------------------------
     // FIELD DESCRIPTORS
@@ -2101,10 +2101,10 @@ public:
     }
 #endif
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-    // Returns true iff the native view of this type requires 64-bit alignment.
-    bool NativeRequiresAlign8();
-#endif // FEATURE_64BIT_ALIGNMENT
+#ifdef FEATURE_2XPTR_ALIGNMENT
+    // Returns true iff the native view of this type requires 2 * pointer-size alignment.
+    bool NativeRequiresAlign2xPtr();
+#endif // FEATURE_2XPTR_ALIGNMENT
 
     //-------------------------------------------------------------------
     // PARENT INTERFACES
@@ -3829,8 +3829,8 @@ private:
         enum_flag_Collectible                 = 0x00200000, // GC depends on this bit. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         // enum_flag_unused                   = 0x00400000,
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-        enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly) [cDAC] [RuntimeTypeSystem]: Contract depends on this value
+#ifdef FEATURE_2XPTR_ALIGNMENT
+        enum_flag_RequiresAlign2xPtr          = 0x00800000, // Type requires 2 * pointer-size alignment (only set on platforms that require this and don't get it implicitly) [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 #endif
 
         enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references. [cDAC] [RuntimeTypeSystem]: Contract depends on this value

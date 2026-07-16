@@ -78,7 +78,7 @@ partial interface IRuntimeTypeSystem : IContract
     // src/coreclr/vm/class.cpp.
     public virtual bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
-    public virtual bool RequiresAlign8(TypeHandle typeHandle);
+    public virtual bool RequiresAlign2xPtr(TypeHandle typeHandle);
     // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
     // (used to decide how a struct is passed in registers), or false if the type has no such
     // classification (not applicable, or the runtime was not built with UNIX_AMD64_ABI).
@@ -369,7 +369,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000,
-        RequiresAlign8 = 0x00800000,
+        RequiresAlign2xPtr = 0x00800000,
         ContainsGCPointers = 0x01000000,
         IsTrackedReferenceWithFinalizer = 0x04000000,
         ContainsGenericVariables = 0x20000000,
@@ -418,7 +418,7 @@ internal partial struct RuntimeTypeSystem_1
         public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
-        public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
+        public bool RequiresAlign2xPtr => GetFlag(WFLAGS_HIGH.RequiresAlign2xPtr) != 0;
         public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
         public bool IsIntrinsicType => GetFlag(WFLAGS2_ENUM.IsIntrinsicType) != 0;
@@ -730,7 +730,7 @@ Contracts used:
     //   TryGetHFAElementSize(th):
     //       if targetArch is not ARM/ARM64:               return false
     //       if !th.Flags.IsHFA:                           return false
-    //       if targetArch is ARM:                         return (true, th.Flags.RequiresAlign8 ? 8 : 4)
+    //       if targetArch is ARM:                         return (true, th.Flags.RequiresAlign2xPtr ? 8 : 4)
     //       mt = th
     //       loop (bounded depth):
     //           if (elem = GetVectorHFAElementSize(mt)):  return (true, elem)
@@ -754,7 +754,7 @@ Contracts used:
     //       return elem
     public bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize) { ... }
 
-    public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+    public bool RequiresAlign2xPtr(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign2xPtr;
 
     public bool IsCanonicalMethodTable(TypeHandle typeHandle)
         => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].IsCanonMT;

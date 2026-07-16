@@ -1172,8 +1172,8 @@ FCIMPL1(Object*, RuntimeTypeHandle::InternalAllocNoChecks_FastPath, MethodTable*
         return NULL;
     }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (pMT->RequiresAlign8())
+#ifdef FEATURE_2XPTR_ALIGNMENT
+    if (pMT->RequiresAlign2xPtr())
     {
         return NULL;
     }

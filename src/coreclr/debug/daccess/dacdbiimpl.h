@@ -720,7 +720,7 @@ public:
     HRESULT STDMETHODCALLTYPE GetVarArgSig(CORDB_ADDRESS VASigCookieAddr, OUT CORDB_ADDRESS * pArgBase, OUT TargetBuffer * pRetVal);
 
     // returns TRUE if the type requires 8-byte alignment
-    HRESULT STDMETHODCALLTYPE RequiresAlign8(VMPTR_TypeHandle thExact, OUT BOOL * pResult);
+    HRESULT STDMETHODCALLTYPE RequiresAlign2xPtr(VMPTR_TypeHandle thExact, OUT BOOL * pResult);
 
     // Resolve the raw generics token to the real generics type token.  The resolution is based on the
     // given index.

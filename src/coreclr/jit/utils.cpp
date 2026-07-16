@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // ===================================================================================================
@@ -1497,12 +1497,12 @@ void HelperCallProperties::init()
 
             // Heap Allocation helpers, these all never return null
             case CORINFO_HELP_NEWSFAST:
-            case CORINFO_HELP_NEWSFAST_ALIGN8:
-            case CORINFO_HELP_NEWSFAST_ALIGN8_VC:
+            case CORINFO_HELP_NEWSFAST_ALIGN_2XPTR:
+            case CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_VC:
             case CORINFO_HELP_NEWFAST:
             case CORINFO_HELP_NEWFAST_MAYBEFROZEN:
             case CORINFO_HELP_NEWSFAST_FINALIZE:
-            case CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
+            case CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_FINALIZE:
             case CORINFO_HELP_READYTORUN_NEW:
             case CORINFO_HELP_BOX:
 
@@ -1514,7 +1514,7 @@ void HelperCallProperties::init()
             // These allocation helpers do some checks on the size (and lower bound) inputs,
             // and can throw exceptions other than OOM.
             case CORINFO_HELP_NEWARR_1_VC:
-            case CORINFO_HELP_NEWARR_1_ALIGN8:
+            case CORINFO_HELP_NEWARR_1_ALIGN_2XPTR:
             case CORINFO_HELP_NEW_MDARR:
             case CORINFO_HELP_NEW_MDARR_RARE:
             case CORINFO_HELP_NEWARR_1_DIRECT:

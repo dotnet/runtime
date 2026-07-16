@@ -155,10 +155,10 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength);
 
-#if defined(FEATURE_64BIT_ALIGNMENT)
-EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT);
+#if defined(FEATURE_2XPTR_ALIGNMENT)
+EXTERN_C FCDECL1(Object*, RhpNewFastAlign2xPtr, MethodTable* pMT);
 EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT);
-EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign2xPtr, MethodTable* pMT, INT_PTR size);
 #endif
 
 #if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))

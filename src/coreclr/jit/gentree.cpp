@@ -2092,7 +2092,7 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
                 case CORINFO_HELP_NEWARR_1_DIRECT:
                 case CORINFO_HELP_NEWARR_1_PTR:
                 case CORINFO_HELP_NEWARR_1_VC:
-                case CORINFO_HELP_NEWARR_1_ALIGN8:
+                case CORINFO_HELP_NEWARR_1_ALIGN_2XPTR:
                 {
                     // This is an array allocation site. Grab the array length node.
                     arrayLength = call->gtArgs.GetUserArgByIndex(1)->GetNode();
@@ -21230,7 +21230,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
         case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
         case CORINFO_HELP_NEWARR_1_PTR:
         case CORINFO_HELP_NEWARR_1_VC:
-        case CORINFO_HELP_NEWARR_1_ALIGN8:
+        case CORINFO_HELP_NEWARR_1_ALIGN_2XPTR:
         case CORINFO_HELP_READYTORUN_NEWARR_1:
         {
             CORINFO_CLASS_HANDLE arrayHnd = (CORINFO_CLASS_HANDLE)call->compileTimeHelperArgumentHandle;

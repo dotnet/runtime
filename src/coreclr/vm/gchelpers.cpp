@@ -680,17 +680,18 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
     else
     {
-#ifdef FEATURE_64BIT_ALIGNMENT
+#ifdef FEATURE_2XPTR_ALIGNMENT
         MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
-        if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
+        if (pElementMT->RequiresAlign2xPtr() && pElementMT->IsValueType())
         {
-            // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
+            // This platform requires that certain fields are 2 * pointer-size aligned (and the runtime doesn't provide
             // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
             // header that requires alignment we need to be careful. However it just so happens that all the
-            // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
-            // in their headers so the alignment requirements for the header and the payload are the same.
-            _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-            flags |= GC_ALLOC_ALIGN8;
+            // cases we care about (single and multi-dim arrays of value types) have headers whose size is a
+            // whole multiple of the required alignment, so the alignment requirements for the header and the
+            // payload are the same.
+            _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & (2 * DATA_ALIGNMENT - 1)) == 0);
+            flags |= GC_ALLOC_ALIGN_2XPTR;
         }
 #endif
         orArray = (ArrayBase*)Alloc(totalSize, flags);
@@ -751,9 +752,9 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
     {
         return NULL;
     }
-#ifdef FEATURE_64BIT_ALIGNMENT
+#ifdef FEATURE_2XPTR_ALIGNMENT
     MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
-    if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
+    if (pElementMT->RequiresAlign2xPtr() && pElementMT->IsValueType())
     {
         return NULL;
     }
@@ -928,17 +929,18 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     }
     else
     {
-#ifdef FEATURE_64BIT_ALIGNMENT
+#ifdef FEATURE_2XPTR_ALIGNMENT
         MethodTable *pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
-        if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
+        if (pElementMT->RequiresAlign2xPtr() && pElementMT->IsValueType())
         {
-            // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
+            // This platform requires that certain fields are 2 * pointer-size aligned (and the runtime doesn't provide
             // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
             // header that requires alignment we need to be careful. However it just so happens that all the
-            // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
-            // in their headers so the alignment requirements for the header and the payload are the same.
-            _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-            flags |= GC_ALLOC_ALIGN8;
+            // cases we care about (single and multi-dim arrays of value types) have headers whose size is a
+            // whole multiple of the required alignment, so the alignment requirements for the header and the
+            // payload are the same.
+            _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & (2 * DATA_ALIGNMENT - 1)) == 0);
+            flags |= GC_ALLOC_ALIGN_2XPTR;
         }
 #endif
         orArray = (ArrayBase*)Alloc(totalSize, flags);
@@ -1273,21 +1275,22 @@ OBJECTREF AllocateObject(MethodTable *pMT
         if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
             flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-        if (pMT->RequiresAlign8())
+#ifdef FEATURE_2XPTR_ALIGNMENT
+        if (pMT->RequiresAlign2xPtr())
         {
             // The last argument to the allocation, indicates whether the alignment should be "biased". This
-            // means that the object is allocated so that its header lies exactly between two 8-byte
-            // boundaries. This is required in cases where we need to mis-align the header in order to align
-            // the actual payload. Currently this is false for classes (where we apply padding to ensure the
-            // first field is aligned relative to the header) and true for boxed value types (where we can't
-            // do the same padding without introducing more complexity in type layout and unboxing stubs).
-            _ASSERTE(sizeof(Object) == 4);
-            flags |= GC_ALLOC_ALIGN8;
+            // means that the object is allocated so that its header lies exactly between two aligned
+            // boundaries (8 bytes on 32-bit, 16 bytes on 64-bit). This is required in cases where we
+            // need to mis-align the header in order to align the actual payload. Currently this is false
+            // for classes (where we apply padding to ensure the first field is aligned relative to the
+            // header) and true for boxed value types (where we can't do the same padding without
+            // introducing more complexity in type layout and unboxing stubs).
+            _ASSERTE(sizeof(Object) == sizeof(void*));
+            flags |= GC_ALLOC_ALIGN_2XPTR;
             if (pMT->IsValueType())
-                flags |= GC_ALLOC_ALIGN8_BIAS;
+                flags |= GC_ALLOC_ALIGN_2XPTR_BIAS;
         }
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
         Object* orObject = (Object*)Alloc(totalSize, flags);
 
@@ -1324,13 +1327,13 @@ OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
         return NULL;
     }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (pObjMT->RequiresAlign8())
+#ifdef FEATURE_2XPTR_ALIGNMENT
+    if (pObjMT->RequiresAlign2xPtr())
     {
         // Custom alignment is not supported for frozen objects yet.
         return NULL;
     }
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
     FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
     Object* orObject = foh->TryAllocateObject(pObjMT, PtrAlign(pObjMT->GetBaseSize()));

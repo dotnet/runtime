@@ -313,7 +313,7 @@ namespace Internal.TypeSystem
             // Instance slice size is the total size of instance not including the base type.
             // It is calculated as the field whose offset and size add to the greatest value.
             LayoutInt offsetBias = !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
-            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign2xPtr: false, requiresAlignedBase: false) - offsetBias;
             LayoutInt instanceSize = cumulativeInstanceFieldPos + offsetBias;
 
             int packingSize = ComputePackingSize(type, layoutMetadata);
@@ -427,7 +427,7 @@ namespace Internal.TypeSystem
             // For reference types, we calculate field alignment as if the address after the method table pointer
             // has offset 0 (on 32-bit platforms, this location is guaranteed to be 8-aligned).
             LayoutInt offsetBias = !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
-            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign2xPtr: false, requiresAlignedBase: false) - offsetBias;
 
             LayoutInt largestAlignmentRequirement = LayoutInt.One;
             int fieldOrdinal = 0;
@@ -711,7 +711,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8, bool requiresAlignedBase)
+        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign2xPtr, bool requiresAlignedBase)
         {
         }
 
@@ -815,7 +815,7 @@ namespace Internal.TypeSystem
                     // This alignment requirement will not be significant in the final alignment calculation unlesss the
                     // type is greater than the size of a single pointer.
                     //
-                    // This does not account for types that are marked IsAlign8Candidate due to 8-byte fields
+                    // This does not account for types that are marked IsAlign2xPtrCandidate due to 8-byte fields
                     // but that is explicitly handled when we calculate the final alignment for the type.
 
                     // This behavior is extremely strange for primitive types, as it makes a struct with a single byte in it
@@ -842,12 +842,12 @@ namespace Internal.TypeSystem
                 }
             }
 
-            bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && context.Target.PointerSize == 4 && context.Target.GetObjectAlignment(largestAlignmentRequired).AsInt > 4;
+            bool requiresAlign2xPtr = !largestAlignmentRequired.IsIndeterminate && context.Target.PointerSize == 4 && context.Target.GetObjectAlignment(largestAlignmentRequired).AsInt > 4;
 
             // For types inheriting from another type, field offsets continue on from where they left off
             // Base alignment is not always required, it's only applied when there's a version bubble boundary
             // between base type and the current type.
-            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8, requiresAlignedBase: false);
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign2xPtr, requiresAlignedBase: false);
             LayoutInt offsetBias = LayoutInt.Zero;
 
             // The following conditional statement mimics the behavior of MethodTableBuilder::PlaceInstanceFields;
@@ -858,7 +858,7 @@ namespace Internal.TypeSystem
             // pointer (the Crossgen2 way) to ensure 8-alignment for longs and doubles as required by the ARM32 ISA. Please note
             // that for 16-alignment used by Vector128 this logic actually ensures that the fields are 16-misaligned
             // (they are 16-aligned after the 4-byte or 8-byte method table pointer).
-            if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && !type.Context.Target.SupportsAlign8)
+            if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && !type.Context.Target.SupportsAlign2xPtr)
             {
                 offsetBias = type.Context.Target.LayoutPointerSize;
                 cumulativeInstanceFieldPos -= offsetBias;
@@ -997,7 +997,7 @@ namespace Internal.TypeSystem
                 {
                     minAlign = largestAlignmentRequired;
                 }
-                if (requiresAlign8 && minAlign.AsInt < 8)
+                if (requiresAlign2xPtr && minAlign.AsInt < 8)
                 {
                     minAlign = new LayoutInt(8);
                 }
@@ -1079,7 +1079,7 @@ namespace Internal.TypeSystem
             return type.IsValueType && !type.IsPrimitive && !type.IsEnum;
         }
 
-        public LayoutInt CalculateFieldBaseOffset(MetadataType type, bool requiresAlign8, bool requiresAlignedBase)
+        public LayoutInt CalculateFieldBaseOffset(MetadataType type, bool requiresAlign2xPtr, bool requiresAlignedBase)
         {
             LayoutInt cumulativeInstanceFieldPos = LayoutInt.Zero;
 
@@ -1092,7 +1092,7 @@ namespace Internal.TypeSystem
                     {
                         cumulativeInstanceFieldPos += LayoutInt.One;
                     }
-                    AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8, requiresAlignedBase);
+                    AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign2xPtr, requiresAlignedBase);
                 }
             }
 

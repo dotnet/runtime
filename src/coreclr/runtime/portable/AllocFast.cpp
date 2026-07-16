@@ -91,7 +91,7 @@ static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size TRANSITION_HELPER
 }
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
-static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size TRANSITION_HELPER_ARG_DECL)
+static Object* NewArrayFastAlign2xPtrCore(MethodTable* pMT, INT_PTR size TRANSITION_HELPER_ARG_DECL)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -133,11 +133,11 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size TRANSITION_
         return pObject;
     }
 
-    return AllocateObject(pMT, GC_ALLOC_ALIGN8, size TRANSITION_HELPER_ARG_HELPER_PASSTHRU);
+    return AllocateObject(pMT, GC_ALLOC_ALIGN_2XPTR, size TRANSITION_HELPER_ARG_HELPER_PASSTHRU);
 }
 
-EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size);
-FCIMPL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
+EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign2xPtr, MethodTable* pMT, INT_PTR size);
+FCIMPL2(Object*, RhpNewArrayFastAlign2xPtr, MethodTable* pMT, INT_PTR size)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -148,10 +148,10 @@ FCIMPL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
     if (size > 0x10000)
     {
         // Overflow here should result in an OOM. Let the slow path take care of it.
-        return AllocateObject(pMT, GC_ALLOC_ALIGN8, size TRANSITION_HELPER_ARG_PREPARED);
+        return AllocateObject(pMT, GC_ALLOC_ALIGN_2XPTR, size TRANSITION_HELPER_ARG_PREPARED);
     }
 
-    return NewArrayFastAlign8Core(pMT, size TRANSITION_HELPER_ARG_PREPARED);
+    return NewArrayFastAlign2xPtrCore(pMT, size TRANSITION_HELPER_ARG_PREPARED);
 }
 FCIMPLEND
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -223,8 +223,8 @@ FCIMPL1(Object*, RhpNewFast, MethodTable* pMT)
 FCIMPLEND
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
-EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT);
-FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
+EXTERN_C FCDECL1(Object*, RhpNewFastAlign2xPtr, MethodTable* pMT);
+FCIMPL1(Object*, RhpNewFastAlign2xPtr, MethodTable* pMT)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -260,7 +260,7 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
     }
 
     PREPARE_TRANSITION_ARG();
-    return AllocateObject(pMT, GC_ALLOC_ALIGN8, 0 TRANSITION_HELPER_ARG_PREPARED);
+    return AllocateObject(pMT, GC_ALLOC_ALIGN_2XPTR, 0 TRANSITION_HELPER_ARG_PREPARED);
 }
 FCIMPLEND
 
@@ -301,7 +301,7 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
     }
 
     PREPARE_TRANSITION_ARG();
-    return AllocateObject(pMT, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0 TRANSITION_HELPER_ARG_PREPARED);
+    return AllocateObject(pMT, GC_ALLOC_ALIGN_2XPTR | GC_ALLOC_ALIGN_2XPTR_BIAS, 0 TRANSITION_HELPER_ARG_PREPARED);
 }
 FCIMPLEND
 #endif // FEATURE_64BIT_ALIGNMENT

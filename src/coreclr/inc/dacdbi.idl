@@ -289,7 +289,7 @@ interface IDacDbiInterface : IUnknown
     // Method
     HRESULT IsDiagnosticsHiddenOrLCGMethod([in] VMPTR_MethodDesc vmMethodDesc, [out] DynamicMethodType * pRetVal);
     HRESULT GetVarArgSig([in] CORDB_ADDRESS VASigCookieAddr, [out] CORDB_ADDRESS * pArgBase, [out] struct TargetBuffer * pRetVal);
-    HRESULT RequiresAlign8([in] VMPTR_TypeHandle thExact, [out] BOOL * pResult);
+    HRESULT RequiresAlign2xPtr([in] VMPTR_TypeHandle thExact, [out] BOOL * pResult);
     HRESULT ResolveExactGenericArgsToken([in] DWORD dwExactGenericArgsTokenIndex, [in] GENERICS_TYPE_TOKEN rawToken, [out] GENERICS_TYPE_TOKEN * pRetVal);
     HRESULT GetILCodeAndSig([in] VMPTR_Assembly vmAssembly, [in] mdToken functionToken, [out] struct TargetBuffer * pCodeInfo, [out] mdToken * pLocalSigToken);
     HRESULT GetNativeCodeInfo([in] VMPTR_Assembly vmAssembly, [in] mdToken functionToken, [out] struct NativeCodeFunctionData * pCodeInfo);

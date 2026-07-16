@@ -247,12 +247,12 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeThreadStaticIndexNode(type, null);
             });
 
-            _GCStaticEETypes = new NodeCache<(GCPointerMap, bool), DataOnlyEETypeNode>(((GCPointerMap gcMap, bool requiresAlign8) key) =>
+            _GCStaticEETypes = new NodeCache<(GCPointerMap, bool), DataOnlyEETypeNode>(((GCPointerMap gcMap, bool requiresAlign2xPtr) key) =>
             {
                 // Base type: System.Object. This allows storing an instance of this type in an array of objects,
                 // or finding associated module from BulkType event source events.
                 DefType baseType = _context.GetWellKnownType(WellKnownType.Object);
-                return new DataOnlyEETypeNode("GCStaticEEType", key.gcMap, baseType, key.requiresAlign8);
+                return new DataOnlyEETypeNode("GCStaticEEType", key.gcMap, baseType, key.requiresAlign2xPtr);
             });
 
             _asyncContinuationEETypes = new NodeCache<AsyncContinuationType, AsyncContinuationEETypeNode>((AsyncContinuationType key) =>
@@ -925,10 +925,10 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<(GCPointerMap, bool), DataOnlyEETypeNode> _GCStaticEETypes;
 
-        public ISymbolNode GCStaticEEType(GCPointerMap gcMap, bool requiredAlign8)
+        public ISymbolNode GCStaticEEType(GCPointerMap gcMap, bool requiredAlign2xPtr)
         {
-            requiredAlign8 &= Target.SupportsAlign8;
-            return _GCStaticEETypes.GetOrAdd((gcMap, requiredAlign8));
+            requiredAlign2xPtr &= Target.SupportsAlign2xPtr;
+            return _GCStaticEETypes.GetOrAdd((gcMap, requiredAlign2xPtr));
         }
 
         private NodeCache<ReadOnlyDataBlobKey, BlobNode> _readOnlyDataBlobs;

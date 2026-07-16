@@ -978,7 +978,7 @@ namespace Internal.CallingConvention
                                 {
                                     // Value type case: extract the alignment requirement, note that this has to handle
                                     // the interop "native value types".
-                                    fRequiresAlign64Bit = _argTypeHandle.RequiresAlign8();
+                                    fRequiresAlign64Bit = _argTypeHandle.RequiresAlign2xPtr();
 
                                     // Handle HFAs: packed structures of 1-4 floats or doubles that are passed in FP argument
                                     // registers if possible.

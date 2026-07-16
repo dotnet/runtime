@@ -2101,19 +2101,19 @@ EEClass::CheckForHFA()
     return true;
 }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-// Returns true iff the native view of this type requires 64-bit alignment.
-bool MethodTable::NativeRequiresAlign8()
+#ifdef FEATURE_2XPTR_ALIGNMENT
+// Returns true iff the native view of this type requires 2 * pointer-size alignment.
+bool MethodTable::NativeRequiresAlign2xPtr()
 {
     LIMITED_METHOD_CONTRACT;
 
     if (HasLayout() && !IsBlittable())
     {
-        return (GetNativeLayoutInfo()->GetLargestAlignmentRequirement() >= 8);
+        return (GetNativeLayoutInfo()->GetLargestAlignmentRequirement() >= (2 * DATA_ALIGNMENT));
     }
-    return RequiresAlign8();
+    return RequiresAlign2xPtr();
 }
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
 #ifndef DACCESS_COMPILE
 

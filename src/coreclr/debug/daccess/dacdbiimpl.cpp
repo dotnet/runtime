@@ -5103,7 +5103,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
 }
 
 // returns TRUE if the type requires 8-byte alignment
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::RequiresAlign8(VMPTR_TypeHandle thExact, OUT BOOL * pResult)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::RequiresAlign2xPtr(VMPTR_TypeHandle thExact, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
 
@@ -5111,11 +5111,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::RequiresAlign8(VMPTR_TypeHandle t
     EX_TRY
     {
 
-    #ifdef FEATURE_64BIT_ALIGNMENT
+    #ifdef FEATURE_2XPTR_ALIGNMENT
         TypeHandle th = TypeHandle::FromPtr(thExact.GetDacPtr());
         PTR_MethodTable mt = th.AsMethodTable();
 
-        *pResult = mt->RequiresAlign8();
+        *pResult = mt->RequiresAlign2xPtr();
     #else
         ThrowHR(E_NOTIMPL);
     #endif

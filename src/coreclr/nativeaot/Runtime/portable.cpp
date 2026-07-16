@@ -77,9 +77,9 @@ FCIMPL1(Object *, RhpNewFast, MethodTable* pEEType)
 }
 FCIMPLEND
 
-#define GC_ALLOC_FINALIZE    0x1 // TODO: Defined in gc.h
-#define GC_ALLOC_ALIGN8_BIAS 0x4 // TODO: Defined in gc.h
-#define GC_ALLOC_ALIGN8      0x8 // TODO: Defined in gc.h
+#define GC_ALLOC_FINALIZE         0x1 // TODO: Defined in gc.h
+#define GC_ALLOC_ALIGN_2XPTR_BIAS 0x4 // TODO: Defined in gc.h
+#define GC_ALLOC_ALIGN_2XPTR      0x8 // TODO: Defined in gc.h
 
 FCIMPL1(Object *, RhpNewFinalizable, MethodTable* pEEType)
 {
@@ -139,14 +139,14 @@ FCIMPLEND
 
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 
-FCIMPL1(Object *, RhpNewFinalizableAlign8, MethodTable* pEEType)
+FCIMPL1(Object *, RhpNewFinalizableAlign2xPtr, MethodTable* pEEType)
 {
-    return AllocateObject(pEEType, GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8, 0);
+    return AllocateObject(pEEType, GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN_2XPTR, 0);
 }
 FCIMPLEND
 
 #ifndef HOST_64BIT
-FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pEEType)
+FCIMPL1(Object*, RhpNewFastAlign2xPtr, MethodTable* pEEType)
 {
     ASSERT(!pEEType->HasFinalizer());
 
@@ -180,7 +180,7 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pEEType)
         return pObject;
     }
 
-    return AllocateObject(pEEType, GC_ALLOC_ALIGN8, 0);
+    return AllocateObject(pEEType, GC_ALLOC_ALIGN_2XPTR, 0);
 }
 FCIMPLEND
 
@@ -215,11 +215,11 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
         return pObject;
     }
 
-    return AllocateObject(pEEType, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0);
+    return AllocateObject(pEEType, GC_ALLOC_ALIGN_2XPTR | GC_ALLOC_ALIGN_2XPTR_BIAS, 0);
 }
 FCIMPLEND
 
-FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, intptr_t numElements)
+FCIMPL2(Array*, RhpNewArrayFastAlign2xPtr, MethodTable* pArrayEEType, intptr_t numElements)
 {
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
@@ -234,7 +234,7 @@ FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, intptr_t numEl
     if (numElements > 0x10000)
     {
         // Overflow here should result in an OOM. Let the slow path take care of it.
-        return (Array*)AllocateObject(pArrayEEType, GC_ALLOC_ALIGN8, numElements);
+        return (Array*)AllocateObject(pArrayEEType, GC_ALLOC_ALIGN_2XPTR, numElements);
     }
 
     uint32_t baseSize = pArrayEEType->GetBaseSize();
@@ -266,7 +266,7 @@ FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, intptr_t numEl
         return pObject;
     }
 
-    return (Array*)AllocateObject(pArrayEEType, GC_ALLOC_ALIGN8, numElements);
+    return (Array*)AllocateObject(pArrayEEType, GC_ALLOC_ALIGN_2XPTR, numElements);
 }
 FCIMPLEND
 #endif // !HOST_64BIT

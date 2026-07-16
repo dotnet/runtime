@@ -349,15 +349,15 @@ namespace ILCompiler
         //
         public static string GetNewObjectHelperForType(TypeDesc type)
         {
-            if (type.RequiresAlign8())
+            if (type.RequiresAlign2xPtr())
             {
                 if (type.HasFinalizer)
-                    return "RhpNewFinalizableAlign8";
+                    return "RhpNewFinalizableAlign2xPtr";
 
                 if (type.IsValueType)
                     return "RhpNewFastMisalign";
 
-                return "RhpNewFastAlign8";
+                return "RhpNewFastAlign2xPtr";
             }
 
             if (type.HasFinalizer)

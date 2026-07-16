@@ -48,10 +48,10 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
             // Currently we don't support frozen objects with special alignment requirements
             // TODO: We should also give up on arrays of doubles on 32-bit platforms.
             // (we currently never allocate them on frozen segments)
-#ifdef FEATURE_64BIT_ALIGNMENT
-            if (type->RequiresAlign8())
+#ifdef FEATURE_2XPTR_ALIGNMENT
+            if (type->RequiresAlign2xPtr())
             {
-                // Align8 objects are not supported yet
+                // Align2xPtr objects are not supported yet
                 return nullptr;
             }
 #endif

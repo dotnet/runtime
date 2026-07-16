@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -43,9 +43,9 @@ namespace Internal.Runtime
                 // TODO: We should also give up on arrays of doubles on 32-bit platforms.
                 // (we currently never allocate them on frozen segments)
 #if FEATURE_64BIT_ALIGNMENT
-                if (type->RequiresAlign8)
+                if (type->RequiresAlign2xPtr)
                 {
-                    // Align8 objects are not supported yet
+                    // Align2xPtr objects are not supported yet
                     return null;
                 }
 #endif

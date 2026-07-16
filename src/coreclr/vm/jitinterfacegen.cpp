@@ -32,10 +32,15 @@ void InitJITAllocationHelpers()
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_PTR, RhpNewPtrArrayFast);
 
-#if defined(FEATURE_64BIT_ALIGNMENT)
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, RhpNewFastAlign8);
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8_VC, RhpNewFastMisalign);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, RhpNewArrayFastAlign8);
+#if defined(FEATURE_2XPTR_ALIGNMENT) && (defined(TARGET_ARM) || defined(TARGET_WASM))
+            // These fast inline allocation stubs handle the alignment fixup themselves and only exist
+            // on 32-bit ARM/WASM. On 64-bit the align helpers keep their portable default backing
+            // (RhpNew / RhpNewVariableSizeObject), which route through RhpGcAlloc -> AllocateObject /
+            // AllocateSzArray and derive GC_ALLOC_ALIGN_2XPTR from the MethodTable, so alignment is honored
+            // without a dedicated stub.
+            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN_2XPTR, RhpNewFastAlign2xPtr);
+            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_VC, RhpNewFastMisalign);
+            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN_2XPTR, RhpNewArrayFastAlign2xPtr);
 #endif
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString), ECall::FastAllocateString);

@@ -1525,7 +1525,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     {
         // Value type case: extract the alignment requirement, note that this has to handle
         // the interop "native value types".
-        fRequiresAlign64Bit = thValueType.RequiresAlign8();
+        fRequiresAlign64Bit = thValueType.RequiresAlign2xPtr();
 
 #ifdef FEATURE_HFA
         // Handle HFAs: packed structures of 1-4 floats or doubles that are passed in FP argument

@@ -213,9 +213,9 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.IsByRefLikeFlag;
             }
 
-            if (type.RequiresAlign8())
+            if (type.RequiresAlign2xPtr())
             {
-                flagsEx |= (ushort)EETypeFlagsEx.RequiresAlign8Flag;
+                flagsEx |= (ushort)EETypeFlagsEx.RequiresAlign2xPtrFlag;
             }
 
             if (type.IsValueType && type != type.Context.UniversalCanonType)
