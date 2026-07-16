@@ -5784,11 +5784,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_op_LeftShift
-            return nullptr;
-#endif
-
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();
 
@@ -5826,11 +5821,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_op_RightShift:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_op_RightShift
-            return nullptr;
-#endif
 
             genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
 
@@ -5870,11 +5860,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_op_UnsignedRightShift:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_op_UnsignedRightShift
-            return nullptr;
-#endif
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();

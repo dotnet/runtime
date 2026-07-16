@@ -292,6 +292,38 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void Vector128ShiftTest()
+    {
+        // Left shift (<<) with a constant count across element widths.
+        Assert.Equal(Vector128.Create(4, 8, 12, 16), Vector128.Create(1, 2, 3, 4) << 2);
+        Assert.Equal(Vector128.Create(2L, 4L), Vector128.Create(1L, 2L) << 1);
+        Assert.Equal(Vector128.Create((short)8, 16, 24, 32, 40, 48, 56, 64),
+                     Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8) << 3);
+
+        // Arithmetic right shift (>>) preserves sign for signed types.
+        Assert.Equal(Vector128.Create(-2, -1, 1, 2), Vector128.Create(-8, -4, 4, 8) >> 2);
+        Assert.Equal(Vector128.Create((sbyte)-1, -1, 0, 1, -2, 2, -4, 4, -1, -1, 0, 1, -2, 2, -4, 4),
+                     Vector128.Create((sbyte)-2, -1, 1, 2, -4, 4, -8, 8, -2, -1, 1, 2, -4, 4, -8, 8) >> 1);
+
+        // Unsigned/logical right shift (>>>) zero-fills.
+        Assert.Equal(Vector128.Create(0x3FFFFFFFu, 1u, 2u, 3u),
+                     Vector128.Create(0xFFFFFFFFu, 4u, 8u, 12u) >>> 2);
+        Assert.Equal(Vector128.Create(unchecked((int)0x3FFFFFFF), 1, 2, 3),
+                     Vector128.Create(unchecked((int)0xFFFFFFFF), 4, 8, 12) >>> 2);
+
+        // Non-constant counts exercise the scalar-amount path.
+        var v = Vector128.Create(1, 2, 3, 4);
+        for (int i = 0; i < 4; i++)
+        {
+            Assert.Equal(Vector128.Create(1 << i, 2 << i, 3 << i, 4 << i), v << i);
+            Assert.Equal(Vector128.Create(16 >> i, 32 >> i, 48 >> i, 64 >> i),
+                         Vector128.Create(16, 32, 48, 64) >> i);
+            Assert.Equal(Vector128.Create(16u >>> i, 32u >>> i, 48u >>> i, 64u >>> i),
+                         Vector128.Create(16u, 32u, 48u, 64u) >>> i);
+        }
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);
