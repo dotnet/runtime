@@ -379,6 +379,34 @@ public sealed class PackedSimdTests
     }
 
     [Fact]
+    public static unsafe void ConstantShuffleTest()
+    {
+        // Opaque data with constant indices exercises the Swizzle-based constant-shuffle path.
+
+        Vector128<int> vi = Opaque(Vector128.Create(1, 2, 3, 4));
+        Assert.Equal(Vector128.Create(4, 3, 2, 1), Vector128.Shuffle(vi, Vector128.Create(3, 2, 1, 0)));
+        // Out-of-range indices zero the corresponding element.
+        Assert.Equal(Vector128.Create(1, 2, 3, 0), Vector128.Shuffle(vi, Vector128.Create(0, 1, 2, 99)));
+
+        Vector128<float> vf = Opaque(Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f));
+        Assert.Equal(Vector128.Create(4.0f, 3.0f, 2.0f, 1.0f), Vector128.Shuffle(vf, Vector128.Create(3, 2, 1, 0)));
+
+        Vector128<long> vl = Opaque(Vector128.Create(10L, 20L));
+        Assert.Equal(Vector128.Create(20L, 10L), Vector128.Shuffle(vl, Vector128.Create(1L, 0L)));
+
+        Vector128<short> vs = Opaque(Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8));
+        Assert.Equal(Vector128.Create((short)8, 7, 6, 5, 4, 3, 2, 1),
+                     Vector128.Shuffle(vs, Vector128.Create((short)7, 6, 5, 4, 3, 2, 1, 0)));
+
+        Vector128<byte> vb = Opaque(Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
+        Assert.Equal(Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0),
+                     Vector128.Shuffle(vb, Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)));
+        // Out-of-range byte indices zero their element.
+        Assert.Equal(Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0),
+                     Vector128.Shuffle(vb, Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 200)));
+    }
+
+    [Fact]
     public static unsafe void SaturatingArithmeticTest()
     {
         var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);

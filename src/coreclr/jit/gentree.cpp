@@ -28906,8 +28906,40 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseType, simdSize);
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdShuffleNode");
-    return nullptr;
+    assert(simdSize == 16);
+
+    uint64_t value  = 0;
+    simd_t   vecCns = {};
+
+    for (size_t index = 0; index < elementCount; index++)
+    {
+        value = op2->GetIntegralVectorConstElement(index, simdBaseType);
+
+        if (value < elementCount)
+        {
+            for (uint32_t i = 0; i < elementSize; i++)
+            {
+                vecCns.u8[(index * elementSize) + i] = (uint8_t)((value * elementSize) + i);
+            }
+        }
+        else
+        {
+            // Swizzle selects zero for any byte index that is out of range (>= 16), so mark every
+            // byte of an out-of-range element accordingly.
+            for (uint32_t i = 0; i < elementSize; i++)
+            {
+                vecCns.u8[(index * elementSize) + i] = 0xFF;
+            }
+        }
+    }
+
+    // Swizzle operates on bytes, so reinterpret the shuffle as a byte-granular selection.
+    simdBaseType = varTypeIsUnsigned(simdBaseType) ? TYP_UBYTE : TYP_BYTE;
+
+    op2                        = gtNewVconNode(type);
+    op2->AsVecCon()->gtSimdVal = vecCns;
+
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_PackedSimd_Swizzle, simdBaseType, simdSize);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
