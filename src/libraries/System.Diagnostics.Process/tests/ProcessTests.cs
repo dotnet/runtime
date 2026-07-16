@@ -755,7 +755,7 @@ namespace System.Diagnostics.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Process timing information is not supported on iOS/tvOS")]
         public void TimingProperties_AfterProcessExit()
         {
-            Process process = CreateProcess();
+            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             process.Start();
             Assert.True(process.WaitForExit(WaitInMS));
 
@@ -779,6 +779,19 @@ namespace System.Diagnostics.Tests
                 Assert.Throws<InvalidOperationException>(() => process.TotalProcessorTime);
                 Assert.Throws<InvalidOperationException>(() => process.UserProcessorTime);
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Process timing information is not supported on iOS/tvOS")]
+        public void StartTime_AfterProcessExit_WhenCachedBeforeExit_IsAvailable()
+        {
+            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            process.Start();
+            DateTime startTime = process.StartTime;
+            Assert.True(process.WaitForExit(WaitInMS));
+
+            Assert.NotEqual(default, startTime);
+            Assert.Equal(startTime, process.StartTime);
         }
 
         [Fact]

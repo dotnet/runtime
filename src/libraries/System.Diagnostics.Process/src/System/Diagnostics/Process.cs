@@ -240,6 +240,7 @@ namespace System.Diagnostics
         /// No process is associated with this object. On Windows, there is no process handle available.
         /// On Unix, the process has exited.
         /// </exception>
+        /// <exception cref="Win32Exception">The operating system could not retrieve process timing information.</exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -257,6 +258,7 @@ namespace System.Diagnostics
         /// No process is associated with this object. On Windows, there is no process handle available.
         /// On Unix, the process has exited.
         /// </exception>
+        /// <exception cref="Win32Exception">The operating system could not retrieve process timing information.</exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -274,6 +276,7 @@ namespace System.Diagnostics
         /// No process is associated with this object. On Windows, there is no process handle available.
         /// On Unix, the process has exited.
         /// </exception>
+        /// <exception cref="Win32Exception">The operating system could not retrieve process timing information.</exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
