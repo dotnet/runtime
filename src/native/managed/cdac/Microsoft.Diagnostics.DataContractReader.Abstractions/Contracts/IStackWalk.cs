@@ -84,7 +84,6 @@ public record struct DebuggerEvalData(
 public enum StackwalkFlag
 {
     Default = 0,
-    X86ESPIgnoresCalleePoppedArgs = 0x1,
 }
 
 public interface IStackWalk : IContract

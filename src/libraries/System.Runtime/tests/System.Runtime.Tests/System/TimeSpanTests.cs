@@ -1775,7 +1775,7 @@ namespace System.Tests
         [Theory, MemberData(nameof(MultiplicationTestData))]
         public static void Division(TimeSpan timeSpan, double factor, TimeSpan expected)
         {
-            Assert.Equal(factor, expected / timeSpan, 14);
+            AssertExtensions.Equal(factor, expected / timeSpan, 1e-14);
             double divisor = 1.0 / factor;
             Assert.Equal(expected, timeSpan / divisor);
         }
@@ -1818,7 +1818,7 @@ namespace System.Tests
         [Theory, MemberData(nameof(MultiplicationTestData))]
         public static void NamedDivision(TimeSpan timeSpan, double factor, TimeSpan expected)
         {
-            Assert.Equal(factor, expected.Divide(timeSpan), 14);
+            AssertExtensions.Equal(factor, expected.Divide(timeSpan), 1e-14);
             double divisor = 1.0 / factor;
             Assert.Equal(expected, timeSpan.Divide(divisor));
         }

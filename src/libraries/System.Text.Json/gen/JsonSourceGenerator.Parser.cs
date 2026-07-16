@@ -281,7 +281,7 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                void AddTypeArgumentDiagnosticIds(ITypeSymbol type, ref HashSet<string>? experimentalIds)
+                static void AddTypeArgumentDiagnosticIds(ITypeSymbol type, ref HashSet<string>? experimentalIds)
                 {
                     if (type is IArrayTypeSymbol arrayType)
                     {
