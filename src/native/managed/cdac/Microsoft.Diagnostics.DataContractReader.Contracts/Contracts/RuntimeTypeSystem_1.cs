@@ -522,7 +522,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return GetOrCreateTargetTypeHandle(methodTablePointer);
         }
 
-        // Otherwse, get ready to validate
+        // Otherwise, get ready to validate
         if (!_typeValidation.TryValidateMethodTablePointer(methodTablePointer))
         {
             throw new ArgumentException("Invalid method table pointer", nameof(typeHandlePointer));
