@@ -4067,15 +4067,16 @@ public:
         }
 
         assert(igOffs >= m_uninterruptibleEnd);
-        if (igOffs > m_uninterruptibleEnd)
+        // Include the first instruction unless this is a prolog.
+        //
+        unsigned interruptibleEnd = igOffs;
+        if (!isInProlog)
         {
-            // Once the first instruction in IG executes, we cannot have GC.
-            // But it is ok to have GC while the IP is on the first instruction, unless we are in prolog.
-            unsigned interruptibleEnd = igOffs;
-            if (!isInProlog)
-            {
-                interruptibleEnd += firstInstrSize;
-            }
+            interruptibleEnd += firstInstrSize;
+        }
+
+        if (interruptibleEnd > m_uninterruptibleEnd)
+        {
             m_gcInfoEncoder->DefineInterruptibleRange(m_uninterruptibleEnd, interruptibleEnd - m_uninterruptibleEnd);
         }
         m_uninterruptibleEnd = igOffs + igSize;
