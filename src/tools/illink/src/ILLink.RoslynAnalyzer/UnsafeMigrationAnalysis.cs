@@ -932,10 +932,7 @@ namespace ILLink.RoslynAnalyzer
                     .Any(RequiresUnsafeContract);
             }
 
-            ISymbol? symbol = declaration switch
-            {
-                _ => semanticModel.GetDeclaredSymbol(declaration, cancellationToken)
-            };
+            ISymbol? symbol = semanticModel.GetDeclaredSymbol(declaration, cancellationToken);
 
             if (symbol is null)
                 return false;

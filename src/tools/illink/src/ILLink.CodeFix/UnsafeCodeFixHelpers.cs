@@ -20,6 +20,10 @@ namespace ILLink.CodeFix
         private const string SafetyDocumentation = "/// <safety>TODO: Audit.</safety>";
         private const string UnsafeExpressionPlaceholder = "__unsafe_operand__";
 
+        private static readonly CSharpParseOptions s_unsafeParseOptions =
+            new CSharpParseOptions(LanguageVersion.Preview)
+                .WithFeatures([new("updated-memory-safety-rules", "")]);
+
         public static bool IsMigrationEnabled(Document document)
             => document.Project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue(
                 $"build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration}",
@@ -97,7 +101,8 @@ namespace ILLink.CodeFix
         public static ExpressionSyntax? CreateUnsafeExpression(ExpressionSyntax expression)
         {
             ExpressionSyntax template = SyntaxFactory.ParseExpression(
-                $"unsafe(/* SAFETY: Audit */{UnsafeExpressionPlaceholder})");
+                $"unsafe(/* SAFETY: Audit */{UnsafeExpressionPlaceholder})",
+                options: s_unsafeParseOptions);
 
             if (template.ContainsDiagnostics)
                 return null;
@@ -124,7 +129,8 @@ namespace ILLink.CodeFix
                     .Reverse()
                     .TakeWhile(static trivia => trivia.IsKind(SyntaxKind.WhitespaceTrivia))
                     .Reverse());
-            SyntaxTriviaList documentation = SyntaxFactory.ParseLeadingTrivia($"{SafetyDocumentation}\r\n");
+            SyntaxTriviaList documentation = SyntaxFactory.ParseLeadingTrivia(SafetyDocumentation)
+                .Add(SyntaxFactory.ElasticCarriageReturnLineFeed);
             return declaration.WithLeadingTrivia(
                 leadingTrivia
                     .AddRange(documentation)
@@ -132,7 +138,9 @@ namespace ILLink.CodeFix
         }
 
         private static SyntaxTriviaList CreateSafetyCommentTrivia()
-            => SyntaxFactory.ParseLeadingTrivia($"{SafetyComment}\r\n");
+            => SyntaxFactory.TriviaList(
+                SyntaxFactory.Comment(SafetyComment),
+                SyntaxFactory.ElasticCarriageReturnLineFeed);
     }
 }
 #endif
