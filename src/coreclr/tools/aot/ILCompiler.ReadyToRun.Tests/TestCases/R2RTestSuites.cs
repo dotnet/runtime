@@ -128,8 +128,14 @@ public class R2RTestSuites
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             Assert.True(webcilReader.IsWasmWrapped);
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
-            Assert.True(R2RAssert.GetAllMethods(reader).Exists(method =>
-                method.SignatureString.Contains("Echo", StringComparison.Ordinal)));
+
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            foreach (string name in new[] { "Echo", "ThroughLocal", "Store", "CallEcho" })
+            {
+                Assert.True(
+                    methods.Exists(method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal)),
+                    $"Expected compiled method '{name}' in the wasm SIMD module.");
+            }
         }
     }
 
