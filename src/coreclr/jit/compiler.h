@@ -3358,12 +3358,8 @@ public:
     GenTreeCall* gtNewHelperCallNode(
         unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr);
 
-    // Return type used when creating the class-init helper calls (CORINFO_HELP_INITCLASS/INITINSTCLASS).
-    // On wasm these helpers must be modeled as value-returning so the compiled call_indirect signature
-    // matches the callee: InitHelpers.InitClass/InitInstantiatedClass return void* (a dummy value) to match
-    // the interpreter's value-returning portable-entry-point convention. The JIT pushes and then discards
-    // the result (see the unused-value drop in CodeGen::WasmProduceReg). This modeling therefore depends on
-    // that CoreLib signature and must land together with it. Other targets model these helpers as void.
+    // On wasm these helpers return void* (InitHelpers.InitClass/InitInstantiatedClass), so model them as
+    // value-returning to match the callee's call_indirect signature; must land with that CoreLib change.
 #ifdef TARGET_WASM
     static constexpr var_types HelperInitClassRetType = TYP_I_IMPL;
 #else
