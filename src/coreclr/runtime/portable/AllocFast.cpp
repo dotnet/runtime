@@ -122,8 +122,9 @@ static Object* NewArrayFastAlign2xPtrCore(MethodTable* pMT, INT_PTR size TRANSIT
         cxt->setAllocPtr(alloc_ptr + paddedSize);
         if (requiresPadding)
         {
-            Object* dummy = (Object*)alloc_ptr;
+            PtrArray* dummy = (PtrArray*)alloc_ptr;
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
+            dummy->SetNumComponents(0);
             alloc_ptr += MIN_OBJECT_SIZE;
         }
         _ASSERTE(IS_ALIGNED(alloc_ptr, 2 * sizeof(void*)));
@@ -249,8 +250,9 @@ FCIMPL1(Object*, RhpNewFastAlign2xPtr, MethodTable* pMT)
         cxt->setAllocPtr(alloc_ptr + paddedSize);
         if (requiresPadding)
         {
-            Object* dummy = (Object*)alloc_ptr;
+            PtrArray* dummy = (PtrArray*)alloc_ptr;
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
+            dummy->SetNumComponents(0);
             alloc_ptr += MIN_OBJECT_SIZE;
         }
         _ASSERTE(IS_ALIGNED(alloc_ptr, 2 * sizeof(void*)));
@@ -290,8 +292,9 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
         cxt->setAllocPtr(alloc_ptr + paddedSize);
         if (requiresPadding)
         {
-            Object* dummy = (Object*)alloc_ptr;
+            PtrArray* dummy = (PtrArray*)alloc_ptr;
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
+            dummy->SetNumComponents(0);
             alloc_ptr += MIN_OBJECT_SIZE;
         }
         _ASSERTE((((size_t)alloc_ptr) & (2 * sizeof(void*) - 1)) == sizeof(void*));
