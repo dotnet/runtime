@@ -7760,6 +7760,28 @@ bool MethodContext::IsStringContentEqual(LightWeightMap<DWORD, DWORD>* prev, Lig
     }
 }
 
+void MethodContext::recCanValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn, bool result)
+{
+    if (CanValueClassInstancePointerEscape == nullptr)
+        CanValueClassInstancePointerEscape = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key   = CastHandle(ftn);
+    DWORD     value = result ? 1 : 0;
+    CanValueClassInstancePointerEscape->Add(key, value);
+    DEBUG_REC(dmpCanValueClassInstancePointerEscape(key, value));
+}
+void MethodContext::dmpCanValueClassInstancePointerEscape(DWORDLONG key, DWORD value)
+{
+    printf("CanValueClassInstancePointerEscape key ftn-%016" PRIX64 ", value res-%u", key, value);
+}
+bool MethodContext::repCanValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
+{
+    DWORDLONG key   = CastHandle(ftn);
+    DWORD     value = LookupByKeyOrMiss(CanValueClassInstancePointerEscape, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpCanValueClassInstancePointerEscape(key, value));
+    return value != 0;
+}
+
 bool g_debugRec = false;
 bool g_debugRep = false;
 

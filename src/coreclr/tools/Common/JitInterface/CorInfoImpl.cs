@@ -1082,6 +1082,44 @@ namespace Internal.JitInterface
             return method.IsIntrinsic || HardwareIntrinsicHelpers.IsHardwareIntrinsic(method);
         }
 
+        private bool canValueClassInstancePointerEscape(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            MethodDesc method = HandleToObject(ftn);
+
+            // We only reason about the receiver of an instance method. This works for both direct and
+            // virtual/interface calls, and regardless of whether 'ftn' is the base (e.g. interface)
+            // method or the derived method: a method that lets 'this' escape must, together with every
+            // method it overrides, be annotated with [UnscopedRef], so inspecting the called method
+            // here is sufficient.
+            if (method.Signature.IsStatic)
+                return true;
+
+            if (method.GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod)
+                return true;
+
+            // The guarantee only holds for modules that opted into the ref safety rules augment
+            // (RefSafetyRulesAttribute version 11 or above).
+            if (!ModuleOptsIntoRefSafetyRules(ecmaMethod.Module, 11))
+                return true;
+
+            // Per the augment, the 'this' pointer of a value type instance method does not escape the
+            // method unless the method is annotated with [UnscopedRef].
+            return ecmaMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "UnscopedRefAttribute");
+        }
+
+        private static bool ModuleOptsIntoRefSafetyRules(EcmaModule module, int minVersion)
+        {
+            var reader = module.MetadataReader;
+            var handle = reader.GetCustomAttributeHandle(
+                reader.GetModuleDefinition().GetCustomAttributes(),
+                "System.Runtime.CompilerServices", "RefSafetyRulesAttribute");
+            if (handle.IsNil)
+                return false;
+
+            var value = reader.GetCustomAttribute(handle).DecodeValue(new CustomAttributeTypeProvider(module));
+            return value.FixedArguments.Length == 1 && value.FixedArguments[0].Value is int version && version >= minVersion;
+        }
+
         private uint getMethodAttribsInternal(MethodDesc method)
         {
             CorInfoFlag result = 0;

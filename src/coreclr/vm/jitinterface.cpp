@@ -37,6 +37,7 @@
 #include "ecall.h"
 #include "generics.h"
 #include "typestring.h"
+#include "caparser.h"
 #include "typedesc.h"
 #include "genericdict.h"
 #include "array.h"
@@ -6431,6 +6432,76 @@ bool CEEInfo::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     EE_TO_JIT_TRANSITION_LEAF();
 
     return ret;
+}
+
+// Determine whether 'pModule' opted into the ECMA-335 augment for escaping value type instance
+// pointers by applying RefSafetyRulesAttribute with a version of at least 'minVersion' (11 for the
+// initial augment). The attribute is emitted at module scope by the C# compiler.
+static bool ModuleOptsIntoRefSafetyRules(Module* pModule, int minVersion)
+{
+    STANDARD_VM_CONTRACT;
+
+    const void* pData  = NULL;
+    ULONG       cbData = 0;
+    HRESULT     hr =
+        pModule->GetCustomAttribute(TokenFromRid(1, mdtModule), WellKnownAttribute::RefSafetyRules, &pData, &cbData);
+    if (hr != S_OK)
+    {
+        return false;
+    }
+
+    // RefSafetyRulesAttribute(int version): a 2-byte prolog followed by the int32 version argument.
+    CustomAttributeParser cap(pData, cbData);
+    if (FAILED(cap.SkipProlog()))
+    {
+        return false;
+    }
+
+    INT32 version;
+    if (FAILED(cap.GetI4(&version)))
+    {
+        return false;
+    }
+
+    return version >= minVersion;
+}
+
+bool CEEInfo::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    // Conservatively assume the value type instance pointer may escape the callee.
+    bool result = true;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(ftn != NULL);
+
+    MethodDesc* pMD = GetMethod(ftn);
+
+    // We only reason about the receiver of an instance method. This works for both direct and
+    // virtual/interface calls, and regardless of whether 'ftn' is the base (e.g. interface) method or
+    // the derived method: a method that lets 'this' escape must, together with every method it
+    // overrides, be annotated with [UnscopedRef], so inspecting the called method here is sufficient.
+    if (!pMD->IsStatic())
+    {
+        // The guarantee only holds for modules that opted into the ref safety rules augment
+        // (RefSafetyRulesAttribute version 11 or above).
+        if (ModuleOptsIntoRefSafetyRules(pMD->GetModule(), 11))
+        {
+            // Per the augment, the 'this' pointer of a value type instance method does not escape
+            // the method unless the method is annotated with [UnscopedRef].
+            result = (pMD->GetCustomAttribute(WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
 }
 
 bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)

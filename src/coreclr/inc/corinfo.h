@@ -2114,6 +2114,18 @@ public:
     // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) & CORINFO_FLG_INTRINSIC, except faster.
     virtual bool isIntrinsic(CORINFO_METHOD_HANDLE ftn) = 0;
 
+    // Check whether the value type instance pointer ('this') passed to a value type instance
+    // method 'ftn' could possibly escape the method when it is called. This works for both direct
+    // and virtual/interface calls: since a method that lets 'this' escape must, together with every
+    // method it overrides, be annotated with [UnscopedRef], checking the called method (whether the
+    // base or the derived method) is sufficient.
+    //
+    // A 'false' result means the runtime can guarantee, based on the ECMA-335 augment tied to
+    // 'RefSafetyRulesAttribute', that the instance pointer does not escape 'ftn'. This allows the
+    // JIT to replace a heap box with a stack-allocated copy when devirtualizing calls onto boxed
+    // value types. A 'true' (conservative) result means no such guarantee can be made.
+    virtual bool canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn) = 0;
+
     // Notify EE about intent to rely on given MethodInfo in the current method
     // EE returns false if we're not allowed to do so and the methodinfo may change.
     // Example of a scenario addressed by notifyMethodInfoUsage:

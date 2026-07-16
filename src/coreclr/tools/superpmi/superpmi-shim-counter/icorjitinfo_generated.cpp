@@ -19,6 +19,13 @@ bool interceptor_ICJI::isIntrinsic(
     return original_ICorJitInfo->isIntrinsic(ftn);
 }
 
+bool interceptor_ICJI::canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    mcs->AddCall("canValueClassInstancePointerEscape");
+    return original_ICorJitInfo->canValueClassInstancePointerEscape(ftn);
+}
+
 bool interceptor_ICJI::notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn)
 {

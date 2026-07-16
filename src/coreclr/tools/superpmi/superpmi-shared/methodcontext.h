@@ -122,6 +122,10 @@ public:
     void dmpIsIntrinsic(DWORDLONG key, DWORD value);
     bool repIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
+    void recCanValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn, bool result);
+    void dmpCanValueClassInstancePointerEscape(DWORDLONG key, DWORD value);
+    bool repCanValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn);
+
     void recNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn, bool result);
     void dmpNotifyMethodInfoUsage(DWORDLONG key, DWORD value);
     bool repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn);
@@ -1219,6 +1223,7 @@ enum mcPackets
     Packet_GetAsyncOtherVariant = 237,
     Packet_GetAwaitReturnCall = 238,
     Packet_GetAddressAlignment = 239,
+    Packet_CanValueClassInstancePointerEscape = 240,
 };
 
 void SetDebugDumpVariables();
