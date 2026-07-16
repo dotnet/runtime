@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -12,10 +13,7 @@ namespace System.Numerics
         : IComparable,
           IComparable<Decimal64>,
           IEquatable<Decimal64>,
-          IFloatingPointConstants<Decimal64>,
-          INumber<Decimal64>,
-          INumberBase<Decimal64>,
-          ISignedNumber<Decimal64>,
+          IFloatingPoint<Decimal64>,
           ISpanFormattable,
           ISpanParsable<Decimal64>,
           IMinMaxValue<Decimal64>,
@@ -758,6 +756,115 @@ namespace System.Numerics
 
         /// <summary>Gets the mathematical constant <c>tau</c>.</summary>
         public static Decimal64 Tau => new Decimal64(TauValue);
+
+        //
+        // IFloatingPoint
+        //
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        public static Decimal64 Ceiling(Decimal64 x) => new Decimal64(Number.RoundDecimalIeee754<Decimal64, ulong>(x._value, 0, MidpointRounding.ToPositiveInfinity));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(Decimal64 value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(Decimal64 value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        public static Decimal64 Floor(Decimal64 x) => new Decimal64(Number.RoundDecimalIeee754<Decimal64, ulong>(x._value, 0, MidpointRounding.ToNegativeInfinity));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        public static Decimal64 Round(Decimal64 x) => new Decimal64(Number.RoundDecimalIeee754<Decimal64, ulong>(x._value, 0, MidpointRounding.ToEven));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
+        public static Decimal64 Round(Decimal64 x, int digits) => new Decimal64(Number.RoundDecimalIeee754<Decimal64, ulong>(x._value, digits, MidpointRounding.ToEven));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, MidpointRounding)" />
+        public static Decimal64 Round(Decimal64 x, MidpointRounding mode) => new Decimal64(Number.RoundDecimalIeee754<Decimal64, ulong>(x._value, 0, mode));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int, MidpointRounding)" />
+        public static Decimal64 Round(Decimal64 x, int digits, MidpointRounding mode) => new Decimal64(Number.RoundDecimalIeee754<Decimal64, ulong>(x._value, digits, mode));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        public static Decimal64 Truncate(Decimal64 x) => new Decimal64(Number.RoundDecimalIeee754<Decimal64, ulong>(x._value, 0, MidpointRounding.ToZero));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<Decimal64>.GetExponentByteCount() => sizeof(int);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        int IFloatingPoint<Decimal64>.GetExponentShortestBitLength()
+        {
+            int exponent = Number.UnpackDecimalIeee754<Decimal64, ulong>(_value).UnbiasedExponent;
+
+            if (exponent >= 0)
+            {
+                return (sizeof(int) * 8) - int.LeadingZeroCount(exponent);
+            }
+            else
+            {
+                return (sizeof(int) * 8) + 1 - int.LeadingZeroCount(~exponent);
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<Decimal64>.GetSignificandBitLength() => 54;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<Decimal64>.GetSignificandByteCount() => sizeof(ulong);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal64>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt32BigEndian(destination, Number.UnpackDecimalIeee754<Decimal64, ulong>(_value).UnbiasedExponent))
+            {
+                bytesWritten = sizeof(int);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal64>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt32LittleEndian(destination, Number.UnpackDecimalIeee754<Decimal64, ulong>(_value).UnbiasedExponent))
+            {
+                bytesWritten = sizeof(int);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal64>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt64BigEndian(destination, Number.UnpackDecimalIeee754<Decimal64, ulong>(_value).Significand))
+            {
+                bytesWritten = sizeof(ulong);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal64>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt64LittleEndian(destination, Number.UnpackDecimalIeee754<Decimal64, ulong>(_value).Significand))
+            {
+                bytesWritten = sizeof(ulong);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>

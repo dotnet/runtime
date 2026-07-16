@@ -1116,6 +1116,106 @@ namespace System
         }
 
         /// <summary>
+        /// Rounds a finite value to <paramref name="digits"/> fractional digits under <paramref name="mode"/>.
+        /// The value is <c>coefficient * 10^exponent</c>; when its quantum exponent is already at or above
+        /// <c>-digits</c> there is nothing to round and it is returned unchanged. Otherwise the digits below
+        /// <c>10^(-digits)</c> are discarded and the retained coefficient is incremented per <paramref name="mode"/>.
+        /// Every intermediate fits a single limb: the divisor is at most <c>10^(Precision - 1)</c> and dividing by
+        /// at least ten keeps the rounded coefficient below <c>MaxSignificand</c>.
+        /// </summary>
+        internal static TValue RoundDecimalIeee754<TDecimal, TValue>(TValue bits, int digits, MidpointRounding mode)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (digits < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_RoundingDigits(nameof(digits));
+            }
+
+            if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
+            {
+                ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+            }
+
+            if (TDecimal.IsNaN(bits))
+            {
+                return bits;
+            }
+
+            if (TDecimal.IsInfinity(bits))
+            {
+                // Canonicalize so a non-canonical infinity operand rounds to the canonical infinity.
+                return TDecimal.IsNegative(bits) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            DecodedDecimalIeee754<TValue> a = UnpackDecimalIeee754<TDecimal, TValue>(bits);
+            int targetExponent = -digits;
+
+            if (a.UnbiasedExponent >= targetExponent)
+            {
+                // The quantum is already at or coarser than the requested precision; nothing is discarded. Re-encode so
+                // a non-canonical operand (coefficient above the format maximum, unpacked to zero) is returned canonical.
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(a.Signed, a.Significand, a.UnbiasedExponent);
+            }
+
+            int drop = targetExponent - a.UnbiasedExponent;
+            int coefficientDigits = TValue.IsZero(a.Significand) ? 0 : TDecimal.CountDigits(a.Significand);
+
+            TValue five = TValue.CreateTruncating(5);
+            TValue quotient;
+
+            // Sign of (discarded - half quantum): negative below the midpoint, zero at it, positive above it.
+            int discardedComparedToHalf;
+            bool discardedNonZero;
+
+            if (drop >= coefficientDigits)
+            {
+                // Every coefficient digit is discarded, so the retained value is zero before rounding.
+                quotient = TValue.Zero;
+
+                if (drop > coefficientDigits)
+                {
+                    // The whole coefficient is strictly less than half of the discarded quantum.
+                    discardedComparedToHalf = -1;
+                    discardedNonZero = !TValue.IsZero(a.Significand);
+                }
+                else
+                {
+                    TValue half = five * TDecimal.Power10(coefficientDigits - 1);
+                    discardedComparedToHalf = a.Significand.CompareTo(half);
+                    discardedNonZero = true;
+                }
+            }
+            else
+            {
+                TValue divisor = TDecimal.Power10(drop);
+                quotient = a.Significand / divisor;
+
+                TValue discarded = a.Significand - (quotient * divisor);
+                TValue half = five * TDecimal.Power10(drop - 1);
+                discardedComparedToHalf = discarded.CompareTo(half);
+                discardedNonZero = !TValue.IsZero(discarded);
+            }
+
+            bool roundAwayFromZero = mode switch
+            {
+                MidpointRounding.ToEven => (discardedComparedToHalf > 0) || ((discardedComparedToHalf == 0) && !TValue.IsZero(quotient & TValue.One)),
+                MidpointRounding.AwayFromZero => discardedComparedToHalf >= 0,
+                MidpointRounding.ToZero => false,
+                MidpointRounding.ToNegativeInfinity => discardedNonZero && a.Signed,
+                MidpointRounding.ToPositiveInfinity => discardedNonZero && !a.Signed,
+                _ => throw new UnreachableException(),
+            };
+
+            if (roundAwayFromZero)
+            {
+                quotient += TValue.One;
+            }
+
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(a.Signed, quotient, targetExponent);
+        }
+
+        /// <summary>
         /// Computes the scale factor <c>10^<paramref name="exponent"/></c> used to align addition operands. Exponents
         /// within the format's <c>Power10</c> lookup range (<c>0..Precision - 1</c>) come straight from that table,
         /// matching the existing parsing/formatting paths. The slightly larger alignment exponents
