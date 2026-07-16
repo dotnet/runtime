@@ -884,6 +884,7 @@ AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int32_t
         IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferCompact));
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         (*env)->GetByteArrayRegion(env, loc[dataArray], 0, bytes_to_read, (jbyte*)buffer);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         *read = bytes_to_read;
         ret = SSLStreamStatus_OK;
     }
