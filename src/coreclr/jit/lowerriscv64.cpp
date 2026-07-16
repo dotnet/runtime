@@ -1239,7 +1239,7 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
         if (relop->OperIs(GT_EQ, GT_NE))
         {
             GenTree* relopOp2 = relop->gtGetOp2();
-            if (relopOp2->IsIntegralConst(0) && relopOp2->isContained())
+            if (relopOp2->IsIntegralConst(0))
             {
                 sel->gtCond = relop->gtGetOp1();
                 if (relop->OperIs(GT_EQ))
