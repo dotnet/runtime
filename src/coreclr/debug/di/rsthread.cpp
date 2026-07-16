@@ -2157,7 +2157,7 @@ void CordbThread::GetActiveInternalFramesCallback(const Debugger_STRData * pFram
 
     // Create a CordbInternalFrame.
     CordbInternalFrame * pInternalFrame = new CordbInternalFrame(pThis,
-                                                                 pFrameData->fp,
+                                                                 FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(pFrameData->fp)),
                                                                  pAppDomain,
                                                                  pFrameData);
 
@@ -5154,7 +5154,7 @@ CordbMiscFrame::CordbMiscFrame()
 CordbMiscFrame::CordbMiscFrame(Debugger_JITFuncData * pJITFuncData)
 {
     this->parentIP       = (SIZE_T)pJITFuncData->parentNativeOffset;
-    this->fpParentOrSelf = pJITFuncData->fpParentOrSelf;
+    this->fpParentOrSelf = FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(pJITFuncData->fpParentOrSelf));
     this->fIsFilterFunclet = (pJITFuncData->fIsFilterFrame == TRUE);
 }
 

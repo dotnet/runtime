@@ -519,7 +519,8 @@ struct MSLAYOUT Debugger_JITFuncData
 
     BOOL fIsFilterFrame;
     ULONG64 parentNativeOffset;
-    FramePointer fpParentOrSelf;
+    // FramePointer as CORDB_ADDRESS (fixed 64-bit); RS converts to/from FramePointer.
+    CORDB_ADDRESS fpParentOrSelf;
 
     // indicates if the MethodDesc is a generic function or a method inside a generic class (or
     // both!).
@@ -538,8 +539,10 @@ struct MSLAYOUT Debugger_JITFuncData
 #endif                          // ARM context structures have a 16-byte alignment requirement
 struct MSLAYOUT Debugger_STRData
 {
-    FramePointer            fp;
-    BYTE *                  ctx;   // opaque target CONTEXT bytes (DT_CONTEXT image)
+    // fp is fixed-width across target architectures. ctx points to a DBI-owned
+    // buffer containing the target's opaque CONTEXT byte image.
+    CORDB_ADDRESS           fp;
+    BYTE *                  ctx;
     VMPTR_AppDomain         vmCurrentAppDomainToken;
 
 

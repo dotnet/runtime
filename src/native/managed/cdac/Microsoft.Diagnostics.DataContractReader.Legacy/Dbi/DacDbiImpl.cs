@@ -217,7 +217,84 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int ResolveTypeReference(DacDbiTypeRefData* pTypeRefInfo, DacDbiTypeRefData* pTargetRefInfo)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ResolveTypeReference(pTypeRefInfo, pTargetRefInfo) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        bool resolved = false;
+        TargetPointer targetAssembly = TargetPointer.Null;
+        uint targetTypeDef = 0;
+        pTargetRefInfo->vmAssembly = 0;
+        pTargetRefInfo->typeToken = 0;
+        try
+        {
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle referencingModule = loader.GetModuleHandleFromAssemblyPtr(pTypeRefInfo->vmAssembly);
+
+            uint typeToken = pTypeRefInfo->typeToken;
+            uint tokenType = typeToken & EcmaMetadataUtils.TokenTypeMask;
+
+            // It's a TypeDef already
+            if (tokenType == (uint)EcmaMetadataUtils.TokenType.mdtTypeDef)
+            {
+                targetAssembly = loader.GetAssembly(referencingModule);
+                targetTypeDef = typeToken;
+                resolved = true;
+            }
+            else if (tokenType == (uint)EcmaMetadataUtils.TokenType.mdtTypeRef)
+            {
+                Contracts.IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
+
+                // The TypeRef is already cached in the referencing module's TypeRef->MethodTable map
+                Contracts.ModuleLookupTables tables = loader.GetLookupTables(referencingModule);
+                TargetPointer methodTable = loader.GetModuleLookupMapElement(tables.TypeRefToMethodTable, typeToken, out _);
+                if (methodTable != TargetPointer.Null)
+                {
+                    Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                    Contracts.TypeHandle typeHandle = rts.GetTypeHandle(methodTable);
+                    TargetPointer typeDefModulePtr = rts.GetModule(typeHandle);
+                    Contracts.ModuleHandle typeDefModule = loader.GetModuleHandleFromModulePtr(typeDefModulePtr);
+                    targetAssembly = loader.GetAssembly(typeDefModule);
+                    targetTypeDef = rts.GetTypeDefToken(typeHandle);
+                    resolved = true;
+                }
+
+                // Resolve the TypeRef via metadata (resolution scope + type-forwarder chain).
+                else if (EcmaMetadataUtils.TryResolveTypeRef(loader, ecmaMetadata, referencingModule, typeToken, out targetAssembly, out targetTypeDef))
+                {
+                    resolved = true;
+                }
+            }
+
+            if (resolved)
+            {
+                pTargetRefInfo->vmAssembly = targetAssembly.Value;
+                pTargetRefInfo->typeToken = targetTypeDef;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        if (!resolved && hr == HResults.S_OK)
+        {
+            hr = CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED;
+        }
+
+#if DEBUG
+        if (resolved && _legacy is not null)
+        {
+            DacDbiTypeRefData targetLocal = default;
+            int hrLocal = _legacy.ResolveTypeReference(pTypeRefInfo, &targetLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pTargetRefInfo->vmAssembly == targetLocal.vmAssembly, $"cDAC: {pTargetRefInfo->vmAssembly:x}, DAC: {targetLocal.vmAssembly:x}");
+                Debug.Assert(pTargetRefInfo->typeToken == targetLocal.typeToken, $"cDAC: {pTargetRefInfo->typeToken:x}, DAC: {targetLocal.typeToken:x}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetModulePath(ulong vmModule, nint pStrFilename, Interop.BOOL* pResult)
     {
@@ -1334,8 +1411,84 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, Interop.BOOL fCodeAvailable, nint pNativeVarData, nint pSequencePoints)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeSequencePointsAndVarInfo(vmMethodDesc, startAddress, fCodeAvailable, pNativeVarData, pSequencePoints) : HResults.E_NOTIMPL;
+    public int GetNativeCodeSequencePointsAndVarInfo(
+        ulong vmMethodDesc,
+        ulong startAddress,
+        Interop.BOOL fCodeAvailable,
+        uint* pFixedArgCount,
+        delegate* unmanaged<NativeVarInfo*, void*, void> fpVarInfoCallback,
+        delegate* unmanaged<DbiOffsetMapping*, void*, void> fpSeqPointCallback,
+        nint pUserData)
+    {
+        // Fully materialize both arrays before invoking any callback to avoid delivering partial results on failure.
+        List<NativeVarInfo> cdacVarInfos = new();
+        List<DbiOffsetMapping> cdacSeqPoints = new();
+        int hr = HResults.S_OK;
+        if (pFixedArgCount != null)
+            *pFixedArgCount = 0;
+        try
+        {
+            Debug.Assert(vmMethodDesc != 0, $"vmMethodDesc is null");
+            Debug.Assert(fCodeAvailable != 0, $"fCodeAvailable is false");
+
+            Contracts.IDebugInfo debugInfo = _target.Contracts.DebugInfo;
+            TargetCodePointer codePointer = new TargetCodePointer(startAddress);
+
+            if (pFixedArgCount != null)
+                *pFixedArgCount = GetArgCount(vmMethodDesc);
+
+            bool hasDebugInfo = debugInfo.HasDebugInfo(codePointer);
+            if (!hasDebugInfo && (fpVarInfoCallback != null || fpSeqPointCallback != null))
+            {
+                hr = HResults.E_FAIL;
+            }
+
+            if (fpVarInfoCallback != null && hasDebugInfo)
+            {
+                IEnumerable<DebugVarInfo> varInfos = debugInfo.GetMethodVarInfo(codePointer, out _);
+                foreach (DebugVarInfo varInfo in varInfos)
+                {
+                    cdacVarInfos.Add(ConvertToNativeVarInfo(varInfo));
+                }
+            }
+
+            if (fpSeqPointCallback != null && hasDebugInfo)
+            {
+                IEnumerable<Contracts.OffsetMapping> sequencePoints = debugInfo.GetMethodNativeMap(codePointer, preferUninstrumented: true, out _);
+                foreach (Contracts.OffsetMapping mapping in sequencePoints)
+                {
+                    cdacSeqPoints.Add(ConvertToDbiOffsetMapping(mapping));
+                }
+            }
+
+            foreach (NativeVarInfo nvi in cdacVarInfos)
+            {
+                NativeVarInfo entry = nvi;
+                fpVarInfoCallback(&entry, (void*)pUserData);
+            }
+
+            foreach (DbiOffsetMapping mapping in cdacSeqPoints)
+            {
+                DbiOffsetMapping entry = mapping;
+                fpSeqPointCallback(&entry, (void*)pUserData);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ValidateNativeCodeInfoAgainstLegacy(
+                vmMethodDesc, startAddress, fCodeAvailable,
+                pFixedArgCount, cdacVarInfos, cdacSeqPoints, hr,
+                varInfoRequested: fpVarInfoCallback != null,
+                seqPointsRequested: fpSeqPointCallback != null);
+        }
+#endif
+        return hr;
+    }
 
     public int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal)
     {
@@ -1533,10 +1686,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (handleData.IsValid)
             {
                 IStackWalk sw = _target.Contracts.StackWalk;
-                StackwalkFlag flags = (handleData.Current.State == StackWalkState.NativeMarker)
-                    ? StackwalkFlag.X86ESPIgnoresCalleePoppedArgs
-                    : StackwalkFlag.Default;
-                byte[] context = sw.GetRawContext(handleData.Current, flags);
+                byte[] context = sw.GetRawContext(handleData.Current);
 
                 // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L184
                 RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
@@ -4309,21 +4459,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(new TargetPointer(obj));
-                TypeHandle th = rts.GetTypeHandle(mt);
-                TargetPointer canonMT = rts.GetCanonicalMethodTable(th);
 
-                if (mt == canonMT)
-                {
-                    isValid = Interop.BOOL.TRUE;
-                }
-                else if (!rts.IsCanonicalMethodTable(th) || rts.IsContinuationWithoutMetadata(th))
-                {
-                    TargetPointer cls = rts.GetClassPointer(th);
-                    TypeHandle canonTh = rts.GetTypeHandle(canonMT);
-                    TargetPointer canonCls = rts.GetClassPointer(canonTh);
-                    if (canonCls == cls)
-                        isValid = Interop.BOOL.TRUE;
-                }
+                // GetTypeHandle validation performs the MethodTable -> EEClass -> MethodTable
+                // round-trip check (the port of MethodTable::ValidateWithPossibleAV), so a
+                // successfully resolved type handle means the object's MethodTable is self-consistent.
+                rts.GetTypeHandle(mt);
+                isValid = Interop.BOOL.TRUE;
             }
             catch (System.Exception)
             {
