@@ -9516,6 +9516,13 @@ public:
 
     CORINFO_ASYNC_INFO* eeGetAsyncInfo();
 
+#if defined(TARGET_WASM)
+    CORINFO_WASM_WELLKNOWN_GLOBALS wasmWellKnownGlobals;
+    bool                           wasmWellKnownGlobalsInitialized = false;
+
+    CORINFO_WASM_WELLKNOWN_GLOBALS* eeGetWasmWellKnownGlobals();
+#endif // defined(TARGET_WASM)
+
     // Gets the offset of a SDArray's first element
     static unsigned eeGetArrayDataOffset();
 
