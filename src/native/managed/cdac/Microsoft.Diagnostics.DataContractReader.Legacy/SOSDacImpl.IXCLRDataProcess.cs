@@ -214,16 +214,155 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     }
 
     int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        ulong handleLocal = 0;
+        try
+        {
+            if (_legacyProcess is not null)
+                hrLocal = _legacyProcess.StartEnumAppDomains(handle is null ? null : &handleLocal);
+
+            if (handle is null)
+                throw new NullReferenceException();
+
+            *handle = DefaultAppDomainId;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*handle == handleLocal, $"cDAC: {*handle}, DAC: {handleLocal}");
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EnumAppDomain(handle, appDomain) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        ulong handleLocal = 0;
+        try
+        {
+            if (handle is null)
+                throw new NullReferenceException();
+
+            IXCLRDataAppDomain? legacyAppDomain = null;
+            handleLocal = *handle;
+            if (_legacyProcess is not null)
+            {
+                void* legacyAppDomainPtr = null;
+                hrLocal = _legacyProcess.EnumAppDomain(
+                    &handleLocal,
+                    appDomain is null ? null : &legacyAppDomainPtr);
+                if (appDomain is not null)
+                    legacyAppDomain = ConvertAndReleaseComPointer<IXCLRDataAppDomain>(legacyAppDomainPtr);
+            }
+
+            if (*handle == DefaultAppDomainId)
+            {
+                if (appDomain is null)
+                    throw new NullReferenceException();
+
+                TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
+                *appDomain = ComInterfaceMarshaller<IXCLRDataAppDomain>.ConvertToUnmanaged(
+                    new ClrDataAppDomain(_target, currentAppDomain, legacyAppDomain));
+                *handle = 0;
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+            if (handle is not null)
+                Debug.Assert(*handle == handleLocal, $"cDAC: {*handle}, DAC: {handleLocal}");
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.EndEnumAppDomains(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EndEnumAppDomains(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            int hrLocal = _legacyProcess.EndEnumAppDomains(handle);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.GetAppDomainByUniqueID(ulong id, /*IXCLRDataAppDomain*/ void** appDomain)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetAppDomainByUniqueID(id, appDomain) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        try
+        {
+            IXCLRDataAppDomain? legacyAppDomain = null;
+            if (_legacyProcess is not null)
+            {
+                void* legacyAppDomainPtr = null;
+                hrLocal = _legacyProcess.GetAppDomainByUniqueID(
+                    id,
+                    appDomain is null ? null : &legacyAppDomainPtr);
+                if (appDomain is not null)
+                    legacyAppDomain = ConvertAndReleaseComPointer<IXCLRDataAppDomain>(legacyAppDomainPtr);
+            }
+
+            if (id != DefaultAppDomainId)
+                throw new ArgumentException();
+
+            if (appDomain is null)
+                throw new NullReferenceException();
+
+            TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
+            *appDomain = ComInterfaceMarshaller<IXCLRDataAppDomain>.ConvertToUnmanaged(
+                new ClrDataAppDomain(_target, currentAppDomain, legacyAppDomain));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
+        return hr;
+    }
+
+    private static T? ConvertAndReleaseComPointer<T>(void* pointer) where T : class
+    {
+        if (pointer is null)
+            return null;
+
+        try
+        {
+            return ComInterfaceMarshaller<T>.ConvertToManaged(pointer);
+        }
+        finally
+        {
+            ComInterfaceMarshaller<T>.Free(pointer);
+        }
+    }
 
     int IXCLRDataProcess.StartEnumAssemblies(ulong* handle)
         => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumAssemblies(handle) : HResults.E_NOTIMPL;
