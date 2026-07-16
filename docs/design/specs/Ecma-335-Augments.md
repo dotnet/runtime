@@ -1040,11 +1040,11 @@ Applying the custom attribute `System.Runtime.CompilerServices.RefSafetyRulesAtt
 Languages may define more rules based on this attribute, but for the purpose of defining valid IL only the following restrictions must be satisfied.
 
 #### III.1.7.7.1 (Version 11 and above) Escaping `this` from value type instance methods
-A pointer value is said to escape when it becomes accessible outside the given scope. A pointer escapes if the pointer itself, or pointer value derived from it (for example, by applying a field offset), is stored, returned, or otherwise propagated such that code executing outside the given scope can access it.
+A pointer value is said to escape when it becomes accessible outside the given scope. A pointer escapes if the pointer itself, or a pointer value derived from it (for example, by applying a field offset), is stored, returned, or otherwise propagated such that code executing outside the given scope can access it.
 
 Valid IL shall ensure that the `this` argument of an instance method on a value type does not escape the method unless at least one of the following conditions holds:
 - The method is annotated with `System.Diagnostics.CodeAnalysis.UnscopedRefAttribute`.
-- The value type instance resides in unmanaged memory, stack-allocated storage or pinned GC heap storage.
+- The value type instance resides in unmanaged memory, stack-allocated storage, or pinned GC heap storage.
 
 This restriction permits an optimizing compiler to eliminate boxing of value types when it is safe to do so.
 
