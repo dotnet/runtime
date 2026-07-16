@@ -1531,10 +1531,11 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
 
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
-        // The LOH always guarantees at least 8-byte alignment, regardless of platform. Moreover it doesn't
-        // support mis-aligned object headers so we can't support biased headers. Luckily for us
-        // we've managed to arrange things so the only case where we see a bias is for boxed value types and
-        // these can never get large enough to be allocated on the LOH.
+        // The LOH always guarantees at least 8-byte alignment, regardless of platform. It doesn't support
+        // mis-aligned (biased) object headers, so a biased header must never be requested for an object that
+        // lands here: boxed value types can never grow large enough to reach the LOH, and the array allocators
+        // only ever request a bias on the small object heap. As a consequence, objects that reach the LOH fall
+        // back to 8-byte alignment even when 2 * pointer-size alignment was requested (e.g. a large Int128[]).
         ASSERT((flags & GC_ALLOC_ALIGN_2XPTR_BIAS) == 0);
         ASSERT(65536 < loh_size_threshold);
 

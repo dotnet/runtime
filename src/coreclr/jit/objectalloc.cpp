@@ -1569,6 +1569,17 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
 
     GenTree* const data = candidate.m_tree->AsLclVar()->Data();
 
+#ifdef TARGET_64BIT
+    // Arrays whose payload requires 2 * pointer-size alignment can't currently be stack allocated on 64-bit:
+    // the JIT has no mechanism to give a single frame local greater-than-pointer-size alignment (lvStructDoubleAlign
+    // only aligns to 8 bytes and is 32-bit only). Leave these on the heap where the alignment is honored.
+    if (data->AsCall()->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN_2XPTR)
+    {
+        candidate.m_onHeapReason = "[array requires 2x pointer-size alignment]";
+        return false;
+    }
+#endif // TARGET_64BIT
+
     //------------------------------------------------------------------------
     // We expect the following expression tree at this point
     // For non-ReadyToRun:
@@ -1781,6 +1792,12 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     const bool         alignTo2xPtr  = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN_2XPTR;
     const unsigned int lclNum        = m_compiler->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
     LclVarDsc* const   lclDsc        = m_compiler->lvaGetDesc(lclNum);
+
+#ifdef TARGET_64BIT
+    // 2 * pointer-size aligned arrays are never stack allocated on 64-bit (see MorphAllocObjNodeHelperArr), so
+    // 2 * pointer-size here is only ever 8 bytes, honored below via lvStructDoubleAlign.
+    assert(!alignTo2xPtr);
+#endif
 
     if (alignTo2xPtr)
     {

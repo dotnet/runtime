@@ -685,11 +685,10 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         if (pElementMT->RequiresAlign2xPtr() && pElementMT->IsValueType())
         {
             // This platform requires that certain fields are 2 * pointer-size aligned (and the runtime doesn't provide
-            // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
-            // header that requires alignment we need to be careful. However it just so happens that all the
-            // cases we care about (single and multi-dim arrays of value types) have headers whose size is a
-            // whole multiple of the required alignment, so the alignment requirements for the header and the
-            // payload are the same.
+            // this guarantee implicitly, e.g. on 32-bit platforms). It's the array payload, not the header, that
+            // requires alignment. For SZARRAYs the payload always sits a whole multiple of the required alignment past
+            // the object start (the header size is a whole multiple of it), so aligning the object start suffices and
+            // no biased header is needed.
             _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & (2 * DATA_ALIGNMENT - 1)) == 0);
             flags |= GC_ALLOC_ALIGN_2XPTR;
         }
@@ -934,13 +933,18 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         if (pElementMT->RequiresAlign2xPtr() && pElementMT->IsValueType())
         {
             // This platform requires that certain fields are 2 * pointer-size aligned (and the runtime doesn't provide
-            // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
-            // header that requires alignment we need to be careful. However it just so happens that all the
-            // cases we care about (single and multi-dim arrays of value types) have headers whose size is a
-            // whole multiple of the required alignment, so the alignment requirements for the header and the
-            // payload are the same.
-            _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & (2 * DATA_ALIGNMENT - 1)) == 0);
+            // this guarantee implicitly, e.g. on 32-bit platforms). It's the array payload, not the header, that
+            // requires alignment, so we align based on where the payload sits relative to a 2 * pointer-size boundary.
+            // The payload follows the header, whose size is the base size minus the object header:
+            //   - phase == 0: the payload is a whole multiple of the alignment past the object start, so aligning the
+            //     object start suffices (single-dim and even-rank multi-dim value-type arrays).
+            //   - phase == DATA_ALIGNMENT: the payload sits one pointer past the boundary, so we request a biased
+            //     (mis-aligned by one pointer) header (odd-rank multi-dim value-type arrays).
+            size_t payloadPhase = (pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & (2 * DATA_ALIGNMENT - 1);
+            _ASSERTE(payloadPhase == 0 || payloadPhase == DATA_ALIGNMENT);
             flags |= GC_ALLOC_ALIGN_2XPTR;
+            if (payloadPhase == DATA_ALIGNMENT)
+                flags |= GC_ALLOC_ALIGN_2XPTR_BIAS;
         }
 #endif
         orArray = (ArrayBase*)Alloc(totalSize, flags);
