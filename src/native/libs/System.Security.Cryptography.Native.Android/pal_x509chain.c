@@ -607,6 +607,7 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
             ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
             loc[endOnly] = (*env)->GetStaticObjectField(
                 env, g_PKIXRevocationCheckerOptionClass, g_PKIXRevocationCheckerOptionOnlyEndEntity);
+            ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
             (*env)->CallBooleanMethod(env, loc[options], g_HashSetAdd, loc[endOnly]);
             ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         }

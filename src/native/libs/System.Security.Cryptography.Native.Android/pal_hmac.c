@@ -107,6 +107,7 @@ ARGS_NON_NULL_ALL static int32_t DoFinal(JNIEnv* env, jobject mac, uint8_t* data
     loc[dataBytes] = (jbyteArray)(*env)->CallObjectMethod(env, mac, g_MacDoFinal);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     dataBytesLen = (*env)->GetArrayLength(env, loc[dataBytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->GetByteArrayRegion(env, loc[dataBytes], 0, dataBytesLen, (jbyte*) data);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     *len = (int32_t)dataBytesLen;
