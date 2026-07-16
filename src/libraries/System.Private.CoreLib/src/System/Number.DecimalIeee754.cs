@@ -598,6 +598,18 @@ namespace System
         }
 
         /// <summary>
+        /// Returns <paramref name="bits" /> unchanged when it is a number, or the canonical quiet NaN when it is a
+        /// NaN. The minimum/maximum family selects one operand to return; routing that operand through this helper
+        /// canonicalizes a NaN result as IEEE 754-2019 §5.1 requires without disturbing the numeric selection.
+        /// </summary>
+        private static TValue CanonicalizeIfNaN<TDecimal, TValue>(TValue bits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            return TDecimal.IsNaN(bits) ? PropagateNaN<TDecimal, TValue>(bits, bits) : bits;
+        }
+
+        /// <summary>
         /// Adds two IEEE 754 decimal values represented by their raw bit patterns and returns the
         /// bit pattern of the correctly rounded (round-to-nearest, ties-to-even) sum.
         /// </summary>
@@ -1787,7 +1799,7 @@ namespace System
 
             if (GreaterThanDecimalIeee754<TDecimal, TValue>(ax, ay) || TDecimal.IsNaN(ax))
             {
-                return x;
+                return CanonicalizeIfNaN<TDecimal, TValue>(x);
             }
 
             if (EqualsDecimalIeee754<TDecimal, TValue>(ax, ay))
@@ -1795,7 +1807,7 @@ namespace System
                 return TDecimal.IsNegative(x) ? y : x;
             }
 
-            return y;
+            return CanonicalizeIfNaN<TDecimal, TValue>(y);
         }
 
         internal static TValue MinMagnitudeDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
@@ -1807,7 +1819,7 @@ namespace System
 
             if (LessThanDecimalIeee754<TDecimal, TValue>(ax, ay) || TDecimal.IsNaN(ax))
             {
-                return x;
+                return CanonicalizeIfNaN<TDecimal, TValue>(x);
             }
 
             if (EqualsDecimalIeee754<TDecimal, TValue>(ax, ay))
@@ -1815,7 +1827,7 @@ namespace System
                 return TDecimal.IsNegative(x) ? x : y;
             }
 
-            return y;
+            return CanonicalizeIfNaN<TDecimal, TValue>(y);
         }
 
         internal static TValue MaxMagnitudeNumberDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
@@ -1827,7 +1839,7 @@ namespace System
 
             if (GreaterThanDecimalIeee754<TDecimal, TValue>(ax, ay) || TDecimal.IsNaN(ay))
             {
-                return x;
+                return CanonicalizeIfNaN<TDecimal, TValue>(x);
             }
 
             if (EqualsDecimalIeee754<TDecimal, TValue>(ax, ay))
@@ -1847,7 +1859,7 @@ namespace System
 
             if (LessThanDecimalIeee754<TDecimal, TValue>(ax, ay) || TDecimal.IsNaN(ay))
             {
-                return x;
+                return CanonicalizeIfNaN<TDecimal, TValue>(x);
             }
 
             if (EqualsDecimalIeee754<TDecimal, TValue>(ax, ay))
@@ -1868,12 +1880,12 @@ namespace System
         {
             if (TDecimal.IsNaN(x))
             {
-                return x;
+                return PropagateNaN<TDecimal, TValue>(x, x);
             }
 
             if (TDecimal.IsNaN(y))
             {
-                return y;
+                return PropagateNaN<TDecimal, TValue>(y, y);
             }
 
             if (!EqualsDecimalIeee754<TDecimal, TValue>(x, y))
@@ -1890,12 +1902,12 @@ namespace System
         {
             if (TDecimal.IsNaN(x))
             {
-                return x;
+                return PropagateNaN<TDecimal, TValue>(x, x);
             }
 
             if (TDecimal.IsNaN(y))
             {
-                return y;
+                return PropagateNaN<TDecimal, TValue>(y, y);
             }
 
             if (!EqualsDecimalIeee754<TDecimal, TValue>(x, y))
@@ -1910,14 +1922,14 @@ namespace System
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            return GreaterThanDecimalIeee754<TDecimal, TValue>(x, y) ? x : y;
+            return CanonicalizeIfNaN<TDecimal, TValue>(GreaterThanDecimalIeee754<TDecimal, TValue>(x, y) ? x : y);
         }
 
         internal static TValue MinNativeDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            return LessThanDecimalIeee754<TDecimal, TValue>(x, y) ? x : y;
+            return CanonicalizeIfNaN<TDecimal, TValue>(LessThanDecimalIeee754<TDecimal, TValue>(x, y) ? x : y);
         }
 
         internal static TValue MaxNumberDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
@@ -1931,7 +1943,7 @@ namespace System
                     return LessThanDecimalIeee754<TDecimal, TValue>(y, x) ? x : y;
                 }
 
-                return x;
+                return CanonicalizeIfNaN<TDecimal, TValue>(x);
             }
 
             return TDecimal.IsNegative(y) ? x : y;
@@ -1948,7 +1960,7 @@ namespace System
                     return LessThanDecimalIeee754<TDecimal, TValue>(x, y) ? x : y;
                 }
 
-                return x;
+                return CanonicalizeIfNaN<TDecimal, TValue>(x);
             }
 
             return TDecimal.IsNegative(x) ? x : y;

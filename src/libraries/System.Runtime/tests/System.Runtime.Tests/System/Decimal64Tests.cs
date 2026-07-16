@@ -2049,6 +2049,8 @@ namespace System.Tests
             yield return new object[] { 0x31C0000000000003UL, 0x7C00000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0xB1C0000000000005UL, 0x7800000000000000UL, 0x7800000000000000UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x7C00000000001234UL }; // non-canonical NaN operand is canonicalized
+            yield return new object[] { 0x31C0000000000005UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL }; // non-canonical NaN operand is canonicalized
         }
 
         [Theory]
@@ -2074,6 +2076,8 @@ namespace System.Tests
             yield return new object[] { 0x31C0000000000003UL, 0x7C00000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0xB1C0000000000005UL, 0x7800000000000000UL, 0xB1C0000000000005UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x7C00000000001234UL }; // non-canonical NaN operand is canonicalized
+            yield return new object[] { 0x31C0000000000005UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL }; // non-canonical NaN operand is canonicalized
         }
 
         [Theory]
@@ -2099,6 +2103,8 @@ namespace System.Tests
             yield return new object[] { 0x31C0000000000003UL, 0x7C00000000000000UL, 0x31C0000000000003UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0xF800000000000000UL };
             yield return new object[] { 0xB1C0000000000005UL, 0x7800000000000000UL, 0x7800000000000000UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x31C0000000000005UL }; // non-canonical NaN dropped in favor of the number
+            yield return new object[] { 0x7E00000000001234UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000001234UL }; // both NaN -> first operand canonicalized
         }
 
         [Theory]
@@ -2124,6 +2130,8 @@ namespace System.Tests
             yield return new object[] { 0x31C0000000000003UL, 0x7C00000000000000UL, 0x31C0000000000003UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0xF800000000000000UL };
             yield return new object[] { 0xB1C0000000000005UL, 0x7800000000000000UL, 0xB1C0000000000005UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x31C0000000000005UL }; // non-canonical NaN dropped in favor of the number
+            yield return new object[] { 0x7E00000000001234UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000001234UL }; // both NaN -> first operand canonicalized
         }
 
         [Theory]
@@ -2178,6 +2186,8 @@ namespace System.Tests
             yield return new object[] { 0xF800000000000000UL, 0x7800000000000000UL, 0x7800000000000000UL };
             yield return new object[] { 0x7800000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0x7C00000000000000UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x7C00000000001234UL }; // non-canonical NaN operand is canonicalized
+            yield return new object[] { 0x31C0000000000005UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL }; // non-canonical NaN operand is canonicalized
         }
 
         [Theory]
@@ -2213,6 +2223,8 @@ namespace System.Tests
             yield return new object[] { 0xF800000000000000UL, 0x7800000000000000UL, 0xF800000000000000UL };
             yield return new object[] { 0x7800000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0x7C00000000000000UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x7C00000000001234UL }; // non-canonical NaN operand is canonicalized
+            yield return new object[] { 0x31C0000000000005UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL }; // non-canonical NaN operand is canonicalized
         }
 
         [Theory]
@@ -2248,6 +2260,8 @@ namespace System.Tests
             yield return new object[] { 0xF800000000000000UL, 0x7800000000000000UL, 0x7800000000000000UL };
             yield return new object[] { 0x7800000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0xF800000000000000UL };
+            yield return new object[] { 0x31C0000000000005UL, 0x7E00000000001234UL, 0x7C00000000001234UL }; // NaN operand wins and is canonicalized
+            yield return new object[] { 0x7E00000000001234UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL }; // both NaN -> second operand canonicalized
         }
 
         [Theory]
@@ -2283,6 +2297,8 @@ namespace System.Tests
             yield return new object[] { 0xF800000000000000UL, 0x7800000000000000UL, 0xF800000000000000UL };
             yield return new object[] { 0x7800000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0xF800000000000000UL };
+            yield return new object[] { 0x31C0000000000005UL, 0x7E00000000001234UL, 0x7C00000000001234UL }; // NaN operand wins and is canonicalized
+            yield return new object[] { 0x7E00000000001234UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL }; // both NaN -> second operand canonicalized
         }
 
         [Theory]
@@ -2318,6 +2334,8 @@ namespace System.Tests
             yield return new object[] { 0xF800000000000000UL, 0x7800000000000000UL, 0x7800000000000000UL };
             yield return new object[] { 0x7800000000000000UL, 0x7C00000000000000UL, 0x7800000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0xF800000000000000UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x31C0000000000005UL }; // non-canonical NaN dropped in favor of the number
+            yield return new object[] { 0x7E00000000001234UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000001234UL }; // both NaN -> first operand canonicalized
         }
 
         [Theory]
@@ -2353,6 +2371,8 @@ namespace System.Tests
             yield return new object[] { 0xF800000000000000UL, 0x7800000000000000UL, 0xF800000000000000UL };
             yield return new object[] { 0x7800000000000000UL, 0x7C00000000000000UL, 0x7800000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0xF800000000000000UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x31C0000000000005UL }; // non-canonical NaN dropped in favor of the number
+            yield return new object[] { 0x7E00000000001234UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000001234UL }; // both NaN -> first operand canonicalized
         }
 
         [Theory]
