@@ -1899,7 +1899,7 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
                 // Wasm integers are sign-agnostic: any 32-bit pattern is a valid i32.const,
                 // reduced to its signed value for a canonical SLEB128 encoding.
                 assert(FitsIn<INT32>(bits) || FitsIn<UINT32>(bits));
-                bits = (int32_t)bits;
+                bits = static_cast<int32_t>(bits);
                 break;
             }
             case TYP_LONG:
