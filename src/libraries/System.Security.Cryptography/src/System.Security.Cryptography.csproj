@@ -1172,6 +1172,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Unix.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509MruCache.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Persistence.cs" />
   </ItemGroup>
