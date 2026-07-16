@@ -11,10 +11,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.Serialization.SerializationInfo.StartDeserialization</Target>
+    <Target>M:System.Environment.get_HasEnvironmentVariablesBeenModified</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Environment.get_HasEnvironmentVariablesBeenModified</Target>
+    <Target>M:System.Runtime.Serialization.SerializationInfo.StartDeserialization</Target>
   </Suppression>
 </Suppressions>
