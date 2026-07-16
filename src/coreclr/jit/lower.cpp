@@ -10346,6 +10346,26 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
             // Mark the block non-interruptible so it can be unrolled: the copy does not report the GC
             // references held in its temporary register(s).
             blkNode->gtBlkOpGcUnsafe = true;
+
+            // Insert a nop so debug sequence points remain interruptible between adjacent non-interruptible copies.
+            //
+            if (m_compiler->opts.compDbgCode)
+            {
+                bool               isClosed;
+                LIR::ReadOnlyRange treeRange = BlockRange().GetTreeRange(blkNode, &isClosed);
+                assert(isClosed);
+
+                GenTree* ilOffset = treeRange.FirstNode()->gtPrev;
+                if ((ilOffset != nullptr) && ilOffset->OperIs(GT_IL_OFFSET))
+                {
+                    GenTree* previous = ilOffset->gtPrev;
+                    if ((previous != nullptr) && previous->OperIs(GT_STORE_BLK) && previous->AsBlk()->gtBlkOpGcUnsafe)
+                    {
+                        GenTree* noOp = new (m_compiler, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
+                        BlockRange().InsertBefore(treeRange.FirstNode(), noOp);
+                    }
+                }
+            }
         }
 #else  // TARGET_WASM
        // WASM lowers this to a single `memory.copy` opcode (not a GC-safe point), so it is safe for
