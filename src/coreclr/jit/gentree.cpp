@@ -390,6 +390,7 @@ void GenTree::ReplaceWith(GenTree* src, Compiler* comp)
     this->gtPrev = prev;
     this->gtNext = next;
 
+#if defined(FEATURE_HW_INTRINSICS)
     // A MultiOp storing its operands inline has an interior self-pointer that the
     // raw copy above left aliasing "src"; re-point it into this node before "src"
     // is destroyed below.
@@ -397,6 +398,7 @@ void GenTree::ReplaceWith(GenTree* src, Compiler* comp)
     {
         AsMultiOp()->RelocateInlineOperandsFrom(src);
     }
+#endif // FEATURE_HW_INTRINSICS
 
 #ifdef DEBUG
     gtSeqNum = 0;
