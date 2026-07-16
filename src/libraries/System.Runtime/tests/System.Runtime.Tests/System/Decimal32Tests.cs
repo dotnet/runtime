@@ -1,6 +1,7 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
@@ -2531,5 +2532,159 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => decimal.CreateChecked(Decimal32.MaxValue));
             Assert.Throws<OverflowException>(() => decimal.CreateChecked(Decimal32.NaN));
         }
+
+        public static IEnumerable<object[]> op_Modulus_TestData()
+        {
+            yield return new object[] { 0x30800000U, 0x3B802494U, 0x30800000U };
+            yield return new object[] { 0x03800001U, 0xD9816ABDU, 0x03800001U };
+            yield return new object[] { 0x220005D4U, 0x9C814F1CU, 0x1C80D12CU };
+            yield return new object[] { 0xBE8024DDU, 0xFC000000U, 0xFC000000U };
+            yield return new object[] { 0x0719EB11U, 0xF11248EDU, 0x0719EB11U };
+            yield return new object[] { 0x588E93BAU, 0x09800000U, 0x7C000000U };
+            yield return new object[] { 0x3F8E737BU, 0x59800005U, 0x3F8E737BU };
+            yield return new object[] { 0xBD0CC3EAU, 0xD600096BU, 0xBD0CC3EAU };
+            yield return new object[] { 0xD5811B28U, 0x6245C247U, 0x895CDC6DU };
+            yield return new object[] { 0x4B000008U, 0xF8000000U, 0x4B000008U };
+            yield return new object[] { 0xC0800011U, 0xD7000000U, 0x7C000000U };
+            yield return new object[] { 0xCD824997U, 0x0E801B4AU, 0x8E800298U };
+            yield return new object[] { 0x58800000U, 0x2B001201U, 0x2B000000U };
+            yield return new object[] { 0x44009111U, 0x3D800000U, 0x7C000000U };
+            yield return new object[] { 0x11000052U, 0x4E936B7DU, 0x11000052U };
+            yield return new object[] { 0xF8000000U, 0xFC000000U, 0xFC000000U };
+            yield return new object[] { 0xDF815AC4U, 0xFC000000U, 0xFC000000U };
+            yield return new object[] { 0x070008A0U, 0xC3064EB3U, 0x070008A0U };
+            yield return new object[] { 0xDD000004U, 0xDC000009U, 0xDC000004U };
+            yield return new object[] { 0xDA08333FU, 0xCA800056U, 0xCA800036U };
+            yield return new object[] { 0xAA001D5CU, 0x86827828U, 0x86816690U };
+            yield return new object[] { 0x9F85DA07U, 0x389FE11CU, 0x9F85DA07U };
+            yield return new object[] { 0xD70013AAU, 0xC5844302U, 0xC581626CU };
+            yield return new object[] { 0xAA80890CU, 0xFC000000U, 0xFC000000U };
+            yield return new object[] { 0x96800218U, 0x3881296CU, 0x96800218U };
+            yield return new object[] { 0x4F000000U, 0x19000001U, 0x19000000U };
+            yield return new object[] { 0x9E800008U, 0x800D7106U, 0x8008A836U };
+            yield return new object[] { 0xF8000000U, 0xCC000000U, 0x7C000000U };
+            yield return new object[] { 0x120DBC9EU, 0xD60049FBU, 0x120DBC9EU };
+            yield return new object[] { 0x92000C66U, 0xF8000000U, 0x92000C66U };
+            yield return new object[] { 0x41CFB625U, 0xF8000000U, 0x41CFB625U };
+            yield return new object[] { 0x912AE74FU, 0xFC000000U, 0xFC000000U };
+            yield return new object[] { 0xA10018DBU, 0xA380107BU, 0xA10018DBU };
+            yield return new object[] { 0x78000000U, 0x8D0137A3U, 0x7C000000U };
+            yield return new object[] { 0xFC000000U, 0xE8E1DBD4U, 0xFC000000U };
+            yield return new object[] { 0x42000000U, 0xB2800000U, 0x7C000000U };
+            yield return new object[] { 0xAE800000U, 0x53800007U, 0xAE800000U };
+            yield return new object[] { 0xB1800002U, 0xFC000000U, 0xFC000000U };
+            yield return new object[] { 0x98000D0EU, 0xF8000000U, 0x98000D0EU };
+            yield return new object[] { 0x84C31037U, 0x97000D9FU, 0x84C31037U };
+        }
+
+        [Theory]
+        [MemberData(nameof(op_Modulus_TestData))]
+        public static void op_Modulus(uint left, uint right, uint expected)
+        {
+            Decimal32 result = Unsafe.BitCast<uint, Decimal32>(left) % Unsafe.BitCast<uint, Decimal32>(right);
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
+        }
+
+        public static IEnumerable<object[]> RoundToDigits_TestData()
+        {
+            yield return new object[] { 0xFC000000U, 0, MidpointRounding.ToEven, 0xFC000000U }; // NaN passes through
+            yield return new object[] { 0x78000000U, 3, MidpointRounding.AwayFromZero, 0x78000000U }; // +Inf passes through
+            yield return new object[] { 0xF8000000U, 2, MidpointRounding.ToPositiveInfinity, 0xF8000000U }; // -Inf passes through
+            yield return new object[] { 0x32000019U, 0, MidpointRounding.ToEven, 0x32800002U }; // 2.5 -> 2 (ToEven)
+            yield return new object[] { 0x32000019U, 0, MidpointRounding.AwayFromZero, 0x32800003U }; // 2.5 -> 3 (AwayFromZero)
+            yield return new object[] { 0x32000023U, 0, MidpointRounding.ToEven, 0x32800004U }; // 3.5 -> 4 (ToEven)
+            yield return new object[] { 0x32000005U, 0, MidpointRounding.ToEven, 0x32800000U }; // 0.5 -> 0 (ToEven)
+            yield return new object[] { 0x32000005U, 0, MidpointRounding.ToPositiveInfinity, 0x32800001U }; // 0.5 -> 1 (ToPositiveInfinity)
+            yield return new object[] { 0xB2000005U, 0, MidpointRounding.ToNegativeInfinity, 0xB2800001U }; // -0.5 -> -1 (ToNegativeInfinity)
+            yield return new object[] { 0xB1800019U, 0, MidpointRounding.ToPositiveInfinity, 0xB2800000U }; // -0.25 -> -0 (ToPositiveInfinity)
+            yield return new object[] { 0xB1800019U, 0, MidpointRounding.ToNegativeInfinity, 0xB2800001U }; // -0.25 -> -1 (ToNegativeInfinity)
+            yield return new object[] { 0x31800019U, 0, MidpointRounding.ToZero, 0x32800000U }; // 0.25 -> 0 (ToZero)
+            yield return new object[] { 0x32000005U, 5, MidpointRounding.ToEven, 0x32000005U }; // already finer than target, no-op
+            yield return new object[] { 0xB2000000U, 0, MidpointRounding.ToNegativeInfinity, 0xB2800000U }; // -0 stays -0 (ToNegativeInfinity)
+            yield return new object[] { 0x3101E240U, 2, MidpointRounding.ToEven, 0x3180303AU }; // 123.456 -> 123.46 (ToEven)
+            yield return new object[] { 0x2280020DU, 7, MidpointRounding.ToNegativeInfinity, 0x2F000000U };
+            yield return new object[] { 0xD9800006U, 8, MidpointRounding.ToNegativeInfinity, 0xD9800006U };
+            yield return new object[] { 0xB4001656U, 3, MidpointRounding.ToZero, 0xB4001656U };
+            yield return new object[] { 0x9604DAA5U, 4, MidpointRounding.AwayFromZero, 0xB0800000U };
+            yield return new object[] { 0x2880005AU, 8, MidpointRounding.ToZero, 0x2E800000U };
+            yield return new object[] { 0xA0000037U, 5, MidpointRounding.ToEven, 0xB0000000U };
+            yield return new object[] { 0xA8000000U, 3, MidpointRounding.ToPositiveInfinity, 0xB1000000U };
+            yield return new object[] { 0x2A8B1C9BU, 6, MidpointRounding.ToNegativeInfinity, 0x2F800000U };
+            yield return new object[] { 0x060006D9U, 2, MidpointRounding.ToEven, 0x31800000U };
+            yield return new object[] { 0x9A000289U, 2, MidpointRounding.ToNegativeInfinity, 0xB1800001U };
+            yield return new object[] { 0x1D80009CU, 2, MidpointRounding.ToZero, 0x31800000U };
+            yield return new object[] { 0x5981B2C3U, 8, MidpointRounding.ToPositiveInfinity, 0x5981B2C3U };
+            yield return new object[] { 0x188EEC20U, 2, MidpointRounding.ToPositiveInfinity, 0x31800001U };
+            yield return new object[] { 0x5B01FC6AU, 0, MidpointRounding.ToNegativeInfinity, 0x5B01FC6AU };
+            yield return new object[] { 0x57801F86U, 1, MidpointRounding.ToEven, 0x57801F86U };
+            yield return new object[] { 0x28800000U, 1, MidpointRounding.ToNegativeInfinity, 0x32000000U };
+            yield return new object[] { 0x5B01246AU, 7, MidpointRounding.AwayFromZero, 0x5B01246AU };
+            yield return new object[] { 0x2A000000U, 3, MidpointRounding.ToNegativeInfinity, 0x31000000U };
+            yield return new object[] { 0xAC800000U, 3, MidpointRounding.ToNegativeInfinity, 0xB1000000U };
+            yield return new object[] { 0x26B74A57U, 0, MidpointRounding.ToZero, 0x32800000U };
+            yield return new object[] { 0xFC000000U, 7, MidpointRounding.ToEven, 0xFC000000U };
+            yield return new object[] { 0xDC800000U, 3, MidpointRounding.ToZero, 0xDC800000U };
+            yield return new object[] { 0xAE000000U, 7, MidpointRounding.ToEven, 0xAF000000U };
+            yield return new object[] { 0x39000000U, 8, MidpointRounding.ToNegativeInfinity, 0x39000000U };
+            yield return new object[] { 0x82800000U, 5, MidpointRounding.ToEven, 0xB0000000U };
+            yield return new object[] { 0x96800042U, 3, MidpointRounding.ToPositiveInfinity, 0xB1000000U };
+            yield return new object[] { 0x4B8009DAU, 6, MidpointRounding.ToPositiveInfinity, 0x4B8009DAU };
+            yield return new object[] { 0xB3800014U, 2, MidpointRounding.ToEven, 0xB3800014U };
+            yield return new object[] { 0xA90015F5U, 4, MidpointRounding.ToNegativeInfinity, 0xB0800001U };
+            yield return new object[] { 0x78000000U, 3, MidpointRounding.ToZero, 0x78000000U };
+            yield return new object[] { 0xD4801DA3U, 5, MidpointRounding.ToEven, 0xD4801DA3U };
+            yield return new object[] { 0x08016897U, 1, MidpointRounding.ToPositiveInfinity, 0x32000001U };
+            yield return new object[] { 0xB5000000U, 0, MidpointRounding.ToZero, 0xB5000000U };
+            yield return new object[] { 0xFC000000U, 2, MidpointRounding.ToNegativeInfinity, 0xFC000000U };
+            yield return new object[] { 0xD02E0F8DU, 6, MidpointRounding.ToZero, 0xD02E0F8DU };
+            yield return new object[] { 0x9980236DU, 6, MidpointRounding.AwayFromZero, 0xAF800000U };
+            yield return new object[] { 0x3980E252U, 7, MidpointRounding.ToEven, 0x3980E252U };
+            yield return new object[] { 0x9B8B73CFU, 6, MidpointRounding.ToEven, 0xAF800000U };
+            yield return new object[] { 0x2E00034EU, 0, MidpointRounding.AwayFromZero, 0x32800000U };
+            yield return new object[] { 0xAE8C7F3EU, 9, MidpointRounding.ToPositiveInfinity, 0xAE8C7F3EU };
+        }
+
+        [Theory]
+        [MemberData(nameof(RoundToDigits_TestData))]
+        public static void RoundToDigits(uint value, int digits, MidpointRounding mode, uint expected)
+        {
+            Decimal32 result = Decimal32.Round(Unsafe.BitCast<uint, Decimal32>(value), digits, mode);
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
+        }
+
+        [Fact]
+        public static void RoundConvenienceOverloads()
+        {
+            Decimal32 x = Unsafe.BitCast<uint, Decimal32>(0x32000019U); // 2.5
+
+            Assert.Equal(Decimal32.Round(x, 0, MidpointRounding.ToPositiveInfinity), Decimal32.Ceiling(x));
+            Assert.Equal(Decimal32.Round(x, 0, MidpointRounding.ToNegativeInfinity), Decimal32.Floor(x));
+            Assert.Equal(Decimal32.Round(x, 0, MidpointRounding.ToZero), Decimal32.Truncate(x));
+            Assert.Equal(Decimal32.Round(x, 0, MidpointRounding.ToEven), Decimal32.Round(x));
+            Assert.Equal(Decimal32.Round(x, 0, MidpointRounding.AwayFromZero), Decimal32.Round(x, MidpointRounding.AwayFromZero));
+            Assert.Equal(Decimal32.Round(x, 2, MidpointRounding.ToEven), Decimal32.Round(x, 2));
+        }
+
+        [Fact]
+        public static void IFloatingPoint_ExponentAndSignificand()
+        {
+            IFloatingPoint<Decimal32> value = Unsafe.BitCast<uint, Decimal32>(0x31803039U); // 123.45
+
+            Assert.Equal(sizeof(int), value.GetExponentByteCount());
+            Assert.Equal(sizeof(uint), value.GetSignificandByteCount());
+
+            Span<byte> exponent = stackalloc byte[value.GetExponentByteCount()];
+            Assert.True(value.TryWriteExponentLittleEndian(exponent, out int exponentWritten));
+            Assert.Equal(sizeof(int), exponentWritten);
+            Assert.Equal(-2, BinaryPrimitives.ReadInt32LittleEndian(exponent));
+
+            Span<byte> significand = stackalloc byte[value.GetSignificandByteCount()];
+            Assert.True(value.TryWriteSignificandLittleEndian(significand, out int significandWritten));
+            Assert.Equal(sizeof(uint), significandWritten);
+            Assert.Equal(12345u, BinaryPrimitives.ReadUInt32LittleEndian(significand));
+
+            Assert.Equal(123, Decimal32.ConvertToInteger<int>(Unsafe.BitCast<uint, Decimal32>(0x31803039U)));
+        }
+
     }
 }
