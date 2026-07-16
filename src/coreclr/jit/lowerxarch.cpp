@@ -660,7 +660,7 @@ void Lowering::LowerCast(GenTree* tree)
         //
         // This creates the equivalent of the following C# code:
         //   var addRes = Sse2.AddScalar(castResult, Vector128.CreateScalar(4294967296.0));
-        //   castResult = Sse41.BlendVariable(castResult, addRes, castResult);
+        //   castResult = X86Base.BlendVariable(castResult, addRes, castResult);
 
         GenTreeVecCon* addCns    = m_compiler->gtNewVconNode(TYP_SIMD16);
         addCns->gtSimdVal.f64[0] = 4294967296.0;
@@ -983,7 +983,7 @@ void Lowering::LowerCast(GenTree* tree)
                             // this is adequate to force selection of the negated result.
                             //
                             // This creates the equivalent of the following C# code:
-                            //   convertResult = Sse41.BlendVariable(result, negated, result);
+                            //   convertResult = X86Base.BlendVariable(result, negated, result);
 
                             convertResult =
                                 m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, result, negated, resultClone,
@@ -1547,7 +1547,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                                 //   B: op1
                                 //   C: op2 (AllBitsSet)
                                 //
-                                // This represents a double not, so so just return op2
+                                // This represents a double not, so just return op2
                                 // which is the only actual value now that the parameters
                                 // were shifted around
 
@@ -2188,7 +2188,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
-                    // We're an unused zero constant node, so don't both creating
+                    // We're an unused zero constant node, so don't bother creating
                     // a new node for something that will never be consumed
                 }
 
@@ -2424,7 +2424,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             assert(varTypeIsIntegral(node->GetSimdBaseType()));
 
-            // pre-AVX512 doesn't actually support these intrinsics in hardware so we need to swap the operands around
+            // There's no integer compare-less-than instruction, so the managed intrinsic ID is unconditionally
+            // rewritten to compare-greater-than with the operands swapped
             NamedIntrinsic newIntrinsicId = NI_Illegal;
 
             switch (intrinsicId)
@@ -5813,7 +5814,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             case TYP_DOUBLE:
             {
                 // We will be constructing the following parts:
-                //   idx  =    CNS_INT       int    0x31
+                //   idx  =    CNS_INT       int    0x33
                 //          /--*  op1  simd16
                 //          +--*  op2  simd16
                 //          +--*  idx  int
@@ -5822,7 +5823,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 //   node = *  HWINTRINSIC   simd16 T ToScalar
 
                 // This is roughly the following managed code:
-                //   var tmp3 = Avx.DotProduct(op1, op2, 0x31);
+                //   var tmp3 = Avx.DotProduct(op1, op2, 0x33);
                 //   return tmp3.ToScalar();
 
                 idx = m_compiler->gtNewIconNode(0x33, TYP_INT);
@@ -6715,7 +6716,7 @@ bool Lowering::IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd)
 
             if (m_scratchSideEffects.InterferesWith(m_compiler, node, false))
             {
-                // The indirection's tree contains some node that can't be moved to the storeInder. The indirection is
+                // The indirection's tree contains some node that can't be moved to the storeIndir. The indirection is
                 // not a candidate. Clear any leftover mark bits and return.
                 for (; markCount > 0; node = node->gtPrev)
                 {
@@ -6821,7 +6822,7 @@ bool Lowering::IsBinOpInRMWStoreInd(GenTree* tree)
 //  Parameters:
 //     tree               -  GT_STOREIND node
 //     outIndirCandidate  -  out param set to indirCandidate as described above
-//     ouutIndirOpSource  -  out param set to indirOpSource as described above
+//     outIndirOpSource  -  out param set to indirOpSource as described above
 //
 //  Return value
 //     True if there is a RMW memory operation rooted at a GT_STOREIND tree
@@ -7618,7 +7619,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     else if (node->OperIs(GT_MUL_LONG))
     {
         hasImpliedFirstOperand = true;
-        // GT_MUL_LONG hsa node type LONG but work on INT
+        // GT_MUL_LONG has node type LONG but work on INT
         nodeType = TYP_INT;
     }
 #endif
