@@ -897,7 +897,7 @@ namespace Internal.JitInterface
 
             // Varargs are not supported in .NET Core
             if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_VARARG)
-                ThrowHelper.ThrowBadImageFormatException();
+                ThrowHelper.ThrowInvalidProgramException();
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
             if (signature.IsExplicitThis) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS;
@@ -1556,18 +1556,21 @@ namespace Internal.JitInterface
 
             if (requiresInstMethodDescArg)
             {
+#if READYTORUN
                 if (unboxingStub)
                 {
-                    // Bail out for now. We need an unboxing stub that points to an instantiated method.
+                    // We need an unboxing stub that points to an instantiated method but this is not happening in R2R.
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                     return false;
                 }
-#if READYTORUN
+
                 MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
                 info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
-
 #else
-                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(originalImpl));
+                // We could produce a method generic dictionary constant lookup for originalImpl,
+                // but due to IL scanner limitations, we cannot devirtualize shared generic virtual methods right now.
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
 #endif
             }
             else if (requiresInstMethodTableArg)
@@ -1576,7 +1579,6 @@ namespace Internal.JitInterface
                 {
 #if READYTORUN
                     info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
-
 #else
                     info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
 #endif
@@ -3592,7 +3594,7 @@ namespace Internal.JitInterface
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
         }
 
-        private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP instArg)
+        private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg)
         {
             instArg.lookupKind.needsRuntimeLookup = false;
             instArg.constLookup.accessType = InfoAccessType.IAT_VALUE;
@@ -3608,9 +3610,11 @@ namespace Internal.JitInterface
             CompilerTypeSystemContext context = _compilation.TypeSystemContext;
             DefType asyncHelpers = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
 
+            TypeDesc returnType = caller.Signature.ReturnType;
             MethodDesc runtimeDeterminedCaller = caller.GetSharedRuntimeFormMethodTarget();
+            TypeDesc runtimeDeterminedReturnType = runtimeDeterminedCaller.Signature.ReturnType;
 
-            TypeDesc returnType = runtimeDeterminedCaller.Signature.ReturnType;
+            MethodDesc result;
             MethodDesc runtimeDeterminedResult;
             if (returnType.IsVoid)
             {
@@ -3618,7 +3622,8 @@ namespace Internal.JitInterface
                     ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
                     : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
                 MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.Void), [parameterType]);
-                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature);
+                result = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature);
+                runtimeDeterminedResult = result;
             }
             else
             {
@@ -3627,12 +3632,14 @@ namespace Internal.JitInterface
                     ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8).MakeInstantiatedType(signatureVariable)
                     : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8).MakeInstantiatedType(signatureVariable);
                 MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 1, signatureVariable, [parameterType]);
-                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature).MakeInstantiatedMethod(returnType);
+                result = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature).MakeInstantiatedMethod(returnType);
+                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature).MakeInstantiatedMethod(runtimeDeterminedReturnType);
             }
 
-            MethodDesc result = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            MethodDesc targetMethod = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            *contextHandle = contextFromMethod(result);
 
-            if (result.RequiresInstArg())
+            if (targetMethod.RequiresInstArg())
             {
 #if READYTORUN
                 if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
@@ -3657,7 +3664,7 @@ namespace Internal.JitInterface
 #endif
             }
 
-            return ObjectToHandle(result);
+            return ObjectToHandle(targetMethod);
         }
 
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
@@ -4706,7 +4713,7 @@ namespace Internal.JitInterface
             }
 
 #if READYTORUN
-            if (this.MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Browser)
+            if (this.MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
             }

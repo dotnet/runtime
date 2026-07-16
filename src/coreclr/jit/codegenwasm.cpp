@@ -105,15 +105,15 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
-    // SIMD16 (Vector128) parameters are lowered to i32 in the wasm signature, so any
-    // v128 operation performed on them produces an invalid module (e.g. a v128 op with
-    // an i32 operand). Bail such methods to the interpreter until SIMD16 parameters are
+    // SIMD (Vector2/3/4, Vector128) parameters are lowered to i32 in the wasm signature, so any
+    // vector operation performed on them produces an invalid module (e.g. a v128/f64 op with
+    // an i32 operand). Bail such methods to the interpreter until SIMD parameters are
     // properly supported in the wasm calling convention.
     for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
     {
-        if (m_compiler->lvaGetDesc(lclNum)->TypeGet() == TYP_SIMD16)
+        if (varTypeIsSIMD(m_compiler->lvaGetDesc(lclNum)->TypeGet()))
         {
-            NYI_WASM_SIMD("SIMD16 parameter");
+            NYI_WASM_SIMD("SIMD parameter");
         }
     }
 
@@ -291,6 +291,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         assert(segment.IsPassedInRegister());
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+        // Skip homing parameters that are dead at method entry (not live into the first block).
         if (varDsc->lvTracked && !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
             return;
@@ -2274,9 +2275,10 @@ void CodeGen::genEmitNullCheck(regNumber reg)
 void CodeGen::genRangeCheck(GenTree* tree)
 {
     assert(tree->OperIs(GT_BOUNDS_CHECK));
-    genConsumeOperands(tree->AsOp());
+    GenTreeBoundsChk* boundsCheck = tree->AsBoundsChk();
+    genConsumeOperands(boundsCheck);
     GetEmitter()->emitIns(INS_I_ge_u);
-    genJumpToThrowHlpBlk(SCK_RNGCHK_FAIL);
+    genJumpToThrowHlpBlk(boundsCheck->gtThrowKind);
 }
 
 //------------------------------------------------------------------------
@@ -2876,6 +2878,24 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             {
                 m_compiler->eeGetMethodSig(params.methHnd, &sigInfoLocal);
                 sigInfoCall = &sigInfoLocal;
+                if (callRetType == TYP_REF && sigInfoCall->retType == CORINFO_TYPE_VOID &&
+                    sigInfoCall->callConv == CORINFO_CALLCONV_HASTHIS)
+                {
+                    // String ctors are special. The JIT recognizes them, and rewrites the call to call the function as
+                    // a static function which returns the string instead of calling them with the normal
+                    // allocation/initialization pattern. The signature of the static function is different from the
+                    // instance method, so we need to adjust the signature here to match what the WASM runtime expects.
+                    const unsigned       methodFlags = m_compiler->info.compCompHnd->getMethodAttribs(params.methHnd);
+                    CORINFO_CLASS_HANDLE stringClass = m_compiler->info.compCompHnd->getBuiltinClass(CLASSID_STRING);
+
+                    if ((methodFlags & CORINFO_FLG_CONSTRUCTOR) != 0 && (stringClass != NO_CLASS_HANDLE) &&
+                        (m_compiler->info.compCompHnd->getMethodClass(params.methHnd) == stringClass))
+                    {
+                        // Adjust sigInfoCall for string ctor case
+                        sigInfoCall->retType  = CORINFO_TYPE_CLASS;
+                        sigInfoCall->callConv = CORINFO_CALLCONV_DEFAULT;
+                    }
+                }
             }
         }
 
@@ -3797,6 +3817,38 @@ void CodeGen::genEmitEndIf()
     GetEmitter()->emitIns(INS_end);
 }
 
+// ------------------------------------------------------------------------
+// genEmitBeginBlock: Emit a 'block' instruction.
+//
+// Notes:
+//   The block is not modeled as part of wasmControlFlowStack.
+//   This is used for jump tables which don't have corresponding BasicBlock's
+//   and which will be emitted within a single block with known offsets for each case.
+void CodeGen::genEmitBeginBlock(WasmValueType blockType)
+{
+    wasmExtraControlFlowDepth++;
+    if (blockType != WasmValueType::Invalid)
+    {
+        GetEmitter()->emitIns_BlockTy(INS_block, blockType);
+    }
+    else
+    {
+        GetEmitter()->emitIns(INS_block);
+    }
+}
+
+// -----------------------------------------------------------------------
+// genEmitEndBlock: Emit an 'end' instruction closing a 'block'.
+//
+// Notes:
+//   Removes the added stack depth from genEmitBeginBlock.
+void CodeGen::genEmitEndBlock()
+{
+    assert(wasmExtraControlFlowDepth > 0);
+    wasmExtraControlFlowDepth--;
+    GetEmitter()->emitIns(INS_end);
+}
+
 //------------------------------------------------------------------------
 // inst_JMP: Emit a jump instruction.
 //
@@ -3849,34 +3901,34 @@ void CodeGen::genWasmEmitterUnitTestsSimd()
     DROP
 
     // Extract lane: v128 -> scalar (i32/i64/f32/f64), then drop
-#define TEST_EXTRACT_LANE(bytes, ins, attr, lane) \
+#define TEST_EXTRACT_LANE(bytes, ins, lane) \
     PUSH_V128(bytes);                             \
-    emit->emitIns_Lane(ins, attr, lane);              \
+    emit->emitIns_Lane(ins, lane);              \
     DROP
 
     // Replace lane: [v128, scalar] -> v128, then drop
-#define TEST_REPLACE_LANE_I32(bytes, ins, attr, lane) \
+#define TEST_REPLACE_LANE_I32(bytes, ins, lane) \
     PUSH_V128(bytes);                                 \
     PUSH_I32(42);                                     \
-    emit->emitIns_Lane(ins, attr, lane);                  \
+    emit->emitIns_Lane(ins, lane);                  \
     DROP
 
-#define TEST_REPLACE_LANE_I64(bytes, ins, attr, lane) \
+#define TEST_REPLACE_LANE_I64(bytes, ins, lane) \
     PUSH_V128(bytes);                                 \
     PUSH_I64(42);                                     \
-    emit->emitIns_Lane(ins, attr, lane);                  \
+    emit->emitIns_Lane(ins, lane);                  \
     DROP
 
-#define TEST_REPLACE_LANE_F32(bytes, ins, attr, lane) \
+#define TEST_REPLACE_LANE_F32(bytes, ins, lane) \
     PUSH_V128(bytes);                                 \
     PUSH_F32(0);                                      \
-    emit->emitIns_Lane(ins, attr, lane);                  \
+    emit->emitIns_Lane(ins, lane);                  \
     DROP
 
-#define TEST_REPLACE_LANE_F64(bytes, ins, attr, lane) \
+#define TEST_REPLACE_LANE_F64(bytes, ins, lane) \
     PUSH_V128(bytes);                                 \
     PUSH_F64(0);                                      \
-    emit->emitIns_Lane(ins, attr, lane);                  \
+    emit->emitIns_Lane(ins, lane);                  \
     DROP
 
     // Load lane: [i32_addr, v128] -> v128, then drop
@@ -3918,30 +3970,30 @@ void CodeGen::genWasmEmitterUnitTestsSimd()
 
     // --- IF_LANE: extract/replace lane instructions ---
     // i8x16 lanes (0..15)
-    TEST_EXTRACT_LANE(v128Ones, INS_i8x16_extract_lane_s, EA_1BYTE, 0);
-    TEST_EXTRACT_LANE(v128Ones, INS_i8x16_extract_lane_u, EA_1BYTE, 15);
-    TEST_REPLACE_LANE_I32(v128Ones, INS_i8x16_replace_lane, EA_1BYTE, 7);
+    TEST_EXTRACT_LANE(v128Ones, INS_i8x16_extract_lane_s, 0);
+    TEST_EXTRACT_LANE(v128Ones, INS_i8x16_extract_lane_u, 15);
+    TEST_REPLACE_LANE_I32(v128Ones, INS_i8x16_replace_lane, 7);
 
     // i16x8 lanes (0..7)
-    TEST_EXTRACT_LANE(v128Ones, INS_i16x8_extract_lane_s, EA_2BYTE, 0);
-    TEST_EXTRACT_LANE(v128Ones, INS_i16x8_extract_lane_u, EA_2BYTE, 7);
-    TEST_REPLACE_LANE_I32(v128Ones, INS_i16x8_replace_lane, EA_2BYTE, 3);
+    TEST_EXTRACT_LANE(v128Ones, INS_i16x8_extract_lane_s, 0);
+    TEST_EXTRACT_LANE(v128Ones, INS_i16x8_extract_lane_u, 7);
+    TEST_REPLACE_LANE_I32(v128Ones, INS_i16x8_replace_lane, 3);
 
     // i32x4 lanes (0..3)
-    TEST_EXTRACT_LANE(v128Ones, INS_i32x4_extract_lane, EA_4BYTE, 0);
-    TEST_REPLACE_LANE_I32(v128Ones, INS_i32x4_replace_lane, EA_4BYTE, 3);
+    TEST_EXTRACT_LANE(v128Ones, INS_i32x4_extract_lane, 0);
+    TEST_REPLACE_LANE_I32(v128Ones, INS_i32x4_replace_lane, 3);
 
     // i64x2 lanes (0..1)
-    TEST_EXTRACT_LANE(v128Ones, INS_i64x2_extract_lane, EA_8BYTE, 0);
-    TEST_REPLACE_LANE_I64(v128Ones, INS_i64x2_replace_lane, EA_8BYTE, 1);
+    TEST_EXTRACT_LANE(v128Ones, INS_i64x2_extract_lane, 0);
+    TEST_REPLACE_LANE_I64(v128Ones, INS_i64x2_replace_lane, 1);
 
     // f32x4 lanes (0..3)
-    TEST_EXTRACT_LANE(v128Ones, INS_f32x4_extract_lane, EA_4BYTE, 3);
-    TEST_REPLACE_LANE_F32(v128Ones, INS_f32x4_replace_lane, EA_4BYTE, 0);
+    TEST_EXTRACT_LANE(v128Ones, INS_f32x4_extract_lane, 3);
+    TEST_REPLACE_LANE_F32(v128Ones, INS_f32x4_replace_lane, 0);
 
     // f64x2 lanes (0..1)
-    TEST_EXTRACT_LANE(v128Ones, INS_f64x2_extract_lane, EA_8BYTE, 0);
-    TEST_REPLACE_LANE_F64(v128Ones, INS_f64x2_replace_lane, EA_8BYTE, 1);
+    TEST_EXTRACT_LANE(v128Ones, INS_f64x2_extract_lane, 0);
+    TEST_REPLACE_LANE_F64(v128Ones, INS_f64x2_replace_lane, 1);
 
     // --- IF_MEMARG_LANE: load/store lane with memarg ---
     TEST_LOAD_LANE(v128Ones, INS_v128_load8_lane, EA_1BYTE, 0, 5);

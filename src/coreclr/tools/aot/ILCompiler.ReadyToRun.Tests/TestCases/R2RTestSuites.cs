@@ -401,6 +401,93 @@ public class R2RTestSuites
         }
     }
 
+    /// <summary>
+    /// Regression test for an ARM32 alignment fault (SIGBUS / BUS_ADRALN) when loading a composite
+    /// Ready-to-Run image. The manifest metadata root (STORAGESIGNATURE/STORAGEHEADER/STORAGESTREAM)
+    /// and the component assembly table (READYTORUN_COMPONENT_ASSEMBLIES_ENTRY) are packed arrays of
+    /// DWORD fields that the runtime reads in place, so their sections must start on a 4-byte
+    /// boundary. When they landed on an unaligned RVA the runtime faulted on ARM32 (which does not
+    /// permit unaligned multi-word loads) during coreclr_initialize; x64/arm64 tolerated it.
+    /// </summary>
+    [Fact]
+    public void CompositeManifestSectionsAreAligned()
+    {
+        var compositeLib = new CompiledAssembly
+        {
+            AssemblyName = "CompositeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+        };
+        var compositeMain = new CompiledAssembly
+        {
+            AssemblyName = nameof(CompositeManifestSectionsAreAligned),
+            SourceResourceNames = ["CrossModuleInlining/CompositeBasic.cs"],
+            References = [compositeLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeManifestSectionsAreAligned),
+            [
+                new(nameof(CompositeManifestSectionsAreAligned),
+                [
+                    new CrossgenAssembly(compositeLib),
+                    new CrossgenAssembly(compositeMain),
+                ])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.CompositeManifestSectionsAreAligned(reader, out diag), diag);
+        }
+    }
+
+    /// <summary>
+    /// Complements <see cref="CompositeManifestSectionsAreAligned"/> using the same trigger as the
+    /// MVID-table test: --pdb emits an odd-sized debug directory section that shifts the manifest
+    /// sections off a 4-byte boundary without the fix. Windows-only because it relies on Windows PDB
+    /// generation.
+    /// </summary>
+    [ConditionalFact(nameof(IsWindows))]
+    public void CompositeManifestSectionsArePaddedWhenPdbPresent()
+    {
+        var compositeLib = new CompiledAssembly
+        {
+            AssemblyName = "CompositeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+        };
+        var compositeMain = new CompiledAssembly
+        {
+            AssemblyName = nameof(CompositeManifestSectionsArePaddedWhenPdbPresent),
+            SourceResourceNames = ["CrossModuleInlining/CompositeBasic.cs"],
+            References = [compositeLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeManifestSectionsArePaddedWhenPdbPresent),
+            [
+                new(nameof(CompositeManifestSectionsArePaddedWhenPdbPresent),
+                [
+                    new CrossgenAssembly(compositeLib),
+                    new CrossgenAssembly(compositeMain),
+                ])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs = ["--pdb"],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.CompositeManifestSectionsAreAligned(reader, out diag), diag);
+        }
+    }
+
     [Fact]
     public void RuntimeAsyncMethodEmission()
     {
@@ -436,6 +523,8 @@ public class R2RTestSuites
     /// <summary>
     /// #129813 / PR #129884: crossgen2 --strip-il-bodies must preserve the IL of non-async
     /// Task/ValueTask-returning methods, which is needed to compile the runtime-async variant.
+    /// It must also strip a non-async Task-returning method whose async variant has already been
+    /// compiled, since the IL is no longer needed at runtime.
     /// </summary>
     [Fact]
     public void RuntimeAsyncStripILBodiesPreservesTaskReturningIL()
@@ -485,6 +574,9 @@ public class R2RTestSuites
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "AsyncValueTaskMethod", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncTaskMethod", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncValueTaskMethod", out diag), diag);
+
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "SyncTaskWithCompiledAsyncVariant", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "SyncTaskWithCompiledAsyncVariant", out diag), diag);
         }
     }
 
