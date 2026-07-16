@@ -300,6 +300,8 @@ internal sealed class MockGCBuilder
         public ulong AllocationStart;
         public ulong AllocContextPointer;
         public ulong AllocContextLimit;
+        public long AllocationBytes;
+        public long AllocationBytesLoh;
     }
 
     public MockGCBuilder(MockMemorySpace.Builder builder)
@@ -360,6 +362,8 @@ internal sealed class MockGCBuilder
             MockGCAllocContext allocationContext = generation.GetAllocationContext(GCAllocContextLayout);
             allocationContext.Pointer = generations[i].AllocContextPointer;
             allocationContext.Limit = generations[i].AllocContextLimit;
+            allocationContext.AllocBytes = generations[i].AllocationBytes;
+            allocationContext.AllocBytesLoh = generations[i].AllocationBytesLoh;
             generation.StartSegment = generations[i].StartSegment;
             generation.AllocationStart = generations[i].AllocationStart;
         }
@@ -424,6 +428,8 @@ internal sealed class MockGCBuilder
             MockGCAllocContext allocationContext = generation.GetAllocationContext(GCAllocContextLayout);
             allocationContext.Pointer = generations[i].AllocContextPointer;
             allocationContext.Limit = generations[i].AllocContextLimit;
+            allocationContext.AllocBytes = generations[i].AllocationBytes;
+            allocationContext.AllocBytesLoh = generations[i].AllocationBytesLoh;
             generation.StartSegment = generations[i].StartSegment;
             generation.AllocationStart = generations[i].AllocationStart;
         }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
@@ -15,7 +16,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// Uses the ServerGC debuggee dump, which enables server GC and allocates
 /// objects across multiple heaps.
 /// </summary>
-public class ServerGCDumpTests : DumpTestBase
+public unsafe class ServerGCDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "ServerGC";
 
@@ -116,6 +117,40 @@ public class ServerGCDumpTests : DumpTestBase
             Assert.NotNull(heapData.GenerationTable);
             Assert.True(heapData.GenerationTable.Count > 0,
                 $"Expected generation table for heap 0x{heap:X} to be non-empty");
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void GetHeapAllocData_MatchesEachHeapGenerationAllocationContexts(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gc = Target.Contracts.GC;
+        List<TargetPointer> heaps = gc.GetGCHeaps().ToList();
+        ISOSDacInterface sos = new SOSDacImpl(Target, legacyObj: null);
+
+        uint needed;
+        Assert.Equal(System.HResults.S_OK, sos.GetHeapAllocData(0, null, &needed));
+        Assert.Equal((uint)heaps.Count, needed);
+
+        DacpGenerationAllocData[] data = new DacpGenerationAllocData[heaps.Count];
+        fixed (DacpGenerationAllocData* dataPtr = data)
+        {
+            Assert.Equal(System.HResults.S_OK, sos.GetHeapAllocData(needed, dataPtr, &needed));
+        }
+        for (int heapIndex = 0; heapIndex < heaps.Count; heapIndex++)
+        {
+            IReadOnlyList<GCGenerationData> generations = gc.GetHeapData(heaps[heapIndex]).GenerationTable;
+            for (int generationIndex = 0; generationIndex < GCConstants.DAC_NUMBERGENERATIONS; generationIndex++)
+            {
+                Assert.Equal(
+                    unchecked((ulong)generations[generationIndex].AllocationBytes),
+                    (ulong)data[heapIndex][generationIndex].allocBytes);
+                Assert.Equal(
+                    unchecked((ulong)generations[generationIndex].AllocationBytesLoh),
+                    (ulong)data[heapIndex][generationIndex].allocBytesLoh);
+            }
         }
     }
 

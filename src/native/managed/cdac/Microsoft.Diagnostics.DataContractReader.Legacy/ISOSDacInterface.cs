@@ -114,6 +114,12 @@ public struct DacpAllocData
     public ClrDataAddress allocBytesLoh;
 }
 
+[System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_NUMBERGENERATIONS)]
+internal struct DacpGenerationAllocData
+{
+    private DacpAllocData _element0;
+}
+
 public struct DacpModuleData
 {
     public enum TransientFlags : uint

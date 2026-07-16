@@ -1880,7 +1880,108 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetHeapAllocData(uint count, void* data, uint* pNeeded)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetHeapAllocData(count, data, pNeeded) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        uint needed = 0;
+        bool isServer = false;
+        try
+        {
+            if (data is null && pNeeded is null)
+                throw new ArgumentException();
+
+            IGC gc = _target.Contracts.GC;
+            isServer = gc.GetGCIdentifiers().Contains(GCIdentifiers.Server);
+            List<TargetPointer>? heapAddresses = null;
+            if (isServer)
+            {
+                heapAddresses = gc.GetGCHeaps().ToList();
+                needed = (uint)heapAddresses.Count;
+            }
+            else
+            {
+                needed = 1;
+            }
+
+            if (pNeeded is not null)
+                *pNeeded = needed;
+
+            if (data is not null)
+            {
+                // Native server GC writes one record for every heap whenever data is non-null,
+                // while workstation GC requires count >= 1.
+                uint heapsToWrite = isServer ? needed : Math.Min(count, needed);
+                DacpAllocData* output = (DacpAllocData*)data;
+                for (uint heapIndex = 0; heapIndex < heapsToWrite; heapIndex++)
+                {
+                    GCHeapData heap;
+                    if (isServer)
+                    {
+                        if (heapAddresses is null)
+                            throw new InvalidOperationException("Server GC heap addresses are unavailable.");
+                        heap = gc.GetHeapData(heapAddresses[(int)heapIndex]);
+                    }
+                    else
+                    {
+                        heap = gc.GetHeapData();
+                    }
+                    IReadOnlyList<GCGenerationData> generations = heap.GenerationTable;
+                    if (generations.Count < GCConstants.DAC_NUMBERGENERATIONS)
+                        throw new InvalidOperationException($"Expected at least {GCConstants.DAC_NUMBERGENERATIONS} generations.");
+
+                    for (int generationIndex = 0; generationIndex < GCConstants.DAC_NUMBERGENERATIONS; generationIndex++)
+                    {
+                        GCGenerationData generation = generations[generationIndex];
+                        int outputIndex = checked((int)heapIndex * GCConstants.DAC_NUMBERGENERATIONS + generationIndex);
+                        output[outputIndex].allocBytes = (ClrDataAddress)unchecked((ulong)generation.AllocationBytes);
+                        output[outputIndex].allocBytesLoh = (ClrDataAddress)unchecked((ulong)generation.AllocationBytesLoh);
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint localCapacity = Math.Max(count, needed);
+            DacpGenerationAllocData[] dataLocal = new DacpGenerationAllocData[checked((int)localCapacity)];
+            uint neededLocal = 0;
+            fixed (DacpGenerationAllocData* dataLocalPtr = dataLocal)
+            {
+                int hrLocal = _legacyImpl.GetHeapAllocData(
+                    count,
+                    data is null ? null : dataLocalPtr,
+                    pNeeded is null ? null : &neededLocal);
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK)
+                {
+                    if (pNeeded is not null)
+                        Debug.Assert(*pNeeded == neededLocal, $"cDAC: {*pNeeded}, DAC: {neededLocal}");
+
+                    if (data is not null)
+                    {
+                        DacpAllocData* output = (DacpAllocData*)data;
+                        DacpAllocData* outputLocal = (DacpAllocData*)dataLocalPtr;
+                        uint heapsToCompare = isServer ? needed : Math.Min(count, needed);
+                        for (uint heapIndex = 0; heapIndex < heapsToCompare; heapIndex++)
+                        {
+                            for (int generationIndex = 0; generationIndex < GCConstants.DAC_NUMBERGENERATIONS; generationIndex++)
+                            {
+                                int index = checked((int)heapIndex * GCConstants.DAC_NUMBERGENERATIONS + generationIndex);
+                                Debug.Assert(output[index].allocBytes == outputLocal[index].allocBytes);
+                                Debug.Assert(output[index].allocBytesLoh == outputLocal[index].allocBytesLoh);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetHeapAnalyzeData(ClrDataAddress addr, DacpGcHeapAnalyzeData* data)
     {
         int hr = HResults.S_OK;

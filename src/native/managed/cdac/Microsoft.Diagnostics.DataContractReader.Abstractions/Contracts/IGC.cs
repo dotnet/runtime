@@ -68,6 +68,8 @@ public readonly struct GCGenerationData
     public TargetPointer AllocationStart { get; init; }
     public TargetPointer AllocationContextPointer { get; init; }
     public TargetPointer AllocationContextLimit { get; init; }
+    public long AllocationBytes { get; init; }
+    public long AllocationBytesLoh { get; init; }
 }
 
 public readonly struct GCHeapSegmentData

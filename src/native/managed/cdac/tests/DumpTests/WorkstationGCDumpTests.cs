@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
@@ -15,7 +16,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// Uses the GCRoots debuggee dump, which pins objects and creates GC handles
 /// under the default workstation GC.
 /// </summary>
-public class WorkstationGCDumpTests : DumpTestBase
+public unsafe class WorkstationGCDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "GCRoots";
 
@@ -141,6 +142,29 @@ public class WorkstationGCDumpTests : DumpTestBase
             Assert.NotEqual(TargetPointer.Null, limit);
             Assert.True(pointer <= limit,
                 $"Expected allocPtr (0x{pointer:X}) <= allocLimit (0x{limit:X})");
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void GetHeapAllocData_MatchesGenerationAllocationContexts(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gc = Target.Contracts.GC;
+        ISOSDacInterface sos = new SOSDacImpl(Target, legacyObj: null);
+
+        uint needed;
+        Assert.Equal(System.HResults.S_OK, sos.GetHeapAllocData(0, null, &needed));
+        Assert.Equal(1u, needed);
+
+        DacpGenerationAllocData data = default;
+        Assert.Equal(System.HResults.S_OK, sos.GetHeapAllocData(1, &data, &needed));
+        IReadOnlyList<GCGenerationData> generations = gc.GetHeapData().GenerationTable;
+        for (int i = 0; i < GCConstants.DAC_NUMBERGENERATIONS; i++)
+        {
+            Assert.Equal(unchecked((ulong)generations[i].AllocationBytes), (ulong)data[i].allocBytes);
+            Assert.Equal(unchecked((ulong)generations[i].AllocationBytesLoh), (ulong)data[i].allocBytesLoh);
         }
     }
 

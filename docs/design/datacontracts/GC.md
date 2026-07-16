@@ -39,6 +39,8 @@ public readonly struct GCGenerationData
     public TargetPointer AllocationStart { get; init; }
     public TargetPointer AllocationContextPointer { get; init; }
     public TargetPointer AllocationContextLimit { get; init; }
+    public long AllocationBytes { get; init; }
+    public long AllocationBytesLoh { get; init; }
 }
 
 public readonly struct GCHeapSegmentData
@@ -699,6 +701,10 @@ private List<GCGeneration> GetGenerationData(TargetPointer generationTableArrayS
             target.ReadPointer(generationAddress + /* Generation::AllocationContext offset */ + /* GCAllocContext::Pointer offset */);
         generationData.AllocationContextLimit =
             target.ReadPointer(generationAddress + /* Generation::AllocationContext offset */ + /* GCAllocContext::Limit offset */);
+        generationData.AllocationBytes =
+            target.Read<long>(generationAddress + /* Generation::AllocationContext offset */ + /* GCAllocContext::AllocBytes offset */);
+        generationData.AllocationBytesLoh =
+            target.Read<long>(generationAddress + /* Generation::AllocationContext offset */ + /* GCAllocContext::AllocBytesLoh offset */);
 
         generationTable.Add(generationData);
     }

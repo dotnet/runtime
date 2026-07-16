@@ -17,10 +17,10 @@ public class GCTests
     {
         var generations = new MockGCBuilder.Generation[]
         {
-            new() { StartSegment = 0xAA00_0000, AllocationStart = 0xAA00_1000, AllocContextPointer = 0xAA00_2000, AllocContextLimit = 0xAA00_3000 },
-            new() { StartSegment = 0xBB00_0000, AllocationStart = 0xBB00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-            new() { StartSegment = 0xCC00_0000, AllocationStart = 0xCC00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-            new() { StartSegment = 0xDD00_0000, AllocationStart = 0xDD00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
+            new() { StartSegment = 0xAA00_0000, AllocationStart = 0xAA00_1000, AllocContextPointer = 0xAA00_2000, AllocContextLimit = 0xAA00_3000, AllocationBytes = 101, AllocationBytesLoh = 201 },
+            new() { StartSegment = 0xBB00_0000, AllocationStart = 0xBB00_1000, AllocContextPointer = 0, AllocContextLimit = 0, AllocationBytes = 102, AllocationBytesLoh = 202 },
+            new() { StartSegment = 0xCC00_0000, AllocationStart = 0xCC00_1000, AllocContextPointer = 0, AllocContextLimit = 0, AllocationBytes = 103, AllocationBytesLoh = 203 },
+            new() { StartSegment = 0xDD00_0000, AllocationStart = 0xDD00_1000, AllocContextPointer = 0, AllocContextLimit = 0, AllocationBytes = 104, AllocationBytesLoh = 204 },
         };
 
         ulong[] fillPointers = [0x1000, 0x2000, 0x3000, 0x4000, 0x5000, 0x6000, 0x7000];
@@ -43,6 +43,8 @@ public class GCTests
             Assert.Equal(generations[i].AllocationStart, (ulong)heapData.GenerationTable[i].AllocationStart);
             Assert.Equal(generations[i].AllocContextPointer, (ulong)heapData.GenerationTable[i].AllocationContextPointer);
             Assert.Equal(generations[i].AllocContextLimit, (ulong)heapData.GenerationTable[i].AllocationContextLimit);
+            Assert.Equal(generations[i].AllocationBytes, heapData.GenerationTable[i].AllocationBytes);
+            Assert.Equal(generations[i].AllocationBytesLoh, heapData.GenerationTable[i].AllocationBytesLoh);
         }
     }
 

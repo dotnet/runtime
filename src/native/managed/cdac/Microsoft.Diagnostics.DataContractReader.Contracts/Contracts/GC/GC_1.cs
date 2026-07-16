@@ -235,6 +235,8 @@ internal struct GC_1 : IGC
             AllocationStart = gen.AllocationStart ?? 0,
             AllocationContextPointer = gen.AllocationContext.Pointer,
             AllocationContextLimit = gen.AllocationContext.Limit,
+            AllocationBytes = gen.AllocationContext.AllocBytes,
+            AllocationBytesLoh = gen.AllocationContext.AllocBytesLoh,
         }).ToList();
         return generationDataList;
     }
