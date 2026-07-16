@@ -8291,7 +8291,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 #endif
             {
 
-#ifdef FEATURE_MASKED_HW_INTRINSICS
+#if defined(FEATURE_MASKED_HW_INTRINSICS) || defined(TARGET_WASM)
                 simdmask_t simdMaskVal;
 
                 switch (simdSize)
@@ -8332,10 +8332,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 assert(elemCount <= 32);
 
                 return VNForIntCon(static_cast<int32_t>(mask));
-#elif defined(TARGET_WASM)
-                NYI_WASM_SIMD("Vector128_ExtractMostSignificantBits");
-                break;
-#endif // FEATURE_MASKED_HW_INTRINSICS
+#endif // FEATURE_MASKED_HW_INTRINSICS || TARGET_WASM
             }
 
 #ifdef TARGET_XARCH
@@ -9605,9 +9602,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 
     switch (ni)
     {
-#ifndef TARGET_WASM
-// TODO-WASM: Implement bitwise select case
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_WASM)
         case NI_Vector_ConditionalSelect:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_BitwiseSelect:
@@ -9673,7 +9668,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
             }
             break;
         }
-#endif // !defined(TARGET_WASM)
 
         case NI_Vector_WithElement:
         {
