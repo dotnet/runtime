@@ -174,7 +174,32 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     }
 
     int IXCLRDataMethodInstance.GetFlags(uint* flags)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (flags is null)
+                throw new NullReferenceException();
+
+            *flags = MethodSignatureHelpers.GetMethodFlags(_target, _methodDesc);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint flagsLocal = 0;
+            int hrLocal = _legacyImpl.GetFlags(flags is null ? null : &flagsLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK && flags is not null)
+                Debug.Assert(*flags == flagsLocal, $"cDAC: {*flags}, DAC: {flagsLocal}");
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.IsSameObject(IXCLRDataMethodInstance* method)
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameObject(method) : HResults.E_NOTIMPL;
@@ -382,7 +407,32 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EndEnumExtents(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+    {
+        int hr = ClrDataMethodDefinition.HandleRevisionRequest(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer);
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            byte[] localBuffer = new byte[(int)outBufferSize];
+            fixed (byte* localOutBuffer = localBuffer)
+            {
+                int hrLocal = _legacyImpl.Request(
+                    reqCode,
+                    inBufferSize,
+                    inBuffer,
+                    outBufferSize,
+                    outBuffer is null ? null : localOutBuffer);
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK)
+                {
+                    Debug.Assert(outBuffer is not null);
+                    Debug.Assert(new ReadOnlySpan<byte>(outBuffer, (int)outBufferSize).SequenceEqual(localBuffer));
+                }
+            }
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.GetRepresentativeEntryAddress(ClrDataAddress* addr)
     {
