@@ -681,7 +681,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmBootJsonBuildPropertyStamp"
     DependsOnTargets="_ResolveBuildWasmBootJsonEndpoints">
     <PropertyGroup>
-      <_WasmBootJsonBuildStampContent>$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)</_WasmBootJsonBuildStampContent>
+      <_WasmBootJsonBuildStampContent>$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonBuildStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-build.stamp"
@@ -740,7 +740,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
       LogExitCode="$(WasmTestLogExitCode)"
       AsyncFlushOnExit="$(WasmTestAsyncFlushOnExit)"
-      ForwardConsole="$(WasmTestForwardConsole)"
       />
 
     <ItemGroup>
@@ -1174,7 +1173,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmPublishBootJsonPropertyStamp"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
     <PropertyGroup>
-      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)</_WasmBootJsonPublishStampContent>
+      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonPublishStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
@@ -1228,7 +1227,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
       LogExitCode="$(WasmTestLogExitCode)"
       AsyncFlushOnExit="$(WasmTestAsyncFlushOnExit)"
-      ForwardConsole="$(WasmTestForwardConsole)"
       />
 
     <ItemGroup>
