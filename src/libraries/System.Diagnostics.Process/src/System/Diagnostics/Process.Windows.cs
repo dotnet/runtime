@@ -192,13 +192,7 @@ namespace System.Diagnostics
             get { return GetProcessTimes().ExitTime; }
         }
 
-        /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
-        /// <remarks>If a handle to the process is available, the value can be retrieved after the process exits.</remarks>
-        /// <exception cref="InvalidOperationException">No process is associated with this object, or there is no process handle available.</exception>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan PrivilegedProcessorTime
+        public partial TimeSpan PrivilegedProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.PrivilegedTime : GetProcessTimes().PrivilegedProcessorTime;
         }
@@ -209,31 +203,12 @@ namespace System.Diagnostics
             get { return GetProcessTimes().StartTime; }
         }
 
-        /// <summary>
-        /// Gets the amount of time the associated process has spent utilizing the CPU.
-        /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
-        /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
-        /// </summary>
-        /// <remarks>If a handle to the process is available, the value can be retrieved after the process exits.</remarks>
-        /// <exception cref="InvalidOperationException">No process is associated with this object, or there is no process handle available.</exception>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan TotalProcessorTime
+        public partial TimeSpan TotalProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.TotalTime : GetProcessTimes().TotalProcessorTime;
         }
 
-        /// <summary>
-        /// Gets the amount of time the associated process has spent running code
-        /// inside the application portion of the process (not the operating system core).
-        /// </summary>
-        /// <remarks>If a handle to the process is available, the value can be retrieved after the process exits.</remarks>
-        /// <exception cref="InvalidOperationException">No process is associated with this object, or there is no process handle available.</exception>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan UserProcessorTime
+        public partial TimeSpan UserProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.UserTime : GetProcessTimes().UserProcessorTime;
         }

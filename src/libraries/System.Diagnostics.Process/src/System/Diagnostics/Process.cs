@@ -231,6 +231,54 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
+        /// <remarks>
+        /// On Windows, if a handle to the process is available, the value can be retrieved after the process exits.
+        /// On Unix, the value is unavailable after the process exits.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// No process is associated with this object. On Windows, there is no process handle available.
+        /// On Unix, the process has exited.
+        /// </exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public partial TimeSpan PrivilegedProcessorTime { get; }
+
+        /// <summary>
+        /// Gets the amount of time the associated process has spent utilizing the CPU.
+        /// It is the sum of the <see cref='UserProcessorTime'/> and <see cref='PrivilegedProcessorTime'/>.
+        /// </summary>
+        /// <remarks>
+        /// On Windows, if a handle to the process is available, the value can be retrieved after the process exits.
+        /// On Unix, the value is unavailable after the process exits.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// No process is associated with this object. On Windows, there is no process handle available.
+        /// On Unix, the process has exited.
+        /// </exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public partial TimeSpan TotalProcessorTime { get; }
+
+        /// <summary>
+        /// Gets the amount of time the associated process has spent running code
+        /// inside the application portion of the process (not the operating system core).
+        /// </summary>
+        /// <remarks>
+        /// On Windows, if a handle to the process is available, the value can be retrieved after the process exits.
+        /// On Unix, the value is unavailable after the process exits.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// No process is associated with this object. On Windows, there is no process handle available.
+        /// On Unix, the process has exited.
+        /// </exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public partial TimeSpan UserProcessorTime { get; }
+
         /// <devdoc>
         ///    <para>
         ///       Gets

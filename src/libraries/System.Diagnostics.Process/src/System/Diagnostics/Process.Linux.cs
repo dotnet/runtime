@@ -13,13 +13,7 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
-        /// <remarks>The value is unavailable after the process exits.</remarks>
-        /// <exception cref="InvalidOperationException">No process is associated with this object, or the process has exited.</exception>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan PrivilegedProcessorTime
+        public partial TimeSpan PrivilegedProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.PrivilegedTime : TicksToTimeSpan(GetStat().stime);
         }
@@ -85,17 +79,7 @@ namespace System.Diagnostics
             return null;
         }
 
-        /// <summary>
-        /// Gets the amount of time the associated process has spent utilizing the CPU.
-        /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
-        /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
-        /// </summary>
-        /// <remarks>The value is unavailable after the process exits.</remarks>
-        /// <exception cref="InvalidOperationException">No process is associated with this object, or the process has exited.</exception>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan TotalProcessorTime
+        public partial TimeSpan TotalProcessorTime
         {
             get
             {
@@ -109,16 +93,7 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>
-        /// Gets the amount of time the associated process has spent running code
-        /// inside the application portion of the process (not the operating system core).
-        /// </summary>
-        /// <remarks>The value is unavailable after the process exits.</remarks>
-        /// <exception cref="InvalidOperationException">No process is associated with this object, or the process has exited.</exception>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan UserProcessorTime
+        public partial TimeSpan UserProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.UserTime : TicksToTimeSpan(GetStat().utime);
         }
