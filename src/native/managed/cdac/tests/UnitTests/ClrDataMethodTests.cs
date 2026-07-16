@@ -46,60 +46,6 @@ public unsafe class ClrDataMethodTests
         Assert.Equal(expectedFlags, instanceFlags);
     }
 
-    [Fact]
-    public void MethodDefinitionRequest_ImplementsRevisionOne()
-    {
-        IXCLRDataMethodDefinition definition = new ClrDataMethodDefinition(
-            CreateTarget([0x00, 0x00, 0x01]),
-            s_module,
-            MethodToken,
-            legacyImpl: null);
-
-        AssertRevisionRequest(
-            (uint reqCode, uint inSize, byte* inBuffer, uint outSize, byte* outBuffer) =>
-                definition.Request(reqCode, inSize, inBuffer, outSize, outBuffer));
-    }
-
-    [Fact]
-    public void MethodInstanceRequest_ImplementsRevisionOne()
-    {
-        IXCLRDataMethodInstance instance = new ClrDataMethodInstance(
-            CreateTarget([0x00, 0x00, 0x01]),
-            new MethodDescHandle(s_methodDesc),
-            appDomain: TargetPointer.Null,
-            legacyImpl: null);
-
-        AssertRevisionRequest(
-            (uint reqCode, uint inSize, byte* inBuffer, uint outSize, byte* outBuffer) =>
-                instance.Request(reqCode, inSize, inBuffer, outSize, outBuffer));
-    }
-
-    private static void AssertRevisionRequest(Request request)
-    {
-        uint revision = 0;
-        Assert.Equal(
-            HResults.S_OK,
-            request((uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION, 0, null, sizeof(uint), (byte*)&revision));
-        Assert.Equal(1u, revision);
-
-        byte input = 0;
-        Assert.Equal(
-            HResults.E_INVALIDARG,
-            request((uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION, 1, null, sizeof(uint), (byte*)&revision));
-        Assert.Equal(
-            HResults.E_INVALIDARG,
-            request((uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION, 0, &input, sizeof(uint), (byte*)&revision));
-        Assert.Equal(
-            HResults.E_INVALIDARG,
-            request((uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION, 0, null, 0, (byte*)&revision));
-        Assert.Equal(
-            HResults.E_POINTER,
-            request((uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION, 0, null, sizeof(uint), null));
-        Assert.Equal(
-            HResults.E_INVALIDARG,
-            request(0x12345678, 0, null, sizeof(uint), (byte*)&revision));
-    }
-
     private static TestPlaceholderTarget CreateTarget(byte[] signature)
     {
         TargetPointer methodDefToDesc = new(0x4000);
@@ -126,13 +72,6 @@ public unsafe class ClrDataMethodTests
             .AddMockContract<IRuntimeTypeSystem>(new SignatureRuntimeTypeSystem(signature))
             .Build();
     }
-
-    private unsafe delegate int Request(
-        uint reqCode,
-        uint inBufferSize,
-        byte* inBuffer,
-        uint outBufferSize,
-        byte* outBuffer);
 
     private sealed class SignatureRuntimeTypeSystem(byte[] signature) : IRuntimeTypeSystem
     {

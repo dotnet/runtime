@@ -472,62 +472,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     }
 
     int IXCLRDataMethodDefinition.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-    {
-        int hr = HandleRevisionRequest(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer);
-
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            byte[] localBuffer = new byte[(int)outBufferSize];
-            fixed (byte* localOutBuffer = localBuffer)
-            {
-                int hrLocal = _legacyImpl.Request(
-                    reqCode,
-                    inBufferSize,
-                    inBuffer,
-                    outBufferSize,
-                    outBuffer is null ? null : localOutBuffer);
-                Debug.ValidateHResult(hr, hrLocal);
-                if (hr == HResults.S_OK)
-                {
-                    Debug.Assert(outBuffer is not null);
-                    Debug.Assert(new ReadOnlySpan<byte>(outBuffer, (int)outBufferSize).SequenceEqual(localBuffer));
-                }
-            }
-        }
-#endif
-        return hr;
-    }
-
-    internal static int HandleRevisionRequest(
-        uint reqCode,
-        uint inBufferSize,
-        byte* inBuffer,
-        uint outBufferSize,
-        byte* outBuffer)
-    {
-        int hr = HResults.S_OK;
-        try
-        {
-            if (reqCode != (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION
-                || inBufferSize != 0
-                || inBuffer is not null
-                || outBufferSize != sizeof(uint))
-            {
-                throw new ArgumentException();
-            }
-            if (outBuffer is null)
-                throw new NullReferenceException();
-
-            *(uint*)outBuffer = 1;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-
-        return hr;
-    }
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodDefinition.GetRepresentativeEntryAddress(ClrDataAddress* addr)
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetRepresentativeEntryAddress(addr) : HResults.E_NOTIMPL;
