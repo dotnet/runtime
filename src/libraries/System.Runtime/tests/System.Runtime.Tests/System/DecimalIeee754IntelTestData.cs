@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Numerics;
 
 namespace System.Tests
 {
@@ -62,6 +63,37 @@ namespace System.Tests
         private static readonly HashSet<string> s_bid32Predicate = new() { "bid32_isNaN", "bid32_isInf", "bid32_isFinite", "bid32_isSigned", "bid32_isNormal", "bid32_isSubnormal" };
         private static readonly HashSet<string> s_bid64Predicate = new() { "bid64_isNaN", "bid64_isInf", "bid64_isFinite", "bid64_isSigned", "bid64_isNormal", "bid64_isSubnormal" };
         private static readonly HashSet<string> s_bid128Predicate = new() { "bid128_isNaN", "bid128_isInf", "bid128_isFinite", "bid128_isSigned", "bid128_isNormal", "bid128_isSubnormal" };
+
+        // Integer -> decimal (the .NET implicit/explicit constructors use the IEEE convertFromInt semantics: exact
+        // when the value fits, otherwise rounded to the format precision, with the preferred exponent of zero).
+        private static readonly HashSet<string> s_bid32FromInteger = new() { "bid32_from_int32", "bid32_from_int64", "bid32_from_uint32", "bid32_from_uint64" };
+        private static readonly HashSet<string> s_bid64FromInteger = new() { "bid64_from_int32", "bid64_from_int64", "bid64_from_uint32", "bid64_from_uint64" };
+        private static readonly HashSet<string> s_bid128FromInteger = new() { "bid128_from_int32", "bid128_from_int64", "bid128_from_uint32", "bid128_from_uint64" };
+
+        // Decimal -> integer. Only the round-toward-zero (`_int`) family is consumed because the .NET explicit
+        // operators truncate toward zero. Intel reports out-of-range/NaN operands by returning a sentinel and
+        // raising the invalid flag, where-as .NET saturates (unchecked) or throws (checked); such rows are skipped
+        // here (invalid-flagged) and the saturation/overflow behavior is covered by the oracle-derived vectors.
+        private static readonly HashSet<string> s_bid32ToInteger = new() { "bid32_to_int8_int", "bid32_to_int16_int", "bid32_to_int32_int", "bid32_to_int64_int", "bid32_to_uint8_int", "bid32_to_uint16_int", "bid32_to_uint32_int", "bid32_to_uint64_int" };
+        private static readonly HashSet<string> s_bid64ToInteger = new() { "bid64_to_int8_int", "bid64_to_int16_int", "bid64_to_int32_int", "bid64_to_int64_int", "bid64_to_uint8_int", "bid64_to_uint16_int", "bid64_to_uint32_int", "bid64_to_uint64_int" };
+        private static readonly HashSet<string> s_bid128ToInteger = new() { "bid128_to_int8_int", "bid128_to_int16_int", "bid128_to_int32_int", "bid128_to_int64_int", "bid128_to_uint8_int", "bid128_to_uint16_int", "bid128_to_uint32_int", "bid128_to_uint64_int" };
+
+        // Decimal -> binary float and binary float -> decimal (correctly rounded). Only binary32/binary64 map to a
+        // .NET type (float/double); binary80/binary128 are ignored. NaN operands are skipped so the payload
+        // convention differences between the two libraries do not produce spurious failures.
+        private static readonly HashSet<string> s_bid32ToBinary = new() { "bid32_to_binary32", "bid32_to_binary64" };
+        private static readonly HashSet<string> s_bid64ToBinary = new() { "bid64_to_binary32", "bid64_to_binary64" };
+        private static readonly HashSet<string> s_bid128ToBinary = new() { "bid128_to_binary32", "bid128_to_binary64" };
+
+        private static readonly HashSet<string> s_bid32FromBinary = new() { "binary32_to_bid32", "binary64_to_bid32" };
+        private static readonly HashSet<string> s_bid64FromBinary = new() { "binary32_to_bid64", "binary64_to_bid64" };
+        private static readonly HashSet<string> s_bid128FromBinary = new() { "binary32_to_bid128", "binary64_to_bid128" };
+
+        // Cross-format decimal conversions, grouped by the target format (widening is exact, narrowing rounds). NaN
+        // operands are skipped for the same payload-convention reason as the binary float conversions.
+        private static readonly HashSet<string> s_bid32Cross = new() { "bid64_to_bid32", "bid128_to_bid32" };
+        private static readonly HashSet<string> s_bid64Cross = new() { "bid32_to_bid64", "bid128_to_bid64" };
+        private static readonly HashSet<string> s_bid128Cross = new() { "bid32_to_bid128", "bid64_to_bid128" };
 
         /// <summary>
         /// Gets a value indicating whether the Intel <c>readtest.in</c> reference vectors are available,
@@ -234,6 +266,275 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> Decimal32FromInteger()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32FromInteger))
+            {
+                if (TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { IntegerSourceType(fields[0]), fields[2], expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64FromInteger()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64FromInteger))
+            {
+                if (TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { IntegerSourceType(fields[0]), fields[2], expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128FromInteger()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128FromInteger))
+            {
+                if (TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { IntegerSourceType(fields[0]), fields[2], expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32ToInteger()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32ToInteger))
+            {
+                if (TryParseBid32(fields[2], out uint value) && !IsInvalidFlagged(fields[4]))
+                {
+                    yield return new object[] { IntegerTargetType(fields[0]), value, fields[3] };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64ToInteger()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64ToInteger))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && !IsInvalidFlagged(fields[4]))
+                {
+                    yield return new object[] { IntegerTargetType(fields[0]), value, fields[3] };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128ToInteger()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128ToInteger))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && !IsInvalidFlagged(fields[4]))
+                {
+                    yield return new object[] { IntegerTargetType(fields[0]), value, fields[3] };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32ToBinary()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32ToBinary))
+            {
+                if (TryParseBid32(fields[2], out uint value) && !IsBid32NaN(value) && TryParseHexBits(fields[3], out ulong expected))
+                {
+                    yield return new object[] { BinaryTargetType(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64ToBinary()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64ToBinary))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && !IsBid64NaN(value) && TryParseHexBits(fields[3], out ulong expected))
+                {
+                    yield return new object[] { BinaryTargetType(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128ToBinary()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128ToBinary))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && !IsBid128NaN(value) && TryParseHexBits(fields[3], out ulong expected))
+                {
+                    yield return new object[] { BinaryTargetType(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32FromBinary()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32FromBinary))
+            {
+                if (TryParseHexBits(fields[2], out ulong value) && !IsBinaryNaN(BinarySourceType(fields[0]), value) && TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { BinarySourceType(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64FromBinary()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64FromBinary))
+            {
+                if (TryParseHexBits(fields[2], out ulong value) && !IsBinaryNaN(BinarySourceType(fields[0]), value) && TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { BinarySourceType(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128FromBinary()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128FromBinary))
+            {
+                if (TryParseHexBits(fields[2], out ulong value) && !IsBinaryNaN(BinarySourceType(fields[0]), value) && TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { BinarySourceType(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32Cross()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Cross))
+            {
+                if (TryParseDecimalSource(fields[0], fields[2], out UInt128 value) && TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { DecimalSourceType(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64Cross()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Cross))
+            {
+                if (TryParseDecimalSource(fields[0], fields[2], out UInt128 value) && TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { DecimalSourceType(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128Cross()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Cross))
+            {
+                if (TryParseDecimalSource(fields[0], fields[2], out UInt128 value) && TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { DecimalSourceType(fields[0]), value, expected };
+                }
+            }
+        }
+
+        // For `bidNN_from_<type>` the integer source type is the trailing token; for `bidNN_to_<type>_int` it is the
+        // third underscore-separated token; for the binary and cross families it is the leading or third token.
+        private static string IntegerSourceType(string operation) => operation.Substring(operation.LastIndexOf('_') + 1);
+
+        private static string IntegerTargetType(string operation) => NthToken(operation, 2);
+
+        private static string BinaryTargetType(string operation) => NthToken(operation, 2);
+
+        private static string BinarySourceType(string operation) => NthToken(operation, 0);
+
+        private static string DecimalSourceType(string operation) => NthToken(operation, 0);
+
+        // Extracts the zero-based, underscore-delimited token from a fixed-format operation name without the
+        // array and per-token substring allocations that `string.Split('_')` would incur on every vector row.
+        private static string NthToken(string operation, int index)
+        {
+            ReadOnlySpan<char> remaining = operation;
+
+            for (int i = 0; i < index; i++)
+            {
+                remaining = remaining.Slice(remaining.IndexOf('_') + 1);
+            }
+
+            int end = remaining.IndexOf('_');
+            return (end < 0 ? remaining : remaining.Slice(0, end)).ToString();
+        }
+
+        private static bool TryParseDecimalSource(string operation, string token, out UInt128 value)
+        {
+            switch (DecimalSourceType(operation))
+            {
+                case "bid32":
+                    if (TryParseBid32(token, out uint u32) && !IsBid32NaN(u32))
+                    {
+                        value = u32;
+                        return true;
+                    }
+                    break;
+
+                case "bid64":
+                    if (TryParseBid64(token, out ulong u64) && !IsBid64NaN(u64))
+                    {
+                        value = u64;
+                        return true;
+                    }
+                    break;
+
+                case "bid128":
+                    if (TryParseBid128(token, out UInt128 u128) && !IsBid128NaN(u128))
+                    {
+                        value = u128;
+                        return true;
+                    }
+                    break;
+            }
+
+            value = default;
+            return false;
+        }
+
+        private static bool IsInvalidFlagged(string token)
+        {
+            ReadOnlySpan<char> span = token;
+
+            if (span.StartsWith("0x") || span.StartsWith("0X"))
+            {
+                span = span.Slice(2);
+            }
+
+            // A row whose flags cannot be parsed is treated as invalid so it is skipped rather than trusted.
+            if (!uint.TryParse(span, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out uint flags))
+            {
+                return true;
+            }
+
+            // Bit 0 (0x01) is the IEEE invalid-operation flag Intel raises for NaN/infinity/out-of-range operands.
+            return (flags & 0x01) != 0;
+        }
+
+        private static bool TryParseHexBits(string token, out ulong value)
+        {
+            value = 0;
+
+            if ((token.Length < 2) || (token[0] != '[') || (token[^1] != ']'))
+            {
+                return false;
+            }
+
+            return ulong.TryParse(token.AsSpan(1, token.Length - 2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out value);
+        }
+
+        private static bool IsBid32NaN(uint value) => (value & 0x7C000000u) == 0x7C000000u;
+
+        private static bool IsBid64NaN(ulong value) => (value & 0x7C00000000000000ul) == 0x7C00000000000000ul;
+
+        private static bool IsBid128NaN(UInt128 value) => (value & new UInt128(0x7C00000000000000ul, 0x0)) == new UInt128(0x7C00000000000000ul, 0x0);
+
+        private static bool IsBinaryNaN(string binaryType, ulong bits) => binaryType switch
+        {
+            "binary32" => ((bits & 0x7F800000ul) == 0x7F800000ul) && ((bits & 0x7FFFFFul) != 0),
+            "binary64" => ((bits & 0x7FF0000000000000ul) == 0x7FF0000000000000ul) && ((bits & 0xFFFFFFFFFFFFFul) != 0),
+            _ => false,
+        };
+
         private static IEnumerable<string[]> EnumerateRows(HashSet<string> operations)
         {
             string? path = s_readTestPath;
@@ -330,6 +631,18 @@ namespace System.Tests
             // Bid128 comparison operands and every bid128 result are encoded as a single `[hex]`.
             return UInt128.TryParse(inner, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out value);
         }
+
+        // Intel's readtest.in encodes unsigned integer operands and results as a signed decimal string that is
+        // only congruent to the intended unsigned value modulo 2^width (for example uint32 4294967295 is written
+        // as "-1", and uint64 9223372036854775807 as "-9223372036854775809", whose magnitude even exceeds the
+        // signed range). Parse through BigInteger and reduce modulo 2^width to recover the unsigned value.
+        internal static byte ParseUInt8(string s) => unchecked((byte)(uint)(BigInteger.Parse(s, CultureInfo.InvariantCulture) & 0xFF));
+
+        internal static ushort ParseUInt16(string s) => unchecked((ushort)(uint)(BigInteger.Parse(s, CultureInfo.InvariantCulture) & 0xFFFF));
+
+        internal static uint ParseUInt32(string s) => unchecked((uint)(BigInteger.Parse(s, CultureInfo.InvariantCulture) & 0xFFFFFFFF));
+
+        internal static ulong ParseUInt64(string s) => unchecked((ulong)(BigInteger.Parse(s, CultureInfo.InvariantCulture) & ulong.MaxValue));
 
         private static string? ResolveReadTestPath()
         {
