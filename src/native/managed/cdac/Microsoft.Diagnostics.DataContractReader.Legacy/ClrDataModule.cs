@@ -800,7 +800,36 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumAppDomains(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.GetVersionId(Guid* vid)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.GetVersionId(vid) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (vid is null)
+                throw new NullReferenceException();
+
+            ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_address);
+            MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)
+                ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            *vid = reader.GetGuid(reader.GetModuleDefinition().Mvid);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            Guid vidLocal = default;
+            int hrLocal = _legacyModule.GetVersionId(vid is null ? null : &vidLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK && vid is not null)
+                Debug.Assert(*vid == vidLocal, $"cDAC: {*vid}, DAC: {vidLocal}");
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataModule2.SetJITCompilerFlags(uint flags)
     {
