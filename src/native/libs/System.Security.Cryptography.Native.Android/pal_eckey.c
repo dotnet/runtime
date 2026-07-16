@@ -22,14 +22,21 @@ EC_KEY* AndroidCryptoNative_NewEcKeyFromKeys(JNIEnv *env, jobject /*ECPublicKey*
 {
     abort_if_invalid_pointer_argument (publicKey);
 
+    EC_KEY* ret = NULL;
+    INIT_LOCALS(loc, curveParameters);
+
     if (!(*env)->IsInstanceOf(env, publicKey, g_ECPublicKeyClass))
-        return NULL;
+        goto cleanup;
 
-    jobject curveParameters = (*env)->CallObjectMethod(env, publicKey, g_ECPublicKeyGetParams);
-    if (CheckJNIExceptions(env) || curveParameters == NULL)
-        return NULL;
+    loc[curveParameters] = (*env)->CallObjectMethod(env, publicKey, g_ECPublicKeyGetParams);
+    if (CheckJNIExceptions(env) || loc[curveParameters] == NULL)
+        goto cleanup;
 
-    return AndroidCryptoNative_NewEcKey(ToGRef(env, curveParameters), AndroidCryptoNative_CreateKeyPair(env, publicKey, privateKey));
+    ret = AndroidCryptoNative_NewEcKey(AddGRef(env, loc[curveParameters]), AndroidCryptoNative_CreateKeyPair(env, publicKey, privateKey));
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 #pragma clang diagnostic push

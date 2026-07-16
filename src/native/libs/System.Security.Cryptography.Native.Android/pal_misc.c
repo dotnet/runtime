@@ -23,6 +23,7 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
 
     loc[buffArray] = make_java_byte_array(env, len);
     (*env)->SetByteArrayRegion(env, loc[buffArray], 0, len, (jbyte*)buff);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, loc[randObj], g_randNextBytesMethod, loc[buffArray]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->GetByteArrayRegion(env, loc[buffArray], 0, len, (jbyte*)buff);

@@ -823,10 +823,10 @@ AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int32_t
     abort_if_invalid_pointer_argument (sslStream);
     abort_if_invalid_pointer_argument (read);
 
-    jbyteArray data = NULL;
     JNIEnv* env = GetJNIEnv();
     PAL_SSLStreamStatus ret = SSLStreamStatus_Error;
     *read = 0;
+    INIT_LOCALS(loc, dataArray);
 
     /*
         appInBuffer.flip();
@@ -878,12 +878,12 @@ AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int32_t
     if (rem > 0)
     {
         int32_t bytes_to_read = rem < length ? rem : length;
-        data = make_java_byte_array(env, bytes_to_read);
-        IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferGet, data));
+        loc[dataArray] = make_java_byte_array(env, bytes_to_read);
+        IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferGet, loc[dataArray]));
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferCompact));
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-        (*env)->GetByteArrayRegion(env, data, 0, bytes_to_read, (jbyte*)buffer);
+        (*env)->GetByteArrayRegion(env, loc[dataArray], 0, bytes_to_read, (jbyte*)buffer);
         *read = bytes_to_read;
         ret = SSLStreamStatus_OK;
     }
@@ -893,7 +893,7 @@ AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int32_t
     }
 
 cleanup:
-    ReleaseLRef(env, data);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 

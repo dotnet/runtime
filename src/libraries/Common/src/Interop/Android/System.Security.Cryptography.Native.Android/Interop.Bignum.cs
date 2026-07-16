@@ -42,8 +42,9 @@ internal static partial class Interop
                 written = BigNumToBinary(bignum, start);
             }
 
-            // A negative result means a pending JNI exception was cleared and no data was written.
-            // Fail loudly rather than silently returning a zero-filled (corrupt) buffer.
+            // A negative result means the native side cleared a pending JNI exception, so the
+            // output must be treated as invalid. Fail loudly rather than returning a buffer that
+            // may be zero-filled or only partially written.
             if (written < 0)
                 throw new CryptographicException();
 

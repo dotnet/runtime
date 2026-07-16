@@ -203,7 +203,7 @@ int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
     int32_t ret = FAIL;
     int certCount = 0;
     int32_t added = 0;
-    INIT_LOCALS(loc, certPathList, trustedCert);
+    INIT_LOCALS(loc, certPathList, trustedCert, cert);
 
     // List<Certificate> certPathList = certPath.getCertificates();
     loc[certPathList] = (*env)->CallObjectMethod(env, ctx->certPath, g_CertPathGetCertificates);
@@ -223,9 +223,10 @@ int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
     // }
     for (int32_t i = 0; i < certCount; ++i)
     {
-        jobject cert = (*env)->CallObjectMethod(env, loc[certPathList], g_ListGet, i);
+        loc[cert] = (*env)->CallObjectMethod(env, loc[certPathList], g_ListGet, i);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-        certs[added++] = ToGRef(env, cert);
+        certs[added++] = ToGRef(env, loc[cert]);
+        loc[cert] = NULL;
     }
 
     // Certificate trustedCert = trustAnchor.getTrustedCert();
@@ -469,6 +470,7 @@ exit:
         for (int32_t i = 0; i < populated; ++i)
         {
             free(errors[i].message);
+            errors[i].message = NULL;
         }
     }
     return ret;
@@ -485,7 +487,7 @@ int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainContext* ctx,
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
-    INIT_LOCALS(loc, anchors);
+    INIT_LOCALS(loc, anchors, anchor);
 
     // HashSet<TrustAnchor> anchors = new HashSet<TrustAnchor>(customTrustStoreLen);
     // for (Certificate cert : customTrustStore) {
@@ -496,11 +498,12 @@ int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainContext* ctx,
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     for (int i = 0; i < customTrustStoreLen; ++i)
     {
-        jobject anchor = (*env)->NewObject(env, g_TrustAnchorClass, g_TrustAnchorCtor, customTrustStore[i], NULL);
+        loc[anchor] = (*env)->NewObject(env, g_TrustAnchorClass, g_TrustAnchorCtor, customTrustStore[i], NULL);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-        (*env)->CallBooleanMethod(env, loc[anchors], g_HashSetAdd, anchor);
-        (*env)->DeleteLocalRef(env, anchor);
+        (*env)->CallBooleanMethod(env, loc[anchors], g_HashSetAdd, loc[anchor]);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        ReleaseLRef(env, loc[anchor]);
+        loc[anchor] = NULL;
     }
 
     // params.setTrustAnchors(anchors);
@@ -557,7 +560,7 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
     abort_if_invalid_pointer_argument (validator);
 
     int32_t ret = FAIL;
-    INIT_LOCALS(loc, certPathList, certPathFromAnchor, options, checker, result, ex, revocationErrorList);
+    INIT_LOCALS(loc, certPathList, certPathFromAnchor, options, checker, result, ex, revocationErrorList, endOnly);
 
     if (revocationMode == X509RevocationMode_Offline)
     {
@@ -602,10 +605,9 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
             // options.add(PKIXRevocationChecker.Option.ONLY_END_ENTITY);
             loc[options] = (*env)->NewObject(env, g_HashSetClass, g_HashSetCtorWithCapacity, 3);
             ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-            jobject endOnly = (*env)->GetStaticObjectField(
+            loc[endOnly] = (*env)->GetStaticObjectField(
                 env, g_PKIXRevocationCheckerOptionClass, g_PKIXRevocationCheckerOptionOnlyEndEntity);
-            (*env)->CallBooleanMethod(env, loc[options], g_HashSetAdd, endOnly);
-            (*env)->DeleteLocalRef(env, endOnly);
+            (*env)->CallBooleanMethod(env, loc[options], g_HashSetAdd, loc[endOnly]);
             ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         }
     }
