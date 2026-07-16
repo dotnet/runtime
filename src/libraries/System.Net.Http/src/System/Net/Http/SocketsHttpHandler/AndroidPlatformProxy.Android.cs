@@ -122,9 +122,15 @@ namespace System.Net.Http
                 return false;
             }
 
-            proxyUri = new UriBuilder(scheme, host, entry.Port).Uri;
-
-            return true;
+            try
+            {
+                proxyUri = new UriBuilder(scheme, host, entry.Port).Uri;
+                return true;
+            }
+            catch (UriFormatException)
+            {
+                return false;
+            }
         }
 
         // SocketsHttpHandler's pattern is: call IsBypassed first; if it returns false,
