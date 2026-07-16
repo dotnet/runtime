@@ -209,22 +209,45 @@ namespace System.Text.Json.Serialization.Metadata
 
                 foreach (CustomAttributeNamedArgument namedArgument in attributeData.NamedArguments)
                 {
-                    if (namedArgument.MemberName == "DerivedTypes" &&
-                        namedArgument.TypedValue.Value is IList<CustomAttributeTypedArgument> derivedTypeArguments)
+                    if (namedArgument.MemberName != "DerivedTypes")
                     {
-                        Type[] derivedTypes = new Type[derivedTypeArguments.Count];
-                        for (int i = 0; i < derivedTypes.Length; i++)
+                        continue;
+                    }
+
+                    object? value = namedArgument.TypedValue.Value;
+
+                    // Mono materializes array-valued named arguments directly, while CoreCLR wraps
+                    // each element in a CustomAttributeTypedArgument.
+                    if (value is Type[] materializedDerivedTypes)
+                    {
+                        foreach (Type? derivedType in materializedDerivedTypes)
                         {
-                            if (derivedTypeArguments[i].Value is not Type derivedType)
+                            if (derivedType is null)
                             {
                                 return null;
                             }
-
-                            derivedTypes[i] = derivedType;
                         }
 
-                        return derivedTypes;
+                        return materializedDerivedTypes;
                     }
+
+                    if (value is not IList<CustomAttributeTypedArgument> derivedTypeArguments)
+                    {
+                        return null;
+                    }
+
+                    Type[] derivedTypes = new Type[derivedTypeArguments.Count];
+                    for (int i = 0; i < derivedTypes.Length; i++)
+                    {
+                        if (derivedTypeArguments[i].Value is not Type derivedType)
+                        {
+                            return null;
+                        }
+
+                        derivedTypes[i] = derivedType;
+                    }
+
+                    return derivedTypes;
                 }
 
                 // The closed-type marker is present but carries no derived types.

@@ -21,8 +21,6 @@ namespace System.Text.Json.Serialization.Tests
         // Ensure that the reflection-based serializer testing abstraction roots KeyValuePair<,>
         // which is required by many tests in the reflection test suite.
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
-        // Ensure that compiler-generated closed hierarchy metadata is preserved in trimmed reflection tests.
-        [DynamicDependency(DynamicallyAccessedMemberTypes.All, "System.Runtime.CompilerServices.IsClosedTypeAttribute", "System.Private.CoreLib")]
         protected JsonSerializerWrapper()
         {
         }
