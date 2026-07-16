@@ -2713,6 +2713,23 @@ namespace System.Tests
             Assert.Equal(Unsafe.SizeOf<UInt128>(), significandWritten);
             Assert.Equal((UInt128)12345, BinaryPrimitives.ReadUInt128LittleEndian(significand));
 
+            Assert.Equal(2, value.GetExponentShortestBitLength());
+            Assert.Equal(113, value.GetSignificandBitLength());
+
+            Span<byte> exponentBigEndian = stackalloc byte[value.GetExponentByteCount()];
+            Assert.True(value.TryWriteExponentBigEndian(exponentBigEndian, out exponentWritten));
+            Assert.Equal(sizeof(int), exponentWritten);
+            Assert.Equal(-2, BinaryPrimitives.ReadInt32BigEndian(exponentBigEndian));
+
+            Span<byte> significandBigEndian = stackalloc byte[value.GetSignificandByteCount()];
+            Assert.True(value.TryWriteSignificandBigEndian(significandBigEndian, out significandWritten));
+            Assert.Equal(Unsafe.SizeOf<UInt128>(), significandWritten);
+            Assert.Equal((UInt128)12345, BinaryPrimitives.ReadUInt128BigEndian(significandBigEndian));
+
+            // A non-negative exponent exercises the other GetExponentShortestBitLength branch.
+            IFloatingPoint<Decimal128> integer = Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x3040000000000000, 0x0000000000003039)); // 12345
+            Assert.Equal(0, integer.GetExponentShortestBitLength());
+
             Assert.Equal(123, Decimal128.ConvertToInteger<int>(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x303C000000000000, 0x0000000000003039))));
         }
 
