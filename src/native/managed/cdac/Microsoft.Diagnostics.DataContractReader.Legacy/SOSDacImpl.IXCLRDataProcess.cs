@@ -19,6 +19,18 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// </summary>
 public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProcess2
 {
+    private sealed class EnumModules : IEnum<Contracts.ModuleHandle>
+    {
+        public IEnumerator<Contracts.ModuleHandle> Enumerator { get; }
+        public nuint LegacyHandle { get; set; }
+
+        public EnumModules(IEnumerator<Contracts.ModuleHandle> enumerator, nuint legacyHandle)
+        {
+            Enumerator = enumerator;
+            LegacyHandle = legacyHandle;
+        }
+    }
+
     int IXCLRDataProcess.Flush()
     {
         _target.Flush(FlushScope.All);
@@ -235,16 +247,178 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EndEnumAssemblies(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.StartEnumModules(ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumModules(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        ulong legacyHandle = 0;
+        try
+        {
+            if (_legacyProcess is not null)
+                hrLocal = _legacyProcess.StartEnumModules(handle is null ? null : &legacyHandle);
+
+            if (handle is null)
+                throw new NullReferenceException();
+
+            *handle = 0;
+            ILoader loader = _target.Contracts.Loader;
+            TargetPointer appDomain = loader.GetAppDomain();
+            IEnumerator<Contracts.ModuleHandle> enumerator = loader.GetModuleHandles(
+                appDomain,
+                AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution).GetEnumerator();
+            EnumModules state = new(enumerator, (nuint)legacyHandle);
+            *handle = (ulong)((IEnum<Contracts.ModuleHandle>)state).GetHandle();
+            legacyHandle = 0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        finally
+        {
+            if (_legacyProcess is not null && legacyHandle != 0)
+                _legacyProcess.EndEnumModules(legacyHandle);
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.EnumModule(ulong* handle, DacComNullableByRef<IXCLRDataModule> mod)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EnumModule(handle, mod) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        try
+        {
+            if (handle is null)
+                throw new NullReferenceException();
+            if (*handle == 0)
+                throw new ArgumentException();
+
+            GCHandle gcHandle = GCHandle.FromIntPtr((nint)(*handle));
+            if (gcHandle.Target is not EnumModules state)
+                throw new ArgumentException();
+
+            bool outputIsNull = mod is null || mod.IsNullRef;
+            IXCLRDataModule? legacyModule = null;
+            if (_legacyProcess is not null)
+            {
+                DacComNullableByRef<IXCLRDataModule> legacyModuleOut = new(isNullRef: outputIsNull);
+                ulong legacyHandle = state.LegacyHandle;
+                hrLocal = _legacyProcess.EnumModule(&legacyHandle, legacyModuleOut);
+                state.LegacyHandle = (nuint)legacyHandle;
+                legacyModule = legacyModuleOut.Interface;
+            }
+
+            if (state.Enumerator.MoveNext())
+            {
+                if (outputIsNull)
+                    throw new NullReferenceException();
+                DacComNullableByRef<IXCLRDataModule> moduleOutput = mod ?? throw new NullReferenceException();
+
+                TargetPointer module = _target.Contracts.Loader.GetModule(state.Enumerator.Current);
+                moduleOutput.Interface = new ClrDataModule(module, _target, legacyModule);
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.EndEnumModules(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EndEnumModules(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        try
+        {
+            if (handle != 0)
+            {
+                GCHandle gcHandle = GCHandle.FromIntPtr((nint)handle);
+                if (gcHandle.Target is not EnumModules state)
+                    throw new ArgumentException();
+
+                ((IEnum<Contracts.ModuleHandle>)state).Dispose();
+                gcHandle.Free();
+                if (_legacyProcess is not null)
+                    hrLocal = _legacyProcess.EndEnumModules(state.LegacyHandle);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.GetModuleByAddress(ClrDataAddress address, DacComNullableByRef<IXCLRDataModule> mod)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetModuleByAddress(address, mod) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_FALSE;
+        int hrLocal = HResults.S_OK;
+        try
+        {
+            bool outputIsNull = mod is null || mod.IsNullRef;
+            IXCLRDataModule? legacyModule = null;
+            if (_legacyProcess is not null)
+            {
+                DacComNullableByRef<IXCLRDataModule> legacyModuleOut = new(isNullRef: outputIsNull);
+                hrLocal = _legacyProcess.GetModuleByAddress(address, legacyModuleOut);
+                legacyModule = legacyModuleOut.Interface;
+            }
+
+            ILoader loader = _target.Contracts.Loader;
+            TargetPointer appDomain = loader.GetAppDomain();
+            ulong targetAddress = address.ToTargetPointer(_target).Value;
+            foreach (Contracts.ModuleHandle moduleHandle in loader.GetModuleHandles(
+                appDomain,
+                AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+            {
+                if (!loader.TryGetLoadedImageContents(moduleHandle, out TargetPointer baseAddress, out uint size, out _)
+                    || baseAddress == TargetPointer.Null)
+                {
+                    continue;
+                }
+
+                if (targetAddress >= baseAddress.Value && targetAddress - baseAddress.Value < size)
+                {
+                    if (outputIsNull)
+                        throw new NullReferenceException();
+                    DacComNullableByRef<IXCLRDataModule> moduleOutput = mod ?? throw new NullReferenceException();
+                    TargetPointer module = loader.GetModule(moduleHandle);
+                    moduleOutput.Interface = new ClrDataModule(module, _target, legacyModule);
+                    hr = HResults.S_OK;
+                    break;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
+        return hr;
+    }
 
     internal sealed class EnumMethodInstances : IEnum<MethodDescHandle>
     {
