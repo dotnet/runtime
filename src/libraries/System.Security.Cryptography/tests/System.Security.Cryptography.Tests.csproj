@@ -426,8 +426,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherOneShotTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2ContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2ContractTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Provider.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Provider.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Tests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs"
@@ -602,7 +602,8 @@
     <Compile Include="PemEncodingFindTests.cs" />
     <Compile Include="PKCS1MaskGenerationMethodTest.cs" />
     <Compile Include="RandomNumberGeneratorTests.cs" />
-    <Compile Include="RC2Provider.cs" />
+    <Compile Include="DefaultRC2Provider.cs" />
+    <Compile Include="RC2TestRegistration.Default.cs" />
     <Compile Include="RC2Tests.cs" />
     <Compile Include="ReusabilityTests.cs" />
     <Compile Include="Rfc2202HmacTests.cs" />
@@ -740,6 +741,9 @@
     <Compile Include="RSAImportExportCspBlobTests.cs" />
     <Compile Include="RSATestRegistration.Cng.cs" />
     <Compile Include="RSATestRegistration.Csp.cs" />
+    <Compile Include="RC2CryptoServiceProviderProvider.cs" />
+    <Compile Include="RC2TestRegistration.Csp.cs" />
+    <Compile Include="RC2CryptoServiceProviderTests.cs" />
     <Compile Include="ShimHelpers.cs" />
     <Compile Include="TestData.Cng.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs"
@@ -884,6 +888,9 @@
     <Compile Include="RSATestRegistration.Csp.cs" />
     <Compile Include="RSATestRegistration.OpenSsl.cs" />
     <Compile Include="RsaOpenSslTests.cs" />
+    <Compile Include="RC2CryptoServiceProviderProvider.cs" />
+    <Compile Include="RC2TestRegistration.Csp.cs" />
+    <Compile Include="RC2CryptoServiceProviderTests.cs" />
     <Compile Include="ShimHelpers.cs" />
     <Compile Include="SlhDsaOpenSslConstructionTests.Unix.cs" />
     <Compile Include="SlhDsaOpenSslTests.cs" />

@@ -14,9 +14,6 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
              Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs"
-             Link="CommonTest\AlgorithmImplementations\RC2\RC2Factory.cs" />
-    <Compile Include="RC2Provider.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)System.Security.Cryptography\tests\TestData.Cng.cs"

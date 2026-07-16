@@ -11,7 +11,6 @@
   <ItemGroup>
     <Compile Include="CreateTransformCompat.cs" />
     <Compile Include="CspParametersTests.cs" />
-    <Compile Include="ShimHelpers.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Security.Cryptography\tests\ShimHelpers.cs"
              Link="ShimHelpers.Shared.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
@@ -31,8 +30,6 @@
     <Compile Include="DESCryptoServiceProviderTests.cs" />
     <Compile Include="MD5CryptoServiceProviderTests.cs" />
     <Compile Include="PasswordDeriveBytesTests.cs" />
-    <Compile Include="RC2CryptoServiceProviderProvider.cs" />
-    <Compile Include="RC2CryptoServiceProviderTests.cs" />
     <Compile Include="RNGCryptoServiceProviderTests.cs" />
     <Compile Include="SHAxCryptoServiceProviderTests.cs" />
     <Compile Include="TripleDESCryptoServiceProviderTests.cs" />
@@ -42,11 +39,5 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESFactory.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DesTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DesTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Tests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Tests.cs" />
   </ItemGroup>
 </Project>
