@@ -460,7 +460,7 @@ namespace Internal.JitInterface
                     WasmValueType paramWasmType = LowerType(loweredParamType);
                     if (paramWasmType == WasmValueType.V128)
                     {
-                        ((CompilerTypeSystemContext)paramType.Context).CacheV128Type(paramType);
+                        ((CompilerTypeSystemContext)paramType.Context).CacheV128Type(loweredParamType);
                     }
                     sigBuilder.Append(WasmValueTypeToSigChar(paramWasmType));
                     result.Add(paramWasmType);
