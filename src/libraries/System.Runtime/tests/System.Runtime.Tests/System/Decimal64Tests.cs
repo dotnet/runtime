@@ -1536,6 +1536,60 @@ namespace System.Tests
             Assert.Equal(0, bytesConsumed);
         }
 
+        [Theory]
+        [InlineData(0x31C0000000000001UL, 0)] // 1
+        [InlineData(0x3260000000000001UL, 5)] // 1e5
+        [InlineData(0x31C000000012D687UL, 6)] // 1234567
+        [InlineData(0x3120000000000389UL, -3)] // 9.05e-3
+        [InlineData(0x31C000000000002AUL, 1)] // 42
+        [InlineData(0x25E0000000000001UL, -95)] // 1e-95
+        [InlineData(0x3280000000000001UL, 6)] // 1e6
+        [InlineData(0x31C0000000000000UL, int.MinValue)] // +0
+        [InlineData(0xB1C0000000000000UL, int.MinValue)] // -0
+        [InlineData(0xFC00000000000000UL, int.MaxValue)] // NaN
+        [InlineData(0x7800000000000000UL, int.MaxValue)] // +Infinity
+        [InlineData(0xF800000000000000UL, int.MaxValue)] // -Infinity
+        public static void ILogBTest(ulong bits, int expected)
+        {
+            Assert.Equal(expected, Decimal64.ILogB(Unsafe.BitCast<ulong, Decimal64>(bits)));
+        }
+
+        [Theory]
+        [InlineData(0x31C000000000007BUL, 0, 0x31C000000000007BUL)] // 123 scaleB 0
+        [InlineData(0x31C000000000007BUL, 2, 0x320000000000007BUL)] // 123 scaleB 2
+        [InlineData(0x31C000000000007BUL, -2, 0x318000000000007BUL)] // 123 scaleB -2
+        [InlineData(0x31C0000000000001UL, 16, 0x33C0000000000001UL)] // absorb into coefficient
+        [InlineData(0x31C0000000000009UL, 369, 0x5FE0000000000009UL)] // absorb at max quantum
+        [InlineData(0x31C0000000000001UL, 394, 0x7800000000000000UL)] // overflow -> +Infinity
+        [InlineData(0xB1C0000000000001UL, 394, 0xF800000000000000UL)] // overflow -> -Infinity
+        [InlineData(0x01E0000000000001UL, -50, 0x0000000000000000UL)] // deep underflow -> +0
+        [InlineData(0x000000000000000FUL, -1, 0x0000000000000002UL)] // gradual underflow, tie -> even (up)
+        [InlineData(0x0000000000000019UL, -1, 0x0000000000000002UL)] // gradual underflow, tie -> even (stay)
+        [InlineData(0x000000000000000EUL, -1, 0x0000000000000001UL)] // gradual underflow, rounds down
+        [InlineData(0x31C0000000000000UL, 5, 0x3260000000000000UL)] // +0
+        [InlineData(0xB1C0000000000000UL, 5, 0xB260000000000000UL)] // -0
+        [InlineData(0xFC00000000000000UL, 5, 0xFC00000000000000UL)] // NaN
+        [InlineData(0x7800000000000000UL, 5, 0x7800000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 5, 0xF800000000000000UL)] // -Infinity
+        public static void ScaleBTest(ulong bits, int n, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.ScaleB(Unsafe.BitCast<ulong, Decimal64>(bits), n)));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64ILogB), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ILogB_IntelReferenceVectors(ulong value, int expected)
+        {
+            Assert.Equal(expected, Decimal64.ILogB(Unsafe.BitCast<ulong, Decimal64>(value)));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64ScaleB), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ScaleB_IntelReferenceVectors(ulong value, int n, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.ScaleB(Unsafe.BitCast<ulong, Decimal64>(value), n)));
+        }
+
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64Arithmetic), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void op_Arithmetic_IntelReferenceVectors(string operation, ulong left, ulong right, ulong expected)

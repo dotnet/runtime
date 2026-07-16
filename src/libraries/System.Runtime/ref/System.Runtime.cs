@@ -11464,6 +11464,7 @@ namespace System.Numerics
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal128 Floor(System.Numerics.Decimal128 x) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static int ILogB(System.Numerics.Decimal128 x) { throw null; }
         public static bool IsEvenInteger(System.Numerics.Decimal128 value) { throw null; }
         public static bool IsFinite(System.Numerics.Decimal128 value) { throw null; }
         public static bool IsInfinity(System.Numerics.Decimal128 value) { throw null; }
@@ -11580,6 +11581,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x, int digits) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x, int digits, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x, System.MidpointRounding mode) { throw null; }
+        public static System.Numerics.Decimal128 ScaleB(System.Numerics.Decimal128 x, int n) { throw null; }
         public static int Sign(System.Numerics.Decimal128 value) { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal128>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal128>.GetExponentShortestBitLength() { throw null; }
@@ -11654,6 +11656,7 @@ namespace System.Numerics
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal32 Floor(System.Numerics.Decimal32 x) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static int ILogB(System.Numerics.Decimal32 x) { throw null; }
         public static bool IsEvenInteger(System.Numerics.Decimal32 value) { throw null; }
         public static bool IsFinite(System.Numerics.Decimal32 value) { throw null; }
         public static bool IsInfinity(System.Numerics.Decimal32 value) { throw null; }
@@ -11774,6 +11777,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x, int digits) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x, int digits, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x, System.MidpointRounding mode) { throw null; }
+        public static System.Numerics.Decimal32 ScaleB(System.Numerics.Decimal32 x, int n) { throw null; }
         public static int Sign(System.Numerics.Decimal32 value) { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal32>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal32>.GetExponentShortestBitLength() { throw null; }
@@ -11848,6 +11852,7 @@ namespace System.Numerics
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal64 Floor(System.Numerics.Decimal64 x) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static int ILogB(System.Numerics.Decimal64 x) { throw null; }
         public static bool IsEvenInteger(System.Numerics.Decimal64 value) { throw null; }
         public static bool IsFinite(System.Numerics.Decimal64 value) { throw null; }
         public static bool IsInfinity(System.Numerics.Decimal64 value) { throw null; }
@@ -11966,6 +11971,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x, int digits) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x, int digits, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x, System.MidpointRounding mode) { throw null; }
+        public static System.Numerics.Decimal64 ScaleB(System.Numerics.Decimal64 x, int n) { throw null; }
         public static int Sign(System.Numerics.Decimal64 value) { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal64>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal64>.GetExponentShortestBitLength() { throw null; }

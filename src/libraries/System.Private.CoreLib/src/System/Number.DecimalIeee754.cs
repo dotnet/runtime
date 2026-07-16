@@ -1240,6 +1240,125 @@ namespace System
         }
 
         /// <summary>
+        /// Computes the integer base-10 logarithm of a value: the exponent of its most significant digit. The special
+        /// cases match <see cref="Math.ILogB(double)"/>, reporting <see cref="int.MinValue"/> for zero and
+        /// <see cref="int.MaxValue"/> for both NaN and infinity.
+        /// </summary>
+        internal static int ILogBDecimalIeee754<TDecimal, TValue>(TValue bits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (!TDecimal.IsFinite(bits))
+            {
+                return int.MaxValue;
+            }
+
+            DecodedDecimalIeee754<TValue> a = UnpackDecimalIeee754<TDecimal, TValue>(bits);
+
+            if (TValue.IsZero(a.Significand))
+            {
+                return int.MinValue;
+            }
+
+            return a.UnbiasedExponent + TDecimal.CountDigits(a.Significand) - 1;
+        }
+
+        /// <summary>
+        /// Multiplies a value by <c>10^<paramref name="n"/></c>. A surplus exponent is absorbed into trailing zeros of
+        /// the coefficient while it still fits the format precision; anything beyond that overflows to a signed infinity.
+        /// A deficit exponent rounds the coefficient (to nearest, ties to even) up to the minimum quantum, underflowing
+        /// gradually to a subnormal or a signed zero.
+        /// </summary>
+        internal static TValue ScaleBDecimalIeee754<TDecimal, TValue>(TValue bits, int n)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // This code is based on `bid32_scalbn`, `bid64_scalbn`, and `bid128_scalbn` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (TDecimal.IsNaN(bits))
+            {
+                return bits;
+            }
+
+            if (TDecimal.IsInfinity(bits))
+            {
+                // Canonicalize so a non-canonical infinity operand scales to the canonical infinity.
+                return TDecimal.IsNegative(bits) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            DecodedDecimalIeee754<TValue> a = UnpackDecimalIeee754<TDecimal, TValue>(bits);
+            long exponent = (long)a.UnbiasedExponent + n;
+
+            if (TValue.IsZero(a.Significand))
+            {
+                // Zero carries no significant digits, so the quantum simply clamps into the representable range.
+                int zeroExponent = (int)Math.Clamp(exponent, TDecimal.MinAdjustedExponent, TDecimal.MaxAdjustedExponent);
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(a.Signed, TValue.Zero, zeroExponent);
+            }
+
+            if (exponent > TDecimal.MaxAdjustedExponent)
+            {
+                // Absorb the surplus into trailing zeros while the coefficient stays within the format precision.
+                long surplus = exponent - TDecimal.MaxAdjustedExponent;
+
+                if (surplus <= TDecimal.Precision - TDecimal.CountDigits(a.Significand))
+                {
+                    TValue significand = a.Significand * TDecimal.Power10((int)surplus);
+                    return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(a.Signed, significand, TDecimal.MaxAdjustedExponent);
+                }
+
+                return a.Signed ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            if (exponent < TDecimal.MinAdjustedExponent)
+            {
+                // Raise the quantum to the minimum by discarding low-order digits, rounding to nearest with ties to even.
+                long drop = TDecimal.MinAdjustedExponent - exponent;
+                int coefficientDigits = TDecimal.CountDigits(a.Significand);
+
+                if (drop > coefficientDigits)
+                {
+                    // Even the most significant digit sits below half the minimum quantum, so the result is a signed zero.
+                    return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(a.Signed, TValue.Zero, TDecimal.MinAdjustedExponent);
+                }
+
+                TValue five = TValue.CreateTruncating(5);
+                TValue quotient;
+                int discardedComparedToHalf;
+
+                if (drop == coefficientDigits)
+                {
+                    // The entire coefficient is discarded; compare it against half of the discarded quantum.
+                    quotient = TValue.Zero;
+                    TValue half = five * TDecimal.Power10(coefficientDigits - 1);
+                    discardedComparedToHalf = a.Significand.CompareTo(half);
+                }
+                else
+                {
+                    TValue divisor = TDecimal.Power10((int)drop);
+                    quotient = a.Significand / divisor;
+                    TValue discarded = a.Significand - (quotient * divisor);
+                    TValue half = five * TDecimal.Power10((int)drop - 1);
+                    discardedComparedToHalf = discarded.CompareTo(half);
+                }
+
+                if ((discardedComparedToHalf > 0) || ((discardedComparedToHalf == 0) && !TValue.IsZero(quotient & TValue.One)))
+                {
+                    quotient += TValue.One;
+                }
+
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(a.Signed, quotient, TDecimal.MinAdjustedExponent);
+            }
+
+            // The shifted quantum is already representable, so the coefficient is preserved exactly.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(a.Signed, a.Significand, (int)exponent);
+        }
+
+        /// <summary>
         /// Computes the scale factor <c>10^<paramref name="exponent"/></c> used to align addition operands. Exponents
         /// within the format's <c>Power10</c> lookup range (<c>0..Precision - 1</c>) come straight from that table,
         /// matching the existing parsing/formatting paths. The slightly larger alignment exponents

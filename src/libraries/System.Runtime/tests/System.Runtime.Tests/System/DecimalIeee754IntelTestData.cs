@@ -107,6 +107,19 @@ namespace System.Tests
         private static readonly HashSet<string> s_bid64RoundIntegral = new() { "bid64_round_integral_exact", "bid64_round_integral_nearest_even", "bid64_round_integral_nearest_away", "bid64_round_integral_negative", "bid64_round_integral_positive", "bid64_round_integral_zero" };
         private static readonly HashSet<string> s_bid128RoundIntegral = new() { "bid128_round_integral_exact", "bid128_round_integral_nearest_even", "bid128_round_integral_nearest_away", "bid128_round_integral_negative", "bid128_round_integral_positive", "bid128_round_integral_zero" };
 
+        // ScaleB (the `int` scaling-exponent variant). NaN operands are skipped for the same payload-convention
+        // reason as RoundIntegral; invalid-flagged rows (overflow/underflow beyond the format range) are also
+        // skipped because Intel reports them via a sentinel plus the invalid flag rather than the saturated result.
+        private static readonly HashSet<string> s_bid32ScaleB = new() { "bid32_scalbn" };
+        private static readonly HashSet<string> s_bid64ScaleB = new() { "bid64_scalbn" };
+        private static readonly HashSet<string> s_bid128ScaleB = new() { "bid128_scalbn" };
+
+        // ILogB. Only finite, non-zero operands are consumed (invalid-flagged rows cover zero/infinity/NaN, where
+        // Intel's C99 ilogb sentinels diverge from the .NET int.MinValue/int.MaxValue contract).
+        private static readonly HashSet<string> s_bid32ILogB = new() { "bid32_ilogb" };
+        private static readonly HashSet<string> s_bid64ILogB = new() { "bid64_ilogb" };
+        private static readonly HashSet<string> s_bid128ILogB = new() { "bid128_ilogb" };
+
         /// <summary>
         /// Gets a value indicating whether the Intel <c>readtest.in</c> reference vectors are available,
         /// gating the theories that consume them.
@@ -511,6 +524,72 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> Decimal32ScaleB()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32ScaleB))
+            {
+                if ((fields.Length >= 6) && TryParseBid32(fields[2], out uint value) && !IsBid32NaN(value) && TryParseScaleAmount(fields[3], out int n) && TryParseBid32(fields[4], out uint expected) && !IsInvalidFlagged(fields[5]))
+                {
+                    yield return new object[] { value, n, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64ScaleB()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64ScaleB))
+            {
+                if ((fields.Length >= 6) && TryParseBid64(fields[2], out ulong value) && !IsBid64NaN(value) && TryParseScaleAmount(fields[3], out int n) && TryParseBid64(fields[4], out ulong expected) && !IsInvalidFlagged(fields[5]))
+                {
+                    yield return new object[] { value, n, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128ScaleB()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128ScaleB))
+            {
+                if ((fields.Length >= 6) && TryParseBid128(fields[2], out UInt128 value) && !IsBid128NaN(value) && TryParseScaleAmount(fields[3], out int n) && TryParseBid128(fields[4], out UInt128 expected) && !IsInvalidFlagged(fields[5]))
+                {
+                    yield return new object[] { value, n, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32ILogB()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32ILogB))
+            {
+                if (TryParseBid32(fields[2], out uint value) && !IsInvalidFlagged(fields[4]) && int.TryParse(fields[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64ILogB()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64ILogB))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && !IsInvalidFlagged(fields[4]) && int.TryParse(fields[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128ILogB()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128ILogB))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && !IsInvalidFlagged(fields[4]) && int.TryParse(fields[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
         // For `bidNN_from_<type>` the integer source type is the trailing token; for `bidNN_to_<type>_int` it is the
         // third underscore-separated token; for the binary and cross families it is the leading or third token.
         private static string IntegerSourceType(string operation) => operation.Substring(operation.LastIndexOf('_') + 1);
@@ -638,6 +717,29 @@ namespace System.Tests
         }
 
         private static string OperationSuffix(string operation) => operation.Substring(operation.IndexOf('_') + 1);
+
+        // The scaling amount is a plain decimal integer; Intel occasionally writes it float-style (for example
+        // `1.0`), which is accepted only when the fractional part is entirely zero.
+        private static bool TryParseScaleAmount(string token, out int value)
+        {
+            int dot = token.IndexOf('.');
+
+            if (dot >= 0)
+            {
+                for (int i = dot + 1; i < token.Length; i++)
+                {
+                    if (token[i] != '0')
+                    {
+                        value = 0;
+                        return false;
+                    }
+                }
+
+                token = token.Substring(0, dot);
+            }
+
+            return int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        }
 
         private static bool TryParseComparisonResult(string token, out bool value)
         {
