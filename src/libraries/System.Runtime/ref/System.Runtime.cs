@@ -11108,45 +11108,57 @@ namespace System.IO
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
-    public sealed partial class ReadOnlyMemoryStream : System.IO.MemoryStream
+    public sealed partial class ReadOnlyMemoryStream : System.IO.Stream
     {
         public ReadOnlyMemoryStream(System.ReadOnlyMemory<byte> source) { }
-        public override int Capacity { get { throw null; } set { } }
+        public override bool CanRead { get { throw null; } }
+        public override bool CanSeek { get { throw null; } }
+        public override bool CanWrite { get { throw null; } }
+        public override long Length { get { throw null; } }
+        public override long Position { get { throw null; } set { } }
         public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
         public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
-        public override byte[] GetBuffer() { throw null; }
+        public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override int Read(System.Span<byte> buffer) { throw null; }
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override int ReadByte() { throw null; }
-        public override byte[] ToArray() { throw null; }
-        public override bool TryGetBuffer(out System.ArraySegment<byte> buffer) { throw null; }
-        public override void WriteTo(System.IO.Stream stream) { }
-    }
-    public sealed partial class WritableMemoryStream : System.IO.MemoryStream
-    {
-        public WritableMemoryStream(System.Memory<byte> buffer) { }
-        public override int Capacity { get { throw null; } set { } }
-        public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
-        public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
-        protected override void Dispose(bool disposing) { }
-        public override byte[] GetBuffer() { throw null; }
-        public override int Read(byte[] buffer, int offset, int count) { throw null; }
-        public override int Read(System.Span<byte> buffer) { throw null; }
-        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public override int ReadByte() { throw null; }
+        public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
-        public override byte[] ToArray() { throw null; }
-        public override bool TryGetBuffer(out System.ArraySegment<byte> buffer) { throw null; }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
-        public override void WriteTo(System.IO.Stream stream) { }
+    }
+    public sealed partial class WritableMemoryStream : System.IO.Stream
+    {
+        public WritableMemoryStream(System.Memory<byte> buffer) { }
+        public override bool CanRead { get { throw null; } }
+        public override bool CanSeek { get { throw null; } }
+        public override bool CanWrite { get { throw null; } }
+        public override long Length { get { throw null; } }
+        public override long Position { get { throw null; } set { } }
+        public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
+        public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected override void Dispose(bool disposing) { }
+        public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override int Read(System.Span<byte> buffer) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override int ReadByte() { throw null; }
+        public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
+        public override void SetLength(long value) { }
+        public override void Write(byte[] buffer, int offset, int count) { }
+        public override void Write(System.ReadOnlySpan<byte> buffer) { }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override void WriteByte(byte value) { }
     }
     public partial class StringWriter : System.IO.TextWriter
     {
@@ -11417,7 +11429,7 @@ namespace System.Net
 }
 namespace System.Numerics
 {
-    public readonly partial struct Decimal128 : System.IComparable, System.IComparable<System.Numerics.Decimal128>, System.IEquatable<System.Numerics.Decimal128>, System.IParsable<System.Numerics.Decimal128>, System.ISpanParsable<System.Numerics.Decimal128>, System.Numerics.IMinMaxValue<System.Numerics.Decimal128>
+    public readonly partial struct Decimal128 : System.IComparable, System.IComparable<System.Numerics.Decimal128>, System.IEquatable<System.Numerics.Decimal128>, System.IFormattable, System.IParsable<System.Numerics.Decimal128>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.Decimal128>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Numerics.Decimal128>, System.Numerics.IAdditionOperators<System.Numerics.Decimal128, System.Numerics.Decimal128, System.Numerics.Decimal128>, System.Numerics.IAdditiveIdentity<System.Numerics.Decimal128, System.Numerics.Decimal128>, System.Numerics.IDecrementOperators<System.Numerics.Decimal128>, System.Numerics.IDivisionOperators<System.Numerics.Decimal128, System.Numerics.Decimal128, System.Numerics.Decimal128>, System.Numerics.IEqualityOperators<System.Numerics.Decimal128, System.Numerics.Decimal128, bool>, System.Numerics.IIncrementOperators<System.Numerics.Decimal128>, System.Numerics.IMinMaxValue<System.Numerics.Decimal128>, System.Numerics.IMultiplicativeIdentity<System.Numerics.Decimal128, System.Numerics.Decimal128>, System.Numerics.IMultiplyOperators<System.Numerics.Decimal128, System.Numerics.Decimal128, System.Numerics.Decimal128>, System.Numerics.INumberBase<System.Numerics.Decimal128>, System.Numerics.ISubtractionOperators<System.Numerics.Decimal128, System.Numerics.Decimal128, System.Numerics.Decimal128>, System.Numerics.IUnaryNegationOperators<System.Numerics.Decimal128, System.Numerics.Decimal128>, System.Numerics.IUnaryPlusOperators<System.Numerics.Decimal128, System.Numerics.Decimal128>
     {
         private readonly int _dummyPrimitive;
         public static System.Numerics.Decimal128 E { get { throw null; } }
@@ -11431,6 +11443,9 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 One { get { throw null; } }
         public static System.Numerics.Decimal128 Pi { get { throw null; } }
         public static System.Numerics.Decimal128 PositiveInfinity { get { throw null; } }
+        static System.Numerics.Decimal128 System.Numerics.IAdditiveIdentity<System.Numerics.Decimal128,System.Numerics.Decimal128>.AdditiveIdentity { get { throw null; } }
+        static System.Numerics.Decimal128 System.Numerics.IMultiplicativeIdentity<System.Numerics.Decimal128,System.Numerics.Decimal128>.MultiplicativeIdentity { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Numerics.Decimal128>.Radix { get { throw null; } }
         public static System.Numerics.Decimal128 Tau { get { throw null; } }
         public static System.Numerics.Decimal128 Zero { get { throw null; } }
         public static System.Numerics.Decimal128 Abs(System.Numerics.Decimal128 value) { throw null; }
@@ -11439,6 +11454,9 @@ namespace System.Numerics
         public int CompareTo(System.Numerics.Decimal128 other) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Numerics.Decimal128 CopySign(System.Numerics.Decimal128 value, System.Numerics.Decimal128 sign) { throw null; }
+        public static System.Numerics.Decimal128 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.Decimal128 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.Decimal128 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public bool Equals(System.Numerics.Decimal128 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -11467,11 +11485,76 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 MinNumber(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
         public static System.Numerics.Decimal128 MultiplyAddEstimate(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right, System.Numerics.Decimal128 addend) { throw null; }
         public static System.Numerics.Decimal128 operator +(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
+        public static explicit operator checked byte (System.Numerics.Decimal128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked sbyte (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator checked char (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator checked short (System.Numerics.Decimal128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ushort (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator checked int (System.Numerics.Decimal128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked uint (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator checked nint (System.Numerics.Decimal128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked nuint (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator checked long (System.Numerics.Decimal128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ulong (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator checked System.Int128 (System.Numerics.Decimal128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.UInt128 (System.Numerics.Decimal128 value) { throw null; }
         public static System.Numerics.Decimal128 operator --(System.Numerics.Decimal128 value) { throw null; }
         public static System.Numerics.Decimal128 operator /(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
         public static bool operator ==(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
+        public static explicit operator System.Numerics.Decimal128 (double value) { throw null; }
+        public static explicit operator System.Numerics.Decimal128 (System.Half value) { throw null; }
+        public static explicit operator System.Numerics.Decimal128 (System.Int128 value) { throw null; }
+        public static explicit operator byte (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator char (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator decimal (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator double (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator System.Half (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator System.Int128 (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator short (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator int (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator long (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator nint (System.Numerics.Decimal128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator sbyte (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator float (System.Numerics.Decimal128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.UInt128 (System.Numerics.Decimal128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ushort (System.Numerics.Decimal128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator uint (System.Numerics.Decimal128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ulong (System.Numerics.Decimal128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator nuint (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator System.Numerics.Decimal128 (float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.Decimal128 (System.UInt128 value) { throw null; }
         public static bool operator >(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
         public static bool operator >=(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
+        public static implicit operator System.Numerics.Decimal128 (byte value) { throw null; }
+        public static implicit operator System.Numerics.Decimal128 (char value) { throw null; }
+        public static implicit operator System.Numerics.Decimal128 (decimal value) { throw null; }
+        public static implicit operator System.Numerics.Decimal128 (short value) { throw null; }
+        public static implicit operator System.Numerics.Decimal128 (int value) { throw null; }
+        public static implicit operator System.Numerics.Decimal128 (long value) { throw null; }
+        public static implicit operator System.Numerics.Decimal128 (nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.Decimal128 (sbyte value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.Decimal128 (ushort value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.Decimal128 (uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.Decimal128 (ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.Decimal128 (nuint value) { throw null; }
         public static System.Numerics.Decimal128 operator ++(System.Numerics.Decimal128 value) { throw null; }
         public static bool operator !=(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
         public static bool operator <(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
@@ -11480,6 +11563,8 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 operator -(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
         public static System.Numerics.Decimal128 operator -(System.Numerics.Decimal128 value) { throw null; }
         public static System.Numerics.Decimal128 operator +(System.Numerics.Decimal128 value) { throw null; }
+        public static System.Numerics.Decimal128 Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Numerics.Decimal128 Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal128 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
         public static System.Numerics.Decimal128 Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal128 Parse(string s) { throw null; }
@@ -11487,22 +11572,36 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal128 Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static int Sign(System.Numerics.Decimal128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal128>.IsCanonical(System.Numerics.Decimal128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal128>.IsComplexNumber(System.Numerics.Decimal128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal128>.IsImaginaryNumber(System.Numerics.Decimal128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal128>.IsZero(System.Numerics.Decimal128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal128>.TryConvertFromChecked<TOther>(TOther value, out System.Numerics.Decimal128 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal128>.TryConvertFromSaturating<TOther>(TOther value, out System.Numerics.Decimal128 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal128>.TryConvertFromTruncating<TOther>(TOther value, out System.Numerics.Decimal128 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal128>.TryConvertToChecked<TOther>(System.Numerics.Decimal128 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal128>.TryConvertToSaturating<TOther>(System.Numerics.Decimal128 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal128>.TryConvertToTruncating<TOther>(System.Numerics.Decimal128 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
-        public static bool TryParsePartial(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal128 result, out int bytesConsumed) { throw null; }
+        public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal128 result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, out System.Numerics.Decimal128 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal128 result) { throw null; }
-        public static bool TryParsePartial(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal128 result, out int charsConsumed) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal128 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Numerics.Decimal128 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal128 result) { throw null; }
-        public static bool TryParsePartial([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal128 result, out int charsConsumed) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal128 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Numerics.Decimal128 result) { throw null; }
+        public static bool TryParsePartial(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal128 result, out int bytesConsumed) { throw null; }
+        public static bool TryParsePartial(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal128 result, out int charsConsumed) { throw null; }
+        public static bool TryParsePartial([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal128 result, out int charsConsumed) { throw null; }
     }
 
-    public readonly partial struct Decimal32 : System.IComparable, System.IComparable<System.Numerics.Decimal32>, System.IEquatable<System.Numerics.Decimal32>, System.IParsable<System.Numerics.Decimal32>, System.ISpanParsable<System.Numerics.Decimal32>, System.Numerics.IMinMaxValue<System.Numerics.Decimal32>
+    public readonly partial struct Decimal32 : System.IComparable, System.IComparable<System.Numerics.Decimal32>, System.IEquatable<System.Numerics.Decimal32>, System.IFormattable, System.IParsable<System.Numerics.Decimal32>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.Decimal32>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Numerics.Decimal32>, System.Numerics.IAdditionOperators<System.Numerics.Decimal32, System.Numerics.Decimal32, System.Numerics.Decimal32>, System.Numerics.IAdditiveIdentity<System.Numerics.Decimal32, System.Numerics.Decimal32>, System.Numerics.IDecrementOperators<System.Numerics.Decimal32>, System.Numerics.IDivisionOperators<System.Numerics.Decimal32, System.Numerics.Decimal32, System.Numerics.Decimal32>, System.Numerics.IEqualityOperators<System.Numerics.Decimal32, System.Numerics.Decimal32, bool>, System.Numerics.IIncrementOperators<System.Numerics.Decimal32>, System.Numerics.IMinMaxValue<System.Numerics.Decimal32>, System.Numerics.IMultiplicativeIdentity<System.Numerics.Decimal32, System.Numerics.Decimal32>, System.Numerics.IMultiplyOperators<System.Numerics.Decimal32, System.Numerics.Decimal32, System.Numerics.Decimal32>, System.Numerics.INumberBase<System.Numerics.Decimal32>, System.Numerics.ISubtractionOperators<System.Numerics.Decimal32, System.Numerics.Decimal32, System.Numerics.Decimal32>, System.Numerics.IUnaryNegationOperators<System.Numerics.Decimal32, System.Numerics.Decimal32>, System.Numerics.IUnaryPlusOperators<System.Numerics.Decimal32, System.Numerics.Decimal32>
     {
         private readonly int _dummyPrimitive;
         public static System.Numerics.Decimal32 E { get { throw null; } }
@@ -11516,6 +11615,9 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 One { get { throw null; } }
         public static System.Numerics.Decimal32 Pi { get { throw null; } }
         public static System.Numerics.Decimal32 PositiveInfinity { get { throw null; } }
+        static System.Numerics.Decimal32 System.Numerics.IAdditiveIdentity<System.Numerics.Decimal32,System.Numerics.Decimal32>.AdditiveIdentity { get { throw null; } }
+        static System.Numerics.Decimal32 System.Numerics.IMultiplicativeIdentity<System.Numerics.Decimal32,System.Numerics.Decimal32>.MultiplicativeIdentity { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Numerics.Decimal32>.Radix { get { throw null; } }
         public static System.Numerics.Decimal32 Tau { get { throw null; } }
         public static System.Numerics.Decimal32 Zero { get { throw null; } }
         public static System.Numerics.Decimal32 Abs(System.Numerics.Decimal32 value) { throw null; }
@@ -11524,6 +11626,9 @@ namespace System.Numerics
         public int CompareTo(System.Numerics.Decimal32 other) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Numerics.Decimal32 CopySign(System.Numerics.Decimal32 value, System.Numerics.Decimal32 sign) { throw null; }
+        public static System.Numerics.Decimal32 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.Decimal32 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.Decimal32 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public bool Equals(System.Numerics.Decimal32 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -11552,11 +11657,80 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 MinNumber(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
         public static System.Numerics.Decimal32 MultiplyAddEstimate(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right, System.Numerics.Decimal32 addend) { throw null; }
         public static System.Numerics.Decimal32 operator +(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
+        public static explicit operator checked byte (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked sbyte (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator checked char (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator checked short (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ushort (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator checked int (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked uint (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator checked nint (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked nuint (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator checked long (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ulong (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator checked System.Int128 (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.UInt128 (System.Numerics.Decimal32 value) { throw null; }
         public static System.Numerics.Decimal32 operator --(System.Numerics.Decimal32 value) { throw null; }
         public static System.Numerics.Decimal32 operator /(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
         public static bool operator ==(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
+        public static explicit operator System.Numerics.Decimal32 (decimal value) { throw null; }
+        public static explicit operator System.Numerics.Decimal32 (double value) { throw null; }
+        public static explicit operator System.Numerics.Decimal32 (System.Half value) { throw null; }
+        public static explicit operator System.Numerics.Decimal32 (System.Int128 value) { throw null; }
+        public static explicit operator System.Numerics.Decimal32 (int value) { throw null; }
+        public static explicit operator System.Numerics.Decimal32 (long value) { throw null; }
+        public static explicit operator System.Numerics.Decimal32 (nint value) { throw null; }
+        public static explicit operator System.Numerics.Decimal32 (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator byte (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator char (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator decimal (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator double (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator System.Half (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator System.Int128 (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator short (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator int (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator long (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator nint (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator sbyte (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator float (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.UInt128 (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ushort (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator uint (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ulong (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator nuint (System.Numerics.Decimal32 value) { throw null; }
+        public static explicit operator System.Numerics.Decimal32 (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator System.Numerics.Decimal32 (float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.Decimal32 (System.UInt128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.Decimal32 (uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.Decimal32 (ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.Decimal32 (nuint value) { throw null; }
         public static bool operator >(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
         public static bool operator >=(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
+        public static implicit operator System.Numerics.Decimal32 (byte value) { throw null; }
+        public static implicit operator System.Numerics.Decimal32 (char value) { throw null; }
+        public static implicit operator System.Numerics.Decimal32 (short value) { throw null; }
+        public static implicit operator System.Numerics.Decimal128 (System.Numerics.Decimal32 value) { throw null; }
+        public static implicit operator System.Numerics.Decimal64 (System.Numerics.Decimal32 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.Decimal32 (sbyte value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.Decimal32 (ushort value) { throw null; }
         public static System.Numerics.Decimal32 operator ++(System.Numerics.Decimal32 value) { throw null; }
         public static bool operator !=(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
         public static bool operator <(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
@@ -11565,6 +11739,8 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 operator -(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
         public static System.Numerics.Decimal32 operator -(System.Numerics.Decimal32 value) { throw null; }
         public static System.Numerics.Decimal32 operator +(System.Numerics.Decimal32 value) { throw null; }
+        public static System.Numerics.Decimal32 Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Numerics.Decimal32 Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal32 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
         public static System.Numerics.Decimal32 Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal32 Parse(string s) { throw null; }
@@ -11572,22 +11748,36 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal32 Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static int Sign(System.Numerics.Decimal32 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.IsCanonical(System.Numerics.Decimal32 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.IsComplexNumber(System.Numerics.Decimal32 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.IsImaginaryNumber(System.Numerics.Decimal32 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.IsZero(System.Numerics.Decimal32 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertFromChecked<TOther>(TOther value, out System.Numerics.Decimal32 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertFromSaturating<TOther>(TOther value, out System.Numerics.Decimal32 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertFromTruncating<TOther>(TOther value, out System.Numerics.Decimal32 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertToChecked<TOther>(System.Numerics.Decimal32 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertToSaturating<TOther>(System.Numerics.Decimal32 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertToTruncating<TOther>(System.Numerics.Decimal32 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
-        public static bool TryParsePartial(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal32 result, out int bytesConsumed) { throw null; }
+        public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal32 result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, out System.Numerics.Decimal32 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal32 result) { throw null; }
-        public static bool TryParsePartial(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal32 result, out int charsConsumed) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal32 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Numerics.Decimal32 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal32 result) { throw null; }
-        public static bool TryParsePartial([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal32 result, out int charsConsumed) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal32 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Numerics.Decimal32 result) { throw null; }
+        public static bool TryParsePartial(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal32 result, out int bytesConsumed) { throw null; }
+        public static bool TryParsePartial(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal32 result, out int charsConsumed) { throw null; }
+        public static bool TryParsePartial([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal32 result, out int charsConsumed) { throw null; }
     }
 
-    public readonly partial struct Decimal64 : System.IComparable, System.IComparable<System.Numerics.Decimal64>, System.IEquatable<System.Numerics.Decimal64>, System.IParsable<System.Numerics.Decimal64>, System.ISpanParsable<System.Numerics.Decimal64>, System.Numerics.IMinMaxValue<System.Numerics.Decimal64>
+    public readonly partial struct Decimal64 : System.IComparable, System.IComparable<System.Numerics.Decimal64>, System.IEquatable<System.Numerics.Decimal64>, System.IFormattable, System.IParsable<System.Numerics.Decimal64>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.Decimal64>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Numerics.Decimal64>, System.Numerics.IAdditionOperators<System.Numerics.Decimal64, System.Numerics.Decimal64, System.Numerics.Decimal64>, System.Numerics.IAdditiveIdentity<System.Numerics.Decimal64, System.Numerics.Decimal64>, System.Numerics.IDecrementOperators<System.Numerics.Decimal64>, System.Numerics.IDivisionOperators<System.Numerics.Decimal64, System.Numerics.Decimal64, System.Numerics.Decimal64>, System.Numerics.IEqualityOperators<System.Numerics.Decimal64, System.Numerics.Decimal64, bool>, System.Numerics.IIncrementOperators<System.Numerics.Decimal64>, System.Numerics.IMinMaxValue<System.Numerics.Decimal64>, System.Numerics.IMultiplicativeIdentity<System.Numerics.Decimal64, System.Numerics.Decimal64>, System.Numerics.IMultiplyOperators<System.Numerics.Decimal64, System.Numerics.Decimal64, System.Numerics.Decimal64>, System.Numerics.INumberBase<System.Numerics.Decimal64>, System.Numerics.ISubtractionOperators<System.Numerics.Decimal64, System.Numerics.Decimal64, System.Numerics.Decimal64>, System.Numerics.IUnaryNegationOperators<System.Numerics.Decimal64, System.Numerics.Decimal64>, System.Numerics.IUnaryPlusOperators<System.Numerics.Decimal64, System.Numerics.Decimal64>
     {
         private readonly int _dummyPrimitive;
         public static System.Numerics.Decimal64 E { get { throw null; } }
@@ -11601,6 +11791,9 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 One { get { throw null; } }
         public static System.Numerics.Decimal64 Pi { get { throw null; } }
         public static System.Numerics.Decimal64 PositiveInfinity { get { throw null; } }
+        static System.Numerics.Decimal64 System.Numerics.IAdditiveIdentity<System.Numerics.Decimal64,System.Numerics.Decimal64>.AdditiveIdentity { get { throw null; } }
+        static System.Numerics.Decimal64 System.Numerics.IMultiplicativeIdentity<System.Numerics.Decimal64,System.Numerics.Decimal64>.MultiplicativeIdentity { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Numerics.Decimal64>.Radix { get { throw null; } }
         public static System.Numerics.Decimal64 Tau { get { throw null; } }
         public static System.Numerics.Decimal64 Zero { get { throw null; } }
         public static System.Numerics.Decimal64 Abs(System.Numerics.Decimal64 value) { throw null; }
@@ -11609,6 +11802,9 @@ namespace System.Numerics
         public int CompareTo(System.Numerics.Decimal64 other) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Numerics.Decimal64 CopySign(System.Numerics.Decimal64 value, System.Numerics.Decimal64 sign) { throw null; }
+        public static System.Numerics.Decimal64 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.Decimal64 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.Decimal64 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public bool Equals(System.Numerics.Decimal64 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -11637,11 +11833,78 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 MinNumber(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
         public static System.Numerics.Decimal64 MultiplyAddEstimate(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right, System.Numerics.Decimal64 addend) { throw null; }
         public static System.Numerics.Decimal64 operator +(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }
+        public static explicit operator checked byte (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked sbyte (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator checked char (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator checked short (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ushort (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator checked int (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked uint (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator checked nint (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked nuint (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator checked long (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ulong (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator checked System.Int128 (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.UInt128 (System.Numerics.Decimal64 value) { throw null; }
         public static System.Numerics.Decimal64 operator --(System.Numerics.Decimal64 value) { throw null; }
         public static System.Numerics.Decimal64 operator /(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }
         public static bool operator ==(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }
+        public static explicit operator System.Numerics.Decimal64 (decimal value) { throw null; }
+        public static explicit operator System.Numerics.Decimal64 (double value) { throw null; }
+        public static explicit operator System.Numerics.Decimal64 (System.Half value) { throw null; }
+        public static explicit operator System.Numerics.Decimal64 (System.Int128 value) { throw null; }
+        public static explicit operator System.Numerics.Decimal64 (long value) { throw null; }
+        public static explicit operator System.Numerics.Decimal64 (nint value) { throw null; }
+        public static explicit operator System.Numerics.Decimal64 (System.Numerics.Decimal128 value) { throw null; }
+        public static explicit operator byte (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator char (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator decimal (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator double (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator System.Half (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator System.Int128 (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator short (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator int (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator long (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator nint (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator sbyte (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator float (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.UInt128 (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ushort (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator uint (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ulong (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator nuint (System.Numerics.Decimal64 value) { throw null; }
+        public static explicit operator System.Numerics.Decimal64 (float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.Decimal64 (System.UInt128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.Decimal64 (ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.Decimal64 (nuint value) { throw null; }
         public static bool operator >(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }
         public static bool operator >=(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }
+        public static implicit operator System.Numerics.Decimal64 (byte value) { throw null; }
+        public static implicit operator System.Numerics.Decimal64 (char value) { throw null; }
+        public static implicit operator System.Numerics.Decimal64 (short value) { throw null; }
+        public static implicit operator System.Numerics.Decimal64 (int value) { throw null; }
+        public static implicit operator System.Numerics.Decimal128 (System.Numerics.Decimal64 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.Decimal64 (sbyte value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.Decimal64 (ushort value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.Decimal64 (uint value) { throw null; }
         public static System.Numerics.Decimal64 operator ++(System.Numerics.Decimal64 value) { throw null; }
         public static bool operator !=(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }
         public static bool operator <(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }
@@ -11650,6 +11913,8 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 operator -(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }
         public static System.Numerics.Decimal64 operator -(System.Numerics.Decimal64 value) { throw null; }
         public static System.Numerics.Decimal64 operator +(System.Numerics.Decimal64 value) { throw null; }
+        public static System.Numerics.Decimal64 Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Numerics.Decimal64 Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal64 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
         public static System.Numerics.Decimal64 Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal64 Parse(string s) { throw null; }
@@ -11657,19 +11922,33 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal64 Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static int Sign(System.Numerics.Decimal64 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal64>.IsCanonical(System.Numerics.Decimal64 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal64>.IsComplexNumber(System.Numerics.Decimal64 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal64>.IsImaginaryNumber(System.Numerics.Decimal64 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal64>.IsZero(System.Numerics.Decimal64 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal64>.TryConvertFromChecked<TOther>(TOther value, out System.Numerics.Decimal64 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal64>.TryConvertFromSaturating<TOther>(TOther value, out System.Numerics.Decimal64 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal64>.TryConvertFromTruncating<TOther>(TOther value, out System.Numerics.Decimal64 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal64>.TryConvertToChecked<TOther>(System.Numerics.Decimal64 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal64>.TryConvertToSaturating<TOther>(System.Numerics.Decimal64 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal64>.TryConvertToTruncating<TOther>(System.Numerics.Decimal64 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
-        public static bool TryParsePartial(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal64 result, out int bytesConsumed) { throw null; }
+        public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal64 result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, out System.Numerics.Decimal64 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal64 result) { throw null; }
-        public static bool TryParsePartial(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal64 result, out int charsConsumed) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal64 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Numerics.Decimal64 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal64 result) { throw null; }
-        public static bool TryParsePartial([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal64 result, out int charsConsumed) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal64 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Numerics.Decimal64 result) { throw null; }
+        public static bool TryParsePartial(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal64 result, out int bytesConsumed) { throw null; }
+        public static bool TryParsePartial(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal64 result, out int charsConsumed) { throw null; }
+        public static bool TryParsePartial([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Decimal64 result, out int charsConsumed) { throw null; }
     }
 
     public readonly partial struct BFloat16 : System.IComparable, System.IComparable<System.Numerics.BFloat16>, System.IEquatable<System.Numerics.BFloat16>, System.IFormattable, System.IParsable<System.Numerics.BFloat16>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.BFloat16>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Numerics.BFloat16>, System.Numerics.IAdditionOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IAdditiveIdentity<System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IBinaryFloatingPointIeee754<System.Numerics.BFloat16>, System.Numerics.IBinaryNumber<System.Numerics.BFloat16>, System.Numerics.IBitwiseOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IComparisonOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, bool>, System.Numerics.IDecrementOperators<System.Numerics.BFloat16>, System.Numerics.IDivisionOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IEqualityOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, bool>, System.Numerics.IExponentialFunctions<System.Numerics.BFloat16>, System.Numerics.IFloatingPoint<System.Numerics.BFloat16>, System.Numerics.IFloatingPointConstants<System.Numerics.BFloat16>, System.Numerics.IFloatingPointIeee754<System.Numerics.BFloat16>, System.Numerics.IHyperbolicFunctions<System.Numerics.BFloat16>, System.Numerics.IIncrementOperators<System.Numerics.BFloat16>, System.Numerics.ILogarithmicFunctions<System.Numerics.BFloat16>, System.Numerics.IMinMaxValue<System.Numerics.BFloat16>, System.Numerics.IModulusOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IMultiplicativeIdentity<System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IMultiplyOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.INumber<System.Numerics.BFloat16>, System.Numerics.INumberBase<System.Numerics.BFloat16>, System.Numerics.IPowerFunctions<System.Numerics.BFloat16>, System.Numerics.IRootFunctions<System.Numerics.BFloat16>, System.Numerics.ISignedNumber<System.Numerics.BFloat16>, System.Numerics.ISubtractionOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.ITrigonometricFunctions<System.Numerics.BFloat16>, System.Numerics.IUnaryNegationOperators<System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IUnaryPlusOperators<System.Numerics.BFloat16, System.Numerics.BFloat16>

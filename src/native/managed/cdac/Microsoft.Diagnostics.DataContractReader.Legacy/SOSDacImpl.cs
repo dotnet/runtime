@@ -4739,27 +4739,27 @@ public sealed unsafe partial class SOSDacImpl
             int iterationMax = 8192;
 
             Contracts.ILoader loader = _target.Contracts.Loader;
-            TargetPointer block = loader.GetFirstLoaderHeapBlock(loaderHeapAddr);
-            TargetPointer firstBlock = block;
+            using IEnumerator<Contracts.LoaderHeapBlock> blocks = loader.EnumerateLoaderHeapBlocks(loaderHeapAddr).GetEnumerator();
             int i = 0;
-            while (block != TargetPointer.Null && i++ < iterationMax)
+            try
             {
-                Contracts.LoaderHeapBlockData blockData;
-                try
+                while (i < iterationMax && blocks.MoveNext())
                 {
-                    blockData = loader.GetLoaderHeapBlockData(block);
-                }
-                catch (VirtualReadException)
-                {
-                    throw new NullReferenceException();
-                }
-                pCallback(blockData.Address.Value, (nuint)blockData.Size.Value, block == firstBlock ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+                    i++;
+                    Contracts.LoaderHeapBlock block = blocks.Current;
+                    pCallback(block.Address.Value, (nuint)block.Size.Value, i == 1 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 #if DEBUG
-                DebugTraverseLoaderHeapBlocks.Add((blockData.Address.Value, (nuint)blockData.Size.Value));
+                    DebugTraverseLoaderHeapBlocks.Add((block.Address.Value, (nuint)block.Size.Value));
 #endif
-                block = blockData.NextBlock;
-                if (block == firstBlock)
-                    throw new NullReferenceException();
+                }
+            }
+            catch (VirtualReadException)
+            {
+                throw new NullReferenceException();
+            }
+            catch (InvalidOperationException)
+            {
+                throw new NullReferenceException();
             }
             if (i >= iterationMax)
                 hr = HResults.S_FALSE;
