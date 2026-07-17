@@ -88,30 +88,30 @@ namespace System.Text.Json.Schema
         {
             get
             {
-                if (_trueOrFalse != null)
+                if (_trueOrFalse is not null)
                 {
                     // Boolean schemas admit no keywords
                     return 0;
                 }
 
                 int count = 0;
-                Count(Ref != null);
-                Count(Comment != null);
+                Count(Ref is not null);
+                Count(Comment is not null);
                 Count(Type != JsonSchemaType.Any);
-                Count(Format != null);
-                Count(Pattern != null);
-                Count(Constant != null);
-                Count(Properties != null);
-                Count(Required != null);
-                Count(Items != null);
-                Count(AdditionalProperties != null);
-                Count(Enum != null);
-                Count(Not != null);
-                Count(AnyOf != null);
+                Count(Format is not null);
+                Count(Pattern is not null);
+                Count(Constant is not null);
+                Count(Properties is not null);
+                Count(Required is not null);
+                Count(Items is not null);
+                Count(AdditionalProperties is not null);
+                Count(Enum is not null);
+                Count(Not is not null);
+                Count(AnyOf is not null);
                 Count(HasDefaultValue);
-                Count(MinLength != null);
-                Count(MaxLength != null);
-                Count(Deprecated != null);
+                Count(MinLength is not null);
+                Count(MaxLength is not null);
+                Count(Deprecated is not null);
 
                 return count;
 
@@ -124,7 +124,7 @@ namespace System.Text.Json.Schema
 
         public void MakeNullable()
         {
-            if (_trueOrFalse != null)
+            if (_trueOrFalse is not null)
             {
                 // boolean schemas do not admit type keywords.
                 return;
@@ -145,12 +145,12 @@ namespace System.Text.Json.Schema
 
             var objSchema = new JsonObject();
 
-            if (Ref != null)
+            if (Ref is not null)
             {
                 objSchema.Add(RefPropertyName, Ref);
             }
 
-            if (Comment != null)
+            if (Comment is not null)
             {
                 objSchema.Add(CommentPropertyName, Comment);
             }
@@ -160,22 +160,22 @@ namespace System.Text.Json.Schema
                 objSchema.Add(TypePropertyName, type);
             }
 
-            if (Format != null)
+            if (Format is not null)
             {
                 objSchema.Add(FormatPropertyName, Format);
             }
 
-            if (Pattern != null)
+            if (Pattern is not null)
             {
                 objSchema.Add(PatternPropertyName, Pattern);
             }
 
-            if (Constant != null)
+            if (Constant is not null)
             {
                 objSchema.Add(ConstPropertyName, Constant);
             }
 
-            if (Properties != null)
+            if (Properties is not null)
             {
                 var properties = new JsonObject();
                 foreach (KeyValuePair<string, JsonSchema> property in Properties)
@@ -186,7 +186,7 @@ namespace System.Text.Json.Schema
                 objSchema.Add(PropertiesPropertyName, properties);
             }
 
-            if (Required != null)
+            if (Required is not null)
             {
                 var requiredArray = new JsonArray();
                 foreach (string requiredProperty in Required)
@@ -197,27 +197,27 @@ namespace System.Text.Json.Schema
                 objSchema.Add(RequiredPropertyName, requiredArray);
             }
 
-            if (Items != null)
+            if (Items is not null)
             {
                 objSchema.Add(ItemsPropertyName, Items.ToJsonNode(options));
             }
 
-            if (AdditionalProperties != null)
+            if (AdditionalProperties is not null)
             {
                 objSchema.Add(AdditionalPropertiesPropertyName, AdditionalProperties.ToJsonNode(options));
             }
 
-            if (Enum != null)
+            if (Enum is not null)
             {
                 objSchema.Add(EnumPropertyName, Enum);
             }
 
-            if (Not != null)
+            if (Not is not null)
             {
                 objSchema.Add(NotPropertyName, Not.ToJsonNode(options));
             }
 
-            if (AnyOf != null)
+            if (AnyOf is not null)
             {
                 JsonArray anyOfArray = [];
                 foreach (JsonSchema schema in AnyOf)
@@ -254,7 +254,7 @@ namespace System.Text.Json.Schema
             {
                 if (ExporterContext is { } context)
                 {
-                    Debug.Assert(options.TransformSchemaNode != null, "context should only be populated if a callback is present.");
+                    Debug.Assert(options.TransformSchemaNode is not null, "context should only be populated if a callback is present.");
                     // Apply any user-defined transformations to the schema.
                     return options.TransformSchemaNode(context, schema);
                 }
