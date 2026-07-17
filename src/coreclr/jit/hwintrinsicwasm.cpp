@@ -173,21 +173,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        // The following PackedSimd intrinsics are not yet implemented on WASM. NYI_WASM_SIMD marks the
-        // method as ReadyToRun-unsupported (implReadyToRunUnsupported) so it falls back to the interpreter
-        // rather than baking a PlatformNotSupportedException throw into the R2R image.
-        case NI_PackedSimd_ExtractScalar:
-        {
-            NYI_WASM_SIMD("NI_PackedSimd_ExtractScalar");
-            break;
-        }
-
-        case NI_PackedSimd_ReplaceScalar:
-        {
-            NYI_WASM_SIMD("NI_PackedSimd_ReplaceScalar");
-            break;
-        }
-
         case NI_PackedSimd_LoadVector128:
         {
             assert(sig->numArgs == 1);
@@ -210,15 +195,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_PackedSimd_LoadScalarAndInsert:
         case NI_PackedSimd_LoadWideningVector128:
         {
-            NYI_WASM_SIMD("NI_PackedSimd load scalar/widening");
-            break;
-        }
-
-        case NI_PackedSimd_ShiftLeft:
-        case NI_PackedSimd_ShiftRightArithmetic:
-        case NI_PackedSimd_ShiftRightLogical:
-        {
-            NYI_WASM_SIMD("NI_PackedSimd shift");
             break;
         }
 
@@ -242,7 +218,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_PackedSimd_StoreSelectedScalar:
         {
-            NYI_WASM_SIMD("NI_PackedSimd_StoreSelectedScalar");
             break;
         }
 

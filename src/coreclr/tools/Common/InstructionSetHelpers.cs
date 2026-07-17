@@ -97,11 +97,7 @@ namespace System.CommandLine
             else if (targetArchitecture == TargetArchitecture.Wasm32)
             {
                 instructionSetSupportBuilder.AddSupportedInstructionSet("base");
-
-                // NOTE: "simd128" (PackedSimd / the virtual Vector128 ISA) is intentionally omitted. Wasm SIMD
-                // codegen is incomplete (some ops are NYI and bail to the SIMD-less interpreter), so claiming
-                // support drives code down SIMD paths that cannot be executed end-to-end. Keep in sync with the
-                // JIT baseline ISAs in Compiler::compSetProcessor (compiler.cpp).
+                instructionSetSupportBuilder.AddSupportedInstructionSet("simd128");
             }
 
             bool throttleAvx512 = false;

@@ -2027,12 +2027,10 @@ void Compiler::compSetProcessor()
 #elif defined(TARGET_WASM)
     // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
     instructionSetFlags.AddInstructionSet(InstructionSet_WasmBase);
+    instructionSetFlags.AddInstructionSet(InstructionSet_PackedSimd);
 
-    // NOTE: PackedSimd and the virtual Vector128 ISA are intentionally NOT added as supported baseline
-    // ISAs yet. Wasm SIMD codegen is incomplete (some ops are NYI and bail the method to the interpreter,
-    // which has no SIMD support), so claiming support drives code down SIMD paths that cannot be executed
-    // end-to-end. Until SIMD is fully supported, report it as unsupported so all code uses scalar fallbacks.
-    // This must be kept in sync with the crossgen2 instruction-set support (InstructionSetHelpers.cs).
+    // Add virtual vector ISA. Vector128 is part of the required Wasm SIMD baseline.
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
 #endif // TARGET_ARM64
 
     assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
