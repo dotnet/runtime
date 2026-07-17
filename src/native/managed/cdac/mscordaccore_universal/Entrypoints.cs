@@ -290,6 +290,7 @@ internal static class Entrypoints
             }
 
             ContractDescriptorTarget target = CreateTargetFromCorDebugDataTarget(dataTarget);
+            Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts);
             Legacy.DacDbiImpl impl = new(target, legacyObj: null);
             *iface = ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
             return HResults.S_OK;
@@ -455,7 +456,7 @@ internal static class Entrypoints
                 $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
         }
 
-        if (!ContractDescriptorTarget.TryCreate(
+        return ContractDescriptorTarget.Create(
             contractAddress,
             (address, buffer) =>
             {
@@ -479,13 +480,6 @@ internal static class Entrypoints
                 allocatedAddress = 0;
                 return HResults.E_NOTIMPL;
             },
-            [Contracts.CoreCLRContracts.Register],
-            out ContractDescriptorTarget? target))
-        {
-            throw new InvalidOperationException(
-                $"Failed to create a {nameof(ContractDescriptorTarget)} from the contract descriptor at 0x{contractAddress:x}.");
-        }
-
-        return target!;
+            [Contracts.CoreCLRContracts.Register]);
     }
 }
