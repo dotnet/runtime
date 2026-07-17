@@ -216,6 +216,9 @@ extern "C" {
 
 void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
 
+bool utils_starts_with(const pal_char_t* value, size_t value_len, const pal_char_t* prefix, size_t prefix_len, bool match_case);
+bool utils_ends_with(const pal_char_t* value, size_t value_len, const pal_char_t* suffix, size_t suffix_len, bool match_case);
+
 void utils_append_path(pal_char_t* path_buffer, size_t path_buffer_len, const pal_char_t* component);
 
 // Caller should free() the returned pointer.

@@ -65,6 +65,7 @@ typedef FARPROC pal_proc_t;
 #define pal_strchr(s, c) wcschr(s, c)
 #define pal_strrchr(s, c) wcsrchr(s, c)
 #define pal_strncmp(a, b, n) wcsncmp(a, b, n)
+#define pal_strncasecmp(a, b, n) _wcsnicmp(a, b, n)
 #define pal_strtoul(s, e, b) wcstoul(s, e, b)
 #define pal_str_vprintf(buf, count, fmt, args) _vsnwprintf_s(buf, count, _TRUNCATE, fmt, args)
 #define pal_strlen_vprintf(fmt, args) _vscwprintf(fmt, args)
@@ -78,6 +79,7 @@ typedef FARPROC pal_proc_t;
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <strings.h> // strncasecmp
 
 typedef void* pal_dll_t;
 typedef void* pal_proc_t;
@@ -101,6 +103,7 @@ typedef void* pal_proc_t;
 #define pal_strchr(s, c) strchr(s, c)
 #define pal_strrchr(s, c) strrchr(s, c)
 #define pal_strncmp(a, b, n) strncmp(a, b, n)
+#define pal_strncasecmp(a, b, n) strncasecmp(a, b, n)
 #define pal_strtoul(s, e, b) strtoul(s, e, b)
 #define pal_str_vprintf(buf, count, fmt, args) vsnprintf(buf, (size_t)(count), fmt, args)
 #define pal_strlen_vprintf(fmt, args) vsnprintf(NULL, 0, fmt, args)
@@ -223,6 +226,15 @@ pal_proc_t pal_get_symbol(void* library, const char* name);
 
 // Convert a UTF-8 string into the platform character type
 bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len);
+
+// Write message followed by a newline to stderr.
+void pal_err_print_line(const pal_char_t* message);
+
+// Format and write to stdout followed by a newline.
+void pal_out_vprint_line(const pal_char_t* format, va_list vl);
+
+// Format and write to the file f followed by a newline.
+void pal_file_vprintf(FILE* f, const pal_char_t* format, va_list vl);
 
 // Find a library named library_name that is already loaded into the current
 // process (without loading it if it is not). symbol_name is used to obtain an
@@ -364,10 +376,6 @@ namespace pal
 
     inline FILE* file_open(const string_t& path, const char_t* mode) { return ::_wfsopen(path.c_str(), mode, _SH_DENYNO); }
 
-    void file_vprintf(FILE* f, const char_t* format, va_list vl);
-    void err_print_line(const char_t* message);
-    void out_vprint_line(const char_t* format, va_list vl);
-
     inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::_vscwprintf(format, vl); }
 
@@ -436,9 +444,6 @@ namespace pal
 
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
     inline FILE* file_open(const string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
-    inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfprintf(f, format, vl); ::fputc('\n', f); }
-    inline void err_print_line(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
-    inline void out_vprint_line(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
     inline int str_vprintf(char_t* str, size_t size, const char_t* format, va_list vl) { return ::vsnprintf(str, size, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::vsnprintf(nullptr, 0, format, vl); }
 

@@ -19,7 +19,7 @@ add_compile_definitions(FEATURE_APPHOST)
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
-        ../apphost.windows.cpp)
+        ../apphost.windows.c)
     list(APPEND HEADERS
         ../apphost.windows.h)
 
@@ -33,7 +33,7 @@ add_executable(apphost ${SOURCES} ${RESOURCES})
 target_link_libraries(apphost PRIVATE fxr_resolver)
 
 if(CLR_CMAKE_TARGET_WIN32)
-    target_link_libraries(apphost PRIVATE hostmisc shell32)
+    target_link_libraries(apphost PRIVATE hostmisc_c minipal_objects shell32)
 
     # Disable manifest generation into the file .exe on Windows
     target_link_options(apphost PRIVATE "/MANIFEST:NO")

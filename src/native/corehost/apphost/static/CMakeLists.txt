@@ -61,7 +61,7 @@ endif()
 if(CLR_CMAKE_TARGET_WIN32)
     add_compile_definitions(UNICODE)
     list(APPEND SOURCES
-        ../apphost.windows.cpp
+        ../apphost.windows.c
     )
 
     list(APPEND HEADERS

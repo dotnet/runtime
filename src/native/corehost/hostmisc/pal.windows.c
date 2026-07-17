@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include <locale.h>
 
 #include <minipal/utils.h>
 
@@ -630,4 +631,57 @@ bool pal_get_loaded_library(
     *dll = dll_maybe;
     *out_path = path;
     return true;
+}
+
+static void print_line_to_handle(const pal_char_t* message, HANDLE handle, FILE* fallback_file)
+{
+    // String functions like fwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
+    // In order to properly print UTF-8 and GB18030 characters to the console without requiring the user to use chcp to a compatible locale, we use WriteConsoleW.
+    // However, WriteConsoleW will fail if the output is redirected to a file - in that case we write to the fallback file using a UTF-8 locale.
+    DWORD mode;
+    // GetConsoleMode returns FALSE when the output is redirected to a file.
+    if (GetConsoleMode(handle, &mode) == FALSE)
+    {
+        _locale_t loc = _create_locale(LC_ALL, ".utf8");
+        _fwprintf_l(fallback_file, _X("%s\n"), loc, message);
+        _free_locale(loc);
+    }
+    else
+    {
+        WriteConsoleW(handle, message, (DWORD)wcslen(message), NULL, NULL);
+        WriteConsoleW(handle, _X("\n"), 1, NULL, NULL);
+    }
+}
+
+void pal_err_print_line(const pal_char_t* message)
+{
+    print_line_to_handle(message, GetStdHandle(STD_ERROR_HANDLE), stderr);
+}
+
+void pal_file_vprintf(FILE* f, const pal_char_t* format, va_list vl)
+{
+    // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
+    // In order to properly print UTF-8 and GB18030 characters, we need to use the version of vfwprintf that takes a locale.
+    _locale_t loc = _create_locale(LC_ALL, ".utf8");
+    _vfwprintf_l(f, format, loc, vl);
+    fputwc(_X('\n'), f);
+    _free_locale(loc);
+}
+
+void pal_out_vprint_line(const pal_char_t* format, va_list vl)
+{
+    va_list vl_copy;
+    va_copy(vl_copy, vl);
+    int len = 1 + pal_strlen_vprintf(format, vl_copy);
+    va_end(vl_copy);
+    if (len <= 0)
+        return;
+
+    pal_char_t* buffer = (pal_char_t*)malloc((size_t)len * sizeof(pal_char_t));
+    if (buffer == NULL)
+        return;
+
+    pal_str_vprintf(buffer, len, format, vl);
+    print_line_to_handle(buffer, GetStdHandle(STD_OUTPUT_HANDLE), stdout);
+    free(buffer);
 }

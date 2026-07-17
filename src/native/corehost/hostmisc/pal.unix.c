@@ -480,3 +480,21 @@ bool pal_get_loaded_library(
     *out_path = path_copy;
     return true;
 }
+
+void pal_err_print_line(const pal_char_t* message)
+{
+    fputs(message, stderr);
+    fputc('\n', stderr);
+}
+
+void pal_file_vprintf(FILE* f, const pal_char_t* format, va_list vl)
+{
+    vfprintf(f, format, vl);
+    fputc('\n', f);
+}
+
+void pal_out_vprint_line(const pal_char_t* format, va_list vl)
+{
+    vfprintf(stdout, format, vl);
+    fputc('\n', stdout);
+}
