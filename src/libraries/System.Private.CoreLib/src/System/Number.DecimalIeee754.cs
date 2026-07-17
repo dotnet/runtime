@@ -1070,7 +1070,7 @@ namespace System
             {
                 // `remainder < divisor <= MaxSignificand`, so it always has enough leading zeros for `k >= 1`.
                 // `(lz * 3) / 10 <= lz / log2(10)` keeps `remainder * 10^k` from overflowing the limb, and `k` is
-                // clamped to `Precision - 1` (the largest exponent every `Power10` table supports) and to the
+                // clamped to `Precision - 1` (an exponent every `Power10` table is guaranteed to hold) and to the
                 // digits still owed.
                 int lz = int.CreateTruncating(TValue.LeadingZeroCount(remainder));
                 int k = (lz * 3) / 10;
