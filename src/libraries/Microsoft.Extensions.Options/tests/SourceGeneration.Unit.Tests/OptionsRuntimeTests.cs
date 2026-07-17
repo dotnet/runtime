@@ -536,16 +536,6 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             ValidateOptionsResult syncNestedResult = new SyncRootReusingNestedOptionsValidator().Validate("SyncRoot", syncSelfValidating);
             Assert.True(syncNestedResult.Succeeded);
         }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        public async Task TestManualValidateAsyncIsNotOverwritten()
-        {
-            // The generator must not emit a ValidateAsync for ManualAsyncOptionsValidator (that would be a duplicate
-            // member); the hand-written implementation is the one invoked.
-            ValidateOptionsResult result = await new ManualAsyncOptionsValidator().ValidateAsync("ManualAsyncOptions", new ManualAsyncOptions { Name = "Valid" }, default);
-            Assert.True(result.Failed);
-            Assert.Contains("Manual ValidateAsync invoked.", result.Failures);
-        }
 #endif // NET
     }
 
@@ -854,21 +844,6 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
     [OptionsValidator]
     public partial class SyncRootReusingNestedOptionsValidator : IValidateOptions<SyncRootReusingNestedOptions>
     {
-    }
-
-    public class ManualAsyncOptions
-    {
-        [Required]
-        public string? Name { get; set; }
-    }
-
-    // Regression: the validator implements IAsyncValidateOptions<T> but supplies its own ValidateAsync. The generator
-    // must skip emitting ValidateAsync to avoid a duplicate-member compile error, and the hand-written method must win.
-    [OptionsValidator]
-    public partial class ManualAsyncOptionsValidator : IValidateOptions<ManualAsyncOptions>, IAsyncValidateOptions<ManualAsyncOptions>
-    {
-        public Task<ValidateOptionsResult> ValidateAsync(string? name, ManualAsyncOptions options, CancellationToken cancellationToken = default)
-            => Task.FromResult(ValidateOptionsResult.Fail("Manual ValidateAsync invoked."));
     }
 #endif // NET
 }

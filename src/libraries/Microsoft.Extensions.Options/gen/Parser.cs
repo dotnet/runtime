@@ -103,13 +103,32 @@ namespace Microsoft.Extensions.Options.Generators
                             }
 
                             // Decide, per model, whether we additionally emit a ValidateAsync method. We do so when the
-                            // validator type explicitly implements IAsyncValidateOptions<T> for this specific model (and the
-                            // async symbols are available). A multi-model validator therefore only gets async validation for
-                            // the models it opted into. If the user already hand-wrote a matching ValidateAsync, we skip
-                            // generation to avoid emitting a duplicate member. The async requirement is propagated to any
-                            // synthesized child validators reached from this model.
-                            bool generateAsync = ValidatorImplementsAsyncInterfaceFor(validatorType, modelType)
-                                && !AlreadyImplementsValidateAsyncMethod(validatorType, modelType);
+                            // validator type explicitly implements IAsyncValidateOptions<T> for this specific model. A
+                            // multi-model validator therefore only gets async validation for the models it opted into.
+                            // The async requirement is propagated to any synthesized child validators reached from this model.
+                            bool wantsAsync = ValidatorImplementsAsyncInterfaceFor(validatorType, modelType);
+
+                            if (wantsAsync && AlreadyImplementsValidateAsyncMethod(validatorType, modelType))
+                            {
+                                // The user hand-wrote a matching ValidateAsync on an [OptionsValidator] type. This is an
+                                // error (symmetric with SYSLIB1205 for a hand-written Validate): a generated synchronous
+                                // Validate combined with a hand-written ValidateAsync would validate differently on the
+                                // sync vs async access paths, silently skipping the generated attribute validation on the
+                                // async path. Report it and skip only the async generation - the synchronous Validate is
+                                // still generated so the sole failure surfaced is this diagnostic, not a cascading CS0535.
+                                Diag(DiagDescriptors.AlreadyImplementsValidateAsyncMethod, syntax.GetLocation(), validatorType.Name);
+                                wantsAsync = false;
+                            }
+
+                            // Asynchronous validation relies on the async DataAnnotations APIs (IAsyncValidatableObject /
+                            // Validator.TryValidateValueAsync), which are only available when targeting .NET 11 or later.
+                            // When they are unavailable, emit a diagnostic instead of generating code that wouldn't compile.
+                            bool generateAsync = wantsAsync;
+                            if (wantsAsync && _symbolHolder.IAsyncValidatableObjectSymbol is null)
+                            {
+                                Diag(DiagDescriptors.AsyncValidationRequiresNet11, syntax.GetLocation(), validatorType.Name);
+                                generateAsync = false;
+                            }
 
                             Location? modelTypeLocation = modelType.GetLocation();
                             Location lowerLocationInCompilation = modelTypeLocation is not null && modelTypeLocation.SourceTree is not null && _compilation.ContainsSyntaxTree(modelTypeLocation.SourceTree)
@@ -222,27 +241,44 @@ namespace Microsoft.Extensions.Options.Generators
             => type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat.WithGenericsOptions(SymbolDisplayGenericsOptions.None));
 
         /// <summary>
-        /// Checks whether the given validator already implement the IValidationOptions&gt;T&lt; interface.
+        /// Checks whether the given validator already implements the generated <c>Validate</c> method
+        /// (implicitly or as an explicit interface implementation).
         /// </summary>
         private static bool AlreadyImplementsValidateMethod(INamespaceOrTypeSymbol validatorType, ISymbol modelType)
             => validatorType
-                .GetMembers("Validate")
-                .Where(m => m.Kind == SymbolKind.Method)
-                .Select(m => (IMethodSymbol)m)
-                .Any(m => m.Parameters.Length == NumValidationMethodArgs
-                    && m.Parameters[0].Type.SpecialType == SpecialType.System_String
-                    && SymbolEqualityComparer.Default.Equals(m.Parameters[1].Type, modelType));
+                .GetMembers()
+                .OfType<IMethodSymbol>()
+                .Any(m => MatchesGeneratedValidateSignature(m, "Validate", NumValidationMethodArgs, modelType, requireCancellationToken: false));
 
         // Detects a user-supplied ValidateAsync(string, TModel, CancellationToken) overload so the generator doesn't emit
         // a duplicate member for a validator that already provides its own asynchronous implementation.
         private static bool AlreadyImplementsValidateAsyncMethod(INamespaceOrTypeSymbol validatorType, ISymbol modelType)
             => validatorType
-                .GetMembers("ValidateAsync")
-                .Where(m => m.Kind == SymbolKind.Method)
-                .Select(m => (IMethodSymbol)m)
-                .Any(m => m.Parameters.Length == NumValidationMethodArgs + 1
-                    && m.Parameters[0].Type.SpecialType == SpecialType.System_String
-                    && SymbolEqualityComparer.Default.Equals(m.Parameters[1].Type, modelType));
+                .GetMembers()
+                .OfType<IMethodSymbol>()
+                .Any(m => MatchesGeneratedValidateSignature(m, "ValidateAsync", NumValidationMethodArgs + 1, modelType, requireCancellationToken: true));
+
+        // Matches a method with the signature the generator would emit, whether declared implicitly or as an explicit
+        // interface implementation. The return type is intentionally ignored (C# does not overload on return type), and
+        // no display-string comparison is used.
+        private static bool MatchesGeneratedValidateSignature(IMethodSymbol method, string name, int parameterCount, ISymbol modelType, bool requireCancellationToken)
+        {
+            bool nameMatches = method.Name == name
+                || method.ExplicitInterfaceImplementations.Any(impl => impl.Name == name);
+
+            if (!nameMatches
+                || method.Parameters.Length != parameterCount
+                || method.Parameters[0].Type.SpecialType != SpecialType.System_String
+                || !SymbolEqualityComparer.Default.Equals(method.Parameters[1].Type, modelType))
+            {
+                return false;
+            }
+
+            return !requireCancellationToken || IsCancellationToken(method.Parameters[parameterCount - 1].Type);
+        }
+
+        private static bool IsCancellationToken(ITypeSymbol type)
+            => type is { Name: "CancellationToken", ContainingNamespace: { Name: "Threading", ContainingNamespace: { Name: "System", ContainingNamespace.IsGlobalNamespace: true } } };
 
         /// <summary>
         /// Checks whether the given type contain any unbound generic type arguments.

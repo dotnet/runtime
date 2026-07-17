@@ -2,6 +2,16 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="pt-BR" original="../Strings.resx">
     <body>
+      <trans-unit id="AlreadyImplementsValidateAsyncMethodMessage">
+        <source>Type {0} already implements the ValidateAsync method.</source>
+        <target state="new">Type {0} already implements the ValidateAsync method.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlreadyImplementsValidateAsyncMethodTitle">
+        <source>A type already includes an implementation of the 'ValidateAsync' method.</source>
+        <target state="new">A type already includes an implementation of the 'ValidateAsync' method.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="AlreadyImplementsValidateMethodMessage">
         <source>Type {0} already implements the Validate method.</source>
         <target state="translated">O tipo {0} já implementa o método Validar.</target>
@@ -10,6 +20,16 @@
       <trans-unit id="AlreadyImplementsValidateMethodTitle">
         <source>A type already includes an implementation of the 'Validate' method.</source>
         <target state="translated">Um tipo já inclui uma implementação do método "Validar".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AsyncValidationRequiresNet11Message">
+        <source>Type {0} requires asynchronous options validation, which is only supported when targeting .NET 11 or later.</source>
+        <target state="new">Type {0} requires asynchronous options validation, which is only supported when targeting .NET 11 or later.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AsyncValidationRequiresNet11Title">
+        <source>Asynchronous options validation requires targeting .NET 11 or later.</source>
+        <target state="new">Asynchronous options validation requires targeting .NET 11 or later.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantBeStaticClassMessage">
