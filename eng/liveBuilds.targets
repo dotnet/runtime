@@ -325,10 +325,12 @@
         IsNative="true" />
     </ItemGroup>
 
-    <!-- WASI CoreCLR ships only the static runtime libraries (already
-         provided by RuntimeFiles from $(CoreCLRSharedFrameworkDir)) and
-         the libs.native static libs (already provided by the unconditional
-         glob above). corerun.wasm is not part of the runtime pack. -->
+    <!-- WASI CoreCLR host archive, staged from the host subset. Excluded from the runtime-tests
+         build (which omits the host subset), mirroring the browser libBrowserHost.a handling. -->
+    <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'">
+      <LibrariesRuntimeFiles Include="$(HostSharedFrameworkDir)libWasiHost.a"
+                             IsNative="true" />
+    </ItemGroup>
 
 
     <Error Condition="'@(LibrariesRuntimeFiles)' == ''" Text="The 'libs' subset must be built before building this project." />

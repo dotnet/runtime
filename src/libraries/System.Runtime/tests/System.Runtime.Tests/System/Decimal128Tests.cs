@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
@@ -1549,6 +1550,16 @@ namespace System.Tests
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128Modulus), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void op_Modulus_IntelReferenceVectors(UInt128 left, UInt128 right, UInt128 expected)
+        {
+            Decimal128 l = Unsafe.BitCast<UInt128, Decimal128>(left);
+            Decimal128 r = Unsafe.BitCast<UInt128, Decimal128>(right);
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(l % r));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128Comparison), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void op_Comparison_IntelReferenceVectors(string operation, UInt128 left, UInt128 right, bool expected)
         {
@@ -1579,6 +1590,26 @@ namespace System.Tests
             {
                 "abs" => Decimal128.Abs(v),
                 "negate" => -v,
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128RoundIntegral), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void RoundIntegral_IntelReferenceVectors(string operation, UInt128 value, UInt128 expected)
+        {
+            Decimal128 v = Unsafe.BitCast<UInt128, Decimal128>(value);
+
+            Decimal128 result = operation switch
+            {
+                "round_integral_exact" => Decimal128.Round(v, 0, MidpointRounding.ToEven),
+                "round_integral_nearest_even" => Decimal128.Round(v, 0, MidpointRounding.ToEven),
+                "round_integral_nearest_away" => Decimal128.Round(v, 0, MidpointRounding.AwayFromZero),
+                "round_integral_negative" => Decimal128.Floor(v),
+                "round_integral_positive" => Decimal128.Ceiling(v),
+                "round_integral_zero" => Decimal128.Truncate(v),
                 _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
             };
 
@@ -1619,6 +1650,153 @@ namespace System.Tests
             };
 
             Assert.Equal(expected, result);
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128FromInteger), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ConvertFromInteger_IntelReferenceVectors(string integerType, string operand, UInt128 expected)
+        {
+            Decimal128 result = integerType switch
+            {
+                "int32" => (Decimal128)int.Parse(operand, CultureInfo.InvariantCulture),
+                "int64" => (Decimal128)long.Parse(operand, CultureInfo.InvariantCulture),
+                "uint32" => (Decimal128)DecimalIeee754IntelTestData.ParseUInt32(operand),
+                "uint64" => (Decimal128)DecimalIeee754IntelTestData.ParseUInt64(operand),
+                _ => throw new InvalidOperationException($"Unexpected integer type '{integerType}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128ToInteger), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ConvertToInteger_IntelReferenceVectors(string integerType, UInt128 value, string expected)
+        {
+            Decimal128 v = Unsafe.BitCast<UInt128, Decimal128>(value);
+
+            switch (integerType)
+            {
+                case "int8": Assert.Equal(sbyte.Parse(expected, CultureInfo.InvariantCulture), (sbyte)v); break;
+                case "int16": Assert.Equal(short.Parse(expected, CultureInfo.InvariantCulture), (short)v); break;
+                case "int32": Assert.Equal(int.Parse(expected, CultureInfo.InvariantCulture), (int)v); break;
+                case "int64": Assert.Equal(long.Parse(expected, CultureInfo.InvariantCulture), (long)v); break;
+                case "uint8": Assert.Equal(DecimalIeee754IntelTestData.ParseUInt8(expected), (byte)v); break;
+                case "uint16": Assert.Equal(DecimalIeee754IntelTestData.ParseUInt16(expected), (ushort)v); break;
+                case "uint32": Assert.Equal(DecimalIeee754IntelTestData.ParseUInt32(expected), (uint)v); break;
+                case "uint64": Assert.Equal(DecimalIeee754IntelTestData.ParseUInt64(expected), (ulong)v); break;
+                default: throw new InvalidOperationException($"Unexpected integer type '{integerType}'.");
+            }
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128ToBinary), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ConvertToBinary_IntelReferenceVectors(string binaryType, UInt128 value, ulong expected)
+        {
+            Decimal128 v = Unsafe.BitCast<UInt128, Decimal128>(value);
+
+            switch (binaryType)
+            {
+                case "binary32": Assert.Equal((uint)expected, BitConverter.SingleToUInt32Bits((float)v)); break;
+                case "binary64": Assert.Equal(expected, BitConverter.DoubleToUInt64Bits((double)v)); break;
+                default: throw new InvalidOperationException($"Unexpected binary type '{binaryType}'.");
+            }
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128FromBinary), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ConvertFromBinary_IntelReferenceVectors(string binaryType, ulong value, UInt128 expected)
+        {
+            Decimal128 result = binaryType switch
+            {
+                "binary32" => (Decimal128)BitConverter.UInt32BitsToSingle((uint)value),
+                "binary64" => (Decimal128)BitConverter.UInt64BitsToDouble(value),
+                _ => throw new InvalidOperationException($"Unexpected binary type '{binaryType}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128Cross), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ConvertFromDecimal_IntelReferenceVectors(string decimalType, UInt128 value, UInt128 expected)
+        {
+            Decimal128 result = decimalType switch
+            {
+                "bid32" => (Decimal128)Unsafe.BitCast<uint, Decimal32>((uint)value),
+                "bid64" => (Decimal128)Unsafe.BitCast<ulong, Decimal64>((ulong)value),
+                _ => throw new InvalidOperationException($"Unexpected decimal type '{decimalType}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [Theory]
+        [InlineData("0", 0x3040000000000000UL, 0x0000000000000000UL)]
+        [InlineData("0.00", 0x303C000000000000UL, 0x0000000000000000UL)]
+        [InlineData("1", 0x3040000000000000UL, 0x0000000000000001UL)]
+        [InlineData("1.00", 0x303C000000000000UL, 0x0000000000000064UL)]
+        [InlineData("-1", 0xB040000000000000UL, 0x0000000000000001UL)]
+        [InlineData("-1.00", 0xB03C000000000000UL, 0x0000000000000064UL)]
+        [InlineData("0.5", 0x303E000000000000UL, 0x0000000000000005UL)]
+        [InlineData("-0.5", 0xB03E000000000000UL, 0x0000000000000005UL)]
+        [InlineData("123.456", 0x303A000000000000UL, 0x000000000001E240UL)]
+        [InlineData("-123.456", 0xB03A000000000000UL, 0x000000000001E240UL)]
+        [InlineData("3.14159265358979", 0x3024000000000000UL, 0x00011DB9E76A2483UL)]
+        [InlineData("79228162514264337593543950335", 0x30400000FFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL)]
+        [InlineData("-79228162514264337593543950335", 0xB0400000FFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL)]
+        [InlineData("0.0000000000000000000000000001", 0x3008000000000000UL, 0x0000000000000001UL)]
+        [InlineData("12345678901234567890123456789", 0x3040000027E41B32UL, 0x46BEC9B16E398115UL)]
+        [InlineData("9999999", 0x3040000000000000UL, 0x000000000098967FUL)]
+        [InlineData("10000000", 0x3040000000000000UL, 0x0000000000989680UL)]
+        [InlineData("2.5", 0x303E000000000000UL, 0x0000000000000019UL)]
+        [InlineData("0.1", 0x303E000000000000UL, 0x0000000000000001UL)]
+        [InlineData("0.2", 0x303E000000000000UL, 0x0000000000000002UL)]
+        [InlineData("0.3", 0x303E000000000000UL, 0x0000000000000003UL)]
+        public static void ConvertFromSystemDecimalTest(string value, ulong expectedUpper, ulong expectedLower)
+        {
+            decimal d = decimal.Parse(value, CultureInfo.InvariantCulture);
+            Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>((Decimal128)d));
+        }
+
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0x00000000, 0x00000000, 0x00000000, 0, false)]
+        [InlineData(0x303C000000000000UL, 0x0000000000000000UL, 0x00000000, 0x00000000, 0x00000000, 2, false)]
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL, 0x00000001, 0x00000000, 0x00000000, 0, false)]
+        [InlineData(0x303C000000000000UL, 0x0000000000000064UL, 0x00000064, 0x00000000, 0x00000000, 2, false)]
+        [InlineData(0xB040000000000000UL, 0x0000000000000001UL, 0x00000001, 0x00000000, 0x00000000, 0, true)]
+        [InlineData(0xB03C000000000000UL, 0x0000000000000064UL, 0x00000064, 0x00000000, 0x00000000, 2, true)]
+        [InlineData(0x303E000000000000UL, 0x0000000000000005UL, 0x00000005, 0x00000000, 0x00000000, 1, false)]
+        [InlineData(0xB03E000000000000UL, 0x0000000000000005UL, 0x00000005, 0x00000000, 0x00000000, 1, true)]
+        [InlineData(0x303A000000000000UL, 0x000000000001E240UL, 0x0001E240, 0x00000000, 0x00000000, 3, false)]
+        [InlineData(0xB03A000000000000UL, 0x000000000001E240UL, 0x0001E240, 0x00000000, 0x00000000, 3, true)]
+        [InlineData(0x3024000000000000UL, 0x00011DB9E76A2483UL, 0xE76A2483, 0x00011DB9, 0x00000000, 14, false)]
+        [InlineData(0x30400000FFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0, false)]
+        [InlineData(0xB0400000FFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0, true)]
+        [InlineData(0x3008000000000000UL, 0x0000000000000001UL, 0x00000001, 0x00000000, 0x00000000, 28, false)]
+        [InlineData(0x3040000027E41B32UL, 0x46BEC9B16E398115UL, 0x6E398115, 0x46BEC9B1, 0x27E41B32, 0, false)]
+        [InlineData(0x3040000000000000UL, 0x000000000098967FUL, 0x0098967F, 0x00000000, 0x00000000, 0, false)]
+        [InlineData(0x3040000000000000UL, 0x0000000000989680UL, 0x00989680, 0x00000000, 0x00000000, 0, false)]
+        [InlineData(0x303E000000000000UL, 0x0000000000000019UL, 0x00000019, 0x00000000, 0x00000000, 1, false)]
+        [InlineData(0x303E000000000000UL, 0x0000000000000001UL, 0x00000001, 0x00000000, 0x00000000, 1, false)]
+        [InlineData(0x303E000000000000UL, 0x0000000000000002UL, 0x00000002, 0x00000000, 0x00000000, 1, false)]
+        [InlineData(0x303E000000000000UL, 0x0000000000000003UL, 0x00000003, 0x00000000, 0x00000000, 1, false)]
+        public static void ConvertToSystemDecimalTest(ulong upper, ulong lower, uint lo, uint mid, uint hi, byte scale, bool isNegative)
+        {
+            decimal expected = new decimal((int)lo, (int)mid, (int)hi, isNegative, scale);
+            decimal actual = (decimal)Unsafe.BitCast<UInt128, Decimal128>(new UInt128(upper, lower));
+
+            Assert.Equal(expected, actual);
+            Assert.Equal(decimal.GetBits(expected), decimal.GetBits(actual));
+        }
+
+        [Fact]
+        public static void ConvertToSystemDecimalThrowsTest()
+        {
+            Assert.Throws<OverflowException>(() => (decimal)Decimal128.NaN);
+            Assert.Throws<OverflowException>(() => (decimal)Decimal128.PositiveInfinity);
+            Assert.Throws<OverflowException>(() => (decimal)Decimal128.NegativeInfinity);
+            Assert.Throws<OverflowException>(() => (decimal)Decimal128.MaxValue);
+            Assert.Throws<OverflowException>(() => (decimal)Decimal128.MinValue);
         }
 
         [Fact]
@@ -1868,6 +2046,8 @@ namespace System.Tests
             yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000003), new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000005), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x7C00000000000000, 0x0000000000001234) }; // non-canonical NaN operand is canonicalized
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x7C003FFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), new UInt128(0x7C00000000000000, 0x0000000000000000) }; // non-canonical NaN operand is canonicalized
         }
 
         [Theory]
@@ -1893,6 +2073,8 @@ namespace System.Tests
             yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000003), new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000005), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000005) };
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x7C00000000000000, 0x0000000000001234) }; // non-canonical NaN operand is canonicalized
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x7C003FFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), new UInt128(0x7C00000000000000, 0x0000000000000000) }; // non-canonical NaN operand is canonicalized
         }
 
         [Theory]
@@ -1918,6 +2100,8 @@ namespace System.Tests
             yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000003), new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000003) };
             yield return new object[] { new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000005), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x3040000000000000, 0x0000000000000005) }; // non-canonical NaN dropped in favor of the number
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x7C003FFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), new UInt128(0x7C00000000000000, 0x0000000000001234) }; // both NaN -> first operand canonicalized
         }
 
         [Theory]
@@ -1943,6 +2127,8 @@ namespace System.Tests
             yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000003), new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000003) };
             yield return new object[] { new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000005), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000005) };
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x3040000000000000, 0x0000000000000005) }; // non-canonical NaN dropped in favor of the number
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x7C003FFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), new UInt128(0x7C00000000000000, 0x0000000000001234) }; // both NaN -> first operand canonicalized
         }
 
         [Theory]
@@ -1997,6 +2183,8 @@ namespace System.Tests
             yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x7C00000000000000, 0x0000000000001234) }; // non-canonical NaN operand is canonicalized
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x7C003FFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), new UInt128(0x7C00000000000000, 0x0000000000000000) }; // non-canonical NaN operand is canonicalized
         }
 
         [Theory]
@@ -2032,6 +2220,8 @@ namespace System.Tests
             yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x7C00000000000000, 0x0000000000001234) }; // non-canonical NaN operand is canonicalized
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x7C003FFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), new UInt128(0x7C00000000000000, 0x0000000000000000) }; // non-canonical NaN operand is canonicalized
         }
 
         [Theory]
@@ -2067,6 +2257,8 @@ namespace System.Tests
             yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x7C00000000000000, 0x0000000000001234) }; // NaN operand wins and is canonicalized
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x7C003FFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), new UInt128(0x7C00000000000000, 0x0000000000000000) }; // both NaN -> second operand canonicalized
         }
 
         [Theory]
@@ -2102,6 +2294,8 @@ namespace System.Tests
             yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x7C00000000000000, 0x0000000000001234) }; // NaN operand wins and is canonicalized
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x7C003FFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), new UInt128(0x7C00000000000000, 0x0000000000000000) }; // both NaN -> second operand canonicalized
         }
 
         [Theory]
@@ -2137,6 +2331,8 @@ namespace System.Tests
             yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x3040000000000000, 0x0000000000000005) }; // non-canonical NaN dropped in favor of the number
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x7C003FFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), new UInt128(0x7C00000000000000, 0x0000000000001234) }; // both NaN -> first operand canonicalized
         }
 
         [Theory]
@@ -2172,6 +2368,8 @@ namespace System.Tests
             yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000) };
             yield return new object[] { new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x3040000000000000, 0x0000000000000005), new UInt128(0x3040000000000000, 0x0000000000000005) }; // non-canonical NaN dropped in favor of the number
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), new UInt128(0x7C003FFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), new UInt128(0x7C00000000000000, 0x0000000000001234) }; // both NaN -> first operand canonicalized
         }
 
         [Theory]
@@ -2304,5 +2502,259 @@ namespace System.Tests
         {
             Assert.Throws<ArgumentException>(() => Decimal128.ClampNative(Decimal128.One, Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x3040000000000000, 0x000000000000000A)), Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x3040000000000000, 0x0000000000000001))));
         }
+
+        [Fact]
+        public static void CreateFromSourceTest()
+        {
+            // Create* forwards to the widening conversion operators, so bit-for-bit equality with
+            // the corresponding operator confirms the dispatch. The conversion math itself is
+            // covered exhaustively by the Intel reference vectors above.
+            Assert.Equal(Unsafe.BitCast<Decimal128, UInt128>((Decimal128)123), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.CreateChecked<int>(123)));
+            Assert.Equal(Unsafe.BitCast<Decimal128, UInt128>((Decimal128)123), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.CreateSaturating<int>(123)));
+            Assert.Equal(Unsafe.BitCast<Decimal128, UInt128>((Decimal128)123), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.CreateTruncating<int>(123)));
+
+            Assert.Equal(Unsafe.BitCast<Decimal128, UInt128>((Decimal128)(byte)255), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.CreateChecked<byte>(255)));
+            Assert.Equal(Unsafe.BitCast<Decimal128, UInt128>((Decimal128)(-5L)), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.CreateChecked<long>(-5)));
+            Assert.Equal(Unsafe.BitCast<Decimal128, UInt128>((Decimal128)1.5f), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.CreateChecked<float>(1.5f)));
+            Assert.Equal(Unsafe.BitCast<Decimal128, UInt128>((Decimal128)1.5), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.CreateChecked<double>(1.5)));
+            Assert.Equal(Unsafe.BitCast<Decimal128, UInt128>((Decimal128)1.5m), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.CreateChecked<decimal>(1.5m)));
+
+            // The same type is returned unchanged, preserving the exact cohort member.
+            Decimal128 value = (Decimal128)123456;
+            Assert.Equal(Unsafe.BitCast<Decimal128, UInt128>(value), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.CreateChecked<Decimal128>(value)));
+
+            // Cross-decimal conversions forward to the widening operators.
+            Assert.Equal(Unsafe.BitCast<Decimal128, UInt128>((Decimal128)(Decimal32)123), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.CreateChecked<Decimal32>((Decimal32)123)));
+            Assert.Equal(Unsafe.BitCast<Decimal128, UInt128>((Decimal128)(Decimal64)123), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.CreateChecked<Decimal64>((Decimal64)123)));
+        }
+
+        [Fact]
+        public static void CreateToIntegerCheckedTest()
+        {
+            // The reverse direction (int.CreateChecked(Decimal128)) routes through Decimal128's
+            // TryConvertToChecked, which throws on overflow, NaN, or infinity.
+            Assert.Equal(123, int.CreateChecked((Decimal128)123));
+
+            Assert.Throws<OverflowException>(() => byte.CreateChecked((Decimal128)300));
+            Assert.Throws<OverflowException>(() => byte.CreateChecked((Decimal128)(-1)));
+            Assert.Throws<OverflowException>(() => byte.CreateChecked(Decimal128.NaN));
+            Assert.Throws<OverflowException>(() => byte.CreateChecked(Decimal128.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => byte.CreateChecked(Decimal128.NegativeInfinity));
+
+            // A negative value in the open interval (-1, 0) truncates toward zero into range, so a
+            // checked conversion to an unsigned target returns zero rather than throwing, matching
+            // checked((byte)(-0.5)) and the binary floating-point to integer conversions.
+            Assert.Equal((byte)0, byte.CreateChecked((Decimal128)(-0.5m)));
+        }
+
+        [Fact]
+        public static void CreateToIntegerSaturatingTest()
+        {
+            // TryConvertToSaturating and TryConvertToTruncating share the saturating integer
+            // operators: NaN becomes zero and out-of-range values clamp to the target's bounds.
+            Assert.Equal((byte)200, byte.CreateSaturating((Decimal128)200));
+            Assert.Equal(byte.MaxValue, byte.CreateSaturating((Decimal128)300));
+            Assert.Equal((byte)0, byte.CreateSaturating((Decimal128)(-1)));
+            Assert.Equal((byte)0, byte.CreateSaturating(Decimal128.NaN));
+            Assert.Equal(byte.MaxValue, byte.CreateSaturating(Decimal128.PositiveInfinity));
+            Assert.Equal((byte)0, byte.CreateSaturating(Decimal128.NegativeInfinity));
+
+            // Truncating toward zero drops the fractional part.
+            Assert.Equal(123, int.CreateTruncating((Decimal128)123.9m));
+            Assert.Equal(byte.MaxValue, byte.CreateTruncating((Decimal128)300));
+        }
+
+        [Fact]
+        public static void CreateToSystemDecimalTest()
+        {
+            // Saturating clamps to System.Decimal's range and maps NaN to zero.
+            Assert.Equal(1.5m, decimal.CreateSaturating((Decimal128)1.5m));
+            Assert.Equal(decimal.MaxValue, decimal.CreateSaturating(Decimal128.MaxValue));
+            Assert.Equal(decimal.MinValue, decimal.CreateSaturating(Decimal128.MinValue));
+            Assert.Equal(0.0m, decimal.CreateSaturating(Decimal128.NaN));
+
+            // Decimal128 represents decimal.MaxValue/MinValue exactly, so the nearest values round-trip.
+            Assert.Equal(decimal.MaxValue, decimal.CreateSaturating((Decimal128)decimal.MaxValue));
+            Assert.Equal(decimal.MinValue, decimal.CreateSaturating((Decimal128)decimal.MinValue));
+
+            // Checked throws when the value cannot be represented, matching the (decimal) operator.
+            Assert.Equal(1.5m, decimal.CreateChecked((Decimal128)1.5m));
+            Assert.Throws<OverflowException>(() => decimal.CreateChecked(Decimal128.MaxValue));
+            Assert.Throws<OverflowException>(() => decimal.CreateChecked(Decimal128.NaN));
+        }
+
+        public static IEnumerable<object[]> op_Modulus_TestData()
+        {
+            yield return new object[] { new UInt128(0x4810000000000000, 0x0000000000000000), new UInt128(0x990E000000000000, 0x00727CEB5CF62962), new UInt128(0x190E000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x02DC000000000000, 0x000000000000C323), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x02DC000000000000, 0x000000000000C323) };
+            yield return new object[] { new UInt128(0x0820000000000000, 0x000C7F077915197C), new UInt128(0x557C000000000000, 0x0B1E07FE86637A2F), new UInt128(0x0820000000000000, 0x000C7F077915197C) };
+            yield return new object[] { new UInt128(0x19D815CE6B5B34C3, 0x8F50B6B1CC625385), new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xC35E00001C26FEE5, 0x1B671598D84E4FDE), new UInt128(0xD6D6000000000000, 0x00000001979A8758), new UInt128(0xC35E00001C26FEE5, 0x1B671598D84E4FDE) };
+            yield return new object[] { new UInt128(0x36840000000810A5, 0xB6D5CBDA7C41FE15), new UInt128(0xA602000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x4BE200000000885C, 0x1D87CD3186D0C6CC), new UInt128(0x8180000000000000, 0x0000000000006BD7), new UInt128(0x0180000000000000, 0x00000000000009B8) };
+            yield return new object[] { new UInt128(0xA9100000000001C7, 0x5A954BD2316F738B), new UInt128(0x4E34000000000AB0, 0x19F2EB310DEB90C4), new UInt128(0xA9100000000001C7, 0x5A954BD2316F738B) };
+            yield return new object[] { new UInt128(0x5B74000000BE82C5, 0xEEE7839C9CF8EDF7), new UInt128(0x4030000000000000, 0x001FFAF9A71D2883), new UInt128(0x4030000000000000, 0x001CD7AC6FE3A534) };
+            yield return new object[] { new UInt128(0x8102000A63BCF670, 0xD60A6355E652AD8A), new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x901C000000000000, 0x4C27457B78954A33), new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xBE8800005BE01275, 0xF6418621117238DD), new UInt128(0xD932000000000000, 0x00000000000D8679), new UInt128(0xBE8800005BE01275, 0xF6418621117238DD) };
+            yield return new object[] { new UInt128(0xB250000000000000, 0x0000000000000000), new UInt128(0x2504000000000000, 0x000000000002E306), new UInt128(0xA504000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0x1344000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xDE2B69A7FDF37D69, 0x0C83953B47DD2851), new UInt128(0x0DB804DBC574207F, 0x31843184B6F0A80A), new UInt128(0x8DB8016B5216022A, 0x9B020AB9F393AFFC) };
+            yield return new object[] { new UInt128(0xC38400001491446B, 0x673D6453971DBCAB), new UInt128(0x1A4A000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x2720000000000000, 0x0000097407D8946B), new UInt128(0xB5F4000000000000, 0x00000000000AF371), new UInt128(0x2720000000000000, 0x0000097407D8946B) };
+            yield return new object[] { new UInt128(0x9BF6000000000000, 0x1A30D732F747DD0E), new UInt128(0xA3B8000ABA01A581, 0x4406F1E2E09B39B9), new UInt128(0x9BF6000000000000, 0x1A30D732F747DD0E) };
+            yield return new object[] { new UInt128(0x0092000000000000, 0x00000000399224C3), new UInt128(0x5AEC000000000000, 0x0000096C2B8F87F0), new UInt128(0x0092000000000000, 0x00000000399224C3) };
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x8958000000000000, 0x000000000FC25A7C), new UInt128(0x7C00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x57B2000000000000, 0x000F5DCED6652344), new UInt128(0xB5A2000000001139, 0x85837D2F6B305C5F), new UInt128(0x35A20000000009F6, 0x20430D5F4C647EA6) };
+            yield return new object[] { new UInt128(0xAD78000000000000, 0x0000000000000000), new UInt128(0x346E000000000016, 0xF78007A0158F736C), new UInt128(0xAD78000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xA7B4000000000000, 0x0000000000000001), new UInt128(0x26B4000000000000, 0x03345E83946E53FD), new UInt128(0xA6B4000000000000, 0x007817AA3A3AB10A) };
+            yield return new object[] { new UInt128(0x0DE2000000000003, 0xF7F0A35B2122BACC), new UInt128(0x40B6000000000000, 0x00000001C0645AF2), new UInt128(0x0DE2000000000003, 0xF7F0A35B2122BACC) };
+            yield return new object[] { new UInt128(0xA984000591CB546F, 0xCDCB05B27845D2D7), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xA984000591CB546F, 0xCDCB05B27845D2D7) };
+            yield return new object[] { new UInt128(0x99D4000000000000, 0x0000000000000000), new UInt128(0x01CA000000000000, 0x00003FCDF3F54CA3), new UInt128(0x81CA000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x5ECE0059773868D9, 0xD79D80205EF487AD), new UInt128(0x575C000000000000, 0x000000000000250A), new UInt128(0x575C000000000000, 0x000000000000012C) };
+            yield return new object[] { new UInt128(0xAA26000000000000, 0x0000134F75405BA4), new UInt128(0x977C000000000000, 0x000003CC1F1EFDB2), new UInt128(0x977C000000000000, 0x000001BF28D406A8) };
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0x97D0000000000000, 0x0000000000000347), new UInt128(0xFC00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x546C000000000000, 0x00000000000000C7), new UInt128(0xD59C000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0x52DC000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x4BAC0000000015DC, 0xF9962B8B9EA1F26D), new UInt128(0x40D2000000000000, 0x0000000000000007), new UInt128(0x40D2000000000000, 0x0000000000000002) };
+            yield return new object[] { new UInt128(0xBABA045882CF1D86, 0x95BA36F8663F9C4C), new UInt128(0x8220000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x386E00000000003C, 0x845CF4E0C470005B), new UInt128(0x7C00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x5DDD4F2CD7014F7C, 0xF0B4AEB4AEDB5010), new UInt128(0x8AA20000000001C6, 0x4D4C69C05E1AEEC9), new UInt128(0x0AA200000000012C, 0xBDCF5BE2645FEAEF) };
+            yield return new object[] { new UInt128(0x9CF600000023177C, 0x325CB9124638EB43), new UInt128(0xC77E000000000000, 0x0000000000000009), new UInt128(0x9CF600000023177C, 0x325CB9124638EB43) };
+            yield return new object[] { new UInt128(0x3A72000000000000, 0x0000000000000000), new UInt128(0x3752000000000000, 0x000000B07C9C82E5), new UInt128(0x3752000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0xB3E800008DD69B34, 0x8898B05BA9A564C1), new UInt128(0xFC00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xBA20000000000000, 0x0000000000001C83), new UInt128(0x3D1C000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) };
+        }
+
+        [Theory]
+        [MemberData(nameof(op_Modulus_TestData))]
+        public static void op_Modulus(UInt128 left, UInt128 right, UInt128 expected)
+        {
+            Decimal128 result = Unsafe.BitCast<UInt128, Decimal128>(left) % Unsafe.BitCast<UInt128, Decimal128>(right);
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        public static IEnumerable<object[]> RoundToDigits_TestData()
+        {
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), 0, MidpointRounding.ToEven, new UInt128(0xFC00000000000000, 0x0000000000000000) }; // canonical NaN passes through
+            yield return new object[] { new UInt128(0x7E00000000000000, 0x0000000000001234), 0, MidpointRounding.ToEven, new UInt128(0x7C00000000000000, 0x0000000000001234) }; // signaling NaN -> quiet NaN (payload preserved)
+            yield return new object[] { new UInt128(0x7C003FFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF), 3, MidpointRounding.ToZero, new UInt128(0x7C00000000000000, 0x0000000000000000) }; // out-of-range NaN payload cleared
+            yield return new object[] { new UInt128(0xFE00000000000000, 0x0000000000000000), 2, MidpointRounding.ToNegativeInfinity, new UInt128(0xFC00000000000000, 0x0000000000000000) }; // negative signaling NaN -> quiet NaN (sign preserved)
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), 3, MidpointRounding.AwayFromZero, new UInt128(0x7800000000000000, 0x0000000000000000) }; // +Inf passes through
+            yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), 2, MidpointRounding.ToPositiveInfinity, new UInt128(0xF800000000000000, 0x0000000000000000) }; // -Inf passes through
+            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000019), 0, MidpointRounding.ToEven, new UInt128(0x3040000000000000, 0x0000000000000002) }; // 2.5 -> 2 (ToEven)
+            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000019), 0, MidpointRounding.AwayFromZero, new UInt128(0x3040000000000000, 0x0000000000000003) }; // 2.5 -> 3 (AwayFromZero)
+            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000023), 0, MidpointRounding.ToEven, new UInt128(0x3040000000000000, 0x0000000000000004) }; // 3.5 -> 4 (ToEven)
+            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000005), 0, MidpointRounding.ToEven, new UInt128(0x3040000000000000, 0x0000000000000000) }; // 0.5 -> 0 (ToEven)
+            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000005), 0, MidpointRounding.ToPositiveInfinity, new UInt128(0x3040000000000000, 0x0000000000000001) }; // 0.5 -> 1 (ToPositiveInfinity)
+            yield return new object[] { new UInt128(0xB03E000000000000, 0x0000000000000005), 0, MidpointRounding.ToNegativeInfinity, new UInt128(0xB040000000000000, 0x0000000000000001) }; // -0.5 -> -1 (ToNegativeInfinity)
+            yield return new object[] { new UInt128(0xB03C000000000000, 0x0000000000000019), 0, MidpointRounding.ToPositiveInfinity, new UInt128(0xB040000000000000, 0x0000000000000000) }; // -0.25 -> -0 (ToPositiveInfinity)
+            yield return new object[] { new UInt128(0xB03C000000000000, 0x0000000000000019), 0, MidpointRounding.ToNegativeInfinity, new UInt128(0xB040000000000000, 0x0000000000000001) }; // -0.25 -> -1 (ToNegativeInfinity)
+            yield return new object[] { new UInt128(0x303C000000000000, 0x0000000000000019), 0, MidpointRounding.ToZero, new UInt128(0x3040000000000000, 0x0000000000000000) }; // 0.25 -> 0 (ToZero)
+            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000005), 5, MidpointRounding.ToEven, new UInt128(0x303E000000000000, 0x0000000000000005) }; // already finer than target, no-op
+            yield return new object[] { new UInt128(0xB03E000000000000, 0x0000000000000000), 0, MidpointRounding.ToNegativeInfinity, new UInt128(0xB040000000000000, 0x0000000000000000) }; // -0 stays -0 (ToNegativeInfinity)
+            yield return new object[] { new UInt128(0x303A000000000000, 0x000000000001E240), 2, MidpointRounding.ToEven, new UInt128(0x303C000000000000, 0x000000000000303A) }; // 123.456 -> 123.46 (ToEven)
+            yield return new object[] { new UInt128(0xACA200001A64F0B2, 0x47116E8F4AA7655A), 1, MidpointRounding.AwayFromZero, new UInt128(0xB03E000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xBBD6000000000000, 0x0000000000000000), 34, MidpointRounding.AwayFromZero, new UInt128(0xBBD6000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x5CB4020BD4E73D0E, 0x6B8B8C501BF89C14), 19, MidpointRounding.ToEven, new UInt128(0x5CB4020BD4E73D0E, 0x6B8B8C501BF89C14) };
+            yield return new object[] { new UInt128(0x4C48000000000000, 0x00000001DD06A8E5), 32, MidpointRounding.ToZero, new UInt128(0x4C48000000000000, 0x00000001DD06A8E5) };
+            yield return new object[] { new UInt128(0x5008000000000000, 0x00000000008BDB96), 22, MidpointRounding.ToZero, new UInt128(0x5008000000000000, 0x00000000008BDB96) };
+            yield return new object[] { new UInt128(0x44A600000004A2E4, 0x946727A4C20797B4), 35, MidpointRounding.AwayFromZero, new UInt128(0x44A600000004A2E4, 0x946727A4C20797B4) };
+            yield return new object[] { new UInt128(0xA5940002963B08E8, 0x1CFEC92070EC50BB), 15, MidpointRounding.AwayFromZero, new UInt128(0xB022000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x9EE8000000000000, 0x0000000000000000), 34, MidpointRounding.ToPositiveInfinity, new UInt128(0xAFFC000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x81E4000000000000, 0x000000000000F435), 9, MidpointRounding.ToNegativeInfinity, new UInt128(0xB02E000000000000, 0x0000000000000001) };
+            yield return new object[] { new UInt128(0x4878DE405BD7331D, 0x0541CCBC7509BA76), 8, MidpointRounding.ToNegativeInfinity, new UInt128(0x4878DE405BD7331D, 0x0541CCBC7509BA76) };
+            yield return new object[] { new UInt128(0x1A40000000000000, 0x0000000000208C95), 30, MidpointRounding.ToZero, new UInt128(0x3004000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), 32, MidpointRounding.ToZero, new UInt128(0xFC00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x83BC000000000000, 0x246A51A7EDEE468A), 16, MidpointRounding.AwayFromZero, new UInt128(0xB020000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), 36, MidpointRounding.ToZero, new UInt128(0x7800000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x2A6C000000000018, 0x524FE2F25ACC517F), 13, MidpointRounding.ToEven, new UInt128(0x3026000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x4E8E295B67DFC0C6, 0xE4BC3F5859D95A1C), 18, MidpointRounding.AwayFromZero, new UInt128(0x4E8E295B67DFC0C6, 0xE4BC3F5859D95A1C) };
+            yield return new object[] { new UInt128(0xC234000000000000, 0x00000000003638E6), 7, MidpointRounding.ToZero, new UInt128(0xC234000000000000, 0x00000000003638E6) };
+            yield return new object[] { new UInt128(0x2448000000000003, 0xC16B45BF142025EA), 24, MidpointRounding.ToPositiveInfinity, new UInt128(0x3010000000000000, 0x0000000000000001) };
+            yield return new object[] { new UInt128(0x4F96000000000000, 0x000000000000027D), 6, MidpointRounding.ToZero, new UInt128(0x4F96000000000000, 0x000000000000027D) };
+            yield return new object[] { new UInt128(0xCC54000000000000, 0x00000000005DFBBC), 16, MidpointRounding.ToEven, new UInt128(0xCC54000000000000, 0x00000000005DFBBC) };
+            yield return new object[] { new UInt128(0x8030000000000000, 0x000000000000002F), 13, MidpointRounding.ToEven, new UInt128(0xB026000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), 20, MidpointRounding.ToZero, new UInt128(0xFC00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x1F64000000000000, 0x0000000000000000), 14, MidpointRounding.ToZero, new UInt128(0x3024000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x2D9C000000000000, 0x000000000000AF5A), 11, MidpointRounding.ToEven, new UInt128(0x302A000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xAF9C000000000000, 0x0000000000000032), 24, MidpointRounding.ToPositiveInfinity, new UInt128(0xB010000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x5F9E0000000003FC, 0x7B93612B2A7B1A77), 20, MidpointRounding.ToZero, new UInt128(0x5F9E0000000003FC, 0x7B93612B2A7B1A77) };
+            yield return new object[] { new UInt128(0x5ABE000000000000, 0x0000090FF790C39F), 36, MidpointRounding.ToEven, new UInt128(0x5ABE000000000000, 0x0000090FF790C39F) };
+            yield return new object[] { new UInt128(0x1F34000000000000, 0x0000000000704EFF), 34, MidpointRounding.ToZero, new UInt128(0x2FFC000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0xB088000000000000, 0x00000007B16C6B74), 27, MidpointRounding.ToZero, new UInt128(0xB088000000000000, 0x00000007B16C6B74) };
+            yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), 9, MidpointRounding.ToZero, new UInt128(0xF800000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x8848000001DF35DC, 0xB97C8D8D51686009), 13, MidpointRounding.ToNegativeInfinity, new UInt128(0xB026000000000000, 0x0000000000000001) };
+            yield return new object[] { new UInt128(0x2412000000017DA7, 0xA70161F30FBAD560), 13, MidpointRounding.AwayFromZero, new UInt128(0x3026000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x43A4007DC21E3069, 0xD3DC36E844F4E8E4), 16, MidpointRounding.ToZero, new UInt128(0x43A4007DC21E3069, 0xD3DC36E844F4E8E4) };
+            yield return new object[] { new UInt128(0x38E4000000027ED7, 0x90B063487ECA3640), 20, MidpointRounding.ToEven, new UInt128(0x38E4000000027ED7, 0x90B063487ECA3640) };
+            yield return new object[] { new UInt128(0xC326000000000000, 0x000000021EBC0119), 30, MidpointRounding.AwayFromZero, new UInt128(0xC326000000000000, 0x000000021EBC0119) };
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), 12, MidpointRounding.ToNegativeInfinity, new UInt128(0xFC00000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x4A40000000000000, 0x000000000000038D), 11, MidpointRounding.ToNegativeInfinity, new UInt128(0x4A40000000000000, 0x000000000000038D) };
+            yield return new object[] { new UInt128(0x3382D503E84E1B51, 0x5301BCC58952CAB2), 29, MidpointRounding.ToEven, new UInt128(0x3382D503E84E1B51, 0x5301BCC58952CAB2) };
+            yield return new object[] { new UInt128(0x9FBE000000000000, 0x0000000000000363), 24, MidpointRounding.ToEven, new UInt128(0xB010000000000000, 0x0000000000000000) };
+            yield return new object[] { new UInt128(0x374A000000000000, 0x000000A466DBFDD5), 21, MidpointRounding.ToZero, new UInt128(0x374A000000000000, 0x000000A466DBFDD5) };
+        }
+
+        [Theory]
+        [MemberData(nameof(RoundToDigits_TestData))]
+        public static void RoundToDigits(UInt128 value, int digits, MidpointRounding mode, UInt128 expected)
+        {
+            Decimal128 result = Decimal128.Round(Unsafe.BitCast<UInt128, Decimal128>(value), digits, mode);
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [Fact]
+        public static void RoundConvenienceOverloads()
+        {
+            Decimal128 x = Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x303E000000000000, 0x0000000000000019)); // 2.5
+
+            Assert.Equal(Decimal128.Round(x, 0, MidpointRounding.ToPositiveInfinity), Decimal128.Ceiling(x));
+            Assert.Equal(Decimal128.Round(x, 0, MidpointRounding.ToNegativeInfinity), Decimal128.Floor(x));
+            Assert.Equal(Decimal128.Round(x, 0, MidpointRounding.ToZero), Decimal128.Truncate(x));
+            Assert.Equal(Decimal128.Round(x, 0, MidpointRounding.ToEven), Decimal128.Round(x));
+            Assert.Equal(Decimal128.Round(x, 0, MidpointRounding.AwayFromZero), Decimal128.Round(x, MidpointRounding.AwayFromZero));
+            Assert.Equal(Decimal128.Round(x, 2, MidpointRounding.ToEven), Decimal128.Round(x, 2));
+        }
+
+        [Fact]
+        public static void IFloatingPoint_ExponentAndSignificand()
+        {
+            IFloatingPoint<Decimal128> value = Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x303C000000000000, 0x0000000000003039)); // 123.45
+
+            Assert.Equal(sizeof(int), value.GetExponentByteCount());
+            Assert.Equal(Unsafe.SizeOf<UInt128>(), value.GetSignificandByteCount());
+
+            Span<byte> exponent = stackalloc byte[value.GetExponentByteCount()];
+            Assert.True(value.TryWriteExponentLittleEndian(exponent, out int exponentWritten));
+            Assert.Equal(sizeof(int), exponentWritten);
+            Assert.Equal(-2, BinaryPrimitives.ReadInt32LittleEndian(exponent));
+
+            Span<byte> significand = stackalloc byte[value.GetSignificandByteCount()];
+            Assert.True(value.TryWriteSignificandLittleEndian(significand, out int significandWritten));
+            Assert.Equal(Unsafe.SizeOf<UInt128>(), significandWritten);
+            Assert.Equal((UInt128)12345, BinaryPrimitives.ReadUInt128LittleEndian(significand));
+
+            Assert.Equal(2, value.GetExponentShortestBitLength());
+            Assert.Equal(113, value.GetSignificandBitLength());
+
+            Span<byte> exponentBigEndian = stackalloc byte[value.GetExponentByteCount()];
+            Assert.True(value.TryWriteExponentBigEndian(exponentBigEndian, out exponentWritten));
+            Assert.Equal(sizeof(int), exponentWritten);
+            Assert.Equal(-2, BinaryPrimitives.ReadInt32BigEndian(exponentBigEndian));
+
+            Span<byte> significandBigEndian = stackalloc byte[value.GetSignificandByteCount()];
+            Assert.True(value.TryWriteSignificandBigEndian(significandBigEndian, out significandWritten));
+            Assert.Equal(Unsafe.SizeOf<UInt128>(), significandWritten);
+            Assert.Equal((UInt128)12345, BinaryPrimitives.ReadUInt128BigEndian(significandBigEndian));
+
+            // A non-negative exponent exercises the other GetExponentShortestBitLength branch.
+            IFloatingPoint<Decimal128> integer = Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x3040000000000000, 0x0000000000003039)); // 12345
+            Assert.Equal(0, integer.GetExponentShortestBitLength());
+
+            Assert.Equal(123, Decimal128.ConvertToInteger<int>(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x303C000000000000, 0x0000000000003039))));
+        }
+
     }
 }
