@@ -82,14 +82,6 @@ public unsafe partial interface ICLRDataTarget3 : ICLRDataTarget2
 }
 
 [GeneratedComInterface]
-[Guid("b760bf44-9377-4597-8be7-58083bdc5146")]
-public unsafe partial interface ICLRRuntimeLocator
-{
-    [PreserveSig]
-    int GetRuntimeBase(ulong* baseAddress);
-}
-
-[GeneratedComInterface]
 [Guid("17d5b8c6-34a9-407f-af4f-a930201d4e02")]
 public unsafe partial interface ICLRContractLocator
 {

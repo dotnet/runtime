@@ -8,20 +8,6 @@ using CorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorEle
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
-[GeneratedComInterface]
-[Guid("FE06DC28-49FB-4636-A4A3-E80DB4AE116C")]
-public unsafe partial interface ICorDebugDataTarget
-{
-    [PreserveSig]
-    int GetPlatform(int* pTargetPlatform);
-
-    [PreserveSig]
-    int ReadVirtual(ulong address, byte* pBuffer, uint bytesRequested, uint* pBytesRead);
-
-    [PreserveSig]
-    int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, byte* pContext);
-}
-
 [StructLayout(LayoutKind.Sequential)]
 public struct COR_TYPEID
 {
