@@ -5,7 +5,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -17,6 +16,60 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstance
 {
+    private const string InvalidExtentHandleMessage = "The handle does not reference a valid EnumMethodExtents instance.";
+
+    private struct ClrDataAddressRange
+    {
+        public ClrDataAddress StartAddress;
+        public ClrDataAddress EndAddress;
+    }
+
+    private sealed class EnumMethodExtents : IEnum<ClrDataAddressRange>
+    {
+        public IEnumerator<ClrDataAddressRange> Enumerator { get; }
+        public nuint LegacyHandle { get; set; }
+
+        public EnumMethodExtents(ClrDataAddressRange extent)
+        {
+            Enumerator = new SingleExtentEnumerator(extent);
+        }
+    }
+
+    private sealed class SingleExtentEnumerator : IEnumerator<ClrDataAddressRange>
+    {
+        private readonly ClrDataAddressRange _extent;
+        private bool _hasCurrent;
+
+        public SingleExtentEnumerator(ClrDataAddressRange extent)
+        {
+            _extent = extent;
+        }
+
+        public ClrDataAddressRange Current => _hasCurrent ? _extent : throw new InvalidOperationException("Enumeration has not started or has already finished.");
+
+        object IEnumerator.Current => Current;
+
+        public bool MoveNext()
+        {
+            if (_hasCurrent)
+            {
+                return false;
+            }
+
+            _hasCurrent = true;
+            return true;
+        }
+
+        public void Reset()
+        {
+            _hasCurrent = false;
+        }
+
+        public void Dispose()
+        {
+        }
+    }
+
     private readonly Target _target;
     private readonly MethodDescHandle _methodDesc;
     private readonly TargetPointer _appDomain;
@@ -372,14 +425,162 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         return hr;
     }
 
+    private ClrDataAddressRange GetMethodExtent()
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        TargetCodePointer nativeCode = rts.GetNativeCode(_methodDesc);
+        TargetCodePointer code = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
+        if (code == TargetCodePointer.Null)
+        {
+            code = nativeCode;
+        }
+
+        if (code == TargetCodePointer.Null)
+        {
+            throw new InvalidOperationException($"Method descriptor has no valid native code pointer (methodDesc={_methodDesc.Address:x}; the method may not be JIT-compiled yet).");
+        }
+
+        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+        CodeBlockHandle? codeBlock = executionManager.GetCodeBlockHandle(code);
+        if (codeBlock is null)
+        {
+            throw new InvalidOperationException($"No code block found for native code address {code.ToClrDataAddress(_target):x} (the address may be invalid or the corresponding module may not be loaded).");
+        }
+
+        executionManager.GetGCInfo(codeBlock.Value, out TargetPointer gcInfoAddress, out uint gcVersion);
+        CodeKind codeKind = executionManager.GetCodeKind(code);
+        IGCInfo gcInfo = _target.Contracts.GCInfo;
+        IGCInfoHandle gcInfoHandle = codeKind == CodeKind.Interpreter
+            ? gcInfo.DecodeInterpreterGCInfo(gcInfoAddress, gcVersion)
+            : gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion);
+
+        ClrDataAddress startAddress = code.ToClrDataAddress(_target);
+        uint codeLength = gcInfo.GetCodeLength(gcInfoHandle);
+        return new ClrDataAddressRange
+        {
+            StartAddress = startAddress,
+            EndAddress = startAddress + codeLength,
+        };
+    }
+
     int IXCLRDataMethodInstance.StartEnumExtents(ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.StartEnumExtents(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (handle is null)
+                throw new ArgumentNullException(nameof(handle));
+
+            EnumMethodExtents extents = new(GetMethodExtent());
+            *handle = (ulong)((IEnum<ClrDataAddressRange>)extents).GetHandle();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ulong legacyHandle = 0;
+            int hrLocal = _legacyImpl.StartEnumExtents(handle is null ? null : &legacyHandle);
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+                ((EnumMethodExtents)gcHandle.Target!).LegacyHandle = (nuint)legacyHandle;
+            }
+            else if (hrLocal == HResults.S_OK)
+            {
+                _legacyImpl.EndEnumExtents(legacyHandle);
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.EnumExtent(ulong* handle, void* extent)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EnumExtent(handle, extent) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        EnumMethodExtents? extents = null;
+        try
+        {
+            if (handle is null)
+                throw new ArgumentNullException(nameof(handle));
+            if (extent is null)
+                throw new ArgumentNullException(nameof(extent));
+            if (*handle == 0)
+                throw new ArgumentException(InvalidExtentHandleMessage, nameof(handle));
+
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+            object? target = gcHandle.Target;
+            extents = target as EnumMethodExtents ?? throw new ArgumentException(InvalidExtentHandleMessage, nameof(handle));
+            if (extents.Enumerator.MoveNext())
+            {
+                *(ClrDataAddressRange*)extent = extents.Enumerator.Current;
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null && extents is { LegacyHandle: not 0 })
+        {
+            ulong legacyHandle = (ulong)extents.LegacyHandle;
+            ClrDataAddressRange extentLocal = default;
+            int hrLocal = _legacyImpl.EnumExtent(&legacyHandle, &extentLocal);
+            extents.LegacyHandle = (nuint)legacyHandle;
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                ClrDataAddressRange* result = (ClrDataAddressRange*)extent;
+                Debug.Assert(result->StartAddress == extentLocal.StartAddress, $"StartAddress - cDAC: {result->StartAddress:x}, DAC: {extentLocal.StartAddress:x}");
+                Debug.Assert(result->EndAddress == extentLocal.EndAddress, $"EndAddress - cDAC: {result->EndAddress:x}, DAC: {extentLocal.EndAddress:x}");
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.EndEnumExtents(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EndEnumExtents(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        nuint legacyHandle = 0;
+        try
+        {
+            if (handle != 0)
+            {
+                GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
+                EnumMethodExtents extents = gcHandle.Target as EnumMethodExtents ?? throw new ArgumentException(InvalidExtentHandleMessage, nameof(handle));
+                legacyHandle = extents.LegacyHandle;
+                ((IEnum<ClrDataAddressRange>)extents).Dispose();
+                gcHandle.Free();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null && legacyHandle != 0)
+        {
+            int hrLocal = _legacyImpl.EndEnumExtents((ulong)legacyHandle);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
