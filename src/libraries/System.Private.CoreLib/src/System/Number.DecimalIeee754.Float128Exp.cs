@@ -72,7 +72,58 @@ internal static partial class Number
     ];
 
     // ---- exp10 (base 10) constant table (dpml_exp_x.h) ----
-    // Deferred: the exp10/exp2 tables are ported and harness-validated in a follow-up before wiring.
+    // The exp10 polynomial approximates 10^t directly, so the reduction subtracts scale*log10(2) and the
+    // result is 10^reduced * 2^scale.
+
+    private const ulong Exp10ReciprocalHigh = 0xd49a784bcd1b8afe; // high digits of log2(10)/4
+    private const ulong Exp10Ln2High = 0x9a209a84fbcff799;        // high digits of log10(2)*2
+    private const int Exp10ReduceConstantExponent = -1;           // binary exponent of log10(2)
+    private const int Exp10Degree = 22;
+    private const int Exp10TrailingExponent = 2;
+
+    // log10(2)_lo, as an unpacked value.
+    private static Float128 Exp10Ln2Low => new Float128(UxSignBit, -66, 0xe0ed4ca7e906dd0f, 0xb2a59e75785c196c);
+
+    private static readonly Float128FixedCoefficient[] Exp10Coefficients =
+    [
+        new(0xaa326d76e12a5f3d, 0x000000000005d18c),
+        new(0xbb46d2d76a135c14, 0x000000000037bd19),
+        new(0x2188762e74d6a84b, 0x0000000001fba820),
+        new(0x10a5eebae5e25723, 0x0000000011396f18),
+        new(0xb3fcd05a246ea126, 0x000000008e20e630),
+        new(0x11f8f23a20dd37fd, 0x00000004570fb29c),
+        new(0x167b5d1d64bf3431, 0x000000200af8fbff),
+        new(0xb407c79f854435f8, 0x000000dea8177bc6),
+        new(0xaef77a1b0616e83b, 0x000005aa7a612e29),
+        new(0x119b2348d3c5fba9, 0x0000227315a5882e),
+        new(0x20d8613a1e07d507, 0x0000c27f096fc05f),
+        new(0x7f472bc73dd8f81c, 0x0003f59fabb213ac),
+        new(0x674c9f4591a76481, 0x0012ea52b2d182af),
+        new(0xc9822f93893bb4f4, 0x005225f11764f507),
+        new(0xf088ae28f92f4908, 0x014116b05fdaa5cd),
+        new(0xc160bba8aa4224b1, 0x045b937f0ccea1ac),
+        new(0xd9f3dcd36ebee310, 0x0d3f6b8423e45aeb),
+        new(0x5c6542259124b3bc, 0x22853ffa3a9aec44),
+        new(0xea51f65ed9f90d3b, 0x4af5d827f6631131),
+        new(0x6a4f9d820d46ba57, 0x82382c8ef1652304),
+        new(0x80a99ce52d65a6ec, 0xa9a92639e753443a),
+        new(0xea56d62b82d30a2c, 0x935d8dddaaa8ac16),
+        new(0x0000000000000000, 0x4000000000000000),
+    ];
+
+    // 1.0 as an unpacked value (Intel's UX_ONE).
+    private static Float128 Float128One => new Float128(0, 1, 0x8000000000000000, 0);
+
+    // ln2 as a full unpacked value, built from the exp table's high and low pieces.
+    private static Float128 Float128Ln2
+    {
+        get
+        {
+            Span<Float128> single = stackalloc Float128[1];
+            Float128AddSub(new Float128(0, 0, ExpLn2High, 0), ExpLn2Low, UxSub, single);
+            return single[0];
+        }
+    }
 
     /// <summary>
     /// Reduces <paramref name="orig"/> as <c>lnb*x = scale*ln2 + reduced</c> with <c>|reduced| &lt;=
@@ -491,5 +542,87 @@ internal static partial class Number
         Float128EvaluateExpPolynomial(reduced, ExpCoefficients, ExpDegree, ExpTrailingExponent, out Float128 result);
         result._exponent += scale;
         return result;
+    }
+
+    /// <summary>Computes <c>10^x</c> for an unpacked argument (Intel's <c>UX_EXP10</c>).</summary>
+    private static Float128 Float128Exp10(scoped in Float128 argument)
+    {
+        int scale = Float128ExpReduce(argument, out Float128 reduced, Exp10ReciprocalHigh, Exp10Ln2High, Exp10ReduceConstantExponent, Exp10Ln2Low);
+        Float128EvaluateExpPolynomial(reduced, Exp10Coefficients, Exp10Degree, Exp10TrailingExponent, out Float128 result);
+        result._exponent += scale;
+        return result;
+    }
+
+    /// <summary>
+    /// Computes <c>b^x - 1</c> for an unpacked argument (Intel's <c>UX_EXPM1</c>, generalized over the
+    /// base-b table). For small reduced arguments a direct polynomial avoids the cancellation of
+    /// <c>b^x - 1</c>; otherwise <c>b^x</c> is formed and one is subtracted.
+    /// </summary>
+    private static Float128 Float128ExpM1(scoped in Float128 argument, ulong reciprocalHigh, ulong ln2High, int reduceConstantExponent, scoped in Float128 ln2Low, ReadOnlySpan<Float128FixedCoefficient> coefficients, int degree, int trailingExponent)
+    {
+        int scale = Float128ExpReduce(argument, out Float128 reduced, reciprocalHigh, ln2High, reduceConstantExponent, ln2Low);
+        Float128 result;
+
+        if (scale == 0)
+        {
+            // |reduced| <= ln2/2: use the low degree-1 terms of the polynomial, post-multiplied by the
+            // reduced argument. This leaves the exponent low by the table's trailing exponent.
+            Float128Normalize(ref reduced);
+            long shift = -(long)(degree - 1) * reduced._exponent;
+
+            if (reduced._sign != 0)
+            {
+                Float128EvaluateNegativePolynomial(reduced, shift, coefficients, 0, degree - 1, out result);
+            }
+            else
+            {
+                Float128EvaluatePositivePolynomial(reduced, shift, coefficients, 0, degree - 1, out result);
+            }
+
+            Float128 reducedLocal = reduced;
+            Float128Multiply(ref reducedLocal, ref result, out result);
+            result._exponent += trailingExponent;
+        }
+        else
+        {
+            Float128EvaluateExpPolynomial(reduced, coefficients, degree, trailingExponent, out result);
+            result._exponent += scale;
+
+            Span<Float128> single = stackalloc Float128[1];
+            Float128AddSub(result, Float128One, UxSub | UxNoNormalization | UxMagnitudeOnly, single);
+            result = single[0];
+        }
+
+        return result;
+    }
+
+    /// <summary>Computes <c>e^x - 1</c> for an unpacked argument.</summary>
+    private static Float128 Float128ExpM1(scoped in Float128 argument) =>
+        Float128ExpM1(argument, ExpReciprocalLn2High, ExpLn2High, ExpReduceConstantExponent, ExpLn2Low, ExpCoefficients, ExpDegree, ExpTrailingExponent);
+
+    /// <summary>Computes <c>10^x - 1</c> for an unpacked argument.</summary>
+    private static Float128 Float128Exp10M1(scoped in Float128 argument) =>
+        Float128ExpM1(argument, Exp10ReciprocalHigh, Exp10Ln2High, Exp10ReduceConstantExponent, Exp10Ln2Low, Exp10Coefficients, Exp10Degree, Exp10TrailingExponent);
+
+    // Intel's software engine has no dedicated exp2 table (its decimal exp2 routes through a separate
+    // templated binary128 engine), so 2^x is evaluated as e^(x*ln2) using the exp table's own ln2. A
+    // dedicated exp2 table is a faithful-fidelity follow-up.
+
+    /// <summary>Computes <c>2^x</c> for an unpacked argument as <c>e^(x*ln2)</c>.</summary>
+    private static Float128 Float128Exp2(scoped in Float128 argument)
+    {
+        Float128 argumentLocal = argument;
+        Float128 ln2 = Float128Ln2;
+        Float128Multiply(ref argumentLocal, ref ln2, out Float128 scaled);
+        return Float128Exp(scaled);
+    }
+
+    /// <summary>Computes <c>2^x - 1</c> for an unpacked argument as <c>expm1(x*ln2)</c>.</summary>
+    private static Float128 Float128Exp2M1(scoped in Float128 argument)
+    {
+        Float128 argumentLocal = argument;
+        Float128 ln2 = Float128Ln2;
+        Float128Multiply(ref argumentLocal, ref ln2, out Float128 scaled);
+        return Float128ExpM1(scaled);
     }
 }

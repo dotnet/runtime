@@ -865,6 +865,21 @@ namespace System.Numerics
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal128 Exp(Decimal128 x) => new Decimal128(Number.ExpDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static Decimal128 Exp10(Decimal128 x) => new Decimal128(Number.Exp10DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static Decimal128 Exp10M1(Decimal128 x) => new Decimal128(Number.Exp10M1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static Decimal128 Exp2(Decimal128 x) => new Decimal128(Number.Exp2DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static Decimal128 Exp2M1(Decimal128 x) => new Decimal128(Number.Exp2M1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static Decimal128 ExpM1(Decimal128 x) => new Decimal128(Number.ExpM1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static Decimal128 FusedMultiplyAdd(Decimal128 left, Decimal128 right, Decimal128 addend) => new Decimal128(Number.FusedMultiplyAddDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower), new UInt128(addend._upper, addend._lower)));
 

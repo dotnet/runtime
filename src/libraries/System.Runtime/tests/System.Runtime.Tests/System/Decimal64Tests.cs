@@ -1732,6 +1732,131 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL)] // exp10(+0) = 1
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL)] // exp10(-0) = 1
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // exp10(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x31C0000000000000UL)] // exp10(-Infinity) = +0
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // exp10(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void Exp10Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Exp10(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void Exp10AccuracyTest(double input)
+        {
+            double expected = double.Exp10(input);
+            double actual = (double)Decimal64.Exp10((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(expected), $"exp10({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL)] // exp2(+0) = 1
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL)] // exp2(-0) = 1
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // exp2(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x31C0000000000000UL)] // exp2(-Infinity) = +0
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // exp2(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void Exp2Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Exp2(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void Exp2AccuracyTest(double input)
+        {
+            double expected = double.Exp2(input);
+            double actual = (double)Decimal64.Exp2((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(expected), $"exp2({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // expm1(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // expm1(-0) = -0 (sign preserved)
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // expm1(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0xB1C0000000000001UL)] // expm1(-Infinity) = -1
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // expm1(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void ExpM1Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.ExpM1(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void ExpM1AccuracyTest(double input)
+        {
+            double expected = double.ExpM1(input);
+            double actual = (double)Decimal64.ExpM1((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(expected), $"expm1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // exp2m1(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // exp2m1(-0) = -0 (sign preserved)
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // exp2m1(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0xB1C0000000000001UL)] // exp2m1(-Infinity) = -1
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // exp2m1(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void Exp2M1Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Exp2M1(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void Exp2M1AccuracyTest(double input)
+        {
+            double expected = double.Exp2M1(input);
+            double actual = (double)Decimal64.Exp2M1((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(expected), $"exp2m1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // exp10m1(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // exp10m1(-0) = -0 (sign preserved)
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // exp10m1(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0xB1C0000000000001UL)] // exp10m1(-Infinity) = -1
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // exp10m1(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void Exp10M1Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Exp10M1(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void Exp10M1AccuracyTest(double input)
+        {
+            double expected = double.Exp10M1(input);
+            double actual = (double)Decimal64.Exp10M1((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(expected), $"exp10m1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x31C0000000000001UL, 0x3180000000000001UL, 0x3180000000000064UL)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x31A0000000000019UL, 0x31C0000000000001UL, 0x31C0000000000002UL)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x31A0000000000023UL, 0x31C0000000000001UL, 0x31C0000000000004UL)] // quantize(3.5, 1E0) = 4 (ties to even)

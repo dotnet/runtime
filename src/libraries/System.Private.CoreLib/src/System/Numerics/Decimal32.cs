@@ -888,6 +888,21 @@ namespace System.Numerics
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal32 Exp(Decimal32 x) => new Decimal32(Number.ExpDecimalIeee754<Decimal32, uint>(x._value));
 
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static Decimal32 Exp10(Decimal32 x) => new Decimal32(Number.Exp10DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static Decimal32 Exp10M1(Decimal32 x) => new Decimal32(Number.Exp10M1DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static Decimal32 Exp2(Decimal32 x) => new Decimal32(Number.Exp2DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static Decimal32 Exp2M1(Decimal32 x) => new Decimal32(Number.Exp2M1DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static Decimal32 ExpM1(Decimal32 x) => new Decimal32(Number.ExpM1DecimalIeee754<Decimal32, uint>(x._value));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static Decimal32 FusedMultiplyAdd(Decimal32 left, Decimal32 right, Decimal32 addend) => new Decimal32(Number.FusedMultiplyAddDecimalIeee754<Decimal32, uint>(left._value, right._value, addend._value));
 

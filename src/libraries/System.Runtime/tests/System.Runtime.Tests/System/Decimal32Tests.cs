@@ -1726,6 +1726,131 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x32800000U, 0x32800001U)] // exp10(+0) = 1
+        [InlineData(0xB2800000U, 0x32800001U)] // exp10(-0) = 1
+        [InlineData(0x78000000U, 0x78000000U)] // exp10(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0x32800000U)] // exp10(-Infinity) = +0
+        [InlineData(0x7C000000U, 0x7C000000U)] // exp10(NaN) = NaN
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared
+        public static void Exp10Test(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Exp10(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void Exp10AccuracyTest(double input)
+        {
+            double expected = double.Exp10(input);
+            double actual = (double)Decimal32.Exp10((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(expected), $"exp10({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800001U)] // exp2(+0) = 1
+        [InlineData(0xB2800000U, 0x32800001U)] // exp2(-0) = 1
+        [InlineData(0x78000000U, 0x78000000U)] // exp2(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0x32800000U)] // exp2(-Infinity) = +0
+        [InlineData(0x7C000000U, 0x7C000000U)] // exp2(NaN) = NaN
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared
+        public static void Exp2Test(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Exp2(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void Exp2AccuracyTest(double input)
+        {
+            double expected = double.Exp2(input);
+            double actual = (double)Decimal32.Exp2((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(expected), $"exp2({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // expm1(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // expm1(-0) = -0 (sign preserved)
+        [InlineData(0x78000000U, 0x78000000U)] // expm1(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0xB2800001U)] // expm1(-Infinity) = -1
+        [InlineData(0x7C000000U, 0x7C000000U)] // expm1(NaN) = NaN
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared
+        public static void ExpM1Test(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.ExpM1(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void ExpM1AccuracyTest(double input)
+        {
+            double expected = double.ExpM1(input);
+            double actual = (double)Decimal32.ExpM1((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(expected), $"expm1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // exp2m1(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // exp2m1(-0) = -0 (sign preserved)
+        [InlineData(0x78000000U, 0x78000000U)] // exp2m1(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0xB2800001U)] // exp2m1(-Infinity) = -1
+        [InlineData(0x7C000000U, 0x7C000000U)] // exp2m1(NaN) = NaN
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared
+        public static void Exp2M1Test(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Exp2M1(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void Exp2M1AccuracyTest(double input)
+        {
+            double expected = double.Exp2M1(input);
+            double actual = (double)Decimal32.Exp2M1((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(expected), $"exp2m1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // exp10m1(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // exp10m1(-0) = -0 (sign preserved)
+        [InlineData(0x78000000U, 0x78000000U)] // exp10m1(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0xB2800001U)] // exp10m1(-Infinity) = -1
+        [InlineData(0x7C000000U, 0x7C000000U)] // exp10m1(NaN) = NaN
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared
+        public static void Exp10M1Test(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Exp10M1(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void Exp10M1AccuracyTest(double input)
+        {
+            double expected = double.Exp10M1(input);
+            double actual = (double)Decimal32.Exp10M1((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(expected), $"exp10m1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x32800001U, 0x31800001U, 0x31800064U)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x32000019U, 0x32800001U, 0x32800002U)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x32000023U, 0x32800001U, 0x32800004U)] // quantize(3.5, 1E0) = 4 (ties to even)

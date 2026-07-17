@@ -879,6 +879,21 @@ namespace System.Numerics
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal64 Exp(Decimal64 x) => new Decimal64(Number.ExpDecimalIeee754<Decimal64, ulong>(x._value));
 
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static Decimal64 Exp10(Decimal64 x) => new Decimal64(Number.Exp10DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static Decimal64 Exp10M1(Decimal64 x) => new Decimal64(Number.Exp10M1DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static Decimal64 Exp2(Decimal64 x) => new Decimal64(Number.Exp2DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static Decimal64 Exp2M1(Decimal64 x) => new Decimal64(Number.Exp2M1DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static Decimal64 ExpM1(Decimal64 x) => new Decimal64(Number.ExpM1DecimalIeee754<Decimal64, ulong>(x._value));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static Decimal64 FusedMultiplyAdd(Decimal64 left, Decimal64 right, Decimal64 addend) => new Decimal64(Number.FusedMultiplyAddDecimalIeee754<Decimal64, ulong>(left._value, right._value, addend._value));
 
