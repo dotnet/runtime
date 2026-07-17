@@ -9,6 +9,8 @@ public interface IStackDataFrameHandle
 {
     // Describes what the current Context/FrameIter of this handle represents.
     StackWalkState State { get; }
+    bool IsActiveFrame { get; }
+    bool IsExceptionFrame { get; }
 }
 
 public enum StackWalkState

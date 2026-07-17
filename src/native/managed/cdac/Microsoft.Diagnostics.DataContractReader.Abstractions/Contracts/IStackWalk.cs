@@ -9,6 +9,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface IStackDataFrameHandle
 {
     StackWalkState State { get; }
+    bool IsActiveFrame { get; }
+    bool IsExceptionFrame { get; }
 }
 
 public enum StackWalkState

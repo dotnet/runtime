@@ -5,9 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
+using HResults = System.HResults;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -288,5 +291,203 @@ public unsafe class StackWalkTests
 
         Assert.Equal(expectedToken, data.MethodToken);
         Assert.Equal(expectedAssembly, data.AssemblyPtr.Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ClrDataStackWalk_RuntimeFrameOperations(MockTarget.Architecture arch)
+    {
+        TestStackDataFrame initial = new(StackWalkState.InitialNativeContext);
+        TestStackDataFrame exception = new(StackWalkState.Frame, isExceptionFrame: true);
+        TestStackDataFrame managed = new(StackWalkState.Frameless, isActiveFrame: true);
+        (IXCLRDataStackWalk stackWalk, Mock<IStackWalk> contract, TestPlaceholderTarget target) =
+            CreateClrDataStackWalk(
+                arch,
+                flags: 0x8,
+                [(initial, 0x1000), (exception, 0x1100), (managed, 0x1200)]);
+
+        uint simpleType;
+        uint detailedType;
+        Assert.Equal(HResults.S_OK, stackWalk.GetFrameType(&simpleType, &detailedType));
+        Assert.Equal(0x8u, simpleType);
+        Assert.Equal(3u, detailedType);
+
+        ulong stackSizeSkipped;
+        Assert.Equal(HResults.S_OK, stackWalk.GetStackSizeSkipped(&stackSizeSkipped));
+        Assert.Equal(0x100ul, stackSizeSkipped);
+
+        IPlatformAgnosticContext expectedContext = IPlatformAgnosticContext.GetContextForPlatform(target);
+        byte[] contextBuffer = new byte[expectedContext.Size];
+        uint contextSize;
+        Assert.Equal(HResults.S_OK, stackWalk.GetContext(expectedContext.AllContextFlags, (uint)contextBuffer.Length, &contextSize, contextBuffer));
+        Assert.Equal(expectedContext.Size, contextSize);
+        expectedContext.FillFromBuffer(contextBuffer);
+        Assert.Equal(0x1100ul, expectedContext.StackPointer.Value);
+
+        byte[] smallBuffer = new byte[contextBuffer.Length - 1];
+        Assert.Equal(HResults.E_INVALIDARG, stackWalk.GetContext(expectedContext.AllContextFlags, (uint)smallBuffer.Length, &contextSize, smallBuffer));
+        Assert.Equal(expectedContext.Size, contextSize);
+
+        TargetPointer frameAddress = new(0x1234);
+        contract.Setup(s => s.GetFrameAddress(exception)).Returns(frameAddress);
+        ulong frameData;
+        Assert.Equal(HResults.S_OK, stackWalk.Request(0xf0000000, 0, null, sizeof(ulong), (byte*)&frameData));
+        Assert.Equal(frameAddress.ToClrDataAddress(target).Value, frameData);
+
+        DacComNullableByRef<IXCLRDataFrame> frame = new(isNullRef: false);
+        Assert.Equal(HResults.S_OK, stackWalk.GetFrame(frame));
+        Assert.IsType<ClrDataFrame>(frame.Interface);
+
+        Assert.Equal(HResults.S_FALSE, stackWalk.Next());
+        Assert.Equal(HResults.S_FALSE, stackWalk.GetFrameType(&simpleType, &detailedType));
+        Assert.Equal(HResults.E_INVALIDARG, stackWalk.GetFrame(frame));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ClrDataStackWalk_ManagedFilteringTracksSkippedStack(MockTarget.Architecture arch)
+    {
+        TestStackDataFrame initial = new(StackWalkState.InitialNativeContext);
+        TestStackDataFrame firstRuntime = new(StackWalkState.Frame);
+        TestStackDataFrame firstManaged = new(StackWalkState.Frameless);
+        TestStackDataFrame secondRuntime = new(StackWalkState.SkippedFrame);
+        TestStackDataFrame secondManaged = new(StackWalkState.Frameless);
+        (IXCLRDataStackWalk stackWalk, _, _) = CreateClrDataStackWalk(
+            arch,
+            flags: 0x2,
+            [
+                (initial, 0x1000),
+                (firstRuntime, 0x1100),
+                (firstManaged, 0x1300),
+                (secondRuntime, 0x1400),
+                (secondManaged, 0x1700),
+            ]);
+
+        uint simpleType;
+        uint detailedType;
+        Assert.Equal(HResults.S_OK, stackWalk.GetFrameType(&simpleType, &detailedType));
+        Assert.Equal(0x2u, simpleType);
+        Assert.Equal(0u, detailedType);
+
+        ulong stackSizeSkipped;
+        Assert.Equal(HResults.S_OK, stackWalk.GetStackSizeSkipped(&stackSizeSkipped));
+        Assert.Equal(0x300ul, stackSizeSkipped);
+
+        Assert.Equal(HResults.S_OK, stackWalk.Next());
+        Assert.Equal(HResults.S_OK, stackWalk.GetStackSizeSkipped(&stackSizeSkipped));
+        Assert.Equal(0x300ul, stackSizeSkipped);
+        Assert.Equal(HResults.S_FALSE, stackWalk.Next());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ClrDataStackWalk_SetContextAndRequests(MockTarget.Architecture arch)
+    {
+        TestStackDataFrame initial = new(StackWalkState.Frameless);
+        TestStackDataFrame reset = new(StackWalkState.Frameless);
+        List<bool> isFirstValues = [];
+        (IXCLRDataStackWalk stackWalk, _, TestPlaceholderTarget target) =
+            CreateClrDataStackWalk(
+                arch,
+                flags: 0x2,
+                [(initial, 0x1000)],
+                [(reset, 0x2000)],
+                isFirstValues);
+
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+        context.RawContextFlags = context.FullContextFlags;
+        context.StackPointer = new TargetPointer(0x2000);
+        byte[] contextBuffer = context.GetBytes();
+
+        Assert.Equal(HResults.S_OK, stackWalk.SetContext((uint)contextBuffer.Length, contextBuffer));
+        Assert.Equal([false], isFirstValues);
+
+        uint isFirst = 1;
+        Assert.Equal(HResults.S_OK, stackWalk.Request(0xe1000000, sizeof(uint), (byte*)&isFirst, 0, null));
+        Assert.Equal(HResults.S_OK, stackWalk.SetContext((uint)contextBuffer.Length, contextBuffer));
+        Assert.Equal([false, true], isFirstValues);
+
+        Assert.Equal(HResults.S_OK, stackWalk.SetContext2(0, (uint)contextBuffer.Length, contextBuffer));
+        Assert.Equal(HResults.S_OK, stackWalk.SetContext2(1, (uint)contextBuffer.Length, contextBuffer));
+        Assert.Equal([false, true, false, true], isFirstValues);
+
+        Assert.Equal(HResults.E_INVALIDARG, stackWalk.SetContext2(2, (uint)contextBuffer.Length, contextBuffer));
+        Assert.Equal(HResults.E_INVALIDARG, stackWalk.SetContext(1, contextBuffer));
+
+        uint revision;
+        Assert.Equal(HResults.S_OK, stackWalk.Request((uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION, 0, null, sizeof(uint), (byte*)&revision));
+        Assert.Equal(1u, revision);
+        Assert.Equal(HResults.E_INVALIDARG, stackWalk.Request(0, 0, null, 0, null));
+    }
+
+    private static (
+        IXCLRDataStackWalk StackWalk,
+        Mock<IStackWalk> Contract,
+        TestPlaceholderTarget Target)
+        CreateClrDataStackWalk(
+            MockTarget.Architecture arch,
+            uint flags,
+            IReadOnlyList<(TestStackDataFrame Frame, ulong StackPointer)> initialFrames,
+            IReadOnlyList<(TestStackDataFrame Frame, ulong StackPointer)>? resetFrames = null,
+            List<bool>? isFirstValues = null)
+    {
+        TargetPointer threadAddress = new(0x5000);
+        Mock<IThread> thread = new(MockBehavior.Strict);
+        thread.Setup(t => t.GetThreadData(threadAddress)).Returns(default(ThreadData));
+
+        Mock<IStackWalk> stackWalk = new(MockBehavior.Strict);
+        stackWalk.Setup(s => s.CreateStackWalk(It.IsAny<ThreadData>()))
+            .Returns(initialFrames.Select(f => (IStackDataFrameHandle)f.Frame));
+
+        Mock<IRuntimeInfo> runtimeInfo = new(MockBehavior.Strict);
+        runtimeInfo.Setup(r => r.GetTargetArchitecture())
+            .Returns(arch.Is64Bit ? RuntimeInfoArchitecture.X64 : RuntimeInfoArchitecture.X86);
+
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(thread.Object)
+            .AddMockContract(stackWalk.Object)
+            .AddMockContract(runtimeInfo.Object)
+            .Build();
+
+        Dictionary<IStackDataFrameHandle, byte[]> contexts = [];
+        AddContexts(initialFrames);
+        if (resetFrames is not null)
+        {
+            AddContexts(resetFrames);
+            stackWalk.Setup(s => s.CreateStackWalk(It.IsAny<ThreadData>(), It.IsAny<byte[]>(), It.IsAny<bool>()))
+                .Callback((ThreadData _, byte[] _, bool isFirst) => isFirstValues?.Add(isFirst))
+                .Returns(resetFrames.Select(f => (IStackDataFrameHandle)f.Frame));
+        }
+
+        stackWalk.Setup(s => s.GetRawContext(It.IsAny<IStackDataFrameHandle>(), StackwalkFlag.Default))
+            .Returns((IStackDataFrameHandle frame, StackwalkFlag _) => contexts[frame]);
+
+        return (new ClrDataStackWalk(threadAddress, flags, target, legacyImpl: null), stackWalk, target);
+
+        void AddContexts(IReadOnlyList<(TestStackDataFrame Frame, ulong StackPointer)> frames)
+        {
+            foreach ((TestStackDataFrame frame, ulong stackPointer) in frames)
+            {
+                IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(target);
+                context.RawContextFlags = context.FullContextFlags;
+                context.StackPointer = new TargetPointer(stackPointer);
+                context.InstructionPointer = new TargetCodePointer(0x7000);
+                contexts.Add(frame, context.GetBytes());
+            }
+        }
+    }
+
+    private sealed class TestStackDataFrame : IStackDataFrameHandle
+    {
+        public TestStackDataFrame(StackWalkState state, bool isActiveFrame = false, bool isExceptionFrame = false)
+        {
+            State = state;
+            IsActiveFrame = isActiveFrame;
+            IsExceptionFrame = isExceptionFrame;
+        }
+
+        public StackWalkState State { get; }
+        public bool IsActiveFrame { get; }
+        public bool IsExceptionFrame { get; }
     }
 }
