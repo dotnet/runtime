@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
@@ -129,14 +130,12 @@ internal static partial class Interop
                 out isNtlmUsed);
         }
 
-        internal static Status InitSecContext(
+        internal static unsafe Status InitSecContext(
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
             PackageType packageType,
             ChannelBinding channelBinding,
-            int cbtAppDataOffset,
-            int cbtAppDataSize,
             SafeGssNameHandle? targetName,
             uint reqFlags,
             ReadOnlySpan<byte> inputBytes,
@@ -144,6 +143,19 @@ internal static partial class Interop
             out uint retFlags,
             out bool isNtlmUsed)
         {
+            // Skip the SecChannelBindings header to get to the application-specific data.
+            int cbtAppDataOffset = sizeof(SecChannelBindings);
+            Debug.Assert(cbtAppDataOffset < channelBinding.Size);
+            int cbtAppDataSize = channelBinding.Size - cbtAppDataOffset;
+            if (cbtAppDataSize < 0)
+            {
+                // Malformed channel binding; fail rather than passing a negative size to interop.
+                minorStatus = Status.GSS_S_COMPLETE;
+                retFlags = 0;
+                isNtlmUsed = false;
+                return Status.GSS_S_BAD_BINDINGS;
+            }
+
             // Ref-count the channel binding handle so it cannot be released while the native
             // call, which receives a raw pointer into the application-specific data, is in flight.
             bool refAdded = false;
@@ -188,13 +200,11 @@ internal static partial class Interop
             out uint retFlags,
             [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
 
-        internal static Status AcceptSecContext(
+        internal static unsafe Status AcceptSecContext(
             out Status minorStatus,
             SafeGssCredHandle acceptorCredHandle,
             ref SafeGssContextHandle acceptContextHandle,
             ChannelBinding? channelBinding,
-            int cbtAppDataOffset,
-            int cbtAppDataSize,
             ReadOnlySpan<byte> inputBytes,
             ref GssBuffer token,
             out uint retFlags,
@@ -213,6 +223,19 @@ internal static partial class Interop
                     ref token,
                     out retFlags,
                     out isNtlmUsed);
+            }
+
+            // Skip the SecChannelBindings header to get to the application-specific data.
+            int cbtAppDataOffset = sizeof(SecChannelBindings);
+            Debug.Assert(cbtAppDataOffset < channelBinding.Size);
+            int cbtAppDataSize = channelBinding.Size - cbtAppDataOffset;
+            if (cbtAppDataSize < 0)
+            {
+                // Malformed channel binding; fail rather than passing a negative size to interop.
+                minorStatus = Status.GSS_S_COMPLETE;
+                retFlags = 0;
+                isNtlmUsed = false;
+                return Status.GSS_S_BAD_BINDINGS;
             }
 
             // Ref-count the channel binding handle so it cannot be released while the native

@@ -539,7 +539,7 @@ namespace System.Net
                 }
             }
 
-            private unsafe NegotiateAuthenticationStatusCode InitializeSecurityContext(
+            private NegotiateAuthenticationStatusCode InitializeSecurityContext(
                 ref SafeGssCredHandle credentialsHandle,
                 ref SafeGssContextHandle? contextHandle,
                 ref SafeGssNameHandle? targetNameHandle,
@@ -581,26 +581,11 @@ namespace System.Net
 
                     if (channelBinding != null)
                     {
-                        // If a TLS channel binding token (cbt) is available then pass the whole
-                        // binding along with the offset and length of the application-specific
-                        // data. The interop wrapper ref-counts the SafeHandle around the native
-                        // call so it cannot be released while the raw pointer is in use.
-                        int appDataOffset = sizeof(SecChannelBindings);
-                        Debug.Assert(appDataOffset < channelBinding.Size);
-                        if (channelBinding.Size < appDataOffset)
-                        {
-                            // Malformed channel binding; fail rather than passing a negative size to interop.
-                            return NegotiateAuthenticationStatusCode.BadBinding;
-                        }
-
-                        int cbtAppDataSize = channelBinding.Size - appDataOffset;
                         status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
                                                                         credentialsHandle,
                                                                         ref contextHandle,
                                                                         _packageType,
                                                                         channelBinding,
-                                                                        appDataOffset,
-                                                                        cbtAppDataSize,
                                                                         targetNameHandle,
                                                                         (uint)requestedContextFlags,
                                                                         incomingBlob,
@@ -674,7 +659,7 @@ namespace System.Net
                 }
             }
 
-            private unsafe NegotiateAuthenticationStatusCode AcceptSecurityContext(
+            private NegotiateAuthenticationStatusCode AcceptSecurityContext(
                 SafeGssCredHandle credentialsHandle,
                 ref SafeGssContextHandle? contextHandle,
                 ReadOnlySpan<byte> incomingBlob,
@@ -693,46 +678,14 @@ namespace System.Net
                     uint outputFlags;
                     bool isNtlmUsed;
 
-                    if (channelBinding != null)
-                    {
-                        // If a TLS channel binding token (cbt) is available then pass the whole
-                        // binding along with the offset and length of the application-specific
-                        // data. The interop wrapper ref-counts the SafeHandle around the native
-                        // call so it cannot be released while the raw pointer is in use.
-                        int appDataOffset = sizeof(SecChannelBindings);
-                        Debug.Assert(appDataOffset < channelBinding.Size);
-                        if (channelBinding.Size < appDataOffset)
-                        {
-                            // Malformed channel binding; fail rather than passing a negative size to interop.
-                            resultBlobLength = 0;
-                            return NegotiateAuthenticationStatusCode.BadBinding;
-                        }
-
-                        int cbtAppDataSize = channelBinding.Size - appDataOffset;
-                        status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
-                                                                            credentialsHandle,
-                                                                            ref contextHandle,
-                                                                            channelBinding,
-                                                                            appDataOffset,
-                                                                            cbtAppDataSize,
-                                                                            incomingBlob,
-                                                                            ref token,
-                                                                            out outputFlags,
-                                                                            out isNtlmUsed);
-                    }
-                    else
-                    {
-                        status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
-                                                                            credentialsHandle,
-                                                                            ref contextHandle,
-                                                                            null,
-                                                                            0,
-                                                                            0,
-                                                                            incomingBlob,
-                                                                            ref token,
-                                                                            out outputFlags,
-                                                                            out isNtlmUsed);
-                    }
+                    status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
+                                                                        credentialsHandle,
+                                                                        ref contextHandle,
+                                                                        channelBinding,
+                                                                        incomingBlob,
+                                                                        ref token,
+                                                                        out outputFlags,
+                                                                        out isNtlmUsed);
 
                     if ((status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE) &&
                         (status != Interop.NetSecurityNative.Status.GSS_S_CONTINUE_NEEDED))
