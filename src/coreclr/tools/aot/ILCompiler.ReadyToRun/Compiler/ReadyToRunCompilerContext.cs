@@ -111,13 +111,6 @@ namespace ILCompiler
             }
         }
 
-        /// <summary>
-        /// Returns true for targets that cannot generate code at runtime, meaning neither the JIT
-        /// nor the interpreter can produce code for hardware intrinsics that are not selected at
-        /// compile time. On such targets the set of usable instruction sets is fixed during crossgen2
-        /// compilation. When runtime code generation is otherwise available, this is the inverse of
-        /// <see cref="TargetAllowsRuntimeCodeGeneration"/>.
-        /// </summary>
         public static bool IsFixedInstructionSetTarget(TargetOS operatingSystem, TargetArchitecture architecture)
         {
             return operatingSystem is TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator
