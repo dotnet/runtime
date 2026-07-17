@@ -72,7 +72,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null
+            ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts)
+            : HResults.S_OK;
 
     public int IsLeftSideInitialized(Interop.BOOL* pResult)
     {
