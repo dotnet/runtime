@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
@@ -1555,6 +1556,16 @@ namespace System.Tests
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64Modulus), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void op_Modulus_IntelReferenceVectors(ulong left, ulong right, ulong expected)
+        {
+            Decimal64 l = Unsafe.BitCast<ulong, Decimal64>(left);
+            Decimal64 r = Unsafe.BitCast<ulong, Decimal64>(right);
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(l % r));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64Comparison), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void op_Comparison_IntelReferenceVectors(string operation, ulong left, ulong right, bool expected)
         {
@@ -1585,6 +1596,26 @@ namespace System.Tests
             {
                 "abs" => Decimal64.Abs(v),
                 "negate" => -v,
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64RoundIntegral), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void RoundIntegral_IntelReferenceVectors(string operation, ulong value, ulong expected)
+        {
+            Decimal64 v = Unsafe.BitCast<ulong, Decimal64>(value);
+
+            Decimal64 result = operation switch
+            {
+                "round_integral_exact" => Decimal64.Round(v, 0, MidpointRounding.ToEven),
+                "round_integral_nearest_even" => Decimal64.Round(v, 0, MidpointRounding.ToEven),
+                "round_integral_nearest_away" => Decimal64.Round(v, 0, MidpointRounding.AwayFromZero),
+                "round_integral_negative" => Decimal64.Floor(v),
+                "round_integral_positive" => Decimal64.Ceiling(v),
+                "round_integral_zero" => Decimal64.Truncate(v),
                 _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
             };
 
@@ -2018,6 +2049,8 @@ namespace System.Tests
             yield return new object[] { 0x31C0000000000003UL, 0x7C00000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0xB1C0000000000005UL, 0x7800000000000000UL, 0x7800000000000000UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x7C00000000001234UL }; // non-canonical NaN operand is canonicalized
+            yield return new object[] { 0x31C0000000000005UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL }; // non-canonical NaN operand is canonicalized
         }
 
         [Theory]
@@ -2043,6 +2076,8 @@ namespace System.Tests
             yield return new object[] { 0x31C0000000000003UL, 0x7C00000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0xB1C0000000000005UL, 0x7800000000000000UL, 0xB1C0000000000005UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x7C00000000001234UL }; // non-canonical NaN operand is canonicalized
+            yield return new object[] { 0x31C0000000000005UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL }; // non-canonical NaN operand is canonicalized
         }
 
         [Theory]
@@ -2068,6 +2103,8 @@ namespace System.Tests
             yield return new object[] { 0x31C0000000000003UL, 0x7C00000000000000UL, 0x31C0000000000003UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0xF800000000000000UL };
             yield return new object[] { 0xB1C0000000000005UL, 0x7800000000000000UL, 0x7800000000000000UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x31C0000000000005UL }; // non-canonical NaN dropped in favor of the number
+            yield return new object[] { 0x7E00000000001234UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000001234UL }; // both NaN -> first operand canonicalized
         }
 
         [Theory]
@@ -2093,6 +2130,8 @@ namespace System.Tests
             yield return new object[] { 0x31C0000000000003UL, 0x7C00000000000000UL, 0x31C0000000000003UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0xF800000000000000UL };
             yield return new object[] { 0xB1C0000000000005UL, 0x7800000000000000UL, 0xB1C0000000000005UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x31C0000000000005UL }; // non-canonical NaN dropped in favor of the number
+            yield return new object[] { 0x7E00000000001234UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000001234UL }; // both NaN -> first operand canonicalized
         }
 
         [Theory]
@@ -2147,6 +2186,8 @@ namespace System.Tests
             yield return new object[] { 0xF800000000000000UL, 0x7800000000000000UL, 0x7800000000000000UL };
             yield return new object[] { 0x7800000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0x7C00000000000000UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x7C00000000001234UL }; // non-canonical NaN operand is canonicalized
+            yield return new object[] { 0x31C0000000000005UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL }; // non-canonical NaN operand is canonicalized
         }
 
         [Theory]
@@ -2182,6 +2223,8 @@ namespace System.Tests
             yield return new object[] { 0xF800000000000000UL, 0x7800000000000000UL, 0xF800000000000000UL };
             yield return new object[] { 0x7800000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0x7C00000000000000UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x7C00000000001234UL }; // non-canonical NaN operand is canonicalized
+            yield return new object[] { 0x31C0000000000005UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL }; // non-canonical NaN operand is canonicalized
         }
 
         [Theory]
@@ -2217,6 +2260,8 @@ namespace System.Tests
             yield return new object[] { 0xF800000000000000UL, 0x7800000000000000UL, 0x7800000000000000UL };
             yield return new object[] { 0x7800000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0xF800000000000000UL };
+            yield return new object[] { 0x31C0000000000005UL, 0x7E00000000001234UL, 0x7C00000000001234UL }; // NaN operand wins and is canonicalized
+            yield return new object[] { 0x7E00000000001234UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL }; // both NaN -> second operand canonicalized
         }
 
         [Theory]
@@ -2252,6 +2297,8 @@ namespace System.Tests
             yield return new object[] { 0xF800000000000000UL, 0x7800000000000000UL, 0xF800000000000000UL };
             yield return new object[] { 0x7800000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0xF800000000000000UL };
+            yield return new object[] { 0x31C0000000000005UL, 0x7E00000000001234UL, 0x7C00000000001234UL }; // NaN operand wins and is canonicalized
+            yield return new object[] { 0x7E00000000001234UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000000000UL }; // both NaN -> second operand canonicalized
         }
 
         [Theory]
@@ -2287,6 +2334,8 @@ namespace System.Tests
             yield return new object[] { 0xF800000000000000UL, 0x7800000000000000UL, 0x7800000000000000UL };
             yield return new object[] { 0x7800000000000000UL, 0x7C00000000000000UL, 0x7800000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0xF800000000000000UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x31C0000000000005UL }; // non-canonical NaN dropped in favor of the number
+            yield return new object[] { 0x7E00000000001234UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000001234UL }; // both NaN -> first operand canonicalized
         }
 
         [Theory]
@@ -2322,6 +2371,8 @@ namespace System.Tests
             yield return new object[] { 0xF800000000000000UL, 0x7800000000000000UL, 0xF800000000000000UL };
             yield return new object[] { 0x7800000000000000UL, 0x7C00000000000000UL, 0x7800000000000000UL };
             yield return new object[] { 0x7C00000000000000UL, 0xF800000000000000UL, 0xF800000000000000UL };
+            yield return new object[] { 0x7E00000000001234UL, 0x31C0000000000005UL, 0x31C0000000000005UL }; // non-canonical NaN dropped in favor of the number
+            yield return new object[] { 0x7E00000000001234UL, 0x7C03FFFFFFFFFFFFUL, 0x7C00000000001234UL }; // both NaN -> first operand canonicalized
         }
 
         [Theory]
@@ -2537,5 +2588,179 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => decimal.CreateChecked(Decimal64.MaxValue));
             Assert.Throws<OverflowException>(() => decimal.CreateChecked(Decimal64.NaN));
         }
+
+        public static IEnumerable<object[]> op_Modulus_TestData()
+        {
+            yield return new object[] { 0x41A00000002DEBDBUL, 0x17C0000000000000UL, 0x7C00000000000000UL };
+            yield return new object[] { 0xCA2000000000004FUL, 0x7800000000000000UL, 0xCA2000000000004FUL };
+            yield return new object[] { 0xB6600000004150C1UL, 0xBCC0000000002448UL, 0xB6600000004150C1UL };
+            yield return new object[] { 0x7800000000000000UL, 0xB1E00000000019C3UL, 0x7C00000000000000UL };
+            yield return new object[] { 0x4960000000000000UL, 0x0DC0000000000024UL, 0x0DC0000000000000UL };
+            yield return new object[] { 0x10EE600FD19029CBUL, 0xA6A000000094E674UL, 0x10EE600FD19029CBUL };
+            yield return new object[] { 0x85CF1FFC772F327BUL, 0xBBA00000268EDEFFUL, 0x85CF1FFC772F327BUL };
+            yield return new object[] { 0x48A0000000060DE1UL, 0xB5E01EFC5808BE55UL, 0x35E00BCDA6CEDA71UL };
+            yield return new object[] { 0x2D80000000000012UL, 0xD6600000007B80C8UL, 0x2D80000000000012UL };
+            yield return new object[] { 0xAFE0000000000000UL, 0x36E0000000000019UL, 0xAFE0000000000000UL };
+            yield return new object[] { 0x33227424D5C43DDEUL, 0xCDE0029AD1B2EAB5UL, 0x33227424D5C43DDEUL };
+            yield return new object[] { 0x81A0000000000000UL, 0xDFFE6402B104AB83UL, 0x81A0000000000000UL };
+            yield return new object[] { 0xF800000000000000UL, 0xFC00000000000000UL, 0xFC00000000000000UL };
+            yield return new object[] { 0x8A20000000001260UL, 0x18641BBD81D53E7DUL, 0x8A20000000001260UL };
+            yield return new object[] { 0x8D000000000D7F91UL, 0xB960000141EB09DAUL, 0x8D000000000D7F91UL };
+            yield return new object[] { 0xE6C19C4850147174UL, 0xB3000000000026E1UL, 0xE6C19C4850147174UL };
+            yield return new object[] { 0xC2C000000000003AUL, 0x5FE003C84E63DFC8UL, 0xC2C000000000003AUL };
+            yield return new object[] { 0x38C02B1AFA429C27UL, 0x5F800000000038C0UL, 0x38C02B1AFA429C27UL };
+            yield return new object[] { 0xBA4000E2D684A0C5UL, 0xCFDEA1F334F310E9UL, 0xBA4000E2D684A0C5UL };
+            yield return new object[] { 0x2900000000000000UL, 0x222000040FAA1C34UL, 0x2220000000000000UL };
+            yield return new object[] { 0x1D400000006FF219UL, 0x52C00739A4B8C5B2UL, 0x1D400000006FF219UL };
+            yield return new object[] { 0xA620000000046867UL, 0xD100000000000004UL, 0xA620000000046867UL };
+            yield return new object[] { 0xD5A005E5E3DDA2EDUL, 0xFC00000000000000UL, 0xFC00000000000000UL };
+            yield return new object[] { 0xA3400014152667BAUL, 0xCCE0000000000000UL, 0x7C00000000000000UL };
+            yield return new object[] { 0x4140000000000000UL, 0x42C000000000001CUL, 0x4140000000000000UL };
+            yield return new object[] { 0x07C0047B67EC371CUL, 0x2520000000000000UL, 0x7C00000000000000UL };
+            yield return new object[] { 0x8EE2BC0886D8B658UL, 0x9E00000000000000UL, 0x7C00000000000000UL };
+            yield return new object[] { 0x15A0000000000007UL, 0x80E0000000002291UL, 0x00E0000000000E1AUL };
+            yield return new object[] { 0xC7E0000000000E7CUL, 0x54800000030D836EUL, 0xC7E0000000000E7CUL };
+            yield return new object[] { 0x4BE031B4C864F3BEUL, 0xC920000000000007UL, 0x4920000000000000UL };
+            yield return new object[] { 0x2BA0009305476749UL, 0x1800000000000294UL, 0x180000000000003CUL };
+            yield return new object[] { 0xCB00207A9585137BUL, 0x95C0000000000000UL, 0x7C00000000000000UL };
+            yield return new object[] { 0x9920000000000B0EUL, 0x1C40000003C50B28UL, 0x9920000000000B0EUL };
+            yield return new object[] { 0x91A0000000000002UL, 0x524000000000003EUL, 0x91A0000000000002UL };
+            yield return new object[] { 0x0100000000275140UL, 0xB2A008E9FA40DF3FUL, 0x0100000000275140UL };
+            yield return new object[] { 0xBBE00002515A612BUL, 0xAFC0000000000351UL, 0xAFC000000000022CUL };
+            yield return new object[] { 0x16E0000000000000UL, 0xAA800004CECAD583UL, 0x16E0000000000000UL };
+            yield return new object[] { 0xD5400522C65A0499UL, 0x2CC0000000000017UL, 0xACC000000000000DUL };
+            yield return new object[] { 0x0680000000000000UL, 0xEDE9769371960A39UL, 0x0680000000000000UL };
+            yield return new object[] { 0x4580000000000000UL, 0x45600000000006C2UL, 0x4560000000000000UL };
+        }
+
+        [Theory]
+        [MemberData(nameof(op_Modulus_TestData))]
+        public static void op_Modulus(ulong left, ulong right, ulong expected)
+        {
+            Decimal64 result = Unsafe.BitCast<ulong, Decimal64>(left) % Unsafe.BitCast<ulong, Decimal64>(right);
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
+        }
+
+        public static IEnumerable<object[]> RoundToDigits_TestData()
+        {
+            yield return new object[] { 0xFC00000000000000UL, 0, MidpointRounding.ToEven, 0xFC00000000000000UL }; // canonical NaN passes through
+            yield return new object[] { 0x7E00000000001234UL, 0, MidpointRounding.ToEven, 0x7C00000000001234UL }; // signaling NaN -> quiet NaN (payload preserved)
+            yield return new object[] { 0x7C03FFFFFFFFFFFFUL, 3, MidpointRounding.ToZero, 0x7C00000000000000UL }; // out-of-range NaN payload cleared
+            yield return new object[] { 0xFE00000000000000UL, 2, MidpointRounding.ToNegativeInfinity, 0xFC00000000000000UL }; // negative signaling NaN -> quiet NaN (sign preserved)
+            yield return new object[] { 0x7800000000000000UL, 3, MidpointRounding.AwayFromZero, 0x7800000000000000UL }; // +Inf passes through
+            yield return new object[] { 0xF800000000000000UL, 2, MidpointRounding.ToPositiveInfinity, 0xF800000000000000UL }; // -Inf passes through
+            yield return new object[] { 0x31A0000000000019UL, 0, MidpointRounding.ToEven, 0x31C0000000000002UL }; // 2.5 -> 2 (ToEven)
+            yield return new object[] { 0x31A0000000000019UL, 0, MidpointRounding.AwayFromZero, 0x31C0000000000003UL }; // 2.5 -> 3 (AwayFromZero)
+            yield return new object[] { 0x31A0000000000023UL, 0, MidpointRounding.ToEven, 0x31C0000000000004UL }; // 3.5 -> 4 (ToEven)
+            yield return new object[] { 0x31A0000000000005UL, 0, MidpointRounding.ToEven, 0x31C0000000000000UL }; // 0.5 -> 0 (ToEven)
+            yield return new object[] { 0x31A0000000000005UL, 0, MidpointRounding.ToPositiveInfinity, 0x31C0000000000001UL }; // 0.5 -> 1 (ToPositiveInfinity)
+            yield return new object[] { 0xB1A0000000000005UL, 0, MidpointRounding.ToNegativeInfinity, 0xB1C0000000000001UL }; // -0.5 -> -1 (ToNegativeInfinity)
+            yield return new object[] { 0xB180000000000019UL, 0, MidpointRounding.ToPositiveInfinity, 0xB1C0000000000000UL }; // -0.25 -> -0 (ToPositiveInfinity)
+            yield return new object[] { 0xB180000000000019UL, 0, MidpointRounding.ToNegativeInfinity, 0xB1C0000000000001UL }; // -0.25 -> -1 (ToNegativeInfinity)
+            yield return new object[] { 0x3180000000000019UL, 0, MidpointRounding.ToZero, 0x31C0000000000000UL }; // 0.25 -> 0 (ToZero)
+            yield return new object[] { 0x31A0000000000005UL, 5, MidpointRounding.ToEven, 0x31A0000000000005UL }; // already finer than target, no-op
+            yield return new object[] { 0xB1A0000000000000UL, 0, MidpointRounding.ToNegativeInfinity, 0xB1C0000000000000UL }; // -0 stays -0 (ToNegativeInfinity)
+            yield return new object[] { 0x316000000001E240UL, 2, MidpointRounding.ToEven, 0x318000000000303AUL }; // 123.456 -> 123.46 (ToEven)
+            yield return new object[] { 0x5164296458D07D2CUL, 4, MidpointRounding.ToZero, 0x5164296458D07D2CUL };
+            yield return new object[] { 0x3840000000000000UL, 5, MidpointRounding.ToPositiveInfinity, 0x3840000000000000UL };
+            yield return new object[] { 0xFC00000000000000UL, 12, MidpointRounding.ToNegativeInfinity, 0xFC00000000000000UL };
+            yield return new object[] { 0xC820008FE40A9785UL, 11, MidpointRounding.ToZero, 0xC820008FE40A9785UL };
+            yield return new object[] { 0x9640000000000000UL, 0, MidpointRounding.ToZero, 0xB1C0000000000000UL };
+            yield return new object[] { 0xF800000000000000UL, 2, MidpointRounding.AwayFromZero, 0xF800000000000000UL };
+            yield return new object[] { 0xD2200012C6ADE789UL, 15, MidpointRounding.AwayFromZero, 0xD2200012C6ADE789UL };
+            yield return new object[] { 0xD4C0000000097DE0UL, 16, MidpointRounding.ToPositiveInfinity, 0xD4C0000000097DE0UL };
+            yield return new object[] { 0x37C002682D7CA496UL, 9, MidpointRounding.ToZero, 0x37C002682D7CA496UL };
+            yield return new object[] { 0xF800000000000000UL, 12, MidpointRounding.AwayFromZero, 0xF800000000000000UL };
+            yield return new object[] { 0x3B0000002F8737D0UL, 5, MidpointRounding.ToZero, 0x3B0000002F8737D0UL };
+            yield return new object[] { 0x7800000000000000UL, 12, MidpointRounding.ToZero, 0x7800000000000000UL };
+            yield return new object[] { 0xA1A00000000BA750UL, 15, MidpointRounding.ToZero, 0xAFE0000000000000UL };
+            yield return new object[] { 0xA380118354CB3560UL, 6, MidpointRounding.ToPositiveInfinity, 0xB100000000000000UL };
+            yield return new object[] { 0x51C000118D08CAA9UL, 7, MidpointRounding.ToZero, 0x51C000118D08CAA9UL };
+            yield return new object[] { 0x0EE00000000923B9UL, 15, MidpointRounding.ToPositiveInfinity, 0x2FE0000000000001UL };
+            yield return new object[] { 0x99C0000000000105UL, 18, MidpointRounding.ToPositiveInfinity, 0xAF80000000000000UL };
+            yield return new object[] { 0x13A0000000A6B74AUL, 16, MidpointRounding.ToEven, 0x2FC0000000000000UL };
+            yield return new object[] { 0x4D200010544A7EF9UL, 6, MidpointRounding.ToZero, 0x4D200010544A7EF9UL };
+            yield return new object[] { 0xAFE129C247897D17UL, 15, MidpointRounding.ToZero, 0xAFE129C247897D17UL };
+            yield return new object[] { 0x39E0000018DBDAC4UL, 18, MidpointRounding.ToZero, 0x39E0000018DBDAC4UL };
+            yield return new object[] { 0x1CE0466A2E2FA67DUL, 1, MidpointRounding.ToEven, 0x31A0000000000000UL };
+            yield return new object[] { 0xD6A000000005F3B6UL, 9, MidpointRounding.AwayFromZero, 0xD6A000000005F3B6UL };
+            yield return new object[] { 0x5980000001992B99UL, 9, MidpointRounding.ToNegativeInfinity, 0x5980000001992B99UL };
+            yield return new object[] { 0x98801012060B07C9UL, 7, MidpointRounding.ToNegativeInfinity, 0xB0E0000000000001UL };
+            yield return new object[] { 0xDFE00000330EA053UL, 1, MidpointRounding.ToPositiveInfinity, 0xDFE00000330EA053UL };
+            yield return new object[] { 0x5800000000000000UL, 15, MidpointRounding.ToNegativeInfinity, 0x5800000000000000UL };
+            yield return new object[] { 0xA1C0000000000000UL, 9, MidpointRounding.ToNegativeInfinity, 0xB0A0000000000000UL };
+            yield return new object[] { 0x31A000F013649DACUL, 10, MidpointRounding.ToZero, 0x31A000F013649DACUL };
+            yield return new object[] { 0x59000039FBCD6B26UL, 11, MidpointRounding.ToPositiveInfinity, 0x59000039FBCD6B26UL };
+            yield return new object[] { 0xDF200000000000BFUL, 5, MidpointRounding.ToZero, 0xDF200000000000BFUL };
+            yield return new object[] { 0xB8600323BC8172A8UL, 11, MidpointRounding.ToZero, 0xB8600323BC8172A8UL };
+            yield return new object[] { 0x0E633EA0E618A8C5UL, 1, MidpointRounding.ToZero, 0x31A0000000000000UL };
+            yield return new object[] { 0xDF00007875FC51AAUL, 5, MidpointRounding.AwayFromZero, 0xDF00007875FC51AAUL };
+            yield return new object[] { 0xBF200000033876D7UL, 5, MidpointRounding.ToPositiveInfinity, 0xBF200000033876D7UL };
+            yield return new object[] { 0x8A6000000000282FUL, 13, MidpointRounding.ToZero, 0xB020000000000000UL };
+            yield return new object[] { 0x0FA022B13F5EAC78UL, 0, MidpointRounding.ToPositiveInfinity, 0x31C0000000000001UL };
+            yield return new object[] { 0xC840000000000000UL, 18, MidpointRounding.ToPositiveInfinity, 0xC840000000000000UL };
+            yield return new object[] { 0x00C00006906B8E09UL, 0, MidpointRounding.ToNegativeInfinity, 0x31C0000000000000UL };
+            yield return new object[] { 0x3500000000574DB9UL, 5, MidpointRounding.ToEven, 0x3500000000574DB9UL };
+        }
+
+        [Theory]
+        [MemberData(nameof(RoundToDigits_TestData))]
+        public static void RoundToDigits(ulong value, int digits, MidpointRounding mode, ulong expected)
+        {
+            Decimal64 result = Decimal64.Round(Unsafe.BitCast<ulong, Decimal64>(value), digits, mode);
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
+        }
+
+        [Fact]
+        public static void RoundConvenienceOverloads()
+        {
+            Decimal64 x = Unsafe.BitCast<ulong, Decimal64>(0x31A0000000000019UL); // 2.5
+
+            Assert.Equal(Decimal64.Round(x, 0, MidpointRounding.ToPositiveInfinity), Decimal64.Ceiling(x));
+            Assert.Equal(Decimal64.Round(x, 0, MidpointRounding.ToNegativeInfinity), Decimal64.Floor(x));
+            Assert.Equal(Decimal64.Round(x, 0, MidpointRounding.ToZero), Decimal64.Truncate(x));
+            Assert.Equal(Decimal64.Round(x, 0, MidpointRounding.ToEven), Decimal64.Round(x));
+            Assert.Equal(Decimal64.Round(x, 0, MidpointRounding.AwayFromZero), Decimal64.Round(x, MidpointRounding.AwayFromZero));
+            Assert.Equal(Decimal64.Round(x, 2, MidpointRounding.ToEven), Decimal64.Round(x, 2));
+        }
+
+        [Fact]
+        public static void IFloatingPoint_ExponentAndSignificand()
+        {
+            IFloatingPoint<Decimal64> value = Unsafe.BitCast<ulong, Decimal64>(0x3180000000003039UL); // 123.45
+
+            Assert.Equal(sizeof(int), value.GetExponentByteCount());
+            Assert.Equal(sizeof(ulong), value.GetSignificandByteCount());
+
+            Span<byte> exponent = stackalloc byte[value.GetExponentByteCount()];
+            Assert.True(value.TryWriteExponentLittleEndian(exponent, out int exponentWritten));
+            Assert.Equal(sizeof(int), exponentWritten);
+            Assert.Equal(-2, BinaryPrimitives.ReadInt32LittleEndian(exponent));
+
+            Span<byte> significand = stackalloc byte[value.GetSignificandByteCount()];
+            Assert.True(value.TryWriteSignificandLittleEndian(significand, out int significandWritten));
+            Assert.Equal(sizeof(ulong), significandWritten);
+            Assert.Equal(12345ul, BinaryPrimitives.ReadUInt64LittleEndian(significand));
+
+            Assert.Equal(2, value.GetExponentShortestBitLength());
+            Assert.Equal(54, value.GetSignificandBitLength());
+
+            Span<byte> exponentBigEndian = stackalloc byte[value.GetExponentByteCount()];
+            Assert.True(value.TryWriteExponentBigEndian(exponentBigEndian, out exponentWritten));
+            Assert.Equal(sizeof(int), exponentWritten);
+            Assert.Equal(-2, BinaryPrimitives.ReadInt32BigEndian(exponentBigEndian));
+
+            Span<byte> significandBigEndian = stackalloc byte[value.GetSignificandByteCount()];
+            Assert.True(value.TryWriteSignificandBigEndian(significandBigEndian, out significandWritten));
+            Assert.Equal(sizeof(ulong), significandWritten);
+            Assert.Equal(12345ul, BinaryPrimitives.ReadUInt64BigEndian(significandBigEndian));
+
+            // A non-negative exponent exercises the other GetExponentShortestBitLength branch.
+            IFloatingPoint<Decimal64> integer = Unsafe.BitCast<ulong, Decimal64>(0x31C0000000003039UL); // 12345
+            Assert.Equal(0, integer.GetExponentShortestBitLength());
+
+            Assert.Equal(123, Decimal64.ConvertToInteger<int>(Unsafe.BitCast<ulong, Decimal64>(0x3180000000003039UL)));
+        }
+
     }
 }

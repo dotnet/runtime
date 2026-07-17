@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -12,7 +13,7 @@ namespace System.Numerics
         : IComparable,
           IComparable<Decimal128>,
           IEquatable<Decimal128>,
-          INumberBase<Decimal128>,
+          IFloatingPoint<Decimal128>,
           ISpanFormattable,
           ISpanParsable<Decimal128>,
           IMinMaxValue<Decimal128>,
@@ -335,6 +336,16 @@ namespace System.Numerics
         public static Decimal128 operator /(Decimal128 left, Decimal128 right)
         {
             UInt128 result = Number.DivideDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+            return new Decimal128(result);
+        }
+
+        /// <summary>Divides two values together to compute their remainder.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <returns>The remainder of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        public static Decimal128 operator %(Decimal128 left, Decimal128 right)
+        {
+            UInt128 result = Number.RemainderDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
             return new Decimal128(result);
         }
 
@@ -731,6 +742,115 @@ namespace System.Numerics
 
         /// <summary>Gets the mathematical constant <c>tau</c>.</summary>
         public static Decimal128 Tau => new Decimal128(TauValue);
+
+        //
+        // IFloatingPoint
+        //
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        public static Decimal128 Ceiling(Decimal128 x) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), 0, MidpointRounding.ToPositiveInfinity));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(Decimal128 value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(Decimal128 value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        public static Decimal128 Floor(Decimal128 x) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), 0, MidpointRounding.ToNegativeInfinity));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        public static Decimal128 Round(Decimal128 x) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), 0, MidpointRounding.ToEven));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
+        public static Decimal128 Round(Decimal128 x, int digits) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), digits, MidpointRounding.ToEven));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, MidpointRounding)" />
+        public static Decimal128 Round(Decimal128 x, MidpointRounding mode) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), 0, mode));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int, MidpointRounding)" />
+        public static Decimal128 Round(Decimal128 x, int digits, MidpointRounding mode) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), digits, mode));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        public static Decimal128 Truncate(Decimal128 x) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), 0, MidpointRounding.ToZero));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<Decimal128>.GetExponentByteCount() => sizeof(int);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        int IFloatingPoint<Decimal128>.GetExponentShortestBitLength()
+        {
+            int exponent = Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower)).UnbiasedExponent;
+
+            if (exponent >= 0)
+            {
+                return (sizeof(int) * 8) - int.LeadingZeroCount(exponent);
+            }
+            else
+            {
+                return (sizeof(int) * 8) + 1 - int.LeadingZeroCount(~exponent);
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<Decimal128>.GetSignificandBitLength() => 113;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<Decimal128>.GetSignificandByteCount() => Unsafe.SizeOf<UInt128>();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal128>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt32BigEndian(destination, Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower)).UnbiasedExponent))
+            {
+                bytesWritten = sizeof(int);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal128>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt32LittleEndian(destination, Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower)).UnbiasedExponent))
+            {
+                bytesWritten = sizeof(int);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal128>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt128BigEndian(destination, Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower)).Significand))
+            {
+                bytesWritten = Unsafe.SizeOf<UInt128>();
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal128>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt128LittleEndian(destination, Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower)).Significand))
+            {
+                bytesWritten = Unsafe.SizeOf<UInt128>();
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>

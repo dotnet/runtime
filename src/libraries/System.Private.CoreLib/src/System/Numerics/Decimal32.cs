@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -14,7 +15,7 @@ namespace System.Numerics
         : IComparable,
           IComparable<Decimal32>,
           IEquatable<Decimal32>,
-          INumberBase<Decimal32>,
+          IFloatingPoint<Decimal32>,
           ISpanFormattable,
           ISpanParsable<Decimal32>,
           IMinMaxValue<Decimal32>,
@@ -336,6 +337,15 @@ namespace System.Numerics
         public static Decimal32 operator /(Decimal32 left, Decimal32 right)
         {
             return new Decimal32(Number.DivideDecimalIeee754<Decimal32, uint>(left._value, right._value));
+        }
+
+        /// <summary>Divides two values together to compute their remainder.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <returns>The remainder of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        public static Decimal32 operator %(Decimal32 left, Decimal32 right)
+        {
+            return new Decimal32(Number.RemainderDecimalIeee754<Decimal32, uint>(left._value, right._value));
         }
 
         //
@@ -755,6 +765,115 @@ namespace System.Numerics
 
         /// <summary>Gets the mathematical constant <c>tau</c>.</summary>
         public static Decimal32 Tau => new Decimal32(TauValue);
+
+        //
+        // IFloatingPoint
+        //
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        public static Decimal32 Ceiling(Decimal32 x) => new Decimal32(Number.RoundDecimalIeee754<Decimal32, uint>(x._value, 0, MidpointRounding.ToPositiveInfinity));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(Decimal32 value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(Decimal32 value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        public static Decimal32 Floor(Decimal32 x) => new Decimal32(Number.RoundDecimalIeee754<Decimal32, uint>(x._value, 0, MidpointRounding.ToNegativeInfinity));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        public static Decimal32 Round(Decimal32 x) => new Decimal32(Number.RoundDecimalIeee754<Decimal32, uint>(x._value, 0, MidpointRounding.ToEven));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
+        public static Decimal32 Round(Decimal32 x, int digits) => new Decimal32(Number.RoundDecimalIeee754<Decimal32, uint>(x._value, digits, MidpointRounding.ToEven));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, MidpointRounding)" />
+        public static Decimal32 Round(Decimal32 x, MidpointRounding mode) => new Decimal32(Number.RoundDecimalIeee754<Decimal32, uint>(x._value, 0, mode));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int, MidpointRounding)" />
+        public static Decimal32 Round(Decimal32 x, int digits, MidpointRounding mode) => new Decimal32(Number.RoundDecimalIeee754<Decimal32, uint>(x._value, digits, mode));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        public static Decimal32 Truncate(Decimal32 x) => new Decimal32(Number.RoundDecimalIeee754<Decimal32, uint>(x._value, 0, MidpointRounding.ToZero));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<Decimal32>.GetExponentByteCount() => sizeof(int);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        int IFloatingPoint<Decimal32>.GetExponentShortestBitLength()
+        {
+            int exponent = Number.UnpackDecimalIeee754<Decimal32, uint>(_value).UnbiasedExponent;
+
+            if (exponent >= 0)
+            {
+                return (sizeof(int) * 8) - int.LeadingZeroCount(exponent);
+            }
+            else
+            {
+                return (sizeof(int) * 8) + 1 - int.LeadingZeroCount(~exponent);
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<Decimal32>.GetSignificandBitLength() => 24;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<Decimal32>.GetSignificandByteCount() => sizeof(uint);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal32>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt32BigEndian(destination, Number.UnpackDecimalIeee754<Decimal32, uint>(_value).UnbiasedExponent))
+            {
+                bytesWritten = sizeof(int);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal32>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt32LittleEndian(destination, Number.UnpackDecimalIeee754<Decimal32, uint>(_value).UnbiasedExponent))
+            {
+                bytesWritten = sizeof(int);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal32>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt32BigEndian(destination, Number.UnpackDecimalIeee754<Decimal32, uint>(_value).Significand))
+            {
+                bytesWritten = sizeof(uint);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal32>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt32LittleEndian(destination, Number.UnpackDecimalIeee754<Decimal32, uint>(_value).Significand))
+            {
+                bytesWritten = sizeof(uint);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>

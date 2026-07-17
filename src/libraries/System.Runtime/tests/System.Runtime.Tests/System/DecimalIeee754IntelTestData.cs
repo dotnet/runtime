@@ -95,6 +95,18 @@ namespace System.Tests
         private static readonly HashSet<string> s_bid64Cross = new() { "bid32_to_bid64", "bid128_to_bid64" };
         private static readonly HashSet<string> s_bid128Cross = new() { "bid32_to_bid128", "bid64_to_bid128" };
 
+        // Truncating remainder (fmod, the C# `%` operator), not the round-to-nearest IEEE 754 remainder.
+        private static readonly HashSet<string> s_bid32Modulus = new() { "bid32_fmod" };
+        private static readonly HashSet<string> s_bid64Modulus = new() { "bid64_fmod" };
+        private static readonly HashSet<string> s_bid128Modulus = new() { "bid128_fmod" };
+
+        // Round to an integral value under each rounding mode, mapping onto the .NET Round/Ceiling/Floor/Truncate
+        // surface. `round_integral_exact` takes the mode from the rounding-context column, so only its
+        // round-to-nearest-even (rnd == 0) rows are consumed here; the mode-named variants ignore that column.
+        private static readonly HashSet<string> s_bid32RoundIntegral = new() { "bid32_round_integral_exact", "bid32_round_integral_nearest_even", "bid32_round_integral_nearest_away", "bid32_round_integral_negative", "bid32_round_integral_positive", "bid32_round_integral_zero" };
+        private static readonly HashSet<string> s_bid64RoundIntegral = new() { "bid64_round_integral_exact", "bid64_round_integral_nearest_even", "bid64_round_integral_nearest_away", "bid64_round_integral_negative", "bid64_round_integral_positive", "bid64_round_integral_zero" };
+        private static readonly HashSet<string> s_bid128RoundIntegral = new() { "bid128_round_integral_exact", "bid128_round_integral_nearest_even", "bid128_round_integral_nearest_away", "bid128_round_integral_negative", "bid128_round_integral_positive", "bid128_round_integral_zero" };
+
         /// <summary>
         /// Gets a value indicating whether the Intel <c>readtest.in</c> reference vectors are available,
         /// gating the theories that consume them.
@@ -427,6 +439,74 @@ namespace System.Tests
                 if (TryParseDecimalSource(fields[0], fields[2], out UInt128 value) && TryParseBid128(fields[3], out UInt128 expected))
                 {
                     yield return new object[] { DecimalSourceType(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32Modulus()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Modulus))
+            {
+                if (TryParseBid32(fields[2], out uint left) && TryParseBid32(fields[3], out uint right) && TryParseBid32(fields[4], out uint expected))
+                {
+                    yield return new object[] { left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64Modulus()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Modulus))
+            {
+                if (TryParseBid64(fields[2], out ulong left) && TryParseBid64(fields[3], out ulong right) && TryParseBid64(fields[4], out ulong expected))
+                {
+                    yield return new object[] { left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128Modulus()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Modulus))
+            {
+                if (TryParseBid128(fields[2], out UInt128 left) && TryParseBid128(fields[3], out UInt128 right) && TryParseBid128(fields[4], out UInt128 expected))
+                {
+                    yield return new object[] { left, right, expected };
+                }
+            }
+        }
+
+        // NaN operands are skipped: rounding leaves the value's payload untouched, but Intel canonicalizes and quiets
+        // NaNs so its result column would not match the raw operand bits. The mode is taken from the operation name.
+        public static IEnumerable<object[]> Decimal32RoundIntegral()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32RoundIntegral))
+            {
+                if (TryParseBid32(fields[2], out uint value) && !IsBid32NaN(value) && TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { OperationSuffix(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64RoundIntegral()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64RoundIntegral))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && !IsBid64NaN(value) && TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { OperationSuffix(fields[0]), value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128RoundIntegral()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128RoundIntegral))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && !IsBid128NaN(value) && TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { OperationSuffix(fields[0]), value, expected };
                 }
             }
         }
