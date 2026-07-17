@@ -36041,7 +36041,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 if (maskIsZero)
                 {
-                    if ((op2->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    if ((op2->gtFlags & GTF_ALL_EFFECT) != 0)
                     {
                         // op2 has side effects and is evaluated after op1, so dropping it here would
                         // reorder its side effects ahead of op1. That isn't safe to do from the general

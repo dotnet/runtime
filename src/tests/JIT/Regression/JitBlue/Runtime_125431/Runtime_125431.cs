@@ -14,14 +14,9 @@ public class Runtime_125431
 
     private static bool s_op1Evaluated;
 
-    [Fact]
+    [ConditionalFact(typeof(Avx2), nameof(Avx2.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (!Avx2.IsSupported)
-        {
-            return;
-        }
-
         // The mask is a constant zero, so BlendVariable selects its first operand. Folding the
         // intrinsic must not reorder the second operand's side effects (the null s_53 load) ahead
         // of the first operand's side effects (the M43 call), so M43 must run before the null load
