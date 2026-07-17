@@ -2929,7 +2929,7 @@ StackFrame ExInfo::FindParentStackFrameHelper(CrawlFrame* pCF,
 #else  // !DACCESS_COMPILE
         PTR_VOID eeBase = GetClrModuleBase();
 #endif // !DACCESS_COMPILE
-        fIsCallerInVM = ExecutionManager::IsIPInModule(eeBase, callerIP);
+        fIsCallerInVM = IsIPInModule(eeBase, callerIP);
 #endif // TARGET_UNIX
 
         if (!fIsCallerInVM)

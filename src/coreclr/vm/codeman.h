@@ -2418,8 +2418,6 @@ public:
     // Returns true if currentPC is ready to run codegen
     static BOOL IsReadyToRunCode(PCODE currentPC);
 
-    static BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
-
     // Returns method's start address for a given PC
     static PCODE GetCodeStartAddress(PCODE currentPC);
 
