@@ -360,6 +360,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             hr = ex.HResult;
         }
 
+#if DEBUG
         int hrLocal = HResults.S_OK;
         byte[]? localOutBuffer = null;
         if (_legacyImpl is not null)
@@ -371,7 +372,6 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             }
         }
 
-#if DEBUG
         if (_legacyImpl is not null)
         {
             Debug.ValidateHResult(hr, hrLocal);
@@ -383,6 +383,8 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
                 }
             }
         }
+#else
+        _legacyImpl?.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer);
 #endif
         return hr;
     }
