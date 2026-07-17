@@ -212,9 +212,9 @@
 #define ENABLE_CONTRACTS_DATA
 #endif
 
-// The DAC and DBI builds reference contract data, but not implementation
+// The DAC builds reference contract data but not implementation,
 // so we disable contracts for those builds.
-#if defined(ENABLE_CONTRACTS_DATA) && !defined(DACCESS_COMPILE) && !defined(DBI_COMPILE)
+#if defined(ENABLE_CONTRACTS_DATA) && !defined(DACCESS_COMPILE)
 #define ENABLE_CONTRACTS
 #endif
 
