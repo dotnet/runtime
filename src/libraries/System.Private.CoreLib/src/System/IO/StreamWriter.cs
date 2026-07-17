@@ -43,14 +43,22 @@ namespace System.IO
 
         // We don't guarantee thread safety on StreamWriter, but we should at
         // least prevent users from trying to write anything while an Async
-        // write from the same thread is in progress.
+        // write from the same thread is in progress. We track this with the
+        // following fields.
+        //
+        // Generally we prefer to use the bool _asyncIOInProgress, but in
+        // certain cases for async1 this would require introducing a wrapper
+        // state machine, and in those cases we use Task _asyncWriteTask
+        // instead.
+        //
         private bool _asyncIOInProgress;
+        private Task _asyncWriteTask = Task.CompletedTask;
 
         private void CheckAsyncTaskInProgress()
         {
             // We are not locking this access because this is not meant to guarantee thread safety.
             // We are simply trying to deter calling any Write APIs while an async Write from the same thread is in progress.
-            if (_asyncIOInProgress)
+            if (_asyncIOInProgress || !_asyncWriteTask.IsCompleted)
             {
                 ThrowAsyncIOInProgress();
             }
@@ -932,7 +940,13 @@ namespace System.IO
 
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
-            return FlushAsyncInternalWithGuard(flushStream: true, flushEncoder: true, CancellationToken.None);
+
+            if (RuntimeHelpers.IsRuntimeAsync())
+            {
+                return FlushAsyncInternalWithGuard(flushStream: true, flushEncoder: true, CancellationToken.None);
+            }
+
+            return (_asyncWriteTask = FlushAsyncInternal(flushStream: true, flushEncoder: true, CancellationToken.None));
         }
 
         /// <summary>Clears all buffers for this stream asynchronously and causes any buffered data to be written to the underlying device.</summary>
@@ -952,7 +966,13 @@ namespace System.IO
 
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
-            return FlushAsyncInternalWithGuard(flushStream: true, flushEncoder: true, cancellationToken);
+
+            if (RuntimeHelpers.IsRuntimeAsync())
+            {
+                return FlushAsyncInternalWithGuard(flushStream: true, flushEncoder: true, cancellationToken);
+            }
+
+            return (_asyncWriteTask = FlushAsyncInternal(flushStream: true, flushEncoder: true, cancellationToken));
         }
 
         private async Task FlushAsyncInternalWithGuard(bool flushStream, bool flushEncoder, CancellationToken cancellationToken)
