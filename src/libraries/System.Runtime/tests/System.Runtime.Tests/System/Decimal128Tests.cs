@@ -2117,6 +2117,48 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x7C00000000000000UL, 0x0000000000001234UL, 5, 0x7C00000000000000UL, 0x0000000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC00400000000000UL, 0x0000000000000000UL, 5, 0xFC00000000000000UL, 0x0000000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        [InlineData(0x3040000000000000UL, 0x0000000000000008UL, 0, 0x7C00000000000000UL, 0x0000000000000000UL)] // rootn(x, 0) = NaN
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL, 5, 0x7800000000000000UL, 0x0000000000000000UL)] // rootn(+Infinity, odd > 0) = +Infinity
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL, 4, 0x7800000000000000UL, 0x0000000000000000UL)] // rootn(+Infinity, even > 0) = +Infinity
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL, -5, 0x3040000000000000UL, 0x0000000000000000UL)] // rootn(+Infinity, n < 0) = +0
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL, 5, 0xF800000000000000UL, 0x0000000000000000UL)] // rootn(-Infinity, odd > 0) = -Infinity
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL, 4, 0x7C00000000000000UL, 0x0000000000000000UL)] // rootn(-Infinity, even > 0) = NaN
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL, -5, 0xB040000000000000UL, 0x0000000000000000UL)] // rootn(-Infinity, odd < 0) = -0
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 5, 0x3040000000000000UL, 0x0000000000000000UL)] // rootn(+0, odd > 0) = +0
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL, 5, 0xB040000000000000UL, 0x0000000000000000UL)] // rootn(-0, odd > 0) = -0
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL, 4, 0x3040000000000000UL, 0x0000000000000000UL)] // rootn(-0, even > 0) = +0
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, -5, 0x7800000000000000UL, 0x0000000000000000UL)] // rootn(+0, n < 0) = +Infinity
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL, -5, 0xF800000000000000UL, 0x0000000000000000UL)] // rootn(-0, odd < 0) = -Infinity
+        [InlineData(0xB040000000000000UL, 0x0000000000000004UL, 2, 0x7C00000000000000UL, 0x0000000000000000UL)] // rootn(-4, even) = NaN
+        public static void RootNTest(ulong valueUpper, ulong valueLower, int n, ulong expectedUpper, ulong expectedLower)
+        {
+            Decimal128 result = Decimal128.RootN(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(valueUpper, valueLower)), n);
+            Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [Theory]
+        [InlineData(8.0, 3)]
+        [InlineData(-8.0, 3)]
+        [InlineData(27.0, 3)]
+        [InlineData(16.0, 4)]
+        [InlineData(32.0, 5)]
+        [InlineData(1000.0, 3)]
+        [InlineData(2.0, 2)]
+        [InlineData(0.5, 2)]
+        [InlineData(2.0, -2)]
+        [InlineData(8.0, -3)]
+        public static void RootNAccuracyTest(double input, int n)
+        {
+            // Decimal128 evaluates rootn through the binary128 engine (as Intel does); comparing the result
+            // cast back to binary64 stays within a few ulps of double.RootN.
+            double expected = double.RootN(input, n);
+            double actual = (double)Decimal128.RootN((Decimal128)input, n);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"rootn({input}, {n}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x7C00000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000001UL)] // pow(NaN, +0) = 1
         [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000001UL)] // pow(2, +0) = 1
         [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0xB040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000001UL)] // pow(2, -0) = 1

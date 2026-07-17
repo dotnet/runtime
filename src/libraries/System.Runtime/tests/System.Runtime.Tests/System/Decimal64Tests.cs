@@ -2106,6 +2106,47 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x7C00000000001234UL, 5, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 5, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        [InlineData(0x31C0000000000008UL, 0, 0x7C00000000000000UL)] // rootn(x, 0) = NaN
+        [InlineData(0x7800000000000000UL, 5, 0x7800000000000000UL)] // rootn(+Infinity, odd > 0) = +Infinity
+        [InlineData(0x7800000000000000UL, 4, 0x7800000000000000UL)] // rootn(+Infinity, even > 0) = +Infinity
+        [InlineData(0x7800000000000000UL, -5, 0x31C0000000000000UL)] // rootn(+Infinity, n < 0) = +0
+        [InlineData(0xF800000000000000UL, 5, 0xF800000000000000UL)] // rootn(-Infinity, odd > 0) = -Infinity
+        [InlineData(0xF800000000000000UL, 4, 0x7C00000000000000UL)] // rootn(-Infinity, even > 0) = NaN
+        [InlineData(0xF800000000000000UL, -5, 0xB1C0000000000000UL)] // rootn(-Infinity, odd < 0) = -0
+        [InlineData(0x31C0000000000000UL, 5, 0x31C0000000000000UL)] // rootn(+0, odd > 0) = +0
+        [InlineData(0xB1C0000000000000UL, 5, 0xB1C0000000000000UL)] // rootn(-0, odd > 0) = -0
+        [InlineData(0xB1C0000000000000UL, 4, 0x31C0000000000000UL)] // rootn(-0, even > 0) = +0
+        [InlineData(0x31C0000000000000UL, -5, 0x7800000000000000UL)] // rootn(+0, n < 0) = +Infinity
+        [InlineData(0xB1C0000000000000UL, -5, 0xF800000000000000UL)] // rootn(-0, odd < 0) = -Infinity
+        [InlineData(0xB1C0000000000004UL, 2, 0x7C00000000000000UL)] // rootn(-4, even) = NaN
+        public static void RootNTest(ulong value, int n, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.RootN(Unsafe.BitCast<ulong, Decimal64>(value), n)));
+        }
+
+        [Theory]
+        [InlineData(8.0, 3)]
+        [InlineData(-8.0, 3)]
+        [InlineData(27.0, 3)]
+        [InlineData(16.0, 4)]
+        [InlineData(32.0, 5)]
+        [InlineData(1000.0, 3)]
+        [InlineData(2.0, 2)]
+        [InlineData(0.5, 2)]
+        [InlineData(2.0, -2)]
+        [InlineData(8.0, -3)]
+        public static void RootNAccuracyTest(double input, int n)
+        {
+            // Decimal64 evaluates rootn through the binary128 engine (as Intel does); comparing the result
+            // cast back to binary64 stays within a few ulps of double.RootN.
+            double expected = double.RootN(input, n);
+            double actual = (double)Decimal64.RootN((Decimal64)input, n);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"rootn({input}, {n}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x7C00000000000000UL, 0x31C0000000000000UL, 0x31C0000000000001UL)] // pow(NaN, +0) = 1
         [InlineData(0x31C0000000000002UL, 0x31C0000000000000UL, 0x31C0000000000001UL)] // pow(2, +0) = 1
         [InlineData(0x31C0000000000002UL, 0xB1C0000000000000UL, 0x31C0000000000001UL)] // pow(2, -0) = 1

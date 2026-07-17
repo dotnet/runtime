@@ -854,4 +854,102 @@ internal static partial class Number
         Float128 yMagnitude = DecimalToFloat128<TDecimal, TValue>(signed: false, dy.UnbiasedExponent, dy.Significand);
         return Float128ToDecimal<TDecimal, TValue>(Float128Hypot(xMagnitude, yMagnitude));
     }
+
+    /// <summary>Computes the <paramref name="n" />th root of <paramref name="x" />.</summary>
+    internal static TValue RootNDecimalIeee754<TDecimal, TValue>(TValue x, int n)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        // rootn(x, 0) = NaN for every x, matching the binary surface.
+        if (n == 0)
+        {
+            return TDecimal.NaNMask;
+        }
+
+        // rootn(x, 3) is the cube root, which handles a negative operand directly.
+        if (n == 3)
+        {
+            return CbrtDecimalIeee754<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        bool nNegative = n < 0;
+        bool nOdd = int.IsOddInteger(n);
+
+        if (TDecimal.IsInfinity(x))
+        {
+            bool xNegative = TDecimal.IsNegative(x);
+
+            // rootn(-inf, n) is real only for an odd n; the even case is invalid.
+            if (xNegative && !nOdd)
+            {
+                return TDecimal.NaNMask;
+            }
+
+            if (!nNegative)
+            {
+                // rootn(+/-inf, n > 0) = +/-inf.
+                return xNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            // rootn(+/-inf, n < 0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(xNegative, TValue.Zero, 0);
+        }
+
+        DecodedDecimalIeee754<TValue> dx = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(dx.Significand))
+        {
+            // rootn(+/-0, n): an odd n carries the sign, an even n normalizes to positive.
+            bool resultNegative = dx.Signed && nOdd;
+
+            if (!nNegative)
+            {
+                // rootn(+/-0, n > 0) = +/-0.
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultNegative, TValue.Zero, 0);
+            }
+
+            // rootn(+/-0, n < 0) = +/-inf.
+            return resultNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+        }
+
+        // A finite negative base has a real root only for an odd n.
+        if (dx.Signed && !nOdd)
+        {
+            return TDecimal.NaNMask;
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            double result = double.RootN(value, n);
+
+            if (double.IsNaN(result))
+            {
+                return TDecimal.NaNMask;
+            }
+
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
+        }
+
+        // The engine evaluates |x|^(1/n) with the reciprocal formed exactly in the binary128 domain;
+        // a negative base only reaches here with an odd n, so it simply carries the sign.
+        Float128 one = new Float128(0u, 1, 0x8000_0000_0000_0000, 0);
+        Float128 degree = DecimalToFloat128<TDecimal, TValue>(nNegative, 0, TValue.CreateTruncating(int.Abs(n)));
+        Float128Divide(one, degree, Float128FullPrecision, out Float128 exponent);
+
+        Float128 baseValue = DecimalToFloat128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
+        Float128 magnitude = Float128Pow(baseValue, exponent);
+
+        if (dx.Signed)
+        {
+            magnitude = new Float128(1u, magnitude._exponent, magnitude._hi, magnitude._lo);
+        }
+
+        return Float128ToDecimal<TDecimal, TValue>(magnitude);
+    }
 }

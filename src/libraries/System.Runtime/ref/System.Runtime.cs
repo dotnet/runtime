@@ -11599,6 +11599,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 Pow(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
         public static System.Numerics.Decimal128 Quantize(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
         public static System.Numerics.Decimal128 Quantum(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 RootN(System.Numerics.Decimal128 x, int n) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x, int digits) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x, int digits, System.MidpointRounding mode) { throw null; }
@@ -11819,6 +11820,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 Pow(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
         public static System.Numerics.Decimal32 Quantize(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
         public static System.Numerics.Decimal32 Quantum(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 RootN(System.Numerics.Decimal32 x, int n) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x, int digits) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x, int digits, System.MidpointRounding mode) { throw null; }
@@ -12037,6 +12039,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 Pow(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
         public static System.Numerics.Decimal64 Quantize(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
         public static System.Numerics.Decimal64 Quantum(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 RootN(System.Numerics.Decimal64 x, int n) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x, int digits) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x, int digits, System.MidpointRounding mode) { throw null; }

@@ -2100,6 +2100,47 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x7C001234U, 5, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 5, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        [InlineData(0x32800008U, 0, 0x7C000000U)] // rootn(x, 0) = NaN
+        [InlineData(0x78000000U, 5, 0x78000000U)] // rootn(+Infinity, odd > 0) = +Infinity
+        [InlineData(0x78000000U, 4, 0x78000000U)] // rootn(+Infinity, even > 0) = +Infinity
+        [InlineData(0x78000000U, -5, 0x32800000U)] // rootn(+Infinity, n < 0) = +0
+        [InlineData(0xF8000000U, 5, 0xF8000000U)] // rootn(-Infinity, odd > 0) = -Infinity
+        [InlineData(0xF8000000U, 4, 0x7C000000U)] // rootn(-Infinity, even > 0) = NaN
+        [InlineData(0xF8000000U, -5, 0xB2800000U)] // rootn(-Infinity, odd < 0) = -0
+        [InlineData(0x32800000U, 5, 0x32800000U)] // rootn(+0, odd > 0) = +0
+        [InlineData(0xB2800000U, 5, 0xB2800000U)] // rootn(-0, odd > 0) = -0
+        [InlineData(0xB2800000U, 4, 0x32800000U)] // rootn(-0, even > 0) = +0
+        [InlineData(0x32800000U, -5, 0x78000000U)] // rootn(+0, n < 0) = +Infinity
+        [InlineData(0xB2800000U, -5, 0xF8000000U)] // rootn(-0, odd < 0) = -Infinity
+        [InlineData(0xB2800004U, 2, 0x7C000000U)] // rootn(-4, even) = NaN
+        public static void RootNTest(uint value, int n, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.RootN(Unsafe.BitCast<uint, Decimal32>(value), n)));
+        }
+
+        [Theory]
+        [InlineData(8.0, 3)]
+        [InlineData(-8.0, 3)]
+        [InlineData(27.0, 3)]
+        [InlineData(16.0, 4)]
+        [InlineData(32.0, 5)]
+        [InlineData(1000.0, 3)]
+        [InlineData(2.0, 2)]
+        [InlineData(0.5, 2)]
+        [InlineData(2.0, -2)]
+        [InlineData(8.0, -3)]
+        public static void RootNAccuracyTest(double input, int n)
+        {
+            // Decimal32 evaluates rootn through binary64 (as Intel does), so the result matches double.RootN
+            // to within the format's seven significant digits.
+            double expected = double.RootN(input, n);
+            double actual = (double)Decimal32.RootN((Decimal32)input, n);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"rootn({input}, {n}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x7C000000U, 0x32800000U, 0x32800001U)] // pow(NaN, +0) = 1
         [InlineData(0x32800002U, 0x32800000U, 0x32800001U)] // pow(2, +0) = 1
         [InlineData(0x32800002U, 0xB2800000U, 0x32800001U)] // pow(2, -0) = 1
