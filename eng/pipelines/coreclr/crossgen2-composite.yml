@@ -1,13 +1,5 @@
 trigger: none
 
-schedules:
-- cron: "0 6 * * *"
-  displayName: Mon through Sun at 10:00 PM (UTC-8:00)
-  branches:
-    include:
-    - main
-  always: true
-
 variables:
   - template: /eng/pipelines/common/variables.yml
   - template: /eng/pipelines/helix-platforms.yml

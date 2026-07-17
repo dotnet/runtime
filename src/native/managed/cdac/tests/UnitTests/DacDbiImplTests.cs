@@ -4,10 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
+using ILCompiler.Reflection.ReadyToRun;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -1219,6 +1221,8 @@ public unsafe class DacDbiImplTests
     [InlineData(DebugVarLocKind.RegisterStack, false, false, VarLocType.VLT_REG_STK)]
     [InlineData(DebugVarLocKind.StackRegister, false, false, VarLocType.VLT_STK_REG)]
     [InlineData(DebugVarLocKind.DoubleStack, false, false, VarLocType.VLT_STK2)]
+    [InlineData(DebugVarLocKind.FloatingPointStack, false, false, VarLocType.VLT_FPSTK)]
+    [InlineData(DebugVarLocKind.FixedVarArg, false, false, VarLocType.VLT_FIXED_VA)]
     public void ConvertToVarLoc_MapsVarLocTypeCorrectly(DebugVarLocKind kind, bool isByRef, bool isFloatingPoint, VarLocType expected)
     {
         var varInfo = new DebugVarInfo { Kind = kind, IsByRef = isByRef, IsFloatingPoint = isFloatingPoint };
@@ -1289,6 +1293,79 @@ public unsafe class DacDbiImplTests
         Assert.Equal(VarLocType.VLT_STK2, result.vlType);
         Assert.Equal(4u, result.vlsBaseReg);
         Assert.Equal(0x20, result.vlsOffset);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_FloatingPointStack_SetsRegister()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.FloatingPointStack, FloatingPointStackRegister = 3 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(VarLocType.VLT_FPSTK, result.vlType);
+        Assert.Equal(3u, result.vlfReg);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_FixedVarArg_SetsOffset()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.FixedVarArg, FixedVarArgOffset = 0x28 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(VarLocType.VLT_FIXED_VA, result.vlType);
+        Assert.Equal(0x28u, result.vlfvOffset);
+    }
+
+    [Fact]
+    public void DecodeVarInfo_PreservesFloatingPointStackAndFixedVarArgLocations()
+    {
+        const uint maxILNum = unchecked((uint)-6);
+        byte[] encoded = EncodeNibbleUInts(
+            2,
+            unchecked(0u - maxILNum), 1, 2, (uint)VarLocType.VLT_FPSTK, 3,
+            unchecked(1u - maxILNum), 4, 2, (uint)VarLocType.VLT_FIXED_VA, 0x28);
+
+        var reader = new NativeReader(new MemoryStream(encoded));
+        List<DebugVarInfo> result = new(DebugInfoHelpers.DoVars(reader, isX86: true));
+
+        Assert.Collection(
+            result,
+            varInfo =>
+            {
+                Assert.Equal(DebugVarLocKind.FloatingPointStack, varInfo.Kind);
+                Assert.True(varInfo.IsFloatingPoint);
+                Assert.Equal(3u, varInfo.FloatingPointStackRegister);
+            },
+            varInfo =>
+            {
+                Assert.Equal(DebugVarLocKind.FixedVarArg, varInfo.Kind);
+                Assert.Equal(0x28u, varInfo.FixedVarArgOffset);
+            });
+    }
+
+    private static byte[] EncodeNibbleUInts(params uint[] values)
+    {
+        List<byte> nibbles = new();
+        Span<byte> groups = stackalloc byte[11];
+        foreach (uint value in values)
+        {
+            int groupCount = 0;
+            uint remaining = value;
+            do
+            {
+                groups[groupCount++] = (byte)(remaining & 7);
+                remaining >>= 3;
+            }
+            while (remaining != 0);
+
+            for (int i = groupCount - 1; i >= 0; i--)
+            {
+                byte continuation = i == 0 ? (byte)0 : (byte)8;
+                nibbles.Add((byte)(groups[i] | continuation));
+            }
+        }
+
+        byte[] bytes = new byte[(nibbles.Count + 1) / 2];
+        for (int i = 0; i < nibbles.Count; i++)
+            bytes[i / 2] |= (byte)(nibbles[i] << (4 * (i & 1)));
+        return bytes;
     }
 
     [Theory]

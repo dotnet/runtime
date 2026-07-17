@@ -91,9 +91,9 @@ jobs:
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:cc5720152b9ddb1df305525253e31936794ffff0d440007bb170ec3bf6a5f7ae
+        - (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:541bfc7ad7cead26f1e7dc2eaf587e053758966ce42b63b403db2289d74234d7
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:cc5720152b9ddb1df305525253e31936794ffff0d440007bb170ec3bf6a5f7ae
+        - (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7@sha256:541bfc7ad7cead26f1e7dc2eaf587e053758966ce42b63b403db2289d74234d7
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
