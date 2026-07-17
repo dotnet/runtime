@@ -961,6 +961,21 @@ namespace System.Runtime.CompilerServices
                 AsyncThreadContext.Release(context);
             }
 
+            public static void Append(AsyncStateMachineDispatcher dispatcher, ref Info info)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
+
+                SyncPoint.Check(context);
+
+                EventKeywords activeEventKeywords = context.ActiveEventKeywords;
+                if (IsEnabled.AnyAsyncEvents(activeEventKeywords) && IsEnabled.ResumeStateMachineAsyncCallstackEvent(activeEventKeywords))
+                {
+                    ResumeAsyncContext.Append(dispatcher, context, Stopwatch.GetTimestamp());
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong parentDispatcherId, ulong dispatcherId, AsyncEventID eventID)
             {
                 Debug.Assert(eventID == AsyncEventID.CreateRuntimeAsyncContext || eventID == AsyncEventID.CreateStateMachineAsyncContext);
@@ -1215,7 +1230,7 @@ namespace System.Runtime.CompilerServices
 #if !RUNTIME_ASYNC_SUPPORTED
             public static void InitInfo(ref Info info)
             {
-                info.ContinuationTable = 0;
+                info.ContinuationTable = ref Unsafe.NullRef<nint>();
                 info.ContinuationIndex = 0;
             }
 #endif

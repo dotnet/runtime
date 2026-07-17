@@ -413,6 +413,26 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
                 }
 
+                case NI_PRIMITIVE_SaturateToInt8:
+                {
+                    return {SymbolicIntegerValue::ByteMin, SymbolicIntegerValue::ByteMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToInt16:
+                {
+                    return {SymbolicIntegerValue::ShortMin, SymbolicIntegerValue::ShortMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToUInt8:
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UByteMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToUInt16:
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UShortMax};
+                }
+
                 case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
                 {
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
@@ -2193,6 +2213,18 @@ void Compiler::optAssertionGen(GenTree* tree)
             if (tree->IndirMayFault(this))
             {
                 assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, /*equals*/ false);
+            }
+            else if (tree->OperIs(GT_IND) && tree->TypeIs(TYP_INT) &&
+                     IntegralRange::ForNode(tree, this).IsNonNegative())
+            {
+                // Create "IND >= 0" assertion for int indirections that are known to be non-negative.
+                // Mainly, this is for unpromoted Span.Length indirections.
+                ValueNum vn = optConservativeNormalVN(tree);
+                if (vn != ValueNumStore::NoVN)
+                {
+                    assertionInfo = optAddAssertion(
+                        AssertionDsc::CreateConstantBound(this, VNF_GE, vn, vnStore->VNZeroForType(TYP_INT)));
+                }
             }
             break;
 

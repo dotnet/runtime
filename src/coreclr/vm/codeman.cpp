@@ -1687,6 +1687,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_Rcpc2);
     }
 
+    if (((cpuFeatures & ARM64IntrinsicConstants_Cssc) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Cssc))
+    {
+        CPUCompileFlags.Set(InstructionSet_Cssc);
+    }
+
     if (((cpuFeatures & ARM64IntrinsicConstants_Crc32) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Crc32))
     {
         CPUCompileFlags.Set(InstructionSet_Crc32);
@@ -1733,10 +1738,12 @@ void EEJitManager::SetCpuInfo()
         uint32_t maxVectorTLength = (maxVectorTBitWidth / 8);
         uint64_t sveLengthFromOS = GetSveLengthFromOS();
 
-        // For now, enable SVE only when the system vector length is 16 bytes (128-bits)
-        // TODO: https://github.com/dotnet/runtime/issues/101477
-        if (sveLengthFromOS == 16)
-        // if ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0))
+        if (sveLengthFromOS == 16
+#ifdef _DEBUG
+            || (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitUseScalableVectorT)
+                && ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0)))
+#endif
+            )
         {
             CPUCompileFlags.Set(InstructionSet_Sve);
 
@@ -1803,6 +1810,11 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & RiscV64IntrinsicConstants_Zbs) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zbs))
     {
         CPUCompileFlags.Set(InstructionSet_Zbs);
+    }
+
+    if (((cpuFeatures & RiscV64IntrinsicConstants_Zicond) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zicond))
+    {
+        CPUCompileFlags.Set(InstructionSet_Zicond);
     }
 #endif
 
@@ -6029,6 +6041,24 @@ FunctionTableIndexRangeSection* ExecutionManager::FindFunctionTableIndexRangeSec
         pCurrent = pCurrent->pNext;
     }
     return nullptr;
+}
+
+BOOL ExecutionManager::IsFuncletFunctionIndex(DWORD functionIndex)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    FunctionTableIndexRangeSection* pSection = FindFunctionTableIndexRangeSection(functionIndex);
+    if (pSection == nullptr)
+    {
+        return FALSE;
+    }
+
+    Module* pModule = pSection->pR2RModule;
+    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
+
+    DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
+    return RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction);
 }
 
 TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex)

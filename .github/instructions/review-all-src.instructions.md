@@ -76,7 +76,7 @@ Before reviewing individual lines of code, evaluate the PR as a whole. Consider 
 - **Don't modify auto-generated files or `eng/common` manually.** Change the generator or source definition instead. Files in `eng/common` are synced from dotnet/arcade.
 - **Use `DOTNET_` prefix for environment variables, not `COMPlus_`.** New runtime environment variables must use `DOTNET_` exclusively.
 - **Match existing style in modified files.** The existing style in a file takes precedence over general guidelines. Do not change existing code for style alone.
-- **Prefer `sizeof` over `Unsafe.SizeOf` consistently.** A pass was done to replace all `Unsafe.SizeOf` uses. Do not reintroduce them.
+- **Use the `sizeof` operator consistently.** A pass removed calls to the equivalent `Unsafe` helper; do not reintroduce them.
 
 ### Runtime-Specific Patterns
 

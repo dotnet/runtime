@@ -904,6 +904,56 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.NotNull(unvalidated);
         }
 
+        private class EnumeratedChildOptions
+        {
+            [Required]
+            public string? Name { get; set; }
+        }
+
+        private class ParentWithEnumeratedItems
+        {
+            [ValidateEnumeratedItems]
+            public IReadOnlyList<EnumeratedChildOptions?>? Items { get; set; }
+        }
+
+        [Fact]
+        public void DataAnnotationValidateOptions_Validate_SkipsNullEnumeratedItems()
+        {
+            var options = new ParentWithEnumeratedItems
+            {
+                Items = new List<EnumeratedChildOptions?>
+                {
+                    new() { Name = "first" },
+                    null,
+                    new() { Name = "third" },
+                }
+            };
+
+            var validator = new DataAnnotationValidateOptions<ParentWithEnumeratedItems>(Options.DefaultName);
+            ValidateOptionsResult result = validator.Validate(Options.DefaultName, options);
+            Assert.True(result.Succeeded);
+        }
+
+        [Fact]
+        public void DataAnnotationValidateOptions_Validate_ReportsInvalidItemAfterNullElement()
+        {
+            var options = new ParentWithEnumeratedItems
+            {
+                Items = new List<EnumeratedChildOptions?>
+                {
+                    new() { Name = "first" },
+                    null,
+                    new() { Name = null },
+                }
+            };
+
+            var validator = new DataAnnotationValidateOptions<ParentWithEnumeratedItems>(Options.DefaultName);
+            ValidateOptionsResult result = validator.Validate(Options.DefaultName, options);
+            Assert.True(result.Failed);
+            Assert.Contains("ParentWithEnumeratedItems.Items[2]", result.FailureMessage);
+            Assert.DoesNotContain("[1]", result.FailureMessage);
+        }
+
 #if NET11_0_OR_GREATER
         private sealed class AsyncOnlyFailAttribute : AsyncValidationAttribute
         {
@@ -1134,6 +1184,44 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Contains("[0]", asyncResult.FailureMessage);
             Assert.Contains("[1]", asyncResult.FailureMessage);
             Assert.Contains("Async-only failure", asyncResult.FailureMessage);
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_SkipsNullEnumeratedItems()
+        {
+            var options = new ParentWithEnumeratedItems
+            {
+                Items = new List<EnumeratedChildOptions?>
+                {
+                    new() { Name = "first" },
+                    null,
+                    new() { Name = "third" },
+                }
+            };
+
+            var validator = new DataAnnotationValidateOptions<ParentWithEnumeratedItems>(Options.DefaultName);
+            ValidateOptionsResult result = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(result.Succeeded);
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_ReportsInvalidItemAfterNullElement()
+        {
+            var options = new ParentWithEnumeratedItems
+            {
+                Items = new List<EnumeratedChildOptions?>
+                {
+                    new() { Name = "first" },
+                    null,
+                    new() { Name = null },
+                }
+            };
+
+            var validator = new DataAnnotationValidateOptions<ParentWithEnumeratedItems>(Options.DefaultName);
+            ValidateOptionsResult result = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(result.Failed);
+            Assert.Contains("ParentWithEnumeratedItems.Items[2]", result.FailureMessage);
+            Assert.DoesNotContain("[1]", result.FailureMessage);
         }
 #endif // NET11_0_OR_GREATER
     }
