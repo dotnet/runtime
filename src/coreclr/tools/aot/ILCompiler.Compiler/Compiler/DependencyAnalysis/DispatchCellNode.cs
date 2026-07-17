@@ -108,44 +108,14 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
 
-    internal static class DispatchCellInfoEncoding
+    internal sealed class DispatchCellInfoComparer : IComparer<DispatchCellNode>
     {
-        // The direct format stores descriptor fields in parallel arrays. If enough cells share a
-        // descriptor, the dictionary format prefixes the unique descriptor arrays with a compact
-        // per-cell index. The section size tells the runtime which format was selected.
-        public static int GetIndexSize(int descriptorCount)
+        private readonly CompilerComparer _comparer = CompilerComparer.Instance;
+
+        public int Compare(DispatchCellNode x, DispatchCellNode y)
         {
-            if (descriptorCount <= 1 << 8)
-                return sizeof(byte);
-
-            if (descriptorCount <= 1 << 16)
-                return sizeof(ushort);
-
-            return sizeof(uint);
-        }
-
-        public static int GetDictionarySize(int cellCount, int descriptorCount, int pointerSize, int descriptorSize)
-        {
-            int indexSize = GetIndexSize(descriptorCount);
-            int pointerTableOffset = AlignmentHelper.AlignUp(checked(sizeof(uint) + checked(cellCount * indexSize)), pointerSize);
-            return checked(pointerTableOffset + checked(descriptorCount * descriptorSize));
-        }
-
-        public static void EmitIndex(ref ObjectDataBuilder builder, int index, int indexSize)
-        {
-            switch (indexSize)
-            {
-                case sizeof(byte):
-                    builder.EmitByte(checked((byte)index));
-                    break;
-                case sizeof(ushort):
-                    builder.EmitUShort(checked((ushort)index));
-                    break;
-                default:
-                    Debug.Assert(indexSize == sizeof(uint));
-                    builder.EmitUInt(checked((uint)index));
-                    break;
-            }
+            int result = _comparer.Compare(x.TargetMethod, y.TargetMethod);
+            return result != 0 ? result : _comparer.Compare(x.CallSiteIdentifier, y.CallSiteIdentifier);
         }
     }
 }

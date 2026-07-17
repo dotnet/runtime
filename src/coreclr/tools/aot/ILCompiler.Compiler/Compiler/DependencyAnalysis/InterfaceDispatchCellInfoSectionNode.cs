@@ -4,11 +4,11 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
-using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
 
@@ -20,13 +20,20 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class InterfaceDispatchCellInfoSectionNode : ObjectNode, ISymbolDefinitionNode
     {
+        private readonly ExternalReferencesTableNode _externalReferences;
+
+        public InterfaceDispatchCellInfoSectionNode(ExternalReferencesTableNode externalReferences)
+        {
+            _externalReferences = externalReferences;
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, Array.Empty<ISymbolDefinitionNode>());
 
             var cells = new List<DispatchCellNode>();
-            foreach (DispatchCellNode node in new SortedSet<DispatchCellNode>(factory.MetadataManager.GetDispatchCells(), new DispatchCellComparer()))
+            foreach (DispatchCellNode node in new SortedSet<DispatchCellNode>(factory.MetadataManager.GetDispatchCells(), new DispatchCellInfoComparer()))
             {
                 if (node.TargetMethod.HasInstantiation)
                     continue;
@@ -35,74 +42,33 @@ namespace ILCompiler.DependencyAnalysis
                 cells.Add(node);
             }
 
-            var descriptorIndices = new Dictionary<MethodDesc, int>();
-            var descriptors = new List<MethodDesc>();
-            var cellDescriptorIndices = new int[cells.Count];
+            if (cells.Count == 0)
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            for (int i = 0; i < cells.Count; i++)
+            var writer = new NativeWriter();
+            Section section = writer.NewSection();
+            var entries = new VertexSequence();
+            section.Place(entries);
+
+            // Cells are ordered by descriptor, so each entry describes one contiguous run.
+            for (int firstCell = 0; firstCell < cells.Count;)
             {
-                MethodDesc targetMethod = cells[i].TargetMethod;
-                if (!descriptorIndices.TryGetValue(targetMethod, out int descriptorIndex))
-                {
-                    descriptorIndex = descriptors.Count;
-                    descriptorIndices.Add(targetMethod, descriptorIndex);
-                    descriptors.Add(targetMethod);
-                }
+                MethodDesc targetMethod = cells[firstCell].TargetMethod;
+                int nextCell = firstCell + 1;
+                while (nextCell < cells.Count && cells[nextCell].TargetMethod == targetMethod)
+                    nextCell++;
 
-                cellDescriptorIndices[i] = descriptorIndex;
+                uint interfaceTypeIndex = _externalReferences.GetIndex(GetInterfaceTypeNode(factory, targetMethod));
+                int targetSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
+                entries.Append(writer.GetTuple(
+                    writer.GetUnsignedConstant(checked((uint)(nextCell - firstCell))),
+                    writer.GetUnsignedConstant(interfaceTypeIndex),
+                    writer.GetUnsignedConstant(checked((uint)targetSlot))));
+
+                firstCell = nextCell;
             }
 
-            var builder = new ObjectDataBuilder(factory, relocsOnly);
-            builder.AddSymbol(this);
-
-            builder.RequireInitialAlignment(factory.Target.PointerSize);
-
-            int pointerSize = factory.Target.SupportsRelativePointers ? sizeof(int) : factory.Target.PointerSize;
-            int descriptorSize = checked(pointerSize + sizeof(ushort));
-            int directSize = checked(cells.Count * descriptorSize);
-            int dictionarySize = DispatchCellInfoEncoding.GetDictionarySize(cells.Count, descriptors.Count, pointerSize, descriptorSize);
-
-            if (dictionarySize < directSize)
-            {
-                builder.EmitUInt(checked((uint)descriptors.Count));
-
-                int indexSize = DispatchCellInfoEncoding.GetIndexSize(descriptors.Count);
-                foreach (int descriptorIndex in cellDescriptorIndices)
-                    DispatchCellInfoEncoding.EmitIndex(ref builder, descriptorIndex, indexSize);
-
-                builder.PadAlignment(pointerSize);
-
-                foreach (MethodDesc targetMethod in descriptors)
-                    EmitInterfaceType(ref builder, factory, targetMethod);
-
-                foreach (MethodDesc targetMethod in descriptors)
-                    EmitSlot(ref builder, factory, targetMethod);
-            }
-            else
-            {
-                foreach (DispatchCellNode cell in cells)
-                    EmitInterfaceType(ref builder, factory, cell.TargetMethod);
-
-                foreach (DispatchCellNode cell in cells)
-                    EmitSlot(ref builder, factory, cell.TargetMethod);
-            }
-
-            return builder.ToObjectData();
-        }
-
-        private static void EmitInterfaceType(ref ObjectDataBuilder builder, NodeFactory factory, MethodDesc targetMethod)
-        {
-            IEETypeNode interfaceType = GetInterfaceTypeNode(factory, targetMethod);
-            if (factory.Target.SupportsRelativePointers)
-                builder.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32);
-            else
-                builder.EmitPointerReloc(interfaceType);
-        }
-
-        private static void EmitSlot(ref ObjectDataBuilder builder, NodeFactory factory, MethodDesc targetMethod)
-        {
-            int targetSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
-            builder.EmitUShort(checked((ushort)targetSlot));
+            return new ObjectData(writer.Save(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -150,29 +116,5 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        /// <summary>
-        /// Comparer that groups interface dispatch cells by their callsite.
-        /// </summary>
-        private sealed class DispatchCellComparer : IComparer<DispatchCellNode>
-        {
-            private readonly CompilerComparer _comparer = CompilerComparer.Instance;
-
-            public int Compare(DispatchCellNode x, DispatchCellNode y)
-            {
-                int result = _comparer.Compare(x.CallSiteIdentifier, y.CallSiteIdentifier);
-                if (result != 0)
-                    return result;
-
-                MethodDesc methodX = x.TargetMethod;
-                MethodDesc methodY = y.TargetMethod;
-
-                result = _comparer.Compare(methodX, methodY);
-                if (result != 0)
-                    return result;
-
-                Debug.Assert(x == y);
-                return 0;
-            }
-        }
     }
 }
