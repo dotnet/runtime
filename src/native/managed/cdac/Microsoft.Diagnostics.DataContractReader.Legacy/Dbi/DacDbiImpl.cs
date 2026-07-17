@@ -2325,7 +2325,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
 
             MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)
-                ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+                ?? throw new InvalidOperationException("Module has no metadata.");
             MethodDefinitionHandle mdMethodHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(functionToken));
             MethodDefinition methodDef = mdReader.GetMethodDefinition(mdMethodHandle);
 

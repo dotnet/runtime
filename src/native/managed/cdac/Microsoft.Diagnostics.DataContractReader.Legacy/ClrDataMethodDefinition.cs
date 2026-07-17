@@ -70,7 +70,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_module);
         IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
         MetadataReader reader = ecmaMetadata.GetMetadata(moduleHandle)
-            ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            ?? throw new InvalidOperationException("Failed to get metadata reader");
 
         int rowId = (int)(_token & 0x00FFFFFF);
         MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle(rowId);

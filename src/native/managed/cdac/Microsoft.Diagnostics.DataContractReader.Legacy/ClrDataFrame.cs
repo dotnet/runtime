@@ -572,8 +572,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     {
         try
         {
-            MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)
-                ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle) ?? throw new NotImplementedException();
             uint token = _target.Contracts.RuntimeTypeSystem.GetMethodToken(mdh);
             MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token)));
             FlagSignatureTypeProvider provider = new(_target, moduleHandle);
