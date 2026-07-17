@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 
@@ -57,35 +58,21 @@ namespace Internal.Runtime
             if (cellIndex >= cellCount)
                 throw new BadImageFormatException();
 
-            NativeParser parser = GetDispatchCellInfoParser(
+            NativeParser parser = GetDispatchCellInfo(
                 typeManager,
                 ReadyToRunSectionType.InterfaceDispatchCellInfoRegion,
+                checked((uint)cellIndex),
+                cellCount,
                 out ExternalReferencesTable externalReferences);
 
-            uint remainingCellIndex = checked((uint)cellIndex);
-            uint entryCount = parser.GetSequenceCount();
-            for (uint i = 0; i < entryCount; i++)
-            {
-                uint runLength = parser.GetUnsigned();
-                uint interfaceTypeIndex = parser.GetUnsigned();
-                uint slot = parser.GetUnsigned();
+            uint interfaceTypeIndex = parser.GetUnsigned();
+            uint slot = parser.GetUnsigned();
 
-                if (runLength == 0)
-                    throw new BadImageFormatException();
+            if (slot > ushort.MaxValue)
+                throw new BadImageFormatException();
 
-                if (remainingCellIndex < runLength)
-                {
-                    if (slot > ushort.MaxValue)
-                        throw new BadImageFormatException();
-
-                    MethodTable* interfaceType = (MethodTable*)externalReferences.GetIntPtrFromIndex(interfaceTypeIndex);
-                    return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, interfaceType, (ushort)slot);
-                }
-
-                remainingCellIndex -= runLength;
-            }
-
-            throw new BadImageFormatException();
+            MethodTable* interfaceType = (MethodTable*)externalReferences.GetIntPtrFromIndex(interfaceTypeIndex);
+            return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, interfaceType, (ushort)slot);
         }
 
         private static unsafe IntPtr ResolveGvmDispatch(TypeManagerHandle typeManager, object pObject, nuint cellIndex, uint cellCount)
@@ -93,47 +80,38 @@ namespace Internal.Runtime
             if (cellIndex >= cellCount)
                 throw new BadImageFormatException();
 
-            NativeParser parser = GetDispatchCellInfoParser(
+            NativeParser parser = GetDispatchCellInfo(
                 typeManager,
                 ReadyToRunSectionType.GvmDispatchCellInfoRegion,
+                checked((uint)cellIndex),
+                cellCount,
                 out ExternalReferencesTable externalReferences);
 
-            uint remainingCellIndex = checked((uint)cellIndex);
-            uint entryCount = parser.GetSequenceCount();
-            for (uint i = 0; i < entryCount; i++)
-            {
-                uint runLength = parser.GetUnsigned();
-                uint owningTypeIndex = parser.GetUnsigned();
-                uint instantiationIndex = parser.GetUnsigned();
-                uint token = parser.GetUnsigned();
-                uint isAsyncVariant = parser.GetUnsigned();
+            uint owningTypeIndex = parser.GetUnsigned();
+            uint instantiationIndex = parser.GetUnsigned();
+            uint token = parser.GetUnsigned();
+            uint isAsyncVariant = parser.GetUnsigned();
 
-                if (runLength == 0 || token > int.MaxValue || isAsyncVariant > 1)
-                    throw new BadImageFormatException();
+            if (token > int.MaxValue || isAsyncVariant > 1)
+                throw new BadImageFormatException();
 
-                if (remainingCellIndex < runLength)
-                {
-                    MethodTable* owningType = (MethodTable*)externalReferences.GetIntPtrFromIndex(owningTypeIndex);
-                    void* instantiation = (void*)externalReferences.GetIntPtrFromIndex(instantiationIndex);
+            MethodTable* owningType = (MethodTable*)externalReferences.GetIntPtrFromIndex(owningTypeIndex);
+            void* instantiation = (void*)externalReferences.GetIntPtrFromIndex(instantiationIndex);
 
-                    return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
-                        new RuntimeTypeHandle(pObject.GetMethodTable()),
-                        new RuntimeTypeHandle(owningType),
-                        new MethodHandle((int)token),
-                        isAsyncVariant != 0,
-                        instantiation,
-                        isMethodInstantiationDataRelative: MethodTable.SupportsRelativePointers);
-                }
-
-                remainingCellIndex -= runLength;
-            }
-
-            throw new BadImageFormatException();
+            return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
+                new RuntimeTypeHandle(pObject.GetMethodTable()),
+                new RuntimeTypeHandle(owningType),
+                new MethodHandle((int)token),
+                isAsyncVariant != 0,
+                instantiation,
+                isMethodInstantiationDataRelative: MethodTable.SupportsRelativePointers);
         }
 
-        private static unsafe NativeParser GetDispatchCellInfoParser(
+        private static unsafe NativeParser GetDispatchCellInfo(
             TypeManagerHandle typeManager,
             ReadyToRunSectionType section,
+            uint cellIndex,
+            uint cellCount,
             out ExternalReferencesTable externalReferences)
         {
             byte* pInfo = (byte*)RuntimeImports.RhGetModuleSection(typeManager, section, out int length);
@@ -144,7 +122,32 @@ namespace Internal.Runtime
             if (!externalReferences.InitializeNativeReferences(typeManager))
                 throw new BadImageFormatException();
 
-            return new NativeParser(new NativeReader(pInfo, checked((uint)length)), 0);
+            NativeReader reader = new NativeReader(pInfo, checked((uint)length));
+            NativeArray entries = new NativeArray(new NativeParser(reader, 0));
+            uint entryCount = entries.GetCount();
+
+            uint low = 0;
+            uint high = entryCount;
+            while (low < high)
+            {
+                uint middle = low + ((high - low) >> 1);
+                bool found = entries.TryGetAt(middle, out NativeParser parser);
+                Debug.Assert(found);
+
+                if (parser.GetUnsigned() <= cellIndex)
+                    low = middle + 1;
+                else
+                    high = middle;
+            }
+
+            Debug.Assert(low < entryCount);
+            bool resultFound = entries.TryGetAt(low, out NativeParser result);
+            Debug.Assert(resultFound);
+
+            uint endCellIndex = result.GetUnsigned();
+            Debug.Assert(endCellIndex > cellIndex && endCellIndex <= cellCount);
+
+            return result;
         }
     }
 }

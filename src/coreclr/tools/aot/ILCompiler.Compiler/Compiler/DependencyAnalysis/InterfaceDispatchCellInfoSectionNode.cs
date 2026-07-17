@@ -47,10 +47,10 @@ namespace ILCompiler.DependencyAnalysis
 
             var writer = new NativeWriter();
             Section section = writer.NewSection();
-            var entries = new VertexSequence();
+            var entries = new VertexArray(section);
             section.Place(entries);
 
-            // Cells are ordered by descriptor, so each entry describes one contiguous run.
+            int entryIndex = 0;
             for (int firstCell = 0; firstCell < cells.Count;)
             {
                 MethodDesc targetMethod = cells[firstCell].TargetMethod;
@@ -60,13 +60,15 @@ namespace ILCompiler.DependencyAnalysis
 
                 uint interfaceTypeIndex = _externalReferences.GetIndex(GetInterfaceTypeNode(factory, targetMethod));
                 int targetSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
-                entries.Append(writer.GetTuple(
-                    writer.GetUnsignedConstant(checked((uint)(nextCell - firstCell))),
+                entries.Set(entryIndex++, writer.GetTuple(
+                    writer.GetUnsignedConstant(checked((uint)nextCell)),
                     writer.GetUnsignedConstant(interfaceTypeIndex),
                     writer.GetUnsignedConstant(checked((uint)targetSlot))));
 
                 firstCell = nextCell;
             }
+
+            entries.ExpandLayout();
 
             return new ObjectData(writer.Save(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

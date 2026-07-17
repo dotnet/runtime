@@ -47,10 +47,10 @@ namespace ILCompiler.DependencyAnalysis
 
             var writer = new NativeWriter();
             Section section = writer.NewSection();
-            var entries = new VertexSequence();
+            var entries = new VertexArray(section);
             section.Place(entries);
 
-            // Cells are ordered by descriptor, so each entry describes one contiguous run.
+            int entryIndex = 0;
             for (int firstCell = 0; firstCell < cells.Count;)
             {
                 MethodDesc targetMethod = cells[firstCell].TargetMethod;
@@ -63,8 +63,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, GetMethodForMetadata(targetMethod, out bool isAsyncVariant));
 
-                entries.Append(writer.GetTuple(
-                    writer.GetUnsignedConstant(checked((uint)(nextCell - firstCell))),
+                entries.Set(entryIndex++, writer.GetTuple(
+                    writer.GetUnsignedConstant(checked((uint)nextCell)),
                     writer.GetUnsignedConstant(owningTypeIndex),
                     writer.GetTuple(
                         writer.GetUnsignedConstant(instantiationIndex),
@@ -74,6 +74,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 firstCell = nextCell;
             }
+
+            entries.ExpandLayout();
 
             return new ObjectData(writer.Save(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
