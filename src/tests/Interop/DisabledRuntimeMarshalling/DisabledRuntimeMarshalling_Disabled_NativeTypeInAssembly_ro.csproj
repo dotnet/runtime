@@ -6,9 +6,6 @@
     <DebugType>None</DebugType>
     <Optimize>true</Optimize>
     <DefineConstants>DISABLE_RUNTIME_MARSHALLING;$(DefineConstants)</DefineConstants>
-
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/84402 -->
-    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvokeAssemblyMarshallingDisabled/*.cs" />

@@ -247,6 +247,74 @@ namespace System.Text.Json.SourceGeneration
                 return new TypeRef(type);
             }
 
+            /// <summary>
+            /// Adds the <c>[Experimental]</c> diagnostic IDs declared on <paramref name="symbol"/> (if any) to
+            /// <paramref name="experimentalIds"/> (allocated on first use), mirroring the generator's unconditional
+            /// <c>[Obsolete]</c> suppression. When <paramref name="symbol"/> is a type, also recurses into array
+            /// element types and generic type arguments from the type and its containing types, since
+            /// <see cref="ISymbol.GetAttributes"/> on a constructed generic returns the definition's attributes
+            /// rather than the type arguments'.
+            /// </summary>
+            private static void AddExperimentalDiagnosticIds(ISymbol? symbol, ref HashSet<string>? experimentalIds)
+            {
+                if (symbol is null)
+                {
+                    return;
+                }
+
+                // For type references, also gather IDs from array element types and generic type arguments.
+                if (symbol is ITypeSymbol type)
+                {
+                    AddTypeArgumentDiagnosticIds(type, ref experimentalIds);
+                }
+
+                foreach (AttributeData attributeData in symbol.GetAttributes())
+                {
+                    if (IsExperimentalAttribute(attributeData.AttributeClass) &&
+                        attributeData.ConstructorArguments.Length > 0 &&
+                        attributeData.ConstructorArguments[0].Value is string diagnosticId &&
+                        SyntaxFacts.IsValidIdentifier(diagnosticId))
+                    {
+                        // ExperimentalAttribute.DiagnosticId is the first (required) constructor argument.
+                        // Only identifiers are safe to emit into #pragma warning disable directives.
+                        (experimentalIds ??= new(StringComparer.Ordinal)).Add(diagnosticId);
+                    }
+                }
+
+                static void AddTypeArgumentDiagnosticIds(ITypeSymbol type, ref HashSet<string>? experimentalIds)
+                {
+                    if (type is IArrayTypeSymbol arrayType)
+                    {
+                        AddExperimentalDiagnosticIds(arrayType.ElementType, ref experimentalIds);
+                    }
+                    else if (type is INamedTypeSymbol namedType)
+                    {
+                        for (INamedTypeSymbol? current = namedType; current is not null; current = current.ContainingType)
+                        {
+                            foreach (ITypeSymbol typeArgument in current.TypeArguments)
+                            {
+                                AddExperimentalDiagnosticIds(typeArgument, ref experimentalIds);
+                            }
+                        }
+                    }
+                }
+            }
+
+            private static bool IsExperimentalAttribute(INamedTypeSymbol? attributeClass)
+                => attributeClass is
+                {
+                    Name: "ExperimentalAttribute",
+                    ContainingNamespace:
+                    {
+                        Name: "CodeAnalysis",
+                        ContainingNamespace:
+                        {
+                            Name: "Diagnostics",
+                            ContainingNamespace: { Name: "System", ContainingNamespace.IsGlobalNamespace: true }
+                        }
+                    }
+                };
+
             private void ParseJsonSerializerContextAttributes(
                 INamedTypeSymbol contextClassSymbol,
                 out List<TypeToGenerate>? rootSerializableTypes,
@@ -329,6 +397,13 @@ namespace System.Text.Json.SourceGeneration
 
             private SourceGenerationOptionsSpec ParseJsonSourceGenerationOptionsAttribute(INamedTypeSymbol contextType, AttributeData attributeData)
             {
+                // Options-level converters and type classifiers are referenced only by the aggregate source
+                // files (not tied to any single generated type), so gather any experimental IDs encountered
+                // during this call into an options-scoped set that lands on the returned spec. The shared gather
+                // helpers take it by ref and allocate lazily on the first ID, so the common no-experimental case
+                // stays allocation-free.
+                HashSet<string>? optionsExperimentalIds = null;
+
                 JsonSourceGenerationMode? generationMode = null;
                 List<TypeRef>? converters = null;
                 List<TypeRef>? typeClassifiers = null;
@@ -358,6 +433,7 @@ namespace System.Text.Json.SourceGeneration
                 char? indentCharacter = null;
                 int? indentSize = null;
                 bool? allowDuplicateProperties = null;
+                bool? inferClosedTypePolymorphism = null;
 
                 if (attributeData.ConstructorArguments.Length > 0)
                 {
@@ -382,7 +458,7 @@ namespace System.Text.Json.SourceGeneration
                             foreach (TypedConstant element in namedArg.Value.Values)
                             {
                                 var converterType = (ITypeSymbol?)element.Value;
-                                TypeRef? typeRef = GetConverterTypeFromAttribute(contextType, converterType, contextType, attributeData);
+                                TypeRef? typeRef = GetConverterTypeFromAttribute(contextType, converterType, contextType, attributeData, ref optionsExperimentalIds);
                                 if (typeRef != null)
                                 {
                                     converters.Add(typeRef);
@@ -487,12 +563,16 @@ namespace System.Text.Json.SourceGeneration
                             allowDuplicateProperties = (bool)namedArg.Value.Value!;
                             break;
 
+                        case nameof(JsonSourceGenerationOptionsAttribute.InferClosedTypePolymorphism):
+                            inferClosedTypePolymorphism = (bool)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.TypeClassifiers):
                             typeClassifiers = new List<TypeRef>();
                             foreach (TypedConstant element in namedArg.Value.Values)
                             {
                                 var classifierType = (ITypeSymbol?)element.Value;
-                                TypeRef? typeRef = GetTypeClassifierFactoryTypeFromAttribute(contextType, classifierType, contextType, attributeData);
+                                TypeRef? typeRef = GetTypeClassifierFactoryTypeFromAttribute(contextType, classifierType, contextType, attributeData, ref optionsExperimentalIds);
                                 if (typeRef != null)
                                 {
                                     typeClassifiers.Add(typeRef);
@@ -515,6 +595,9 @@ namespace System.Text.Json.SourceGeneration
                     DefaultBufferSize = defaultBufferSize,
                     Converters = converters?.ToImmutableEquatableArray(),
                     TypeClassifiers = typeClassifiers?.ToImmutableEquatableArray(),
+                    ExperimentalDiagnosticIds = optionsExperimentalIds is { Count: > 0 }
+                        ? optionsExperimentalIds.OrderBy(id => id, StringComparer.Ordinal).ToImmutableEquatableArray()
+                        : ImmutableEquatableArray<string>.Empty,
                     DefaultIgnoreCondition = defaultIgnoreCondition,
                     DictionaryKeyPolicy = dictionaryKeyPolicy,
                     RespectNullableAnnotations = respectNullableAnnotations,
@@ -537,6 +620,7 @@ namespace System.Text.Json.SourceGeneration
                     IndentCharacter = indentCharacter,
                     IndentSize = indentSize,
                     AllowDuplicateProperties = allowDuplicateProperties,
+                    InferClosedTypePolymorphism = inferClosedTypePolymorphism,
                 };
             }
 
@@ -593,6 +677,12 @@ namespace System.Text.Json.SourceGeneration
 
                 ITypeSymbol type = typeToGenerate.Type;
 
+                // Gather this type's [Experimental] IDs into a stack-local set. Referenced types (members, ctor
+                // parameters, derived types, converters, etc.) add their IDs via EnqueueType and the funnel helpers
+                // as the type is parsed below; the set is allocated lazily and snapshotted into the returned spec.
+                HashSet<string>? experimentalIds = null;
+                AddExperimentalDiagnosticIds(type, ref experimentalIds);
+
                 ClassType classType;
                 JsonPrimitiveTypeKind? primitiveTypeKind = GetPrimitiveTypeKind(type);
                 TypeRef? collectionKeyType = null;
@@ -613,7 +703,8 @@ namespace System.Text.Json.SourceGeneration
                 bool implementsIJsonOnSerialized = false;
                 bool implementsIJsonOnSerializing = false;
 
-                ProcessTypeCustomAttributes(typeToGenerate, contextType,
+                ProcessTypeCustomAttributes(typeToGenerate, contextType, options,
+                    ref experimentalIds,
                     out JsonNumberHandling? numberHandling,
                     out JsonUnmappedMemberHandling? unmappedMemberHandling,
                     out JsonObjectCreationHandling? preferredPropertyObjectCreationHandling,
@@ -622,6 +713,7 @@ namespace System.Text.Json.SourceGeneration
                     out bool foundJsonConverterAttribute,
                     out TypeRef? customConverterType,
                     out PolymorphismOptionsSpec? polymorphismOptions,
+                    out bool hasClosedDerivedTypes,
                     out TypeRef? unionClassifierFactoryType);
 
                 bool isPolymorphic = polymorphismOptions is not null;
@@ -648,6 +740,9 @@ namespace System.Text.Json.SourceGeneration
                 {
                     classType = ClassType.Nullable;
                     nullableUnderlyingType = EnqueueType(underlyingType, typeToGenerate.Mode);
+
+                    // The generated Nullable<T> metadata references the underlying type by name.
+                    AddExperimentalDiagnosticIds(underlyingType, ref experimentalIds);
                 }
                 else if (type.TypeKind is TypeKind.Enum)
                 {
@@ -695,9 +790,15 @@ namespace System.Text.Json.SourceGeneration
                         classType = keyType != null ? ClassType.Dictionary : ClassType.Enumerable;
                         collectionValueType = EnqueueType(valueType, typeToGenerate.Mode);
 
+                        // The generated collection metadata references the element type by name.
+                        AddExperimentalDiagnosticIds(valueType, ref experimentalIds);
+
                         if (keyType != null)
                         {
                             collectionKeyType = EnqueueType(keyType, typeToGenerate.Mode);
+
+                            // The generated dictionary metadata references the key type by name.
+                            AddExperimentalDiagnosticIds(keyType, ref experimentalIds);
 
                             if (needsRuntimeType)
                             {
@@ -722,8 +823,8 @@ namespace System.Text.Json.SourceGeneration
                     implementsIJsonOnSerializing = _knownSymbols.IJsonOnSerializingType.IsAssignableFrom(type);
                     implementsIJsonOnSerialized = _knownSymbols.IJsonOnSerializedType.IsAssignableFrom(type);
 
-                    ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
-                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeIgnoreCondition, options, typeNamingPolicy, out hasExtensionDataProperty, out fastPathPropertyIndices);
+                    ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers, ref experimentalIds);
+                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeIgnoreCondition, options, typeNamingPolicy, out hasExtensionDataProperty, out fastPathPropertyIndices, ref experimentalIds);
 
                     if (!constructorIsInaccessible)
                     {
@@ -751,6 +852,9 @@ namespace System.Text.Json.SourceGeneration
                                 }
 
                                 TypeRef caseTypeRef = EnqueueType(caseType, typeToGenerate.Mode);
+
+                                // The generated union metadata references the case type by name.
+                                AddExperimentalDiagnosticIds(caseType, ref experimentalIds);
 
                                 // C# rejects Nullable<T> in `value switch` patterns (CS8116). The CLR layer
                                 // boxes a Nullable<T> with HasValue=true bit-identically to a boxed T, so the
@@ -810,6 +914,10 @@ namespace System.Text.Json.SourceGeneration
                     PrimitiveTypeKind = primitiveTypeKind,
                     IsPolymorphic = isPolymorphic,
                     PolymorphismOptions = polymorphismOptions,
+                    IsClosedTypeWithoutInferredPolymorphism =
+                        polymorphismOptions is null &&
+                        options?.InferClosedTypePolymorphism is not true &&
+                        hasClosedDerivedTypes,
                     NumberHandling = numberHandling,
                     UnmappedMemberHandling = unmappedMemberHandling,
                     PreferredPropertyObjectCreationHandling = preferredPropertyObjectCreationHandling,
@@ -837,12 +945,17 @@ namespace System.Text.Json.SourceGeneration
                     ImplementsIJsonOnSerialized = implementsIJsonOnSerialized,
                     ImplementsIJsonOnSerializing = implementsIJsonOnSerializing,
                     ImmutableCollectionFactoryMethod = DetermineImmutableCollectionFactoryMethod(immutableCollectionFactoryTypeFullName),
+                    ExperimentalDiagnosticIds = experimentalIds is not { Count: > 0 }
+                        ? ImmutableEquatableArray<string>.Empty
+                        : experimentalIds.OrderBy(id => id, StringComparer.Ordinal).ToImmutableEquatableArray(),
                 };
             }
 
             private void ProcessTypeCustomAttributes(
                 in TypeToGenerate typeToGenerate,
                 INamedTypeSymbol contextType,
+                SourceGenerationOptionsSpec? options,
+                ref HashSet<string>? experimentalIds,
                 out JsonNumberHandling? numberHandling,
                 out JsonUnmappedMemberHandling? unmappedMemberHandling,
                 out JsonObjectCreationHandling? objectCreationHandling,
@@ -851,6 +964,7 @@ namespace System.Text.Json.SourceGeneration
                 out bool foundJsonConverterAttribute,
                 out TypeRef? customConverterType,
                 out PolymorphismOptionsSpec? polymorphismOptions,
+                out bool hasClosedDerivedTypes,
                 out TypeRef? unionClassifierFactoryType)
             {
                 numberHandling = null;
@@ -861,6 +975,7 @@ namespace System.Text.Json.SourceGeneration
                 customConverterType = null;
                 foundJsonConverterAttribute = false;
                 polymorphismOptions = null;
+                hasClosedDerivedTypes = false;
                 unionClassifierFactoryType = null;
 
                 bool hasPolymorphicAttribute = false;
@@ -869,6 +984,8 @@ namespace System.Text.Json.SourceGeneration
                 string? typeDiscriminatorPropertyName = null;
                 TypeRef? polymorphicClassifierFactoryType = null;
                 List<DerivedTypeSpec>? derivedTypes = null;
+                HashSet<object>? typeDiscriminators = null;
+                bool hasExplicitDerivedTypeAttribute = false;
                 bool hasUnionTypeClassifierSpecified = false;
                 bool isUnionType = IsUnionType(typeToGenerate.Type);
                 INamedTypeSymbol? namedUnionType = typeToGenerate.Type as INamedTypeSymbol;
@@ -910,7 +1027,7 @@ namespace System.Text.Json.SourceGeneration
                     }
                     else if (!foundJsonConverterAttribute && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
                     {
-                        customConverterType = GetConverterTypeFromJsonConverterAttribute(contextType, typeToGenerate.Type, attributeData);
+                        customConverterType = GetConverterTypeFromJsonConverterAttribute(contextType, typeToGenerate.Type, attributeData, ref experimentalIds);
                         foundJsonConverterAttribute = true;
                     }
 
@@ -938,22 +1055,8 @@ namespace System.Text.Json.SourceGeneration
                     if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonDerivedTypeAttributeType))
                     {
                         Debug.Assert(attributeData.ConstructorArguments.Length > 0);
-                        var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
-
-                        if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
-                        {
-                            if (!TryResolveOpenGenericDerivedType(
-                                    unboundDerived, typeToGenerate.Type,
-                                    out INamedTypeSymbol? resolvedType, out string? failureReason))
-                            {
-                                ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, attributeData.GetLocation(), derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
-                                continue;
-                            }
-
-                            derivedType = resolvedType!;
-                        }
-
-                        TypeRef derivedTypeRef = EnqueueType(derivedType, typeToGenerate.Mode);
+                        hasExplicitDerivedTypeAttribute = true;
+                        ITypeSymbol derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
 
                         object? typeDiscriminator = null;
                         if (attributeData.ConstructorArguments.Length == 2)
@@ -962,16 +1065,16 @@ namespace System.Text.Json.SourceGeneration
                             Debug.Assert(typeDiscriminator is int or string);
                         }
 
-                        if (derivedTypes is null && typeToGenerate.Mode == JsonSourceGenerationMode.Serialization)
-                        {
-                            ReportDiagnostic(DiagnosticDescriptors.PolymorphismNotSupported, typeToGenerate.Location, typeToGenerate.Type.ToDisplayString());
-                        }
-
-                        (derivedTypes ??= new()).Add(new DerivedTypeSpec
-                        {
-                            DerivedType = derivedTypeRef,
-                            TypeDiscriminator = typeDiscriminator,
-                        });
+                        AddPolymorphicDerivedType(
+                            typeToGenerate,
+                            derivedType,
+                            typeDiscriminator,
+                            attributeData.GetLocation(),
+                            typeToGenerate.Location,
+                            ref typeDiscriminators,
+                            ref experimentalIds,
+                            ref derivedTypes,
+                            isInferredDerivedType: false);
                     }
                     else if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonPolymorphicAttributeType))
                     {
@@ -990,7 +1093,7 @@ namespace System.Text.Json.SourceGeneration
                                 case "TypeClassifier":
                                     if (namedArg.Value.Value is ITypeSymbol classifierType)
                                     {
-                                        polymorphicClassifierFactoryType = GetTypeClassifierFactoryTypeFromAttribute(contextType, classifierType, typeToGenerate.Type, attributeData);
+                                        polymorphicClassifierFactoryType = GetTypeClassifierFactoryTypeFromAttribute(contextType, classifierType, typeToGenerate.Type, attributeData, ref experimentalIds);
                                     }
                                     break;
                                 case "UnknownDerivedTypeHandling":
@@ -1009,10 +1112,34 @@ namespace System.Text.Json.SourceGeneration
                                 namedArg.Value.Value is ITypeSymbol classifierType)
                             {
                                 hasUnionTypeClassifierSpecified = true;
-                                unionClassifierFactoryType = GetTypeClassifierFactoryTypeFromAttribute(contextType, classifierType, namedUnionType, attributeData);
+                                unionClassifierFactoryType = GetTypeClassifierFactoryTypeFromAttribute(contextType, classifierType, namedUnionType, attributeData, ref experimentalIds);
                                 break;
                             }
                         }
+                    }
+                }
+
+                // Enumerate a closed hierarchy once when it is needed either for inference or to determine
+                // whether generated metadata must reject runtime-only inference. Explicit derived-type
+                // registrations suppress inference, while any explicit polymorphism metadata makes the
+                // runtime-only inference guard unnecessary.
+                bool shouldInferClosedTypePolymorphism =
+                    options?.InferClosedTypePolymorphism is true && !hasExplicitDerivedTypeAttribute;
+                bool needsRuntimeInferenceGuard =
+                    options?.InferClosedTypePolymorphism is not true &&
+                    !hasPolymorphicAttribute &&
+                    derivedTypes is null;
+
+                if ((shouldInferClosedTypePolymorphism || needsRuntimeInferenceGuard) &&
+                    typeToGenerate.Type is INamedTypeSymbol closedBaseType &&
+                    closedBaseType.IsClosedType())
+                {
+                    List<ITypeSymbol>? closedDerivedTypes = closedBaseType.GetClosedDerivedTypes();
+                    hasClosedDerivedTypes = closedDerivedTypes is { Count: > 0 };
+
+                    if (shouldInferClosedTypePolymorphism && closedDerivedTypes is not null)
+                    {
+                        InferClosedTypeDerivedTypes(typeToGenerate, closedDerivedTypes, ref typeDiscriminators, ref experimentalIds, ref derivedTypes);
                     }
                 }
 
@@ -1032,7 +1159,117 @@ namespace System.Text.Json.SourceGeneration
                 // types (constructor parameter types) for metadata generation.
                 if (isUnionType)
                 {
-                    EnqueueUnionCaseTypes(typeToGenerate, hasUnionTypeClassifierSpecified);
+                    EnqueueUnionCaseTypes(typeToGenerate, hasUnionTypeClassifierSpecified, ref experimentalIds);
+                }
+            }
+
+            private void AddPolymorphicDerivedType(
+                in TypeToGenerate typeToGenerate,
+                ITypeSymbol derivedType,
+                object? typeDiscriminator,
+                Location? derivedTypeDiagnosticLocation,
+                Location? polymorphismDiagnosticLocation,
+                ref HashSet<object>? typeDiscriminators,
+                ref HashSet<string>? experimentalIds,
+                ref List<DerivedTypeSpec>? derivedTypes,
+                bool isInferredDerivedType)
+            {
+                ITypeSymbol? resolvedDerivedType = derivedType;
+
+                if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
+                {
+                    if (!TryResolveOpenGenericDerivedType(
+                            unboundDerived, typeToGenerate.Type,
+                            out resolvedDerivedType, out string? failureReason))
+                    {
+                        // An open generic derived type that cannot be unified against this base
+                        // has no concrete type to emit. Surface it at build time and emit a
+                        // guaranteed-invalid placeholder so the shared runtime resolver rejects
+                        // the hierarchy, matching reflection without referencing the unresolvable type.
+                        ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, derivedTypeDiagnosticLocation, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
+                    }
+                }
+
+                if (resolvedDerivedType is not null &&
+                    !typeToGenerate.Type.IsAssignableFrom(resolvedDerivedType))
+                {
+                    // The shared runtime resolver throws DerivedTypeNotSupported for the emitted entry;
+                    // surface the problem at build time and keep the entry so runtime behavior matches.
+                    ReportDiagnostic(DiagnosticDescriptors.DerivedTypeIsNotSupported, derivedTypeDiagnosticLocation, resolvedDerivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
+                }
+
+                derivedType = resolvedDerivedType ?? _knownSymbols.ObjectType;
+
+                // An inferred derived type must be at least as visible as the base type it is
+                // being registered under; otherwise there are call sites that can see the base but
+                // not the derived type, and the generated context could not reference it.
+                if (isInferredDerivedType &&
+                    !derivedType.IsAtLeastAsVisibleAs(typeToGenerate.Type))
+                {
+                    // Emit a guaranteed-invalid placeholder so the shared runtime resolver rejects
+                    // the hierarchy without referencing the inaccessible type.
+                    ReportDiagnostic(DiagnosticDescriptors.InferredDerivedTypeIsNotAccessible, derivedTypeDiagnosticLocation, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
+                    derivedType = _knownSymbols.ObjectType;
+                }
+
+                if (typeDiscriminator is not null &&
+                    !(typeDiscriminators ??= new()).Add(typeDiscriminator))
+                {
+                    // Emit the colliding entry anyway so the shared runtime resolver throws,
+                    // matching the reflection path; surface the collision at build time.
+                    ReportDiagnostic(DiagnosticDescriptors.DerivedTypeDiscriminatorCollision, derivedTypeDiagnosticLocation, typeDiscriminator, typeToGenerate.Type.ToDisplayString());
+                }
+
+                if (derivedTypes is null && typeToGenerate.Mode == JsonSourceGenerationMode.Serialization)
+                {
+                    ReportDiagnostic(DiagnosticDescriptors.PolymorphismNotSupported, polymorphismDiagnosticLocation, typeToGenerate.Type.ToDisplayString());
+                }
+
+                TypeRef derivedTypeRef = EnqueueType(derivedType, typeToGenerate.Mode);
+
+                // The generated polymorphic metadata references the derived type by name.
+                AddExperimentalDiagnosticIds(derivedType, ref experimentalIds);
+
+                (derivedTypes ??= new()).Add(new DerivedTypeSpec
+                {
+                    DerivedType = derivedTypeRef,
+                    TypeDiscriminator = typeDiscriminator,
+                });
+            }
+
+            /// <summary>
+            /// Synthesizes <see cref="DerivedTypeSpec"/> entries from a closed hierarchy's immediate
+            /// derived type set, mirroring the reflection-side inference in
+            /// <c>DefaultJsonTypeInfoResolver.Helpers.PopulatePolymorphismMetadata</c>. Each inferred
+            /// entry uses the derived type's simple name as its string discriminator.
+            /// </summary>
+            private void InferClosedTypeDerivedTypes(
+                in TypeToGenerate typeToGenerate,
+                List<ITypeSymbol> closedTypeDerivedTypes,
+                ref HashSet<object>? typeDiscriminators,
+                ref HashSet<string>? experimentalIds,
+                ref List<DerivedTypeSpec>? derivedTypes)
+            {
+                // Surface inference diagnostics at the [JsonSerializable] registration site when available
+                // (mirroring the TypeNotSupported handling), so they appear on the context the author
+                // controls rather than on the closed base type's declaration, which may live in another
+                // file or referenced assembly.
+                Location? diagnosticLocation = typeToGenerate.AttributeLocation ?? typeToGenerate.Location;
+
+                // Order by the simple name used as the discriminator, which must be unique.
+                foreach (ITypeSymbol closedDerivedType in closedTypeDerivedTypes.OrderBy(static type => type.Name, StringComparer.Ordinal))
+                {
+                    string discriminator = closedDerivedType.Name;
+                    AddPolymorphicDerivedType(
+                        typeToGenerate,
+                        closedDerivedType,
+                        discriminator,
+                        diagnosticLocation,
+                        diagnosticLocation,
+                        ref typeDiscriminators,
+                        ref experimentalIds,
+                        ref derivedTypes,
+                        isInferredDerivedType: true);
                 }
             }
 
@@ -1055,7 +1292,7 @@ namespace System.Text.Json.SourceGeneration
             private bool TryResolveOpenGenericDerivedType(
                 INamedTypeSymbol unboundDerived,
                 ITypeSymbol baseType,
-                out INamedTypeSymbol? resolvedType,
+                [NotNullWhen(true)] out ITypeSymbol? resolvedType,
                 out string? failureReason)
             {
                 resolvedType = null;
@@ -1315,7 +1552,7 @@ namespace System.Text.Json.SourceGeneration
             /// Enqueues all case types from a union's defining members
             /// and emits diagnostics for ambiguous JSON value categories.
             /// </summary>
-            private void EnqueueUnionCaseTypes(in TypeToGenerate typeToGenerate, bool hasUnionTypeClassifierSpecified)
+            private void EnqueueUnionCaseTypes(in TypeToGenerate typeToGenerate, bool hasUnionTypeClassifierSpecified, ref HashSet<string>? experimentalIds)
             {
                 if (typeToGenerate.Type is not INamedTypeSymbol namedType)
                 {
@@ -1326,6 +1563,9 @@ namespace System.Text.Json.SourceGeneration
                 foreach ((ITypeSymbol caseType, _) in caseTypes)
                 {
                     EnqueueType(caseType, typeToGenerate.Mode);
+
+                    // The generated union metadata references the case type by name.
+                    AddExperimentalDiagnosticIds(caseType, ref experimentalIds);
                 }
 
                 // Detect ambiguous case types (multiple types mapping to same JSON value category).
@@ -1892,7 +2132,8 @@ namespace System.Text.Json.SourceGeneration
                 SourceGenerationOptionsSpec? options,
                 JsonKnownNamingPolicy? typeNamingPolicy,
                 out bool hasExtensionDataProperty,
-                out List<int>? fastPathPropertyIndices)
+                out List<int>? fastPathPropertyIndices,
+                ref HashSet<string>? experimentalIds)
             {
                 Location? typeLocation = typeToGenerate.Location;
                 List<PropertyGenerationSpec> properties = new();
@@ -1923,7 +2164,8 @@ namespace System.Text.Json.SourceGeneration
                             memberInfo: propertyInfo,
                             typeToGenerate.Mode,
                             ref state,
-                            ref hasExtensionDataProperty);
+                            ref hasExtensionDataProperty,
+                            ref experimentalIds);
                     }
 
                     foreach (IFieldSymbol fieldInfo in members.OfType<IFieldSymbol>())
@@ -1946,7 +2188,8 @@ namespace System.Text.Json.SourceGeneration
                             memberInfo: fieldInfo,
                             typeToGenerate.Mode,
                             ref state,
-                            ref hasExtensionDataProperty);
+                            ref hasExtensionDataProperty,
+                            ref experimentalIds);
                     }
                 }
 
@@ -1964,7 +2207,8 @@ namespace System.Text.Json.SourceGeneration
                     ISymbol memberInfo,
                     JsonSourceGenerationMode? generationMode,
                     ref PropertyHierarchyResolutionState state,
-                    ref bool hasExtensionDataProperty)
+                    ref bool hasExtensionDataProperty,
+                    ref HashSet<string>? experimentalIds)
                 {
                     PropertyGenerationSpec? propertySpec = ParsePropertyGenerationSpec(
                         contextType,
@@ -1976,7 +2220,8 @@ namespace System.Text.Json.SourceGeneration
                         ref hasExtensionDataProperty,
                         generationMode,
                         options,
-                        typeNamingPolicy);
+                        typeNamingPolicy,
+                        ref experimentalIds);
 
                     if (propertySpec is null)
                     {
@@ -1986,12 +2231,6 @@ namespace System.Text.Json.SourceGeneration
 
                     AddPropertyWithConflictResolution(propertySpec, memberInfo, propertyIndex: properties.Count, ref state);
                     properties.Add(propertySpec);
-
-                    // Note: ParsePropertyGenerationSpec intentionally does not mark inaccessible
-                    // [JsonInclude] members as invalid for fast-path generation. Some callers rely
-                    // on that omission to source-generate against experimental APIs without
-                    // introducing new warnings until https://github.com/dotnet/runtime/issues/124889
-                    // is completed.
                 }
 
                 bool PropertyIsOverriddenAndIgnored(IPropertySymbol property, Dictionary<string, ISymbol>? ignoredMembers)
@@ -2124,7 +2363,8 @@ namespace System.Text.Json.SourceGeneration
                 ref bool typeHasExtensionDataProperty,
                 JsonSourceGenerationMode? generationMode,
                 SourceGenerationOptionsSpec? options,
-                JsonKnownNamingPolicy? typeNamingPolicy)
+                JsonKnownNamingPolicy? typeNamingPolicy,
+                ref HashSet<string>? experimentalIds)
             {
                 Debug.Assert(memberInfo is IFieldSymbol or IPropertySymbol);
 
@@ -2132,6 +2372,7 @@ namespace System.Text.Json.SourceGeneration
                     contextType,
                     memberInfo,
                     memberType,
+                    ref experimentalIds,
                     out bool hasJsonInclude,
                     out string? jsonPropertyName,
                     out JsonIgnoreCondition? ignoreCondition,
@@ -2162,15 +2403,9 @@ namespace System.Text.Json.SourceGeneration
                     out bool isRequired,
                     out bool canUseGetter,
                     out bool canUseSetter,
-                    out bool hasJsonIncludeButIsInaccessible,
                     out bool setterIsInitOnly,
                     out bool isGetterNonNullable,
                     out bool isSetterNonNullable);
-
-                if (hasJsonIncludeButIsInaccessible)
-                {
-                    ReportDiagnostic(DiagnosticDescriptors.InaccessibleJsonIncludePropertiesNotSupported, memberInfo.GetLocation(), declaringType.Name, memberInfo.Name);
-                }
 
                 if (isExtensionData)
                 {
@@ -2187,11 +2422,13 @@ namespace System.Text.Json.SourceGeneration
                     typeHasExtensionDataProperty = true;
                 }
 
-                if ((!canUseGetter && !canUseSetter && !hasJsonIncludeButIsInaccessible) ||
+                if ((!canUseGetter && !canUseSetter && !hasJsonInclude) ||
                     !IsSymbolAccessibleWithin(memberType, within: contextType))
                 {
                     // Skip the member if either of the two conditions hold
-                    // 1. Member has no accessible getters or setters (but is not marked with JsonIncludeAttribute since we need to throw a runtime exception) OR
+                    // 1. Member has no accessible getters or setters and is not annotated with
+                    //    JsonIncludeAttribute (inaccessible [JsonInclude] members are read/written
+                    //    using UnsafeAccessor or reflection) OR
                     // 2. The member type is not accessible within the generated context.
                     return null;
                 }
@@ -2224,6 +2461,29 @@ namespace System.Text.Json.SourceGeneration
                     ? EnqueueType(memberType, generationMode)
                     : new TypeRef(memberType);
 
+                if (ignoreCondition != JsonIgnoreCondition.Always)
+                {
+                    // The generated code accesses this member and its type, so suppress any [Experimental]
+                    // diagnostic declared on the member type as well as on the member itself.
+                    AddExperimentalDiagnosticIds(memberType, ref experimentalIds);
+                    AddExperimentalDiagnosticIds(memberInfo, ref experimentalIds);
+
+                    // [Experimental] can also be applied directly to the accessor(s) the generated code invokes
+                    // (for example [get: Experimental(...)] / [set: Experimental(...)]).
+                    if (memberInfo is IPropertySymbol property)
+                    {
+                        if (canUseGetter)
+                        {
+                            AddExperimentalDiagnosticIds(property.GetMethod, ref experimentalIds);
+                        }
+
+                        if (canUseSetter)
+                        {
+                            AddExperimentalDiagnosticIds(property.SetMethod, ref experimentalIds);
+                        }
+                    }
+                }
+
                 return new PropertyGenerationSpec
                 {
                     NameSpecifiedInSourceCode = memberInfo.MemberNameNeedsAtSign() ? "@" + memberInfo.Name : memberInfo.Name,
@@ -2244,10 +2504,7 @@ namespace System.Text.Json.SourceGeneration
                     NumberHandling = numberHandling,
                     ObjectCreationHandling = objectCreationHandling,
                     Order = order,
-                    // TODO: remove the inaccessibility check once https://github.com/dotnet/runtime/issues/124889
-                    // is complete; some callers currently rely on this omission when source-generating
-                    // against experimental APIs (tracking: https://github.com/dotnet/runtime/issues/88519).
-                    HasJsonInclude = hasJsonInclude && !hasJsonIncludeButIsInaccessible,
+                    HasJsonInclude = hasJsonInclude,
                     CanUseUnsafeAccessors = _knownSymbols.UnsafeAccessorAttributeType is not null
                         && (memberInfo.ContainingType is not INamedTypeSymbol { IsGenericType: true }
                             || _knownSymbols.SupportsGenericUnsafeAccessors),
@@ -2272,6 +2529,7 @@ namespace System.Text.Json.SourceGeneration
                 INamedTypeSymbol contextType,
                 ISymbol memberInfo,
                 ITypeSymbol memberType,
+                ref HashSet<string>? experimentalIds,
                 out bool hasJsonInclude,
                 out string? jsonPropertyName,
                 out JsonIgnoreCondition? ignoreCondition,
@@ -2307,7 +2565,7 @@ namespace System.Text.Json.SourceGeneration
 
                     if (converterType is null && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
                     {
-                        converterType = GetConverterTypeFromJsonConverterAttribute(contextType, memberInfo, attributeData, memberType);
+                        converterType = GetConverterTypeFromJsonConverterAttribute(contextType, memberInfo, attributeData, ref experimentalIds, memberType);
                     }
                     else if (memberNamingPolicy is null && _knownSymbols.JsonNamingPolicyAttributeType?.IsAssignableFrom(attributeType) == true)
                     {
@@ -2396,7 +2654,6 @@ namespace System.Text.Json.SourceGeneration
                 out bool isRequired,
                 out bool canUseGetter,
                 out bool canUseSetter,
-                out bool hasJsonIncludeButIsInaccessible,
                 out bool isSetterInitOnly,
                 out bool isGetterNonNullable,
                 out bool isSetterNonNullable)
@@ -2406,7 +2663,6 @@ namespace System.Text.Json.SourceGeneration
                 isRequired = false;
                 canUseGetter = false;
                 canUseSetter = false;
-                hasJsonIncludeButIsInaccessible = false;
                 isSetterInitOnly = false;
                 isGetterNonNullable = false;
                 isSetterNonNullable = false;
@@ -2429,10 +2685,6 @@ namespace System.Text.Json.SourceGeneration
                                 isAccessible = true;
                                 canUseGetter = hasJsonInclude;
                             }
-                            else
-                            {
-                                hasJsonIncludeButIsInaccessible = hasJsonInclude;
-                            }
                         }
 
                         if (propertyInfo.SetMethod is { } setMethod)
@@ -2448,10 +2700,6 @@ namespace System.Text.Json.SourceGeneration
                             {
                                 isAccessible = true;
                                 canUseSetter = hasJsonInclude;
-                            }
-                            else
-                            {
-                                hasJsonIncludeButIsInaccessible = hasJsonInclude;
                             }
                         }
                         else
@@ -2478,10 +2726,6 @@ namespace System.Text.Json.SourceGeneration
                             canUseGetter = hasJsonInclude;
                             canUseSetter = hasJsonInclude && !isReadOnly;
                         }
-                        else
-                        {
-                            hasJsonIncludeButIsInaccessible = hasJsonInclude;
-                        }
 
                         fieldInfo.ResolveNullabilityAnnotations(out isGetterNonNullable, out isSetterNonNullable);
                         break;
@@ -2495,7 +2739,8 @@ namespace System.Text.Json.SourceGeneration
                 in TypeToGenerate typeToGenerate,
                 IMethodSymbol? constructor,
                 out ObjectConstructionStrategy constructionStrategy,
-                out bool constructorSetsRequiredMembers)
+                out bool constructorSetsRequiredMembers,
+                ref HashSet<string>? experimentalIds)
             {
                 ITypeSymbol type = typeToGenerate.Type;
 
@@ -2505,6 +2750,10 @@ namespace System.Text.Json.SourceGeneration
                     constructorSetsRequiredMembers = false;
                     return null;
                 }
+
+                // The generated code invokes this constructor, so suppress any [Experimental] diagnostic declared
+                // on the constructor itself (parameter types are covered by EnqueueType below).
+                AddExperimentalDiagnosticIds(constructor, ref experimentalIds);
 
                 ParameterGenerationSpec[] constructorParameters;
                 int paramCount = constructor?.Parameters.Length ?? 0;
@@ -2538,9 +2787,18 @@ namespace System.Text.Json.SourceGeneration
 
                         // Don't enqueue out parameter types for JSON contract generation — they
                         // aren't deserialized and may reference unsupported types (e.g. Task).
-                        TypeRef parameterTypeRef = parameterInfo.RefKind == RefKind.Out
-                            ? new TypeRef(parameterInfo.Type)
-                            : EnqueueType(parameterInfo.Type, typeToGenerate.Mode);
+                        TypeRef parameterTypeRef;
+                        if (parameterInfo.RefKind == RefKind.Out)
+                        {
+                            parameterTypeRef = new TypeRef(parameterInfo.Type);
+                        }
+                        else
+                        {
+                            parameterTypeRef = EnqueueType(parameterInfo.Type, typeToGenerate.Mode);
+
+                            // The generated constructor invocation references the parameter type by name.
+                            AddExperimentalDiagnosticIds(parameterInfo.Type, ref experimentalIds);
+                        }
 
                         // out parameters don't receive values from JSON, so they have ArgsIndex = -1.
                         int currentArgsIndex = parameterInfo.RefKind == RefKind.Out ? -1 : argsIndex++;
@@ -2642,7 +2900,7 @@ namespace System.Text.Json.SourceGeneration
                 return propertyInitializers;
             }
 
-            private TypeRef? GetConverterTypeFromJsonConverterAttribute(INamedTypeSymbol contextType, ISymbol declaringSymbol, AttributeData attributeData, ITypeSymbol? typeToConvert = null)
+            private TypeRef? GetConverterTypeFromJsonConverterAttribute(INamedTypeSymbol contextType, ISymbol declaringSymbol, AttributeData attributeData, ref HashSet<string>? experimentalIds, ITypeSymbol? typeToConvert = null)
             {
                 Debug.Assert(_knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeData.AttributeClass));
 
@@ -2658,10 +2916,10 @@ namespace System.Text.Json.SourceGeneration
                 // If typeToConvert is not provided, try to infer it from declaringSymbol
                 typeToConvert ??= declaringSymbol as ITypeSymbol;
 
-                return GetConverterTypeFromAttribute(contextType, converterType, declaringSymbol, attributeData, typeToConvert);
+                return GetConverterTypeFromAttribute(contextType, converterType, declaringSymbol, attributeData, ref experimentalIds, typeToConvert);
             }
 
-            private TypeRef? GetConverterTypeFromAttribute(INamedTypeSymbol contextType, ITypeSymbol? converterType, ISymbol declaringSymbol, AttributeData attributeData, ITypeSymbol? typeToConvert = null)
+            private TypeRef? GetConverterTypeFromAttribute(INamedTypeSymbol contextType, ITypeSymbol? converterType, ISymbol declaringSymbol, AttributeData attributeData, ref HashSet<string>? experimentalIds, ITypeSymbol? typeToConvert = null)
             {
                 INamedTypeSymbol? namedConverterType = converterType as INamedTypeSymbol;
 
@@ -2680,9 +2938,11 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
+                IMethodSymbol? accessibleParameterlessCtor = namedConverterType?.Constructors.FirstOrDefault(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType));
+
                 if (namedConverterType is null ||
                     !_knownSymbols.JsonConverterType.IsAssignableFrom(namedConverterType) ||
-                    !namedConverterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
+                    accessibleParameterlessCtor is null)
                 {
                     ReportDiagnostic(DiagnosticDescriptors.JsonConverterAttributeInvalidType, attributeData.GetLocation(), converterType?.ToDisplayString() ?? "null", declaringSymbol.ToDisplayString());
                     return null;
@@ -2693,23 +2953,33 @@ namespace System.Text.Json.SourceGeneration
                     ReportDiagnostic(DiagnosticDescriptors.JsonStringEnumConverterNotSupportedInAot, attributeData.GetLocation(), declaringSymbol.ToDisplayString());
                 }
 
+                // The generated code instantiates this converter (including any generic type arguments) via
+                // its parameterless constructor, so suppress any [Experimental] diagnostic on either symbol.
+                AddExperimentalDiagnosticIds(namedConverterType, ref experimentalIds);
+                AddExperimentalDiagnosticIds(accessibleParameterlessCtor, ref experimentalIds);
                 return new TypeRef(namedConverterType);
             }
 
-            private TypeRef? GetTypeClassifierFactoryTypeFromAttribute(INamedTypeSymbol contextType, ITypeSymbol? classifierType, ISymbol declaringSymbol, AttributeData attributeData)
+            private TypeRef? GetTypeClassifierFactoryTypeFromAttribute(INamedTypeSymbol contextType, ITypeSymbol? classifierType, ISymbol declaringSymbol, AttributeData attributeData, ref HashSet<string>? experimentalIds)
             {
                 INamedTypeSymbol? namedClassifierType = classifierType as INamedTypeSymbol;
+
+                IMethodSymbol? accessibleParameterlessCtor = namedClassifierType?.Constructors.FirstOrDefault(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType));
 
                 if (namedClassifierType is null ||
                     namedClassifierType.IsAbstract ||
                     !_knownSymbols.JsonTypeClassifierFactoryType.IsAssignableFrom(namedClassifierType) ||
-                    !namedClassifierType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
+                    accessibleParameterlessCtor is null)
                 {
                     // Reuse the converter-attribute diagnostic for this prototype; the conditions are analogous.
                     ReportDiagnostic(DiagnosticDescriptors.JsonConverterAttributeInvalidType, attributeData.GetLocation(), classifierType?.ToDisplayString() ?? "null", declaringSymbol.ToDisplayString());
                     return null;
                 }
 
+                // The generated code instantiates this classifier factory (including any generic type arguments) via
+                // its parameterless constructor, so suppress any [Experimental] diagnostic on either symbol.
+                AddExperimentalDiagnosticIds(namedClassifierType, ref experimentalIds);
+                AddExperimentalDiagnosticIds(accessibleParameterlessCtor, ref experimentalIds);
                 return new TypeRef(namedClassifierType);
             }
 

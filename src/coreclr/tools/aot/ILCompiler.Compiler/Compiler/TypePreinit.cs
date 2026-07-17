@@ -929,10 +929,18 @@ namespace ILCompiler
                                         context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((long)(ulong)val) : ValueTypeValue.FromInt32((int)(uint)val));
                                     break;
                                 case ILOpcode.conv_i1:
-                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
+                                    // TODO: Once the fix for unchecked float->small integer saturation propagates into
+                                    // the ILC toolchain, the Math.Clamp can be removed and this simplified to:
+                                    // stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
+                                    stack.Push(StackValueKind.Int32,
+                                        ValueTypeValue.FromInt32((sbyte)(int)Math.Clamp(double.IsNaN(val) ? 0 : val, sbyte.MinValue, sbyte.MaxValue)));
                                     break;
                                 case ILOpcode.conv_i2:
-                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
+                                    // TODO: Once the fix for unchecked float->small integer saturation propagates into
+                                    // the ILC toolchain, the Math.Clamp can be removed and this simplified to:
+                                    // stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
+                                    stack.Push(StackValueKind.Int32,
+                                        ValueTypeValue.FromInt32((short)(int)Math.Clamp(double.IsNaN(val) ? 0 : val, short.MinValue, short.MaxValue)));
                                     break;
                                 case ILOpcode.conv_i4:
                                     stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
@@ -941,10 +949,18 @@ namespace ILCompiler
                                     stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)val));
                                     break;
                                 case ILOpcode.conv_u1:
-                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
+                                    // TODO: Once the fix for unchecked float->small integer saturation propagates into
+                                    // the ILC toolchain, the Math.Clamp can be removed and this simplified to:
+                                    // stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
+                                    stack.Push(StackValueKind.Int32,
+                                        ValueTypeValue.FromInt32((byte)(int)Math.Clamp(double.IsNaN(val) ? 0 : val, byte.MinValue, byte.MaxValue)));
                                     break;
                                 case ILOpcode.conv_u2:
-                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
+                                    // TODO: Once the fix for unchecked float->small integer saturation propagates into
+                                    // the ILC toolchain, the Math.Clamp can be removed and this simplified to:
+                                    // stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
+                                    stack.Push(StackValueKind.Int32,
+                                        ValueTypeValue.FromInt32((ushort)(int)Math.Clamp(double.IsNaN(val) ? 0 : val, ushort.MinValue, ushort.MaxValue)));
                                     break;
                                 case ILOpcode.conv_u4:
                                     stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)(uint)val));
@@ -3249,13 +3265,13 @@ namespace ILCompiler
         private sealed class DelegateInstance : AllocatedReferenceTypeValue, ISerializableReference
         {
             private readonly MethodDesc _methodPointed;
-            private readonly ReferenceTypeValue _firstParameter;
+            private readonly ReferenceTypeValue _target;
 
             public DelegateInstance(TypeDesc delegateType, MethodDesc methodPointed, ReferenceTypeValue firstParameter, AllocationSite allocationSite)
                 : base(delegateType, allocationSite)
             {
                 _methodPointed = methodPointed;
-                _firstParameter = firstParameter;
+                _target = firstParameter;
             }
 
             private DelegateCreationInfo GetDelegateCreationInfo(NodeFactory factory)
@@ -3280,7 +3296,7 @@ namespace ILCompiler
 
             public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
-                Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
+                Debug.Assert(_methodPointed.Signature.IsStatic == (_target == null));
 
                 DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
 
@@ -3295,34 +3311,34 @@ namespace ILCompiler
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk"u8);
 
-                    // _firstParameter
-                    builder.EmitPointerReloc(thisNode);
-
                     // _helperObject
                     builder.EmitZeroPointer();
 
-                    // _extraFunctionPointerOrData
-                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
+                    // _target
+                    builder.EmitPointerReloc(thisNode);
 
-                    // _functionPointer
+                    // _methodPtr
                     Debug.Assert(creationInfo.Thunk != null);
                     builder.EmitPointerReloc(creationInfo.Thunk);
+
+                    // _extraFunctionPointerOrData
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
                 else
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance"u8);
 
-                    // _firstParameter
-                    _firstParameter.WriteFieldData(ref builder, factory);
-
                     // _helperObject
                     builder.EmitZeroPointer();
 
+                    // _target
+                    _target.WriteFieldData(ref builder, factory);
+
+                    // _methodPtr
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
+
                     // _extraFunctionPointerOrData
                     builder.EmitZeroPointer();
-
-                    // _functionPointer
-                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
             }
 

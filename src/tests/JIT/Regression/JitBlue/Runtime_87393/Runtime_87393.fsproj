@@ -3,9 +3,15 @@
     <Optimize>True</Optimize>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <OtherFlags>--tailcalls+</OtherFlags>
+    <!-- This F# test uses [<Fact>] without an [<EntryPoint>] and relies on
+         the merged-runner test framework to invoke it. There is no F#
+         equivalent of the C# XUnitWrapperGenerator that synthesises an
+         entry point, so it can't be built standalone. -->
+    <DisableProjectBuild Condition="'$(BuildAllTestsAsStandalone)' == 'true' or '$(BuildAsStandalone)' == 'true'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).fs" />
     <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>
+

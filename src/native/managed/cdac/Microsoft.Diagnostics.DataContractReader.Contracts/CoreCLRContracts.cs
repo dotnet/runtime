@@ -26,6 +26,7 @@ public static class CoreCLRContracts
         registry.Register<INotifications>("c1", static t => new Notifications_1(t));
         registry.Register<ICodeNotifications>("c1", static t => new CodeNotifications_1(t));
         registry.Register<ISignature>("c1", static t => new Signature_1(t));
+        registry.Register<ICallingConvention>("c1", static t => new CallingConvention_1(t));
         registry.Register<IBuiltInCOM>("c1", static t => new BuiltInCOM_1(t));
         registry.Register<IObjectiveCMarshal>("c1", static t => new ObjectiveCMarshal_1(t));
         registry.Register<IConditionalWeakTable>("c1", static t => new ConditionalWeakTable_1(t));
@@ -39,12 +40,15 @@ public static class CoreCLRContracts
         registry.Register<IStressLog>("c2", static t => new StressLog_2(t));
 
         registry.Register<IThread>("c1", static t => new Thread_1(t));
+        registry.Register<IWindowsErrorReporting>("c1", static t => new WindowsErrorReporting_1(t));
 
         registry.Register<IRuntimeTypeSystem>("c1", static t => new RuntimeTypeSystem_1(t));
 
         registry.Register<IObject>("c1", static t => new Object_1(t));
 
         registry.Register<IPlatformMetadata>("c1", static t => new PlatformMetadata_1(t));
+
+        registry.Register<IFeatureFlags>("c1", static t => new FeatureFlags_1(t));
 
         registry.Register<IPrecodeStubs>("c1", static t => new PrecodeStubs_1(t));
         registry.Register<IPrecodeStubs>("c2", static t => new PrecodeStubs_2(t));
@@ -60,6 +64,7 @@ public static class CoreCLRContracts
             return arch switch
             {
                 RuntimeInfoArchitecture.X64 => new GCInfo_1<AMD64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.X86 => new GCInfoX86_1(t),
                 RuntimeInfoArchitecture.Arm64 => new GCInfo_1<ARM64GCInfoTraits>(t),
                 RuntimeInfoArchitecture.Arm => new GCInfo_1<ARMGCInfoTraits>(t),
                 RuntimeInfoArchitecture.LoongArch64 => new GCInfo_1<LoongArch64GCInfoTraits>(t),

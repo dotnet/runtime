@@ -345,6 +345,13 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
         return -1;
     }
 
+    // Prevent terminal devices from becoming the controlling terminal of this process.
+    // WASM (browser/WASI) has no controlling terminals, and WASMFS's doOpen rejects any
+    // flag outside its known set (O_NOCTTY is not among them), so skip it there.
+#ifndef TARGET_WASM
+    flags |= O_NOCTTY;
+#endif
+
     int result;
     while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
 #if !HAVE_O_CLOEXEC
@@ -1862,8 +1869,8 @@ int32_t SystemNative_ReadThreadInfo(int32_t pid, int32_t tid, ThreadInfo* thread
 
     lwpsinfo_t pr;
     int result = Common_Read(fd, &pr, sizeof(pr));
-    close(fd);
-    if (result < sizeof (pr))
+    close(ToFileDescriptor(fd));
+    if (result < (int)sizeof(pr))
     {
         errno = EIO;
         return -1;
@@ -1910,8 +1917,8 @@ int32_t SystemNative_ReadProcessInfo(int32_t pid, ProcessInfo* processInfo, uint
 
     psinfo_t pr;
     int result = Common_Read(fd, &pr, sizeof(pr));
-    close(fd);
-    if (result < sizeof (pr))
+    close(ToFileDescriptor(fd));
+    if (result < (int)sizeof(pr))
     {
         errno = EIO;
         return -1;

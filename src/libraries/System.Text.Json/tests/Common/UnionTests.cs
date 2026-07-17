@@ -182,7 +182,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Trigger configuration of the type info via GetTypeInfo (modifiers run during
             // resolver invocation, before Configure).
-            options.MakeReadOnly(populateMissingResolver: true);
+            options.MakeReadOnly();
             _ = options.GetTypeInfo(typeof(UnionWithCustomClassifier));
 
             Assert.NotNull(observedAtModifierTime);
@@ -323,7 +323,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             options.TypeClassifiers.Add(new UnionWithOtherCaseOptionsClassifierFactory());
-            options.MakeReadOnly(populateMissingResolver: true);
+            options.MakeReadOnly();
             _ = options.GetTypeInfo(typeof(UnionWithCustomConverterCase));
 
             Assert.NotNull(observedAtModifierTime);
@@ -1140,7 +1140,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             });
 
-            options.MakeReadOnly(populateMissingResolver: true);
+            options.MakeReadOnly();
 
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
                 () => options.GetTypeInfo(typeof(NullableCaseUnion)));
@@ -1160,7 +1160,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             });
 
-            options.MakeReadOnly(populateMissingResolver: true);
+            options.MakeReadOnly();
 
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
                 () => options.GetTypeInfo(typeof(NullableCaseUnion)));
@@ -1779,7 +1779,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             Assert.Throws<JsonException>(() =>
-                JsonSerializer.Serialize(union, options));
+                JsonSerializer.Serialize(union, options.GetTypeInfo<SelfReferentialUnion>()));
         }
 
         [Fact]

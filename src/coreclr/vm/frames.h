@@ -184,7 +184,6 @@ class DacDbiInterfaceImpl;
 // whenever we compare it to a PTR_Frame value (the usual use of the value).
 #define FRAME_TOP_VALUE  ~0     // we want to say -1 here, but gcc has trouble with the signed value
 #define FRAME_TOP (PTR_Frame(FRAME_TOP_VALUE))
-#define GCFRAME_TOP (PTR_GCFrame(FRAME_TOP_VALUE))
 
 
 enum class FrameIdentifier : TADDR
@@ -1062,6 +1061,7 @@ public:
     }
 
     void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
+    void SetContext(T_CONTEXT *pContext);
 #endif
 
     TADDR GetReturnAddressPtr_Impl()
@@ -1210,6 +1210,7 @@ template<>
 struct cdac_data<FuncEvalFrame>
 {
     static constexpr size_t DebuggerEvalPtr = offsetof(FuncEvalFrame, m_pDebuggerEval);
+    static constexpr size_t ReturnAddress = offsetof(FuncEvalFrame, m_ReturnAddress);
 };
 
 typedef DPTR(FuncEvalFrame) PTR_FuncEvalFrame;
@@ -1359,6 +1360,14 @@ public:
         trace->InitForUnmanaged(GetPInvokeCalliTarget());
         return TRUE;
     }
+
+    friend struct ::cdac_data<PInvokeCalliFrame>;
+};
+
+template <>
+struct cdac_data<PInvokeCalliFrame>
+{
+    static constexpr size_t VASigCookiePtr = offsetof(PInvokeCalliFrame, m_pVASigCookie);
 };
 
 // Some context-related forwards.
@@ -1808,6 +1817,17 @@ private:
 #ifdef FEATURE_INTERPRETER
     PTR_VOID      m_osStackLocation;
 #endif
+
+    friend struct ::cdac_data<GCFrame>;
+};
+
+template<>
+struct cdac_data<GCFrame>
+{
+    static constexpr size_t Next = offsetof(GCFrame, m_Next);
+    static constexpr size_t ObjRefs = offsetof(GCFrame, m_pObjRefs);
+    static constexpr size_t NumObjRefs = offsetof(GCFrame, m_numObjRefs);
+    static constexpr size_t GCFlags = offsetof(GCFrame, m_gcFlags);
 };
 
 //-----------------------------------------------------------------------------

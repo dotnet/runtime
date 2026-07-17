@@ -20,6 +20,7 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
         private const string ApplicationStartedMessage = "Application started. Press Ctrl+C to shut down.";
 
         public Process HostProcess { get; private set; }
+        internal event DataReceivedEventHandler OutputReceived;
 
         public SelfHostDeployer(DeploymentParameters deploymentParameters, ILoggerFactory loggerFactory)
             : base(deploymentParameters, loggerFactory)
@@ -130,6 +131,8 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
                     {
                         started.TrySetResult(null);
                     }
+
+                    OutputReceived?.Invoke(sender, dataArgs);
                 };
                 var hostExitTokenSource = new CancellationTokenSource();
                 HostProcess.Exited += (sender, e) =>

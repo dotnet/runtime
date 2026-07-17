@@ -19,8 +19,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// </summary>
 public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProcess2
 {
-    private const uint DacStressPrivRequestFlushTargetState = 0xf2000000;
-
     int IXCLRDataProcess.Flush()
     {
         _target.Flush(FlushScope.All);
@@ -265,8 +263,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             _mainMethodDesc = methodDesc;
             if (appDomain == TargetPointer.Null)
             {
-                TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-                _appDomain = _target.ReadPointer(appDomainPointer);
+                _appDomain = _target.Contracts.Loader.GetAppDomain();
             }
             else
             {
@@ -659,8 +656,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
                 case JitNotificationData jit:
                 {
-                    TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-                    TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+                    TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
                     IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                     MethodDescHandle methodDesc = rts.GetMethodDescHandle(jit.MethodDescAddress);
@@ -721,8 +717,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 {
                     if (notify is IXCLRDataExceptionNotification4 notify4)
                     {
-                        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-                        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+                        TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
                         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                         MethodDescHandle methodDesc = rts.GetMethodDescHandle(exceptionCatcherEnter.MethodDescAddress);
                         notify4.ExceptionCatcherEnter(new ClrDataMethodInstance(_target, methodDesc, appDomain, null), exceptionCatcherEnter.NativeOffset);
@@ -757,22 +752,18 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 hr = HResults.S_OK;
             }
         }
-        else if (reqCode == DacStressPrivRequestFlushTargetState)
+        else if (StressTestApi.CdacStressApi.IsStressRequest(reqCode))
         {
-            if (inBufferSize == 0 && inBuffer is null && outBufferSize == 0 && outBuffer is null)
-            {
-                _target.Flush(FlushScope.ForwardExecution);
-                hr = HResults.S_OK;
-            }
+            hr = StressTestApi.CdacStressApi.HandleRequest(_target, reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer);
         }
         else
         {
             return LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
         }
 #if DEBUG
-        // The private DACSTRESSPRIV_REQUEST_FLUSH_TARGET_STATE opcode is cDAC-only
-        // and must NOT be forwarded to the legacy DAC.
-        if (_legacyProcess is not null && reqCode != DacStressPrivRequestFlushTargetState)
+        // Private DACSTRESSPRIV_REQUEST_* opcodes are cDAC-only and must NOT be
+        // forwarded to the legacy DAC.
+        if (_legacyProcess is not null && !StressTestApi.CdacStressApi.IsStressRequest(reqCode))
         {
             byte[] localBuffer = new byte[(int)outBufferSize];
             fixed (byte* localOutBuffer = localBuffer)

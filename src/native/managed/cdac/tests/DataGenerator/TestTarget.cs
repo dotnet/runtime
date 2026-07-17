@@ -176,7 +176,7 @@ internal sealed class TestTarget : Target
 
     public override T Read<T>(ulong address)
     {
-        Span<byte> span = GetSpan(address, System.Runtime.CompilerServices.Unsafe.SizeOf<T>());
+        Span<byte> span = GetSpan(address, sizeof(T));
         return System.Runtime.InteropServices.MemoryMarshal.Read<T>(span);
     }
 
@@ -199,9 +199,12 @@ internal sealed class TestTarget : Target
     public override TargetNUInt ReadNUInt(ulong address)
         => new TargetNUInt(PointerSize == 8 ? Read<ulong>(address) : Read<uint>(address));
 
+    public override TargetNInt ReadNInt(ulong address)
+        => new TargetNInt(PointerSize == 8 ? Read<long>(address) : Read<int>(address));
+
     public override void Write<T>(ulong address, T value)
     {
-        Span<byte> span = GetSpan(address, System.Runtime.CompilerServices.Unsafe.SizeOf<T>());
+        Span<byte> span = GetSpan(address, sizeof(T));
         System.Runtime.InteropServices.MemoryMarshal.Write(span, in value);
     }
 
@@ -253,6 +256,7 @@ internal sealed class TestTarget : Target
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
     public override bool IsAlignedToPointerSize(TargetPointer pointer) => throw new NotImplementedException();
     public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer) => throw new NotImplementedException();
+    public override bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context) => throw new NotImplementedException();
 
     // --- Stub ContractRegistry -------------------------------------
 

@@ -196,6 +196,27 @@ namespace Microsoft.Extensions
             }
         }
 
+        public class ClassWithMatchingParametersAndProperties_DifferentlyCasedCtorParam
+        {
+            private readonly string _color;
+
+            public ClassWithMatchingParametersAndProperties_DifferentlyCasedCtorParam(string color, int length)
+            {
+                _color = color;
+                this.ColorFromCtor = color;
+                this.Length = length;
+            }
+
+            public int Length { get; set; }
+
+            public string ColorFromCtor { get; }
+            public string Color
+            {
+                get => _color;
+                init => _color = "the color is " + value;
+            }
+        }
+
         public sealed class TreeElement : Dictionary<string, TreeElement>;
 
         public record TypeWithRecursionThroughCollections
@@ -220,6 +241,30 @@ namespace Microsoft.Extensions
         }
 
         public record RecordWithArrayParameter(string[] Array);
+
+        public class GetterOnlyCollectionWithCaseMismatchedCtorParameter
+        {
+            public GetterOnlyCollectionWithCaseMismatchedCtorParameter(List<string> instances) => Instances = instances;
+            public List<string> Instances { get; }
+        }
+
+        public class SettableCollectionWithCaseMismatchedCtorParameter
+        {
+            public SettableCollectionWithCaseMismatchedCtorParameter(List<string> instances) => Instances = instances;
+            public List<string> Instances { get; set; }
+        }
+
+        public class GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter
+        {
+            public GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter(IList<string> instances) => Instances = instances;
+            public IList<string> Instances { get; }
+        }
+
+        public class ParamsCollectionCtor
+        {
+            public ParamsCollectionCtor(params List<string> instances) => Instances = instances;
+            public List<string> Instances { get; }
+        }
 
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
