@@ -26,17 +26,27 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 [StructLayout(LayoutKind.Sequential)]
 public struct WasmContext : IPlatformContext
 {
-    // WASM is a 32-bit target (wasm32). Synthetic pointer slots populated by the
-    // interpreter frame-chain walker; there is no native register file to mirror.
-    private uint _instructionPointer;
-    private uint _stackPointer;
-    private uint _framePointer;
+    // Field order and size mirror the native wasm T_CONTEXT (src/coreclr/pal/inc/pal.h,
+    // HOST_WASM branch) so that a serialized WasmContext is byte-compatible with the
+    // runtime's context blob:
+    //   ContextFlags @0, InterpreterWalkFramePointer @4, InterpreterSP @8,
+    //   InterpreterFP @12, InterpreterIP @16  (20 bytes, all 32-bit / wasm32).
+    // There is no native register file; these slots are populated by the R2R virtual
+    // unwind and the interpreter frame-chain walker.
+    private uint _contextFlags;
+    private uint _interpreterWalkFramePointer;
+    private uint _interpreterSP;
+    private uint _interpreterFP;
+    private uint _interpreterIP;
 
-    // The synthetic context holds three 32-bit slots (IP/SP/FP). WASM has no native
-    // register-context blob to read from the target; these slots are populated by the
-    // interpreter frame-chain walker. Size matches the serialized struct so that
-    // ContextHolder.GetBytes() and Size stay consistent.
-    public readonly uint Size => 3 * sizeof(uint);
+    // Name of the synthetic "first argument register" the interpreter stack walk uses to
+    // stash the owning InterpreterFrame address (native SetFirstArgReg / GetFirstArgReg in
+    // src/coreclr/vm/wasm/cgencpu.h write context->InterpreterWalkFramePointer).
+    internal const string InterpreterWalkFramePointerRegister = "interpreterwalkframepointer";
+
+    // Size matches the serialized native wasm T_CONTEXT so that ContextHolder.GetBytes()
+    // and Size stay consistent.
+    public readonly uint Size => 5 * sizeof(uint);
 
     public readonly uint ContextControlFlags => 0;
 
@@ -49,23 +59,23 @@ public struct WasmContext : IPlatformContext
 
     public TargetPointer StackPointer
     {
-        readonly get => new(_stackPointer);
-        set => _stackPointer = (uint)value.Value;
+        readonly get => new(_interpreterSP);
+        set => _interpreterSP = (uint)value.Value;
     }
 
     public TargetCodePointer InstructionPointer
     {
-        readonly get => new(_instructionPointer);
-        set => _instructionPointer = (uint)value.Value;
+        readonly get => new(_interpreterIP);
+        set => _interpreterIP = (uint)value.Value;
     }
 
     public TargetPointer FramePointer
     {
-        readonly get => new(_framePointer);
-        set => _framePointer = (uint)value.Value;
+        readonly get => new(_interpreterFP);
+        set => _interpreterFP = (uint)value.Value;
     }
 
-    public uint RawContextFlags { readonly get => 0; set { } }
+    public uint RawContextFlags { readonly get => _contextFlags; set => _contextFlags = value; }
 
     public void Unwind(Target target)
     {
@@ -95,13 +105,16 @@ public struct WasmContext : IPlatformContext
         switch (name.ToLowerInvariant())
         {
             case "pc" or "ip":
-                _instructionPointer = (uint)value.Value;
+                _interpreterIP = (uint)value.Value;
                 return true;
             case "sp":
-                _stackPointer = (uint)value.Value;
+                _interpreterSP = (uint)value.Value;
                 return true;
             case "fp":
-                _framePointer = (uint)value.Value;
+                _interpreterFP = (uint)value.Value;
+                return true;
+            case InterpreterWalkFramePointerRegister:
+                _interpreterWalkFramePointer = (uint)value.Value;
                 return true;
             default:
                 return false;
@@ -113,13 +126,16 @@ public struct WasmContext : IPlatformContext
         switch (name.ToLowerInvariant())
         {
             case "pc" or "ip":
-                value = new TargetNUInt(_instructionPointer);
+                value = new TargetNUInt(_interpreterIP);
                 return true;
             case "sp":
-                value = new TargetNUInt(_stackPointer);
+                value = new TargetNUInt(_interpreterSP);
                 return true;
             case "fp":
-                value = new TargetNUInt(_framePointer);
+                value = new TargetNUInt(_interpreterFP);
+                return true;
+            case InterpreterWalkFramePointerRegister:
+                value = new TargetNUInt(_interpreterWalkFramePointer);
                 return true;
             default:
                 value = default;

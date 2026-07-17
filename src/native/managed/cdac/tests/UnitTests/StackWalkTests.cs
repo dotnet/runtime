@@ -323,4 +323,61 @@ public unsafe class StackWalkTests
         Assert.Equal(callerReturnAddress, context.InstructionPointer.Value);
         Assert.Equal(calleeSavedFP, context.FramePointer.Value);
     }
+
+    // The WasmContext mirrors the native wasm T_CONTEXT (src/coreclr/pal/inc/pal.h): five
+    // 32-bit slots (ContextFlags, InterpreterWalkFramePointer, InterpreterSP/FP/IP). Verify the
+    // serialized size and that the synthetic first-argument register (InterpreterWalkFramePointer)
+    // and context flags round-trip.
+    [Fact]
+    public void WasmContext_MirrorsNativeLayoutAndRoundTripsRegisters()
+    {
+        WasmContext context = default;
+
+        Assert.Equal(5u * sizeof(uint), context.Size);
+
+        Assert.True(context.TrySetRegister(WasmContext.InterpreterWalkFramePointerRegister, new TargetNUInt(0x0004_9000)));
+        Assert.True(context.TryReadRegister(WasmContext.InterpreterWalkFramePointerRegister, out TargetNUInt walkFp));
+        Assert.Equal(0x0004_9000ul, walkFp.Value);
+
+        context.StackPointer = new TargetPointer(0x0004_1000);
+        context.InstructionPointer = new TargetCodePointer(0x0004_2000);
+        context.FramePointer = new TargetPointer(0x0004_3000);
+        context.RawContextFlags = 0x8000000; // CONTEXT_EXCEPTION_ACTIVE
+
+        Assert.Equal(0x0004_1000ul, context.StackPointer.Value);
+        Assert.Equal(0x0004_2000ul, context.InstructionPointer.Value);
+        Assert.Equal(0x0004_3000ul, context.FramePointer.Value);
+        Assert.Equal(0x8000000u, context.RawContextFlags);
+    }
+
+    // When an active InlinedCallFrame is directly followed by an InterpreterFrame, WasmFrameHandler
+    // stashes the InterpreterFrame address into the synthetic first-argument register
+    // (InterpreterWalkFramePointer) so the subsequent interpreter virtual unwind can recover the
+    // owning frame -- mirroring native SetFirstArgReg on the P/Invoke-into-interpreter transition.
+    [Fact]
+    public void UpdateContextFromFrame_WasmInlinedCallFrameOverInterpreterFrame_StashesInterpreterFrame()
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+
+        ulong icfAddr = 0;
+        ulong interpAddr = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                interpAddr = frameBuilder.AddFrame(MockFrameBuilder.InterpreterFrameIdentifierValue, "InterpreterFrame").Address;
+                MockInlinedCallFrame icf = frameBuilder.AddInlinedCallFrame(callerReturnAddress: 0x0004_2000, datum: 0, callSiteSP: 0x0004_1000);
+                icf.Next = interpAddr;
+                icfAddr = icf.Address;
+            });
+
+        ContextHolder<WasmContext> context = new();
+        FrameHelpers frameHelpers = new(target);
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(icfAddr);
+        frameHelpers.UpdateContextFromFrame(frame, context);
+
+        Assert.True(context.TryReadRegister(WasmContext.InterpreterWalkFramePointerRegister, out TargetNUInt stashed));
+        Assert.Equal(interpAddr, stashed.Value);
+    }
 }

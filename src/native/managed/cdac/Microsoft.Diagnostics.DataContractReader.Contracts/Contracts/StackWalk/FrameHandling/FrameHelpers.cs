@@ -561,6 +561,7 @@ internal sealed class FrameHelpers
             RuntimeInfoArchitecture.X86 => "ecx",
             RuntimeInfoArchitecture.LoongArch64 => "a0",
             RuntimeInfoArchitecture.RiscV64 => "a0",
+            RuntimeInfoArchitecture.Wasm => WasmContext.InterpreterWalkFramePointerRegister,
             var arch => throw new NotSupportedException(
                 $"Unsupported architecture for first argument register: {arch}"),
         };

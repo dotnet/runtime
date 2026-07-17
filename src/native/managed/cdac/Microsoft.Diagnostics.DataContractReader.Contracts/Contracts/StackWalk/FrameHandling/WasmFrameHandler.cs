@@ -24,6 +24,24 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext> contextHolder)
     : BaseFrameHandler(target, contextHolder), IPlatformFrameHandler
 {
+    private readonly ContextHolder<WasmContext> _holder = contextHolder;
+
+    public override void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
+    {
+        base.HandleInlinedCallFrame(inlinedCallFrame);
+
+        // When the frame directly above this P/Invoke transition is an InterpreterFrame, stash its
+        // address in the synthetic first-argument register so the subsequent interpreter virtual
+        // unwind (InterpreterVirtualUnwind -> GetFirstArgReg) can recover the owning InterpreterFrame.
+        // Mirrors the per-architecture handlers (e.g. AMD64FrameHandler) and the native
+        // SetFirstArgReg(context->InterpreterWalkFramePointer) contract on WASM.
+        Data.Frame? next = GetNextFrame(inlinedCallFrame.Address);
+        if (next is not null && _frameHelpers.GetFrameType(next.Identifier) == FrameType.InterpreterFrame)
+        {
+            _holder.Context.TrySetRegister(WasmContext.InterpreterWalkFramePointerRegister, new TargetNUInt(next.Address.Value));
+        }
+    }
+
     public void HandleHijackFrame(HijackFrame frame)
         => throw new NotSupportedException("HijackFrame handling is not supported on WASM.");
 }
