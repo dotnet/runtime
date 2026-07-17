@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Options
     /// <summary>
     /// Used by hosts to asynchronously validate options during startup.
     /// </summary>
-    public interface IAsyncStartupValidator
+    public interface IAsyncStartupValidator : IStartupValidator
     {
         /// <summary>
         /// Calls all registered <see cref="IAsyncValidateOptions{TOptions}"/> validators.

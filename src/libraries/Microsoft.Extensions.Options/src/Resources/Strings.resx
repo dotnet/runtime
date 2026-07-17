@@ -135,4 +135,7 @@
   <data name="Error_NoConfigurationServicesAndAction" xml:space="preserve">
     <value>No IConfigureOptions&lt;&gt;, IPostConfigureOptions&lt;&gt;, or IValidateOptions&lt;&gt; implementations were found, did you mean to call Configure&lt;&gt; or PostConfigure&lt;&gt;?</value>
   </data>
+  <data name="AsyncValidatorSyncValidationUnsupported" xml:space="preserve">
+    <value>Options instance of type '{0}' is validated by an asynchronous validator that cannot run during synchronous validation. Validate these options asynchronously before accessing them synchronously.</value>
+  </data>
 </root>
