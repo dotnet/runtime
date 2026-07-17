@@ -21,7 +21,7 @@
 PALEXPORT int32_t SystemNative_ForkAndExecProcess(
                    const char* filename,   // filename argument to execve
                    char* const argv[],     // argv argument to execve
-                   char* const envp[],     // envp argument to execve; NULL to inherit the current environment (except on Apple platforms, where envp must be non-NULL)
+                   char* const envp[],     // envp argument to execve; NULL to inherit the current environment
                    const char* cwd,        // path passed to chdir in child process
                    int32_t setCredentials, // whether to set the userId and groupId for the child process
                    uint32_t userId,        // the user id under which the child process should run

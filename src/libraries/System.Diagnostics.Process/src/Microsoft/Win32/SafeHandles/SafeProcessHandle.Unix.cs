@@ -427,14 +427,7 @@ namespace Microsoft.Win32.SafeHandles
             => ProcessUtils.IsTerminal(stdinHandle) || ProcessUtils.IsTerminal(stdoutHandle) || ProcessUtils.IsTerminal(stderrHandle);
 
         private static IDictionary<string, string?>? GetEnvironmentVariables(ProcessStartInfo startInfo)
-        {
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || GetHasEnvironmentVariablesBeenModified(null))
-            {
-                return startInfo.Environment;
-            }
-
-            return startInfo._environmentVariables;
-        }
+            => GetHasEnvironmentVariablesBeenModified(null) ? startInfo.Environment : startInfo._environmentVariables;
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_HasEnvironmentVariablesBeenModified")]
         private static extern bool GetHasEnvironmentVariablesBeenModified([UnsafeAccessorType("System.Environment, System.Private.CoreLib")] object? _);

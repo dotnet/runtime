@@ -577,11 +577,6 @@ static int32_t ForkAndExecProcessInternal(
 #endif
 
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
-    // We cannot substitute SystemNative_GetEnviron() here: this path uses posix_spawn
-    // without fork, so concurrent setenv/putenv/unsetenv/clearenv in other threads can
-    // mutate the shared process environment while posix_spawn is consuming envp.
-    assert(NULL != envp);
-
 #if !HAVE_FORK
     // On MacCatalyst, fork(2) exists in the SDK but is blocked by the kernel at runtime (EPERM).
     // setuid/setgid-based credential changes require fork.
@@ -718,7 +713,7 @@ static int32_t ForkAndExecProcessInternal(
         }
 
         // Spawn the process
-        result = posix_spawn(&spawnedPid, filename, &file_actions, &attr, argv, envp);
+        result = posix_spawn(&spawnedPid, filename, &file_actions, &attr, argv, envp != NULL ? envp : SystemNative_GetEnviron());
 
         posix_spawn_file_actions_destroy(&file_actions);
         posix_spawnattr_destroy(&attr);
