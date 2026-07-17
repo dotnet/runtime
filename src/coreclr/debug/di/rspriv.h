@@ -10486,7 +10486,6 @@ public:
 
     void HijackToRaiseException();
     void RestoreFromRaiseExceptionHijack();
-    void SaveRaiseExceptionEntryContext();
     void ClearRaiseExceptionEntryContext();
     BOOL IsExceptionFromLastRaiseException(const EXCEPTION_RECORD* pExceptionRecord);
 
