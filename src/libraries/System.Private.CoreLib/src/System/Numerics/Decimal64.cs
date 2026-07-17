@@ -1409,6 +1409,10 @@ namespace System.Numerics
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MinExponent => MinExponent;
 
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MaxAdjustedExponent => MaxExponent - Precision + 1;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MinAdjustedExponent => MinExponent - Precision + 1;
+
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.PositiveInfinity => PositiveInfinityValue;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NegativeInfinity => NegativeInfinityValue;
