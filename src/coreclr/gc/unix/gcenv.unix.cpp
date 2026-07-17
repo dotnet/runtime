@@ -26,6 +26,7 @@
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 #include <minipal/time.h>
+#include <minipal/vmlimit.h>
 #include <minipal/cpucount.h>
 
 #if HAVE_SWAPCTL
@@ -1007,13 +1008,11 @@ static size_t GetCurrentVirtualMemorySize()
 //  non zero if it has succeeded, GetVirtualMemoryMaxAddress() if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
-#ifdef RLIMIT_AS
-    rlimit addressSpaceLimit;
-    if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
+    size_t addressSpaceLimit = minipal_get_virtual_address_space_limit();
+    if (addressSpaceLimit != SIZE_MAX)
     {
-        return addressSpaceLimit.rlim_cur;
+        return addressSpaceLimit;
     }
-#endif // RLIMIT_AS
 
     // No virtual memory limit
     return GetVirtualMemoryMaxAddress();
@@ -1239,15 +1238,15 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
             }
 
 #if HAVE_PROCFS_STATM
-            rlimit addressSpaceLimit;
-            if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
+            size_t virtualAddressSpaceLimit = minipal_get_virtual_address_space_limit();
+            if (virtualAddressSpaceLimit != SIZE_MAX)
             {
                 // If there is virtual address space limit set, compute virtual memory load and change
                 // the load to this one in case it is higher than the physical memory load
                 size_t used_virtual = GetCurrentVirtualMemorySize();
                 if (used_virtual != (size_t)-1)
                 {
-                    uint32_t load_virtual = (uint32_t)(((float)used_virtual * 100) / (float)addressSpaceLimit.rlim_cur);
+                    uint32_t load_virtual = (uint32_t)(((float)used_virtual * 100) / (float)virtualAddressSpaceLimit);
                     if (load_virtual > load)
                     {
                         load = load_virtual;

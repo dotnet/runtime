@@ -31,7 +31,6 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 #include "common.h"
 #include <clrconfignocache.h>
 
-#include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <errno.h>
@@ -41,6 +40,7 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 #include <dlfcn.h>
 #include <minipal/utils.h>
 #include <minipal/ospagesize.h>
+#include <minipal/vmlimit.h>
 
 #if HAVE_VM_ALLOCATE
 #include <mach/vm_map.h>
@@ -1616,20 +1616,15 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     int32_t sizeOfAllocation = MaxExecutableMemorySizeNearCoreClr;
     int32_t initialReserveLimit = -1;
 #if defined(TARGET_WASI)
-    // WASI has neither RLIMIT_AS nor RLIMIT_DATA nor RLIM_INFINITY; wasm32 has a
-    // hard 4 GiB limit and no separate VM accounting. Skip the rlimit-based
-    // sizing and let sizeOfAllocation stay at MaxExecutableMemorySizeNearCoreClr.
+    // WASI has a hard 4 GiB limit and no separate VM accounting.
+    // Skip the virtual address space limit check and let sizeOfAllocation stay
+    // at MaxExecutableMemorySizeNearCoreClr.
 #else
-#ifdef RLIMIT_AS
-    int addressSpace = RLIMIT_AS;
-#else
-    int addressSpace = RLIMIT_DATA;
-#endif
-    rlimit addressSpaceLimit;
-    if ((getrlimit(addressSpace, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
+    size_t virtualAddressSpaceLimit = minipal_get_virtual_address_space_limit();
+    if (virtualAddressSpaceLimit != SIZE_MAX)
     {
         // By default reserve max 20% of the available virtual address space
-        rlim_t initialExecMemoryPerc = 20;
+        size_t initialExecMemoryPerc = 20;
         CLRConfigNoCache defInitialExecMemoryPerc = CLRConfigNoCache::Get("InitialExecMemoryPercent", /*noprefix*/ false, &getenv);
         if (defInitialExecMemoryPerc.IsSet())
         {
@@ -1640,7 +1635,12 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
             }
         }
 
-        initialReserveLimit = addressSpaceLimit.rlim_cur * initialExecMemoryPerc / 100;
+        size_t computedLimit = virtualAddressSpaceLimit * initialExecMemoryPerc / 100;
+        if (computedLimit > INT32_MAX)
+        {
+            computedLimit = INT32_MAX;
+        }
+        initialReserveLimit = (int32_t)computedLimit;
         if (initialReserveLimit < sizeOfAllocation)
         {
             sizeOfAllocation = initialReserveLimit;

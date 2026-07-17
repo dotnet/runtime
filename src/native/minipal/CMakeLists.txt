@@ -29,7 +29,7 @@ if(NOT WIN32 AND NOT HOST_WASM AND NOT (CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_C
 endif()
 
 if(CLR_CMAKE_HOST_UNIX)
-    list(APPEND SOURCES cpucount.c)
+    list(APPEND SOURCES cpucount.c vmlimit.c)
 endif()
 
 # Provide an object library for scenarios where we ship static libraries
