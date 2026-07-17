@@ -11,6 +11,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionState
 {
+    private const uint FirstChance = 0x1;
+
     private readonly Target _target;
     private readonly TargetPointer _threadAddress;
     private readonly uint _flags;
@@ -213,9 +215,69 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
     }
 
     int IXCLRDataExceptionState.IsSameState(EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameState(exRecord, contextSize, cxRecord) : HResults.E_NOTIMPL;
+    {
+        int hr = IsSameState2(0, exRecord);
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.IsSameState(exRecord, contextSize, cxRecord);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
+
     int IXCLRDataExceptionState.IsSameState2(uint flags, EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameState2(flags, exRecord, contextSize, cxRecord) : HResults.E_NOTIMPL;
+    {
+        int hr = IsSameState2(flags, exRecord);
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.IsSameState2(flags, exRecord, contextSize, cxRecord);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
+
+    private int IsSameState2(uint flags, EXCEPTION_RECORD64* exRecord)
+    {
+        if ((flags & ~FirstChance) != 0)
+            return HResults.E_INVALIDARG;
+
+        int hr = HResults.S_FALSE;
+        try
+        {
+            if ((_flags & (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL) != 0)
+            {
+                if ((flags & FirstChance) != 0)
+                    hr = HResults.S_OK;
+            }
+            else
+            {
+                if (exRecord is null)
+                    throw new NullReferenceException();
+
+                ThreadData threadData = _target.Contracts.Thread.GetThreadData(_threadAddress);
+                TargetPointer exceptionAddress = _target.ReadPointer(
+                    threadData.OSExceptionRecord + (ulong)(sizeof(uint) * 2 + _target.PointerSize));
+                TargetPointer requestedAddress = new(
+                    _target.PointerSize == sizeof(ulong)
+                        ? exRecord->ExceptionAddress
+                        : (uint)exRecord->ExceptionAddress);
+
+                if (exceptionAddress == requestedAddress)
+                    hr = HResults.S_OK;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
     int IXCLRDataExceptionState.GetTask(DacComNullableByRef<IXCLRDataTask> task)
     {
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;

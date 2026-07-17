@@ -128,6 +128,57 @@ public unsafe class ExceptionStateTests
         return (hr, strLen, buffer);
     }
 
+    private static IXCLRDataExceptionState CreateExceptionStateWithRecord(
+        MockTarget.Architecture arch,
+        ulong exceptionAddress)
+    {
+        TargetTestHelpers helpers = new(arch);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        var allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x1_0000, 0x2_0000);
+        MockMemorySpace.HeapFragment exceptionRecord =
+            allocator.Allocate((ulong)(sizeof(uint) * 2 + helpers.PointerSize * 2), "ExceptionRecord");
+        helpers.WritePointer(
+            exceptionRecord.Data.AsSpan(sizeof(uint) * 2 + helpers.PointerSize, helpers.PointerSize),
+            exceptionAddress);
+
+        TargetPointer threadAddress = new(0x1000);
+        var mockThread = new Mock<IThread>();
+        mockThread.Setup(t => t.GetThreadData(threadAddress)).Returns(new ThreadData(
+            ThreadAddress: threadAddress,
+            Id: 1,
+            OSId: new TargetNUInt(1234),
+            State: default,
+            PreemptiveGCDisabled: false,
+            AllocContextPointer: TargetPointer.Null,
+            AllocContextLimit: TargetPointer.Null,
+            Frame: TargetPointer.Null,
+            FirstNestedException: TargetPointer.Null,
+            ExposedObjectHandle: TargetPointer.Null,
+            LastThrownObjectHandle: TargetPointer.Null,
+            CurrentCustomDebuggerNotificationHandle: TargetPointer.Null,
+            LastThrownObjectIsUnhandled: false,
+            HasUnhandledException: false,
+            NextThread: TargetPointer.Null,
+            ThreadHandle: TargetPointer.Null,
+            IsInteropDebuggingHijacked: false,
+            DebuggerFilterContext: TargetPointer.Null,
+            GCFrame: TargetPointer.Null,
+            IsExceptionInProgress: true,
+            OSExceptionRecord: new TargetPointer(exceptionRecord.Address),
+            OSExceptionContextRecord: TargetPointer.Null));
+
+        TestPlaceholderTarget target = targetBuilder
+            .AddMockContract(mockThread)
+            .Build();
+        return new ClrDataExceptionState(
+            target,
+            threadAddress,
+            (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            thrownObjectHandle: TargetPointer.Null,
+            previousExInfoAddress: TargetPointer.Null,
+            legacyImpl: null);
+    }
+
     [Theory]
     [InlineData((uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, false, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT)]
     [InlineData((uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, true, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_NESTED)]
@@ -291,6 +342,68 @@ public unsafe class ExceptionStateTests
         int hr = exceptionState.GetTask(task);
         Assert.Equal(HResults.S_OK, hr);
         Assert.NotNull(task.Interface);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsSameState_MatchingAddress(MockTarget.Architecture arch)
+    {
+        const ulong exceptionAddress = 0xAA00_0000;
+        IXCLRDataExceptionState exceptionState = CreateExceptionStateWithRecord(arch, exceptionAddress);
+        EXCEPTION_RECORD64 inputRecord = new() { ExceptionAddress = exceptionAddress };
+
+        int hr = exceptionState.IsSameState(&inputRecord, 0, null);
+
+        Assert.Equal(HResults.S_OK, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsSameState2_DifferentAddress(MockTarget.Architecture arch)
+    {
+        const ulong exceptionAddress = 0x1234_5678;
+        IXCLRDataExceptionState exceptionState = CreateExceptionStateWithRecord(arch, exceptionAddress);
+        EXCEPTION_RECORD64 inputRecord = new() { ExceptionAddress = exceptionAddress + 1 };
+
+        int hr = exceptionState.IsSameState2(0, &inputRecord, 0, null);
+
+        Assert.Equal(HResults.S_FALSE, hr);
+    }
+
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(1u)]
+    public void IsSameState2_PartialState(uint flags)
+    {
+        IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
+            target: null!,
+            threadAddress: TargetPointer.Null,
+            flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL,
+            thrownObjectHandle: TargetPointer.Null,
+            previousExInfoAddress: TargetPointer.Null,
+            legacyImpl: null);
+
+        int hr = exceptionState.IsSameState2(flags, null, 0, null);
+
+        Assert.Equal(flags == 1 ? HResults.S_OK : HResults.S_FALSE, hr);
+    }
+
+    [Theory]
+    [InlineData(2u)]
+    [InlineData(uint.MaxValue)]
+    public void IsSameState2_InvalidFlags(uint flags)
+    {
+        IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
+            target: null!,
+            threadAddress: TargetPointer.Null,
+            flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL,
+            thrownObjectHandle: TargetPointer.Null,
+            previousExInfoAddress: TargetPointer.Null,
+            legacyImpl: null);
+
+        int hr = exceptionState.IsSameState2(flags, null, 0, null);
+
+        Assert.Equal(HResults.E_INVALIDARG, hr);
     }
 
     [Theory]
