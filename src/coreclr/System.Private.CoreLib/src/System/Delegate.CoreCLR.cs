@@ -20,7 +20,7 @@ namespace System
         private const nint UnmanagedMarker = -1;
 
         // This is set under 3 circumstances
-        // 1. Multicast delegates - object[]
+        // 1. Multicast delegates - Wrapper[]
         // 2. Method cache - MethodInfo
         // 3. Collectible delegates - LoaderAllocator and such
         private object? _helperObject;
@@ -232,7 +232,7 @@ namespace System
             if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
             {
                 int hash = 0;
-                foreach (Wrapper wrapper in invocations)
+                foreach (ref readonly Wrapper wrapper in invocations)
                 {
                     hash = hash * 33 + wrapper.GetHashCode();
                 }
@@ -624,9 +624,9 @@ namespace System
         {
             internal Delegate? Value = value;
 
-            public bool Equals(Wrapper other) => Value!.Equals(other.Value);
-            public override bool Equals(object? obj) => obj is Wrapper other && Equals(other);
-            public override int GetHashCode() => Value!.GetHashCode();
+            public readonly bool Equals(Wrapper other) => Value!.Equals(other.Value);
+            public override readonly bool Equals(object? obj) => obj is Wrapper other && Equals(other);
+            public override readonly int GetHashCode() => Value!.GetHashCode();
         }
 
         private unsafe Delegate NewMulticastDelegate(Wrapper[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
@@ -766,29 +766,23 @@ namespace System
             if (!isMulticast)
                 return this;
 
+            int i = invocationList.LastIndexOf(otherInvocations);
+            if (i < 0)
+                return this;
+
             int newCount = invocationList.Length - otherInvocations.Length;
-            for (int i = newCount; i >= 0; i--)
+            switch (newCount)
             {
-                if (!invocationList.Slice(i, otherInvocations.Length).SequenceEqual(otherInvocations))
-                {
-                    continue;
-                }
-
-                switch (newCount)
-                {
-                    case 0:
-                        // Special case - no values left
-                        return null;
-                    case 1:
-                        // Special case - only one value left, either at the beginning or the end
-                        return invocationList[i == 0 ? ^1 : 0].Value;
-                    default:
-                        Wrapper[] list = DeleteFromInvocationList(invocationList, i, otherInvocations.Length);
-                        return NewMulticastDelegate(list, newCount, true);
-                }
+                case 0:
+                    // Special case - no values left
+                    return null;
+                case 1:
+                    // Special case - only one value left, either at the beginning or the end
+                    return invocationList[i == 0 ? ^1 : 0].Value;
+                default:
+                    Wrapper[] list = DeleteFromInvocationList(invocationList, i, otherInvocations.Length);
+                    return NewMulticastDelegate(list, newCount, true);
             }
-
-            return this;
         }
 
         internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
