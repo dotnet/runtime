@@ -302,6 +302,7 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                               packageType,
                                               NULL,
                                               0,
+                                              0,
                                               targetName,
                                               reqFlags,
                                               inputBytes,
@@ -316,6 +317,7 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
                                             GssCtxId** contextHandle,
                                             uint32_t packageType,
                                             void* cbt,
+                                            int32_t cbtOffset,
                                             int32_t cbtSize,
                                             GssName* targetName,
                                             uint32_t reqFlags,
@@ -391,7 +393,7 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
     {
         memset(&gssCbt, 0, sizeof(struct gss_channel_bindings_struct));
         gssCbt.application_data.length = (size_t)cbtSize;
-        gssCbt.application_data.value = cbt;
+        gssCbt.application_data.value = (uint8_t*)cbt + cbtOffset;
     }
 
     uint32_t majorStatus = gss_init_sec_context(minorStatus,
@@ -418,6 +420,7 @@ uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
                                             GssCredId* acceptorCredHandle,
                                             GssCtxId** contextHandle,
                                             void* cbt,
+                                            int32_t cbtOffset,
                                             int32_t cbtSize,
                                             uint8_t* inputBytes,
                                             uint32_t inputLength,
@@ -454,7 +457,7 @@ uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
     {
         memset(&gssCbt, 0, sizeof(struct gss_channel_bindings_struct));
         gssCbt.application_data.length = (size_t)cbtSize;
-        gssCbt.application_data.value = cbt;
+        gssCbt.application_data.value = (uint8_t*)cbt + cbtOffset;
     }
 
     gss_OID mechType = GSS_C_NO_OID;

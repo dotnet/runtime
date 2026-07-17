@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Authentication.ExtendedProtection;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -92,7 +93,8 @@ internal static partial class Interop
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
             PackageType packageType,
-            IntPtr cbt,
+            ChannelBinding cbt,
+            int cbtOffset,
             int cbtSize,
             SafeGssNameHandle? targetName,
             uint reqFlags,
@@ -133,7 +135,8 @@ internal static partial class Interop
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
             PackageType packageType,
-            IntPtr cbt,
+            ChannelBinding channelBinding,
+            int cbtOffset,
             int cbtSize,
             SafeGssNameHandle? targetName,
             uint reqFlags,
@@ -147,7 +150,8 @@ internal static partial class Interop
                 initiatorCredHandle,
                 ref contextHandle,
                 packageType,
-                cbt,
+                channelBinding,
+                cbtOffset,
                 cbtSize,
                 targetName,
                 reqFlags,
@@ -163,7 +167,8 @@ internal static partial class Interop
             out Status minorStatus,
             SafeGssCredHandle acceptorCredHandle,
             ref SafeGssContextHandle acceptContextHandle,
-            IntPtr cbt,
+            ChannelBinding? cbt,
+            int cbtOffset,
             int cbtSize,
             ref byte inputBytes,
             int inputLength,
@@ -175,7 +180,8 @@ internal static partial class Interop
             out Status minorStatus,
             SafeGssCredHandle acceptorCredHandle,
             ref SafeGssContextHandle acceptContextHandle,
-            IntPtr cbt,
+            ChannelBinding? channelBinding,
+            int cbtOffset,
             int cbtSize,
             ReadOnlySpan<byte> inputBytes,
             ref GssBuffer token,
@@ -186,7 +192,8 @@ internal static partial class Interop
                 out minorStatus,
                 acceptorCredHandle,
                 ref acceptContextHandle,
-                cbt,
+                channelBinding,
+                cbtOffset,
                 cbtSize,
                 ref MemoryMarshal.GetReference(inputBytes),
                 inputBytes.Length,

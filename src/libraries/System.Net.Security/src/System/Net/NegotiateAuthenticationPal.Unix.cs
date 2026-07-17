@@ -581,9 +581,10 @@ namespace System.Net
 
                     if (channelBinding != null)
                     {
-                        // If a TLS channel binding token (cbt) is available then get the pointer
-                        // to the application specific data. The handle is ref-counted to prevent it
-                        // from being released while the native call is in progress.
+                        // If a TLS channel binding token (cbt) is available then pass the whole
+                        // binding as a SafeHandle and let the native shim offset past the
+                        // SecChannelBindings header to the application specific data. Passing the
+                        // SafeHandle lets the interop marshaller ref-count the handle for us.
                         int appDataOffset = sizeof(SecChannelBindings);
                         Debug.Assert(appDataOffset < channelBinding.Size);
                         if (channelBinding.Size < appDataOffset)
@@ -592,32 +593,20 @@ namespace System.Net
                             return NegotiateAuthenticationStatusCode.BadBinding;
                         }
 
-                        bool refAdded = false;
-                        try
-                        {
-                            channelBinding.DangerousAddRef(ref refAdded);
-                            IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
-                            int cbtAppDataSize = channelBinding.Size - appDataOffset;
-                            status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
-                                                                            credentialsHandle,
-                                                                            ref contextHandle,
-                                                                            _packageType,
-                                                                            cbtAppData,
-                                                                            cbtAppDataSize,
-                                                                            targetNameHandle,
-                                                                            (uint)requestedContextFlags,
-                                                                            incomingBlob,
-                                                                            ref token,
-                                                                            out outputFlags,
-                                                                            out isNtlmUsed);
-                        }
-                        finally
-                        {
-                            if (refAdded)
-                            {
-                                channelBinding.DangerousRelease();
-                            }
-                        }
+                        int cbtAppDataSize = channelBinding.Size - appDataOffset;
+                        status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
+                                                                        credentialsHandle,
+                                                                        ref contextHandle,
+                                                                        _packageType,
+                                                                        channelBinding,
+                                                                        appDataOffset,
+                                                                        cbtAppDataSize,
+                                                                        targetNameHandle,
+                                                                        (uint)requestedContextFlags,
+                                                                        incomingBlob,
+                                                                        ref token,
+                                                                        out outputFlags,
+                                                                        out isNtlmUsed);
                     }
                     else
                     {
@@ -706,9 +695,10 @@ namespace System.Net
 
                     if (channelBinding != null)
                     {
-                        // If a TLS channel binding token (cbt) is available then get the pointer
-                        // to the application specific data. The handle is ref-counted to prevent it
-                        // from being released while the native call is in progress.
+                        // If a TLS channel binding token (cbt) is available then pass the whole
+                        // binding as a SafeHandle and let the native shim offset past the
+                        // SecChannelBindings header to the application specific data. Passing the
+                        // SafeHandle lets the interop marshaller ref-count the handle for us.
                         int appDataOffset = sizeof(SecChannelBindings);
                         Debug.Assert(appDataOffset < channelBinding.Size);
                         if (channelBinding.Size < appDataOffset)
@@ -718,36 +708,25 @@ namespace System.Net
                             return NegotiateAuthenticationStatusCode.BadBinding;
                         }
 
-                        bool refAdded = false;
-                        try
-                        {
-                            channelBinding.DangerousAddRef(ref refAdded);
-                            IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
-                            int cbtAppDataSize = channelBinding.Size - appDataOffset;
-                            status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
-                                                                                credentialsHandle,
-                                                                                ref contextHandle,
-                                                                                cbtAppData,
-                                                                                cbtAppDataSize,
-                                                                                incomingBlob,
-                                                                                ref token,
-                                                                                out outputFlags,
-                                                                                out isNtlmUsed);
-                        }
-                        finally
-                        {
-                            if (refAdded)
-                            {
-                                channelBinding.DangerousRelease();
-                            }
-                        }
+                        int cbtAppDataSize = channelBinding.Size - appDataOffset;
+                        status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
+                                                                            credentialsHandle,
+                                                                            ref contextHandle,
+                                                                            channelBinding,
+                                                                            appDataOffset,
+                                                                            cbtAppDataSize,
+                                                                            incomingBlob,
+                                                                            ref token,
+                                                                            out outputFlags,
+                                                                            out isNtlmUsed);
                     }
                     else
                     {
                         status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
                                                                             credentialsHandle,
                                                                             ref contextHandle,
-                                                                            IntPtr.Zero,
+                                                                            null,
+                                                                            0,
                                                                             0,
                                                                             incomingBlob,
                                                                             ref token,
