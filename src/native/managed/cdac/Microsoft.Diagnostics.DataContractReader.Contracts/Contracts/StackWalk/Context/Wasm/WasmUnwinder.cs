@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wasm;
 
 /// <summary>
@@ -91,7 +93,13 @@ public sealed class WasmUnwinder
 
         ulong current = sp.Value;
         if (_target.Read<uint>(current + FunctionIndexOffset) == StackWalkIndirectToFramePointer)
+        {
             current = _target.ReadPointer(current + _pointerSize).Value;
+            // Re-apply the linear-stack floor after following the localloc indirection: a null or
+            // out-of-range saved frame pointer is not a valid frame base.
+            if (current <= LinearStackFloor)
+                return false;
+        }
 
         if (_target.Read<uint>(current + FunctionIndexOffset) == TerminateR2RStackWalk)
             return false;
@@ -153,27 +161,42 @@ public sealed class WasmUnwinder
         }
 
         uint frameSize = DecodeULEB128(unwindData.Value);
+        if (frameSize == 0)
+        {
+            // A zero frame size makes no progress; terminate rather than risk an unbounded walk.
+            sp = TargetPointer.Null;
+            return false;
+        }
+
         sp = new TargetPointer(frameBase.Value + frameSize);
         ip = GetVirtualIP(sp);
+        if (ip == TargetCodePointer.Null)
+        {
+            // The caller is not R2R-generated code (an interpreter transition or the stack top);
+            // the R2R walk is exhausted.
+            sp = TargetPointer.Null;
+            return false;
+        }
+
         return true;
     }
 
-    // Standard little-endian base-128 varint, matching the native DecodeULEB128AsU32.
+    // Standard little-endian base-128 varint, matching the native DecodeULEB128AsU32. A ULEB128
+    // uint32 is at most 5 bytes (5 * 7 = 35 >= 32 bits); a longer encoding is malformed.
     private uint DecodeULEB128(ulong address)
     {
+        const int MaxBytes = 5;
         uint result = 0;
         int shift = 0;
-        ulong offset = 0;
-        while (true)
+        for (ulong offset = 0; offset < MaxBytes; offset++)
         {
             byte b = _target.Read<byte>(address + offset);
-            offset++;
             result |= (uint)(b & 0x7F) << shift;
             if ((b & 0x80) == 0)
-                break;
+                return result;
             shift += 7;
         }
 
-        return result;
+        throw new InvalidOperationException("Malformed ULEB128 value in WASM unwind data.");
     }
 }

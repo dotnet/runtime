@@ -96,9 +96,10 @@ public struct WasmContext : IPlatformContext
         }
     }
 
-    // WASM has no hardware single-step flag.
-    public void UnsetSingleStepFlag()
-        => throw new NotSupportedException("Single-step flag is not supported on WASM.");
+    // WASM has no hardware single-step flag; like other architectures without one (ARM, LoongArch64,
+    // RISC-V) this is a no-op. Callers (e.g. Debugger_1.PrepareExceptionHijack) invoke it
+    // unconditionally, so it must not throw.
+    public void UnsetSingleStepFlag() { }
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {

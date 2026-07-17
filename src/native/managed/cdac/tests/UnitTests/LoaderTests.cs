@@ -98,7 +98,8 @@ public unsafe class LoaderTests
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetFileName(MockTarget.Architecture arch)
-    {        string expected = $"TestModule.dll";
+    {
+        string expected = $"TestModule.dll";
         TargetPointer moduleAddr = TargetPointer.Null;
         TargetPointer moduleAddrEmptyName = TargetPointer.Null;
 

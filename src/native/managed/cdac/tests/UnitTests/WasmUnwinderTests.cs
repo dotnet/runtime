@@ -212,5 +212,60 @@ public class WasmUnwinderTests
         Assert.Equal(TargetPointer.Null, sp);
     }
 
+    [Fact]
+    public void TryGetFramePointer_LocallocToBelowFloor_ReturnsFalse()
+    {
+        // localloc frame whose saved real frame pointer is below the linear-stack floor.
+        TargetTestHelpers helpers = new(WasmArch);
+        ulong indirectSp = FramesBase;
+
+        byte[] indirect = new byte[16];
+        helpers.Write(indirect.AsSpan(0, sizeof(uint)), StackWalkSentinelIndirect);
+        helpers.WritePointer(indirect.AsSpan((int)helpers.PointerSize, helpers.PointerSize), 0x10ul); // below LinearStackFloor
+
+        TestPlaceholderTarget target = CreateTarget(
+            [new MockMemorySpace.HeapFragment { Address = indirectSp, Data = indirect, Name = "indirect" }]);
+        WasmUnwinder unwinder = new(target, new FakeWasmR2RInfo());
+
+        Assert.False(unwinder.TryGetFramePointer(new TargetPointer(indirectSp), out _));
+    }
+
+    [Fact]
+    public void TryUnwindOneFrame_ZeroFrameSize_TerminatesCleanly()
+    {
+        FakeWasmR2RInfo info = new();
+        info.VirtualIpBases[FuncIndexLeaf] = VirtualIpBase;
+        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
+            Blob(BlobsBase, [0x00], "zeroFrameSize"), // ULEB128 0 -> no progress
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        TargetPointer sp = new(FramesBase);
+        Assert.False(unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.Equal(TargetPointer.Null, sp);
+    }
+
+    [Fact]
+    public void TryUnwindOneFrame_MalformedUleb128_Throws()
+    {
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
+            // 5 continuation bytes with no terminator -> exceeds the 5-byte uint32 ULEB128 limit.
+            Blob(BlobsBase, [0x80, 0x80, 0x80, 0x80, 0x80], "malformed"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        TargetPointer sp = new(FramesBase);
+        Assert.Throws<InvalidOperationException>(() => unwinder.TryUnwindOneFrame(ref sp, out _));
+    }
+
     private const uint StackWalkSentinelIndirect = 0;
 }
