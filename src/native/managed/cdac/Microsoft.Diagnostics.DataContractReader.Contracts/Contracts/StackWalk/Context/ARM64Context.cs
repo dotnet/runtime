@@ -158,6 +158,12 @@ internal struct ARM64Context : IPlatformContext
 
     public bool TrySetRegister(int number, TargetNUInt value)
     {
+        if ((uint)(number - 33) < 32)
+        {
+            SetVectorRegister(number - 33, value);
+            return true;
+        }
+
         switch (number)
         {
             case 0: X0 = value.Value; return true;
@@ -199,6 +205,12 @@ internal struct ARM64Context : IPlatformContext
 
     public bool TryReadRegister(int number, out TargetNUInt value)
     {
+        if ((uint)(number - 33) < 32)
+        {
+            value = ReadVectorRegister(number - 33);
+            return true;
+        }
+
         switch (number)
         {
             case 0: value = new TargetNUInt(X0); return true;
@@ -235,6 +247,22 @@ internal struct ARM64Context : IPlatformContext
             case 31: value = new TargetNUInt(Sp); return true;
             case 32: value = new TargetNUInt(Pc); return true;
             default: value = default; return false;
+        }
+    }
+
+    private unsafe void SetVectorRegister(int index, TargetNUInt value)
+    {
+        fixed (ulong* registers = V)
+        {
+            registers[index * 2] = value.Value;
+        }
+    }
+
+    private readonly unsafe TargetNUInt ReadVectorRegister(int index)
+    {
+        fixed (ulong* registers = V)
+        {
+            return new TargetNUInt(registers[index * 2]);
         }
     }
 

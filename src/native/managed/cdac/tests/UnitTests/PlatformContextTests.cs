@@ -36,6 +36,8 @@ public class PlatformContextTests
     [InlineData(29, 0xABCDUL)] // Fp
     [InlineData(31, 0x5678UL)] // Sp
     [InlineData(32, 0x9000UL)] // Pc
+    [InlineData(33, 0x1122334455667788UL)] // V0, low 64 bits
+    [InlineData(64, 0x8877665544332211UL)] // V31, low 64 bits
     public void ARM64_TrySetAndRead_ByNumber_RoundTrips(int regNum, ulong testValue)
     {
         var ctx = new ARM64Context();
@@ -45,12 +47,30 @@ public class PlatformContextTests
     }
 
     [Theory]
-    [InlineData(33)]
+    [InlineData(65)] // REGNUM_COUNT
+    [InlineData(66)] // REGNUM_AMBIENT_SP
     public void ARM64_OutOfRange_ReturnsFalse(int regNum)
     {
         var ctx = new ARM64Context();
         Assert.False(ctx.TrySetRegister(regNum, new TargetNUInt(0)));
         Assert.False(ctx.TryReadRegister(regNum, out _));
+    }
+
+    [Fact]
+    public unsafe void ARM64_VectorRegisterNumber_UsesLow64Bits()
+    {
+        var ctx = new ARM64Context();
+        ulong* registers = ctx.V;
+        registers[1] = 0x1111;
+        registers[3] = 0x3333;
+        registers[4] = 0x4444;
+
+        Assert.True(ctx.TrySetRegister(34, new TargetNUInt(0x2222)));
+
+        Assert.Equal(0x1111UL, registers[1]);
+        Assert.Equal(0x2222UL, registers[2]);
+        Assert.Equal(0x3333UL, registers[3]);
+        Assert.Equal(0x4444UL, registers[4]);
     }
 
     [Theory]
