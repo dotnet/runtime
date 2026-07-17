@@ -624,9 +624,27 @@ namespace System
         {
             internal Delegate? Value = value;
 
-            public readonly bool Equals(Wrapper other) => Value!.Equals(other.Value);
-            public override readonly bool Equals(object? obj) => obj is Wrapper other && Equals(other);
-            public override readonly int GetHashCode() => Value!.GetHashCode();
+            public readonly bool Equals(Wrapper other)
+            {
+                // we should never get null here
+                Debug.Assert(Value is not null);
+                Debug.Assert(other.Value is not null);
+                return Value.Equals(other.Value);
+            }
+
+            public override readonly bool Equals(object? obj)
+            {
+                // we should never get another type here
+                Debug.Assert(obj is Wrapper);
+                return Equals((Wrapper)obj);
+            }
+
+            public override readonly int GetHashCode()
+            {
+                // we should never get null here
+                Debug.Assert(Value is not null);
+                return Value.GetHashCode();
+            }
         }
 
         private unsafe Delegate NewMulticastDelegate(Wrapper[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
