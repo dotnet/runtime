@@ -286,7 +286,6 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 
 #endif // defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_WASM))
 
-
         case GT_INDEX_ADDR:
             if (node->AsIndexAddr()->IsBoundsChecked())
             {
