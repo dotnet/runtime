@@ -11449,6 +11449,8 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 Tau { get { throw null; } }
         public static System.Numerics.Decimal128 Zero { get { throw null; } }
         public static System.Numerics.Decimal128 Abs(System.Numerics.Decimal128 value) { throw null; }
+        public static System.Numerics.Decimal128 BitDecrement(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 BitIncrement(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 Ceiling(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 Clamp(System.Numerics.Decimal128 value, System.Numerics.Decimal128 min, System.Numerics.Decimal128 max) { throw null; }
         public static System.Numerics.Decimal128 ClampNative(System.Numerics.Decimal128 value, System.Numerics.Decimal128 min, System.Numerics.Decimal128 max) { throw null; }
@@ -11463,7 +11465,10 @@ namespace System.Numerics
         public bool Equals(System.Numerics.Decimal128 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal128 Floor(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 FusedMultiplyAdd(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right, System.Numerics.Decimal128 addend) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static int ILogB(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 Ieee754Remainder(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
         public static bool IsEvenInteger(System.Numerics.Decimal128 value) { throw null; }
         public static bool IsFinite(System.Numerics.Decimal128 value) { throw null; }
         public static bool IsInfinity(System.Numerics.Decimal128 value) { throw null; }
@@ -11576,11 +11581,16 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Numerics.Decimal128 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal128 Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.Decimal128 Quantize(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
+        public static System.Numerics.Decimal128 Quantum(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x, int digits) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x, int digits, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x, System.MidpointRounding mode) { throw null; }
+        public static bool SameQuantum(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
+        public static System.Numerics.Decimal128 ScaleB(System.Numerics.Decimal128 x, int n) { throw null; }
         public static int Sign(System.Numerics.Decimal128 value) { throw null; }
+        public static System.Numerics.Decimal128 Sqrt(System.Numerics.Decimal128 x) { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal128>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal128>.GetExponentShortestBitLength() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal128>.GetSignificandBitLength() { throw null; }
@@ -11639,6 +11649,8 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 Tau { get { throw null; } }
         public static System.Numerics.Decimal32 Zero { get { throw null; } }
         public static System.Numerics.Decimal32 Abs(System.Numerics.Decimal32 value) { throw null; }
+        public static System.Numerics.Decimal32 BitDecrement(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 BitIncrement(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Ceiling(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Clamp(System.Numerics.Decimal32 value, System.Numerics.Decimal32 min, System.Numerics.Decimal32 max) { throw null; }
         public static System.Numerics.Decimal32 ClampNative(System.Numerics.Decimal32 value, System.Numerics.Decimal32 min, System.Numerics.Decimal32 max) { throw null; }
@@ -11653,7 +11665,10 @@ namespace System.Numerics
         public bool Equals(System.Numerics.Decimal32 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal32 Floor(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 FusedMultiplyAdd(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right, System.Numerics.Decimal32 addend) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static int ILogB(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 Ieee754Remainder(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
         public static bool IsEvenInteger(System.Numerics.Decimal32 value) { throw null; }
         public static bool IsFinite(System.Numerics.Decimal32 value) { throw null; }
         public static bool IsInfinity(System.Numerics.Decimal32 value) { throw null; }
@@ -11770,11 +11785,16 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Numerics.Decimal32 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal32 Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.Decimal32 Quantize(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
+        public static System.Numerics.Decimal32 Quantum(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x, int digits) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x, int digits, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x, System.MidpointRounding mode) { throw null; }
+        public static bool SameQuantum(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
+        public static System.Numerics.Decimal32 ScaleB(System.Numerics.Decimal32 x, int n) { throw null; }
         public static int Sign(System.Numerics.Decimal32 value) { throw null; }
+        public static System.Numerics.Decimal32 Sqrt(System.Numerics.Decimal32 x) { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal32>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal32>.GetExponentShortestBitLength() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal32>.GetSignificandBitLength() { throw null; }
@@ -11833,6 +11853,8 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 Tau { get { throw null; } }
         public static System.Numerics.Decimal64 Zero { get { throw null; } }
         public static System.Numerics.Decimal64 Abs(System.Numerics.Decimal64 value) { throw null; }
+        public static System.Numerics.Decimal64 BitDecrement(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 BitIncrement(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 Ceiling(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 Clamp(System.Numerics.Decimal64 value, System.Numerics.Decimal64 min, System.Numerics.Decimal64 max) { throw null; }
         public static System.Numerics.Decimal64 ClampNative(System.Numerics.Decimal64 value, System.Numerics.Decimal64 min, System.Numerics.Decimal64 max) { throw null; }
@@ -11847,7 +11869,10 @@ namespace System.Numerics
         public bool Equals(System.Numerics.Decimal64 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal64 Floor(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 FusedMultiplyAdd(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right, System.Numerics.Decimal64 addend) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static int ILogB(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 Ieee754Remainder(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }
         public static bool IsEvenInteger(System.Numerics.Decimal64 value) { throw null; }
         public static bool IsFinite(System.Numerics.Decimal64 value) { throw null; }
         public static bool IsInfinity(System.Numerics.Decimal64 value) { throw null; }
@@ -11962,11 +11987,16 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Numerics.Decimal64 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal64 Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.Decimal64 Quantize(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
+        public static System.Numerics.Decimal64 Quantum(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x, int digits) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x, int digits, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x, System.MidpointRounding mode) { throw null; }
+        public static bool SameQuantum(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
+        public static System.Numerics.Decimal64 ScaleB(System.Numerics.Decimal64 x, int n) { throw null; }
         public static int Sign(System.Numerics.Decimal64 value) { throw null; }
+        public static System.Numerics.Decimal64 Sqrt(System.Numerics.Decimal64 x) { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal64>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal64>.GetExponentShortestBitLength() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal64>.GetSignificandBitLength() { throw null; }

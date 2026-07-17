@@ -1530,6 +1530,272 @@ namespace System.Tests
             Assert.Equal(0, bytesConsumed);
         }
 
+        [Theory]
+        [InlineData(0x32800000U, 0x00000001U)] // +0 -> +MINFP
+        [InlineData(0xB2800000U, 0x00000001U)] // -0 -> +MINFP
+        [InlineData(0x32800001U, 0x2F8F4241U)] // 1 -> 1.000001
+        [InlineData(0xB2800001U, 0xEBD8967FU)] // -1 -> -0.9999999
+        [InlineData(0x77F8967FU, 0x78000000U)] // +MAXFP -> +Infinity
+        [InlineData(0xF7F8967FU, 0xF7F8967EU)] // -MAXFP steps toward zero
+        [InlineData(0x00000001U, 0x00000002U)] // +MINFP
+        [InlineData(0x80000001U, 0x80000000U)] // -MINFP -> -0
+        [InlineData(0x6BF8967FU, 0x300F4240U)] // coefficient carry
+        [InlineData(0x78000000U, 0x78000000U)] // +Infinity
+        [InlineData(0xF8000000U, 0xF7F8967FU)] // -Infinity -> -MAXFP
+        [InlineData(0xFC000000U, 0xFC000000U)] // NaN
+        [InlineData(0x7E001234U, 0x7C001234U)] // signaling NaN canonicalized
+        [InlineData(0x7C0FFFFFU, 0x7C000000U)] // out-of-range NaN payload canonicalized
+        public static void BitIncrementTest(uint bits, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.BitIncrement(Unsafe.BitCast<uint, Decimal32>(bits))));
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x80000001U)] // +0 -> -MINFP
+        [InlineData(0xB2800000U, 0x80000001U)] // -0 -> -MINFP
+        [InlineData(0x32800001U, 0x6BD8967FU)] // 1 -> 0.9999999
+        [InlineData(0xB2800001U, 0xAF8F4241U)] // -1 -> -1.000001
+        [InlineData(0x77F8967FU, 0x77F8967EU)] // +MAXFP steps toward zero
+        [InlineData(0xF7F8967FU, 0xF8000000U)] // -MAXFP -> -Infinity
+        [InlineData(0x00000001U, 0x00000000U)] // +MINFP -> +0
+        [InlineData(0x80000001U, 0x80000002U)] // -MINFP
+        [InlineData(0x6BF8967FU, 0x6BF8967EU)] // normal step
+        [InlineData(0x78000000U, 0x77F8967FU)] // +Infinity -> +MAXFP
+        [InlineData(0xF8000000U, 0xF8000000U)] // -Infinity
+        [InlineData(0xFC000000U, 0xFC000000U)] // NaN
+        [InlineData(0x7E001234U, 0x7C001234U)] // signaling NaN canonicalized
+        [InlineData(0x7C0FFFFFU, 0x7C000000U)] // out-of-range NaN payload canonicalized
+        public static void BitDecrementTest(uint bits, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.BitDecrement(Unsafe.BitCast<uint, Decimal32>(bits))));
+        }
+
+        [Theory]
+        [InlineData(0x32800001U, 0)] // 1
+        [InlineData(0x35000001U, 5)] // 1e5
+        [InlineData(0x3292D687U, 6)] // 1234567
+        [InlineData(0x30000389U, -3)] // 9.05e-3
+        [InlineData(0x3280002AU, 1)] // 42
+        [InlineData(0x03000001U, -95)] // 1e-95
+        [InlineData(0x35800001U, 6)] // 1e6
+        [InlineData(0x32800000U, int.MinValue)] // +0
+        [InlineData(0xB2800000U, int.MinValue)] // -0
+        [InlineData(0xFC000000U, int.MaxValue)] // NaN
+        [InlineData(0x78000000U, int.MaxValue)] // +Infinity
+        [InlineData(0xF8000000U, int.MaxValue)] // -Infinity
+        public static void ILogBTest(uint bits, int expected)
+        {
+            Assert.Equal(expected, Decimal32.ILogB(Unsafe.BitCast<uint, Decimal32>(bits)));
+        }
+
+        [Theory]
+        [InlineData(0x3280007BU, 0, 0x3280007BU)] // 123 scaleB 0
+        [InlineData(0x3280007BU, 2, 0x3380007BU)] // 123 scaleB 2
+        [InlineData(0x3280007BU, -2, 0x3180007BU)] // 123 scaleB -2
+        [InlineData(0x32800001U, 7, 0x36000001U)] // absorb into coefficient
+        [InlineData(0x32800009U, 90, 0x5F800009U)] // absorb at max quantum
+        [InlineData(0x32800001U, 106, 0x78000000U)] // overflow -> +Infinity
+        [InlineData(0xB2800001U, 106, 0xF8000000U)] // overflow -> -Infinity
+        [InlineData(0x00000000U, -50, 0x00000000U)] // deep underflow -> +0
+        [InlineData(0x0000000FU, -1, 0x00000002U)] // gradual underflow, tie -> even (up)
+        [InlineData(0x00000019U, -1, 0x00000002U)] // gradual underflow, tie -> even (stay)
+        [InlineData(0x0000000EU, -1, 0x00000001U)] // gradual underflow, rounds down
+        [InlineData(0x32800000U, 5, 0x35000000U)] // +0
+        [InlineData(0xB2800000U, 5, 0xB5000000U)] // -0
+        [InlineData(0xFC000000U, 5, 0xFC000000U)] // NaN
+        [InlineData(0x78000000U, 5, 0x78000000U)] // +Infinity
+        [InlineData(0xF8000000U, 5, 0xF8000000U)] // -Infinity
+        [InlineData(0x7E001234U, 5, 0x7C001234U)] // signaling NaN canonicalized
+        [InlineData(0x7C0FFFFFU, 5, 0x7C000000U)] // out-of-range NaN payload canonicalized
+        public static void ScaleBTest(uint bits, int n, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.ScaleB(Unsafe.BitCast<uint, Decimal32>(bits), n)));
+        }
+
+        [Theory]
+        [InlineData(0x32800003U, 0x32800002U, 0xB2800001U)] // 3 rem 2 = -1 (quotient rounds up to even 2)
+        [InlineData(0x32800005U, 0x32800002U, 0x32800001U)] // 5 rem 2 = 1 (quotient 2, exact half stays)
+        [InlineData(0x32800007U, 0x32800002U, 0xB2800001U)] // 7 rem 2 = -1 (quotient rounds up to even 4)
+        [InlineData(0x3280000BU, 0x32800004U, 0xB2800001U)] // 11 rem 4 = -1 (nearest multiple 12)
+        [InlineData(0xB280000BU, 0x32800004U, 0x32800001U)] // -11 rem 4 = 1 (sign flips)
+        [InlineData(0x3280000AU, 0x32800003U, 0x32800001U)] // 10 rem 3 = 1
+        [InlineData(0x32800009U, 0x32800003U, 0x32800000U)] // 9 rem 3 = +0 (exact multiple)
+        [InlineData(0xB2800009U, 0x32800003U, 0xB2800000U)] // -9 rem 3 = -0
+        [InlineData(0x3280002AU, 0x78000000U, 0x3280002AU)] // finite rem +Infinity = finite
+        [InlineData(0xB280002AU, 0xF8000000U, 0xB280002AU)] // -finite rem -Infinity = -finite
+        [InlineData(0x32800005U, 0x32800000U, 0x7C000000U)] // x rem 0 = NaN
+        [InlineData(0x78000000U, 0x32800005U, 0x7C000000U)] // +Infinity rem finite = NaN
+        [InlineData(0xFC000000U, 0x32800005U, 0xFC000000U)] // NaN rem finite = NaN
+        [InlineData(0x32800005U, 0xFC000000U, 0xFC000000U)] // finite rem NaN = NaN
+        [InlineData(0x7E001234U, 0x32800005U, 0x7C001234U)] // signaling NaN operand quieted
+        [InlineData(0x32800005U, 0x7C0FFFFFU, 0x7C000000U)] // out-of-range NaN payload cleared
+        [InlineData(0x2A800000U, 0x78000000U, 0x2A800000U)]
+        [InlineData(0xF8000000U, 0x28800184U, 0x7C000000U)]
+        [InlineData(0x19804DB0U, 0x953FA8A2U, 0x1503D67EU)]
+        [InlineData(0x8C015A31U, 0x3F000001U, 0x8C015A31U)]
+        [InlineData(0xFC000000U, 0x18014D75U, 0xFC000000U)]
+        [InlineData(0x07000185U, 0xF8000000U, 0x07000185U)]
+        [InlineData(0xC2801E5DU, 0x9B801D8DU, 0x1B800A91U)]
+        [InlineData(0x28910D0DU, 0xFC000000U, 0xFC000000U)]
+        [InlineData(0x2F847E9CU, 0x95800000U, 0x7C000000U)]
+        [InlineData(0x8D000008U, 0xC7000286U, 0x8D000008U)]
+        [InlineData(0xB85EB066U, 0xFC000000U, 0xFC000000U)]
+        [InlineData(0xB6800330U, 0x2B800003U, 0xAB800000U)]
+        [InlineData(0x5307ABF5U, 0x2287FB3AU, 0xA2825F88U)]
+        [InlineData(0x5A800002U, 0x2D800004U, 0x2D800000U)]
+        [InlineData(0xFC000000U, 0xC200219DU, 0xFC000000U)]
+        [InlineData(0x8200772EU, 0x4F000000U, 0x7C000000U)]
+        [InlineData(0x36807027U, 0x90802417U, 0x108000FDU)]
+        [InlineData(0xA680AC17U, 0x14000000U, 0x7C000000U)]
+        [InlineData(0x3E800000U, 0x9380B36AU, 0x13800000U)]
+        [InlineData(0xFC000000U, 0x91811563U, 0xFC000000U)]
+        [InlineData(0xFC000000U, 0x5D6828A0U, 0xFC000000U)]
+        [InlineData(0xFC000000U, 0xBD800004U, 0xFC000000U)]
+        [InlineData(0x0E000000U, 0x9A00A259U, 0x0E000000U)]
+        [InlineData(0x2D800000U, 0xF8000000U, 0x2D800000U)]
+        [InlineData(0x98000248U, 0x59000000U, 0x7C000000U)]
+        [InlineData(0x4A000005U, 0xA5000000U, 0x7C000000U)]
+        [InlineData(0xC80114EEU, 0x88000000U, 0x7C000000U)]
+        [InlineData(0xBC00BDADU, 0x8E000427U, 0x8E000024U)]
+        [InlineData(0x3380395AU, 0x540129BFU, 0x3380395AU)]
+        [InlineData(0xFC000000U, 0x81000C50U, 0xFC000000U)]
+        [InlineData(0xDB0767EFU, 0x86817D0EU, 0x06808DFEU)]
+        [InlineData(0x9E000000U, 0x5B083365U, 0x9E000000U)]
+        [InlineData(0x3C000008U, 0x3D9DCC91U, 0x3C000008U)]
+        [InlineData(0x140005A9U, 0xB8800000U, 0x7C000000U)]
+        [InlineData(0x5D00003DU, 0x2E80001CU, 0xAE80000CU)]
+        [InlineData(0x04005659U, 0xC66EF60AU, 0x04005659U)]
+        public static void Ieee754RemainderTest(uint left, uint right, uint expected)
+        {
+            Decimal32 result = Decimal32.Ieee754Remainder(Unsafe.BitCast<uint, Decimal32>(left), Unsafe.BitCast<uint, Decimal32>(right));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
+        }
+
+        [Theory]
+        [InlineData(0x32800004U, 0x32800002U)] // sqrt(4) = 2
+        [InlineData(0x32800009U, 0x32800003U)] // sqrt(9) = 3
+        [InlineData(0x32800064U, 0x3280000AU)] // sqrt(100) = 10
+        [InlineData(0x33800004U, 0x33000002U)] // sqrt(4E2) = 2E1 (even exponent halves)
+        [InlineData(0x30800009U, 0x31800003U)] // sqrt(9E-4) = 3E-2
+        [InlineData(0x32800001U, 0x32800001U)] // sqrt(1) = 1
+        [InlineData(0x32800002U, 0x2F959446U)] // sqrt(2) = 1.414214 (inexact, rounded)
+        [InlineData(0x32800000U, 0x32800000U)] // sqrt(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // sqrt(-0) = -0 (sign preserved)
+        [InlineData(0x35000000U, 0x33800000U)] // sqrt(0E5) = 0E2 (preferred exponent floor(5/2))
+        [InlineData(0xB2800004U, 0x7C000000U)] // sqrt(-4) = NaN (invalid)
+        [InlineData(0x78000000U, 0x78000000U)] // sqrt(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0x7C000000U)] // sqrt(-Infinity) = NaN (invalid)
+        [InlineData(0xFC000000U, 0xFC000000U)] // sqrt(NaN) = NaN
+        [InlineData(0xFC001234U, 0xFC001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared
+        public static void SqrtTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Sqrt(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0x32800001U, 0x31800001U, 0x31800064U)] // quantize(1, 1E-2) = 1.00 (exact scale up)
+        [InlineData(0x32000019U, 0x32800001U, 0x32800002U)] // quantize(2.5, 1E0) = 2 (ties to even)
+        [InlineData(0x32000023U, 0x32800001U, 0x32800004U)] // quantize(3.5, 1E0) = 4 (ties to even)
+        [InlineData(0x310004D2U, 0x31800001U, 0x3180007BU)] // quantize(1.234, 1E-2) = 1.23
+        [InlineData(0x3292D687U, 0x32000001U, 0x7C000000U)] // quantize(1234567, 1E-1) needs 8 digits -> NaN
+        [InlineData(0xB5000000U, 0x31800001U, 0xB1800000U)] // quantize(-0E5, 1E-2) = -0E-2 (target quantum)
+        [InlineData(0x32800004U, 0x33800001U, 0x33800000U)] // quantize(4, 1E2) = 0E2 (rounds to zero)
+        [InlineData(0x3280003CU, 0x33800001U, 0x33800001U)] // quantize(60, 1E2) = 1E2 (rounds up)
+        [InlineData(0x78000000U, 0x78000000U, 0x78000000U)] // quantize(+Inf, +Inf) = +Inf
+        [InlineData(0xF8000000U, 0x78000000U, 0xF8000000U)] // quantize(-Inf, +Inf) = -Inf (sign of x)
+        [InlineData(0x78000000U, 0x32800001U, 0x7C000000U)] // quantize(+Inf, finite) = NaN
+        [InlineData(0x32800001U, 0x78000000U, 0x7C000000U)] // quantize(finite, +Inf) = NaN
+        [InlineData(0x7C001234U, 0x32800001U, 0x7C001234U)] // quantize(qNaN, finite) = qNaN (payload preserved)
+        [InlineData(0x32800001U, 0x7C002222U, 0x7C002222U)] // quantize(finite, qNaN) = qNaN (payload preserved)
+        public static void QuantizeTest(uint value, uint quantum, uint expected)
+        {
+            Decimal32 result = Decimal32.Quantize(Unsafe.BitCast<uint, Decimal32>(value), Unsafe.BitCast<uint, Decimal32>(quantum));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
+        }
+
+        [Theory]
+        [InlineData(0x31803039U, 0x31800001U)] // quantum(123.45) = 1E-2
+        [InlineData(0xB2800007U, 0x32800001U)] // quantum(-7) = 1E0 (always positive)
+        [InlineData(0x35000000U, 0x35000001U)] // quantum(0E5) = 1E5
+        [InlineData(0x78000000U, 0x78000000U)] // quantum(+Inf) = +Inf
+        [InlineData(0xF8000000U, 0x78000000U)] // quantum(-Inf) = +Inf (sign cleared)
+        [InlineData(0x7C001234U, 0x7C001234U)] // quantum(qNaN) = qNaN (payload preserved)
+        [InlineData(0xFC000000U, 0xFC000000U)] // quantum(-NaN) = -NaN (propagated)
+        public static void QuantumTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Quantum(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0x32800001U, 0x328003E7U, true)]  // same exponent
+        [InlineData(0x32800001U, 0x32000001U, false)] // different exponent
+        [InlineData(0x7C000000U, 0x7C000000U, true)]  // both NaN
+        [InlineData(0x7C000000U, 0x32800001U, false)] // NaN vs finite
+        [InlineData(0x78000000U, 0xF8000000U, true)]  // both Infinity
+        [InlineData(0x78000000U, 0x7C000000U, false)] // Infinity vs NaN
+        [InlineData(0x78000000U, 0x32800001U, false)] // Infinity vs finite
+        public static void SameQuantumTest(uint x, uint y, bool expected)
+        {
+            Assert.Equal(expected, Decimal32.SameQuantum(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y)));
+        }
+
+
+        [Theory]
+        [InlineData(0x32800002U, 0x32800003U, 0x32800004U, 0x3280000AU)] // 2 * 3 + 4 = 10
+        [InlineData(0x2F8F4241U, 0x2F8F4241U, 0xAF8F4242U, 0x2C800001U)] // 1.000001 * 1.000001 - 1.000002 = 1E-12 (fused)
+        [InlineData(0x35000000U, 0x33800003U, 0x31000007U, 0x31000007U)] // 0E5 * 3E2 + 7E-3
+        [InlineData(0x32800003U, 0x32800004U, 0x32800000U, 0x3280000CU)] // 3 * 4 + 0 = 12
+        [InlineData(0x32800002U, 0x32800003U, 0xB2800006U, 0x32800000U)] // 2 * 3 + (-6) = +0
+        [InlineData(0xB2800002U, 0x32800003U, 0x32800006U, 0x32800000U)] // -2 * 3 + 6 = +0
+        [InlineData(0x32800003U, 0x7C001234U, 0x32800004U, 0x7C001234U)] // 3 * qNaN(0x1234) + 4 -> qNaN
+        [InlineData(0x7C000011U, 0x32800002U, 0x7C000022U, 0x7C000022U)] // qNaN(x) * 2 + qNaN(z) -> z payload
+        [InlineData(0x32800002U, 0x78000000U, 0x32800003U, 0x78000000U)] // 2 * +Inf + 3 = +Inf
+        [InlineData(0xB2800002U, 0x78000000U, 0x32800003U, 0xF8000000U)] // -2 * +Inf + 3 = -Inf
+        [InlineData(0x32800000U, 0x78000000U, 0x32800005U, 0x7C000000U)] // 0 * +Inf + 5 -> qNaN
+        [InlineData(0x32800002U, 0x78000000U, 0xF8000000U, 0x7C000000U)] // 2 * +Inf + (-Inf) -> qNaN
+        public static void FusedMultiplyAddTest(uint x, uint y, uint z, uint expected)
+        {
+            Decimal32 result = Decimal32.FusedMultiplyAdd(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y), Unsafe.BitCast<uint, Decimal32>(z));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32BitDecrement), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void BitDecrement_IntelReferenceVectors(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.BitDecrement(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32BitIncrement), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void BitIncrement_IntelReferenceVectors(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.BitIncrement(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32ILogB), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ILogB_IntelReferenceVectors(uint value, int expected)
+        {
+            Assert.Equal(expected, Decimal32.ILogB(Unsafe.BitCast<uint, Decimal32>(value)));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32ScaleB), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void ScaleB_IntelReferenceVectors(uint value, int n, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.ScaleB(Unsafe.BitCast<uint, Decimal32>(value), n)));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32FusedMultiplyAdd), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void FusedMultiplyAdd_IntelReferenceVectors(uint x, uint y, uint z, uint expected)
+        {
+            Decimal32 result = Decimal32.FusedMultiplyAdd(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y), Unsafe.BitCast<uint, Decimal32>(z));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
+        }
+
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32Arithmetic), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void op_Arithmetic_IntelReferenceVectors(string operation, uint left, uint right, uint expected)
@@ -1557,6 +1823,38 @@ namespace System.Tests
             Decimal32 r = Unsafe.BitCast<uint, Decimal32>(right);
 
             Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(l % r));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32Remainder), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void Ieee754Remainder_IntelReferenceVectors(uint left, uint right, uint expected)
+        {
+            Decimal32 l = Unsafe.BitCast<uint, Decimal32>(left);
+            Decimal32 r = Unsafe.BitCast<uint, Decimal32>(right);
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Ieee754Remainder(l, r)));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32Sqrt), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void Sqrt_IntelReferenceVectors(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Sqrt(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32Quantize), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void Quantize_IntelReferenceVectors(uint value, uint quantum, uint expected)
+        {
+            Decimal32 result = Decimal32.Quantize(Unsafe.BitCast<uint, Decimal32>(value), Unsafe.BitCast<uint, Decimal32>(quantum));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32Quantum), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void Quantum_IntelReferenceVectors(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Quantum(Unsafe.BitCast<uint, Decimal32>(value))));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
