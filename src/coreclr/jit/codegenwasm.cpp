@@ -2741,8 +2741,8 @@ void CodeGen::genLoadLclTypeSimd12(GenTreeLclVarCommon* tree)
 //    tree - the GT_IND node
 //
 // Notes:
-//    One copy of the address is already on the value stack (from genConsumeAddress) and
-//    is multiply-used, so the trailing v128.load32_lane can re-push it for the upper 4 bytes.
+//    The address is left on the value stack by prior codegen and is multiply-used, so the
+//    trailing v128.load32_lane can re-push it for the upper 4 bytes.
 //
 void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* tree)
 {
