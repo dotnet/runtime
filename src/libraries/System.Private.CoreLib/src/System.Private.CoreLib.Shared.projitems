@@ -450,6 +450,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128Log.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128Pow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128Sqrt.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128Trig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Transcendental.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal128.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal32.cs" />

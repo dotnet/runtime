@@ -879,6 +879,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static Decimal64 Cbrt(Decimal64 x) => new Decimal64(Number.CbrtDecimalIeee754<Decimal64, ulong>(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        public static Decimal64 Cos(Decimal64 x) => new Decimal64(Number.CosDecimalIeee754<Decimal64, ulong>(x._value));
+
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal64 Exp(Decimal64 x) => new Decimal64(Number.ExpDecimalIeee754<Decimal64, ulong>(x._value));
 
@@ -939,8 +942,21 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
         public static Decimal64 ScaleB(Decimal64 x, int n) => new Decimal64(Number.ScaleBDecimalIeee754<Decimal64, ulong>(x._value, n));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        public static Decimal64 Sin(Decimal64 x) => new Decimal64(Number.SinDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (Decimal64 Sin, Decimal64 Cos) SinCos(Decimal64 x)
+        {
+            (ulong sin, ulong cos) = Number.SinCosDecimalIeee754<Decimal64, ulong>(x._value);
+            return (new Decimal64(sin), new Decimal64(cos));
+        }
+
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static Decimal64 Sqrt(Decimal64 x) => new Decimal64(Number.SqrtDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        public static Decimal64 Tan(Decimal64 x) => new Decimal64(Number.TanDecimalIeee754<Decimal64, ulong>(x._value));
 
         /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
         /// <param name="x">The value whose quantum is adjusted.</param>

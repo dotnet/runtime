@@ -2193,6 +2193,118 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // sin(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // sin(-0) = -0
+        [InlineData(0x78000000U, 0x7C000000U)] // sin(+Infinity) = NaN
+        [InlineData(0xF8000000U, 0x7C000000U)] // sin(-Infinity) = NaN
+        [InlineData(0x7C000000U, 0x7C000000U)] // sin(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void SinTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Sin(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void SinAccuracyTest(double input)
+        {
+            // Decimal32 evaluates sin through binary64 (as Intel does), so the result matches double.Sin
+            // to within the format's seven significant digits.
+            double expected = double.Sin(input);
+            double actual = (double)Decimal32.Sin((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"sin({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800001U)] // cos(+0) = 1
+        [InlineData(0xB2800000U, 0x32800001U)] // cos(-0) = 1
+        [InlineData(0x78000000U, 0x7C000000U)] // cos(+Infinity) = NaN
+        [InlineData(0xF8000000U, 0x7C000000U)] // cos(-Infinity) = NaN
+        [InlineData(0x7C000000U, 0x7C000000U)] // cos(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void CosTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Cos(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void CosAccuracyTest(double input)
+        {
+            // Decimal32 evaluates cos through binary64 (as Intel does).
+            double expected = double.Cos(input);
+            double actual = (double)Decimal32.Cos((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cos({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // tan(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // tan(-0) = -0
+        [InlineData(0x78000000U, 0x7C000000U)] // tan(+Infinity) = NaN
+        [InlineData(0xF8000000U, 0x7C000000U)] // tan(-Infinity) = NaN
+        [InlineData(0x7C000000U, 0x7C000000U)] // tan(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void TanTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Tan(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        public static void TanAccuracyTest(double input)
+        {
+            // Decimal32 evaluates tan through binary64 (as Intel does).
+            double expected = double.Tan(input);
+            double actual = (double)Decimal32.Tan((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"tan({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800000U, 0x32800001U)] // sincos(+0) = (+0, 1)
+        [InlineData(0xB2800000U, 0xB2800000U, 0x32800001U)] // sincos(-0) = (-0, 1)
+        [InlineData(0x78000000U, 0x7C000000U, 0x7C000000U)] // sincos(+Infinity) = (NaN, NaN)
+        [InlineData(0x7C000000U, 0x7C000000U, 0x7C000000U)] // sincos(NaN) = (NaN, NaN)
+        public static void SinCosTest(uint value, uint expectedSin, uint expectedCos)
+        {
+            (Decimal32 sin, Decimal32 cos) = Decimal32.SinCos(Unsafe.BitCast<uint, Decimal32>(value));
+            Assert.Equal(expectedSin, Unsafe.BitCast<Decimal32, uint>(sin));
+            Assert.Equal(expectedCos, Unsafe.BitCast<Decimal32, uint>(cos));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        public static void SinCosAccuracyTest(double input)
+        {
+            (Decimal32 sin, Decimal32 cos) = Decimal32.SinCos((Decimal32)input);
+            Assert.True(double.Abs((double)sin - double.Sin(input)) <= 5e-7 * double.Abs(double.MaxMagnitude(double.Sin(input), 1.0)), $"sincos({input}).Sin");
+            Assert.True(double.Abs((double)cos - double.Cos(input)) <= 5e-7 * double.Abs(double.MaxMagnitude(double.Cos(input), 1.0)), $"sincos({input}).Cos");
+        }
+
+        [Theory]
         [InlineData(0x32800001U, 0x31800001U, 0x31800064U)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x32000019U, 0x32800001U, 0x32800002U)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x32000023U, 0x32800001U, 0x32800004U)] // quantize(3.5, 1E0) = 4 (ties to even)

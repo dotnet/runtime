@@ -2199,6 +2199,120 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // sin(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // sin(-0) = -0
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // sin(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // sin(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // sin(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void SinTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Sin(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        [InlineData(100.0)]
+        public static void SinAccuracyTest(double input)
+        {
+            // Decimal64 evaluates sin in the software binary128 engine (as Intel does). Comparing through
+            // binary64 bounds the check to double precision.
+            double expected = double.Sin(input);
+            double actual = (double)Decimal64.Sin((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"sin({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL)] // cos(+0) = 1
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL)] // cos(-0) = 1
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // cos(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // cos(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // cos(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void CosTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Cos(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        [InlineData(100.0)]
+        public static void CosAccuracyTest(double input)
+        {
+            // Decimal64 evaluates cos in the software binary128 engine (as Intel does).
+            double expected = double.Cos(input);
+            double actual = (double)Decimal64.Cos((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cos({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // tan(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // tan(-0) = -0
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // tan(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // tan(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // tan(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void TanTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Tan(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        public static void TanAccuracyTest(double input)
+        {
+            // Decimal64 evaluates tan in the software binary128 engine (as Intel does).
+            double expected = double.Tan(input);
+            double actual = (double)Decimal64.Tan((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"tan({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL, 0x31C0000000000001UL)] // sincos(+0) = (+0, 1)
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL, 0x31C0000000000001UL)] // sincos(-0) = (-0, 1)
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // sincos(+Infinity) = (NaN, NaN)
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // sincos(NaN) = (NaN, NaN)
+        public static void SinCosTest(ulong value, ulong expectedSin, ulong expectedCos)
+        {
+            (Decimal64 sin, Decimal64 cos) = Decimal64.SinCos(Unsafe.BitCast<ulong, Decimal64>(value));
+            Assert.Equal(expectedSin, Unsafe.BitCast<Decimal64, ulong>(sin));
+            Assert.Equal(expectedCos, Unsafe.BitCast<Decimal64, ulong>(cos));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        public static void SinCosAccuracyTest(double input)
+        {
+            (Decimal64 sin, Decimal64 cos) = Decimal64.SinCos((Decimal64)input);
+            Assert.True(double.Abs((double)sin - double.Sin(input)) <= 1e-13 * double.Abs(double.MaxMagnitude(double.Sin(input), 1.0)), $"sincos({input}).Sin");
+            Assert.True(double.Abs((double)cos - double.Cos(input)) <= 1e-13 * double.Abs(double.MaxMagnitude(double.Cos(input), 1.0)), $"sincos({input}).Cos");
+        }
+
+        [Theory]
         [InlineData(0x31C0000000000001UL, 0x3180000000000001UL, 0x3180000000000064UL)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x31A0000000000019UL, 0x31C0000000000001UL, 0x31C0000000000002UL)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x31A0000000000023UL, 0x31C0000000000001UL, 0x31C0000000000004UL)] // quantize(3.5, 1E0) = 4 (ties to even)

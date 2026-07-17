@@ -888,6 +888,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static Decimal32 Cbrt(Decimal32 x) => new Decimal32(Number.CbrtDecimalIeee754<Decimal32, uint>(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        public static Decimal32 Cos(Decimal32 x) => new Decimal32(Number.CosDecimalIeee754<Decimal32, uint>(x._value));
+
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal32 Exp(Decimal32 x) => new Decimal32(Number.ExpDecimalIeee754<Decimal32, uint>(x._value));
 
@@ -948,8 +951,21 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
         public static Decimal32 ScaleB(Decimal32 x, int n) => new Decimal32(Number.ScaleBDecimalIeee754<Decimal32, uint>(x._value, n));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        public static Decimal32 Sin(Decimal32 x) => new Decimal32(Number.SinDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (Decimal32 Sin, Decimal32 Cos) SinCos(Decimal32 x)
+        {
+            (uint sin, uint cos) = Number.SinCosDecimalIeee754<Decimal32, uint>(x._value);
+            return (new Decimal32(sin), new Decimal32(cos));
+        }
+
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static Decimal32 Sqrt(Decimal32 x) => new Decimal32(Number.SqrtDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        public static Decimal32 Tan(Decimal32 x) => new Decimal32(Number.TanDecimalIeee754<Decimal32, uint>(x._value));
 
         /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
         /// <param name="x">The value whose quantum is adjusted.</param>
