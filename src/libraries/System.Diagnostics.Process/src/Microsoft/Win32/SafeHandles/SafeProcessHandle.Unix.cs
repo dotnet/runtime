@@ -7,7 +7,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -429,19 +428,13 @@ namespace Microsoft.Win32.SafeHandles
 
         private static IDictionary<string, string?>? GetEnvironmentVariables(ProcessStartInfo startInfo)
         {
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || HasEnvironmentVariablesBeenModified())
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || GetHasEnvironmentVariablesBeenModified(null))
             {
                 return startInfo.Environment;
             }
 
             return startInfo._environmentVariables;
         }
-
-        private static readonly bool s_hasEnvironmentVariablesBeenModifiedAccessor =
-            typeof(Environment).GetMethod("get_HasEnvironmentVariablesBeenModified", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic) is not null;
-
-        private static bool HasEnvironmentVariablesBeenModified() =>
-            s_hasEnvironmentVariablesBeenModifiedAccessor && GetHasEnvironmentVariablesBeenModified(null);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_HasEnvironmentVariablesBeenModified")]
         private static extern bool GetHasEnvironmentVariablesBeenModified([UnsafeAccessorType("System.Environment, System.Private.CoreLib")] object? _);
