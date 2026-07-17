@@ -36041,7 +36041,16 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 if (maskIsZero)
                 {
-                    return gtWrapWithSideEffects(op1, op2, GTF_ALL_EFFECT);
+                    if ((op2->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        // op2 has side effects and is evaluated after op1, so dropping it here would
+                        // reorder its side effects ahead of op1. That isn't safe to do from the general
+                        // purpose handler here. We'll recognize this and mark it in VN instead
+                        break;
+                    }
+
+                    // op2 has no side effects, so we can return op1 directly
+                    return op1;
                 }
 
                 break;
