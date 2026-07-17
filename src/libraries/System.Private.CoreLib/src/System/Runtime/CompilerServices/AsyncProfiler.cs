@@ -1230,7 +1230,7 @@ namespace System.Runtime.CompilerServices
 #if !RUNTIME_ASYNC_SUPPORTED
             public static void InitInfo(ref Info info)
             {
-                info.ContinuationTable = 0;
+                info.ContinuationTable = ref Unsafe.NullRef<nint>();
                 info.ContinuationIndex = 0;
             }
 #endif

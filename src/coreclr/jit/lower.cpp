@@ -4856,6 +4856,11 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                                             GenCondition* cond,
                                             bool          allowMultipleFlagsChecks)
 {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+    // These architectures have no status/flag register.
+    return false;
+#else
+
     JITDUMP("Lowering condition:\n");
     DISPTREERANGE(BlockRange(), condition);
     JITDUMP("\n");
@@ -4886,9 +4891,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
         }
 #endif
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
-        // TODO-Cleanup: this ifdef look suspect, we should never get here on architectures without a status register,
-        // i. e. the right thing is to ifdef the whole function.
         // TODO-Cleanup: introduce a "has CPU flags" target define.
         if (!allowMultipleFlagsChecks)
         {
@@ -4899,7 +4901,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                 return false;
             }
         }
-#endif
 
         relop->gtType = TYP_VOID;
         relop->gtFlags |= GTF_SET_FLAGS;
@@ -4975,6 +4976,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
     }
 
     return false;
+#endif
 }
 
 //----------------------------------------------------------------------------------------------
@@ -13030,19 +13032,30 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
 
 #if defined(FEATURE_HW_INTRINSICS)
 //----------------------------------------------------------------------------------------------
-// Lowering::InsertNewSimdCreateScalarUnsafeNode: Inserts a new simd CreateScalarUnsafe node
+// Lowering::InsertNewSimdCreateScalarUnsafeNode: Inserts a new simd CreateScalarUnsafe node,
+//    eliding it where it is a pure reinterpret
 //
 //  Arguments:
 //    simdType        - The return type of SIMD node being created
 //    op1             - The value of the lowest element of the simd value
-//    simdBaseJitType - the base JIT type of SIMD type of the intrinsic
+//    simdBaseType    - the base type of the SIMD type of the intrinsic
 //    simdSize        - the size of the SIMD type of the intrinsic
 //
 // Returns:
-//    The inserted CreateScalarUnsafe node
+//    The node the consuming intrinsic should use as its operand. This is the newly created and
+//    lowered CreateScalarUnsafe node, or - where CreateScalarUnsafe is a pure reinterpret - the
+//    bare scalar op1 itself.
 //
 // Remarks:
-//    If the created node is a vector constant, op1 will be removed from the block range
+//    On targets where a floating-point scalar already occupies the lowest element of a SIMD
+//    register (with the upper elements undefined, matching the "Unsafe" contract), a non-constant
+//    floating-point CreateScalarUnsafe is a no-op reinterpret. In that case the bare scalar is
+//    returned and the consuming intrinsic reads it directly, avoiding a redundant node.
+//
+//    Integral scalars still require a real movd/movq (or ins/dup) to move the value into a SIMD
+//    register, and a constant is materialized so it can fold to a vector constant, so those cases
+//    create, lower, and return a real CreateScalarUnsafe node. If that node is a vector constant,
+//    op1 is removed from the block range.
 //
 GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types simdType,
                                                        GenTree*  op1,
@@ -13051,6 +13064,13 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types simdType,
 {
     assert(varTypeIsSIMD(simdType));
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (varTypeIsFloating(simdBaseType) && !op1->IsCnsFltOrDbl())
+    {
+        return op1;
+    }
+#endif // TARGET_XARCH || TARGET_ARM64
+
     GenTree* result = m_compiler->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseType, simdSize);
     BlockRange().InsertAfter(op1, result);
 
@@ -13058,6 +13078,8 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types simdType,
     {
         BlockRange().Remove(op1);
     }
+
+    LowerNode(result);
     return result;
 }
 
