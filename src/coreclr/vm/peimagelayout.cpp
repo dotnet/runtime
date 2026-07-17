@@ -101,10 +101,10 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
         EEFileLoadException::Throw(pOwner->GetPathForErrorMessages(), COR_E_BADIMAGEFORMAT);
 
 #if defined(TARGET_UNIX)
-    // we should not see R2R files here on Unix.
+    // We should not see R2R files here on Unix when R2R is expected/allowed for the image.
     // ConvertedImageLayout may be able to handle them, but the fact that we were unable to
     // load directly implies that MAPMapPEFile could not consume what crossgen produced.
-    // that is suspicious, one or another might have a bug.
+    // That is suspicious; one or another might have a bug.
     _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || !AllowR2RForImage(pOwner) || disableMapping);
 #endif
 
