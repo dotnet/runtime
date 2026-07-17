@@ -829,6 +829,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic      intrinsic = node->GetHWIntrinsicId();
     HWIntrinsicCategory category  = HWIntrinsicInfo::lookupCategory(intrinsic);
     bool                hasImmOp  = HWIntrinsicInfo::HasImmediateOperand(intrinsic);
+    GenTree*            addr      = nullptr;
+
+    if (node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr))
+    {
+        SetMultiplyUsed(addr DEBUGARG("LowerHWIntrinsic memory address (null check)"));
+    }
 
     switch (intrinsic)
     {
