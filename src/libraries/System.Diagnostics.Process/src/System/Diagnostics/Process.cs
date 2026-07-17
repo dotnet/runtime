@@ -191,11 +191,11 @@ namespace System.Diagnostics
         /// <remarks>
         /// On Windows, if a handle to the process is available, this property can be read after the process exits.
         /// On Unix, this property caches its value on first access. A cached value can be read after the process exits,
-        /// but accessing an uncached value after the process has been reaped may throw <see cref="InvalidOperationException"/>.
+        /// but accessing an uncached value after the process exits may throw <see cref="InvalidOperationException"/> when the value is unavailable.
         /// </remarks>
         /// <exception cref="InvalidOperationException">
         /// No process is associated with this object; on Windows, there is no process handle available; or on Unix,
-        /// the value was not cached before the process was reaped.
+        /// the value was not cached and is unavailable after the process exited.
         /// </exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
