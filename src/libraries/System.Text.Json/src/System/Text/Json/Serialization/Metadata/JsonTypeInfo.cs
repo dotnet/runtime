@@ -36,11 +36,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal BitArray? OptionalPropertiesMask { get; private set; }
         internal bool ShouldTrackRequiredProperties => OptionalPropertiesMask is not null;
 
-        private Action<object>? _onSerializing;
-        private Action<object>? _onSerialized;
-        private Action<object>? _onDeserializing;
-        private Action<object>? _onDeserialized;
-
         internal JsonTypeInfo(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
             Type = type;
@@ -120,7 +115,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public Action<object>? OnSerializing
         {
-            get => _onSerializing;
+            get;
             set
             {
                 VerifyMutable();
@@ -130,7 +125,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
 
-                _onSerializing = value;
+                field = value;
             }
         }
 
@@ -150,7 +145,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public Action<object>? OnSerialized
         {
-            get => _onSerialized;
+            get;
             set
             {
                 VerifyMutable();
@@ -160,7 +155,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
 
-                _onSerialized = value;
+                field = value;
             }
         }
 
@@ -180,7 +175,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public Action<object>? OnDeserializing
         {
-            get => _onDeserializing;
+            get;
             set
             {
                 VerifyMutable();
@@ -196,7 +191,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOnDeserializingCallbacksNotSupported(Type);
                 }
 
-                _onDeserializing = value;
+                field = value;
             }
         }
 
@@ -216,7 +211,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public Action<object>? OnDeserialized
         {
-            get => _onDeserialized;
+            get;
             set
             {
                 VerifyMutable();
@@ -226,7 +221,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
 
-                _onDeserialized = value;
+                field = value;
             }
         }
 
@@ -790,7 +785,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public JsonUnmappedMemberHandling? UnmappedMemberHandling
         {
-            get => _unmappedMemberHandling;
+            get;
             set
             {
                 VerifyMutable();
@@ -805,15 +800,11 @@ namespace System.Text.Json.Serialization.Metadata
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                _unmappedMemberHandling = value;
+                field = value;
             }
         }
 
-        private JsonUnmappedMemberHandling? _unmappedMemberHandling;
-
         internal JsonUnmappedMemberHandling EffectiveUnmappedMemberHandling { get; private set; }
-
-        private JsonObjectCreationHandling? _preferredPropertyObjectCreationHandling;
 
         /// <summary>
         /// Gets or sets the preferred <see cref="JsonObjectCreationHandling"/> value for properties contained in the type.
@@ -834,7 +825,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public JsonObjectCreationHandling? PreferredPropertyObjectCreationHandling
         {
-            get => _preferredPropertyObjectCreationHandling;
+            get;
             set
             {
                 VerifyMutable();
@@ -849,7 +840,7 @@ namespace System.Text.Json.Serialization.Metadata
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                _preferredPropertyObjectCreationHandling = value;
+                field = value;
             }
         }
 
@@ -866,7 +857,7 @@ namespace System.Text.Json.Serialization.Metadata
         [EditorBrowsable(EditorBrowsableState.Never)]
         public IJsonTypeInfoResolver? OriginatingResolver
         {
-            get => _originatingResolver;
+            get;
             set
             {
                 VerifyMutable();
@@ -879,11 +870,9 @@ namespace System.Text.Json.Serialization.Metadata
                     IsCustomized = false;
                 }
 
-                _originatingResolver = value;
+                field = value;
             }
         }
-
-        private IJsonTypeInfoResolver? _originatingResolver;
 
         /// <summary>
         /// Gets or sets an attribute provider corresponding to the deserialization constructor.

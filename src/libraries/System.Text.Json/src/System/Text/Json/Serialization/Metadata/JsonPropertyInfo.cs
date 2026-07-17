@@ -47,15 +47,13 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public JsonConverter? CustomConverter
         {
-            get => _customConverter;
+            get;
             set
             {
                 VerifyMutable();
-                _customConverter = value;
+                field = value;
             }
         }
-
-        private JsonConverter? _customConverter;
 
         /// <summary>
         /// Gets or sets a getter delegate for the property.
@@ -201,7 +199,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public JsonObjectCreationHandling? ObjectCreationHandling
         {
-            get => _objectCreationHandling;
+            get;
             set
             {
                 VerifyMutable();
@@ -214,11 +212,10 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                 }
 
-                _objectCreationHandling = value;
+                field = value;
             }
         }
 
-        private JsonObjectCreationHandling? _objectCreationHandling;
         internal JsonObjectCreationHandling EffectiveObjectCreationHandling { get; private set; }
 
         internal string? MemberName { get; set; } // Do not rename (legacy schema generation)
@@ -316,7 +313,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public bool IsExtensionData
         {
-            get => _isExtensionDataProperty;
+            get;
             set
             {
                 VerifyMutable();
@@ -326,11 +323,9 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(this);
                 }
 
-                _isExtensionDataProperty = value;
+                field = value;
             }
         }
-
-        private bool _isExtensionDataProperty;
 
         /// <summary>
         /// Specifies whether the current property is required for deserialization to be successful.
@@ -832,15 +827,13 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public int Order
         {
-            get => _order;
+            get;
             set
             {
                 VerifyMutable();
-                _order = value;
+                field = value;
             }
         }
-
-        private int _order;
 
         internal bool ReadJsonAndAddExtensionProperty(
             object obj,
@@ -1035,15 +1028,13 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public JsonNumberHandling? NumberHandling
         {
-            get => _numberHandling;
+            get;
             set
             {
                 VerifyMutable();
-                _numberHandling = value;
+                field = value;
             }
         }
-
-        private JsonNumberHandling? _numberHandling;
 
         /// <summary>
         /// Number handling after considering options and declaring type number handling

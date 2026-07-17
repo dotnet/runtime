@@ -45,56 +45,39 @@ namespace System.Text.Json.Schema
         /// </summary>
         private readonly bool? _trueOrFalse;
 
-        public string? Ref { get => _ref; set { VerifyMutable(); _ref = value; } }
-        private string? _ref;
+        public string? Ref { get; set { VerifyMutable(); field = value; } }
 
-        public string? Comment { get => _comment; set { VerifyMutable(); _comment = value; } }
-        private string? _comment;
+        public string? Comment { get; set { VerifyMutable(); field = value; } }
 
-        public JsonSchemaType Type { get => _type; set { VerifyMutable(); _type = value; } }
-        private JsonSchemaType _type = JsonSchemaType.Any;
+        public JsonSchemaType Type { get; set { VerifyMutable(); field = value; } } = JsonSchemaType.Any;
 
-        public string? Format { get => _format; set { VerifyMutable(); _format = value; } }
-        private string? _format;
+        public string? Format { get; set { VerifyMutable(); field = value; } }
 
-        public string? Pattern { get => _pattern; set { VerifyMutable(); _pattern = value; } }
-        private string? _pattern;
+        public string? Pattern { get; set { VerifyMutable(); field = value; } }
 
-        public JsonNode? Constant { get => _constant; set { VerifyMutable(); _constant = value; } }
-        private JsonNode? _constant;
+        public JsonNode? Constant { get; set { VerifyMutable(); field = value; } }
 
-        public List<KeyValuePair<string, JsonSchema>>? Properties { get => _properties; set { VerifyMutable(); _properties = value; } }
-        private List<KeyValuePair<string, JsonSchema>>? _properties;
+        public List<KeyValuePair<string, JsonSchema>>? Properties { get; set { VerifyMutable(); field = value; } }
 
-        public List<string>? Required { get => _required; set { VerifyMutable(); _required = value; } }
-        private List<string>? _required;
+        public List<string>? Required { get; set { VerifyMutable(); field = value; } }
 
-        public JsonSchema? Items { get => _items; set { VerifyMutable(); _items = value; } }
-        private JsonSchema? _items;
+        public JsonSchema? Items { get; set { VerifyMutable(); field = value; } }
 
-        public JsonSchema? AdditionalProperties { get => _additionalProperties; set { VerifyMutable(); _additionalProperties = value; } }
-        private JsonSchema? _additionalProperties;
+        public JsonSchema? AdditionalProperties { get; set { VerifyMutable(); field = value; } }
 
-        public JsonArray? Enum { get => _enum; set { VerifyMutable(); _enum = value; } }
-        private JsonArray? _enum;
+        public JsonArray? Enum { get; set { VerifyMutable(); field = value; } }
 
-        public JsonSchema? Not { get => _not; set { VerifyMutable(); _not = value; } }
-        private JsonSchema? _not;
+        public JsonSchema? Not { get; set { VerifyMutable(); field = value; } }
 
-        public List<JsonSchema>? AnyOf { get => _anyOf; set { VerifyMutable(); _anyOf = value; } }
-        private List<JsonSchema>? _anyOf;
+        public List<JsonSchema>? AnyOf { get; set { VerifyMutable(); field = value; } }
 
-        public bool HasDefaultValue { get => _hasDefaultValue; set { VerifyMutable(); _hasDefaultValue = value; } }
-        private bool _hasDefaultValue;
+        public bool HasDefaultValue { get; set { VerifyMutable(); field = value; } }
 
-        public JsonNode? DefaultValue { get => _defaultValue; set { VerifyMutable(); _defaultValue = value; } }
-        private JsonNode? _defaultValue;
+        public JsonNode? DefaultValue { get; set { VerifyMutable(); field = value; } }
 
-        public int? MinLength { get => _minLength; set { VerifyMutable(); _minLength = value; } }
-        private int? _minLength;
+        public int? MinLength { get; set { VerifyMutable(); field = value; } }
 
-        public int? MaxLength { get => _maxLength; set { VerifyMutable(); _maxLength = value; } }
-        private int? _maxLength;
+        public int? MaxLength { get; set { VerifyMutable(); field = value; } }
 
         public bool? Deprecated { get => _deprecated; set { VerifyMutable(); _deprecated = value; } }
         private bool? _deprecated;

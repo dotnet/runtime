@@ -2603,10 +2603,8 @@ namespace System.Text.Json
             }
         }
 
-        private PartialStateForRollback CaptureState()
-        {
-            return new PartialStateForRollback(_totalConsumed, _bytePositionInLine, _consumed, _currentPosition);
-        }
+        private PartialStateForRollback CaptureState() =>
+            new PartialStateForRollback(_totalConsumed, _bytePositionInLine, _consumed, _currentPosition);
 
         private readonly struct PartialStateForRollback
         {
