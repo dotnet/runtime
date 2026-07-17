@@ -562,28 +562,6 @@ bool NearDiffer::compareOffsets(
         return compareOffsetsWasm(payload, blockOffset, instrLen, offset1, offset2);
     }
 
-    // On arm32 a direct BL is fixed up with an ARM32_THUMB_BRANCH24 reloc. When the
-    // two code blocks are allocated more than +-16MB apart, applyRelocs substitutes a
-    // placeholder target for the out-of-range side, so the immediates differ even
-    // though both BLs target the same recorded address. Treat the sites as equal when
-    // both recorded the same reloc kind and target.
-    if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM)
-    {
-        const DiffData* data = (const DiffData*)payload;
-
-        const Agnostic_RecordRelocation* reloc1 =
-            data->cr1->findRelocationInRange(data->originalBlock1, blockOffset, instrLen);
-        const Agnostic_RecordRelocation* reloc2 =
-            data->cr2->findRelocationInRange(data->originalBlock2, blockOffset, instrLen);
-
-        if ((reloc1 != nullptr) && (reloc2 != nullptr) && (reloc1->fRelocType == reloc2->fRelocType) &&
-            ((uint64_t)reloc1->target + (int32_t)reloc1->addlDelta ==
-             (uint64_t)reloc2->target + (int32_t)reloc2->addlDelta))
-        {
-            return true;
-        }
-    }
-
     const DiffData* data         = (const DiffData*)payload;
     size_t          ip1          = data->originalBlock1 + blockOffset;
     size_t          ip2          = data->originalBlock2 + blockOffset;
