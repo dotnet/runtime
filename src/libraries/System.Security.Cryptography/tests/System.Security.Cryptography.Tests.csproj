@@ -713,13 +713,8 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="AesCngProvider.cs" />
     <Compile Include="AesCngTests.cs" />
-    <Compile Include="AesCryptoServiceProviderTests.cs" />
     <Compile Include="AesTestRegistration.Cng.cs" />
     <Compile Include="CngHelpers.cs" />
-    <Compile Include="CreateTransformCompat.cs" />
-    <Compile Include="DESCryptoServiceProviderProvider.cs" />
-    <Compile Include="DESCryptoServiceProviderTests.cs" />
-    <Compile Include="DESTestRegistration.Csp.cs" />
     <Compile Include="DSACngProvider.Windows.cs" />
     <Compile Include="DSACngTests.Windows.cs" />
     <Compile Include="DSACryptoServiceProviderProvider.cs" />
@@ -735,9 +730,6 @@
     <Compile Include="ECDsaCngProvider.cs" />
     <Compile Include="ECDsaCngTests.cs" />
     <Compile Include="ECDsaTestRegistration.Cng.cs" />
-    <Compile Include="RC2CryptoServiceProviderProvider.cs" />
-    <Compile Include="RC2CryptoServiceProviderTests.cs" />
-    <Compile Include="RC2TestRegistration.Csp.cs" />
     <Compile Include="RSACngProvider.cs" />
     <Compile Include="RsaCngTests.cs" />
     <Compile Include="RSACryptoServiceProviderBackCompat.cs" />
@@ -746,12 +738,10 @@
     <Compile Include="RSAImportExportCspBlobTests.cs" />
     <Compile Include="RSATestRegistration.Cng.cs" />
     <Compile Include="RSATestRegistration.Csp.cs" />
-    <Compile Include="ShimHelpers.cs" />
     <Compile Include="SymmetricCngTestHelpers.cs" />
     <Compile Include="TestData.Cng.cs" />
     <Compile Include="TripleDESCngProvider.cs" />
     <Compile Include="TripleDESCngTests.cs" />
-    <Compile Include="TripleDESCryptoServiceProviderTests.cs" />
     <Compile Include="TripleDESTestRegistration.Cng.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs" />
@@ -872,11 +862,6 @@
              Link="Common\System\IO\PersistedFiles.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
-    <Compile Include="AesCryptoServiceProviderTests.cs" />
-    <Compile Include="CreateTransformCompat.cs" />
-    <Compile Include="DESCryptoServiceProviderProvider.cs" />
-    <Compile Include="DESCryptoServiceProviderTests.cs" />
-    <Compile Include="DESTestRegistration.Csp.cs" />
     <Compile Include="DSACryptoServiceProviderProvider.cs" />
     <Compile Include="DSACryptoServiceProviderTests.cs" />
     <Compile Include="DSAOpenSslProvider.Unix.cs" />
@@ -892,9 +877,6 @@
     <Compile Include="Interop.EVP.ExtraHandle.cs" />
     <Compile Include="MLDsaOpenSslTests.Unix.cs" />
     <Compile Include="MLKemOpenSslTests.Unix.cs" />
-    <Compile Include="RC2CryptoServiceProviderProvider.cs" />
-    <Compile Include="RC2CryptoServiceProviderTests.cs" />
-    <Compile Include="RC2TestRegistration.Csp.cs" />
     <Compile Include="RSACryptoServiceProviderBackCompat.cs" />
     <Compile Include="RSACryptoServiceProviderProvider.cs" />
     <Compile Include="RSACryptoServiceProviderTests.cs" />
@@ -903,14 +885,24 @@
     <Compile Include="RSATestRegistration.Csp.cs" />
     <Compile Include="RSATestRegistration.OpenSsl.cs" />
     <Compile Include="RsaOpenSslTests.cs" />
-    <Compile Include="ShimHelpers.cs" />
     <Compile Include="SlhDsaOpenSslConstructionTests.Unix.cs" />
     <Compile Include="SlhDsaOpenSslTests.cs" />
-    <Compile Include="TripleDESCryptoServiceProviderTests.cs" />
     <Compile Include="X25519DiffieHellmanOpenSslTests.Unix.cs" />
     <Compile Include="X509Certificates\HostnameMatchTests.Unix.cs" />
     <Compile Include="X509Certificates\X509FilesystemTests.Unix.cs" />
     <Compile Include="X509Certificates\X509StoreTests.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
+    <Compile Include="AesCryptoServiceProviderTests.cs" />
+    <Compile Include="CreateTransformCompat.cs" />
+    <Compile Include="DESCryptoServiceProviderProvider.cs" />
+    <Compile Include="DESCryptoServiceProviderTests.cs" />
+    <Compile Include="DESTestRegistration.Csp.cs" />
+    <Compile Include="RC2CryptoServiceProviderProvider.cs" />
+    <Compile Include="RC2CryptoServiceProviderTests.cs" />
+    <Compile Include="RC2TestRegistration.Csp.cs" />
+    <Compile Include="ShimHelpers.cs" />
+    <Compile Include="TripleDESCryptoServiceProviderTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.Blobs.cs"
