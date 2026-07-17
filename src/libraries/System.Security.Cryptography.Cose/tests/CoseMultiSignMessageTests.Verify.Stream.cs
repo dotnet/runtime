@@ -4,6 +4,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading.Tasks;
+using Test.Cryptography;
 using Xunit;
 using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
@@ -62,6 +63,25 @@ namespace System.Security.Cryptography.Cose.Tests
             CoseMultiSignMessage msg = CoseMessage.DecodeMultiSign(encodedMsg);
             using Stream unseekableStream = GetTestStream(s_sampleContent, StreamKind.Unreadable);
             await Assert.ThrowsAsync<ArgumentException>("detachedContent", () => msg.Signatures[0].VerifyDetachedAsync(DefaultKey, unseekableStream));
+        }
+
+        [Theory]
+        [InlineData("44A1013822")]
+        [InlineData("45A1182A182A")]
+        public async Task VerifyWithCoseKeyThrowsForInvalidAlgorithmHeader(string replacementHeaders)
+        {
+            CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash);
+            signer.ProtectedHeaders.Add(new CoseHeaderLabel(42), 42);
+            string encodedMessage = CoseMultiSignMessage.SignDetached(s_sampleContent, signer).ByteArrayToHex();
+            encodedMessage = ReplaceFirst(encodedMessage, "47A20126182A182A", replacementHeaders);
+
+            CoseMultiSignMessage message = CoseMessage.DecodeMultiSign(ByteUtils.HexToByteArray(encodedMessage));
+            CoseKey key = new CoseKey(DefaultKey, DefaultHash);
+            using Stream syncStream = GetTestStream(s_sampleContent);
+            using Stream asyncStream = GetTestStream(s_sampleContent);
+
+            Assert.Throws<CryptographicException>(() => message.Signatures[0].VerifyDetached(key, syncStream));
+            await Assert.ThrowsAsync<CryptographicException>(() => message.Signatures[0].VerifyDetachedAsync(key, asyncStream));
         }
     }
 
