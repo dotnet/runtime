@@ -695,7 +695,7 @@ namespace System.Security.Cryptography.Cose
 
             if (algorithm != key.Algorithm)
             {
-                throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, algorithm));
+                throw new CryptographicException(SR.Format(SR.Sign1VerifyAlgDoesNotMatchKeyAlgorithm, algorithm, key.Algorithm));
             }
         }
     }

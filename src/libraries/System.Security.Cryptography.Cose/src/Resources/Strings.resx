@@ -234,6 +234,9 @@
   <data name="Sign1VerifyAlgHeaderWasIncorrect" xml:space="preserve">
     <value>Algorithm header CBOR type was incorrect, expected int or tstr.</value>
   </data>
+  <data name="Sign1VerifyAlgDoesNotMatchKeyAlgorithm" xml:space="preserve">
+    <value>COSE algorithm '{0}' does not match the algorithm '{1}' of the specified key.</value>
+  </data>
   <data name="Sign1VerifyAlgIsRequired" xml:space="preserve">
     <value>Algorithm (alg) header is required and it must be a protected header.</value>
   </data>
