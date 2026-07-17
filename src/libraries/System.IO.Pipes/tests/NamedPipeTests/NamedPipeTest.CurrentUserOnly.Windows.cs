@@ -148,7 +148,7 @@ namespace System.IO.Pipes.Tests
             }
 
             string name = PipeStreamConformanceTests.GetUniquePipeName();
-            using var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly);
+            using NamedPipeServerStream server = new(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly);
             PipeSecurity accessControl = server.GetAccessControl();
             IdentityReference? remoteOwnerSid = accessControl.GetOwner(typeof(SecurityIdentifier));
 
