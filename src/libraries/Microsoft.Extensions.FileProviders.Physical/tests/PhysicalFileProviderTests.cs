@@ -1234,12 +1234,17 @@ namespace Microsoft.Extensions.FileProviders
                         {
                             var oldFileName = Guid.NewGuid().ToString();
                             var oldToken = provider.Watch(oldFileName);
+                            var oldTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+                            oldToken.RegisterChangeCallback(_ => oldTcs.TrySetResult(true), null);
 
                             var newFileName = Guid.NewGuid().ToString();
                             var newToken = provider.Watch(newFileName);
+                            var newTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+                            newToken.RegisterChangeCallback(_ => newTcs.TrySetResult(true), null);
 
                             fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.Path, newFileName, oldFileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+
+                            await Task.WhenAll(oldTcs.Task, newTcs.Task).WaitAsync(TimeSpan.FromSeconds(30));
 
                             Assert.True(oldToken.HasChanged);
                             Assert.True(newToken.HasChanged);
