@@ -5758,8 +5758,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             if (pTargetInfo is null)
-                throw new ArgumentNullException(nameof(pTargetInfo));
-
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pTargetInfo));
             Contracts.IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
 
             pTargetInfo->Arch = runtimeInfo.GetTargetArchitecture() switch
