@@ -124,7 +124,10 @@ namespace System
                     {
                         // Reserve last byte for null terminator. Flush only on the
                         // final iteration to avoid corrupting surrogate pairs split
-                        // across chunk boundaries.
+                        // across chunk boundaries. Encoder.Convert ignores flush until
+                        // the entire input is consumed, so a prematurely-true flush is a
+                        // no-op (Convert reports completed: false and the remaining chars
+                        // are handled on the next iteration).
                         bool flush = remaining.Length <= ChunkSize - 1;
                         encoder.Convert(remaining, buffer[..^1], flush: flush, out int charsUsed, out int bytesUsed, out _);
                         buffer[bytesUsed] = 0;

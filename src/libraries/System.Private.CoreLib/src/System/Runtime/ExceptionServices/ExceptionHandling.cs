@@ -64,6 +64,8 @@ namespace System.Runtime.ExceptionServices
         /// Only a single registration is supported per process. The handler executes as
         /// unmanaged code on the failing thread immediately before the runtime begins its
         /// own fatal-error handling.
+        /// On some fatal errors (for example, stack overflow), the runtime may have already emitted
+        /// some output before invoking the handler.
         /// </remarks>
         [CLSCompliant(false)]
         public static unsafe void SetFatalErrorHandler(delegate* unmanaged<int, void*, int> handler)
