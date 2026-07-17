@@ -1076,6 +1076,10 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     ig->igInsCnt = (BYTE)emitCurIGinsCnt;
     ig->igSize   = (unsigned short)emitCurIGsize;
+    if (ig->igSize != 0)
+    {
+        emitLastSavedIGWasNoGC = (ig->igFlags & IGF_NOGCINTERRUPT) != 0;
+    }
     emitCurCodeOffset += emitCurIGsize;
     assert(IsCodeAligned(emitCurCodeOffset));
 
@@ -1372,6 +1376,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitFwdJumps                       = false;
     emitNoGCRequestCount               = 0;
     emitNoGCIG                         = false;
+    emitLastSavedIGWasNoGC             = false;
     emitForceNewIG                     = false;
     emitContainsRemovableJmpCandidates = false;
 
@@ -2190,6 +2195,7 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
     // increment emitCurCodeOffset since we are not calling emitNewIG()
     //
     emitCurIGsize += MAX_PLACEHOLDER_IG_SIZE;
+    emitLastSavedIGWasNoGC = true;
     emitCurCodeOffset += emitCurIGsize;
 
     // Add the appropriate IP mapping debugging record for this placeholder
@@ -10820,6 +10826,21 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 
 void emitter::emitDisableGC()
 {
+    // For debuggable codegen, ensure there is an interruptible instruction between
+    // adjacent no-gc regions, if we're at a stack-empty point.
+    //
+    if (m_compiler->opts.compDbgCode && (emitNoGCRequestCount == 0) && emitLastCodeIsNoGC() &&
+        !m_compiler->genIPmappings.empty())
+    {
+        const IPmappingDsc& mapping = m_compiler->genIPmappings.back();
+        if ((mapping.ipmdKind == IPmappingDscKind::Normal) &&
+            ((mapping.ipmdLoc.GetSourceTypes() & ICorDebugInfo::STACK_EMPTY) != 0) &&
+            mapping.ipmdNativeLoc.IsCurrentLocation(this))
+        {
+            emitIns(INS_nop);
+        }
+    }
+
     assert(emitNoGCRequestCount < 10); // We really shouldn't have many nested "no gc" requests.
     ++emitNoGCRequestCount;
 
@@ -10846,9 +10867,20 @@ void emitter::emitDisableGC()
     }
 }
 
-bool emitter::emitGCDisabled()
+//------------------------------------------------------------------------
+// emitLastCodeIsNoGC: Check whether the last emitted native code is in a non-interruptible region.
+//
+// Return Value:
+//    true if the last non-empty instruction group is non-interruptible.
+//
+bool emitter::emitLastCodeIsNoGC() const
 {
-    return emitNoGCIG == true;
+    if ((emitCurIG != nullptr) && (emitCurIGsize != 0))
+    {
+        return (emitCurIG->igFlags & IGF_NOGCINTERRUPT) != 0;
+    }
+
+    return emitLastSavedIGWasNoGC;
 }
 
 //------------------------------------------------------------------------
