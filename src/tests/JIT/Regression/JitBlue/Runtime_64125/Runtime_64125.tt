@@ -89,7 +89,6 @@ namespace Runtime_64125
             return true;
         }
 
-        [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoRuntime))]
         [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter), nameof(PlatformDetection.IsMonoRuntime))]
         [Fact]

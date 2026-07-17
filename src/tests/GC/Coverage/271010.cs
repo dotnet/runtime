@@ -13,8 +13,8 @@ using Xunit;
 public class Test_271010 {
 
     public static bool IsCoreClrOnNonBrowser =>
-        TestLibrary.Utilities.IsNotMonoRuntime &&
-        !OperatingSystem.IsBrowser();
+        TestLibrary.PlatformDetection.IsCoreCLR &&
+        !TestLibrary.PlatformDetection.IsBrowser;
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/5933", typeof(Test_271010), nameof(IsCoreClrOnNonBrowser))]
     [Fact]
