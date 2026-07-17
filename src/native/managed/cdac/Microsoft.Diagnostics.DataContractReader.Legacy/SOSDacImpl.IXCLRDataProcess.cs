@@ -213,17 +213,86 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         return codeKind.ToString();
     }
 
-    int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;
+    private sealed class EnumAppDomains : IEnum<TargetPointer>
+    {
+        public IEnumerator<TargetPointer> Enumerator { get; }
+        public nuint LegacyHandle { get; set; }
 
-    int IXCLRDataProcess.EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EnumAppDomain(handle, appDomain) : HResults.E_NOTIMPL;
+        public EnumAppDomains(IEnumerable<TargetPointer> appDomains, nuint legacyHandle)
+        {
+            Enumerator = appDomains.GetEnumerator();
+            LegacyHandle = legacyHandle;
+        }
+    }
+
+    int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
+    {
+        if (handle is null)
+            throw new ArgumentNullException(nameof(handle));
+
+        *handle = 0;
+        IReadOnlyList<TargetPointer> appDomains = [_target.Contracts.Loader.GetAppDomain()];
+        EnumAppDomains domains = new(appDomains, 0);
+        *handle = (ulong)((IEnum<TargetPointer>)domains).GetHandle();
+        return HResults.S_OK;
+    }
+
+    int IXCLRDataProcess.EnumAppDomain(ulong* handle, DacComNullableByRef<IXCLRDataAppDomain> appDomain)
+    {
+        if (handle is null)
+            throw new ArgumentNullException(nameof(handle));
+        if (*handle == 0)
+            return HResults.S_FALSE;
+        if (appDomain.IsNullRef)
+            throw new NullReferenceException();
+
+        GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+        if (gcHandle.Target is not EnumAppDomains domains)
+            throw new ArgumentException();
+
+        if (domains.Enumerator.MoveNext())
+        {
+            appDomain.Interface = new ClrDataAppDomain(_target, domains.Enumerator.Current, legacyImpl: null);
+            return HResults.S_OK;
+        }
+
+        return HResults.S_FALSE;
+    }
 
     int IXCLRDataProcess.EndEnumAppDomains(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EndEnumAppDomains(handle) : HResults.E_NOTIMPL;
+    {
+        if (handle == 0)
+            return HResults.S_OK;
 
-    int IXCLRDataProcess.GetAppDomainByUniqueID(ulong id, /*IXCLRDataAppDomain*/ void** appDomain)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetAppDomainByUniqueID(id, appDomain) : HResults.E_NOTIMPL;
+        try
+        {
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
+            if (gcHandle.Target is not EnumAppDomains domains)
+                throw new ArgumentException();
+
+            ((IEnum<TargetPointer>)domains).Dispose();
+            gcHandle.Free();
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
+    int IXCLRDataProcess.GetAppDomainByUniqueID(ulong id, DacComNullableByRef<IXCLRDataAppDomain> appDomain)
+    {
+        if (appDomain.IsNullRef)
+            throw new NullReferenceException();
+
+        if (id != ClrDataAppDomain.DefaultAppDomainId)
+            return HResults.E_INVALIDARG;
+
+        TargetPointer domain = _target.Contracts.Loader.GetAppDomain();
+        appDomain.Interface = new ClrDataAppDomain(_target, domain, legacyImpl: null);
+        return HResults.S_OK;
+    }
 
     int IXCLRDataProcess.StartEnumAssemblies(ulong* handle)
         => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumAssemblies(handle) : HResults.E_NOTIMPL;
