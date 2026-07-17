@@ -500,7 +500,7 @@ public enum CorDebugSetContextFlags
     SET_CONTEXT_FLAG_UNWIND_FRAME = 0x2,
 }
 
-public enum TargetArchitecture
+public enum TargetArchitecture : int
 {
     Unknown = 0,
     X86,
@@ -512,7 +512,7 @@ public enum TargetArchitecture
     Wasm,
 }
 
-public enum TargetOperatingSystem
+public enum TargetOperatingSystem : int
 {
     Unknown = 0,
     Windows,

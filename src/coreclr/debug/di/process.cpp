@@ -1454,6 +1454,8 @@ void CordbProcess::FreeDac()
         LOG((LF_CORDB, LL_INFO1000, "Unloading DAC\n"));
         m_hDacModule.Free();
     }
+
+    m_ctxSize = 0;
 }
 
 ULONG32 CordbProcess::GetTargetContextSize()
@@ -5899,7 +5901,7 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, ContextBuff
     // can think of these members as not being part of the context, ie they don't represent something
     // which gets saved or restored on context switches. They are just space we shouldn't overwrite.
     // See issue 630276 for more details.
-        if (targetInfo.arch == IDacDbiInterface::kArchAMD64)
+        if (targetInfo.os == IDacDbiInterface::kOSWindows && targetInfo.arch == IDacDbiInterface::kArchAMD64)
         {
             pRemoteContext += offsetof(CONTEXT, ContextFlags); // immediately follows the 6 parameters P1-P6
             pCtxSource += offsetof(CONTEXT, ContextFlags);
