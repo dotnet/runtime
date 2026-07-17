@@ -170,9 +170,9 @@ public class R2RTestSuites
 
                 WebcilImageReader.WasmFunctionInfo body = ResolveWasmBody(reader, webcilReader, method);
 
-Assert.True(
-    body.ParamTypes.Count(b => b == WasmV128) == 1,
-    $"'{name}' should have exactly one wasm v128 parameter; params were {Format(body.ParamTypes)}.");
+                Assert.True(
+                    body.ParamTypes.Count(b => b == WasmV128) == 1,
+                    $"'{name}' should have exactly one wasm v128 parameter; params were {Format(body.ParamTypes)}.");
                 Assert.True(
                     body.ResultTypes.Contains(WasmV128) == expectsV128Return,
                     $"'{name}' v128 return expectation was {expectsV128Return}; results were {Format(body.ResultTypes)}.");
