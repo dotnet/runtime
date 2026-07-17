@@ -105,7 +105,7 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     // ConvertedImageLayout may be able to handle them, but the fact that we were unable to
     // load directly implies that MAPMapPEFile could not consume what crossgen produced.
     // That is suspicious; one or another might have a bug.
-    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || !AllowR2RForImage(pOwner) || disableMapping);
+    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || !AllowR2RForImage(pOwner) || pOwner->IsCompressed() || disableMapping);
 #endif
 
     // If the image is R2R with native code (that is, not a component assembly of composite R2R) or has writeable sections,
