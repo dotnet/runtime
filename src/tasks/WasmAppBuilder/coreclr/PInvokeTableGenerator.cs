@@ -112,8 +112,8 @@ internal sealed class PInvokeTableGenerator
                 // the build under warn-as-error for P/Invokes that are never called on wasm.
                 if (_warnOnUnresolvedModules)
                     Log.Warning("WASM0066", $"PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' is not in the list of allowed modules. It is also not a specially treated module.");
-                else
-                    Log.LogMessage(MessageImportance.Low, $"Skipping unresolved PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' (not statically linked on wasm; will throw if called).");
+                else if (ignoredModules.Add(pinvoke.Module))
+                    Log.LogMessage(MessageImportance.Low, $"Skipping unresolved PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' (not statically linked on wasm; will throw if called)." );
             }
         }
 
