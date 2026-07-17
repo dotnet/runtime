@@ -215,11 +215,11 @@ public unsafe partial interface IXCLRDataProcess
     [PreserveSig]
     int StartEnumAppDomains(ulong* handle);
     [PreserveSig]
-    int EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain);
+    int EnumAppDomain(ulong* handle, DacComNullableByRef<IXCLRDataAppDomain> appDomain);
     [PreserveSig]
     int EndEnumAppDomains(ulong handle);
     [PreserveSig]
-    int GetAppDomainByUniqueID(ulong id, /*IXCLRDataAppDomain*/ void** appDomain);
+    int GetAppDomainByUniqueID(ulong id, DacComNullableByRef<IXCLRDataAppDomain> appDomain);
 
     [PreserveSig]
     int StartEnumAssemblies(ulong* handle);
