@@ -303,7 +303,7 @@ namespace System.Runtime.CompilerServices
         {
             private bool _isLeaf;
 
-            private ulong _dispatcherId;
+            private int _dispatcherId;
 
             bool IAsyncStateMachineDispatcher.IsLeaf
             {
@@ -317,10 +317,10 @@ namespace System.Runtime.CompilerServices
                 {
                     if (_dispatcherId == 0)
                     {
-                        _dispatcherId = (ulong)NewId();
+                        _dispatcherId = NewId();
                     }
 
-                    return _dispatcherId;
+                    return (ulong)_dispatcherId;
                 }
             }
 
@@ -346,7 +346,7 @@ namespace System.Runtime.CompilerServices
                 AsyncProfiler.InitInfo(ref info.AsyncProfilerInfo);
 
                 info.Dispatcher = this;
-                info.AsyncProfilerInfo.DispatcherId = _dispatcherId;
+                info.AsyncProfilerInfo.DispatcherId = (ulong)_dispatcherId;
                 info.AsyncProfilerInfo.CurrentContinuation = this;
 
                 _isLeaf = false;
