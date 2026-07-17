@@ -86,11 +86,19 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         {
             TargetPointer thread = _target.Contracts.Thread.IdToThread((uint)taskID);
             if (thread == TargetPointer.Null)
-                throw new ArgumentException();
+                throw new ArgumentException($"Invalid task ID: {taskID}", nameof(taskID));
 
             task.Interface = new ClrDataTask(thread, _target, legacyTask);
         }
-        catch (System.Exception ex)
+        catch (ArgumentException ex)
+        {
+            hr = ex.HResult;
+        }
+        catch (NullReferenceException ex)
+        {
+            hr = ex.HResult;
+        }
+        catch (InvalidOperationException ex)
         {
             hr = ex.HResult;
         }
@@ -122,7 +130,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         try
         {
             if (type is null)
-                throw new ArgumentNullException(nameof(type));
+                throw new NullReferenceException();
 
             *type = ClrDataAddressUnrecognized;
             TargetCodePointer codeAddress = address.ToTargetCodePointer(_target);
@@ -138,7 +146,15 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
             return HResults.S_OK;
         }
-        catch (System.Exception ex)
+        catch (ArgumentException ex)
+        {
+            return ex.HResult;
+        }
+        catch (NullReferenceException ex)
+        {
+            return ex.HResult;
+        }
+        catch (InvalidOperationException ex)
         {
             return ex.HResult;
         }
@@ -289,7 +305,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
     {
         if (handle is null)
-            throw new ArgumentNullException(nameof(handle));
+            throw new NullReferenceException();
 
         *handle = 0;
         IReadOnlyList<TargetPointer> appDomains = [_target.Contracts.Loader.GetAppDomain()];
@@ -301,7 +317,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.EnumAppDomain(ulong* handle, DacComNullableByRef<IXCLRDataAppDomain> appDomain)
     {
         if (handle is null)
-            throw new ArgumentNullException(nameof(handle));
+            throw new NullReferenceException();
         if (*handle == 0)
             return HResults.S_FALSE;
         if (appDomain.IsNullRef)
@@ -367,7 +383,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.StartEnumModules(ulong* handle)
     {
         if (handle is null)
-            throw new ArgumentNullException(nameof(handle));
+            throw new NullReferenceException();
 
         *handle = 0;
         ILoader loader = _target.Contracts.Loader;
@@ -382,7 +398,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.EnumModule(ulong* handle, DacComNullableByRef<IXCLRDataModule> mod)
     {
         if (handle is null)
-            throw new ArgumentNullException(nameof(handle));
+            throw new NullReferenceException();
         if (*handle == 0)
             return HResults.S_FALSE;
         if (mod.IsNullRef)
