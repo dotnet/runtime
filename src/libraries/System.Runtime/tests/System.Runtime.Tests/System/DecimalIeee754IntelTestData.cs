@@ -113,6 +113,17 @@ namespace System.Tests
         private static readonly HashSet<string> s_bid64Sqrt = new() { "bid64_sqrt" };
         private static readonly HashSet<string> s_bid128Sqrt = new() { "bid128_sqrt" };
 
+        // Quantize (adjust to the quantum of a second operand) and Quantum (1 x 10^exp sharing the exponent). Every
+        // reference row is exercised, including NaN payload propagation, the two-infinity and mixed-infinity cases,
+        // and the invalid rows (unrepresentable quantum) that quiet to the canonical NaN.
+        private static readonly HashSet<string> s_bid32Quantize = new() { "bid32_quantize" };
+        private static readonly HashSet<string> s_bid64Quantize = new() { "bid64_quantize" };
+        private static readonly HashSet<string> s_bid128Quantize = new() { "bid128_quantize" };
+
+        private static readonly HashSet<string> s_bid32Quantum = new() { "bid32_quantum" };
+        private static readonly HashSet<string> s_bid64Quantum = new() { "bid64_quantum" };
+        private static readonly HashSet<string> s_bid128Quantum = new() { "bid128_quantum" };
+
         // Round to an integral value under each rounding mode, mapping onto the .NET Round/Ceiling/Floor/Truncate
         // surface. `round_integral_exact` takes the mode from the rounding-context column, so only its
         // round-to-nearest-even (rnd == 0) rows are consumed here; the mode-named variants ignore that column.
@@ -575,6 +586,72 @@ namespace System.Tests
         public static IEnumerable<object[]> Decimal128Sqrt()
         {
             foreach (string[] fields in EnumerateRows(s_bid128Sqrt))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32Quantize()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Quantize))
+            {
+                if (TryParseBid32(fields[2], out uint value) && TryParseBid32(fields[3], out uint quantum) && TryParseBid32(fields[4], out uint expected))
+                {
+                    yield return new object[] { value, quantum, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64Quantize()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Quantize))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && TryParseBid64(fields[3], out ulong quantum) && TryParseBid64(fields[4], out ulong expected))
+                {
+                    yield return new object[] { value, quantum, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128Quantize()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Quantize))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && TryParseBid128(fields[3], out UInt128 quantum) && TryParseBid128(fields[4], out UInt128 expected))
+                {
+                    yield return new object[] { value, quantum, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32Quantum()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Quantum))
+            {
+                if (TryParseBid32(fields[2], out uint value) && TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64Quantum()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Quantum))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128Quantum()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Quantum))
             {
                 if (TryParseBid128(fields[2], out UInt128 value) && TryParseBid128(fields[3], out UInt128 expected))
                 {

@@ -1765,6 +1765,165 @@ namespace System
         }
 
         /// <summary>
+        /// Re-expresses <paramref name="x"/> with the quantum (exponent) of <paramref name="y"/>, rounding the
+        /// coefficient to nearest with ties to even (IEEE 754-2019 §5.3.2 <c>quantize</c>). The numeric value of
+        /// <paramref name="y"/> is otherwise unused. A NaN operand propagates (<paramref name="x"/> before
+        /// <paramref name="y"/>); one infinite and one finite operand is invalid and yields a quiet NaN, while two
+        /// infinities keep the sign of <paramref name="x"/>. When the requested quantum cannot represent the value
+        /// within the format precision the result is a quiet NaN.
+        /// </summary>
+        internal static TValue QuantizeDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // This code is based on `bid32_quantize`, `bid64_quantize`, and `bid128_quantize` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (TDecimal.IsNaN(x) || TDecimal.IsNaN(y))
+            {
+                // Propagate the first NaN operand (x before y), canonicalized to a quiet NaN.
+                return PropagateNaN<TDecimal, TValue>(x, y);
+            }
+
+            if (TDecimal.IsInfinity(x) || TDecimal.IsInfinity(y))
+            {
+                if (TDecimal.IsInfinity(x) && TDecimal.IsInfinity(y))
+                {
+                    // Two infinities share a quantum; the result keeps the sign of x.
+                    return TDecimal.IsNegative(x) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+                }
+
+                // One infinite and one finite operand cannot share a quantum, so the result is invalid.
+                return TDecimal.NaNMask;
+            }
+
+            DecodedDecimalIeee754<TValue> a = UnpackDecimalIeee754<TDecimal, TValue>(x);
+            int targetExponent = UnpackDecimalIeee754<TDecimal, TValue>(y).UnbiasedExponent;
+
+            if (TValue.IsZero(a.Significand))
+            {
+                // Zero carries no significant digits, so it simply adopts the requested quantum.
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(a.Signed, TValue.Zero, targetExponent);
+            }
+
+            int coefficientDigits = TDecimal.CountDigits(a.Significand);
+
+            if (targetExponent <= a.UnbiasedExponent)
+            {
+                // A quantum at or below the current one only scales the coefficient up; it is exact unless the
+                // scaled coefficient would exceed the format precision, in which case the value is unrepresentable.
+                int shift = a.UnbiasedExponent - targetExponent;
+
+                if (coefficientDigits + shift > TDecimal.Precision)
+                {
+                    return TDecimal.NaNMask;
+                }
+
+                TValue significand = a.Significand * TDecimal.Power10(shift);
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(a.Signed, significand, targetExponent);
+            }
+
+            // A coarser quantum discards low-order digits; rounding away never overflows the precision because the
+            // magnitude only shrinks.
+            int drop = targetExponent - a.UnbiasedExponent;
+            TValue five = TValue.CreateTruncating(5);
+            TValue quotient;
+            int discardedComparedToHalf;
+
+            if (drop >= coefficientDigits)
+            {
+                quotient = TValue.Zero;
+
+                if (drop > coefficientDigits)
+                {
+                    // The whole coefficient is strictly below half of the discarded quantum.
+                    discardedComparedToHalf = -1;
+                }
+                else
+                {
+                    TValue half = five * TDecimal.Power10(coefficientDigits - 1);
+                    discardedComparedToHalf = a.Significand.CompareTo(half);
+                }
+            }
+            else
+            {
+                TValue divisor = TDecimal.Power10(drop);
+                TValue discarded;
+                (quotient, discarded) = TValue.DivRem(a.Significand, divisor);
+
+                TValue half = five * TDecimal.Power10(drop - 1);
+                discardedComparedToHalf = discarded.CompareTo(half);
+            }
+
+            if ((discardedComparedToHalf > 0) || ((discardedComparedToHalf == 0) && !TValue.IsZero(quotient & TValue.One)))
+            {
+                quotient += TValue.One;
+            }
+
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(a.Signed, quotient, targetExponent);
+        }
+
+        /// <summary>
+        /// Returns the quantum of <paramref name="bits"/>: <c>1 × 10^exp</c> sharing its exponent (IEEE 754-2019
+        /// §5.3.2 <c>quantum</c>). The result is always positive. Infinity yields positive infinity and NaN
+        /// propagates, canonicalized to a quiet NaN.
+        /// </summary>
+        internal static TValue QuantumDecimalIeee754<TDecimal, TValue>(TValue bits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // This code is based on `bid32_quantum`, `bid64_quantum`, and `bid128_quantum` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (TDecimal.IsNaN(bits))
+            {
+                return PropagateNaN<TDecimal, TValue>(bits, bits);
+            }
+
+            if (TDecimal.IsInfinity(bits))
+            {
+                return TDecimal.PositiveInfinity;
+            }
+
+            DecodedDecimalIeee754<TValue> a = UnpackDecimalIeee754<TDecimal, TValue>(bits);
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: false, TValue.One, a.UnbiasedExponent);
+        }
+
+        /// <summary>
+        /// Determines whether <paramref name="x"/> and <paramref name="y"/> have the same quantum (exponent), following
+        /// IEEE 754-2019 §5.7.3 <c>sameQuantum</c>. Two NaNs share a quantum and two infinities share a quantum; any
+        /// other pairing that involves a NaN or infinity does not. No exception is ever signaled.
+        /// </summary>
+        internal static bool SameQuantumDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            bool xNaN = TDecimal.IsNaN(x);
+            bool yNaN = TDecimal.IsNaN(y);
+
+            if (xNaN || yNaN)
+            {
+                return xNaN && yNaN;
+            }
+
+            bool xInfinity = TDecimal.IsInfinity(x);
+            bool yInfinity = TDecimal.IsInfinity(y);
+
+            if (xInfinity || yInfinity)
+            {
+                return xInfinity && yInfinity;
+            }
+
+            return UnpackDecimalIeee754<TDecimal, TValue>(x).UnbiasedExponent == UnpackDecimalIeee754<TDecimal, TValue>(y).UnbiasedExponent;
+        }
+
+        /// <summary>
         /// Returns the least value that compares greater than <paramref name="bits"/> (IEEE 754 <c>nextUp</c>). NaN is
         /// returned unchanged, positive infinity is its own successor, and negative infinity steps to the most negative
         /// finite value.
