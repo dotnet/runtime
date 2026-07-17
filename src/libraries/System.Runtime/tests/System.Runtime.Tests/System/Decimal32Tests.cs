@@ -2424,6 +2424,258 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // sinPi(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // sinPi(-0) = -0
+        [InlineData(0x78000000U, 0x7C000000U)] // sinPi(+Infinity) = NaN
+        [InlineData(0xF8000000U, 0x7C000000U)] // sinPi(-Infinity) = NaN
+        [InlineData(0x7C000000U, 0x7C000000U)] // sinPi(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void SinPiTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.SinPi(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)] // sinPi(1) = +0 (sign of x)
+        [InlineData(-1.0)] // sinPi(-1) = -0
+        [InlineData(2.0)] // sinPi(2) = +0
+        public static void SinPiIntegerTest(double input)
+        {
+            // Integer arguments land exactly on a zero of sinPi; the result is a zero with the sign of x.
+            uint expected = Unsafe.BitCast<Decimal32, uint>((Decimal32)double.SinPi(input));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.SinPi((Decimal32)input)));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.5)]
+        [InlineData(0.1)]
+        [InlineData(-2.75)]
+        public static void SinPiAccuracyTest(double input)
+        {
+            // Decimal32 evaluates sinPi through binary64 (as Intel does).
+            double expected = double.SinPi(input);
+            double actual = (double)Decimal32.SinPi((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"sinPi({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800001U)] // cosPi(+0) = 1
+        [InlineData(0xB2800000U, 0x32800001U)] // cosPi(-0) = 1
+        [InlineData(0x78000000U, 0x7C000000U)] // cosPi(+Infinity) = NaN
+        [InlineData(0xF8000000U, 0x7C000000U)] // cosPi(-Infinity) = NaN
+        [InlineData(0x7C000000U, 0x7C000000U)] // cosPi(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void CosPiTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.CosPi(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)] // cosPi(1) = -1
+        [InlineData(2.0)] // cosPi(2) = 1
+        [InlineData(0.5)] // cosPi(0.5) = 0
+        public static void CosPiExactTest(double input)
+        {
+            uint expected = Unsafe.BitCast<Decimal32, uint>((Decimal32)double.CosPi(input));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.CosPi((Decimal32)input)));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        [InlineData(0.1)]
+        [InlineData(-2.75)]
+        public static void CosPiAccuracyTest(double input)
+        {
+            // Decimal32 evaluates cosPi through binary64 (as Intel does).
+            double expected = double.CosPi(input);
+            double actual = (double)Decimal32.CosPi((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cosPi({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // tanPi(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // tanPi(-0) = -0
+        [InlineData(0x78000000U, 0x7C000000U)] // tanPi(+Infinity) = NaN
+        [InlineData(0xF8000000U, 0x7C000000U)] // tanPi(-Infinity) = NaN
+        [InlineData(0x7C000000U, 0x7C000000U)] // tanPi(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void TanPiTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.TanPi(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Fact]
+        public static void TanPiPoleTest()
+        {
+            // Half-integer arguments are poles; tanPi returns a signed infinity matching sinPi's sign.
+            Assert.Equal(0x78000000U, Unsafe.BitCast<Decimal32, uint>(Decimal32.TanPi((Decimal32)0.5)));
+            Assert.Equal(0xF8000000U, Unsafe.BitCast<Decimal32, uint>(Decimal32.TanPi((Decimal32)1.5)));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.2)]
+        [InlineData(0.1)]
+        [InlineData(-0.4)]
+        public static void TanPiAccuracyTest(double input)
+        {
+            // Decimal32 evaluates tanPi through binary64 (as Intel does).
+            double expected = double.TanPi(input);
+            double actual = (double)Decimal32.TanPi((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"tanPi({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800000U, 0x32800001U)] // sinCosPi(+0) = (+0, 1)
+        [InlineData(0xB2800000U, 0xB2800000U, 0x32800001U)] // sinCosPi(-0) = (-0, 1)
+        [InlineData(0x78000000U, 0x7C000000U, 0x7C000000U)] // sinCosPi(+Infinity) = (NaN, NaN)
+        [InlineData(0x7C000000U, 0x7C000000U, 0x7C000000U)] // sinCosPi(NaN) = (NaN, NaN)
+        public static void SinCosPiTest(uint value, uint expectedSin, uint expectedCos)
+        {
+            (Decimal32 sin, Decimal32 cos) = Decimal32.SinCosPi(Unsafe.BitCast<uint, Decimal32>(value));
+            Assert.Equal(expectedSin, Unsafe.BitCast<Decimal32, uint>(sin));
+            Assert.Equal(expectedCos, Unsafe.BitCast<Decimal32, uint>(cos));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        [InlineData(2.5)]
+        public static void SinCosPiAccuracyTest(double input)
+        {
+            (Decimal32 sin, Decimal32 cos) = Decimal32.SinCosPi((Decimal32)input);
+            Assert.True(double.Abs((double)sin - double.SinPi(input)) <= 5e-7 * double.Abs(double.MaxMagnitude(double.SinPi(input), 1.0)), $"sinCosPi({input}).SinPi");
+            Assert.True(double.Abs((double)cos - double.CosPi(input)) <= 5e-7 * double.Abs(double.MaxMagnitude(double.CosPi(input), 1.0)), $"sinCosPi({input}).CosPi");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // atanPi(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // atanPi(-0) = -0
+        [InlineData(0x7C000000U, 0x7C000000U)] // atanPi(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AtanPiTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.AtanPi(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        [InlineData(double.PositiveInfinity)] // atanPi(+Infinity) = +1/2
+        [InlineData(double.NegativeInfinity)] // atanPi(-Infinity) = -1/2
+        public static void AtanPiAccuracyTest(double input)
+        {
+            // Decimal32 evaluates atanPi through binary64 (as Intel does).
+            double expected = double.AtanPi(input);
+            double actual = (double)Decimal32.AtanPi((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atanPi({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // asinPi(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // asinPi(-0) = -0
+        [InlineData(0x32800002U, 0x7C000000U)] // asinPi(2) is outside [-1, 1] -> NaN
+        [InlineData(0xB2800002U, 0x7C000000U)] // asinPi(-2) is outside [-1, 1] -> NaN
+        [InlineData(0x78000000U, 0x7C000000U)] // asinPi(+Infinity) = NaN
+        [InlineData(0xF8000000U, 0x7C000000U)] // asinPi(-Infinity) = NaN
+        [InlineData(0x7C000000U, 0x7C000000U)] // asinPi(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AsinPiTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.AsinPi(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        public static void AsinPiAccuracyTest(double input)
+        {
+            // Decimal32 evaluates asinPi through binary64 (as Intel does).
+            double expected = double.AsinPi(input);
+            double actual = (double)Decimal32.AsinPi((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"asinPi({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800002U, 0x7C000000U)] // acosPi(2) is outside [-1, 1] -> NaN
+        [InlineData(0x78000000U, 0x7C000000U)] // acosPi(+Infinity) = NaN
+        [InlineData(0xF8000000U, 0x7C000000U)] // acosPi(-Infinity) = NaN
+        [InlineData(0x7C000000U, 0x7C000000U)] // acosPi(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AcosPiTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.AcosPi(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)] // acosPi(0) = 1/2
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        public static void AcosPiAccuracyTest(double input)
+        {
+            // Decimal32 evaluates acosPi through binary64 (as Intel does).
+            double expected = double.AcosPi(input);
+            double actual = (double)Decimal32.AcosPi((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"acosPi({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800001U, 0x32800000U)] // atan2Pi(+0, +1) = +0
+        [InlineData(0xB2800000U, 0x32800001U, 0xB2800000U)] // atan2Pi(-0, +1) = -0
+        [InlineData(0x7C000000U, 0x32800001U, 0x7C000000U)] // atan2Pi(NaN, x) = NaN
+        [InlineData(0x32800001U, 0x7C000000U, 0x7C000000U)] // atan2Pi(y, NaN) = NaN
+        [InlineData(0x7C001234U, 0x32800001U, 0x7C001234U)] // NaN payload preserved
+        public static void Atan2PiTest(uint y, uint x, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Atan2Pi(Unsafe.BitCast<uint, Decimal32>(y), Unsafe.BitCast<uint, Decimal32>(x))));
+        }
+
+        [Theory]
+        [InlineData(1.0, 1.0)]
+        [InlineData(-1.0, 1.0)]
+        [InlineData(1.0, -1.0)]
+        [InlineData(-1.0, -1.0)]
+        [InlineData(0.5, 2.0)]
+        [InlineData(1.0, 0.0)]
+        [InlineData(-1.0, 0.0)]
+        [InlineData(0.0, -1.0)]
+        [InlineData(double.PositiveInfinity, 1.0)]
+        [InlineData(double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NegativeInfinity)]
+        public static void Atan2PiAccuracyTest(double y, double x)
+        {
+            // Decimal32 evaluates atan2Pi through binary64 (as Intel does).
+            double expected = double.Atan2Pi(y, x);
+            double actual = (double)Decimal32.Atan2Pi((Decimal32)y, (Decimal32)x);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atan2Pi({y}, {x}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x32800001U, 0x31800001U, 0x31800064U)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x32000019U, 0x32800001U, 0x32800002U)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x32000023U, 0x32800001U, 0x32800004U)] // quantize(3.5, 1E0) = 4 (ties to even)

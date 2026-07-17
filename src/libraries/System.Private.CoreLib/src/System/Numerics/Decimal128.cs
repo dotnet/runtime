@@ -859,14 +859,26 @@ namespace System.Numerics
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
         public static Decimal128 Acos(Decimal128 x) => new Decimal128(Number.AcosDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static Decimal128 AcosPi(Decimal128 x) => new Decimal128(Number.AcosPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
         public static Decimal128 Asin(Decimal128 x) => new Decimal128(Number.AsinDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static Decimal128 AsinPi(Decimal128 x) => new Decimal128(Number.AsinPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static Decimal128 Atan(Decimal128 x) => new Decimal128(Number.AtanDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
         public static Decimal128 Atan2(Decimal128 y, Decimal128 x) => new Decimal128(Number.Atan2DecimalIeee754<Decimal128, UInt128>(new UInt128(y._upper, y._lower), new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static Decimal128 Atan2Pi(Decimal128 y, Decimal128 x) => new Decimal128(Number.Atan2PiDecimalIeee754<Decimal128, UInt128>(new UInt128(y._upper, y._lower), new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static Decimal128 AtanPi(Decimal128 x) => new Decimal128(Number.AtanPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static Decimal128 BitDecrement(Decimal128 x) => new Decimal128(Number.BitDecrementDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
@@ -879,6 +891,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
         public static Decimal128 Cos(Decimal128 x) => new Decimal128(Number.CosDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static Decimal128 CosPi(Decimal128 x) => new Decimal128(Number.CosPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal128 Exp(Decimal128 x) => new Decimal128(Number.ExpDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
@@ -950,11 +965,24 @@ namespace System.Numerics
             return (new Decimal128(sin), new Decimal128(cos));
         }
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
+        public static (Decimal128 SinPi, Decimal128 CosPi) SinCosPi(Decimal128 x)
+        {
+            (UInt128 sin, UInt128 cos) = Number.SinCosPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower));
+            return (new Decimal128(sin), new Decimal128(cos));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static Decimal128 SinPi(Decimal128 x) => new Decimal128(Number.SinPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static Decimal128 Sqrt(Decimal128 x) => new Decimal128(Number.SqrtDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static Decimal128 Tan(Decimal128 x) => new Decimal128(Number.TanDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static Decimal128 TanPi(Decimal128 x) => new Decimal128(Number.TanPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
         /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
         /// <param name="x">The value whose quantum is adjusted.</param>

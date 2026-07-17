@@ -882,14 +882,26 @@ namespace System.Numerics
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
         public static Decimal32 Acos(Decimal32 x) => new Decimal32(Number.AcosDecimalIeee754<Decimal32, uint>(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static Decimal32 AcosPi(Decimal32 x) => new Decimal32(Number.AcosPiDecimalIeee754<Decimal32, uint>(x._value));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
         public static Decimal32 Asin(Decimal32 x) => new Decimal32(Number.AsinDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static Decimal32 AsinPi(Decimal32 x) => new Decimal32(Number.AsinPiDecimalIeee754<Decimal32, uint>(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static Decimal32 Atan(Decimal32 x) => new Decimal32(Number.AtanDecimalIeee754<Decimal32, uint>(x._value));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
         public static Decimal32 Atan2(Decimal32 y, Decimal32 x) => new Decimal32(Number.Atan2DecimalIeee754<Decimal32, uint>(y._value, x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static Decimal32 Atan2Pi(Decimal32 y, Decimal32 x) => new Decimal32(Number.Atan2PiDecimalIeee754<Decimal32, uint>(y._value, x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static Decimal32 AtanPi(Decimal32 x) => new Decimal32(Number.AtanPiDecimalIeee754<Decimal32, uint>(x._value));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static Decimal32 BitDecrement(Decimal32 x) => new Decimal32(Number.BitDecrementDecimalIeee754<Decimal32, uint>(x._value));
@@ -902,6 +914,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
         public static Decimal32 Cos(Decimal32 x) => new Decimal32(Number.CosDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static Decimal32 CosPi(Decimal32 x) => new Decimal32(Number.CosPiDecimalIeee754<Decimal32, uint>(x._value));
 
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal32 Exp(Decimal32 x) => new Decimal32(Number.ExpDecimalIeee754<Decimal32, uint>(x._value));
@@ -973,11 +988,24 @@ namespace System.Numerics
             return (new Decimal32(sin), new Decimal32(cos));
         }
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
+        public static (Decimal32 SinPi, Decimal32 CosPi) SinCosPi(Decimal32 x)
+        {
+            (uint sin, uint cos) = Number.SinCosPiDecimalIeee754<Decimal32, uint>(x._value);
+            return (new Decimal32(sin), new Decimal32(cos));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static Decimal32 SinPi(Decimal32 x) => new Decimal32(Number.SinPiDecimalIeee754<Decimal32, uint>(x._value));
+
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static Decimal32 Sqrt(Decimal32 x) => new Decimal32(Number.SqrtDecimalIeee754<Decimal32, uint>(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static Decimal32 Tan(Decimal32 x) => new Decimal32(Number.TanDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static Decimal32 TanPi(Decimal32 x) => new Decimal32(Number.TanPiDecimalIeee754<Decimal32, uint>(x._value));
 
         /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
         /// <param name="x">The value whose quantum is adjusted.</param>

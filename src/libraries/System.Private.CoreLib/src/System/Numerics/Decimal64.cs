@@ -873,14 +873,26 @@ namespace System.Numerics
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
         public static Decimal64 Acos(Decimal64 x) => new Decimal64(Number.AcosDecimalIeee754<Decimal64, ulong>(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static Decimal64 AcosPi(Decimal64 x) => new Decimal64(Number.AcosPiDecimalIeee754<Decimal64, ulong>(x._value));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
         public static Decimal64 Asin(Decimal64 x) => new Decimal64(Number.AsinDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static Decimal64 AsinPi(Decimal64 x) => new Decimal64(Number.AsinPiDecimalIeee754<Decimal64, ulong>(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static Decimal64 Atan(Decimal64 x) => new Decimal64(Number.AtanDecimalIeee754<Decimal64, ulong>(x._value));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
         public static Decimal64 Atan2(Decimal64 y, Decimal64 x) => new Decimal64(Number.Atan2DecimalIeee754<Decimal64, ulong>(y._value, x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static Decimal64 Atan2Pi(Decimal64 y, Decimal64 x) => new Decimal64(Number.Atan2PiDecimalIeee754<Decimal64, ulong>(y._value, x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static Decimal64 AtanPi(Decimal64 x) => new Decimal64(Number.AtanPiDecimalIeee754<Decimal64, ulong>(x._value));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static Decimal64 BitDecrement(Decimal64 x) => new Decimal64(Number.BitDecrementDecimalIeee754<Decimal64, ulong>(x._value));
@@ -893,6 +905,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
         public static Decimal64 Cos(Decimal64 x) => new Decimal64(Number.CosDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static Decimal64 CosPi(Decimal64 x) => new Decimal64(Number.CosPiDecimalIeee754<Decimal64, ulong>(x._value));
 
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal64 Exp(Decimal64 x) => new Decimal64(Number.ExpDecimalIeee754<Decimal64, ulong>(x._value));
@@ -964,11 +979,24 @@ namespace System.Numerics
             return (new Decimal64(sin), new Decimal64(cos));
         }
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
+        public static (Decimal64 SinPi, Decimal64 CosPi) SinCosPi(Decimal64 x)
+        {
+            (ulong sin, ulong cos) = Number.SinCosPiDecimalIeee754<Decimal64, ulong>(x._value);
+            return (new Decimal64(sin), new Decimal64(cos));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static Decimal64 SinPi(Decimal64 x) => new Decimal64(Number.SinPiDecimalIeee754<Decimal64, ulong>(x._value));
+
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static Decimal64 Sqrt(Decimal64 x) => new Decimal64(Number.SqrtDecimalIeee754<Decimal64, ulong>(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static Decimal64 Tan(Decimal64 x) => new Decimal64(Number.TanDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static Decimal64 TanPi(Decimal64 x) => new Decimal64(Number.TanPiDecimalIeee754<Decimal64, ulong>(x._value));
 
         /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
         /// <param name="x">The value whose quantum is adjusted.</param>

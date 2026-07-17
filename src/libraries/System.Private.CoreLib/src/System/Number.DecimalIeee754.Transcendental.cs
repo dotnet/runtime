@@ -1288,4 +1288,356 @@ internal static partial class Number
         Float128 argumentX = DecimalToFloat128<TDecimal, TValue>(decodedX.Signed, decodedX.UnbiasedExponent, decodedX.Significand);
         return Float128ToDecimal<TDecimal, TValue>(Float128Atan2(argumentY, argumentX, haveX: true));
     }
+
+    /// <summary>Computes <c>sin(pi * x)</c>.</summary>
+    internal static TValue SinPiDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // sinPi(+/-inf) is invalid and produces the canonical quiet NaN.
+            return TDecimal.NaNMask;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // sinPi(+/-0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.SinPi(value));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128SinPi(argument));
+    }
+
+    /// <summary>Computes <c>cos(pi * x)</c>.</summary>
+    internal static TValue CosPiDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // cosPi(+/-inf) is invalid and produces the canonical quiet NaN.
+            return TDecimal.NaNMask;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // cosPi(+/-0) = 1.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: false, TValue.One, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.CosPi(value));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128CosPi(argument));
+    }
+
+    /// <summary>Computes <c>tan(pi * x)</c>.</summary>
+    internal static TValue TanPiDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // tanPi(+/-inf) is invalid and produces the canonical quiet NaN.
+            return TDecimal.NaNMask;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // tanPi(+/-0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.TanPi(value));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        Float128SinCosPi(argument, out Float128 sin, out Float128 cos);
+
+        if (Float128IsZero(cos))
+        {
+            // A half-integer argument is a pole; tanPi returns a signed infinity matching sinPi's sign.
+            return (sin._sign != 0) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+        }
+
+        Float128Divide(sin, cos, Float128FullPrecision, out Float128 tangent);
+        return Float128ToDecimal<TDecimal, TValue>(tangent);
+    }
+
+    /// <summary>Computes <c>sin(pi * x)</c> and <c>cos(pi * x)</c> in a single evaluation.</summary>
+    internal static (TValue SinPi, TValue CosPi) SinCosPiDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            TValue nan = CanonicalizeIfNaN<TDecimal, TValue>(x);
+            return (nan, nan);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // sinPi/cosPi(+/-inf) are invalid and produce the canonical quiet NaN.
+            return (TDecimal.NaNMask, TDecimal.NaNMask);
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // sinCosPi(+/-0) = (+/-0, 1).
+            TValue sinZero = DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+            TValue cosZero = DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: false, TValue.One, 0);
+            return (sinZero, cosZero);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            (double sinValue, double cosValue) = double.SinCosPi(value);
+            return (ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(sinValue),
+                    ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(cosValue));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        Float128SinCosPi(argument, out Float128 sin, out Float128 cos);
+        return (Float128ToDecimal<TDecimal, TValue>(sin), Float128ToDecimal<TDecimal, TValue>(cos));
+    }
+
+    /// <summary>Computes <c>atan(x) / pi</c>.</summary>
+    internal static TValue AtanPiDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        bool signed = (x & TDecimal.SignMask) != TValue.Zero;
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // atanPi(+/-inf) = +/-1/2.
+            if (DecimalIeee754UsesDouble<TValue>())
+            {
+                return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.CopySign(0.5, signed ? -1.0 : 1.0));
+            }
+
+            Float128 half = PiFractionConstants[2];
+            half._sign = signed ? UxSignBit : 0;
+            return Float128ToDecimal<TDecimal, TValue>(half);
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // atanPi(+/-0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.AtanPi(value));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        Float128Divide(Float128Atan(argument), InvTrigConstants[4], Float128FullPrecision, out Float128 result);
+        return Float128ToDecimal<TDecimal, TValue>(result);
+    }
+
+    /// <summary>Computes <c>asin(x) / pi</c>.</summary>
+    internal static TValue AsinPiDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // asinPi(+/-inf) is outside the [-1, 1] domain and produces the canonical quiet NaN.
+            return TDecimal.NaNMask;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // asinPi(+/-0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            double result = double.AsinPi(value);
+            // A domain error (|x| > 1) canonicalizes to the positive quiet NaN.
+            return double.IsNaN(result) ? TDecimal.NaNMask : ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+
+        if (Float128MagnitudeExceedsOne(argument))
+        {
+            return TDecimal.NaNMask;
+        }
+
+        Float128Divide(Float128Asin(argument), InvTrigConstants[4], Float128FullPrecision, out Float128 quotient);
+        return Float128ToDecimal<TDecimal, TValue>(quotient);
+    }
+
+    /// <summary>Computes <c>acos(x) / pi</c>.</summary>
+    internal static TValue AcosPiDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // acosPi(+/-inf) is outside the [-1, 1] domain and produces the canonical quiet NaN.
+            return TDecimal.NaNMask;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // acosPi(+/-0) = 1/2.
+            if (DecimalIeee754UsesDouble<TValue>())
+            {
+                return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(0.5);
+            }
+            return Float128ToDecimal<TDecimal, TValue>(PiFractionConstants[2]);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            double result = double.AcosPi(value);
+            // A domain error (|x| > 1) canonicalizes to the positive quiet NaN.
+            return double.IsNaN(result) ? TDecimal.NaNMask : ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+
+        if (Float128MagnitudeExceedsOne(argument))
+        {
+            return TDecimal.NaNMask;
+        }
+
+        Float128Divide(Float128Acos(argument), InvTrigConstants[4], Float128FullPrecision, out Float128 quotient);
+        return Float128ToDecimal<TDecimal, TValue>(quotient);
+    }
+
+    /// <summary>Computes <c>atan2(y, x) / pi</c>.</summary>
+    internal static TValue Atan2PiDecimalIeee754<TDecimal, TValue>(TValue y, TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(y))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(y);
+        }
+
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            // binary64 atan2Pi already follows IEEE for the signed-zero and infinity quadrant cases.
+            double yValue = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(y);
+            double xValue = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Atan2Pi(yValue, xValue));
+        }
+
+        DecodedDecimalIeee754<TValue> decodedY = UnpackDecimalIeee754<TDecimal, TValue>(y);
+        DecodedDecimalIeee754<TValue> decodedX = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        bool yInfinity = TDecimal.IsInfinity(y);
+        bool xInfinity = TDecimal.IsInfinity(x);
+        bool yZero = !yInfinity && TValue.IsZero(decodedY.Significand);
+        bool xZero = !xInfinity && TValue.IsZero(decodedX.Significand);
+
+        // Signed-zero and infinity quadrant cases resolve to a signed multiple of pi, i.e. a signed
+        // fraction of a half turn (atan2 result divided by pi).
+        if (yInfinity || xInfinity || yZero || xZero)
+        {
+            Float128 magnitude;
+            if (yInfinity)
+            {
+                // atan2Pi(+/-inf, +/-inf) = +/-3/4 or +/-1/4; atan2Pi(+/-inf, finite) = +/-1/2.
+                magnitude = xInfinity ? (decodedX.Signed ? PiFractionConstants[3] : PiFractionConstants[1]) : PiFractionConstants[2];
+            }
+            else if (xInfinity)
+            {
+                // atan2Pi(+/-finite, -inf) = +/-1; atan2Pi(+/-finite, +inf) = +/-0.
+                magnitude = decodedX.Signed ? PiFractionConstants[4] : PiFractionConstants[0];
+            }
+            else if (yZero)
+            {
+                // atan2Pi(+/-0, x<0 or -0) = +/-1; atan2Pi(+/-0, x>=0) = +/-0.
+                magnitude = decodedX.Signed ? PiFractionConstants[4] : PiFractionConstants[0];
+            }
+            else
+            {
+                // xZero, finite non-zero y: atan2Pi(+/-y, +/-0) = +/-1/2.
+                magnitude = PiFractionConstants[2];
+            }
+
+            magnitude._sign = decodedY.Signed ? UxSignBit : 0;
+            return Float128ToDecimal<TDecimal, TValue>(magnitude);
+        }
+
+        Float128 argumentY = DecimalToFloat128<TDecimal, TValue>(decodedY.Signed, decodedY.UnbiasedExponent, decodedY.Significand);
+        Float128 argumentX = DecimalToFloat128<TDecimal, TValue>(decodedX.Signed, decodedX.UnbiasedExponent, decodedX.Significand);
+        Float128Divide(Float128Atan2(argumentY, argumentX, haveX: true), InvTrigConstants[4], Float128FullPrecision, out Float128 result);
+        return Float128ToDecimal<TDecimal, TValue>(result);
+    }
 }
