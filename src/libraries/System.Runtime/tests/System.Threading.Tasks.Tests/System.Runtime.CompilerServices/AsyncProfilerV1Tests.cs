@@ -1931,32 +1931,34 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async Task StateMachineAsync_NestedChildResume_FlattensPerSegment_Child_Marker()
+        private static async Task StateMachineAsync_NestedChildResume_FlattensPerSegment_Child_Marker(Task childGate)
         {
-            await Task.Yield();
+            await childGate;
         }
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async Task StateMachineAsync_NestedChildResume_FlattensPerSegment_Middle_Marker()
+        private static async Task StateMachineAsync_NestedChildResume_FlattensPerSegment_Middle_Marker(Task middleGate1, Task childGate, Task middleGate2)
         {
             // Suspend once so this box becomes a leaf dispatcher, then resume and await a nested child
             // async method (its own dispatcher). When that child completes it inline-resumes this box;
-            // the trailing yield then re-suspends this same box, which under the flattened per-segment
-            // model starts a fresh dispatcher segment parented to the just-completed child.
-            await Task.Yield();
-            await StateMachineAsync_NestedChildResume_FlattensPerSegment_Child_Marker();
-            await Task.Yield();
+            // the trailing gate then re-suspends this same box, which under the flattened per-segment
+            // model starts a fresh dispatcher segment parented to the just-completed child. The gates are
+            // completed inline on a single thread so the child deterministically inline-resumes this box;
+            // thread-pool scheduling (e.g. Task.Yield) would otherwise collapse this into one reused segment.
+            await middleGate1;
+            await StateMachineAsync_NestedChildResume_FlattensPerSegment_Child_Marker(childGate);
+            await middleGate2;
         }
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async Task StateMachineAsync_NestedChildResume_FlattensPerSegment_Marker()
+        private static async Task StateMachineAsync_NestedChildResume_FlattensPerSegment_Marker(Task outerGate, Task middleGate1, Task childGate, Task middleGate2)
         {
             // Suspend/resume first so this outer marker is a live dispatcher (non-zero parent id) by
             // the time the middle frame below first suspends.
-            await Task.Yield();
-            await StateMachineAsync_NestedChildResume_FlattensPerSegment_Middle_Marker();
+            await outerGate;
+            await StateMachineAsync_NestedChildResume_FlattensPerSegment_Middle_Marker(middleGate1, childGate, middleGate2);
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
@@ -1964,7 +1966,28 @@ namespace System.Threading.Tasks.Tests
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
             {
-                RunScenarioAndFlush(() => StateMachineAsync_NestedChildResume_FlattensPerSegment_Marker());
+                RunScenarioAndFlush(async () =>
+                {
+                    var outerGate = new TaskCompletionSource();
+                    var middleGate1 = new TaskCompletionSource();
+                    var childGate = new TaskCompletionSource();
+                    var middleGate2 = new TaskCompletionSource();
+
+                    Task marker = StateMachineAsync_NestedChildResume_FlattensPerSegment_Marker(
+                        outerGate.Task, middleGate1.Task, childGate.Task, middleGate2.Task);
+
+                    // Drive each stage inline on this thread. Completing a default TaskCompletionSource runs
+                    // its continuation synchronously, so each SetResult advances the chain to its next suspend:
+                    // the child completes inline and inline-resumes the middle box, which is the deterministic
+                    // condition that produces the flattened per-segment split (a fresh middle segment parented
+                    // to the child). Thread-pool scheduling would otherwise collapse the middle into one segment.
+                    outerGate.SetResult();
+                    middleGate1.SetResult();
+                    childGate.SetResult();
+                    middleGate2.SetResult();
+
+                    await marker;
+                });
             });
 
             // DumpAllEvents(events);
