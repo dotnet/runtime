@@ -6710,6 +6710,7 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
     VALIDATE_POINTER_TO_OBJECT(ppValue, ICorDebugValue **);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
+    DWORD floatingPointIndex = 0;
     bool isFloatingPoint = false;
     IDacDbiInterface::TargetInfo targetInfo;
     IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
@@ -6717,25 +6718,34 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
     {
         case IDacDbiInterface::kArchX86:
             isFloatingPoint = (reg >= REGISTER_X86_FPSTACK_0) && (reg <= REGISTER_X86_FPSTACK_7);
+            floatingPointIndex = reg - REGISTER_X86_FPSTACK_0;
             break;
         case IDacDbiInterface::kArchAMD64:
             isFloatingPoint = (reg >= REGISTER_AMD64_XMM0) && (reg <= REGISTER_AMD64_XMM15);
+            floatingPointIndex = reg - REGISTER_AMD64_XMM0;
+            break;
+        case IDacDbiInterface::kArchArm:
+            isFloatingPoint = (reg >= REGISTER_ARM_D0) && (reg <= REGISTER_ARM_D31);
+            floatingPointIndex = reg - REGISTER_ARM_D0;
             break;
         case IDacDbiInterface::kArchArm64:
             isFloatingPoint = (reg >= REGISTER_ARM64_V0) && (reg <= REGISTER_ARM64_V31);
+            floatingPointIndex = reg - REGISTER_ARM64_V0;
             break;
         case IDacDbiInterface::kArchRiscV64:
             isFloatingPoint = (reg >= REGISTER_RISCV64_F0) && (reg <= REGISTER_RISCV64_F31);
+            floatingPointIndex = reg - REGISTER_RISCV64_F0;
             break;
         case IDacDbiInterface::kArchLoongArch64:
             isFloatingPoint = (reg >= REGISTER_LOONGARCH64_F0) && (reg <= REGISTER_LOONGARCH64_F31);
+            floatingPointIndex = reg - REGISTER_LOONGARCH64_F0;
             break;
         default:
             break;
     }
 
     if (isFloatingPoint)
-        return GetLocalFloatingPointValue(reg, pType, ppValue);
+        return GetLocalFloatingPointValue(floatingPointIndex, pType, ppValue);
 
     // The address of the given register is the address of the value
     // in this process. We have no remote address here.
