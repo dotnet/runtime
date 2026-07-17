@@ -3756,7 +3756,9 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
 #ifdef PROFILING_SUPPORTED
 void CodeGen::genProfilingLeaveCallback(unsigned helper)
 {
-    NYI_WASM("genProfilingLeaveCallback");
+    // Profiler ELT hooks are not yet implemented on WASM. The matching enter callback in
+    // genFnProlog is already skipped (#if !TARGET_WASM), so emit nothing here rather than
+    // asserting; this keeps WASM consistently free of ELT hooks. See #130953.
 }
 #endif
 
