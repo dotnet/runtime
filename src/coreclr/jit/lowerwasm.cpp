@@ -849,6 +849,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCreate(node);
         }
 
+        case NI_Vector_CreateScalarUnsafe:
+        {
+            // CreateScalarUnsafe leaves the upper elements undefined, so we can broadcast the value
+            // across every lane. This maps directly to a single splat instruction.
+            node->ChangeHWIntrinsicId(NI_PackedSimd_Splat);
+            return LowerNode(node);
+        }
+
         case NI_Vector_op_Equality:
         {
             assert(category == HW_Category_Helper);
@@ -873,6 +881,31 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_Vector_GetElement:
+        {
+            // GetElement(vector, index) maps directly to ExtractScalar(vector, imm).
+            node->ChangeHWIntrinsicId(NI_PackedSimd_ExtractScalar);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
+        case NI_Vector_ToScalar:
+        {
+            // ToScalar(vector) is GetElement(vector, 0), i.e. ExtractScalar(vector, 0).
+            GenTree* idx = m_compiler->gtNewIconNode(0);
+            BlockRange().InsertBefore(node, idx);
+            LowerNode(idx);
+
+            node->ResetHWIntrinsicId(NI_PackedSimd_ExtractScalar, m_compiler, node->Op(1), idx);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
+        case NI_Vector_WithElement:
+        {
+            // WithElement(vector, index, value) maps directly to ReplaceScalar(vector, imm, value).
+            node->ChangeHWIntrinsicId(NI_PackedSimd_ReplaceScalar);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
         case NI_PackedSimd_ExtractScalar:
         case NI_PackedSimd_ReplaceScalar:
         case NI_PackedSimd_LoadScalarAndInsert:
@@ -889,6 +922,13 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // These intrinsics don't require an immediate operand
             assert(!hasImmOp);
             break;
+        }
+
+        case NI_PackedSimd_Swizzle:
+        {
+            assert(category == HW_Category_SIMD);
+            LowerHWIntrinsicSwizzle(node);
+            return node->gtNext;
         }
 
         default:
@@ -930,6 +970,56 @@ GenTree* Lowering::LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node)
 
     ContainCheckHWIntrinsic(node);
     return node->gtNext;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerHWIntrinsicSwizzle: Rewrite a constant-mask PackedSimd Swizzle into an i8x16.shuffle.
+//
+// Wasm's i8x16.swizzle takes a runtime byte-index mask, whereas i8x16.shuffle encodes the 16
+// lane selectors as an immediate. When the mask is a compile-time constant with no out-of-range
+// lanes, emitting i8x16.shuffle lets the underlying wasm engine pattern-match the known
+// permutation into an optimal native sequence instead of a generic table lookup.
+//
+// i8x16.shuffle selects from two vectors (lanes 0-15 from the first, 16-31 from the second), so
+// for a single-source swizzle we feed the source vector as both operands. On the wasm value
+// stack that requires the source twice, so it is marked multiply-used (materialized into a local)
+// and the codegen side emits the extra local.get. Out-of-range masks are left as a swizzle, whose
+// native "index >= 16 -> 0" behavior i8x16.shuffle cannot reproduce without a zero operand.
+//
+// Arguments:
+//    node - The PackedSimd Swizzle node.
+//
+void Lowering::LowerHWIntrinsicSwizzle(GenTreeHWIntrinsic* node)
+{
+    assert(node->GetHWIntrinsicId() == NI_PackedSimd_Swizzle);
+
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+
+    if (op2->IsCnsVec())
+    {
+        const simd_t& mask       = op2->AsVecCon()->gtSimdVal;
+        bool          allInRange = true;
+
+        for (int i = 0; i < 16; i++)
+        {
+            if (mask.u8[i] >= 16)
+            {
+                allInRange = false;
+                break;
+            }
+        }
+
+        if (allInRange)
+        {
+            // The mask becomes the i8x16.shuffle immediate; the source is consumed as both
+            // shuffle operands, so it must be available twice on the value stack.
+            MakeSrcContained(node, op2);
+            SetMultiplyUsed(op1 DEBUGARG("i8x16.shuffle reuses the source as both operands"));
+        }
+    }
+
+    ContainCheckHWIntrinsic(node);
 }
 
 //----------------------------------------------------------------------------------------------

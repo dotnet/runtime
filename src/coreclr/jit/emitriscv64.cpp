@@ -850,7 +850,7 @@ void emitter::emitIns_R_R_R(
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
         (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
         (INS_sh1add <= ins && ins <= INS_sh3add_uw) || (INS_rol <= ins && ins <= INS_maxu) ||
-        (INS_bset <= ins && ins <= INS_binv))
+        (INS_bset <= ins && ins <= INS_binv) || (INS_czero_eqz <= ins && ins <= INS_czero_nez))
     {
 #ifdef DEBUG
         switch (ins)
@@ -962,6 +962,9 @@ void emitter::emitIns_R_R_R(
             case INS_bclr:
             case INS_bext:
             case INS_binv:
+
+            case INS_czero_eqz:
+            case INS_czero_nez:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
@@ -4035,6 +4038,18 @@ void emitter::emitDispInsName(
                         return emitDispIllegalInstruction(code);
                     printf("binv           %s, %s, %s\n", rd, rs1, rs2);
                     return;
+                case 0b0000111:
+                    switch (opcode3)
+                    {
+                        case 0b101:
+                            printf("czero.eqz      %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0b111:
+                            printf("czero.nez      %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
                 default:
                     return emitDispIllegalInstruction(code);
             }

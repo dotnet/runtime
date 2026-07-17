@@ -4856,6 +4856,11 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                                             GenCondition* cond,
                                             bool          allowMultipleFlagsChecks)
 {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+    // These architectures have no status/flag register.
+    return false;
+#else
+
     JITDUMP("Lowering condition:\n");
     DISPTREERANGE(BlockRange(), condition);
     JITDUMP("\n");
@@ -4886,9 +4891,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
         }
 #endif
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
-        // TODO-Cleanup: this ifdef look suspect, we should never get here on architectures without a status register,
-        // i. e. the right thing is to ifdef the whole function.
         // TODO-Cleanup: introduce a "has CPU flags" target define.
         if (!allowMultipleFlagsChecks)
         {
@@ -4899,7 +4901,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                 return false;
             }
         }
-#endif
 
         relop->gtType = TYP_VOID;
         relop->gtFlags |= GTF_SET_FLAGS;
@@ -4975,6 +4976,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
     }
 
     return false;
+#endif
 }
 
 //----------------------------------------------------------------------------------------------
