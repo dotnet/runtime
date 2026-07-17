@@ -11,12 +11,14 @@
 // the sign bits the temp actually holds) instead of reloading the full 4-byte
 // actual type. Compiling M3 exercises the shape (in the switch's case 4).
 
+namespace Runtime_124508;
+
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
 
-public class Program
+public class Runtime_124508
 {
     public static IRuntime s_rt;
     public static sbyte[] s_1;
