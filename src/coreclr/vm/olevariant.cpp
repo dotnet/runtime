@@ -2514,12 +2514,11 @@ BASEARRAYREF OleVariant::ExtractWrappedObjectsFromArray(BASEARRAYREF *pArray)
             {
                 if (*pSrc != NULL)
                 {
-                    DECIMAL srcObj = (*pSrc)->GetWrappedObject();
-                    memcpyNoGCRefs(pDest, &srcObj, sizeof(DECIMAL));
+                    *pDest = (*pSrc)->GetWrappedObject();
                 }
                 else
                 {
-                    memset(pDest, 0, sizeof(DECIMAL));
+                    *pDest = DECIMAL{};
                 }
             }
         }
