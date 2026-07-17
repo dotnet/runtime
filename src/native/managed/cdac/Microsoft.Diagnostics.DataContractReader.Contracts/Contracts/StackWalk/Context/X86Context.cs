@@ -8,7 +8,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 /// <summary>
-/// X86-specific windows thread context. 
+/// X86-specific windows thread context.
 /// </summary>
 [StructLayout(LayoutKind.Explicit, Pack = 1)]
 public struct X86Context : IPlatformContext
