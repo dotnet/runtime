@@ -4113,9 +4113,9 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
     if (!pStructMT->IsValueType())
     {
         // StructureMarshaler<T> is only valid for value types. If T is a reference type,
-        // gracefully fall back to the default C# implementation (which handles the case)
-        // rather than asserting. This can happen when tools like PMI call PrepareMethod
-        // on generic instantiations with object as the type argument.
+        // gracefully fall back to the managed IL implementation rather than asserting.
+        // This can happen when tools call PrepareMethod on generic instantiations with a
+        // reference type as the type argument.
         return false;
     }
 
