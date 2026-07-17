@@ -37,6 +37,10 @@ namespace ILVerify
             var currentTypeDef = (MetadataType)currentClass.GetTypeDefinition();
             var targetTypeDef = (EcmaType)targetClass.GetTypeDefinition();
 
+            // The accessing assembly can waive all access checks to the target assembly via [IgnoresAccessChecksTo].
+            if (currentTypeDef.Module.IgnoresAccessChecksTo(targetTypeDef.Module))
+                return true;
+
             var targetContainingType = targetTypeDef.ContainingType;
             if (targetContainingType == null)
             {
@@ -108,6 +112,10 @@ namespace ILVerify
             var targetTypeDef = (MetadataType)targetType.GetTypeDefinition();
 
             if (memberVisibility == MethodAttributes.Public)
+                return true;
+
+            // The accessing assembly can waive all access checks to the target assembly via [IgnoresAccessChecksTo].
+            if (currentType.Module.IgnoresAccessChecksTo(targetTypeDef.Module))
                 return true;
 
             // This is module-scope checking, to support C++ file & function statics.
@@ -271,6 +279,27 @@ namespace ILVerify
                     }
                 }
             }
+            return false;
+        }
+
+        private static bool IgnoresAccessChecksTo(this ModuleDesc accessingModule, ModuleDesc accessedModule)
+        {
+            var accessingAssembly = accessingModule.ToEcmaAssembly();
+            var accessedAssembly = accessedModule.ToEcmaAssembly();
+            if (accessingAssembly == null || accessedAssembly == null || accessingAssembly == accessedAssembly)
+            {
+                return false;
+            }
+
+            var accessedName = accessedAssembly.GetName();
+
+            foreach (var attribute in accessingAssembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "IgnoresAccessChecksToAttribute"))
+            {
+                AssemblyNameInfo ignoredName = AssemblyNameInfo.Parse(((string)attribute.FixedArguments[0].Value).AsSpan());
+                if (accessedName.Name.Equals(ignoredName.Name, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
             return false;
         }
 
