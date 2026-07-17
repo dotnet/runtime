@@ -919,7 +919,7 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class CreateAsyncContext
         {
-            public static void Create(ref AsyncStateMachineDispatcherInfo info, ulong parentDispatcherId, ulong dispatcherId)
+            public static void Create(ref AsyncStateMachineDispatcherInfo info, IAsyncStateMachineDispatcher dispatcher)
             {
                 AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
 
@@ -936,6 +936,9 @@ namespace System.Runtime.CompilerServices
 
                     if (IsEnabled.CreateStateMachineAsyncContextEvent(activeEventKeywords))
                     {
+                        ulong parentDispatcherId = AsyncProfiler.DispatcherIds.CaptureParentDispatcherId();
+                        ulong dispatcherId = AsyncProfiler.DispatcherIds.GetDispatcherId(dispatcher);
+
                         EmitEvent(context, currentTimestamp, parentDispatcherId, dispatcherId, AsyncEventID.CreateStateMachineAsyncContext);
                     }
                 }
@@ -943,7 +946,7 @@ namespace System.Runtime.CompilerServices
                 AsyncThreadContext.Release(context);
             }
 
-            public static void Create(ulong parentDispatcherId, ulong dispatcherId)
+            public static void Create(IAsyncStateMachineDispatcher dispatcher)
             {
                 Info info = default;
                 AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
@@ -952,6 +955,9 @@ namespace System.Runtime.CompilerServices
 
                 if (IsEnabled.CreateStateMachineAsyncContextEvent(context.ActiveEventKeywords))
                 {
+                    ulong parentDispatcherId = AsyncProfiler.DispatcherIds.CaptureParentDispatcherId();
+                    ulong dispatcherId = AsyncProfiler.DispatcherIds.GetDispatcherId(dispatcher);
+
                     EmitEvent(context, Stopwatch.GetTimestamp(), parentDispatcherId, dispatcherId, AsyncEventID.CreateStateMachineAsyncContext);
                 }
 

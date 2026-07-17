@@ -313,15 +313,16 @@ namespace System.Runtime.CompilerServices
 
             ulong IAsyncStateMachineDispatcher.DispatcherId
             {
-                get
-                {
-                    if (_dispatcherId == 0)
-                    {
-                        _dispatcherId = NewId();
-                    }
+                get => GetDispatcherId();
+            }
 
-                    return (ulong)_dispatcherId;
+            private ulong GetDispatcherId()
+            {
+                if (_dispatcherId == 0)
+                {
+                    _dispatcherId = NewId();
                 }
+                return (ulong)_dispatcherId;
             }
 
             private protected override void InstrumentedMoveNext(Thread? threadPoolThread, AsyncInstrumentation.Flags flags)
@@ -346,7 +347,7 @@ namespace System.Runtime.CompilerServices
                 AsyncProfiler.InitInfo(ref info.AsyncProfilerInfo);
 
                 info.Dispatcher = this;
-                info.AsyncProfilerInfo.DispatcherId = (ulong)_dispatcherId;
+                info.AsyncProfilerInfo.DispatcherId = GetDispatcherId();
                 info.AsyncProfilerInfo.CurrentContinuation = this;
 
                 _isLeaf = false;

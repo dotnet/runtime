@@ -121,16 +121,13 @@ namespace System.Runtime.CompilerServices
         {
             if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
             {
-                ulong parentDispatcherId = AsyncProfiler.DispatcherIds.CaptureParentDispatcherId();
-                ulong dispatcherId = AsyncProfiler.DispatcherIds.GetDispatcherId(dispatcher);
-
                 if (info != null)
                 {
-                    AsyncProfiler.CreateAsyncContext.Create(ref *info, parentDispatcherId, dispatcherId);
+                    AsyncProfiler.CreateAsyncContext.Create(ref *info, dispatcher);
                 }
                 else
                 {
-                    AsyncProfiler.CreateAsyncContext.Create(parentDispatcherId, dispatcherId);
+                    AsyncProfiler.CreateAsyncContext.Create(dispatcher);
                 }
             }
         }
