@@ -451,6 +451,7 @@ CDAC_TYPE_END(AssemblyBinder)
 
 CDAC_TYPE_BEGIN(PEImage)
 CDAC_TYPE_INDETERMINATE(PEImage)
+CDAC_TYPE_FIELD(PEImage, T_POINTER, FlatImageLayout, cdac_data<PEImage>::FlatImageLayout)
 CDAC_TYPE_FIELD(PEImage, T_POINTER, LoadedImageLayout, cdac_data<PEImage>::LoadedImageLayout)
 CDAC_TYPE_FIELD(PEImage, TYPE(ProbeExtensionResult), ProbeExtensionResult, cdac_data<PEImage>::ProbeExtensionResult)
 CDAC_TYPE_END(PEImage)

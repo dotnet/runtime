@@ -810,6 +810,78 @@ public unsafe class LoaderTests
     }
 
     [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetLoadedImageContents_NoLoadedLayout_FallsBackToFlatLayout(MockTarget.Architecture arch)
+    {
+        // Images that are never mapped/loaded (e.g. a webcil ReadyToRun image on WASM) have a null
+        // LoadedImageLayout; their metadata lives in the flat layout. TryGetLoadedImageContents must
+        // fall back to FlatImageLayout instead of reporting "not loaded".
+        const ulong expectedBase = 0x0012_3000;
+        const uint expectedSize = 0x4560;
+        const uint flatFlags = 0; // flat layouts are not FLAG_MAPPED
+
+        TargetTestHelpers helpers = new(arch);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.Builder builder = targetBuilder.MemoryBuilder;
+        MockLoaderBuilder loader = new(builder);
+        var allocator = builder.CreateAllocator(0x0010_0000, 0x0020_0000);
+
+        MockLoaderModule module = loader.AddModule();
+
+        var probeExtLayout = helpers.LayoutFields([
+            new(nameof(Data.ProbeExtensionResult.Type), DataType.int32),
+        ]);
+        var peAssemblyLayout = helpers.LayoutFields([
+            new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
+            new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+        ]);
+        var peImageLayout = helpers.LayoutFields([
+            new(nameof(Data.PEImage.FlatImageLayout), DataType.pointer),
+            new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
+            new(nameof(Data.PEImage.ProbeExtensionResult), DataType.ProbeExtensionResult, probeExtLayout.Stride),
+        ]);
+        var imageLayoutLayout = helpers.LayoutFields([
+            new(nameof(Data.PEImageLayout.Base), DataType.pointer),
+            new(nameof(Data.PEImageLayout.Size), DataType.uint32),
+            new(nameof(Data.PEImageLayout.Flags), DataType.uint32),
+            new(nameof(Data.PEImageLayout.Format), DataType.uint32),
+        ]);
+
+        var flatLayoutFrag = allocator.Allocate(imageLayoutLayout.Stride, "FlatPEImageLayout");
+        helpers.WritePointer(flatLayoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Base)].Offset, helpers.PointerSize), expectedBase);
+        helpers.Write(flatLayoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Size)].Offset, sizeof(uint)), expectedSize);
+        helpers.Write(flatLayoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Flags)].Offset, sizeof(uint)), flatFlags);
+
+        // LoadedImageLayout is left null; only the flat layout is populated.
+        var peImageFrag = allocator.Allocate(peImageLayout.Stride, "PEImage");
+        helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[nameof(Data.PEImage.FlatImageLayout)].Offset, helpers.PointerSize), flatLayoutFrag.Address);
+
+        var peAssemblyFrag = allocator.Allocate(peAssemblyLayout.Stride, "PEAssembly");
+        helpers.WritePointer(peAssemblyFrag.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.PEImage)].Offset, helpers.PointerSize), peImageFrag.Address);
+
+        module.PEAssembly = peAssemblyFrag.Address;
+
+        var types = CreateContractTypes(loader);
+        types[DataType.PEAssembly] = new() { Fields = peAssemblyLayout.Fields, Size = peAssemblyLayout.Stride };
+        types[DataType.PEImage] = new() { Fields = peImageLayout.Fields, Size = peImageLayout.Stride };
+        types[DataType.PEImageLayout] = new() { Fields = imageLayoutLayout.Fields, Size = imageLayoutLayout.Stride };
+        types[DataType.ProbeExtensionResult] = new() { Fields = probeExtLayout.Fields, Size = probeExtLayout.Stride };
+
+        var target = targetBuilder
+            .AddTypes(types)
+            .AddContract<ILoader>(version: "c1")
+            .Build();
+
+        ILoader contract = target.Contracts.Loader;
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(new TargetPointer(module.Address));
+
+        Assert.True(contract.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint imageFlags));
+        Assert.Equal(expectedBase, baseAddress.Value);
+        Assert.Equal(expectedSize, size);
+        Assert.Equal(flatFlags, imageFlags);
+    }
+
+    [Theory]
     [MemberData(nameof(GetDebuggerInfoBitsData))]
     public void GetDebuggerInfoBits(uint rawFlags, DebuggerAssemblyControlFlags expectedBits, MockTarget.Architecture arch)
     {

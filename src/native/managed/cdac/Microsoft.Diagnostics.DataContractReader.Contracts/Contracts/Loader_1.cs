@@ -204,10 +204,18 @@ internal readonly struct Loader_1 : ILoader
         if (!TryGetPEImage(handle, out Data.PEImage? peImage))
             return false; // no PE image
 
-        if (peImage.LoadedImageLayout == TargetPointer.Null)
-            return false; // no loaded image layout
+        TargetPointer imageLayoutPtr = peImage.LoadedImageLayout;
+        if (imageLayoutPtr == TargetPointer.Null)
+        {
+            // Images that are never mapped/loaded (e.g. a webcil ReadyToRun image on WASM) have no
+            // loaded layout; their metadata lives in the flat layout (m_pLayouts[IMAGE_FLAT]).
+            if (peImage.FlatImageLayout is not TargetPointer flatLayoutPtr || flatLayoutPtr == TargetPointer.Null)
+                return false; // no usable image layout
 
-        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+            imageLayoutPtr = flatLayoutPtr;
+        }
+
+        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(imageLayoutPtr);
 
         baseAddress = peImageLayout.Base;
         size = peImageLayout.Size;
