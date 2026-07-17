@@ -444,6 +444,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Index.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128Conversions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal128.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal64.cs" />

@@ -10,8 +10,8 @@ internal static partial class Number
 {
     // This code is based on the unpacked "x_float" software binary128 engine (the "ux" routines)
     // from the Intel(R) Decimal Floating-Point Math Library, specifically `MULTIPLY`,
-    // `EXTENDED_MULTIPLY`, `ADDSUB`, and `FFS_AND_SHIFT` from `dpml_ux_ops_64.c` / `dpml_ux_ops.c`,
-    // and the finite unpack/pack from `UNPACK_X_OR_Y` / `PACK`.
+    // `EXTENDED_MULTIPLY`, `ADDSUB`, `DIVIDE`, and `FFS_AND_SHIFT` from `dpml_ux_ops_64.c` /
+    // `dpml_ux_ops.c`, and the finite unpack/pack from `UNPACK_X_OR_Y` / `PACK`.
     // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
     //
     // Licensed under the BSD 3-Clause "New" or "Revised" License
@@ -76,9 +76,22 @@ internal static partial class Number
     // select magnitude-only and normalization behavior. The SUB/ADD_SUB/SUB_ADD selectors arrive with
     // the first core that uses them.
     private const int UxAdd = 0;
+    private const int UxSub = 1;
     private const int UxMagnitudeOnly = 4;
     private const int UxNoNormalization = 8;
     private const int UxDoNormalization = 2 * UxNoNormalization; // 16
+
+    // DIVIDE precision selectors (Intel's dpml_ux.h): HALF stops after the double-precision estimate;
+    // FULL performs the integer refinement to the complete 128-bit significand.
+    private const int Float128HalfPrecision = 1;
+    private const int Float128FullPrecision = 2;
+
+    // DIVIDE scaling constants (Intel's dpml_ux_ops_64.c), all exact powers of two.
+    private const double TwoPow62 = 4611686018427387904.0;              // 2^62
+    private const double TwoPow124 = TwoPow62 * TwoPow62;               // 2^124
+    private const double RecipTwoPow16 = 1.0 / 65536.0;                 // 2^-16
+    private const double RecipTwoPow60 = 1.0 / 1152921504606846976.0;   // 2^-60
+    private const double RecipTwoPow184 = 4.0 / (TwoPow124 * TwoPow62); // 2^-184
 
     /// <summary>
     /// Normalizes an unpacked value so its most significant fraction bit is set, adjusting the exponent
@@ -356,6 +369,129 @@ internal static partial class Number
             sign ^= uxSave._sign;
             exponent = x._exponent;
         }
+    }
+
+    /// <summary>
+    /// Divides two unpacked values (Intel's <c>DIVIDE</c>). It estimates <c>1/b</c> in double precision to
+    /// more than 70 bits with a Newton-style refinement, forms <c>q = a * (1/b)</c> in high/low double
+    /// pieces, then (unless <paramref name="flags"/> is <see cref="Float128HalfPrecision"/>) corrects the
+    /// quotient to the full 128-bit significand with integer arithmetic. <paramref name="b"/> must be non-zero; it is normalized on a
+    /// local copy if necessary, so the algorithm's assumption that the divisor is normalized holds.
+    /// </summary>
+    private static void Float128Divide(scoped in Float128 a, scoped in Float128 b, int flags, out Float128 c)
+    {
+        Float128 bLocal = b;
+        ulong b1 = bLocal._hi;
+        ulong b2 = bLocal._lo;
+
+        // If b isn't normalized the whole algorithm falls apart, so make sure that it is.
+        if ((long)b1 >= 0)
+        {
+            Float128Normalize(ref bLocal);
+            b1 = bLocal._hi;
+            b2 = bLocal._lo;
+        }
+
+        // Estimate 1/b in double precision to more than 70 bits: get an initial estimate and improve it
+        // with a variation of Newton's iteration. TO_DOUBLE/TO_DIGIT are the signed integer<->double
+        // conversions Intel uses (the operands are always non-negative and below 2^63 at these points).
+        double r = TwoPow124 / (double)(long)(b1 >> 1);
+
+        ulong mask = (1UL << 38) - 1;
+        double bHi = (double)(long)((b1 & ~mask) >> 1);
+        double bLo = RecipTwoPow16 * (double)(long)(((b1 & mask) << 15) | (b2 >> 49));
+
+        ulong a1 = a._hi;
+        ulong a2 = a._lo;
+
+        uint sign = a._sign ^ bLocal._sign;
+        int exponent = a._exponent - bLocal._exponent;
+
+        // Get the high part of r as both an integer and a double, biasing it down so that r_lo stays
+        // positive (see Intel's design note).
+        ulong bigR = (ulong)(long)r;
+        bigR = (bigR - (5UL << 8)) & ~((1UL << 36) - 1);
+        double rHi = (double)(long)bigR;
+
+        // 2*r_lo' = [ (2^124 - b_hi*r_hi) - b_lo*r_hi ] * (r / 2^184).
+        double rLo = ((TwoPow124 - (bHi * rHi)) - (bLo * rHi)) * (RecipTwoPow184 * r);
+
+        // q = a*(1/b), performed as q_hi + q_lo with a' biased below a so that the quotient stays < 2.
+        double aFull = (double)(long)((a1 >> 11) << 10);
+        double aHi = (double)(long)((a1 & ~mask) >> 1);
+        double aLo = RecipTwoPow16 * (double)(long)(((a1 & mask) << 15) | (a2 >> 49));
+
+        rHi *= RecipTwoPow60;
+        double qHi = aHi * rHi;
+        double qLo = (aLo * rHi) + (aFull * rLo);
+
+        // Convert the high 65 bits of q_hi + q_lo into the integers S:Q1. Converting .25*q_hi avoids the
+        // overflow a direct conversion of q_hi would cause.
+        ulong q1 = (ulong)(long)(0.25 * qHi);
+        ulong e = (ulong)(long)qLo;
+
+        ulong s = q1 >> 62;
+        q1 = (4 * q1) + e;
+        s += (q1 < e) ? 1UL : 0UL;
+        ulong q2 = 0;
+
+        if (flags != Float128HalfPrecision)
+        {
+            // Refine R to an integer approximation of 1/b (R/2^63 ~ 1/b); 2^64 saturates to 2^64 - 1.
+            bigR = (bigR << 2) + (ulong)(long)(TwoPow62 * rLo);
+            bigR = (bigR == 0) ? ~0UL : bigR;
+
+            // Using S and Q1 as the current guess for the high 65 bits, compute the remainder N0:N1:N2
+            // (N3 is not needed) of A - S':Q1'*B.
+            mask = 0UL - s;
+
+            ulong p11 = Math.BigMul(q1, b2, out _);
+            ulong p01 = q1 * b1;
+            ulong p00 = Math.BigMul(q1, b1, out _);
+
+            ulong n2 = b2 & mask; // N2/N1 = B2/B1 when S == 1, 0 otherwise
+            ulong n1 = b1 & mask;
+
+            n2 += p11;
+            ulong c1 = (n2 < p11) ? 1UL : 0UL;
+            n2 += p01;
+            c1 += (n2 < p01) ? 1UL : 0UL;
+
+            n1 += p00;
+            ulong n0 = (n1 < p00) ? 1UL : 0UL;
+            n1 += c1;
+            n0 += (n1 < c1) ? 1UL : 0UL;
+
+            n0 = 0UL - n0;
+            c1 = (a2 < n2) ? 1UL : 0UL;
+            n2 = a2 - n2;
+            n0 -= (a1 < n1) ? 1UL : 0UL;
+            n1 = a1 - n1;
+            n0 -= (n1 < c1) ? 1UL : 0UL;
+            n1 -= c1;
+
+            // The estimate to S:Q1 is off by at most one; derive the adjustment E and fix up N2.
+            e = n0 | ((n1 != 0) ? 1UL : 0UL);
+            mask = (e == 0) ? b1 : n0;
+            n2 -= mask ^ b1;
+
+            // Using R/2^63 ~ 1/b and the adjusted N2, approximate Q2. A high bit in Q2 means E was one
+            // too low.
+            q2 = Math.BigMul(bigR, n2, out _);
+
+            e += ((long)q2 < 0) ? 1UL : 0UL;
+            q2 = (2 * q2) + (((a1 | a2) != 0) ? 1UL : 0UL); // ensure 0/b is zero
+
+            q1 += e;
+            s = s + (ulong)((long)e >> 63) + ((q1 < e) ? 1UL : 0UL);
+        }
+
+        int shift = (int)s;
+        c = new Float128(
+            sign,
+            exponent + shift,
+            (s << 63) | (q1 >> shift),
+            ((q1 & s) << 63) | (q2 >> shift));
     }
 
     /// <summary>
