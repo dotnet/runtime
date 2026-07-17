@@ -1388,15 +1388,16 @@ HRESULT CordbThread::FindFrame(ICorDebugFrame ** ppFrame, FramePointer fp)
     PRIVATE_SHIM_CALLBACK_IN_THIS_SCOPE0(GetProcess());
     ShimStackWalk * pSSW = GetProcess()->GetShim()->LookupOrCreateShimStackWalk(this);
 
+    IDacDbiInterface::TargetInfo targetInfo;
+    HRESULT hr = GetProcess()->GetTargetInfo(&targetInfo);
+    if (FAILED(hr))
+        return hr;
+
     for (UINT32 i = 0; i < pSSW->GetFrameCount(); i++)
     {
         ICorDebugFrame * pIFrame = pSSW->GetFrame(i);
         CordbFrame * pCFrame = CordbFrame::GetCordbFrameFromInterface(pIFrame);
 
-        IDacDbiInterface::TargetInfo targetInfo;
-        HRESULT hr = GetProcess()->GetTargetInfo(&targetInfo);
-        if (FAILED(hr))
-            return hr;
         bool frameMatches = targetInfo.arch == IDacDbiInterface::kArchX86 ? pCFrame->IsContainedInFrame(fp) : pCFrame->GetFramePointer() == fp;
         if (frameMatches)
         {
@@ -4083,11 +4084,11 @@ void CordbUnmanagedThread::FixupForSkipBreakpoint()
 
 inline TADDR GetSP(DT_CONTEXT* context)
 {
-#if defined(HOST_X86)
+#if defined(TARGET_X86)
     return (TADDR)context->Esp;
-#elif defined(HOST_AMD64)
+#elif defined(TARGET_AMD64)
     return (TADDR)context->Rsp;
-#elif defined(HOST_ARM) || defined(HOST_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
     return (TADDR)context->Sp;
 #else
     _ASSERTE(!"nyi for platform");
@@ -6717,7 +6718,11 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
     DWORD floatingPointIndex = 0;
     bool isFloatingPoint = false;
     IDacDbiInterface::TargetInfo targetInfo;
-    IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+    HRESULT hr = GetProcess()->GetTargetInfo(&targetInfo);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
     switch (targetInfo.arch)
     {
         case IDacDbiInterface::kArchX86:

@@ -8425,10 +8425,10 @@ CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufs
     HRESULT hr = S_OK;
 
     NativePatch * p = NULL;
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     const BYTE patch = CORDbg_BREAK_INSTRUCTION;
     BYTE opcode;
-#elif defined(HOST_ARM64)
+#elif defined(TARGET_ARM64)
     const PRD_TYPE patch = CORDbg_BREAK_INSTRUCTION;
     PRD_TYPE opcode;
 #else
@@ -8467,10 +8467,10 @@ CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufs
         goto ErrExit;
 
     // It's all successful, so now update our out-params & internal bookkeaping.
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     opcode = (BYTE)p->opcode;
     buffer[0] = opcode;
-#elif defined(HOST_ARM64)
+#elif defined(TARGET_ARM64)
     opcode = p->opcode;
     memcpy_s(buffer, bufsize, &opcode, sizeof(opcode));
 #else

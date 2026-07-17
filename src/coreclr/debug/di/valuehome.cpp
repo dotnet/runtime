@@ -898,7 +898,15 @@ void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
 
 void RegisterValueHome::GetEnregisteredValue(MemoryRange dest)
 {
-    ThrowHR(E_NOTIMPL);
+    IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
+    if (targetInfo.arch != kArchX86)
+    {
+        _ASSERTE(!"@TODO IA64/AMD64 -- Not Yet Implemented");
+        ThrowHR(E_NOTIMPL);
+    }
+    _ASSERTE(m_pRemoteRegAddr != NULL);
+
+    m_pRemoteRegAddr->GetEnregisteredValue(dest); // throws
 } // RegisterValueHome::GetEnregisteredValue
 
 // Is this a signed type or unsigned type?
