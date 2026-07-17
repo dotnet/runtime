@@ -28,11 +28,16 @@ public class GetTotalMemoryConcurrent
     [Fact]
     public static void TestEntryPoint()
     {
-        // A few seconds is far more than enough: the unfixed runtime fails almost immediately.
-        // Even a single allocating thread is sufficient to build the region layout that triggers
-        // the miscount, so this does not depend on the number of processors.
-        const int DurationSeconds = 8;
+        // A couple of seconds is far more than enough: the unfixed runtime fails almost immediately
+        // (typically within the first ~100K probes, well under a second). Even a single allocating
+        // thread is sufficient to build the region layout that triggers the miscount, so this does
+        // not depend on the number of processors.
+        const int DurationSeconds = 2;
         int workers = Math.Max(2, Math.Min(8, Environment.ProcessorCount));
+
+        // Reset in case this ever runs more than once in the same process: the worker threads exit
+        // as soon as s_stop is set, so a stale 'true' would leave the heap idle and mask the bug.
+        s_stop = false;
 
         var threads = new Thread[workers];
         for (int i = 0; i < workers; i++)
