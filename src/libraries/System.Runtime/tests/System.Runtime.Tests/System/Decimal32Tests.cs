@@ -2067,6 +2067,39 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x7C000000U, 0x78000000U, 0x78000000U)] // hypot(NaN, +Infinity) = +Infinity
+        [InlineData(0x78000000U, 0x7C000000U, 0x78000000U)] // hypot(+Infinity, NaN) = +Infinity
+        [InlineData(0xF8000000U, 0x32800002U, 0x78000000U)] // hypot(-Infinity, 2) = +Infinity
+        [InlineData(0x7C000000U, 0x32800002U, 0x7C000000U)] // hypot(NaN, 2) = NaN
+        [InlineData(0x32800002U, 0x7C000000U, 0x7C000000U)] // hypot(2, NaN) = NaN
+        [InlineData(0x7C001234U, 0x32800002U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0x32800002U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        [InlineData(0x32800000U, 0x32800000U, 0x32800000U)] // hypot(+0, +0) = +0
+        [InlineData(0xB2800003U, 0x32800000U, 0x32800003U)] // hypot(-3, +0) = 3
+        [InlineData(0x32800000U, 0xB2800004U, 0x32800004U)] // hypot(+0, -4) = 4
+        public static void HypotTest(uint x, uint y, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Hypot(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y))));
+        }
+
+        [Theory]
+        [InlineData(3.0, 4.0)]
+        [InlineData(5.0, 12.0)]
+        [InlineData(-8.0, 15.0)]
+        [InlineData(1.0, 1.0)]
+        [InlineData(0.5, 0.25)]
+        [InlineData(1000.0, 0.001)]
+        [InlineData(2.5, -6.5)]
+        public static void HypotAccuracyTest(double x, double y)
+        {
+            // Decimal32 evaluates hypot through binary64 (as Intel does), so the result matches double.Hypot
+            // to within the format's seven significant digits.
+            double expected = double.Hypot(x, y);
+            double actual = (double)Decimal32.Hypot((Decimal32)x, (Decimal32)y);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"hypot({x}, {y}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x7C000000U, 0x32800000U, 0x32800001U)] // pow(NaN, +0) = 1
         [InlineData(0x32800002U, 0x32800000U, 0x32800001U)] // pow(2, +0) = 1
         [InlineData(0x32800002U, 0xB2800000U, 0x32800001U)] // pow(2, -0) = 1

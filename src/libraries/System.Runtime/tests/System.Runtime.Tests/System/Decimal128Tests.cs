@@ -2083,6 +2083,40 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x7C00000000000000UL, 0x0000000000000000UL, 0x7800000000000000UL, 0x0000000000000000UL, 0x7800000000000000UL, 0x0000000000000000UL)] // hypot(NaN, +Infinity) = +Infinity
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL, 0x7C00000000000000UL, 0x0000000000000000UL, 0x7800000000000000UL, 0x0000000000000000UL)] // hypot(+Infinity, NaN) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000002UL, 0x7800000000000000UL, 0x0000000000000000UL)] // hypot(-Infinity, 2) = +Infinity
+        [InlineData(0x7C00000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000002UL, 0x7C00000000000000UL, 0x0000000000000000UL)] // hypot(NaN, 2) = NaN
+        [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x7C00000000000000UL, 0x0000000000000000UL, 0x7C00000000000000UL, 0x0000000000000000UL)] // hypot(2, NaN) = NaN
+        [InlineData(0x7C00000000000000UL, 0x0000000000001234UL, 0x3040000000000000UL, 0x0000000000000002UL, 0x7C00000000000000UL, 0x0000000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC00400000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000002UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000000UL)] // hypot(+0, +0) = +0
+        [InlineData(0xB040000000000000UL, 0x0000000000000003UL, 0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000003UL)] // hypot(-3, +0) = 3
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0xB040000000000000UL, 0x0000000000000004UL, 0x3040000000000000UL, 0x0000000000000004UL)] // hypot(+0, -4) = 4
+        public static void HypotTest(ulong xUpper, ulong xLower, ulong yUpper, ulong yLower, ulong expectedUpper, ulong expectedLower)
+        {
+            Decimal128 result = Decimal128.Hypot(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(xUpper, xLower)), Unsafe.BitCast<UInt128, Decimal128>(new UInt128(yUpper, yLower)));
+            Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [Theory]
+        [InlineData(3.0, 4.0)]
+        [InlineData(5.0, 12.0)]
+        [InlineData(-8.0, 15.0)]
+        [InlineData(1.0, 1.0)]
+        [InlineData(0.5, 0.25)]
+        [InlineData(1000.0, 0.001)]
+        [InlineData(2.5, -6.5)]
+        public static void HypotAccuracyTest(double x, double y)
+        {
+            // Decimal128 evaluates hypot through the binary128 engine (as Intel does); comparing the result
+            // cast back to binary64 stays within a few ulps of double.Hypot.
+            double expected = double.Hypot(x, y);
+            double actual = (double)Decimal128.Hypot((Decimal128)x, (Decimal128)y);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"hypot({x}, {y}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x7C00000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000001UL)] // pow(NaN, +0) = 1
         [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000001UL)] // pow(2, +0) = 1
         [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0xB040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000001UL)] // pow(2, -0) = 1

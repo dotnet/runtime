@@ -2073,6 +2073,39 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x7C00000000000000UL, 0x7800000000000000UL, 0x7800000000000000UL)] // hypot(NaN, +Infinity) = +Infinity
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL, 0x7800000000000000UL)] // hypot(+Infinity, NaN) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x31C0000000000002UL, 0x7800000000000000UL)] // hypot(-Infinity, 2) = +Infinity
+        [InlineData(0x7C00000000000000UL, 0x31C0000000000002UL, 0x7C00000000000000UL)] // hypot(NaN, 2) = NaN
+        [InlineData(0x31C0000000000002UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // hypot(2, NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x31C0000000000002UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0x31C0000000000002UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL, 0x31C0000000000000UL)] // hypot(+0, +0) = +0
+        [InlineData(0xB1C0000000000003UL, 0x31C0000000000000UL, 0x31C0000000000003UL)] // hypot(-3, +0) = 3
+        [InlineData(0x31C0000000000000UL, 0xB1C0000000000004UL, 0x31C0000000000004UL)] // hypot(+0, -4) = 4
+        public static void HypotTest(ulong x, ulong y, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Hypot(Unsafe.BitCast<ulong, Decimal64>(x), Unsafe.BitCast<ulong, Decimal64>(y))));
+        }
+
+        [Theory]
+        [InlineData(3.0, 4.0)]
+        [InlineData(5.0, 12.0)]
+        [InlineData(-8.0, 15.0)]
+        [InlineData(1.0, 1.0)]
+        [InlineData(0.5, 0.25)]
+        [InlineData(1000.0, 0.001)]
+        [InlineData(2.5, -6.5)]
+        public static void HypotAccuracyTest(double x, double y)
+        {
+            // Decimal64 evaluates hypot through the binary128 engine (as Intel does); comparing the result
+            // cast back to binary64 stays within a few ulps of double.Hypot.
+            double expected = double.Hypot(x, y);
+            double actual = (double)Decimal64.Hypot((Decimal64)x, (Decimal64)y);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"hypot({x}, {y}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x7C00000000000000UL, 0x31C0000000000000UL, 0x31C0000000000001UL)] // pow(NaN, +0) = 1
         [InlineData(0x31C0000000000002UL, 0x31C0000000000000UL, 0x31C0000000000001UL)] // pow(2, +0) = 1
         [InlineData(0x31C0000000000002UL, 0xB1C0000000000000UL, 0x31C0000000000001UL)] // pow(2, -0) = 1

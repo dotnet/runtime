@@ -803,4 +803,55 @@ internal static partial class Number
         Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
         return Float128ToDecimal<TDecimal, TValue>(Float128Cbrt(argument));
     }
+
+    /// <summary>Computes the hypotenuse (sqrt(<paramref name="x" />^2 + <paramref name="y" />^2)).</summary>
+    internal static TValue HypotDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        // An infinite operand yields +inf even when the other operand is NaN.
+        if (TDecimal.IsInfinity(x) || TDecimal.IsInfinity(y))
+        {
+            return TDecimal.PositiveInfinity;
+        }
+
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsNaN(y))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(y);
+        }
+
+        DecodedDecimalIeee754<TValue> dx = UnpackDecimalIeee754<TDecimal, TValue>(x);
+        DecodedDecimalIeee754<TValue> dy = UnpackDecimalIeee754<TDecimal, TValue>(y);
+
+        bool xZero = TValue.IsZero(dx.Significand);
+        bool yZero = TValue.IsZero(dy.Significand);
+
+        // hypot(x, +/-0) = |x| and hypot(+/-0, y) = |y| (which also covers hypot(+/-0, +/-0) = +0).
+        if (yZero)
+        {
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: false, dx.Significand, dx.UnbiasedExponent);
+        }
+
+        if (xZero)
+        {
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: false, dy.Significand, dy.UnbiasedExponent);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double xValue = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            double yValue = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(y);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Hypot(xValue, yValue));
+        }
+
+        // The result depends only on the magnitudes; the engine squares both operands.
+        Float128 xMagnitude = DecimalToFloat128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
+        Float128 yMagnitude = DecimalToFloat128<TDecimal, TValue>(signed: false, dy.UnbiasedExponent, dy.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128Hypot(xMagnitude, yMagnitude));
+    }
 }
