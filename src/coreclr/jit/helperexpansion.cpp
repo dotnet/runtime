@@ -183,12 +183,12 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         return false;
     }
 
-    assert(call->gtArgs.CountArgs() == 2);
+    assert(call->gtArgs.CountUserArgs() == 2);
     // The call has the following signature:
     //
     //   type = call(genericCtx, signatureCns);
     //
-    const GenTree* signatureNode = call->gtArgs.GetArgByIndex(1)->GetNode();
+    const GenTree* signatureNode = call->gtArgs.GetUserArgByIndex(1)->GetNode();
     if (!signatureNode->IsCnsIntOrI())
     {
         // We expect the signature to be a constant node here (it's marked as DONT_CSE)
@@ -260,7 +260,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         gtUpdateStmtSideEffects(stmt);
     }
 
-    GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
+    GenTree* ctxTree = call->gtArgs.GetUserArgByIndex(0)->GetNode();
 
     // Prepare slotPtr tree (TODO: consider sharing this part with impRuntimeLookup)
     GenTree* slotPtrTree   = gtCloneExpr(ctxTree);
