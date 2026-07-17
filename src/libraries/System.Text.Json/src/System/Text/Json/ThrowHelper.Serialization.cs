@@ -968,6 +968,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_InferredDerivedTypeIsNotAccessible(Type baseType, Type derivedType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_InferredDerivedTypeIsNotAccessible, derivedType, baseType));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_InvalidCustomTypeDiscriminatorPropertyName()
         {
             throw new InvalidOperationException(SR.Polymorphism_InvalidCustomTypeDiscriminatorPropertyName);

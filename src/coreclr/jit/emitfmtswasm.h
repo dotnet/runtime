@@ -33,6 +33,7 @@ IF_DEF(RAW_ULEB128,   IS_NONE, NONE) // <ULEB128 immediate>
 IF_DEF(CODE_SIZE,     IS_NONE, NONE)
 IF_DEF(ULEB128,       IS_NONE, NONE) // <opcode> <ULEB128 immediate>
 IF_DEF(FUNCIDX,       IS_NONE, NONE) // <opcode> <ULEB128 immediate (function index reloc)>
+IF_DEF(GLOBALIDX,     IS_NONE, NONE) // <opcode> <ULEB128 immediate (global index reloc)>
 IF_DEF(SLEB128,       IS_NONE, NONE) // <opcode> <LEB128 immediate (signed)>
 IF_DEF(MEMADDR,       IS_NONE, NONE) // <opcode> <SLEB128 immediate (memory address reloc)>
 IF_DEF(FUNCPTR,       IS_NONE, NONE) // <opcode> <SLEB128 immediate (function pointer reloc)>
