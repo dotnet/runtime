@@ -295,6 +295,9 @@ namespace ILVerify
 
             foreach (var attribute in accessingAssembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "IgnoresAccessChecksToAttribute"))
             {
+                // The attribute argument is an assembly name; it is typically just the simple name.
+                // Matching on the simple name mirrors the runtime, which matches by name when the
+                // declared name omits a public key token (see FriendAssemblyDescriptor::IsAssemblyOnList).
                 AssemblyNameInfo ignoredName = AssemblyNameInfo.Parse(((string)attribute.FixedArguments[0].Value).AsSpan());
                 if (accessedName.Name.Equals(ignoredName.Name, StringComparison.OrdinalIgnoreCase))
                     return true;
