@@ -1094,8 +1094,9 @@ namespace System.IO.Tests
             if (SkipOnWasi(mode)) return;
 
             const int Length = 1024;
+            const int Copies = 3;
 
-            using Stream? stream = await CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream(new byte[Length * Copies]);
             if (stream is null)
             {
                 return;
@@ -1103,7 +1104,6 @@ namespace System.IO.Tests
 
             byte[] expected = GetRandomBytes(Length);
 
-            const int Copies = 3;
             for (int i = 0; i < Copies; i++)
             {
                 await WriteAsync(mode, stream, expected, 0, expected.Length);
@@ -1117,6 +1117,42 @@ namespace System.IO.Tests
                 int bytesRead = await ReadAllAsync(mode, stream, actual, 0, actual.Length);
                 AssertExtensions.SequenceEqual(expected, actual);
                 Array.Clear(actual, 0, actual.Length);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public virtual async Task Write_GrowsLength_Success(ReadWriteMode mode)
+        {
+            if (SkipOnWasi(mode)) return;
+
+            // Start from an empty stream. Streams that cannot produce an empty read-write instance
+            // (e.g. fixed-capacity streams that require initial data) return null and are skipped.
+            using Stream? stream = await CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            const int Length = 1024;
+            byte[] expected = GetRandomBytes(Length);
+
+            if (stream.CanSeek)
+            {
+                Assert.Equal(0, stream.Length);
+            }
+
+            await WriteAsync(mode, stream, expected, 0, expected.Length);
+
+            if (stream.CanSeek)
+            {
+                Assert.Equal(Length, stream.Position);
+                Assert.Equal(Length, stream.Length);
+
+                stream.Position = 0;
+                byte[] actual = new byte[Length];
+                Assert.Equal(Length, await ReadAllAsync(mode, stream, actual, 0, actual.Length));
+                AssertExtensions.SequenceEqual(expected, actual);
             }
         }
 

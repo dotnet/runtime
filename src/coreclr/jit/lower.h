@@ -524,6 +524,7 @@ private:
     GenTree* LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node);
+    void     LowerHWIntrinsicSwizzle(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types type,
                                                  GenTree*  op1,
