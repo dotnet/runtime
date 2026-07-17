@@ -2555,7 +2555,11 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
 
     if (castIsLoad)
     {
-        const var_types srcLoadType = src->TypeGet();
+        // A spill temp holds the full actual-type value, already extended per the source's own
+        // signedness, so it must be reloaded as that actual type rather than as a small memory
+        // operand -- otherwise a signed small source (e.g. TYP_BYTE) reloaded under a zero-extending
+        // cast would drop the sign bits it actually holds.
+        const var_types srcLoadType = src->isUsedFromSpillTemp() ? srcType : src->TypeGet();
 
         switch (m_extendKind)
         {
