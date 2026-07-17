@@ -1394,7 +1394,9 @@ HRESULT CordbThread::FindFrame(ICorDebugFrame ** ppFrame, FramePointer fp)
         CordbFrame * pCFrame = CordbFrame::GetCordbFrameFromInterface(pIFrame);
 
         IDacDbiInterface::TargetInfo targetInfo;
-        IfFailRet(GetProcess()->GetTargetInfo(&targetInfo));
+        HRESULT hr = GetProcess()->GetTargetInfo(&targetInfo);
+        if (FAILED(hr))
+            return hr;
         bool frameMatches = targetInfo.arch == IDacDbiInterface::kArchX86 ? pCFrame->IsContainedInFrame(fp) : pCFrame->GetFramePointer() == fp;
         if (frameMatches)
         {
@@ -3812,7 +3814,9 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
     }
 
     IDacDbiInterface::TargetInfo targetInfo;
-    IfFailRet(GetProcess()->GetTargetInfo(&targetInfo));
+    HRESULT hr = GetProcess()->GetTargetInfo(&targetInfo);
+    if (FAILED(hr))
+        return hr;
     if (targetInfo.arch != IDacDbiInterface::kArchX86)
     {
         // On X86 Debugger::GenericHijackFunc() ensures the stack is walkable
@@ -8366,10 +8370,15 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
                     hr = E_NOTIMPL;
                     break;
                 case IDacDbiInterface::kArchArm64:
-                case IDacDbiInterface::kArchAMD64:
                 case IDacDbiInterface::kArchLoongArch64:
                 case IDacDbiInterface::kArchRiscV64:
                     hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg, type, ppValue);
+                    break;
+                case IDacDbiInterface::kArchAMD64:
+                    hr = m_nativeFrame->GetLocalFloatingPointValue(
+                        pNativeVarInfo->loc.vlReg.vlrReg - ICorDebugInfo::REGNUM_FP_FIRST,
+                        type,
+                        ppValue);
                     break;
                 default:
                     hr = CORDBG_E_IL_VAR_NOT_AVAILABLE;
