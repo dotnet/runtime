@@ -163,7 +163,7 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
 
     auto GetIntCmpOpName = [&](const char* suffix) -> const char* {
         static const char* const intCmpOpNames[] = {
-            "eq", "lt", "le", "neq", "false", "ge", "gt", "true",
+            "eq", "lt", "le", "false", "neq", "ge", "gt", "true",
         };
 
         uint8_t control = static_cast<uint8_t>(emit->emitGetInsSC(id));
@@ -1136,18 +1136,15 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
                     {
                         assert(simdBaseType == TYP_DOUBLE);
                     }
-                    // If broadcast node is contained, should mean that we have some forms like
-                    // Broadcast -> CreateScalarUnsafe -> Scalar.
-                    // If so, directly emit scalar.
-                    // In the code below, we specially handle the `Broadcast -> CNS_INT/CNS_LNG` form and
-                    // handle other cases recursively.
+                    // A contained broadcast wraps its scalar operand directly (any CreateScalar/Unsafe
+                    // wrapper was removed during lowering). We specially handle the
+                    // `Broadcast -> CNS_INT/CNS_LNG` form below and handle other cases recursively.
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
                     assert(hwintrinsicChild->isContained());
                     if (hwintrinsicChild->IsIntegralConst())
                     {
-                        // a special case is when the operand of CreateScalarUnsafe is an integer type,
-                        // CreateScalarUnsafe node will be folded, so we directly match a pattern of
-                        // broadcast -> LCL_VAR(TYP_(U)INT/LONG)
+                        // A broadcast over an integral constant is materialized as a data constant
+                        // that we can read directly from memory.
                         INT64          scalarValue = hwintrinsicChild->AsIntConCommon()->IntegralValue();
                         UNATIVE_OFFSET cnum        = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
                                                                          genTypeSize(simdBaseType), simdBaseType);
@@ -1160,24 +1157,6 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
                         return genOperandDesc(ins, hwintrinsicChild);
                     }
                     break;
-                }
-
-                case NI_Vector128_CreateScalar:
-                case NI_Vector256_CreateScalar:
-                case NI_Vector512_CreateScalar:
-                case NI_Vector128_CreateScalarUnsafe:
-                case NI_Vector256_CreateScalarUnsafe:
-                case NI_Vector512_CreateScalarUnsafe:
-                {
-                    // The hwintrinsic should be contained and its
-                    // op1 should be either contained or spilled. This
-                    // allows us to transparently "look through" the
-                    // CreateScalar/Unsafe and treat it directly like
-                    // a load from memory.
-
-                    assert(hwintrinsic->isContained());
-                    op = hwintrinsic->Op(1);
-                    return genOperandDesc(ins, op);
                 }
 
                 default:

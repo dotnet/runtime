@@ -35,6 +35,92 @@ public struct FieldData
     public ulong m_vmFieldDesc;
 }
 
+public enum VarLocType
+{
+    VLT_REG,
+    VLT_REG_BYREF,
+    VLT_REG_FP,
+    VLT_STK,
+    VLT_STK_BYREF,
+    VLT_REG_REG,
+    VLT_REG_STK,
+    VLT_STK_REG,
+    VLT_STK2,
+    VLT_FPSTK,
+    VLT_FIXED_VA,
+    VLT_COUNT,
+    VLT_INVALID,
+}
+
+// Mirrors the native ICorDebugInfo::VarLoc tagged union: a VarLocType selector plus a union
+// payload, modelled as three 4-byte slots with typed accessors per VarLocType below.
+[StructLayout(LayoutKind.Sequential)]
+public struct VarLoc
+{
+    public VarLocType vlType;
+
+    private uint _field1;
+    private int _field2;
+    private int _field3;
+
+    // vlReg / vlReg_BYREF
+    public uint vlrReg { get => _field1; set => _field1 = value; }
+
+    // vlStk / vlStk_BYREF / vlStk2
+    public uint vlsBaseReg { get => _field1; set => _field1 = value; }
+    public int vlsOffset { get => _field2; set => _field2 = value; }
+
+    // vlRegReg
+    public uint vlrrReg1 { get => _field1; set => _field1 = value; }
+    public uint vlrrReg2 { get => (uint)_field2; set => _field2 = (int)value; }
+
+    // vlRegStk
+    public uint vlrsReg { get => _field1; set => _field1 = value; }
+    public uint vlrssBaseReg { get => (uint)_field2; set => _field2 = (int)value; }
+    public int vlrssOffset { get => _field3; set => _field3 = value; }
+
+    // vlStkReg
+    public uint vlsrsBaseReg { get => _field1; set => _field1 = value; }
+    public int vlsrsOffset { get => _field2; set => _field2 = value; }
+    public uint vlsrReg { get => (uint)_field3; set => _field3 = (int)value; }
+
+    // vlFPstk
+    public uint vlfReg { get => _field1; set => _field1 = value; }
+
+    // vlFixedVarArg
+    public uint vlfvOffset { get => _field1; set => _field1 = value; }
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct NativeVarInfo
+{
+    public uint startOffset;
+    public uint endOffset;
+    public uint callReturnValueILOffset;
+    public uint varNumber;
+    public VarLoc loc;
+}
+
+[Flags]
+public enum DbiSourceTypes : uint
+{
+    SourceTypeInvalid = 0x00,
+    SequencePoint = 0x01,
+    StackEmpty = 0x02,
+    CallSite = 0x04,
+    NativeEndOffsetUnknown = 0x08,
+    CallInstruction = 0x10,
+    Async = 0x20,
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbiOffsetMapping
+{
+    public uint nativeOffset;
+    public uint ilOffset;
+    public DbiSourceTypes source;
+}
+
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 
 [StructLayout(LayoutKind.Sequential)]
@@ -224,14 +310,10 @@ public struct DebuggerIPCE_STRData_StubFrame
     public int frameType;                          // CorDebugInternalFrameType
 }
 
-// Holds data for each stack frame or chain. This data is passed from the RC to
-// the DI during a stack walk. Mirrors the native Debugger_STRData struct
-// defined in src/coreclr/debug/inc/dbgipcevents.h.
-//
-// `ctx` is a pointer into dbi-allocated memory.
-// The DAC writes the populated context through this pointer rather
-// than storing it inline. Code paths that do not produce a context
-// (e.g. EnumerateInternalFrames for cStubFrame entries) leave it as 0.
+// Holds data for each stack frame or chain, passed from the RC to the DI during a
+// stack walk. Mirrors the native Debugger_STRData in src/coreclr/debug/inc/dacdbistructures.h.
+// ctx is a host-sized pointer to a dbi-allocated DT_CONTEXT buffer the DAC writes through;
+// paths that produce no context (e.g. EnumerateInternalFrames cStubFrame entries) leave it 0.
 [StructLayout(LayoutKind.Explicit)]
 public struct Debugger_STRData
 {
@@ -242,10 +324,11 @@ public struct Debugger_STRData
         cRuntimeNativeFrame = 2,
     }
 
-    [FieldOffset(0)] public ulong fp;                           // FramePointer
-    [FieldOffset(8)] public ulong ctx;                          // DT_CONTEXT*
+    [FieldOffset(0)] public ulong fp;                           // FramePointer (CORDB_ADDRESS)
+    [FieldOffset(8)] public nuint ctx;                          // DT_CONTEXT* (host-sized)
     [FieldOffset(16)] public ulong vmCurrentAppDomainToken;     // VMPTR_AppDomain
     [FieldOffset(24)] public EType eType;
+    // v (method frame) and stubFrame overlap, mirroring the native anonymous union.
     [FieldOffset(32)] public DebuggerIPCE_STRData_MethodFrame v;
     [FieldOffset(32)] public DebuggerIPCE_STRData_StubFrame stubFrame;
 }
@@ -366,6 +449,7 @@ public enum CorDebugUserState
     USER_UNSTARTED = 0x08,
     USER_STOPPED = 0x10,
     USER_WAIT_SLEEP_JOIN = 0x20,
+    USER_UNSAFE_POINT = 0x80,
     USER_THREADPOOL = 0x100,
 }
 
@@ -536,7 +620,7 @@ public unsafe partial interface IDacDbiInterface
     int ResolveAssembly(ulong vmScope, uint tkAssemblyRef, ulong* pRetVal);
 
     [PreserveSig]
-    int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, Interop.BOOL fCodeAvailable, nint pNativeVarData, nint pSequencePoints);
+    int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, Interop.BOOL fCodeAvailable, uint* pFixedArgCount, delegate* unmanaged<NativeVarInfo*, void*, void> fpVarInfoCallback, delegate* unmanaged<DbiOffsetMapping*, void*, void> fpSeqPointCallback, nint pUserData);
 
     [PreserveSig]
     int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal);
@@ -570,9 +654,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetStackParameterSize(ulong controlPC, uint* pRetVal);
-
-    [PreserveSig]
-    int GetFramePointer(nuint pSFIHandle, ulong* pRetVal);
 
     [PreserveSig]
     int IsLeafFrame(ulong vmThread, byte* pContext, Interop.BOOL* pResult);

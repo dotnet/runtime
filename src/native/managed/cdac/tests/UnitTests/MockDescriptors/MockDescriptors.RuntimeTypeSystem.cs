@@ -108,6 +108,7 @@ internal sealed class MockEEClass : TypedView
     private const string FieldDescListFieldName = nameof(Data.EEClass.FieldDescList);
     private const string NumNonVirtualSlotsFieldName = nameof(Data.EEClass.NumNonVirtualSlots);
     private const string BaseSizePaddingFieldName = nameof(Data.EEClass.BaseSizePadding);
+    private const string OptionalFieldsFieldName = nameof(Data.EEClass.OptionalFields);
 
     public static Layout<MockEEClass> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("EEClass", architecture)
@@ -122,6 +123,7 @@ internal sealed class MockEEClass : TypedView
             .AddPointerField(FieldDescListFieldName)
             .AddUInt16Field(NumNonVirtualSlotsFieldName)
             .AddByteField(BaseSizePaddingFieldName)
+            .AddPointerField(OptionalFieldsFieldName)
             .Build<MockEEClass>();
 
     public ulong MethodTable
@@ -152,6 +154,18 @@ internal sealed class MockEEClass : TypedView
     {
         get => ReadUInt16Field(NumInstanceFieldsFieldName);
         set => WriteUInt16Field(NumInstanceFieldsFieldName, value);
+    }
+
+    public ushort NumStaticFields
+    {
+        get => ReadUInt16Field(NumStaticFieldsFieldName);
+        set => WriteUInt16Field(NumStaticFieldsFieldName, value);
+    }
+
+    public ulong FieldDescList
+    {
+        get => ReadPointerField(FieldDescListFieldName);
+        set => WritePointerField(FieldDescListFieldName, value);
     }
 
     public ushort NumNonVirtualSlots
@@ -206,6 +220,38 @@ internal class MockTypeDesc : TypedView
     {
         get => ReadUInt32Field(TypeAndFlagsFieldName);
         set => WriteUInt32Field(TypeAndFlagsFieldName, value);
+    }
+}
+
+internal sealed class MockFieldDesc : TypedView
+{
+    private const string DWord1FieldName = nameof(Data.FieldDesc.DWord1);
+    private const string DWord2FieldName = nameof(Data.FieldDesc.DWord2);
+    private const string MTOfEnclosingClassFieldName = nameof(Data.FieldDesc.MTOfEnclosingClass);
+
+    public static Layout<MockFieldDesc> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("FieldDesc", architecture)
+            .AddUInt32Field(DWord1FieldName)
+            .AddUInt32Field(DWord2FieldName)
+            .AddPointerField(MTOfEnclosingClassFieldName)
+            .Build<MockFieldDesc>();
+
+    public uint DWord1
+    {
+        get => ReadUInt32Field(DWord1FieldName);
+        set => WriteUInt32Field(DWord1FieldName, value);
+    }
+
+    public uint DWord2
+    {
+        get => ReadUInt32Field(DWord2FieldName);
+        set => WriteUInt32Field(DWord2FieldName, value);
+    }
+
+    public ulong MTOfEnclosingClass
+    {
+        get => ReadPointerField(MTOfEnclosingClassFieldName);
+        set => WritePointerField(MTOfEnclosingClassFieldName, value);
     }
 }
 
@@ -322,6 +368,7 @@ internal partial class MockDescriptors
         internal Layout<MockFnPtrTypeDesc> FnPtrTypeDescLayout { get; }
         internal Layout<MockParamTypeDesc> ParamTypeDescLayout { get; }
         internal Layout<MockTypeVarTypeDesc> TypeVarTypeDescLayout { get; }
+        internal Layout<MockFieldDesc> FieldDescLayout { get; }
         internal Layout<MockGCCoverageInfo> GCCoverageInfoLayout { get; }
 
         internal MockEEClass SystemObjectEEClass { get; private set; } = null!;
@@ -357,6 +404,7 @@ internal partial class MockDescriptors
             FnPtrTypeDescLayout = MockFnPtrTypeDesc.CreateLayout(Builder.TargetTestHelpers.Arch);
             ParamTypeDescLayout = MockParamTypeDesc.CreateLayout(Builder.TargetTestHelpers.Arch);
             TypeVarTypeDescLayout = MockTypeVarTypeDesc.CreateLayout(Builder.TargetTestHelpers.Arch);
+            FieldDescLayout = MockFieldDesc.CreateLayout(Builder.TargetTestHelpers.Arch);
             GCCoverageInfoLayout = MockGCCoverageInfo.CreateLayout(Builder.TargetTestHelpers.Arch);
 
             AddGlobalPointers();
@@ -490,6 +538,36 @@ internal partial class MockDescriptors
 
         internal MockTypeVarTypeDesc AddTypeVarTypeDesc()
             => Add(TypeVarTypeDescLayout, "TypeVarTypeDesc");
+
+        // Value of the native FieldDesc::m_dwOffset sentinel FIELD_OFFSET_BIG_RVA (FIELD_OFFSET_MAX - 5,
+        // where FIELD_OFFSET_MAX == (1 << 27) - 1). See src/coreclr/vm/field.h.
+        internal const uint FieldOffsetBigRVAValue = ((1u << 27) - 1) - 5;
+
+        // Allocates a FieldDesc whose packed DWord2 stores the given 5-bit field type and 27-bit offset.
+        internal MockFieldDesc AddFieldDesc(ulong mtOfEnclosingClass, CorElementType type, uint offset, uint memberDef = 0)
+        {
+            MockFieldDesc fieldDesc = Add(FieldDescLayout, "FieldDesc");
+            fieldDesc.MTOfEnclosingClass = mtOfEnclosingClass;
+            fieldDesc.DWord1 = memberDef & 0x00ffffff; // low 24 bits hold the token RID
+            fieldDesc.DWord2 = ((uint)type << 27) | (offset & 0x07ffffff);
+            return fieldDesc;
+        }
+
+        // Allocates `count` FieldDescs contiguously (matching the runtime's packed FieldDesc array), each
+        // recording `mtOfEnclosingClass`, and returns the address of the first one.
+        internal TargetPointer AddFieldDescList(ulong mtOfEnclosingClass, int count)
+        {
+            uint size = (uint)FieldDescLayout.Size;
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate((ulong)count * size, "FieldDesc array");
+            for (int i = 0; i < count; i++)
+            {
+                MockFieldDesc fieldDesc = FieldDescLayout.Create(
+                    fragment.Data.AsMemory((int)((uint)i * size), (int)size),
+                    fragment.Address + (uint)i * size);
+                fieldDesc.MTOfEnclosingClass = mtOfEnclosingClass;
+            }
+            return fragment.Address;
+        }
 
         private TView Add<TView>(Layout<TView> layout, string name)
             where TView : TypedView, new()

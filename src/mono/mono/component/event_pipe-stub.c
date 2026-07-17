@@ -27,7 +27,7 @@ static void
 event_pipe_stub_shutdown (void);
 
 static EventPipeSessionID
-event_pipe_stub_enable (
+event_pipe_stub_init_session (
 	const ep_char8_t *output_path,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfigurationNative *providers,
@@ -50,7 +50,7 @@ static EventPipeWaitHandle
 event_pipe_stub_get_wait_handle (EventPipeSessionID session_id);
 
 static void
-event_pipe_stub_start_streaming (EventPipeSessionID session_id);
+event_pipe_stub_start_session (EventPipeSessionID session_id);
 
 static void
 event_pipe_stub_write_event_2 (
@@ -230,11 +230,11 @@ static MonoComponentEventPipe fn_table = {
 	&event_pipe_stub_init,
 	&event_pipe_stub_finish_init,
 	&event_pipe_stub_shutdown,
-	&event_pipe_stub_enable,
+	&event_pipe_stub_init_session,
 	&event_pipe_stub_disable,
 	&event_pipe_stub_get_next_event,
 	&event_pipe_stub_get_wait_handle,
-	&event_pipe_stub_start_streaming,
+	&event_pipe_stub_start_session,
 	&event_pipe_stub_write_event_2,
 	&event_pipe_stub_add_rundown_execution_checkpoint,
 	&event_pipe_stub_add_rundown_execution_checkpoint_2,
@@ -288,7 +288,7 @@ event_pipe_stub_shutdown (void)
 }
 
 static EventPipeSessionID
-event_pipe_stub_enable (
+event_pipe_stub_init_session (
 	const ep_char8_t *output_path,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfigurationNative *providers,
@@ -322,7 +322,7 @@ event_pipe_stub_get_wait_handle (EventPipeSessionID session_id)
 }
 
 static void
-event_pipe_stub_start_streaming (EventPipeSessionID session_id)
+event_pipe_stub_start_session (EventPipeSessionID session_id)
 {
 }
 

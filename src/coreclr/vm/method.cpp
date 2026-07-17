@@ -829,7 +829,10 @@ BOOL MethodDesc::HasSameMethodDefAs(MethodDesc * pMD)
     if (this == pMD)
         return TRUE;
 
-    return (GetMemberDef() == pMD->GetMemberDef()) && (GetModule() == pMD->GetModule() && pMD->IsAsyncVariantMethod() == IsAsyncVariantMethod());
+    return (GetMemberDef() == pMD->GetMemberDef()) &&
+        (GetModule() == pMD->GetModule()) &&
+        (pMD->IsAsyncVariantMethod() == IsAsyncVariantMethod()) &&
+        (pMD->IsReturnDroppingThunk() == IsReturnDroppingThunk());
 }
 
 //*******************************************************************************
@@ -1954,6 +1957,9 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
     // This is the static method descriptor describing the call.
     // It is not the destination of the call, which we must compute.
     MethodDesc* pStaticMD = this;
+
+    // Return dropping thunks should only be called virtually through base
+    _ASSERTE(!pStaticMD->IsReturnDroppingThunk());
 
     // Strip off the method instantiation if present
     MethodDesc* pStaticMDWithoutGenericMethodArgs = pStaticMD->StripMethodInstantiation();

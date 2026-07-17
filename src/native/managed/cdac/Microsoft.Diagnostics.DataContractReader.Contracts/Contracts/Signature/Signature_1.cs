@@ -73,8 +73,8 @@ internal sealed class Signature_1 : ISignature
     {
         Data.VASigCookie cookie = GetCookie(vaSigCookieAddr);
 
-        signatureAddress = cookie.SignaturePointer;
-        signatureLength = cookie.SignatureLength;
+        signatureAddress = cookie.Signature.SignaturePointer;
+        signatureLength = cookie.Signature.SignatureLength;
         Debug.Assert(signatureAddress != TargetPointer.Null || signatureLength == 0,
             "VASigCookie has a non-zero signature length but a null signature pointer.");
     }

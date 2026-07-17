@@ -302,6 +302,8 @@ pal_char_t* pal_get_default_installation_dir(void)
     }
 
     return pal_strdup(_X("/usr/local/share/dotnet"));
+#elif defined(TARGET_OPENBSD)
+    return pal_strdup(_X("/usr/local/share/dotnet"));
 #else
     return pal_strdup(_X("/usr/share/dotnet"));
 #endif
