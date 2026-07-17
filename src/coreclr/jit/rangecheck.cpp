@@ -1529,7 +1529,8 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                                       canUseCheckedBounds, budget - 1, visited);
 
             if (boundRange.LowerLimit().IsConstant() && (boundRange.LowerLimit().GetConstant() >= 0) &&
-                boundRange.UpperLimit().IsBinOpArray() && (boundRange.UpperLimit().vn == preferredBoundVN))
+                boundRange.UpperLimit().IsBinOpArray() && (boundRange.UpperLimit().vn == preferredBoundVN) &&
+                (boundRange.UpperLimit().GetConstant() <= 0))
             {
                 cmpOper    = GT_LT;
                 limit      = boundRange.UpperLimit();
