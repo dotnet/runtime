@@ -6759,7 +6759,6 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
     // The address of the given register is the address of the value
     // in this process. We have no remote address here.
     void *pLocalValue = (void*)GetAddressOfRegister(reg);
-    HRESULT hr = S_OK;
 
     EX_TRY
     {
