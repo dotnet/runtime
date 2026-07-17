@@ -284,7 +284,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         }
         break;
 
-#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+#endif // defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_WASM))
 
 
         case GT_INDEX_ADDR:

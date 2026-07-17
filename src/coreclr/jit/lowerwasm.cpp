@@ -886,7 +886,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_PackedSimd_LoadScalarVector128:
         case NI_PackedSimd_LoadWideningVector128:
         {
-            // These intrinsics don't a required immediate operand
+            // These intrinsics don't require an immediate operand
             assert(!hasImmOp);
             break;
         }
