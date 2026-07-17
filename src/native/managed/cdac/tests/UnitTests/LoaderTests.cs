@@ -73,9 +73,32 @@ public unsafe class LoaderTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetFileName(MockTarget.Architecture arch)
+    public void Module_NoCodeVersioning_MethodDefToILCodeVersioningStateMapIsNull(MockTarget.Architecture arch)
     {
-        string expected = $"TestModule.dll";
+        // On builds without code versioning (e.g. WASM, FEATURE_CODE_VERSIONING off) the Module
+        // layout omits MethodDefToILCodeVersioningStateMap. Reading it must yield null rather than
+        // throwing "Field not found in any layout", so type/module resolution keeps working.
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockLoaderBuilder loader = new(targetBuilder.MemoryBuilder, (0x0001_0000, 0x0002_0000), includeCodeVersioning: false);
+
+        ulong moduleAddr = loader.AddModule().Address;
+
+        var target = targetBuilder
+            .AddTypes(CreateContractTypes(loader))
+            .AddContract<ILoader>(version: "c1")
+            .Build();
+
+        Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(new TargetPointer(moduleAddr));
+
+        // The absent code-versioning map reads as null; a present map still resolves to an address.
+        Assert.Null(module.MethodDefToILCodeVersioningStateMap);
+        Assert.NotEqual(TargetPointer.Null, module.MethodDefToDescMap);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetFileName(MockTarget.Architecture arch)
+    {        string expected = $"TestModule.dll";
         TargetPointer moduleAddr = TargetPointer.Null;
         TargetPointer moduleAddrEmptyName = TargetPointer.Null;
 

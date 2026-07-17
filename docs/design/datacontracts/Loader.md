@@ -700,8 +700,12 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         MethodDefToDescMap: target.ReadPointer(handle.Address + /* Module::MethodDefToDescMap */),
         TypeDefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */),
         TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */),
-        MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
-        Module::MethodDefToILCodeVersioningState */),
+        // Module::MethodDefToILCodeVersioningState is only present when the target was built
+        // with code versioning (FEATURE_CODE_VERSIONING). When absent (e.g. on WASM) it is
+        // treated as a null (empty) table.
+        MethodDefToILCodeVersioningState: HasField(Module::MethodDefToILCodeVersioningState)
+            ? target.ReadPointer(handle.Address + /* Module::MethodDefToILCodeVersioningState */)
+            : TargetPointer.Null,
         TableDataOffset: tableDataOffset);
 }
 
