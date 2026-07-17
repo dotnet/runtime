@@ -536,4 +536,236 @@ internal static partial class Number
 
         return Float128ToDecimal<TDecimal, TValue>(result128);
     }
+
+    /// <summary>
+    /// Returns whether the finite value <c>significand * 10^unbiasedExponent</c> is an integer and, when
+    /// it is, whether that integer is odd. Tested in the decimal domain so it is exact for every format.
+    /// </summary>
+    private static bool DecimalIeee754IsInteger<TDecimal, TValue>(int unbiasedExponent, TValue significand, out bool isOdd)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TValue.IsZero(significand))
+        {
+            // Zero is an even integer.
+            isOdd = false;
+            return true;
+        }
+
+        if (unbiasedExponent >= 0)
+        {
+            // A positive exponent multiplies in a factor of ten, so the value is odd only when the
+            // exponent is zero and the significand itself is odd.
+            isOdd = (unbiasedExponent == 0) && !TValue.IsZero(significand & TValue.One);
+            return true;
+        }
+
+        int k = -unbiasedExponent;
+
+        if (k >= TDecimal.Precision)
+        {
+            // 10^k exceeds the largest representable coefficient, so the value has a fractional part.
+            isOdd = false;
+            return false;
+        }
+
+        (TValue quotient, TValue remainder) = TValue.DivRem(significand, TDecimal.Power10(k));
+
+        if (!TValue.IsZero(remainder))
+        {
+            isOdd = false;
+            return false;
+        }
+
+        isOdd = !TValue.IsZero(quotient & TValue.One);
+        return true;
+    }
+
+    /// <summary>
+    /// Compares the magnitude of the finite, non-zero value <c>significand * 10^unbiasedExponent</c> to
+    /// one, returning a negative value, zero, or a positive value. Tested in the decimal domain so the
+    /// classification is exact for every format.
+    /// </summary>
+    private static int DecimalIeee754CompareMagnitudeToOne<TDecimal, TValue>(int unbiasedExponent, TValue significand)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (unbiasedExponent > 0)
+        {
+            // significand >= 1 scaled up by a positive power of ten is at least ten.
+            return 1;
+        }
+
+        if (unbiasedExponent == 0)
+        {
+            return significand == TValue.One ? 0 : 1;
+        }
+
+        int k = -unbiasedExponent;
+
+        if (k >= TDecimal.Precision)
+        {
+            // significand < 10^Precision <= 10^k, so the value is below one.
+            return -1;
+        }
+
+        TValue power = TDecimal.Power10(k);
+
+        if (significand == power)
+        {
+            return 0;
+        }
+
+        return significand > power ? 1 : -1;
+    }
+
+    /// <summary>Computes <c>x^y</c> (Intel routes Decimal32 through <c>double</c>, wider formats through
+    /// the binary128 engine).</summary>
+    internal static TValue PowDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        bool xNaN = TDecimal.IsNaN(x);
+        bool yNaN = TDecimal.IsNaN(y);
+        bool xInf = TDecimal.IsInfinity(x);
+        bool yInf = TDecimal.IsInfinity(y);
+
+        // The decoded fields are only read on the finite paths below.
+        DecodedDecimalIeee754<TValue> dx = default;
+        DecodedDecimalIeee754<TValue> dy = default;
+
+        if (!xNaN && !xInf)
+        {
+            dx = UnpackDecimalIeee754<TDecimal, TValue>(x);
+        }
+
+        if (!yNaN && !yInf)
+        {
+            dy = UnpackDecimalIeee754<TDecimal, TValue>(y);
+        }
+
+        // pow(x, +/-0) = 1 for every x, including NaN.
+        if (!yNaN && !yInf && TValue.IsZero(dy.Significand))
+        {
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: false, TValue.One, 0);
+        }
+
+        // pow(+1, y) = 1 for every y, including NaN.
+        if (!xNaN && !xInf && !dx.Signed
+            && DecimalIeee754MagnitudeIsOne<TDecimal, TValue>(dx.UnbiasedExponent, dx.Significand))
+        {
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: false, TValue.One, 0);
+        }
+
+        if (xNaN)
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (yNaN)
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(y);
+        }
+
+        bool yNegative = TDecimal.IsNegative(y);
+        bool yIsOddInteger = false;
+        bool yIsInteger = false;
+
+        if (!yInf)
+        {
+            yIsInteger = DecimalIeee754IsInteger<TDecimal, TValue>(dy.UnbiasedExponent, dy.Significand, out yIsOddInteger);
+        }
+
+        // y is +/-Infinity: the result depends only on how |x| compares to one.
+        if (yInf)
+        {
+            int cmp;
+
+            if (xInf)
+            {
+                cmp = 1;
+            }
+            else if (TValue.IsZero(dx.Significand))
+            {
+                cmp = -1;
+            }
+            else
+            {
+                cmp = DecimalIeee754CompareMagnitudeToOne<TDecimal, TValue>(dx.UnbiasedExponent, dx.Significand);
+            }
+
+            if (cmp == 0)
+            {
+                // pow(+/-1, +/-inf) = 1.
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: false, TValue.One, 0);
+            }
+
+            // |x| > 1 with +inf, or |x| < 1 with -inf, diverges to +inf; the complements go to +0.
+            return ((cmp > 0) != yNegative)
+                ? TDecimal.PositiveInfinity
+                : DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: false, TValue.Zero, 0);
+        }
+
+        // x is +/-Infinity (y is finite and non-zero here).
+        if (xInf)
+        {
+            bool resultNegative = TDecimal.IsNegative(x) && yIsOddInteger;
+
+            if (!yNegative)
+            {
+                // pow(+/-inf, y > 0) = +/-inf.
+                return resultNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            // pow(+/-inf, y < 0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultNegative, TValue.Zero, 0);
+        }
+
+        // x is +/-0 (y is finite and non-zero here).
+        if (TValue.IsZero(dx.Significand))
+        {
+            bool resultNegative = dx.Signed && yIsOddInteger;
+
+            if (!yNegative)
+            {
+                // pow(+/-0, y > 0) = +/-0.
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultNegative, TValue.Zero, 0);
+            }
+
+            // pow(+/-0, y < 0) = +/-inf.
+            return resultNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+        }
+
+        // A finite negative base raised to a non-integer power is invalid.
+        if (dx.Signed && !yIsInteger)
+        {
+            return TDecimal.NaNMask;
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double xValue = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            double yValue = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(y);
+            double result = double.Pow(xValue, yValue);
+
+            if (double.IsNaN(result))
+            {
+                return TDecimal.NaNMask;
+            }
+
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
+        }
+
+        // The engine evaluates |x|^y; a negative base with an odd integer exponent carries the sign.
+        Float128 baseValue = DecimalToFloat128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
+        Float128 exponentValue = DecimalToFloat128<TDecimal, TValue>(dy.Signed, dy.UnbiasedExponent, dy.Significand);
+        Float128 magnitude = Float128Pow(baseValue, exponentValue);
+
+        if (dx.Signed && yIsOddInteger)
+        {
+            magnitude = new Float128(1u, magnitude._exponent, magnitude._hi, magnitude._lo);
+        }
+
+        return Float128ToDecimal<TDecimal, TValue>(magnitude);
+    }
 }

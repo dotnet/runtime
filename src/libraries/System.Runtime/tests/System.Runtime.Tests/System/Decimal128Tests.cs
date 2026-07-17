@@ -2049,6 +2049,61 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x7C00000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000001UL)] // pow(NaN, +0) = 1
+        [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000001UL)] // pow(2, +0) = 1
+        [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0xB040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000001UL)] // pow(2, -0) = 1
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL, 0x7C00000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000001UL)] // pow(1, NaN) = 1
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL, 0x7800000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000001UL)] // pow(1, +Infinity) = 1
+        [InlineData(0x7C00000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000002UL, 0x7C00000000000000UL, 0x0000000000000000UL)] // pow(NaN, 2) = NaN
+        [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x7C00000000000000UL, 0x0000000000000000UL, 0x7C00000000000000UL, 0x0000000000000000UL)] // pow(2, NaN) = NaN
+        [InlineData(0x7C00000000000000UL, 0x0000000000001234UL, 0x3040000000000000UL, 0x0000000000000002UL, 0x7C00000000000000UL, 0x0000000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC00400000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000002UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // out-of-range NaN payload cleared
+        [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x7800000000000000UL, 0x0000000000000000UL, 0x7800000000000000UL, 0x0000000000000000UL)] // pow(2, +Infinity) = +Infinity (|x| > 1)
+        [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0xF800000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000000UL)] // pow(2, -Infinity) = +0
+        [InlineData(0xB040000000000000UL, 0x0000000000000001UL, 0x7800000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000001UL)] // pow(-1, +Infinity) = 1 (|x| == 1)
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000002UL, 0x7800000000000000UL, 0x0000000000000000UL)] // pow(+Infinity, 2) = +Infinity
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL, 0xB040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000000UL)] // pow(+Infinity, -2) = +0
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000003UL, 0xF800000000000000UL, 0x0000000000000000UL)] // pow(-Infinity, 3) = -Infinity (odd)
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000002UL, 0x7800000000000000UL, 0x0000000000000000UL)] // pow(-Infinity, 2) = +Infinity (even)
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL, 0xB040000000000000UL, 0x0000000000000003UL, 0xB040000000000000UL, 0x0000000000000000UL)] // pow(-Infinity, -3) = -0 (odd, y < 0)
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000000UL)] // pow(+0, 2) = +0
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0xB040000000000000UL, 0x0000000000000002UL, 0x7800000000000000UL, 0x0000000000000000UL)] // pow(+0, -2) = +Infinity
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000003UL, 0xB040000000000000UL, 0x0000000000000000UL)] // pow(-0, 3) = -0 (odd)
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000000UL)] // pow(-0, 2) = +0 (even)
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL, 0xB040000000000000UL, 0x0000000000000003UL, 0xF800000000000000UL, 0x0000000000000000UL)] // pow(-0, -3) = -Infinity (odd, y < 0)
+        public static void PowTest(ulong valueUpper, ulong valueLower, ulong exponentUpper, ulong exponentLower, ulong expectedUpper, ulong expectedLower)
+        {
+            Decimal128 result = Decimal128.Pow(
+                Unsafe.BitCast<UInt128, Decimal128>(new UInt128(valueUpper, valueLower)),
+                Unsafe.BitCast<UInt128, Decimal128>(new UInt128(exponentUpper, exponentLower)));
+            Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [Theory]
+        [InlineData(2.0, 10.0)]
+        [InlineData(3.0, 4.0)]
+        [InlineData(10.0, 3.0)]
+        [InlineData(2.5, 2.0)]
+        [InlineData(0.5, 3.0)]
+        [InlineData(-2.0, 3.0)]  // negative base, odd integer exponent -> negative result
+        [InlineData(-2.0, 2.0)]  // negative base, even integer exponent -> positive result
+        [InlineData(9.0, 0.5)]   // fractional exponent (square root)
+        public static void PowAccuracyTest(double x, double y)
+        {
+            // Decimal128 evaluates pow through the binary128 engine (as Intel does); comparing the result
+            // cast back to binary64 stays within a few ulps of double.Pow.
+            double expected = double.Pow(x, y);
+            double actual = (double)Decimal128.Pow((Decimal128)x, (Decimal128)y);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"pow({x}, {y}): expected {expected}, got {actual}");
+        }
+
+        [Fact]
+        public static void PowNegativeBaseNonIntegerReturnsNaN()
+        {
+            Assert.True(Decimal128.IsNaN(Decimal128.Pow((Decimal128)(-2.0), (Decimal128)0.5)));
+        }
+
+        [Theory]
         [InlineData(0x3040000000000000UL, 0x0000000000000001UL, 0x303C000000000000UL, 0x0000000000000001UL, 0x303C000000000000UL, 0x0000000000000064UL)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x303E000000000000UL, 0x0000000000000019UL, 0x3040000000000000UL, 0x0000000000000001UL, 0x3040000000000000UL, 0x0000000000000002UL)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x303E000000000000UL, 0x0000000000000023UL, 0x3040000000000000UL, 0x0000000000000001UL, 0x3040000000000000UL, 0x0000000000000004UL)] // quantize(3.5, 1E0) = 4 (ties to even)

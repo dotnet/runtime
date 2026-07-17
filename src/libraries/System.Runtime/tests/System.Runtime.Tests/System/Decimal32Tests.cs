@@ -2034,6 +2034,58 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x7C000000U, 0x32800000U, 0x32800001U)] // pow(NaN, +0) = 1
+        [InlineData(0x32800002U, 0x32800000U, 0x32800001U)] // pow(2, +0) = 1
+        [InlineData(0x32800002U, 0xB2800000U, 0x32800001U)] // pow(2, -0) = 1
+        [InlineData(0x32800001U, 0x7C000000U, 0x32800001U)] // pow(1, NaN) = 1
+        [InlineData(0x32800001U, 0x78000000U, 0x32800001U)] // pow(1, +Infinity) = 1
+        [InlineData(0x7C000000U, 0x32800002U, 0x7C000000U)] // pow(NaN, 2) = NaN
+        [InlineData(0x32800002U, 0x7C000000U, 0x7C000000U)] // pow(2, NaN) = NaN
+        [InlineData(0x7C001234U, 0x32800002U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0x32800002U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        [InlineData(0x32800002U, 0x78000000U, 0x78000000U)] // pow(2, +Infinity) = +Infinity (|x| > 1)
+        [InlineData(0x32800002U, 0xF8000000U, 0x32800000U)] // pow(2, -Infinity) = +0
+        [InlineData(0xB2800001U, 0x78000000U, 0x32800001U)] // pow(-1, +Infinity) = 1 (|x| == 1)
+        [InlineData(0x78000000U, 0x32800002U, 0x78000000U)] // pow(+Infinity, 2) = +Infinity
+        [InlineData(0x78000000U, 0xB2800002U, 0x32800000U)] // pow(+Infinity, -2) = +0
+        [InlineData(0xF8000000U, 0x32800003U, 0xF8000000U)] // pow(-Infinity, 3) = -Infinity (odd)
+        [InlineData(0xF8000000U, 0x32800002U, 0x78000000U)] // pow(-Infinity, 2) = +Infinity (even)
+        [InlineData(0xF8000000U, 0xB2800003U, 0xB2800000U)] // pow(-Infinity, -3) = -0 (odd, y < 0)
+        [InlineData(0x32800000U, 0x32800002U, 0x32800000U)] // pow(+0, 2) = +0
+        [InlineData(0x32800000U, 0xB2800002U, 0x78000000U)] // pow(+0, -2) = +Infinity
+        [InlineData(0xB2800000U, 0x32800003U, 0xB2800000U)] // pow(-0, 3) = -0 (odd)
+        [InlineData(0xB2800000U, 0x32800002U, 0x32800000U)] // pow(-0, 2) = +0 (even)
+        [InlineData(0xB2800000U, 0xB2800003U, 0xF8000000U)] // pow(-0, -3) = -Infinity (odd, y < 0)
+        public static void PowTest(uint value, uint exponent, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Pow(Unsafe.BitCast<uint, Decimal32>(value), Unsafe.BitCast<uint, Decimal32>(exponent))));
+        }
+
+        [Theory]
+        [InlineData(2.0, 10.0)]
+        [InlineData(3.0, 4.0)]
+        [InlineData(10.0, 3.0)]
+        [InlineData(2.5, 2.0)]
+        [InlineData(0.5, 3.0)]
+        [InlineData(-2.0, 3.0)]  // negative base, odd integer exponent -> negative result
+        [InlineData(-2.0, 2.0)]  // negative base, even integer exponent -> positive result
+        [InlineData(9.0, 0.5)]   // fractional exponent (square root)
+        public static void PowAccuracyTest(double x, double y)
+        {
+            // Decimal32 evaluates pow through binary64 (as Intel does), so the result matches double.Pow
+            // to within the format's seven significant digits.
+            double expected = double.Pow(x, y);
+            double actual = (double)Decimal32.Pow((Decimal32)x, (Decimal32)y);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"pow({x}, {y}): expected {expected}, got {actual}");
+        }
+
+        [Fact]
+        public static void PowNegativeBaseNonIntegerReturnsNaN()
+        {
+            Assert.True(Decimal32.IsNaN(Decimal32.Pow((Decimal32)(-2.0), (Decimal32)0.5)));
+        }
+
+        [Theory]
         [InlineData(0x32800001U, 0x31800001U, 0x31800064U)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x32000019U, 0x32800001U, 0x32800002U)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x32000023U, 0x32800001U, 0x32800004U)] // quantize(3.5, 1E0) = 4 (ties to even)

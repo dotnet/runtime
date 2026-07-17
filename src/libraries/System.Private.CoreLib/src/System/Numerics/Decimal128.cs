@@ -910,6 +910,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
         public static Decimal128 LogP1(Decimal128 x) => new Decimal128(Number.LogP1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
+        /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        public static Decimal128 Pow(Decimal128 x, Decimal128 y) => new Decimal128(Number.PowDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
         public static Decimal128 ScaleB(Decimal128 x, int n) => new Decimal128(Number.ScaleBDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), n));
 

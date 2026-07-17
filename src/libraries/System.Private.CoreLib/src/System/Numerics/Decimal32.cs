@@ -933,6 +933,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
         public static Decimal32 LogP1(Decimal32 x) => new Decimal32(Number.LogP1DecimalIeee754<Decimal32, uint>(x._value));
 
+        /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        public static Decimal32 Pow(Decimal32 x, Decimal32 y) => new Decimal32(Number.PowDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
         public static Decimal32 ScaleB(Decimal32 x, int n) => new Decimal32(Number.ScaleBDecimalIeee754<Decimal32, uint>(x._value, n));
 
