@@ -24,7 +24,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// <see cref="Unwind"/> advances the context by one ReadyToRun frame.
 /// </remarks>
 [StructLayout(LayoutKind.Sequential)]
-public struct WasmContext : IPlatformContext
+internal struct WasmContext : IPlatformContext
 {
     // Field order and size mirror the native wasm T_CONTEXT (src/coreclr/pal/inc/pal.h,
     // HOST_WASM branch) so that a serialized WasmContext is byte-compatible with the

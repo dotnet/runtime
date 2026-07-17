@@ -38,7 +38,8 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
         Data.Frame? next = GetNextFrame(inlinedCallFrame.Address);
         if (next is not null && _frameHelpers.GetFrameType(next.Identifier) == FrameType.InterpreterFrame)
         {
-            _holder.Context.TrySetRegister(WasmContext.InterpreterWalkFramePointerRegister, new TargetNUInt(next.Address.Value));
+            if (!_holder.Context.TrySetRegister(WasmContext.InterpreterWalkFramePointerRegister, new TargetNUInt(next.Address.Value)))
+                throw new InvalidOperationException($"Failed to set WASM interpreter frame-pointer register '{WasmContext.InterpreterWalkFramePointerRegister}'.");
         }
     }
 

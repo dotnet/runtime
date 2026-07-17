@@ -14,8 +14,6 @@ public class WasmR2RInfoTests
     // WASM is a 32-bit little-endian target.
     private static readonly MockTarget.Architecture WasmArch = new() { IsLittleEndian = true, Is64Bit = false };
 
-    private const uint FuncletFlag = 0x80000000;
-
     private const uint MinFunctionTableIndex = 5;
     private const uint FunctionTableIndex = 5; // localIndex 0
     private const ulong MinVirtualIP = 0x0005_0000;
@@ -103,15 +101,6 @@ public class WasmR2RInfoTests
 
         Assert.True(info.TryGetUnwindData(FunctionTableIndex, out TargetPointer unwindData));
         Assert.Equal(LoadedImageBase + FunctionUnwindData, unwindData.Value);
-    }
-
-    [Fact]
-    public void IsFuncletFunctionIndex_NonFunclet_ReturnsFalse()
-    {
-        WasmR2RInfo info = new(CreateTarget());
-
-        Assert.False((FunctionBeginAddress & FuncletFlag) != 0);
-        Assert.False(info.IsFuncletFunctionIndex(FunctionTableIndex));
     }
 
     [Fact]

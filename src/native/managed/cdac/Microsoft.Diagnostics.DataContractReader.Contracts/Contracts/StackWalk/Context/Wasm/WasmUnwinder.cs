@@ -8,12 +8,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wa
 /// <summary>
 /// Information the WASM ReadyToRun unwinder needs about R2R function-table entries.
 /// Mirrors the <c>ExecutionManager</c> APIs used by the native WASM stack walk in
-/// <c>src/coreclr/vm/wasm/helpers.cpp</c> (<c>GetWasmVirtualIPFromFunctionTableIndex</c>,
-/// <c>IsFuncletFunctionIndex</c>) plus access to the per-function unwind data from which the
-/// fixed frame size is decoded. Implemented against the cDAC ExecutionManager once the WASM
-/// R2R virtual-IP data descriptors are available.
+/// <c>src/coreclr/vm/wasm/helpers.cpp</c> (<c>GetWasmVirtualIPFromFunctionTableIndex</c>) plus
+/// access to the per-function unwind data from which the fixed frame size is decoded.
 /// </summary>
-public interface IWasmR2RInfo
+internal interface IWasmR2RInfo
 {
     /// <summary>
     /// Returns the base virtual IP for an R2R function table entry
@@ -21,12 +19,6 @@ public interface IWasmR2RInfo
     /// base of 0, when the index does not map to a known R2R function.
     /// </summary>
     bool TryGetVirtualIPBase(uint functionTableIndex, out ulong baseVirtualIP);
-
-    /// <summary>
-    /// Whether the given R2R function table entry names a funclet rather than a main method body
-    /// (<c>ExecutionManager::IsFuncletFunctionIndex</c>).
-    /// </summary>
-    bool IsFuncletFunctionIndex(uint functionTableIndex);
 
     /// <summary>
     /// Returns the address of the WASM unwind blob for an R2R function table entry
@@ -50,7 +42,7 @@ public interface IWasmR2RInfo
 /// top), at which point R2R walking stops and the caller falls back to the explicit Frame chain
 /// / interpreter frame chain.
 /// </remarks>
-public sealed class WasmUnwinder
+internal sealed class WasmUnwinder
 {
     // Sp values at or below the lowest linear-memory page carry nothing meaningful.
     private const ulong LinearStackFloor = 0x1000;

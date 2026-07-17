@@ -13,7 +13,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wa
 /// module's <see cref="Data.ReadyToRunInfo"/>, then reads the corresponding
 /// <c>RUNTIME_FUNCTION</c> for the funclet flag, base virtual IP, and unwind data.
 /// </summary>
-public sealed class WasmR2RInfo : IWasmR2RInfo
+internal sealed class WasmR2RInfo : IWasmR2RInfo
 {
     // RUNTIME_FUNCTION__IsFunclet: the funclet flag is the high bit of BeginAddress (clrnt.h).
     private const uint FuncletFlag = 0x80000000;
@@ -58,17 +58,6 @@ public sealed class WasmR2RInfo : IWasmR2RInfo
 
     private Data.RuntimeFunction GetRuntimeFunction(Data.ReadyToRunInfo r2rInfo, uint localIndex)
         => _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, localIndex);
-
-    public bool IsFuncletFunctionIndex(uint functionTableIndex)
-    {
-        Data.FunctionTableIndexRangeSection? section = FindSection(functionTableIndex);
-        if (section is null)
-            return false;
-
-        Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(section);
-        uint localIndex = functionTableIndex - section.MinFunctionTableIndex;
-        return (GetRuntimeFunction(r2rInfo, localIndex).BeginAddress & FuncletFlag) != 0;
-    }
 
     public bool TryGetVirtualIPBase(uint functionTableIndex, out ulong baseVirtualIP)
     {
