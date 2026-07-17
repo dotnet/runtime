@@ -175,7 +175,7 @@ This contract depends on the following descriptors:
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| For each FrameType `<frameType>`, `<frameType>##Identifier` | `FrameIdentifier` enum value | Identifier used to determine concrete type of Frames |
+| For each FrameType `<frameType>`, `<frameType>##Identifier` | `nuint` (`FrameIdentifier` enum value) | Identifier used to determine concrete type of Frames |
 
 Constants used:
 | Source | Name | Value | Purpose |
@@ -497,7 +497,7 @@ TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 
-`GetFrameName` gets the name associated with a FrameIdentifier (pointer sized value) from the Globals stored in the contract descriptor. If no associated Frame name is found, it returns an empty string.
+`GetFrameName` gets the name associated with a `nuint` FrameIdentifier from the Globals stored in the contract descriptor. If no associated Frame name is found, it returns an empty string.
 ```csharp
 string GetFrameName(TargetPointer frameIdentifier);
 ```

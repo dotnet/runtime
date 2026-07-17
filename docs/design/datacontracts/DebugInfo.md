@@ -328,6 +328,8 @@ public enum DebugVarLocKind
     RegisterStack,
     StackRegister,
     DoubleStack,
+    FloatingPointStack,
+    FixedVarArg,
 }
 
 public readonly struct DebugVarInfo
@@ -344,6 +346,8 @@ public readonly struct DebugVarInfo
     public int StackOffset { get; init; }
     public uint BaseRegister2 { get; init; }
     public int StackOffset2 { get; init; }
+    public uint FloatingPointStackRegister { get; init; }
+    public uint FixedVarArgOffset { get; init; }
     public uint CallReturnValueILOffset { get; init; }
 }
 
