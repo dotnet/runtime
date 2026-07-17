@@ -543,6 +543,9 @@ uint32_t getAddressAlignment(
 bool canOmitPinning(
           CORINFO_FIELD_HANDLE fldHnd) override;
 
+void getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut) override;
+
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
 

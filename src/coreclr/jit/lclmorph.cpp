@@ -1961,11 +1961,6 @@ private:
                 return IndirTransform::LclFld;
             }
 
-#if defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Handle once GetElement and WithElement are supported
-            return IndirTransform::LclFld;
-#endif
-
 #ifdef FEATURE_HW_INTRINSICS
             if (varTypeIsSIMD(varDsc))
             {

@@ -3389,23 +3389,22 @@ namespace Internal.JitInterface
 
         private bool canOmitPinning(CORINFO_FIELD_STRUCT_* fldHnd)
         {
-            return CanOmitPinning(HandleToObject(fldHnd));
-        }
-
-        internal static bool CanOmitPinning(FieldDesc field)
-        {
+            FieldDesc field = HandleToObject(fldHnd);
             if (!field.IsStatic || field.IsThreadStatic || field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 return false;
             }
 
-            // RVA data and reference-type static slots are stable. Keep value-type GC statics
-            // conservative because ReadyToRun can store them in movable boxes.
-            return CanOmitPinningForStaticField(field.HasRva, field.FieldType.IsValueType, field.HasGCStaticBase);
+#if READYTORUN
+            // RVA data and reference-type static slots are always stable. Keep value-type GC
+            // statics conservative because ReadyToRun can store them in movable boxes.
+            return field.HasRva || !field.FieldType.IsValueType || !field.HasGCStaticBase;
+#else
+            // NativeAOT allocates GC statics on the pinned object heap, so every non-thread
+            // static field address is stable.
+            return true;
+#endif
         }
-
-        internal static bool CanOmitPinningForStaticField(bool hasRva, bool isValueType, bool hasGCStaticBase) =>
-            hasRva || !isValueType || !hasGCStaticBase;
 
         private void getBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
         {
@@ -3614,6 +3613,13 @@ namespace Internal.JitInterface
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
         }
 
+        private void getWasmWellKnownGlobals(ref CORINFO_WASM_WELLKNOWN_GLOBALS pWellKnownGlobalsOut)
+        {
+            NodeFactory factory = _compilation.NodeFactory;
+            pWellKnownGlobalsOut.stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.StackPointerName)));
+            pWellKnownGlobalsOut.imageBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.ImageBaseName)));
+            pWellKnownGlobalsOut.tableBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.TableBaseName)));
+        }
         private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg)
         {
             instArg.lookupKind.needsRuntimeLookup = false;
