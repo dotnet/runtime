@@ -2,7 +2,7 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 
 # Linker launcher that fails the build if an object compiled with LTCG (/GL) is
-# pulled in. Such objects are rejected by non-MSVC linkers. MSVC doesn't treat
+# pulled in. Such objects require an exactly matching MSVC toolchain version. MSVC doesn't treat
 # this as an error. It prints "module compiled with /GL found" and succeeds.
 # This launcher runs the link command and errors if that message is found.
 
@@ -29,8 +29,8 @@ endif()
 
 if("${_linker_stdout}${_linker_stderr}" MATCHES "module compiled with /GL found")
     message(FATAL_ERROR
-        "An object compiled with LTCG (/GL) was pulled into this link. LTCG objects are "
-        "rejected by non-MSVC linkers such as lld-link. Disable interprocedural optimization "
+        "An object compiled with LTCG (/GL) was pulled into this link. LTCG objects require"
+        "an exactly matching MSVC toolchain version. Disable interprocedural optimization "
         "(set INTERPROCEDURAL_OPTIMIZATION OFF) on the target that introduced the /GL object.")
 endif()
 
