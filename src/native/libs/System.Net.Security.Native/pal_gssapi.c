@@ -430,6 +430,7 @@ uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
     assert(contextHandle != NULL);
     assert(inputBytes != NULL || inputLength == 0);
     assert(outBuffer != NULL);
+    assert(retFlags != NULL);
     assert(isNtlmUsed != NULL);
     assert(cbt != NULL || cbtSize == 0);
     // Note: *contextHandle is null only in the first call and non-null in the subsequent calls

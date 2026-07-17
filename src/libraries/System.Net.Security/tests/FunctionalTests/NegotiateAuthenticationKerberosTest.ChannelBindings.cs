@@ -61,13 +61,13 @@ namespace System.Net.Security.Tests
             using SafeChannelBindingHandle clientBinding = CreateChannelBinding(kind, hashSeed: 0x42);
             using SafeChannelBindingHandle serverBinding = CreateChannelBinding(kind, hashSeed: 0x42);
 
-            NegotiateAuthentication client = new(new NegotiateAuthenticationClientOptions
+            using NegotiateAuthentication client = new(new NegotiateAuthenticationClientOptions
             {
                 Credential = new NetworkCredential("user", KerberosExecutor.DefaultUserPassword, "LINUX.CONTOSO.COM"),
                 TargetName = "HTTP/linux.contoso.com",
                 Binding = clientBinding,
             });
-            NegotiateAuthentication server = new(new NegotiateAuthenticationServerOptions
+            using NegotiateAuthentication server = new(new NegotiateAuthenticationServerOptions
             {
                 Binding = serverBinding,
             });
@@ -83,13 +83,13 @@ namespace System.Net.Security.Tests
             using SafeChannelBindingHandle clientBinding = CreateChannelBinding(kind, hashSeed: 0x42);
             using SafeChannelBindingHandle serverBinding = CreateChannelBinding(kind, hashSeed: 0x99);
 
-            NegotiateAuthentication client = new(new NegotiateAuthenticationClientOptions
+            using NegotiateAuthentication client = new(new NegotiateAuthenticationClientOptions
             {
                 Credential = new NetworkCredential("user", KerberosExecutor.DefaultUserPassword, "LINUX.CONTOSO.COM"),
                 TargetName = "HTTP/linux.contoso.com",
                 Binding = clientBinding,
             });
-            NegotiateAuthentication server = new(new NegotiateAuthenticationServerOptions
+            using NegotiateAuthentication server = new(new NegotiateAuthenticationServerOptions
             {
                 Binding = serverBinding,
             });

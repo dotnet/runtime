@@ -675,8 +675,6 @@ namespace System.Net
                 {
                     Interop.NetSecurityNative.Status status;
                     Interop.NetSecurityNative.Status minorStatus;
-                    uint outputFlags;
-                    bool isNtlmUsed;
 
                     status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
                                                                         credentialsHandle,
@@ -684,8 +682,8 @@ namespace System.Net
                                                                         channelBinding,
                                                                         incomingBlob,
                                                                         ref token,
-                                                                        out outputFlags,
-                                                                        out isNtlmUsed);
+                                                                        out uint outputFlags,
+                                                                        out bool isNtlmUsed);
 
                     if ((status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE) &&
                         (status != Interop.NetSecurityNative.Status.GSS_S_CONTINUE_NEEDED))

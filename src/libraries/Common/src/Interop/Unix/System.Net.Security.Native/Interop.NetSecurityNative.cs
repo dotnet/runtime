@@ -145,7 +145,7 @@ internal static partial class Interop
         {
             // Skip the SecChannelBindings header to get to the application-specific data.
             int cbtAppDataOffset = sizeof(SecChannelBindings);
-            Debug.Assert(cbtAppDataOffset < channelBinding.Size);
+            Debug.Assert(cbtAppDataOffset <= channelBinding.Size);
             int cbtAppDataSize = channelBinding.Size - cbtAppDataOffset;
             if (cbtAppDataSize < 0)
             {
@@ -227,7 +227,7 @@ internal static partial class Interop
 
             // Skip the SecChannelBindings header to get to the application-specific data.
             int cbtAppDataOffset = sizeof(SecChannelBindings);
-            Debug.Assert(cbtAppDataOffset < channelBinding.Size);
+            Debug.Assert(cbtAppDataOffset <= channelBinding.Size);
             int cbtAppDataSize = channelBinding.Size - cbtAppDataOffset;
             if (cbtAppDataSize < 0)
             {
