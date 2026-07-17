@@ -25,15 +25,13 @@ static const ULONG32 MAX_MASK_COUNT     = (REGISTER_AMD64_MAX + 7) >> 3;
 namespace
 {
     TADDR ReadCtxReg(CordbThread * pThread,
-                     const BYTE * pCtx,
-                     ULONG32 ctxSize,
+                     ContextBuffer contextBuffer,
                      CorDebugRegister reg)
     {
         TADDR value = 0;
         IDacDbiInterface * pDAC = pThread->GetProcess()->GetDAC();
         IfFailThrow(pDAC->ReadRegistersFromContext(
-            const_cast<BYTE *>(pCtx),
-            ctxSize,
+            contextBuffer,
             &reg,
             1,
             &value));
@@ -380,7 +378,8 @@ void ShimStackWalk::Populate()
                     {
                         // If we have hit any managed stack frame, then we may need to send
                         // an enter-managed chain later.  Save the CONTEXT now.
-                        SaveChainContext(pSW, &chainInfo, chainInfo.GetLeafManagedContext());
+                        ContextBuffer contextBuffer = { chainInfo.GetLeafManagedContext(), chainInfo.m_contextSize };
+                        SaveChainContext(pSW, &chainInfo, contextBuffer);
                         chainInfo.m_fNeedEnterManagedChain = true;
                     }
 
@@ -435,7 +434,8 @@ void ShimStackWalk::Populate()
                 // we have exhausted all the stack frames.
 
                 // We need to save the CONTEXT to start tracking an unmanaged chain.
-                SaveChainContext(pSW, &chainInfo, chainInfo.GetLeafNativeContext());
+                ContextBuffer contextBuffer = { chainInfo.GetLeafNativeContext(), chainInfo.m_contextSize };
+                SaveChainContext(pSW, &chainInfo, contextBuffer);
                 chainInfo.m_fLeafNativeContextIsValid = true;
 
                 // begin tracking UM chain if we're supposed to
@@ -978,10 +978,10 @@ void ShimStackWalk::GetCalleeForFrame(ICorDebugFrame * pFrame, ICorDebugFrame **
     }
 }
 
-FramePointer ShimStackWalk::GetFramePointerForChain(const BYTE * pContext)
+FramePointer ShimStackWalk::GetFramePointerForChain(ContextBuffer contextBuffer)
 {
     CordbThread * pThread = static_cast<CordbThread *>(m_pThread.GetValue());
-    TADDR sp = ReadCtxReg(pThread, pContext, GetContextSize(), REGISTER_STACK_POINTER);
+    TADDR sp = ReadCtxReg(pThread, contextBuffer, REGISTER_STACK_POINTER);
     return FramePointer::MakeFramePointer(reinterpret_cast<void *>(sp));
 }
 
@@ -1076,14 +1076,14 @@ void ShimStackWalk::AppendFrame(ICorDebugInternalFrame2 * pInternalFrame2, Stack
 //
 
 void ShimStackWalk::AppendChainWorker(StackWalkInfo *     pStackWalkInfo,
-                                      const BYTE *        pLeafContext,
+                                      ContextBuffer       contextBuffer,
                                       FramePointer        fpRoot,
                                       CorDebugChainReason chainReason,
                                       BOOL                fIsManagedChain)
 {
     // first, create the chain
     NewHolder<ShimChain> pChain(new ShimChain(this,
-                                              pLeafContext,
+                                              contextBuffer,
                                               fpRoot,
                                               pStackWalkInfo->m_cChain,
                                               pStackWalkInfo->m_firstFrameInChain,
@@ -1145,9 +1145,9 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
             // We need to send an extra enter-managed chain.
             _ASSERTE(pChainInfo->m_fLeafNativeContextIsValid);
             CordbThread * pThread = static_cast<CordbThread *>(m_pThread.GetValue());
+            ContextBuffer nativeContext = { pChainInfo->GetLeafNativeContext(), GetContextSize() };
             BYTE * sp = reinterpret_cast<BYTE *>(
-                ReadCtxReg(pThread, pChainInfo->GetLeafNativeContext(), GetContextSize(),
-                           REGISTER_STACK_POINTER));
+                ReadCtxReg(pThread, nativeContext, REGISTER_STACK_POINTER));
 #if !defined(TARGET_ARM) &&  !defined(TARGET_ARM64)
             // Dev11 324806: on ARM we use the caller's SP for a frame's ending delimiter so we cannot
             // subtract 4 bytes from the chain's ending delimiter else the frame might never be in range.
@@ -1156,8 +1156,9 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
 #endif
             FramePointer fp = FramePointer::MakeFramePointer(sp);
 
+            ContextBuffer managedContext = { pChainInfo->GetLeafManagedContext(), pChainInfo->m_contextSize };
             AppendChainWorker(pStackWalkInfo,
-                              pChainInfo->GetLeafManagedContext(),
+                              managedContext,
                               fp,
                               CHAIN_ENTER_MANAGED,
                               TRUE);
@@ -1169,8 +1170,9 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
     }
 
     // Add the actual chain.
+    ContextBuffer chainContext = { const_cast<BYTE *>(pChainContext), pChainInfo->m_contextSize };
     AppendChainWorker(pStackWalkInfo,
-                      pChainContext,
+                      chainContext,
                       pChainInfo->m_rootFP,
                       pChainInfo->m_reason,
                       fManagedChain);
@@ -1186,18 +1188,23 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
 // Arguments:
 //    * pSW        - the ICDStackWalk for the current stackwalk
 //    * pChainInfo - the ChainInfo keeping track of the current chain
-//    * pContext   - the destination CONTEXT
+//    * contextBuffer - the destination CONTEXT
 //
 
-void ShimStackWalk::SaveChainContext(ICorDebugStackWalk * pSW, ChainInfo * pChainInfo, BYTE * pContext)
+void ShimStackWalk::SaveChainContext(ICorDebugStackWalk * pSW, ChainInfo * pChainInfo, ContextBuffer contextBuffer)
 {
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < GetContextSize()))
+    {
+        ThrowHR(E_INVALIDARG);
+    }
+
     HRESULT hr = pSW->GetContext(CONTEXT_FULL,
-                                 GetContextSize(),
+                                 contextBuffer.contextSize,
                                  NULL,
-                                 pContext);
+                                 contextBuffer.pContextBytes);
     IfFailThrow(hr);
 
-    pChainInfo->m_rootFP = GetFramePointerForChain(pContext);
+    pChainInfo->m_rootFP = GetFramePointerForChain(contextBuffer);
 }
 
 // ----------------------------------------------------------------------------
@@ -1259,8 +1266,9 @@ BOOL ShimStackWalk::CheckInternalFrame(ICorDebugFrame *     pNextStackFrame,
 
         // Get the SP from the CONTEXT.  This is the caller SP.
         CordbThread * pThread = static_cast<CordbThread *>(m_pThread.GetValue());
+        ContextBuffer contextBuffer = { ctx, ctxSize };
         CORDB_ADDRESS sp = PTR_TO_CORDB_ADDRESS(
-            ReadCtxReg(pThread, ctx, ctxSize, REGISTER_STACK_POINTER));
+            ReadCtxReg(pThread, contextBuffer, REGISTER_STACK_POINTER));
 
         // get the frame address
         CORDB_ADDRESS frameAddr = 0;
@@ -1459,7 +1467,8 @@ void ShimStackWalk::TrackUMChain(ChainInfo * pChainInfo, StackWalkInfo * pStackW
     {
         // check whether we get any stack range
         _ASSERTE(pChainInfo->m_fLeafNativeContextIsValid);
-        FramePointer fpLeaf = GetFramePointerForChain(pChainInfo->GetLeafNativeContext());
+        ContextBuffer contextBuffer = { pChainInfo->GetLeafNativeContext(), pChainInfo->m_contextSize };
+        FramePointer fpLeaf = GetFramePointerForChain(contextBuffer);
 
         // Don't bother creating an unmanaged chain if the stack range is empty.
         if (fpLeaf != pChainInfo->m_rootFP)
@@ -1603,7 +1612,7 @@ BOOL ShimStackWalk::StackWalkInfo::HasConvertedFrame()
 
 
 ShimChain::ShimChain(ShimStackWalk *     pSW,
-                     const BYTE *        pContext,
+                     ContextBuffer       contextBuffer,
                      FramePointer        fpRoot,
                      UINT32              chainIndex,
                      UINT32              frameStartIndex,
@@ -1623,9 +1632,14 @@ ShimChain::ShimChain(ShimStackWalk *     pSW,
     m_fIsNeutered(FALSE),
     m_pShimLock(pShimLock)
 {
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < m_contextSize))
+    {
+        ThrowHR(E_INVALIDARG);
+    }
+
     // Own a copy of the leaf CONTEXT as an opaque target-sized byte buffer.
     m_pContext = new BYTE[m_contextSize];
-    memcpy(m_pContext, pContext, m_contextSize);
+    memcpy(m_pContext, contextBuffer.pContextBytes, m_contextSize);
 }
 
 ShimChain::~ShimChain()
@@ -1712,8 +1726,9 @@ HRESULT ShimChain::GetStackRange(CORDB_ADDRESS * pStart, CORDB_ADDRESS * pEnd)
         if (pStart)
         {
             CordbThread * pThread = static_cast<CordbThread *>(m_pStackWalk->GetThread());
+            ContextBuffer contextBuffer = { m_pContext, m_contextSize };
             *pStart = PTR_TO_CORDB_ADDRESS(
-                ReadCtxReg(pThread, m_pContext, m_contextSize, REGISTER_STACK_POINTER));
+                ReadCtxReg(pThread, contextBuffer, REGISTER_STACK_POINTER));
         }
 
         // Return the rootmost end of the stack range.  It is represented by the frame pointer of the chain.
@@ -1866,8 +1881,8 @@ HRESULT ShimChain::GetRegisterSet(ICorDebugRegisterSet ** ppRegisters)
 
         // This is a private hook for calling back into the RS.  Alternatively, we could have created a
         // ShimRegisterSet, but that's too much work for now.
-        pThread->CreateCordbRegisterSet(m_pContext,
-                                        m_contextSize,
+        ContextBuffer contextBuffer = { m_pContext, m_contextSize };
+        pThread->CreateCordbRegisterSet(contextBuffer,
                                         (m_chainIndex == 0),
                                         m_chainReason,
                                         ppRegisters);

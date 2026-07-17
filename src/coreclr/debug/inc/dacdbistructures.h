@@ -160,6 +160,13 @@ struct MSLAYOUT TargetBuffer
     ULONG         cbSize;
 };
 
+// Describes an opaque target CONTEXT buffer in the host.
+struct MSLAYOUT ContextBuffer
+{
+    BYTE *  pContextBytes;
+    ULONG32 contextSize;
+};
+
 // Module properties, retrieved by DAC.
 struct MSLAYOUT ModuleInfo
 {

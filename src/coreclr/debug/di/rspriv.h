@@ -3583,8 +3583,8 @@ public:
     void AddToLeftSideResourceCleanupList(CordbBase * pObject);
 
     // Routines to read and write thread context records between the processes safely.
-    HRESULT SafeReadThreadContext(LSPTR_CONTEXT pRemoteContext, BYTE * pCtx);
-    HRESULT SafeWriteThreadContext(LSPTR_CONTEXT pRemoteContext, const BYTE * pCtx);
+    HRESULT SafeReadThreadContext(LSPTR_CONTEXT pRemoteContext, ContextBuffer contextBuffer);
+    HRESULT SafeWriteThreadContext(LSPTR_CONTEXT pRemoteContext, ContextBuffer contextBuffer);
     HRESULT SafeWriteThreadContext(LSPTR_CONTEXT pRemoteContext, T_CONTEXT * pCtx);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -6126,8 +6126,8 @@ public:
     //
     //
     //////////////////////////////////////////////////////////////////////////
-    HRESULT GetManagedContext(BYTE ** ppContext);
-    HRESULT SetManagedContext(BYTE * pContext, ULONG32 cbCtx);
+    HRESULT GetManagedContext(ContextBuffer * pContextBuffer);
+    HRESULT SetManagedContext(ContextBuffer contextBuffer);
 
     // API to retrieve the thread handle from the LS.
     void InternalGetHandle(HANDLE * phThread);
@@ -6170,8 +6170,7 @@ public:
     BOOL IsThreadExceptionManaged();
 
     // This is a private hook for the shim to create a CordbRegisterSet for a ShimChain.
-   void CreateCordbRegisterSet(const BYTE *            pContext,
-                               ULONG32                 contextSize,
+   void CreateCordbRegisterSet(ContextBuffer           contextBuffer,
                                BOOL                    fActive,
                                CorDebugChainReason     reason,
                                ICorDebugRegisterSet ** ppRegSet);
@@ -6668,7 +6667,7 @@ public:
     CordbRuntimeUnwindableFrame(CordbThread *    pThread,
                                 FramePointer     fp,
                                 CordbAppDomain * pCurrentAppDomain,
-                                BYTE *     pContext);
+                                ContextBuffer    contextBuffer);
 
     virtual void Neuter();
 
@@ -6841,7 +6840,7 @@ public:
                      TADDR                addrAmbientESP,
                      CordbAppDomain *     pCurrentAppDomain,
                      CordbMiscFrame *     pMisc = NULL,
-                     BYTE *               pContext = NULL);
+                     ContextBuffer        contextBuffer = {});
     virtual ~CordbNativeFrame();
     virtual void Neuter();
 
@@ -7052,8 +7051,7 @@ private:
 class CordbRegisterSet : public CordbBase, public ICorDebugRegisterSet, public ICorDebugRegisterSet2
 {
 public:
-    CordbRegisterSet(const BYTE *        pContextBuffer,
-                     ULONG32              contextSize,
+    CordbRegisterSet(ContextBuffer         contextBuffer,
                      CordbThread *        pThread,
                      bool fActive,
                      bool fQuickUnwind,
@@ -7706,7 +7704,7 @@ public:
     // set a remote enregistered location to a new value
     // Arguments:
     //     input:  pNewValue - buffer containing the new value along with its size
-    //             pContext  - context from which the value comes
+    //             contextBuffer - context from which the value comes
     //             fIsSigned - indicates whether the value is signed or not. The value provided may be smaller than
     //                         a register, in which case we'll need to extend it to a full register width. To do this
     //                         correctly, we need to know whether to sign extend or zero extend. Currently, only
@@ -7716,7 +7714,7 @@ public:
     // Note: Throws E_FAIL for invalid input or various HRESULTs from an
     //                         unsuccessful call to WriteProcessMemory
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, BYTE * pContext, bool fIsSigned) = 0;
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned) = 0;
 
     // Gets an enregistered value and returns it to the caller
     // Arguments:
@@ -7785,13 +7783,13 @@ public:
     virtual
     RegValueHome * Clone() const { return new RegValueHome(*this); };
 
-    void SetContextRegister(BYTE *           pContext,
+    void SetContextRegister(ContextBuffer    contextBuffer,
                             CorDebugRegister regNum,
                             SIZE_T           newVal);
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, BYTE * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -7860,7 +7858,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, BYTE * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -7917,7 +7915,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, BYTE * pContext, bool fIsSigned) = 0;
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned) = 0;
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -7975,7 +7973,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, BYTE * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -8025,7 +8023,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, BYTE * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -8070,7 +8068,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, BYTE * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual

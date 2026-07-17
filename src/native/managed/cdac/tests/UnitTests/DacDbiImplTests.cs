@@ -846,8 +846,26 @@ public unsafe class DacDbiImplTests
 
         fixed (byte* pCtx = bytes)
         {
-            int hr = dacDbi.CheckContext(ThreadAddr, pCtx);
+            ContextBuffer contextBuffer = new() { pContextBytes = pCtx, contextSize = (uint)bytes.Length };
+            int hr = dacDbi.CheckContext(ThreadAddr, contextBuffer);
             Assert.Equal(expectedHr, hr);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TargetArchitectures))]
+    public void CheckContext_UndersizedBuffer_ReturnsInvalidArgument(MockTarget.Architecture arch, string targetArch)
+    {
+        const ulong ThreadAddr = 0x1000;
+        var (dacDbi, target) = CreateCheckContextDacDbi(arch, targetArch, ThreadAddr, stackBase: 0x8000, stackLimit: 0x4000);
+        uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(target).Size;
+        byte[] bytes = new byte[(int)contextSize - 1];
+
+        fixed (byte* pCtx = bytes)
+        {
+            ContextBuffer contextBuffer = new() { pContextBytes = pCtx, contextSize = (uint)bytes.Length };
+            int hr = dacDbi.CheckContext(ThreadAddr, contextBuffer);
+            Assert.Equal(System.HResults.E_INVALIDARG, hr);
         }
     }
 
@@ -872,7 +890,8 @@ public unsafe class DacDbiImplTests
 
         fixed (byte* pCtx = bytes)
         {
-            int hr = dacDbi.CheckContext(ThreadAddr, pCtx);
+            ContextBuffer contextBuffer = new() { pContextBytes = pCtx, contextSize = (uint)bytes.Length };
+            int hr = dacDbi.CheckContext(ThreadAddr, contextBuffer);
             Assert.Equal(System.HResults.S_OK, hr);
         }
 

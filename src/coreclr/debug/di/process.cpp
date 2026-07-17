@@ -1458,10 +1458,6 @@ void CordbProcess::FreeDac()
 
 ULONG32 CordbProcess::GetTargetContextSize()
 {
-    if (!IsDacInitialized())
-    {
-        return sizeof(T_CONTEXT);
-    }
     if (m_ctxSize == 0)
     {
         ULONG32 size = 0;
@@ -5812,10 +5808,9 @@ HRESULT CordbProcess::IsOSSuspended(DWORD threadID, BOOL *pbSuspended)
 
 //
 // This routine reads a thread context from the process being debugged, taking into account the fact that the context
-// record may be a different size than the one we compiled with. On systems < NT5, then OS doesn't usually allocate
-// space for the extended registers. However, the CONTEXT struct that we compile with does have this space.
+// record may be a different size than the one we compiled with.
 //
-HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, BYTE * pCtx)
+HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, ContextBuffer contextBuffer)
 {
     HRESULT hr = S_OK;
 
@@ -5824,9 +5819,13 @@ HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, BYTE * pCtx)
 
     EX_TRY
     {
-
         void *pRemoteContext = pContext.UnsafeGet();
         ULONG32 fullContextSize = GetTargetContextSize();
+        if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < fullContextSize))
+        {
+            ThrowHR(E_INVALIDARG);
+        }
+
         TargetBuffer tbFull(pRemoteContext, fullContextSize);
 
         // The context may have 2 parts:
@@ -5840,15 +5839,15 @@ HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, BYTE * pCtx)
 
         // Read the minimum part.
         TargetBuffer tbMin = tbFull.SubBuffer(0, minContextSize);
-        SafeReadBuffer(tbMin, (BYTE*) pCtx);
+        SafeReadBuffer(tbMin, contextBuffer.pContextBytes);
 
         if (fullContextSize > minContextSize)
         {
-            void *pCurExtReg = (void*)((UINT_PTR)pCtx + minContextSize);
+            void *pCurExtReg = (void*)((UINT_PTR)contextBuffer.pContextBytes + minContextSize);
             TargetBuffer tbExtended = tbFull.SubBuffer(minContextSize);
 
             BOOL hasExtendedRegisters = FALSE;
-            IfFailThrow(GetDAC()->ContextHasExtendedRegisters(pCtx, fullContextSize, &hasExtendedRegisters));
+            IfFailThrow(GetDAC()->ContextHasExtendedRegisters(contextBuffer, &hasExtendedRegisters));
 
             if (hasExtendedRegisters)
             {
@@ -5866,25 +5865,29 @@ HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, BYTE * pCtx)
 
 //
 // This routine writes a thread context to the process being debugged, taking into account the fact that the context
-// record may be a different size than the one we compiled with. On systems < NT5, then OS doesn't usually allocate
-// space for the extended registers. However, the CONTEXT struct that we compile with does have this space.
+// record may be a different size than the one we compiled with.
 //
-HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, const BYTE * pCtx)
+HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, ContextBuffer contextBuffer)
 {
     INTERNAL_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
 
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < GetTargetContextSize()))
+    {
+        return E_INVALIDARG;
+    }
+
     HRESULT hr = S_OK;
     ULONG32 sizeToWrite;
     BOOL hasExtendedRegisters = FALSE;
-    IfFailThrow(GetDAC()->ContextHasExtendedRegisters(const_cast<BYTE *>(pCtx), GetTargetContextSize(), &hasExtendedRegisters));
+    IfFailThrow(GetDAC()->ContextHasExtendedRegisters(contextBuffer, &hasExtendedRegisters));
     IfFailThrow(GetDAC()->GetTargetContextSize(
         hasExtendedRegisters ? IDacDbiInterface::kContextSizeExtendedRegisters : IDacDbiInterface::kContextSizeBase,
         &sizeToWrite));
     IDacDbiInterface::TargetInfo targetInfo;
 
     BYTE * pRemoteContext = (BYTE*) pContext.UnsafeGet();
-    BYTE * pCtxSource = (BYTE*) pCtx;
+    BYTE * pCtxSource = contextBuffer.pContextBytes;
     IfFailThrow(GetDAC()->GetTargetInfo(&targetInfo));
 
 // 64 bit windows puts space for the first 6 stack parameters in the CONTEXT structure so that
@@ -5992,9 +5995,13 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
             }
             else
             {
-                BYTE * managedContext = NULL;
+                ContextBuffer managedContext = {};
                 IfFailThrow(thread->GetManagedContext(&managedContext));
-                memcpy(context, managedContext, GetTargetContextSize());
+                if (managedContext.contextSize > contextSize)
+                {
+                    ThrowHR(E_INVALIDARG);
+                }
+                memcpy(context, managedContext.pContextBytes, managedContext.contextSize);
             }
         }
         EX_CATCH_HRESULT(hr)
@@ -6079,7 +6086,8 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
                 hr = E_INVALIDARG;
             }
 
-            hr = thread->SetManagedContext(context, contextSize);
+            ContextBuffer contextBuffer = { context, contextSize };
+            hr = thread->SetManagedContext(contextBuffer);
         }
         EX_CATCH
         {

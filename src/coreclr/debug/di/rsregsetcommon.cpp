@@ -19,19 +19,22 @@
 
 
 CordbRegisterSet::CordbRegisterSet(
-    const BYTE *         pContextBuffer,
-    ULONG32              contextSize,
+    ContextBuffer        contextBuffer,
     CordbThread *        pThread,
     bool fActive,
     bool fQuickUnwind,
     bool fTakeOwnershipOfContext /*= false*/)
   : CordbBase(pThread->GetProcess(), 0, enumCordbRegisterSet)
 {
-    _ASSERTE( pContextBuffer != NULL );
-    _ASSERTE( pThread != NULL );
+    _ASSERTE(pThread != NULL);
+    if ((contextBuffer.pContextBytes == NULL) ||
+        (contextBuffer.contextSize < pThread->GetProcess()->GetTargetContextSize()))
+    {
+        ThrowHR(E_INVALIDARG);
+    }
 
-    m_pContext     = const_cast<BYTE *>(pContextBuffer);
-    m_contextSize  = contextSize;
+    m_pContext     = contextBuffer.pContextBytes;
+    m_contextSize  = contextBuffer.contextSize;
     m_fOwnsContext = fTakeOwnershipOfContext;
     m_thread       = pThread;
     m_active       = fActive;
@@ -131,31 +134,38 @@ HRESULT CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
         IDacDbiInterface * pDAC = GetProcess()->GetDAC();
         ULONG32 targetContextSize = GetProcess()->GetTargetContextSize();
 
-        BYTE * pLeafContext = NULL;
+        ContextBuffer leafContext = {};
         if (m_active)
         {
             EX_TRY
             {
                 // This may fail, but it is not a disastrous failure in this case.  All we care is whether
-                // pLeafContext is updated to a non-NULL value.
-                m_thread->GetManagedContext( &pLeafContext);
+                // leafContext is updated to contain a non-NULL value.
+                m_thread->GetManagedContext(&leafContext);
             }
             EX_CATCH
             {
             }
             EX_END_CATCH
 
-            if (pLeafContext != NULL)
+            if (leafContext.pContextBytes != NULL)
             {
+                if (leafContext.contextSize < targetContextSize)
+                {
+                    ThrowHR(E_INVALIDARG);
+                }
+
                 // Raw byte copy of the leaf context, which carries the leaf's ContextFlags into the
                 // destination so the flag-sensitive overlay below is gated on those flags.
-                memcpy( context, pLeafContext, targetContextSize);
+                memcpy(context, leafContext.pContextBytes, targetContextSize);
             }
         }
 
         // Overlay this frame's registers from the cached CONTEXT buffer, honoring the destination's
         // ContextFlags (the leaf's if copied above, otherwise the caller's incoming flags).
-        IfFailThrow(pDAC->CopyContext(context, contextSize, m_pContext, m_contextSize, 0));
+        ContextBuffer destinationContext = { context, contextSize };
+        ContextBuffer sourceContext = { m_pContext, m_contextSize };
+        IfFailThrow(pDAC->CopyContext(destinationContext, sourceContext, 0));
     }
     EX_CATCH_HRESULT(hr);
     return hr;

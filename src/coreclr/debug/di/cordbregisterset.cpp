@@ -72,7 +72,7 @@ namespace
     // into two batches: GPR bits are read in a single ReadRegistersFromContext
     // call, and float bits are served from the thread's float cache.
     HRESULT FillRegisters(IDacDbiInterface * pDAC,
-                          BYTE * pContext, ULONG32 contextSize,
+                          ContextBuffer contextBuffer,
                           CordbThread * pThread,
                           const BYTE * requestMask, ULONG32 requestMaskCount,
                           const BYTE * availMask, ULONG32 availMaskCount,
@@ -123,7 +123,7 @@ namespace
 
         if (gprCount > 0)
         {
-            hr = pDAC->ReadRegistersFromContext(pContext, contextSize, gprRegs, gprCount, gprValues);
+            hr = pDAC->ReadRegistersFromContext(contextBuffer, gprRegs, gprCount, gprValues);
             if (FAILED(hr))
                 return hr;
         }
@@ -206,7 +206,8 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
             requestBytes[b / 8] |= (BYTE)(1 << (b % 8));
     }
 
-    return FillRegisters(pDAC, m_pContext, m_contextSize, m_thread,
+    ContextBuffer contextBuffer = { m_pContext, m_contextSize };
+    return FillRegisters(pDAC, contextBuffer, m_thread,
                          requestBytes, (ULONG32)sizeof(requestBytes),
                          availBytes, kAvailMaskBytes, regCount, regBuffer);
 }
@@ -237,7 +238,8 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
     if (FAILED(hr))
         return hr;
 
-    return FillRegisters(pDAC, m_pContext, m_contextSize, m_thread,
+    ContextBuffer contextBuffer = { m_pContext, m_contextSize };
+    return FillRegisters(pDAC, contextBuffer, m_thread,
                          mask, maskCount,
                          availBytes, kAvailMaskBytes, regCount, regBuffer);
 }

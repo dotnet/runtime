@@ -792,7 +792,7 @@ private:
     void Clear();
 
     // Get a FramePointer to mark the root boundary of a chain.
-    FramePointer GetFramePointerForChain(const BYTE * pContext);
+    FramePointer GetFramePointerForChain(ContextBuffer contextBuffer);
     FramePointer GetFramePointerForChain(ICorDebugInternalFrame2 * pInternalFrame2);
 
     CorDebugInternalFrameType GetInternalFrameType(ICorDebugInternalFrame2 * pFrame2);
@@ -803,14 +803,14 @@ private:
 
     // Append a chain to the array.
     void AppendChainWorker(StackWalkInfo *     pStackWalkInfo,
-                           const BYTE *        pLeafContext,
+                           ContextBuffer       contextBuffer,
                            FramePointer        fpRoot,
                            CorDebugChainReason chainReason,
                            BOOL                fIsManagedChain);
     void AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWalkInfo);
 
     // Save information on the ChainInfo regarding the current chain.
-    void SaveChainContext(ICorDebugStackWalk * pSW, ChainInfo * pChainInfo, BYTE * pContext);
+    void SaveChainContext(ICorDebugStackWalk * pSW, ChainInfo * pChainInfo, ContextBuffer contextBuffer);
 
     // Check what we are process next, a internal frame or a stack frame.
     BOOL CheckInternalFrame(ICorDebugFrame *     pNextStackFrame,
@@ -858,7 +858,7 @@ class ShimChain : public ICorDebugChain
 {
 public:
     ShimChain(ShimStackWalk *     pSW,
-              const BYTE *        pContext,
+              ContextBuffer       contextBuffer,
               FramePointer        fpRoot,
               UINT32              chainIndex,
               UINT32              frameStartIndex,
@@ -1065,4 +1065,3 @@ private:
 
 
 #endif // SHIMPRIV_H
-

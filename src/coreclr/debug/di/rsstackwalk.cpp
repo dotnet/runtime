@@ -35,11 +35,13 @@ void CordbStackWalk::Init()
     m_lastSyncFlushCounter = pProcess->m_flushCounter;
 
     IDacDbiInterface * pDAC = pProcess->GetDAC();
-    m_pContextBuffer = new BYTE[pProcess->GetTargetContextSize()];
+    ULONG32 contextSize = pProcess->GetTargetContextSize();
+    m_pContextBuffer = new BYTE[contextSize];
+    ContextBuffer contextBuffer = { m_pContextBuffer, contextSize };
 
     IfFailThrow(pDAC->CreateStackWalk(m_pCordbThread->m_vmThreadToken,
-                          m_pContextBuffer,
-                          &m_pSFIHandle));
+                                      contextBuffer,
+                                      &m_pSFIHandle));
 
     // see the function header of code:CordbStackWalk::CheckForLegacyHijackCase
     CheckForLegacyHijackCase();
@@ -80,10 +82,11 @@ void CordbStackWalk::CheckForLegacyHijackCase()
                 T_CONTEXT * pContext = reinterpret_cast<T_CONTEXT *>(m_pContextBuffer.GetValue());
                 pContext->ContextFlags = CONTEXT_FULL;
                 pUT->GetThreadContext(pContext);
+                ContextBuffer contextBuffer = { m_pContextBuffer, GetProcess()->GetTargetContextSize() };
                 IfFailThrow(pDAC->SetStackWalkCurrentContext(m_pCordbThread->m_vmThreadToken,
                                                  m_pSFIHandle,
                                                  SET_CONTEXT_FLAG_ACTIVE_FRAME,
-                                                 m_pContextBuffer));
+                                                 contextBuffer));
             }
         }
     }
@@ -206,9 +209,10 @@ void CordbStackWalk::RefreshIfNeeded()
         DeleteAll();
 
         // create a new stackwalk handle
+        ContextBuffer contextBuffer = { m_pContextBuffer, pProcess->GetTargetContextSize() };
         IfFailThrow(pProcess->GetDAC()->CreateStackWalk(m_pCordbThread->m_vmThreadToken,
-                                            m_pContextBuffer,
-                                            &m_pSFIHandle));
+                                                        contextBuffer,
+                                                        &m_pSFIHandle));
 
         // advance the stackwalker to where we originally were
         SetContextWorker(m_cachedSetContextFlag, pProcess->GetTargetContextSize(), ctx);
@@ -287,9 +291,9 @@ HRESULT CordbStackWalk::GetContext(ULONG32   contextFlags,
                 // We always store the current CONTEXT, so just copy it into the buffer.
                 // Stamp the requested contextFlags on the destination so the copy
                 // pulls exactly those chunks from the source.
-                IfFailThrow(pDAC->CopyContext(pbContextBuf, contextBufSize,
-                                              m_pContextBuffer, GetProcess()->GetTargetContextSize(),
-                                              contextFlags));
+                ContextBuffer destinationContext = { pbContextBuf, contextBufSize };
+                ContextBuffer sourceContext = { m_pContextBuffer, GetProcess()->GetTargetContextSize() };
+                IfFailThrow(pDAC->CopyContext(destinationContext, sourceContext, contextFlags));
             }
         }
     }
@@ -348,16 +352,19 @@ void CordbStackWalk::SetContextWorker(CorDebugSetContextFlag flag, ULONG32 conte
     NewArrayHolder<BYTE> tmpCtx(new BYTE[cbCtx]);
     memcpy(tmpCtx, m_pContextBuffer, cbCtx);
     // flags == 0: tmpCtx already carries the desired ContextFlags (copied above).
-    IfFailThrow(pDAC->CopyContext(tmpCtx, cbCtx, context, contextSize, 0));
-    IfFailThrow(pDAC->CheckContext(m_pCordbThread->m_vmThreadToken, tmpCtx));
+    ContextBuffer temporaryContext = { tmpCtx, cbCtx };
+    ContextBuffer sourceContext = { context, contextSize };
+    IfFailThrow(pDAC->CopyContext(temporaryContext, sourceContext, 0));
+    IfFailThrow(pDAC->CheckContext(m_pCordbThread->m_vmThreadToken, temporaryContext));
 
     memcpy(m_pContextBuffer, tmpCtx, cbCtx);
     m_cachedSetContextFlag = flag;
 
+    ContextBuffer currentContext = { m_pContextBuffer, cbCtx };
     IfFailThrow(pDAC->SetStackWalkCurrentContext(m_pCordbThread->m_vmThreadToken,
                                      m_pSFIHandle,
                                      flag,
-                                     m_pContextBuffer));
+                                     currentContext));
 }
 
 //---------------------------------------------------------------------------------------
@@ -383,7 +390,10 @@ BOOL CordbStackWalk::UnwindStackFrame()
 
     // Now that we have unwound, make sure we update the CONTEXT buffer to reflect the current stack frame.
     if (retVal)
-        IfFailThrow(pDAC->GetStackWalkCurrentContext(m_pSFIHandle, m_pContextBuffer));
+    {
+        ContextBuffer contextBuffer = { m_pContextBuffer, pProcess->GetTargetContextSize() };
+        IfFailThrow(pDAC->GetStackWalkCurrentContext(m_pSFIHandle, contextBuffer));
+    }
 
     return retVal;
 } // CordbStackWalk::UnwindStackWalkFrame
@@ -583,6 +593,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // initialize the auxiliary info required for funclets
         CordbMiscFrame miscFrame(pJITFuncData);
+        ContextBuffer contextBuffer = { frameCtx, GetProcess()->GetTargetContextSize() };
 
         // Create the native frame.
         CordbNativeFrame* pNativeFrame = new CordbNativeFrame(m_pCordbThread,
@@ -592,7 +603,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
                                                               (TADDR)frameData.v.taAmbientESP,
                                                               pCurrentAppDomain,
                                                               &miscFrame,
-                                                              frameCtx);
+                                                              contextBuffer);
 
         pResultFrame.Assign(static_cast<CordbFrame *>(pNativeFrame));
 
@@ -714,11 +725,12 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         // to the frame when we create it so we can properly resolve locals in that frame later.
         CordbAppDomain * pCurrentAppDomain = GetProcess()->GetAppDomain();
         _ASSERTE(pCurrentAppDomain != NULL);
+        ContextBuffer contextBuffer = { frameCtx, GetProcess()->GetTargetContextSize() };
 
         CordbRuntimeUnwindableFrame * pRuntimeFrame = new CordbRuntimeUnwindableFrame(m_pCordbThread,
                                                                                       FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(frameData.fp)),
                                                                                       pCurrentAppDomain,
-                                                                                      frameCtx);
+                                                                                      contextBuffer);
 
         pResultFrame.Assign(static_cast<CordbFrame *>(pRuntimeFrame));
 

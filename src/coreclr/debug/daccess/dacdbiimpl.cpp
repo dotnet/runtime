@@ -5428,17 +5428,20 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDebuggerControlBlockAddress(OU
 }
 
 // DacDbi API: Get the context for a particular thread of the target process
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, BYTE * pContextBufferRaw)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, ContextBuffer contextBuffer)
 {
     DD_ENTER_MAY_THROW
+
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < sizeof(DT_CONTEXT)))
+    {
+        return E_INVALIDARG;
+    }
 
     HRESULT hr = S_OK;
     EX_TRY
     {
 
-        _ASSERTE(pContextBufferRaw != NULL);
-
-        DT_CONTEXT * pContextBuffer = reinterpret_cast<DT_CONTEXT *>(pContextBufferRaw);
+        DT_CONTEXT * pContextBuffer = reinterpret_cast<DT_CONTEXT *>(contextBuffer.pContextBytes);
 
         Thread *  pThread  = vmThread.GetDacPtr();
 
@@ -5701,23 +5704,22 @@ static UINT_PTR * GetRegisterSlotFromContext(BYTE * ctxBuf, CorDebugRegister reg
 }
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WriteRegistersToContext(
-    IN OUT BYTE * ctxBuf,
-    IN ULONG32 cb,
+    IN ContextBuffer contextBuffer,
     IN const CorDebugRegister * regs,
     IN ULONG32 nRegs,
     IN const TADDR * values)
 {
     DD_ENTER_MAY_THROW;
 
-    if (ctxBuf == NULL || (nRegs > 0 && (regs == NULL || values == NULL)))
+    if (contextBuffer.pContextBytes == NULL || (nRegs > 0 && (regs == NULL || values == NULL)))
         return E_INVALIDARG;
-    if (cb < sizeof(DT_CONTEXT))
+    if (contextBuffer.contextSize < sizeof(DT_CONTEXT))
         return E_INVALIDARG;
 
     for (ULONG32 i = 0; i < nRegs; i++)
     {
         // Registers with no CONTEXT slot (e.g. float / SIMD registers) are skipped.
-        UINT_PTR * pSlot = GetRegisterSlotFromContext(ctxBuf, regs[i]);
+        UINT_PTR * pSlot = GetRegisterSlotFromContext(contextBuffer.pContextBytes, regs[i]);
         if (pSlot != NULL)
             *pSlot = (UINT_PTR)values[i];
     }
@@ -5725,23 +5727,22 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WriteRegistersToContext(
 }
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ReadRegistersFromContext(
-    IN BYTE * ctxBuf,
-    IN ULONG32 cb,
+    IN ContextBuffer contextBuffer,
     IN const CorDebugRegister * regs,
     IN ULONG32 nRegs,
     OUT TADDR * pValues)
 {
     DD_ENTER_MAY_THROW;
 
-    if (ctxBuf == NULL || (nRegs > 0 && (regs == NULL || pValues == NULL)))
+    if (contextBuffer.pContextBytes == NULL || (nRegs > 0 && (regs == NULL || pValues == NULL)))
         return E_INVALIDARG;
-    if (cb < sizeof(DT_CONTEXT))
+    if (contextBuffer.contextSize < sizeof(DT_CONTEXT))
         return E_INVALIDARG;
 
     for (ULONG32 i = 0; i < nRegs; i++)
     {
         // Registers with no CONTEXT slot (e.g. float / SIMD registers) read as zero.
-        UINT_PTR * pSlot = GetRegisterSlotFromContext(ctxBuf, regs[i]);
+        UINT_PTR * pSlot = GetRegisterSlotFromContext(contextBuffer.pContextBytes, regs[i]);
         pValues[i] = (pSlot != NULL) ? (TADDR)*pSlot : (TADDR)0;
     }
     return S_OK;
@@ -5871,68 +5872,63 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAvailableRegistersMask(
 }
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ContextHasExtendedRegisters(
-    IN BYTE * ctxBuf,
-    IN ULONG32 cb,
+    IN ContextBuffer contextBuffer,
     OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
 
-    if (ctxBuf == NULL || pResult == NULL)
+    if (contextBuffer.pContextBytes == NULL || pResult == NULL)
         return E_INVALIDARG;
-    if (cb < sizeof(DT_CONTEXT))
+    if (contextBuffer.contextSize < sizeof(DT_CONTEXT))
         return E_INVALIDARG;
 
     *pResult = FALSE;
 #if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-    DT_CONTEXT * pCtx = (DT_CONTEXT *)ctxBuf;
+    DT_CONTEXT * pCtx = (DT_CONTEXT *)contextBuffer.pContextBytes;
     *pResult = (pCtx->ContextFlags & DT_CONTEXT_EXTENDED_REGISTERS) == DT_CONTEXT_EXTENDED_REGISTERS;
 #endif
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CompareControlRegisters(
-    IN const BYTE * ctxBuf1,
-    IN ULONG32 cb1,
-    IN const BYTE * ctxBuf2,
-    IN ULONG32 cb2,
+    IN ContextBuffer contextBuffer1,
+    IN ContextBuffer contextBuffer2,
     OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
 
-    if (ctxBuf1 == NULL || ctxBuf2 == NULL || pResult == NULL)
+    if (contextBuffer1.pContextBytes == NULL || contextBuffer2.pContextBytes == NULL || pResult == NULL)
         return E_INVALIDARG;
-    if (cb1 < sizeof(DT_CONTEXT) || cb2 < sizeof(DT_CONTEXT))
+    if (contextBuffer1.contextSize < sizeof(DT_CONTEXT) || contextBuffer2.contextSize < sizeof(DT_CONTEXT))
         return E_INVALIDARG;
 
     *pResult = ::CompareControlRegisters(
-        reinterpret_cast<const DT_CONTEXT *>(ctxBuf1),
-        reinterpret_cast<const DT_CONTEXT *>(ctxBuf2));
+        reinterpret_cast<const DT_CONTEXT *>(contextBuffer1.pContextBytes),
+        reinterpret_cast<const DT_CONTEXT *>(contextBuffer2.pContextBytes));
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CopyContext(
-    IN OUT BYTE * dstCtxBuf,
-    IN ULONG32 cbDst,
-    IN const BYTE * srcCtxBuf,
-    IN ULONG32 cbSrc,
+    IN ContextBuffer destinationContext,
+    IN ContextBuffer sourceContext,
     IN ULONG32 flags)
 {
     DD_ENTER_MAY_THROW;
 
-    if (dstCtxBuf == NULL || srcCtxBuf == NULL)
+    if (destinationContext.pContextBytes == NULL || sourceContext.pContextBytes == NULL)
         return E_INVALIDARG;
-    if (cbDst < sizeof(DT_CONTEXT) || cbSrc < sizeof(DT_CONTEXT))
+    if (destinationContext.contextSize < sizeof(DT_CONTEXT) || sourceContext.contextSize < sizeof(DT_CONTEXT))
         return E_INVALIDARG;
 
     // flags != 0 stamps the destination's ContextFlags before the copy, so the
     // chunk-wise copy below pulls exactly the requested pieces from the source.
     // flags == 0 preserves the destination's existing ContextFlags.
     if (flags != 0)
-        reinterpret_cast<DT_CONTEXT *>(dstCtxBuf)->ContextFlags = flags;
+        reinterpret_cast<DT_CONTEXT *>(destinationContext.pContextBytes)->ContextFlags = flags;
 
     CORDbgCopyThreadContext(
-        reinterpret_cast<T_CONTEXT *>(dstCtxBuf),
-        reinterpret_cast<const T_CONTEXT *>(srcCtxBuf));
+        reinterpret_cast<T_CONTEXT *>(destinationContext.pContextBytes),
+        reinterpret_cast<const T_CONTEXT *>(sourceContext.pContextBytes));
     return S_OK;
 }
 
@@ -6053,8 +6049,7 @@ namespace
 }
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ReadFloatRegistersFromContext(
-    IN  BYTE * ctxBuf,
-    IN  ULONG32 cb,
+    IN  ContextBuffer contextBuffer,
     IN  ULONG32 maxValues,
     OUT DOUBLE values[CORDB_MAX_FLOAT_REGISTERS],
     OUT ULONG32 * pValuesCount,
@@ -6063,15 +6058,15 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ReadFloatRegistersFromContext(
 {
     DD_ENTER_MAY_THROW;
 
-    if (ctxBuf == NULL || values == NULL || pValuesCount == NULL ||
+    if (contextBuffer.pContextBytes == NULL || values == NULL || pValuesCount == NULL ||
         pFirstFloatReg == NULL || pFloatStackTop == NULL || maxValues == 0)
     {
         return E_INVALIDARG;
     }
-    if (cb < sizeof(DT_CONTEXT))
+    if (contextBuffer.contextSize < sizeof(DT_CONTEXT))
         return E_INVALIDARG;
 
-    DT_CONTEXT * pCtx = reinterpret_cast<DT_CONTEXT *>(ctxBuf);
+    DT_CONTEXT * pCtx = reinterpret_cast<DT_CONTEXT *>(contextBuffer.pContextBytes);
 
     *pValuesCount   = 0;
     *pFirstFloatReg = -1;

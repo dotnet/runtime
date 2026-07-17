@@ -16,6 +16,13 @@ public struct COR_TYPEID
 }
 
 [StructLayout(LayoutKind.Sequential)]
+public unsafe struct ContextBuffer
+{
+    public byte* pContextBytes;
+    public uint contextSize;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct FieldData
 {
     public uint m_fldMetadataToken;
@@ -805,22 +812,22 @@ public unsafe partial interface IDacDbiInterface
     int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal);
 
     [PreserveSig]
-    int CreateStackWalk(ulong vmThread, byte* pInternalContextBuffer, nuint* ppSFIHandle);
+    int CreateStackWalk(ulong vmThread, ContextBuffer contextBuffer, nuint* ppSFIHandle);
 
     [PreserveSig]
     int DeleteStackWalk(nuint ppSFIHandle);
 
     [PreserveSig]
-    int GetStackWalkCurrentContext(nuint pSFIHandle, byte* pContext);
+    int GetStackWalkCurrentContext(nuint pSFIHandle, ContextBuffer contextBuffer);
 
     [PreserveSig]
-    int SetStackWalkCurrentContext(ulong vmThread, nuint pSFIHandle, int flag, byte* pContext);
+    int SetStackWalkCurrentContext(ulong vmThread, nuint pSFIHandle, int flag, ContextBuffer contextBuffer);
 
     [PreserveSig]
     int UnwindStackWalkFrame(nuint pSFIHandle, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int CheckContext(ulong vmThread, byte* pContext);
+    int CheckContext(ulong vmThread, ContextBuffer contextBuffer);
 
     [PreserveSig]
     int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, int* pRetVal);
@@ -835,10 +842,10 @@ public unsafe partial interface IDacDbiInterface
     int GetStackParameterSize(ulong controlPC, uint* pRetVal);
 
     [PreserveSig]
-    int IsLeafFrame(ulong vmThread, byte* pContext, Interop.BOOL* pResult);
+    int IsLeafFrame(ulong vmThread, ContextBuffer contextBuffer, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetContext(ulong vmThread, byte* pContextBuffer);
+    int GetContext(ulong vmThread, ContextBuffer contextBuffer);
 
     [PreserveSig]
     int IsDiagnosticsHiddenOrLCGMethod(ulong vmMethodDesc, int* pRetVal);
@@ -1066,10 +1073,10 @@ public unsafe partial interface IDacDbiInterface
     int GetTargetContextSize(ContextSizeFlags flags, uint* pSize);
 
     [PreserveSig]
-    int WriteRegistersToContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, nuint* values);
+    int WriteRegistersToContext(ContextBuffer contextBuffer, CorDebugRegister* regs, uint nRegs, nuint* values);
 
     [PreserveSig]
-    int ReadRegistersFromContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, nuint* pValues);
+    int ReadRegistersFromContext(ContextBuffer contextBuffer, CorDebugRegister* regs, uint nRegs, nuint* pValues);
 
     [PreserveSig]
     int GetAvailableRegistersMask(Interop.BOOL fActive, Interop.BOOL fQuickUnwind, uint regCount, byte* pAvailable);
@@ -1078,17 +1085,17 @@ public unsafe partial interface IDacDbiInterface
     int ConvertJitRegNumToCorDebugRegister(uint jitRegNum, CorDebugRegister* pReg);
 
     [PreserveSig]
-    int ReadFloatRegistersFromContext(byte* ctxBuf, uint cb, uint maxValues, double* values, uint* pValuesCount, int* pFirstFloatReg, uint* pFloatStackTop);
+    int ReadFloatRegistersFromContext(ContextBuffer contextBuffer, uint maxValues, double* values, uint* pValuesCount, int* pFirstFloatReg, uint* pFloatStackTop);
 
     [PreserveSig]
     int GetTargetInfo(TargetInfo* pTargetInfo);
 
     [PreserveSig]
-    int ContextHasExtendedRegisters(byte* ctxBuf, uint cb, Interop.BOOL* pResult);
+    int ContextHasExtendedRegisters(ContextBuffer contextBuffer, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int CompareControlRegisters(byte* ctxBuf1, uint cb1, byte* ctxBuf2, uint cb2, Interop.BOOL* pResult);
+    int CompareControlRegisters(ContextBuffer contextBuffer1, ContextBuffer contextBuffer2, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int CopyContext(byte* dstCtxBuf, uint cbDst, byte* srcCtxBuf, uint cbSrc, uint flags);
+    int CopyContext(ContextBuffer destinationContext, ContextBuffer sourceContext, uint flags);
 }

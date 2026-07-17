@@ -293,7 +293,7 @@ BOOL CordbThread::IsThreadExceptionManaged()
 //    This is a private hook for the shim to create a CordbRegisterSet for a ShimChain.
 //
 // Arguments:
-//    * pContext - the CONTEXT to be converted; this must be the leaf CONTEXT of a chain
+//    * contextBuffer - the CONTEXT to be converted; this must be the leaf CONTEXT of a chain
 //    * fLeaf    - whether the chain is the leaf chain or not
 //    * reason   - the chain reason; this is needed for legacy reasons (see below)
 //    * ppRegSet - out parameter; return the newly created ICDRegisterSet
@@ -304,8 +304,7 @@ BOOL CordbThread::IsThreadExceptionManaged()
 //        chain reason.
 //
 
-void CordbThread::CreateCordbRegisterSet(const BYTE *            pContext,
-                                         ULONG32                 contextSize,
+void CordbThread::CreateCordbRegisterSet(ContextBuffer           contextBuffer,
                                          BOOL                    fLeaf,
                                          CorDebugChainReason     reason,
                                          ICorDebugRegisterSet ** ppRegSet)
@@ -319,15 +318,20 @@ void CordbThread::CreateCordbRegisterSet(const BYTE *            pContext,
     PUBLIC_REENTRANT_API_ENTRY_FOR_SHIM(GetProcess());
 
     IfFailThrow(EnsureThreadIsAlive());
+    ULONG32 expectedContextSize = GetProcess()->GetTargetContextSize();
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < expectedContextSize))
+    {
+        ThrowHR(E_INVALIDARG);
+    }
 
     // Allocate and populate a CONTEXT buffer that the CordbRegisterSet will own.
     // The caller passes the target's CONTEXT size (queried from the DAC).
-    NewArrayHolder<BYTE> pContextBuffer(new BYTE[contextSize]);
-    memcpy(pContextBuffer, pContext, contextSize);
+    NewArrayHolder<BYTE> pContextBuffer(new BYTE[expectedContextSize]);
+    memcpy(pContextBuffer, contextBuffer.pContextBytes, expectedContextSize);
 
     // create the CordbRegisterSet
-    RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(pContextBuffer,
-                                                            contextSize,
+    ContextBuffer registerContext = { pContextBuffer, expectedContextSize };
+    RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(registerContext,
                                                             this,
                                                             (fLeaf == TRUE),
                                                             (reason == CHAIN_ENTER_MANAGED),
@@ -1155,8 +1159,8 @@ HRESULT CordbThread::GetRegisterSet(ICorDebugRegisterSet ** ppRegisters)
                 IfFailThrow(pSW->GetContext(CONTEXT_FULL, contextSize, NULL, pContextBuffer));
 
                 // create the CordbRegisterSet
-                RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(pContextBuffer,
-                                                                        contextSize,
+                ContextBuffer contextBuffer = { pContextBuffer, contextSize };
+                RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(contextBuffer,
                                                                         this,
                                                                         true,   // active
                                                                         false,  // !fQuickUnwind
@@ -1435,14 +1439,14 @@ void CordbThread::LoadFloatState()
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
     ULONG32 cbContext = GetProcess()->GetTargetContextSize();
     NewArrayHolder<BYTE> contextBuf(new BYTE[cbContext]);
-    IfFailThrow(pDAC->GetContext(m_vmThreadToken, contextBuf));
+    ContextBuffer contextBuffer = { contextBuf, cbContext };
+    IfFailThrow(pDAC->GetContext(m_vmThreadToken, contextBuffer));
 
     ULONG32 valuesCount   = 0;
     int     firstFloatReg = -1;
     ULONG32 floatStackTop = 0;
     IfFailThrow(pDAC->ReadFloatRegistersFromContext(
-        contextBuf,
-        cbContext,
+        contextBuffer,
         CORDB_MAX_FLOAT_REGISTERS,
         m_floatValues,
         &valuesCount,
@@ -1540,17 +1544,18 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
 
 // Get the context from a thread in managed code.
 // This thread should be stopped gracefully by the LS in managed code.
-HRESULT CordbThread::GetManagedContext(BYTE ** ppContext)
+HRESULT CordbThread::GetManagedContext(ContextBuffer * pContextBuffer)
 {
     FAIL_IF_NEUTERED(this);
     INTERNAL_SYNC_API_ENTRY(GetProcess());
 
-    if (ppContext == NULL)
+    if (pContextBuffer == NULL)
     {
         ThrowHR(E_INVALIDARG);
     }
 
-    *ppContext = NULL;
+    pContextBuffer->pContextBytes = NULL;
+    pContextBuffer->contextSize = 0;
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
     // Each CordbThread object allocates m_pContext only once, the first time
@@ -1580,8 +1585,8 @@ HRESULT CordbThread::GetManagedContext(BYTE ** ppContext)
 
             // The thread we're examining IS handling an exception, So grab the CONTEXT of the exception, NOT the
             // currently executing thread's CONTEXT (which would be the context of the exception handler.)
-            hr = GetProcess()->SafeReadThreadContext(m_vmLeftSideContext.ToLsPtr(),
-                                                    m_pContext.GetValue());
+            ContextBuffer managedContext = { m_pContext.GetValue(), GetProcess()->GetTargetContextSize() };
+            hr = GetProcess()->SafeReadThreadContext(m_vmLeftSideContext.ToLsPtr(), managedContext);
             IfFailThrow(hr);
         }
 
@@ -1590,17 +1595,19 @@ HRESULT CordbThread::GetManagedContext(BYTE ** ppContext)
     }
 
     _ASSERTE(SUCCEEDED(hr));
-    (*ppContext) = m_pContext;
+    pContextBuffer->pContextBytes = m_pContext;
+    pContextBuffer->contextSize = GetProcess()->GetTargetContextSize();
 
     return hr;
 }
 
-HRESULT CordbThread::SetManagedContext(BYTE * pContext, ULONG32 cbCtx)
+HRESULT CordbThread::SetManagedContext(ContextBuffer contextBuffer)
 {
     INTERNAL_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
 
-    if (pContext == NULL)
+    ULONG32 contextSize = GetProcess()->GetTargetContextSize();
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < contextSize))
     {
         ThrowHR(E_INVALIDARG);
     }
@@ -1623,16 +1630,15 @@ HRESULT CordbThread::SetManagedContext(BYTE * pContext, ULONG32 cbCtx)
         //
         // Note: we read the remote context and merge the new one in, then write it back. This ensures that we don't
         // write too much information into the remote process.
-        NewArrayHolder<BYTE> tempContext(new BYTE[GetProcess()->GetTargetContextSize()]);
-        hr = GetProcess()->SafeReadThreadContext(m_vmLeftSideContext.ToLsPtr(), tempContext);
+        NewArrayHolder<BYTE> tempContext(new BYTE[contextSize]);
+        ContextBuffer temporaryContext = { tempContext, contextSize };
+        hr = GetProcess()->SafeReadThreadContext(m_vmLeftSideContext.ToLsPtr(), temporaryContext);
         IfFailThrow(hr);
 
         // flags == 0: tempContext already carries the target's ContextFlags (read above).
-        IfFailThrow(GetProcess()->GetDAC()->CopyContext(
-            tempContext.GetValue(), GetProcess()->GetTargetContextSize(),
-            pContext, cbCtx, 0));
+        IfFailThrow(GetProcess()->GetDAC()->CopyContext(temporaryContext, contextBuffer, 0));
 
-        hr = GetProcess()->SafeWriteThreadContext(m_vmLeftSideContext.ToLsPtr(), tempContext.GetValue());
+        hr = GetProcess()->SafeWriteThreadContext(m_vmLeftSideContext.ToLsPtr(), temporaryContext);
         IfFailThrow(hr);
 
         // @todo - who's updating the regdisplay to guarantee that's in sync w/ our new context?
@@ -1641,7 +1647,7 @@ HRESULT CordbThread::SetManagedContext(BYTE * pContext, ULONG32 cbCtx)
     _ASSERTE(SUCCEEDED(hr));
     if (m_fContextFresh && (m_pContext != NULL))
     {
-        memcpy(m_pContext, pContext, cbCtx);
+        memcpy(m_pContext, contextBuffer.pContextBytes, contextSize);
     }
 
     return hr;
@@ -3269,8 +3275,9 @@ HRESULT CordbUnmanagedThread::GetThreadContext(T_CONTEXT* pContext)
 
         // Read the context into a temp context then copy to the out param.
         T_CONTEXT tempContext = { 0 };
+        ContextBuffer contextBuffer = { reinterpret_cast<BYTE *>(&tempContext), sizeof(tempContext) };
 
-        hr = GetProcess()->SafeReadThreadContext(m_pLeftSideContext, reinterpret_cast<BYTE*>(&tempContext));
+        hr = GetProcess()->SafeReadThreadContext(m_pLeftSideContext, contextBuffer);
 
         if (SUCCEEDED(hr))
             CORDbgCopyThreadContext(pContext, &tempContext);
@@ -4474,9 +4481,9 @@ HRESULT CordbFrame::ReadContextRegister(CorDebugRegister reg, TADDR * pValue) co
         return E_POINTER;
 
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
+    ContextBuffer contextBuffer = { const_cast<BYTE *>(GetContext()), GetProcess()->GetTargetContextSize() };
     return pDAC->ReadRegistersFromContext(
-        const_cast<BYTE *>(GetContext()),
-        GetProcess()->GetTargetContextSize(),
+        contextBuffer,
         &reg,
         1,
         pValue);
@@ -5091,12 +5098,17 @@ HRESULT CordbInternalFrame::IsCloserToLeaf(ICorDebugFrame * pFrameToCompare,
 CordbRuntimeUnwindableFrame::CordbRuntimeUnwindableFrame(CordbThread *    pThread,
                                                          FramePointer     fp,
                                                          CordbAppDomain * pCurrentAppDomain,
-                                                         BYTE *     pContext)
+                                                         ContextBuffer    contextBuffer)
   : CordbFrame(pThread, fp, 0, pCurrentAppDomain)
 {
-    ULONG32 contextSize = pThread->GetProcess()->GetTargetContextSize();
-    m_pContextBuffer = new BYTE[contextSize];
-    memcpy(m_pContextBuffer, pContext, contextSize);
+    ULONG32 expectedContextSize = pThread->GetProcess()->GetTargetContextSize();
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < expectedContextSize))
+    {
+        ThrowHR(E_INVALIDARG);
+    }
+
+    m_pContextBuffer = new BYTE[expectedContextSize];
+    memcpy(m_pContextBuffer, contextBuffer.pContextBytes, expectedContextSize);
 }
 
 void CordbRuntimeUnwindableFrame::Neuter()
@@ -5170,7 +5182,7 @@ CordbNativeFrame::CordbNativeFrame(CordbThread *        pThread,
                                    TADDR                taAmbientESP,
                                    CordbAppDomain *     pCurrentAppDomain,
                                    CordbMiscFrame *     pMisc /*= NULL*/,
-                                   BYTE *               pContext /*= NULL*/)
+                                   ContextBuffer        contextBuffer /*= {}*/)
   : CordbFrame(pThread, fp, ip, pCurrentAppDomain),
     m_JITILFrame(NULL),
     m_nativeCode(pNativeCode), // implicit InternalAddRef
@@ -5179,10 +5191,14 @@ CordbNativeFrame::CordbNativeFrame(CordbThread *        pThread,
     m_misc = *pMisc;
 
     // Only new CordbNativeFrames created by the new stackwalk contain a CONTEXT.
-    _ASSERTE(pContext != NULL);
-    ULONG32 contextSize = GetProcess()->GetTargetContextSize();
-    m_pContextBuffer = new BYTE[contextSize];
-    memcpy(m_pContextBuffer, pContext, contextSize);
+    ULONG32 expectedContextSize = GetProcess()->GetTargetContextSize();
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < expectedContextSize))
+    {
+        ThrowHR(E_INVALIDARG);
+    }
+
+    m_pContextBuffer = new BYTE[expectedContextSize];
+    memcpy(m_pContextBuffer, contextBuffer.pContextBytes, expectedContextSize);
 }
 
 /*
@@ -5554,8 +5570,8 @@ HRESULT CordbNativeFrame::GetRegisterSet(ICorDebugRegisterSet **ppRegisters)
     EX_TRY
     {
         // allocate a new CordbRegisterSet object
-        RSInitHolder<CordbRegisterSet> pRegisterSet(new CordbRegisterSet(m_pContextBuffer,
-                                                                         GetProcess()->GetTargetContextSize(),
+        ContextBuffer contextBuffer = { m_pContextBuffer, GetProcess()->GetTargetContextSize() };
+        RSInitHolder<CordbRegisterSet> pRegisterSet(new CordbRegisterSet(contextBuffer,
                                                                          m_pThread,
                                                                          IsLeafFrame(),
                                                                          false));
@@ -6385,9 +6401,11 @@ bool CordbNativeFrame::IsLeafFrame() const
                         // check if the leaf frame in the leaf chain is "this"
                         BOOL fSameControlRegisters = FALSE;
                         ULONG32 cbContext = GetProcess()->GetTargetContextSize();
+                        ContextBuffer thisContext = { const_cast<BYTE *>(GetContext()), cbContext };
+                        ContextBuffer nativeFrameContext = { const_cast<BYTE *>(pNFrame->GetContext()), cbContext };
                         IfFailThrow(GetProcess()->GetDAC()->CompareControlRegisters(
-                            GetContext(), cbContext,
-                            pNFrame->GetContext(), cbContext,
+                            thisContext,
+                            nativeFrameContext,
                             &fSameControlRegisters));
                         if (fSameControlRegisters)
                         {
@@ -6406,7 +6424,11 @@ bool CordbNativeFrame::IsLeafFrame() const
         {
             IDacDbiInterface * pDAC = GetProcess()->GetDAC();
             BOOL isLeaf;
-            IfFailThrow(pDAC->IsLeafFrame(m_pThread->m_vmThreadToken, m_pContextBuffer, &isLeaf));
+            ContextBuffer contextBuffer = { m_pContextBuffer, GetProcess()->GetTargetContextSize() };
+            IfFailThrow(pDAC->IsLeafFrame(
+                m_pThread->m_vmThreadToken,
+                contextBuffer,
+                &isLeaf));
             m_optfIsLeafFrame = (isLeaf == TRUE);
         }
     }

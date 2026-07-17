@@ -153,13 +153,12 @@ public:
 
     HRESULT STDMETHODCALLTYPE GetTargetContextSize(ContextSizeFlags flags, OUT ULONG32 * pSize);
 
-    HRESULT STDMETHODCALLTYPE WriteRegistersToContext(IN OUT BYTE * ctxBuf, IN ULONG32 cb, IN const CorDebugRegister * regs, IN ULONG32 nRegs, IN const TADDR * values);
-    HRESULT STDMETHODCALLTYPE ReadRegistersFromContext(IN BYTE * ctxBuf, IN ULONG32 cb, IN const CorDebugRegister * regs, IN ULONG32 nRegs, OUT TADDR * pValues);
+    HRESULT STDMETHODCALLTYPE WriteRegistersToContext(IN ContextBuffer contextBuffer, IN const CorDebugRegister * regs, IN ULONG32 nRegs, IN const TADDR * values);
+    HRESULT STDMETHODCALLTYPE ReadRegistersFromContext(IN ContextBuffer contextBuffer, IN const CorDebugRegister * regs, IN ULONG32 nRegs, OUT TADDR * pValues);
     HRESULT STDMETHODCALLTYPE GetAvailableRegistersMask(IN BOOL fActive, IN BOOL fQuickUnwind, IN ULONG32 regCount, OUT BYTE pAvailable[]);
     HRESULT STDMETHODCALLTYPE ConvertJitRegNumToCorDebugRegister(IN ULONG32 jitRegNum, OUT CorDebugRegister * pReg);
     HRESULT STDMETHODCALLTYPE ReadFloatRegistersFromContext(
-        IN  BYTE * ctxBuf,
-        IN  ULONG32 cb,
+        IN  ContextBuffer contextBuffer,
         IN  ULONG32 regCount,
         OUT DOUBLE values[CORDB_MAX_FLOAT_REGISTERS],
         OUT ULONG32 * pValuesCount,
@@ -168,11 +167,11 @@ public:
 
     HRESULT STDMETHODCALLTYPE GetTargetInfo(OUT TargetInfo * pTargetInfo);
 
-    HRESULT STDMETHODCALLTYPE ContextHasExtendedRegisters(IN BYTE * ctxBuf, IN ULONG32 cb, OUT BOOL * pResult);
+    HRESULT STDMETHODCALLTYPE ContextHasExtendedRegisters(IN ContextBuffer contextBuffer, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE CompareControlRegisters(IN const BYTE * ctxBuf1, IN ULONG32 cb1, IN const BYTE * ctxBuf2, IN ULONG32 cb2, OUT BOOL * pResult);
+    HRESULT STDMETHODCALLTYPE CompareControlRegisters(IN ContextBuffer contextBuffer1, IN ContextBuffer contextBuffer2, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE CopyContext(IN OUT BYTE * dstCtxBuf, IN ULONG32 cbDst, IN const BYTE * srcCtxBuf, IN ULONG32 cbSrc, IN ULONG32 flags);
+    HRESULT STDMETHODCALLTYPE CopyContext(IN ContextBuffer destinationContext, IN ContextBuffer sourceContext, IN ULONG32 flags);
 
 private:
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
@@ -693,24 +692,23 @@ public:
     HRESULT STDMETHODCALLTYPE GetManagedStoppedContext(VMPTR_Thread vmThread, OUT VMPTR_CONTEXT * pRetVal);
 
     // Create and return a stackwalker on the specified thread.
-    HRESULT STDMETHODCALLTYPE CreateStackWalk(VMPTR_Thread vmThread, BYTE * pInternalContextBuffer, OUT StackWalkHandle * ppSFIHandle);
+    HRESULT STDMETHODCALLTYPE CreateStackWalk(VMPTR_Thread vmThread, ContextBuffer contextBuffer, OUT StackWalkHandle * ppSFIHandle);
 
     // Delete the stackwalk object
     HRESULT STDMETHODCALLTYPE DeleteStackWalk(StackWalkHandle ppSFIHandle);
 
     // Get the CONTEXT of the current frame at which the stackwalker is stopped.
-    HRESULT STDMETHODCALLTYPE GetStackWalkCurrentContext(StackWalkHandle pSFIHandle, BYTE * pContext);
+    HRESULT STDMETHODCALLTYPE GetStackWalkCurrentContext(StackWalkHandle pSFIHandle, ContextBuffer contextBuffer);
 
     void GetStackWalkCurrentContext(StackFrameIterator * pIter, DT_CONTEXT * pContext);
 
     // Set the stackwalker to the specified CONTEXT.
-    HRESULT STDMETHODCALLTYPE SetStackWalkCurrentContext(VMPTR_Thread vmThread, StackWalkHandle pSFIHandle, CorDebugSetContextFlag flag, BYTE * pContext);
+    HRESULT STDMETHODCALLTYPE SetStackWalkCurrentContext(VMPTR_Thread vmThread, StackWalkHandle pSFIHandle, CorDebugSetContextFlag flag, ContextBuffer contextBuffer);
 
     // Unwind the stackwalker to the next frame.
     HRESULT STDMETHODCALLTYPE UnwindStackWalkFrame(StackWalkHandle pSFIHandle, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE CheckContext(VMPTR_Thread       vmThread,
-                         const BYTE * pContext);
+    HRESULT STDMETHODCALLTYPE CheckContext(VMPTR_Thread vmThread, ContextBuffer contextBuffer);
 
     // Retrieve information about the current frame from the stackwalker.
     HRESULT STDMETHODCALLTYPE GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL Debugger_STRData * pFrameData, OUT FrameType * pRetVal);
@@ -731,10 +729,10 @@ public:
 
     // Return TRUE if the specified CONTEXT is the CONTEXT of the leaf frame.
     // @dbgtodo  filter CONTEXT - Currently we check for the filter CONTEXT first.
-    HRESULT STDMETHODCALLTYPE IsLeafFrame(VMPTR_Thread vmThread, const BYTE * pContext, OUT BOOL * pResult);
+    HRESULT STDMETHODCALLTYPE IsLeafFrame(VMPTR_Thread vmThread, ContextBuffer contextBuffer, OUT BOOL * pResult);
 
     // DacDbi API: Get the context for a particular thread of the target process
-    HRESULT STDMETHODCALLTYPE GetContext(VMPTR_Thread vmThread, BYTE * pContextBuffer);
+    HRESULT STDMETHODCALLTYPE GetContext(VMPTR_Thread vmThread, ContextBuffer contextBuffer);
 
     // Check if the given method is a DiagnosticHidden or an LCG method.
     HRESULT STDMETHODCALLTYPE IsDiagnosticsHiddenOrLCGMethod(VMPTR_MethodDesc vmMethodDesc, OUT DynamicMethodType * pRetVal);

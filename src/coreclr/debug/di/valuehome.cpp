@@ -39,18 +39,21 @@ void RegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // Arguments:
 // updates a register in a given context buffer using the DAC.
 // Arguments:
-//     input:  pContext - context buffer in which the register is to be updated
+//     input:  contextBuffer - context buffer in which the register is to be updated
 //             regnum   - enumeration constant indicating which register is to be updated
 //             newVal   - the new value for the register contents
 //     output: no out parameters, but the new value will be written to the context buffer
-void RegValueHome::SetContextRegister(BYTE *           pContext,
+void RegValueHome::SetContextRegister(ContextBuffer    contextBuffer,
                                       CorDebugRegister regNum,
                                       SIZE_T           newVal)
 {
     IDacDbiInterface * pDAC = m_pFrame->GetProcess()->GetDAC();
     TADDR value = (TADDR)newVal;
-    ULONG32 cbCtx = m_pFrame->GetProcess()->GetTargetContextSize();
-    HRESULT hr = pDAC->WriteRegistersToContext(pContext, cbCtx, &regNum, 1, &value);
+    HRESULT hr = pDAC->WriteRegistersToContext(
+        contextBuffer,
+        &regNum,
+        1,
+        &value);
     if (FAILED(hr))
     {
         _ASSERTE(!"Invalid register number!");
@@ -61,7 +64,7 @@ void RegValueHome::SetContextRegister(BYTE *           pContext,
 // RegValueHome::SetEnregisteredValue
 // set a remote enregistered location to a new value (see code:EnregisteredValueHome::SetEnregisteredValue
 // for full header comment)
-void RegValueHome::SetEnregisteredValue(MemoryRange newValue, BYTE * pContext, bool fIsSigned)
+void RegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
 {
     SIZE_T extendedVal = 0;
 
@@ -107,7 +110,7 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, BYTE * pContext, b
         }
     }
 
-    SetContextRegister(pContext, m_reg1Info.m_kRegNumber, extendedVal); // throws
+    SetContextRegister(contextBuffer, m_reg1Info.m_kRegNumber, extendedVal); // throws
 } // RegValueHome::SetEnregisteredValue
 
 // RegValueHome::GetEnregisteredValue
@@ -146,7 +149,7 @@ void RegRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // RegRegValueHome::SetEnregisteredValue
 // set a remote enregistered location to a new value (see EnregisteredValueHome::SetEnregisteredValue
 // for full header comment)
-void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, BYTE * pContext, bool fIsSigned)
+void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
 {
     _ASSERTE(newValue.Size() == 8);
     _ASSERTE(REG_SIZE == sizeof(void*));
@@ -160,8 +163,8 @@ void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, BYTE * pContext
 
     // Update the proper registers. SetContextRegister writes through to the
     // active CONTEXT - which is the only source of truth now that REGDISPLAY is gone.
-    SetContextRegister(pContext, m_reg1Info.m_kRegNumber, highPart); // throws
-    SetContextRegister(pContext, m_reg2Info.m_kRegNumber, lowPart); // throws
+    SetContextRegister(contextBuffer, m_reg1Info.m_kRegNumber, highPart); // throws
+    SetContextRegister(contextBuffer, m_reg2Info.m_kRegNumber, lowPart); // throws
 } // RegRegValueHome::SetEnregisteredValue
 
 // RegRegValueHome::GetEnregisteredValue
@@ -201,7 +204,7 @@ void RegMemValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // RegMemValueHome::SetEnregisteredValue
 // set a remote enregistered location to a new value (see EnregisteredValueHome::SetEnregisteredValue
 // for full header comment)
-void RegMemValueHome::SetEnregisteredValue(MemoryRange newValue, BYTE * pContext, bool fIsSigned)
+void RegMemValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
 {
     _ASSERTE(newValue.Size() == REG_SIZE >> 1); // make sure we have bytes for two registers
     _ASSERTE(REG_SIZE == sizeof(void*));
@@ -214,7 +217,7 @@ void RegMemValueHome::SetEnregisteredValue(MemoryRange newValue, BYTE * pContext
     memcpy(&highPart, (BYTE *)newValue.StartAddress() + REG_SIZE, REG_SIZE);
 
     // Update the proper registers.
-    SetContextRegister(pContext, m_reg1Info.m_kRegNumber, highPart); // throws
+    SetContextRegister(contextBuffer, m_reg1Info.m_kRegNumber, highPart); // throws
 
     _ASSERTE(REG_SIZE == sizeof(lowPart));
     HRESULT hr = m_pFrame->GetProcess()->SafeReadStruct(m_memAddr, &lowPart);
@@ -263,7 +266,7 @@ void MemRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // MemRegValueHome::SetEnregisteredValue
 // set a remote enregistered location to a new value (see EnregisteredValueHome::SetEnregisteredValue
 // for full header comment)
-void MemRegValueHome::SetEnregisteredValue(MemoryRange newValue, BYTE * pContext, bool fIsSigned)
+void MemRegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
 {
     _ASSERTE(newValue.Size() == REG_SIZE << 1); // make sure we have bytes for two registers
     _ASSERTE(REG_SIZE == sizeof(void *));
@@ -276,7 +279,7 @@ void MemRegValueHome::SetEnregisteredValue(MemoryRange newValue, BYTE * pContext
     memcpy(&highPart, (BYTE *)newValue.StartAddress() + REG_SIZE, REG_SIZE);
 
     // Update the proper registers.
-    SetContextRegister(pContext, m_reg1Info.m_kRegNumber, lowPart); // throws
+    SetContextRegister(contextBuffer, m_reg1Info.m_kRegNumber, lowPart); // throws
 
     _ASSERTE(REG_SIZE == sizeof(highPart));
     HRESULT hr = m_pFrame->GetProcess()->SafeWriteStruct(m_memAddr, &highPart);
@@ -322,7 +325,7 @@ void FloatRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // FloatValueHome::SetEnregisteredValue
 // set a remote enregistered location to a new value.
 void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
-                                             BYTE *      pContext,
+                                             ContextBuffer contextBuffer,
                                              bool        fIsSigned)
 {
     _ASSERTE((newValue.Size() == 4) || (newValue.Size() == 8));
@@ -574,12 +577,12 @@ void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
     ULONG32 cbCtx = frame->GetProcess()->GetTargetContextSize();
 
     // Get the thread's context so we can update it.
-    BYTE * cTemp = NULL;
+    ContextBuffer contextBuffer = {};
     HRESULT hr = S_OK;
     EX_TRY
     {
         // This may throw, in which case we want to return our own HRESULT.
-        hr = frame->m_pThread->GetManagedContext(&cTemp);
+        hr = frame->m_pThread->GetManagedContext(&contextBuffer);
     }
     EX_CATCH_HRESULT(hr);
     if (FAILED(hr))
@@ -587,18 +590,23 @@ void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
         // If we failed to get the context, then we must not be in a leaf frame.
         ThrowHR(CORDBG_E_SET_VALUE_NOT_ALLOWED_ON_NONLEAF_FRAME);
     }
+    if (contextBuffer.contextSize < cbCtx)
+    {
+        ThrowHR(E_INVALIDARG);
+    }
 
     // Work on a local copy so failures in the chain below don't corrupt the
     // thread's cached context. The subclass mutates this buffer to apply the
     // new register value, and SetManagedContext then ships it to the LS and
     // updates the cache.
     NewArrayHolder<BYTE> ctxBuf(new BYTE[cbCtx]);
-    memcpy(ctxBuf, cTemp, cbCtx);
+    memcpy(ctxBuf, contextBuffer.pContextBytes, cbCtx);
+    ContextBuffer updatedContext = { ctxBuf, cbCtx };
 
-    m_pRemoteRegAddr->SetEnregisteredValue(src, ctxBuf, fIsSigned);
+    m_pRemoteRegAddr->SetEnregisteredValue(src, updatedContext, fIsSigned);
 
     // Set the thread's modified context.
-    IfFailThrow(frame->m_pThread->SetManagedContext(ctxBuf, cbCtx));
+    IfFailThrow(frame->m_pThread->SetManagedContext(updatedContext));
 } // RegisterValueHome::SetEnregisteredValue
 
 
@@ -858,4 +866,3 @@ RefValueHome::RefValueHome(CordbProcess *                pProcess,
 
 
 } // RefValueHome::RefValueHome
-
