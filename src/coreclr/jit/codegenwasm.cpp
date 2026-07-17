@@ -2725,6 +2725,7 @@ void CodeGen::genLoadLclTypeSimd12(GenTreeLclVarCommon* tree)
     bool fpBased;
     int  frameOffset = m_compiler->lvaFrameAddress(tree->GetLclNum(), &fpBased) + (int)tree->GetLclOffs();
     noway_assert(frameOffset >= 0); // WASM address modes are unsigned.
+    assert(fpBased);
     unsigned fpIndex = GetFramePointerRegIndex();
     emitter* emit    = GetEmitter();
 
@@ -2782,9 +2783,10 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* tree)
         bool fpBased;
         int  frameOffset = m_compiler->lvaFrameAddress(addr->AsLclVarCommon()->GetLclNum(), &fpBased) +
                           (int)addr->AsLclVarCommon()->GetLclOffs();
-        noway_assert(frameOffset >= 0);                                        // WASM address modes are unsigned.
-        emit->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex()); // [fp]
-        emit->emitIns_I(INS_local_get, EA_16BYTE, WasmRegToIndex(valReg));     // [fp, value]
+        noway_assert(frameOffset >= 0); // WASM address modes are unsigned.
+        assert(fpBased);
+        emit->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());         // [fp]
+        emit->emitIns_I(INS_local_get, EA_16BYTE, WasmRegToIndex(valReg));             // [fp, value]
         emit->emitIns_MemargLane(INS_v128_store32_lane, EA_4BYTE, frameOffset + 8, 2); // []
     }
     else

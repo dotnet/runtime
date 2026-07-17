@@ -171,7 +171,7 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         // SIMD12 stores also re-materialize the address for the trailing lane store, so force it there as well -
         // unless the address is a re-materializable LCL_ADDR (the local-to-stack store rewrite), which codegen
         // re-emits directly.
-        SetMultiplyUsed(node->Addr() DEBUGARG("LowerStoreIndir faulting Addr"));
+        SetMultiplyUsed(node->Addr() DEBUGARG("LowerStoreIndir Addr (null check or simd12 lane store)"));
     }
 
     ContainCheckStoreIndir(node);
@@ -467,7 +467,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         (((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0) || indirNode->TypeIs(TYP_SIMD12)))
     {
         // SIMD12 loads re-materialize the address for the trailing lane load, so force it there regardless.
-        SetMultiplyUsed(indirNode->Addr() DEBUGARG("ContainCheckIndir faulting load Addr"));
+        SetMultiplyUsed(indirNode->Addr() DEBUGARG("ContainCheckIndir load Addr (null check or simd12 lane load)"));
     }
 
     // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
