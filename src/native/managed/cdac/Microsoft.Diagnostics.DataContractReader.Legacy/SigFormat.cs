@@ -4,6 +4,7 @@
 using System;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -180,7 +181,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                         uint typeDefToken = runtimeTypeSystem.GetTypeDefToken(th);
                         TargetPointer modulePointer = target.Contracts.RuntimeTypeSystem.GetModule(th);
                         Contracts.ModuleHandle module = target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
-                        MetadataReader internalTypeMetadata = target.Contracts.EcmaMetadata.GetMetadata(module)!;
+                        MetadataReader internalTypeMetadata = target.Contracts.EcmaMetadata.GetMetadata(module)
+                            ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
                         TypeDefinition internalTypeDef = internalTypeMetadata.GetTypeDefinition((TypeDefinitionHandle)MetadataTokens.Handle((int)typeDefToken));
                         _namespace = internalTypeMetadata.GetString(internalTypeDef.Namespace);
@@ -346,7 +348,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     uint typeDefToken = runtimeTypeSystem.GetTypeDefToken(typeHandle);
                     TargetPointer modulePointer = target.Contracts.RuntimeTypeSystem.GetModule(typeHandle);
                     Contracts.ModuleHandle module = target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
-                    MetadataReader metadata = target.Contracts.EcmaMetadata.GetMetadata(module)!;
+                    MetadataReader metadata = target.Contracts.EcmaMetadata.GetMetadata(module)
+                        ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
                     TypeDefinition typeDef = metadata.GetTypeDefinition((TypeDefinitionHandle)MetadataTokens.Handle((int)typeDefToken));
                     string _namespace = metadata.GetString(typeDef.Namespace);
                     string name = metadata.GetString(typeDef.Name);
@@ -391,7 +394,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                 case CorElementType.Var:
                     runtimeTypeSystem.IsGenericVariable(typeHandle, out TargetPointer genericVariableModulePointer, out uint typeVarToken);
                     Contracts.ModuleHandle genericVariableModule = target.Contracts.Loader.GetModuleHandleFromModulePtr(genericVariableModulePointer);
-                    MetadataReader generatedVariableMetadata = target.Contracts.EcmaMetadata.GetMetadata(genericVariableModule)!;
+                    MetadataReader generatedVariableMetadata = target.Contracts.EcmaMetadata.GetMetadata(genericVariableModule)
+                        ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
                     GenericParameter genericVariable = generatedVariableMetadata.GetGenericParameter((GenericParameterHandle)MetadataTokens.Handle((int)typeVarToken));
                     stringBuilder.Append(generatedVariableMetadata.GetString(genericVariable.Name));
                     return;
