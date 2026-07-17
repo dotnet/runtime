@@ -114,9 +114,7 @@ When presenting the final review (whether as a PR comment or as output to the us
 ### Structure
 
 ```
-## Holistic Runtime Review
-
-### Holistic Assessment
+## Holistic Review
 
 **Motivation**: <1-2 sentences on whether the PR is justified and the problem is real>
 
@@ -125,8 +123,6 @@ When presenting the final review (whether as a PR comment or as output to the us
 **Summary**: <✅ LGTM / ⚠️ Needs Human Review / ⚠️ Needs Changes / ❌ Reject>. <2-3 sentence summary of the overall verdict and key points. If "Needs Human Review," explicitly state which findings you are uncertain about and what a human reviewer should focus on.>
 
 ---
-<details>
-  <summary>Detailed Findings</summary>
 
 ### Detailed Findings
 
@@ -136,15 +132,16 @@ When presenting the final review (whether as a PR comment or as output to the us
 
 (Repeat for each finding category. Group related findings under a single heading.)
 
-</details>
-
 <!-- AI disclosure note: place any AI-generated content disclosure below this line. -->
 <!-- Example: > [!NOTE] This review was created by GitHub Copilot. -->
 ```
 
 ### Guidelines
 
-- **Holistic Assessment** comes first and covers Motivation, Approach, and Summary.
+- Begin the review body with `## Holistic Review`, immediately followed by the
+  `**Motivation**:`, `**Approach**:`, and `**Summary**:` fields in that order. Do not
+  add a `### Holistic Assessment` subheading, substitute a `Verdict` field, or rename
+  those fields.
 - **Detailed Findings** uses emoji-prefixed category headers:
   - ✅ for things that are correct / look good (use to confirm important aspects were verified)
   - ⚠️ for warnings or impactful suggestions (should fix, or follow-up)
@@ -182,7 +179,7 @@ review**, in addition to the process above.
 
 Load, based on the paths in the diff:
 
-- **`src/**` changed:** `.github/instructions/review-all-src.instructions.md` -- reviewer mindset, the Holistic PR Assessment criteria (Motivation, Evidence, Approach, Cost-Benefit, Scope, Risk, Codebase Fit), correctness philosophy, PR hygiene, consistency, and documentation. Use these criteria to write the Holistic Assessment in your output.
+- **`src/**` changed:** `.github/instructions/review-all-src.instructions.md` -- reviewer mindset, the Holistic PR Assessment criteria (Motivation, Evidence, Approach, Cost-Benefit, Scope, Risk, Codebase Fit), correctness philosophy, PR hygiene, consistency, and documentation. Use these criteria to write the Motivation, Approach, and Summary fields in your output.
 - **`**/*.cs` changed:** `.github/instructions/review-csharp.instructions.md` -- C# error handling, thread safety, security, correctness, performance/allocation, API design, and style rules.
 - **Native files (`*.c` / `*.cpp` / `*.h` / `*.inc` / `*.S` / `*.asm`) changed:** `.github/instructions/review-native.instructions.md` -- C++ style, VM/JIT contracts, GC protection, platform defines, and interop/marshalling rules.
 - **Test files (`**/tests/**`, `src/tests/**`) changed:** `.github/instructions/review-all-tests.instructions.md` -- testing conventions and regression-test requirements.

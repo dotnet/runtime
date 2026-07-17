@@ -12,6 +12,8 @@ Rules for reviewing native runtime code (CoreCLR VM, JIT, `src/native`, Mono nat
 ### Error Handling & Assertions
 
 - **Handle OOM with exceptions or fail-fast, never asserts.** Use `ThrowOutOfMemory` or `EEPOLICY_HANDLE_FATAL_ERROR`, not asserts. In interpreter loops, use `nothrow new` and check for null.
+- **Use `_ASSERTE(!"message")` for unreachable native paths.** Keep native assertion guidance in native code rather than applying managed exception patterns.
+- **Guard native size and offset arithmetic against overflow.** Validate multiplication and addition used for allocation sizes, buffer indexes, and pointer offsets before performing the operation. Prefer patterns and helpers that are correct by construction rather than checking an already-overflowed result.
 
 ### JIT-Specific Correctness
 
@@ -29,6 +31,7 @@ Rules for reviewing native runtime code (CoreCLR VM, JIT, `src/native`, Mono nat
 
 - **Prefer table-driven approaches over excessive case statements.** For hardware intrinsics and pattern-heavy code, use lookup tables (`AuxiliaryJitType`, `SpecialCodeGen` flags) instead of many explicit case entries.
 - **Order struct fields to minimize padding.** In C/C++ struct definitions, order fields by size (pointers first) to reduce padding.
+- **Run `jit-format` before pushing JIT changes.** JIT code must pass `jit-format` to avoid immediately failing CI. Run it with `python3 src/coreclr/scripts/jitformat.py -r . -o <os> -a <arch>` in the repo root. This should be done automatically when authoring JIT code and prior to pushing.
 
 ## Platform & Cross-Platform
 
@@ -46,6 +49,7 @@ Rules for reviewing native runtime code (CoreCLR VM, JIT, `src/native`, Mono nat
 ### Runtime & VM Patterns
 
 - **Use correct VM contracts and QCall patterns.** QCalls that may throw need `BEGIN_QCALL`/`END_QCALL`. Simple QCalls use `QCALL_CONTRACT_NO_GC_TRANSITION`. All VM methods need `STANDARD_VM_CONTRACT` or `WRAPPER_NO_CONTRACT`.
+- **Append new GC-EE interface methods last.** Preserve vtable slot ordering by adding methods only at the end of the interface.
 - **Keep GC protection correct around managed references.** Ensure all GC references are `GCPROTECT`-ed before GC-triggering calls. After GC-triggering calls, use `ObjectFromHandle(handle)` for a fresh reference.
 - **Avoid dynamic allocation on fatal error paths.** Use stack-allocated buffers. Use simple synchronization (Interlocked with spin-wait) instead of Monitor/lock.
 - **Avoid thread-local objects with destructors in CoreCLR.** Destruction order is arbitrary. Tie lifetime to the CoreCLR Thread object. Prefer `PLATFORM_THREAD_LOCAL` from minipal over C++ `thread_local` in perf-critical paths.

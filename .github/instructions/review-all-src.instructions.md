@@ -11,20 +11,25 @@ more specific file conflicts with a general one, the more specific file wins.
 
 **Reviewer mindset:** Be polite but very skeptical. Your job is to help speed the review process for maintainers, which includes not only finding problems the PR author may have missed but also questioning the value of the PR in its entirety. Treat the PR description and linked issues as claims to verify, not facts to accept. Question the stated direction, probe edge cases, and don't hesitate to flag concerns even when unsure.
 
+These are review criteria. During code authoring or local experimentation, treat PR-level gates
+such as motivation, benchmark evidence, and issue prerequisites as preparation guidance for a
+ready-for-review PR, not as reasons to block exploratory work unless the user asks for review.
+
 ## Holistic PR Assessment
 
 Before reviewing individual lines of code, evaluate the PR as a whole. Consider whether the change is justified, whether it takes the right approach, and whether it will be a net positive for the codebase.
 
 ### Motivation & Justification
 
-- **Every PR must articulate what problem it solves and why.** Don't accept vague or absent motivation. Ask "What's the rationale?" and block progress until the contributor provides a clear answer.
+- **Every PR must articulate what problem it solves and why.** Don't accept vague or absent motivation. Ask "What's the rationale?" if none is provided. However, when the PR links to an approved API proposal, accepted issue, or prior discussion that already establishes motivation, referencing that is sufficient — don't demand the author re-state what's already documented.
 - **Challenge every addition with "Do we need this?"** New code, APIs, abstractions, and flags must justify their existence. If an addition can be avoided without sacrificing correctness or meaningful capability, it should be.
 - **Demand real-world use cases and customer scenarios.** Hypothetical benefits are insufficient motivation for expanding API surface area or adding features. Require evidence that real users need this.
 
 ### Evidence & Data
 
-- **Require measurable performance data before accepting optimization PRs.** Demand BenchmarkDotNet results or equivalent proof — never accept performance claims at face value.
-- **Distinguish real performance wins from micro-benchmark noise.** Trivial benchmarks with predictable inputs overstate gains from jump tables, branch elimination, and similar tricks. Require evidence from realistic, varied inputs.
+- **Require measurable performance data before accepting optimization PRs.** Demand BenchmarkDotNet results or equivalent proof — never accept performance claims at face value. Prefer local BenchmarkDotNet runs first, especially for experimental/iterative work. EgorBot runs on an individual's personal account and is not billed like Copilot usage — only recommend it when explicitly requested, or for a final cross-architecture (x64/arm64) confirmation that cannot be reproduced locally.
+- **Distinguish real performance wins from micro-benchmark noise.** Trivial benchmarks with predictable inputs overstate gains from jump tables, branch elimination, and similar tricks. Require evidence from realistic inputs representative of actual workloads. Note that "realistic" does not always mean "varied" — many real-world collections are small (under 64 elements), and data distributions are often domain-specific and non-uniform.
+- **Performance claims in low-level or hardware-guided code may not need benchmarks.** When code follows official hardware vendor optimization recommendations or well-established algorithmic improvements, the systemic reasoning may be sufficient evidence. Microbenchmarks for such changes can be misleading because they don't capture system-level effects.
 - **Investigate and explain regressions before merging.** Even if a PR shows a net improvement, regressions in specific scenarios must be understood and explicitly addressed — not hand-waved.
 
 ### Approach & Alternatives
@@ -60,7 +65,7 @@ Before reviewing individual lines of code, evaluate the PR as a whole. Consider 
 
 - **Keep PRs focused on their stated scope.** No accidental file modifications, no unrelated refactoring, no whitespace noise, no build artifacts. Each PR should serve a single purpose.
 - **Do large refactorings and renames in separate PRs.** Separate no-diff refactors from functional changes. Mechanical renames should be separate from logic changes.
-- **Merge to main first, then backport to release branches.** Use the `/backport` command. Backports to servicing are limited to security bugs, regressions, and reliability issues.
+- **Merge to main first, then backport to release branches.** Use the `/backport` command. Backports to servicing are limited to security bugs, regressions, and reliability issues. Note: the reviewer should never invoke `/backport` itself — only recommend it when appropriate.
 
 ### Code Reuse & Deduplication
 
@@ -76,11 +81,10 @@ Before reviewing individual lines of code, evaluate the PR as a whole. Consider 
 - **Don't modify auto-generated files or `eng/common` manually.** Change the generator or source definition instead. Files in `eng/common` are synced from dotnet/arcade.
 - **Use `DOTNET_` prefix for environment variables, not `COMPlus_`.** New runtime environment variables must use `DOTNET_` exclusively.
 - **Match existing style in modified files.** The existing style in a file takes precedence over general guidelines. Do not change existing code for style alone.
-- **Use the `sizeof` operator consistently.** A pass removed calls to the equivalent `Unsafe` helper; do not reintroduce them.
 
 ### Runtime-Specific Patterns
 
-- **Consider NativeAOT parity for runtime changes.** When changing CoreCLR behavior, verify whether the same change is needed for NativeAOT.
+- **Consider NativeAOT parity for runtime changes.** When changing CoreCLR behavior, verify whether the same change is needed for NativeAOT. Note: Mono and CoreCLR native code conventions differ significantly — do not assume they share the same rules.
 - **Keep interpreter behavior consistent with the regular JIT.** Follow the same patterns, naming, error codes (`CORJIT_BADCODE`), and macros (`NO_WAY`). Use `FEATURE_INTERPRETER` guards.
 - **Source generators: no file locks, diagnostics from analyzers only.** Generators should bypass invalid state gracefully. A separate analyzer should produce diagnostics.
 - **Ref assembly conventions.** No `using` directives (fully qualify types), empty method bodies or `throw null`, genapi-style formatting, alphabetical member order. TFM-specific APIs go in separate files.
@@ -88,12 +92,12 @@ Before reviewing individual lines of code, evaluate the PR as a whole. Consider 
 ## Documentation & Comments
 
 - **Comments should explain why, not restate code.** Delete comments like `// Get the types` that just duplicate the code in English. Don't include historical context about why code changed.
-- **Delete or update obsolete comments when code changes.** Stale comments describing old behavior are worse than no comments.
+- **Delete or update obsolete comments when corresponding code changes.** Stale comments describing old behavior are worse than no comments. Only flag obsolete comments when the relevant code is being touched or the PR is an explicit cleanup pass.
 - **Track deferred work with GitHub issues and searchable TODOs.** Reference a tracking issue in TODO comments with a consistent prefix (e.g., `TODO-Async:`). Remove ancient TODOs that will never be addressed.
-- **Don't duplicate comments on interface implementations.** Documentation comments belong on the interface definition. Duplicating leads to divergence.
+- **Don't duplicate comments on interface implementations.** Documentation comments belong on the interface definition. Implementations should use `<inheritdoc/>` to avoid divergence.
 - **Add XML doc comments on all new public APIs.** These seed the official API documentation on learn.microsoft.com. Properties should start with "Gets the ..." or "Gets or sets the ...". Do not add XML docs to test code.
 - **Use SHA-specific or commit-based links in documentation.** Don't use branch-relative links that break when files move.
-- **Reference ECMA-335 and spec sources in metadata code.** When parsing signatures and metadata, cite the relevant ECMA-335 section. Cite CAVP/ACVP sources in crypto test vectors.
+- **Reference specs and authoritative sources in implementation code.** When parsing signatures and metadata, cite the relevant spec section (e.g., ECMA-335). Link to relevant RFCs, papers, or repo-specific documentation (such as the ECMA-335 augments maintained in this repo). This applies broadly, not just to ECMA-335.
 - **File breaking change documentation for behavioral changes.** Open an issue in dotnet/docs using the template, send notification to the .NET Breaking Change Notification DL. Applies even to prerelease-to-prerelease changes.
 - **Use established terminology in user-facing text.** Do not expose internal type names, private field names, or codenames like "Roslyn" in public docs or error messages.
 - **Retain copyright headers and license information.** All C# and C++ source files must include the standard license header, including test files. When porting from other projects, retain original copyright and update THIRD-PARTY-NOTICES.TXT.
