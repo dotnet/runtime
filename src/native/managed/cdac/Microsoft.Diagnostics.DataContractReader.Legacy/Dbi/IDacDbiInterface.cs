@@ -910,4 +910,5 @@ public struct TargetInfo
 {
     public TargetArchitecture Arch;
     public TargetOperatingSystem OS;
+    public uint PointerSize;
 }

@@ -1394,7 +1394,7 @@ HRESULT CordbThread::FindFrame(ICorDebugFrame ** ppFrame, FramePointer fp)
         CordbFrame * pCFrame = CordbFrame::GetCordbFrameFromInterface(pIFrame);
 
         IDacDbiInterface::TargetInfo targetInfo;
-        GetProcess()->GetTargetInfo(&targetInfo);
+        IfFailRet(GetProcess()->GetTargetInfo(&targetInfo));
         bool frameMatches = targetInfo.arch == IDacDbiInterface::kArchX86 ? pCFrame->IsContainedInFrame(fp) : pCFrame->GetFramePointer() == fp;
         if (frameMatches)
         {
@@ -3812,7 +3812,7 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
     }
 
     IDacDbiInterface::TargetInfo targetInfo;
-    GetProcess()->GetTargetInfo(&targetInfo);
+    IfFailRet(GetProcess()->GetTargetInfo(&targetInfo));
     if (targetInfo.arch != IDacDbiInterface::kArchX86)
     {
         // On X86 Debugger::GenericHijackFunc() ensures the stack is walkable
@@ -6993,7 +6993,7 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
     if (SUCCEEDED(hr))
     {
         IDacDbiInterface::TargetInfo targetInfo;
-        GetProcess()->GetTargetInfo(&targetInfo);
+        IfFailRet(GetProcess()->GetTargetInfo(&targetInfo));
         if (targetInfo.arch == IDacDbiInterface::kArchX86)
         {
             // This is needed on x86 because we are dealing with a stack.

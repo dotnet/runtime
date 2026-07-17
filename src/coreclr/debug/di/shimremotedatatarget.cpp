@@ -279,7 +279,7 @@ ShimRemoteDataTarget::GetPlatform(
                         default: break;
                     }
                 }
-                return S_OK;
+                return CORDBG_E_UNSUPPORTED;
             }
         }
     }

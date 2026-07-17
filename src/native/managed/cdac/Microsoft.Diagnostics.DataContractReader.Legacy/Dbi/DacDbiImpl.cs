@@ -5781,6 +5781,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 Contracts.RuntimeInfoOperatingSystem.Apple => TargetOperatingSystem.Unix,
                 _ => TargetOperatingSystem.Unknown,
             };
+
+            pTargetInfo->PointerSize = (uint)_target.PointerSize;
         }
         catch (System.Exception ex)
         {
@@ -5796,6 +5798,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 Debug.Assert(pTargetInfo->Arch == targetInfoLocal.Arch, $"cDAC: {pTargetInfo->Arch}, DAC: {targetInfoLocal.Arch}");
                 Debug.Assert(pTargetInfo->OS == targetInfoLocal.OS, $"cDAC: {pTargetInfo->OS}, DAC: {targetInfoLocal.OS}");
+                Debug.Assert(pTargetInfo->PointerSize == targetInfoLocal.PointerSize, $"cDAC: {pTargetInfo->PointerSize}, DAC: {targetInfoLocal.PointerSize}");
             }
         }
 #endif

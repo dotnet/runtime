@@ -11391,7 +11391,7 @@ inline void AlignAddressForType(CordbType* pArgType, CORDB_ADDRESS& argBase)
 {
 #ifdef FEATURE_64BIT_ALIGNMENT
     BOOL align = FALSE;
-    HRESULT hr = pArgType->RequiresAlign8(&align);
+    IfFailThrow(pArgType->RequiresAlign8(&align));
 
     if (align)
         argBase = ALIGN_ADDRESS(argBase, 8);
