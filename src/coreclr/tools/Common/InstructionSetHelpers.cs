@@ -11,6 +11,7 @@ using ILCompiler;
 using Internal.TypeSystem;
 
 using InstructionSet = Internal.JitInterface.InstructionSet;
+using InstructionSetFlags = Internal.JitInterface.InstructionSetFlags;
 
 namespace System.CommandLine
 {
@@ -352,6 +353,32 @@ namespace System.CommandLine
                 optimisticInstructionSet,
                 InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(targetArchitecture),
                 targetArchitecture);
+        }
+
+        // Produces an InstructionSetSupport for targets that cannot generate code at runtime. Every
+        // specifiable instruction set that is not supported is marked explicitly unsupported so that
+        // hardware intrinsic IsSupported checks resolve at compile time instead of emitting runtime
+        // fixups, and the optimistic set is collapsed onto the supported set.
+        public static InstructionSetSupport GetFixedInstructionSetSupport(InstructionSetSupport instructionSetSupport)
+        {
+            InstructionSetFlags unsupportedInstructionSets = instructionSetSupport.ExplicitlyUnsupportedFlags;
+            foreach (var instructionSetInfo in InstructionSetFlags.ArchitectureToValidInstructionSets(instructionSetSupport.Architecture))
+            {
+                if (instructionSetInfo.Specifiable &&
+                    !instructionSetSupport.IsInstructionSetSupported(instructionSetInfo.InstructionSet))
+                {
+                    unsupportedInstructionSets.AddInstructionSet(instructionSetInfo.InstructionSet);
+                }
+            }
+            unsupportedInstructionSets.ExpandInstructionSetByReverseImplication(instructionSetSupport.Architecture);
+            unsupportedInstructionSets.Set64BitInstructionSetVariants(instructionSetSupport.Architecture);
+
+            return new InstructionSetSupport(
+                instructionSetSupport.SupportedFlags,
+                unsupportedInstructionSets,
+                instructionSetSupport.SupportedFlags,
+                instructionSetSupport.NonSpecifiableFlags,
+                instructionSetSupport.Architecture);
         }
     }
 }

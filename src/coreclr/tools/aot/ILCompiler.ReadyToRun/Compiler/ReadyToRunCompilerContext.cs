@@ -104,21 +104,24 @@ namespace ILCompiler
             get
             {
 #if FEATURE_DYNAMIC_CODE_COMPILED
-                if (Target.OperatingSystem is TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator)
-                {
-                    return false;
-                }
-
-                if (Target.Architecture is TargetArchitecture.Wasm32)
-                {
-                    return false;
-                }
-
-                return true;
+                return !IsFixedInstructionSetTarget(Target.OperatingSystem, Target.Architecture);
 #else
                 return false;
 #endif
             }
+        }
+
+        /// <summary>
+        /// Returns true for targets that cannot generate code at runtime, meaning neither the JIT
+        /// nor the interpreter can produce code for hardware intrinsics that are not selected at
+        /// compile time. On such targets the set of usable instruction sets is fixed during crossgen2
+        /// compilation. When runtime code generation is otherwise available, this is the inverse of
+        /// <see cref="TargetAllowsRuntimeCodeGeneration"/>.
+        /// </summary>
+        public static bool IsFixedInstructionSetTarget(TargetOS operatingSystem, TargetArchitecture architecture)
+        {
+            return operatingSystem is TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator
+                || architecture is TargetArchitecture.Wasm32;
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)

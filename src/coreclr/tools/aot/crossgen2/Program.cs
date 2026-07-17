@@ -15,7 +15,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 using Internal.IL;
-using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -67,33 +66,6 @@ namespace ILCompiler
                 _imageBase = is64BitTarget ? PEWriter.PE64HeaderConstants.DllImageBase : PEWriter.PE32HeaderConstants.ImageBase;
         }
 
-        private static bool IsFixedInstructionSetPlatform(TargetOS operatingSystem) =>
-            operatingSystem is TargetOS.iOS or TargetOS.tvOS
-                or TargetOS.iOSSimulator or TargetOS.tvOSSimulator
-                or TargetOS.MacCatalyst or TargetOS.Browser or TargetOS.Wasi;
-
-        private static InstructionSetSupport GetFixedInstructionSetSupport(InstructionSetSupport instructionSetSupport)
-        {
-            InstructionSetFlags unsupportedInstructionSets = instructionSetSupport.ExplicitlyUnsupportedFlags;
-            foreach (var instructionSetInfo in InstructionSetFlags.ArchitectureToValidInstructionSets(instructionSetSupport.Architecture))
-            {
-                if (instructionSetInfo.Specifiable &&
-                    !instructionSetSupport.IsInstructionSetSupported(instructionSetInfo.InstructionSet))
-                {
-                    unsupportedInstructionSets.AddInstructionSet(instructionSetInfo.InstructionSet);
-                }
-            }
-            unsupportedInstructionSets.ExpandInstructionSetByReverseImplication(instructionSetSupport.Architecture);
-            unsupportedInstructionSets.Set64BitInstructionSetVariants(instructionSetSupport.Architecture);
-
-            return new InstructionSetSupport(
-                instructionSetSupport.SupportedFlags,
-                unsupportedInstructionSets,
-                instructionSetSupport.SupportedFlags,
-                instructionSetSupport.NonSpecifiableFlags,
-                instructionSetSupport.Architecture);
-        }
-
         public int Run()
         {
             if (_outputFilePath == null && !_outNearInput)
@@ -106,7 +78,7 @@ namespace ILCompiler
 
             (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
-            bool isFixedInstructionSet = IsFixedInstructionSetPlatform(targetOS);
+            bool isFixedInstructionSet = ReadyToRunCompilerContext.IsFixedInstructionSetTarget(targetOS, targetArchitecture);
 
             // Crossgen2 is partial AOT and its pre-compiled methods can be
             // thrown away at runtime if they mismatch in required ISAs or
@@ -130,7 +102,7 @@ namespace ILCompiler
                 isReadyToRun: true);
             if (isFixedInstructionSet)
             {
-                instructionSetSupport = GetFixedInstructionSetSupport(instructionSetSupport);
+                instructionSetSupport = Helpers.GetFixedInstructionSetSupport(instructionSetSupport);
             }
 
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
