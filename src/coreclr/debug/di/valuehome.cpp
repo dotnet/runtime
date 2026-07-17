@@ -898,6 +898,7 @@ void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
 
 void RegisterValueHome::GetEnregisteredValue(MemoryRange dest)
 {
+    IDacDbiInterface::TargetInfo targetInfo;
     IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
     if (targetInfo.arch != kArchX86)
     {
