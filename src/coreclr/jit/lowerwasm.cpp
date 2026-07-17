@@ -164,9 +164,13 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //
 GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
-    if ((node->gtFlags & GTF_IND_NONFAULTING) == 0)
+    if (((node->gtFlags & GTF_IND_NONFAULTING) == 0) ||
+        (node->TypeIs(TYP_SIMD12) && !node->Addr()->OperIs(GT_LCL_ADDR)))
     {
         // We need to be able to null check the address, and that requires multiple uses of the address operand.
+        // SIMD12 stores also re-materialize the address for the trailing lane store, so force it there as well -
+        // unless the address is a re-materializable LCL_ADDR (the local-to-stack store rewrite), which codegen
+        // re-emits directly.
         SetMultiplyUsed(node->Addr() DEBUGARG("LowerStoreIndir faulting Addr"));
     }
 
@@ -459,8 +463,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         return;
     }
 
-    if (indirNode->OperIs(GT_IND) && ((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0))
+    if (indirNode->OperIs(GT_IND) &&
+        (((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0) || indirNode->TypeIs(TYP_SIMD12)))
     {
+        // SIMD12 loads re-materialize the address for the trailing lane load, so force it there regardless.
         SetMultiplyUsed(indirNode->Addr() DEBUGARG("ContainCheckIndir faulting load Addr"));
     }
 
