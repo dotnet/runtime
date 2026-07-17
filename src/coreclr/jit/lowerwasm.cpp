@@ -1309,6 +1309,15 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     return LowerNode(node);
 }
 
+// --------------------------------------------------------------------------------
+// LowerHWIntrinsicNativeShuffle: Lowers a PackedSimd Shuffle call with a possibly non-constant mask
+//
+// Arguments:
+//    node - The hardware intrinsic node.
+//
+// Notes:
+//  If the shuffle mask is a constant vector, it can be contained as an immediate and emitted. Otherwise,
+//  the shuffle is rewritten into two swizzles for the upper and lower input vectors and combined into the final result.
 GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
 {
     assert(node->GetHWIntrinsicId() == NI_PackedSimd_Shuffle);
