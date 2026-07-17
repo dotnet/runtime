@@ -11488,6 +11488,13 @@ namespace System.Numerics
         public static bool IsPositiveInfinity(System.Numerics.Decimal128 value) { throw null; }
         public static bool IsRealNumber(System.Numerics.Decimal128 value) { throw null; }
         public static bool IsSubnormal(System.Numerics.Decimal128 value) { throw null; }
+        public static System.Numerics.Decimal128 Log(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 Log(System.Numerics.Decimal128 x, System.Numerics.Decimal128 newBase) { throw null; }
+        public static System.Numerics.Decimal128 Log10(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 Log10P1(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 Log2(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 Log2P1(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 LogP1(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 Max(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
         public static System.Numerics.Decimal128 MaxMagnitude(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
         public static System.Numerics.Decimal128 MaxMagnitudeNumber(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
@@ -11694,6 +11701,13 @@ namespace System.Numerics
         public static bool IsPositiveInfinity(System.Numerics.Decimal32 value) { throw null; }
         public static bool IsRealNumber(System.Numerics.Decimal32 value) { throw null; }
         public static bool IsSubnormal(System.Numerics.Decimal32 value) { throw null; }
+        public static System.Numerics.Decimal32 Log(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 Log(System.Numerics.Decimal32 x, System.Numerics.Decimal32 newBase) { throw null; }
+        public static System.Numerics.Decimal32 Log10(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 Log10P1(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 Log2(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 Log2P1(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 LogP1(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Max(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
         public static System.Numerics.Decimal32 MaxMagnitude(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
         public static System.Numerics.Decimal32 MaxMagnitudeNumber(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
@@ -11904,6 +11918,13 @@ namespace System.Numerics
         public static bool IsPositiveInfinity(System.Numerics.Decimal64 value) { throw null; }
         public static bool IsRealNumber(System.Numerics.Decimal64 value) { throw null; }
         public static bool IsSubnormal(System.Numerics.Decimal64 value) { throw null; }
+        public static System.Numerics.Decimal64 Log(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 Log(System.Numerics.Decimal64 x, System.Numerics.Decimal64 newBase) { throw null; }
+        public static System.Numerics.Decimal64 Log10(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 Log10P1(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 Log2(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 Log2P1(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 LogP1(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 Max(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
         public static System.Numerics.Decimal64 MaxMagnitude(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
         public static System.Numerics.Decimal64 MaxMagnitudeNumber(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }

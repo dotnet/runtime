@@ -224,4 +224,316 @@ internal static partial class Number
         Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
         return Float128ToDecimal<TDecimal, TValue>(Float128Exp10M1(argument));
     }
+
+    /// <summary>Accurate binary64 <c>ln(1 + x)</c> (Kahan), avoiding the cancellation in the naive
+    /// <c>Log(1 + x)</c> so the Decimal32 log1p family stays faithful to Intel's binary path.</summary>
+    private static double DoubleLog1p(double x)
+    {
+        double u = 1.0 + x;
+
+        if (u == 1.0)
+        {
+            return x;
+        }
+
+        return double.Log(u) * (x / (u - 1.0));
+    }
+
+    /// <summary>
+    /// Returns whether the finite value <c>significand * 10^unbiasedExponent</c> has magnitude exactly
+    /// one, testing in the decimal domain so it is exact for every format (a binary approximation would
+    /// misclassify values a fraction of an ulp from one for Decimal128).
+    /// </summary>
+    private static bool DecimalIeee754MagnitudeIsOne<TDecimal, TValue>(int unbiasedExponent, TValue significand)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (unbiasedExponent > 0)
+        {
+            // significand >= 1 and a positive exponent give a value >= 10.
+            return false;
+        }
+
+        if (unbiasedExponent == 0)
+        {
+            return significand == TValue.One;
+        }
+
+        int k = -unbiasedExponent;
+
+        if (k > TDecimal.Precision - 1)
+        {
+            // 10^k exceeds the largest representable coefficient, so it cannot equal the significand.
+            return false;
+        }
+
+        return significand == TDecimal.Power10(k);
+    }
+
+    /// <summary>Computes <c>ln(x)</c> (Intel routes Decimal32 through <c>double</c>, wider formats through
+    /// the binary128 engine).</summary>
+    internal static TValue LogDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // log(+inf) = +inf, log(-inf) is invalid and produces the canonical quiet NaN.
+            return TDecimal.IsNegative(x) ? TDecimal.NaNMask : TDecimal.PositiveInfinity;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // log(+/-0) = -inf.
+            return TDecimal.NegativeInfinity;
+        }
+
+        if (decoded.Signed)
+        {
+            // log of a negative value is invalid and produces the canonical quiet NaN.
+            return TDecimal.NaNMask;
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Log(value));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128Ln(argument));
+    }
+
+    /// <summary>Computes <c>log_newBase(x)</c> as <c>log(x) / log(newBase)</c>, mirroring the
+    /// <c>double</c> special cases.</summary>
+    internal static TValue LogDecimalIeee754<TDecimal, TValue>(TValue x, TValue newBase)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsNaN(newBase))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(newBase);
+        }
+
+        DecodedDecimalIeee754<TValue> decodedBase = UnpackDecimalIeee754<TDecimal, TValue>(newBase);
+        bool baseIsOne = !TDecimal.IsInfinity(newBase) && !TDecimal.IsNegative(newBase)
+                       && DecimalIeee754MagnitudeIsOne<TDecimal, TValue>(decodedBase.UnbiasedExponent, decodedBase.Significand);
+
+        if (baseIsOne)
+        {
+            return TDecimal.NaNMask;
+        }
+
+        DecodedDecimalIeee754<TValue> decodedX = UnpackDecimalIeee754<TDecimal, TValue>(x);
+        bool xIsOne = !TDecimal.IsInfinity(x) && !TDecimal.IsNegative(x)
+                    && DecimalIeee754MagnitudeIsOne<TDecimal, TValue>(decodedX.UnbiasedExponent, decodedX.Significand);
+        bool baseIsZero = !TDecimal.IsInfinity(newBase) && TValue.IsZero(decodedBase.Significand);
+        bool baseIsPositiveInfinity = TDecimal.IsInfinity(newBase) && !TDecimal.IsNegative(newBase);
+
+        if (!xIsOne && (baseIsZero || baseIsPositiveInfinity))
+        {
+            return TDecimal.NaNMask;
+        }
+
+        TValue logX = LogDecimalIeee754<TDecimal, TValue>(x);
+        TValue logBase = LogDecimalIeee754<TDecimal, TValue>(newBase);
+        return DivideDecimalIeee754<TDecimal, TValue>(logX, logBase);
+    }
+
+    /// <summary>Computes <c>log2(x)</c>.</summary>
+    internal static TValue Log2DecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // log2(+inf) = +inf, log2(-inf) is invalid and produces the canonical quiet NaN.
+            return TDecimal.IsNegative(x) ? TDecimal.NaNMask : TDecimal.PositiveInfinity;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // log2(+/-0) = -inf.
+            return TDecimal.NegativeInfinity;
+        }
+
+        if (decoded.Signed)
+        {
+            // log2 of a negative value is invalid and produces the canonical quiet NaN.
+            return TDecimal.NaNMask;
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Log2(value));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128Log2(argument));
+    }
+
+    /// <summary>Computes <c>log10(x)</c>.</summary>
+    internal static TValue Log10DecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // log10(+inf) = +inf, log10(-inf) is invalid and produces the canonical quiet NaN.
+            return TDecimal.IsNegative(x) ? TDecimal.NaNMask : TDecimal.PositiveInfinity;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // log10(+/-0) = -inf.
+            return TDecimal.NegativeInfinity;
+        }
+
+        if (decoded.Signed)
+        {
+            // log10 of a negative value is invalid and produces the canonical quiet NaN.
+            return TDecimal.NaNMask;
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Log10(value));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128Log10(argument));
+    }
+
+    /// <summary>Computes <c>ln(1 + x)</c>.</summary>
+    internal static TValue LogP1DecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        return Log1pDecimalIeee754<TDecimal, TValue>(x, LogBase.E);
+    }
+
+    /// <summary>Computes <c>log2(1 + x)</c>.</summary>
+    internal static TValue Log2P1DecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        return Log1pDecimalIeee754<TDecimal, TValue>(x, LogBase.Two);
+    }
+
+    /// <summary>Computes <c>log10(1 + x)</c>.</summary>
+    internal static TValue Log10P1DecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        return Log1pDecimalIeee754<TDecimal, TValue>(x, LogBase.Ten);
+    }
+
+    private enum LogBase
+    {
+        E,
+        Two,
+        Ten,
+    }
+
+    /// <summary>Shared <c>log_b(1 + x)</c> dispatch for the log1p family.</summary>
+    private static TValue Log1pDecimalIeee754<TDecimal, TValue>(TValue x, LogBase logBase)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // logP1(+inf) = +inf, logP1(-inf) is invalid and produces the canonical quiet NaN.
+            return TDecimal.IsNegative(x) ? TDecimal.NaNMask : TDecimal.PositiveInfinity;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // logP1(+/-0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            double result = DoubleLog1p(value);
+
+            result = logBase switch
+            {
+                LogBase.Two => result * 1.4426950408889634,  // 1 / ln(2)
+                LogBase.Ten => result * 0.4342944819032518,  // 1 / ln(10)
+                _ => result,
+            };
+
+            if (double.IsNaN(result))
+            {
+                // logP1(x < -1) is invalid; the double core yields a sign-carrying NaN, so canonicalize.
+                return TDecimal.NaNMask;
+            }
+
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+
+        // Guard the 1 + x domain in the binary128 engine (the double path gets this from IEEE): the
+        // conversion error is always below the decimal granularity near x = -1, so 1 + x is exact here.
+        Span<Float128> onePlus = stackalloc Float128[1];
+        Float128AddSub(Float128One, argument, UxAdd, onePlus);
+
+        if ((onePlus[0]._hi | onePlus[0]._lo) == 0)
+        {
+            // logP1(-1) = -inf.
+            return TDecimal.NegativeInfinity;
+        }
+
+        if (onePlus[0]._sign != 0)
+        {
+            // logP1(x < -1) is invalid and produces the canonical quiet NaN.
+            return TDecimal.NaNMask;
+        }
+
+        Float128 result128 = logBase switch
+        {
+            LogBase.Two => Float128Log2P1(argument),
+            LogBase.Ten => Float128Log10P1(argument),
+            _ => Float128Ln1p(argument),
+        };
+
+        return Float128ToDecimal<TDecimal, TValue>(result128);
+    }
 }

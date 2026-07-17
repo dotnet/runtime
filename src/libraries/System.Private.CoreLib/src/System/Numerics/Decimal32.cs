@@ -912,6 +912,27 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Decimal32 x) => Number.ILogBDecimalIeee754<Decimal32, uint>(x._value);
 
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        public static Decimal32 Log(Decimal32 x) => new Decimal32(Number.LogDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
+        public static Decimal32 Log(Decimal32 x, Decimal32 newBase) => new Decimal32(Number.LogDecimalIeee754<Decimal32, uint>(x._value, newBase._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        public static Decimal32 Log10(Decimal32 x) => new Decimal32(Number.Log10DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static Decimal32 Log10P1(Decimal32 x) => new Decimal32(Number.Log10P1DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2(TSelf)" />
+        public static Decimal32 Log2(Decimal32 x) => new Decimal32(Number.Log2DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static Decimal32 Log2P1(Decimal32 x) => new Decimal32(Number.Log2P1DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static Decimal32 LogP1(Decimal32 x) => new Decimal32(Number.LogP1DecimalIeee754<Decimal32, uint>(x._value));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
         public static Decimal32 ScaleB(Decimal32 x, int n) => new Decimal32(Number.ScaleBDecimalIeee754<Decimal32, uint>(x._value, n));
 

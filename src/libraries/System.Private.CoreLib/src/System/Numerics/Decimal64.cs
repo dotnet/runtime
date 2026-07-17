@@ -903,6 +903,27 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Decimal64 x) => Number.ILogBDecimalIeee754<Decimal64, ulong>(x._value);
 
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        public static Decimal64 Log(Decimal64 x) => new Decimal64(Number.LogDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
+        public static Decimal64 Log(Decimal64 x, Decimal64 newBase) => new Decimal64(Number.LogDecimalIeee754<Decimal64, ulong>(x._value, newBase._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        public static Decimal64 Log10(Decimal64 x) => new Decimal64(Number.Log10DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static Decimal64 Log10P1(Decimal64 x) => new Decimal64(Number.Log10P1DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2(TSelf)" />
+        public static Decimal64 Log2(Decimal64 x) => new Decimal64(Number.Log2DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static Decimal64 Log2P1(Decimal64 x) => new Decimal64(Number.Log2P1DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static Decimal64 LogP1(Decimal64 x) => new Decimal64(Number.LogP1DecimalIeee754<Decimal64, ulong>(x._value));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
         public static Decimal64 ScaleB(Decimal64 x, int n) => new Decimal64(Number.ScaleBDecimalIeee754<Decimal64, ulong>(x._value, n));
 

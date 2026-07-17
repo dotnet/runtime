@@ -101,8 +101,8 @@ internal static partial class Number
 
         if ((value._hi | value._lo) == 0)
         {
-            // Zero result: encode the sign-preserving decimal zero at the minimum exponent.
-            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, TValue.Zero, TDecimal.MinAdjustedExponent);
+            // Exact zero result: encode the sign-preserving canonical decimal zero at exponent 0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, TValue.Zero, 0);
         }
 
         int precision = TDecimal.Precision;

@@ -1857,6 +1857,189 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x31C0000000000000UL, 0xF800000000000000UL)] // log(+0) = -Infinity
+        [InlineData(0xB1C0000000000000UL, 0xF800000000000000UL)] // log(-0) = -Infinity
+        [InlineData(0x31C0000000000001UL, 0x31C0000000000000UL)] // log(1) = +0
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // log(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // log(-Infinity) = NaN
+        [InlineData(0xB1C0000000000001UL, 0x7C00000000000000UL)] // log(-1) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // log(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC00000000000000UL, 0xFC00000000000000UL)] // log(-NaN) = -NaN (sign preserved)
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void LogTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(2.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(100.0)]
+        [InlineData(0.001)]
+        public static void LogAccuracyTest(double input)
+        {
+            // Decimal64 evaluates log in the software binary128 engine (as Intel does). Comparing through
+            // binary64 bounds the check to double precision; the full accuracy is covered elsewhere.
+            double expected = double.Log(input);
+            double actual = (double)Decimal64.Log((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x7C00000000000000UL, 0x31C0000000000002UL, 0x7C00000000000000UL)] // log(NaN, 2) = NaN
+        [InlineData(0x31C0000000000002UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // log(2, NaN) = NaN
+        [InlineData(0x31C0000000000002UL, 0x31C0000000000001UL, 0x7C00000000000000UL)] // log(2, 1) = NaN (base 1)
+        public static void LogNewBaseTest(ulong value, ulong newBase, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log(Unsafe.BitCast<ulong, Decimal64>(value), Unsafe.BitCast<ulong, Decimal64>(newBase))));
+        }
+
+        [Theory]
+        [InlineData(8.0, 2.0)]
+        [InlineData(100.0, 10.0)]
+        [InlineData(2.5, 3.0)]
+        public static void LogNewBaseAccuracyTest(double input, double newBase)
+        {
+            double expected = double.Log(input, newBase);
+            double actual = (double)Decimal64.Log((Decimal64)input, (Decimal64)newBase);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log({input}, {newBase}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0xF800000000000000UL)] // log2(+0) = -Infinity
+        [InlineData(0xB1C0000000000000UL, 0xF800000000000000UL)] // log2(-0) = -Infinity
+        [InlineData(0x31C0000000000001UL, 0x31C0000000000000UL)] // log2(1) = +0
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // log2(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // log2(-Infinity) = NaN
+        [InlineData(0xB1C0000000000001UL, 0x7C00000000000000UL)] // log2(-1) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // log2(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void Log2Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log2(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(2.0)]
+        [InlineData(0.5)]
+        [InlineData(8.0)]
+        [InlineData(0.001)]
+        public static void Log2AccuracyTest(double input)
+        {
+            double expected = double.Log2(input);
+            double actual = (double)Decimal64.Log2((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log2({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0xF800000000000000UL)] // log10(+0) = -Infinity
+        [InlineData(0xB1C0000000000000UL, 0xF800000000000000UL)] // log10(-0) = -Infinity
+        [InlineData(0x31C0000000000001UL, 0x31C0000000000000UL)] // log10(1) = +0
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // log10(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // log10(-Infinity) = NaN
+        [InlineData(0xB1C0000000000001UL, 0x7C00000000000000UL)] // log10(-1) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // log10(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void Log10Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log10(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(10.0)]
+        [InlineData(0.5)]
+        [InlineData(1000.0)]
+        [InlineData(0.001)]
+        public static void Log10AccuracyTest(double input)
+        {
+            double expected = double.Log10(input);
+            double actual = (double)Decimal64.Log10((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log10({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // logP1(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // logP1(-0) = -0 (sign preserved)
+        [InlineData(0xB1C0000000000001UL, 0xF800000000000000UL)] // logP1(-1) = -Infinity
+        [InlineData(0xB1C0000000000002UL, 0x7C00000000000000UL)] // logP1(-2) = NaN
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // logP1(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // logP1(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // logP1(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void LogP1Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.LogP1(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(1.0)]
+        [InlineData(-0.5)]
+        [InlineData(2.5)]
+        [InlineData(1e-6)]
+        public static void LogP1AccuracyTest(double input)
+        {
+            double expected = double.LogP1(input);
+            double actual = (double)Decimal64.LogP1((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"logP1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // log2P1(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // log2P1(-0) = -0 (sign preserved)
+        [InlineData(0xB1C0000000000001UL, 0xF800000000000000UL)] // log2P1(-1) = -Infinity
+        [InlineData(0xB1C0000000000002UL, 0x7C00000000000000UL)] // log2P1(-2) = NaN
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // log2P1(+Infinity) = +Infinity
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // log2P1(NaN) = NaN
+        public static void Log2P1Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log2P1(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(1.0)]
+        [InlineData(-0.5)]
+        [InlineData(7.0)]
+        [InlineData(1e-6)]
+        public static void Log2P1AccuracyTest(double input)
+        {
+            double expected = double.Log2P1(input);
+            double actual = (double)Decimal64.Log2P1((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log2P1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // log10P1(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // log10P1(-0) = -0 (sign preserved)
+        [InlineData(0xB1C0000000000001UL, 0xF800000000000000UL)] // log10P1(-1) = -Infinity
+        [InlineData(0xB1C0000000000002UL, 0x7C00000000000000UL)] // log10P1(-2) = NaN
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // log10P1(+Infinity) = +Infinity
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // log10P1(NaN) = NaN
+        public static void Log10P1Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log10P1(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(1.0)]
+        [InlineData(-0.5)]
+        [InlineData(9.0)]
+        [InlineData(1e-6)]
+        public static void Log10P1AccuracyTest(double input)
+        {
+            double expected = double.Log10P1(input);
+            double actual = (double)Decimal64.Log10P1((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log10P1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x31C0000000000001UL, 0x3180000000000001UL, 0x3180000000000064UL)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x31A0000000000019UL, 0x31C0000000000001UL, 0x31C0000000000002UL)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x31A0000000000023UL, 0x31C0000000000001UL, 0x31C0000000000004UL)] // quantize(3.5, 1E0) = 4 (ties to even)

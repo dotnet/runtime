@@ -446,6 +446,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128Conversions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128Exp.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128Log.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Transcendental.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal128.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal32.cs" />
