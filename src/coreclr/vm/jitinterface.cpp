@@ -12548,7 +12548,12 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "get_UTF8",
        "get_IsAllocated",
        "get_EventListenersLock"
-
+       "AsMethodTable",
+       "get_IsFunctionPointer",
+       "EqualsHelper",
+       "get_CompletedTask",
+       "get_UTF8NoBOM",
+       "get_EncoderFallback",
 
 
     };
