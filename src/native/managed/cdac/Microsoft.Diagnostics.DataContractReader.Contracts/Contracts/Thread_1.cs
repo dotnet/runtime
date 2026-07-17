@@ -205,7 +205,7 @@ internal readonly struct Thread_1 : IThread
         TargetPointer idDispenser = _target.ReadPointer(idDispenserPtr);
         Data.IdDispenser idDispenserObj = _target.ProcessedData.GetOrAdd<Data.IdDispenser>(idDispenser);
         TargetPointer threadPtr = TargetPointer.Null;
-        if (id < idDispenserObj.HighestId)
+        if (id <= idDispenserObj.HighestId)
             threadPtr = _target.ReadPointer(idDispenserObj.IdToThread + (ulong)(id * _target.PointerSize));
         return threadPtr;
     }
