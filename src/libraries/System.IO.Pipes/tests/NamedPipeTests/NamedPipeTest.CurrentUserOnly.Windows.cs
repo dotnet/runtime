@@ -5,6 +5,7 @@ using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.DirectoryServices.AccountManagement;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Threading;
@@ -131,6 +132,26 @@ namespace System.IO.Pipes.Tests
         public NamedPipeTest_CurrentUserOnly_Windows(TestAccountImpersonator testAccountImpersonator)
         {
             _testAccountImpersonator = testAccountImpersonator;
+        }
+
+        [ConditionalFact(typeof(NamedPipeTest_CurrentUserOnly_Windows), nameof(IsSupportedWindowsVersionAndPrivilegedProcess))]
+        public static void CurrentUserOnly_UsesCurrentUserSidForPipeOwner()
+        {
+            using WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
+            SecurityIdentifier? currentOwnerSid = currentIdentity.Owner;
+            SecurityIdentifier currentUserSid = currentIdentity.User!;
+
+            if (currentOwnerSid == currentUserSid)
+            {
+                throw new SkipTestException($"Current owner SID '{currentOwnerSid?.Value}' matches current user SID '{currentUserSid.Value}'.");
+            }
+
+            string name = PipeStreamConformanceTests.GetUniquePipeName();
+            using var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly);
+            PipeSecurity accessControl = server.GetAccessControl();
+            IdentityReference? remoteOwnerSid = accessControl.GetOwner(typeof(SecurityIdentifier));
+
+            Assert.Equal(currentUserSid, remoteOwnerSid);
         }
 
         [OuterLoop("Requires admin privileges")]
