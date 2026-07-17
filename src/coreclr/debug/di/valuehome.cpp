@@ -900,7 +900,7 @@ void RegisterValueHome::GetEnregisteredValue(MemoryRange dest)
 {
     IDacDbiInterface::TargetInfo targetInfo;
     IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
-    if (targetInfo.arch != kArchX86)
+    if (targetInfo.arch != IDacDbiInterface::kArchX86)
     {
         _ASSERTE(!"@TODO IA64/AMD64 -- Not Yet Implemented");
         ThrowHR(E_NOTIMPL);
