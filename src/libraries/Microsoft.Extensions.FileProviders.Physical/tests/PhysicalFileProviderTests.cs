@@ -1235,12 +1235,12 @@ namespace Microsoft.Extensions.FileProviders
                         {
                             var oldFileName = Guid.NewGuid().ToString();
                             var oldToken = provider.Watch(oldFileName);
-                            var oldTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+                            var oldTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                             oldToken.RegisterChangeCallback(_ => oldTcs.TrySetResult(true), null);
 
                             var newFileName = Guid.NewGuid().ToString();
                             var newToken = provider.Watch(newFileName);
-                            var newTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+                            var newTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                             newToken.RegisterChangeCallback(_ => newTcs.TrySetResult(true), null);
 
                             fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.Path, newFileName, oldFileName));
@@ -1259,7 +1259,7 @@ namespace Microsoft.Extensions.FileProviders
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokensFiredForNewDirectoryContentsOnRename()
         {
-            var tcsShouldNotFire = new TaskCompletionSource<object>();
+            var tcsShouldNotFire = new TaskCompletionSource<bool>();
             void Fail(object state)
             {
                 tcsShouldNotFire.TrySetException(new InvalidOperationException("This token should not have fired"));
@@ -1287,7 +1287,7 @@ namespace Microsoft.Extensions.FileProviders
                 File.Create(Path.Combine(root.Path, newDirectoryName, newSubDirectoryName, newFileName));
 
                 var oldDirectoryToken = provider.Watch(oldDirectoryName);
-                var oldDirectoryTcs = new TaskCompletionSource<object>();
+                var oldDirectoryTcs = new TaskCompletionSource<bool>();
                 oldDirectoryToken.RegisterChangeCallback(_ => oldDirectoryTcs.TrySetResult(true), null);
                 var oldSubDirectoryToken = provider.Watch(oldSubDirectoryPath);
                 oldSubDirectoryToken.RegisterChangeCallback(Fail, null);
@@ -1295,13 +1295,13 @@ namespace Microsoft.Extensions.FileProviders
                 oldFileToken.RegisterChangeCallback(Fail, null);
 
                 var newDirectoryToken = provider.Watch(newDirectoryName);
-                var newDirectoryTcs = new TaskCompletionSource<object>();
+                var newDirectoryTcs = new TaskCompletionSource<bool>();
                 newDirectoryToken.RegisterChangeCallback(_ => newDirectoryTcs.TrySetResult(true), null);
                 var newSubDirectoryToken = provider.Watch(newSubDirectoryPath);
-                var newSubDirectoryTcs = new TaskCompletionSource<object>();
+                var newSubDirectoryTcs = new TaskCompletionSource<bool>();
                 newSubDirectoryToken.RegisterChangeCallback(_ => newSubDirectoryTcs.TrySetResult(true), null);
                 var newFileToken = provider.Watch(newFilePath);
-                var newFileTcs = new TaskCompletionSource<object>();
+                var newFileTcs = new TaskCompletionSource<bool>();
                 newFileToken.RegisterChangeCallback(_ => newFileTcs.TrySetResult(true), null);
 
                 Assert.False(oldDirectoryToken.HasChanged, "Old directory token should not have changed");
