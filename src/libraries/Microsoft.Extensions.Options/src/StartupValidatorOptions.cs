@@ -13,7 +13,8 @@ namespace Microsoft.Extensions.Options
         // Maps each pair of a) options type and b) options name to a method that forces its evaluation, e.g. IOptionsMonitor<TOptions>.Get(name)
         public Dictionary<(Type, string), Action> _validators { get; } = new Dictionary<(Type, string), Action>();
 
-        // Maps each pair of a) options type and b) options name to an async method that forces evaluation and runs async validators
+        // Maps each pair of a) options type and b) options name to an async method that runs the complete
+        // validation (synchronous and asynchronous validators) and seeds the monitor cache with the result
         public Dictionary<(Type, string), Func<CancellationToken, Task>> _asyncValidators { get; } = new Dictionary<(Type, string), Func<CancellationToken, Task>>();
     }
 }

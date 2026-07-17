@@ -35,9 +35,6 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             var instance = new DataAnnotationValidateOptions<TOptions>(optionsBuilder.Name);
             optionsBuilder.Services.AddSingleton<IValidateOptions<TOptions>>(instance);
-#if NET11_0_OR_GREATER
-            optionsBuilder.Services.AddSingleton<IAsyncValidateOptions<TOptions>>(instance);
-#endif
             return optionsBuilder;
         }
     }
