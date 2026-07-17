@@ -582,9 +582,9 @@ namespace System.Net
                     if (channelBinding != null)
                     {
                         // If a TLS channel binding token (cbt) is available then pass the whole
-                        // binding as a SafeHandle and let the native shim offset past the
-                        // SecChannelBindings header to the application specific data. Passing the
-                        // SafeHandle lets the interop marshaller ref-count the handle for us.
+                        // binding along with the offset and length of the application-specific
+                        // data. The interop wrapper ref-counts the SafeHandle around the native
+                        // call so it cannot be released while the raw pointer is in use.
                         int appDataOffset = sizeof(SecChannelBindings);
                         Debug.Assert(appDataOffset < channelBinding.Size);
                         if (channelBinding.Size < appDataOffset)
@@ -696,9 +696,9 @@ namespace System.Net
                     if (channelBinding != null)
                     {
                         // If a TLS channel binding token (cbt) is available then pass the whole
-                        // binding as a SafeHandle and let the native shim offset past the
-                        // SecChannelBindings header to the application specific data. Passing the
-                        // SafeHandle lets the interop marshaller ref-count the handle for us.
+                        // binding along with the offset and length of the application-specific
+                        // data. The interop wrapper ref-counts the SafeHandle around the native
+                        // call so it cannot be released while the raw pointer is in use.
                         int appDataOffset = sizeof(SecChannelBindings);
                         Debug.Assert(appDataOffset < channelBinding.Size);
                         if (channelBinding.Size < appDataOffset)

@@ -93,8 +93,7 @@ internal static partial class Interop
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
             PackageType packageType,
-            ChannelBinding cbt,
-            int cbtOffset,
+            IntPtr cbt,
             int cbtSize,
             SafeGssNameHandle? targetName,
             uint reqFlags,
@@ -136,8 +135,8 @@ internal static partial class Interop
             ref SafeGssContextHandle contextHandle,
             PackageType packageType,
             ChannelBinding channelBinding,
-            int cbtOffset,
-            int cbtSize,
+            int cbtAppDataOffset,
+            int cbtAppDataSize,
             SafeGssNameHandle? targetName,
             uint reqFlags,
             ReadOnlySpan<byte> inputBytes,
@@ -145,21 +144,35 @@ internal static partial class Interop
             out uint retFlags,
             out bool isNtlmUsed)
         {
-            return InitSecContext(
-                out minorStatus,
-                initiatorCredHandle,
-                ref contextHandle,
-                packageType,
-                channelBinding,
-                cbtOffset,
-                cbtSize,
-                targetName,
-                reqFlags,
-                ref MemoryMarshal.GetReference(inputBytes),
-                inputBytes.Length,
-                ref token,
-                out retFlags,
-                out isNtlmUsed);
+            // Ref-count the channel binding handle so it cannot be released while the native
+            // call, which receives a raw pointer into the application-specific data, is in flight.
+            bool refAdded = false;
+            try
+            {
+                channelBinding.DangerousAddRef(ref refAdded);
+                IntPtr cbtAppData = channelBinding.DangerousGetHandle() + cbtAppDataOffset;
+                return InitSecContext(
+                    out minorStatus,
+                    initiatorCredHandle,
+                    ref contextHandle,
+                    packageType,
+                    cbtAppData,
+                    cbtAppDataSize,
+                    targetName,
+                    reqFlags,
+                    ref MemoryMarshal.GetReference(inputBytes),
+                    inputBytes.Length,
+                    ref token,
+                    out retFlags,
+                    out isNtlmUsed);
+            }
+            finally
+            {
+                if (refAdded)
+                {
+                    channelBinding.DangerousRelease();
+                }
+            }
         }
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_AcceptSecContext")]
@@ -167,8 +180,7 @@ internal static partial class Interop
             out Status minorStatus,
             SafeGssCredHandle acceptorCredHandle,
             ref SafeGssContextHandle acceptContextHandle,
-            ChannelBinding? cbt,
-            int cbtOffset,
+            IntPtr cbt,
             int cbtSize,
             ref byte inputBytes,
             int inputLength,
@@ -181,25 +193,54 @@ internal static partial class Interop
             SafeGssCredHandle acceptorCredHandle,
             ref SafeGssContextHandle acceptContextHandle,
             ChannelBinding? channelBinding,
-            int cbtOffset,
-            int cbtSize,
+            int cbtAppDataOffset,
+            int cbtAppDataSize,
             ReadOnlySpan<byte> inputBytes,
             ref GssBuffer token,
             out uint retFlags,
             out bool isNtlmUsed)
         {
-            return AcceptSecContext(
-                out minorStatus,
-                acceptorCredHandle,
-                ref acceptContextHandle,
-                channelBinding,
-                cbtOffset,
-                cbtSize,
-                ref MemoryMarshal.GetReference(inputBytes),
-                inputBytes.Length,
-                ref token,
-                out retFlags,
-                out isNtlmUsed);
+            if (channelBinding is null)
+            {
+                return AcceptSecContext(
+                    out minorStatus,
+                    acceptorCredHandle,
+                    ref acceptContextHandle,
+                    IntPtr.Zero,
+                    0,
+                    ref MemoryMarshal.GetReference(inputBytes),
+                    inputBytes.Length,
+                    ref token,
+                    out retFlags,
+                    out isNtlmUsed);
+            }
+
+            // Ref-count the channel binding handle so it cannot be released while the native
+            // call, which receives a raw pointer into the application-specific data, is in flight.
+            bool refAdded = false;
+            try
+            {
+                channelBinding.DangerousAddRef(ref refAdded);
+                IntPtr cbtAppData = channelBinding.DangerousGetHandle() + cbtAppDataOffset;
+                return AcceptSecContext(
+                    out minorStatus,
+                    acceptorCredHandle,
+                    ref acceptContextHandle,
+                    cbtAppData,
+                    cbtAppDataSize,
+                    ref MemoryMarshal.GetReference(inputBytes),
+                    inputBytes.Length,
+                    ref token,
+                    out retFlags,
+                    out isNtlmUsed);
+            }
+            finally
+            {
+                if (refAdded)
+                {
+                    channelBinding.DangerousRelease();
+                }
+            }
         }
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_DeleteSecContext")]
