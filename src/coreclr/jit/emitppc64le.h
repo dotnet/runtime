@@ -312,9 +312,10 @@ void emitIns_Mov(
 /************************************************************************/
 
 public:
-// Helper to check if a branch target is within range for direct bl instruction
-// Returns the instruction offset if within range, 0 if out of range
-int getBranchOffset(BYTE* src, void* target);
+// Helper to check if a branch target is within range for direct bl instruction.
+// Returns the instruction offset (in 4-byte units) if within range.
+// Sets *outOfRange to true and returns 0 if the target is beyond the ±32MB bl limit.
+int getBranchOffset(BYTE* src, void* target, bool* outOfRange);
 
 void emitIns(instruction ins);
 

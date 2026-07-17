@@ -3210,81 +3210,38 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
             assert(addr != nullptr);
 
-            // Check if we need a trampoline for long-distance calls
-            // PowerPC64 bl instruction has 24-bit signed offset (±32MB range)
-            if (!call->IsFastTailCall())
-            {
-                // Check if target is within range for direct bl
-                BYTE* currentPos = GetEmitter()->emitCodeBlock;
-                int offset = 0;
-                
-                if (currentPos != nullptr)
-                {
-                    offset = GetEmitter()->getBranchOffset(currentPos, addr);
-                }
-                
-                if (offset == 0 && currentPos != nullptr)
-                {
-                    // Offset out of range - emit trampoline sequence
-                    uint64_t targetAddr = (uint64_t)addr;
-                    
-                    // lis r12, target@highest
-                    GetEmitter()->emitIns_R_I(INS_lis, EA_8BYTE, REG_R12, (targetAddr >> 48) & 0xFFFF);
-                    // ori r12, r12, target@higher
-                    GetEmitter()->emitIns_R_I(INS_ori, EA_8BYTE, REG_R12, (targetAddr >> 32) & 0xFFFF);
-                    // sldi r12, r12, 32
-                    GetEmitter()->emitIns_R_I(INS_sldi, EA_8BYTE, REG_R12, 32);
-                    // oris r12, r12, target@h
-                    GetEmitter()->emitIns_R_I(INS_oris, EA_8BYTE, REG_R12, (targetAddr >> 16) & 0xFFFF);
-                    // ori r12, r12, target@l
-                    GetEmitter()->emitIns_R_I(INS_ori, EA_8BYTE, REG_R12, targetAddr & 0xFFFF);
-                    // mtctr r12
-                    GetEmitter()->emitIns_R(INS_mtctr, EA_8BYTE, REG_R12);
-                    
-                    // Now emit indirect call through CTR
-                    // clang-format off
-                    genEmitCall(emitter::EC_INDIR_R,
-                                methHnd,
-                                INDEBUG_LDISASM_COMMA(sigInfo)
-                                nullptr,  // addr is nullptr for indirect calls
-                                retSize
-                                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                                di,
-                                REG_R12,  // ireg - indicates call through CTR
-                                false);   // Not a tail call
-                    // clang-format on
-                }
-                else
-                {
-                    // Direct call within range (or currentPos is null during early phases)
-                    // clang-format off
-                    genEmitCall(emitter::EC_FUNC_TOKEN,
-                                methHnd,
-                                INDEBUG_LDISASM_COMMA(sigInfo)
-                                addr,
-                                retSize
-                                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                                di,
-                                REG_NA,
-                                false);
-                    // clang-format on
-                }
-            }
-            else
-            {
-                // Tail call - use direct branch
-                // clang-format off
-                genEmitCall(emitter::EC_FUNC_TOKEN,
-                            methHnd,
-                            INDEBUG_LDISASM_COMMA(sigInfo)
-                            addr,
-                            retSize
-                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                            di,
-                            REG_NA,
-                            true);
-                // clang-format on
-            }
+            // PowerPC64 bl has a 24-bit signed offset (±32MB range). Because the final
+            // code layout is not known at instruction-selection time, we cannot reliably
+            // determine whether a direct bl is reachable. Always emit the full 64-bit
+            // address materialisation into r12 followed by an indirect call through CTR.
+            // This is correct for all call distances.
+            uint64_t targetAddr = (uint64_t)addr;
+
+            // lis r12, target@highest  (bits 63:48)
+            GetEmitter()->emitIns_R_I(INS_lis,  EA_8BYTE, REG_R12, (targetAddr >> 48) & 0xFFFF);
+            // ori r12, r12, target@higher  (bits 47:32)
+            GetEmitter()->emitIns_R_I(INS_ori,  EA_8BYTE, REG_R12, (targetAddr >> 32) & 0xFFFF);
+            // sldi r12, r12, 32
+            GetEmitter()->emitIns_R_I(INS_sldi, EA_8BYTE, REG_R12, 32);
+            // oris r12, r12, target@h  (bits 31:16)
+            GetEmitter()->emitIns_R_I(INS_oris, EA_8BYTE, REG_R12, (targetAddr >> 16) & 0xFFFF);
+            // ori r12, r12, target@l  (bits 15:0)
+            GetEmitter()->emitIns_R_I(INS_ori,  EA_8BYTE, REG_R12, targetAddr & 0xFFFF);
+            // mtctr r12
+            GetEmitter()->emitIns_R(INS_mtctr, EA_8BYTE, REG_R12);
+
+            // Indirect call through CTR
+            // clang-format off
+            genEmitCall(emitter::EC_INDIR_R,
+                        methHnd,
+                        INDEBUG_LDISASM_COMMA(sigInfo)
+                        nullptr,  // addr is nullptr for indirect calls
+                        retSize
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        di,
+                        REG_R12,  // ireg - call through CTR
+                        call->IsFastTailCall());
+            // clang-format on
         }
     }
 }
@@ -4579,48 +4536,51 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     void* addr  = nullptr;
     void* pAddr = nullptr;
 
-    emitter::EmitCallType callType = emitter::EC_FUNC_TOKEN;
-    addr                           = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
-    regNumber callTarget           = REG_NA;
+    addr = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
+
+    // PowerPC64 bl has a 24-bit signed offset (±32MB range). To avoid range issues,
+    // always materialize the full 64-bit address and use indirect call through CTR.
+    
+    if (callTargetReg == REG_NA)
+    {
+        // Use REG_R12 as the default call target register
+        callTargetReg = REG_R12;
+    }
+
+    regMaskTP callTargetMask = genRegMask(callTargetReg);
+    regMaskTP callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+
+    // assert that all registers in callTargetMask are in the callKillSet
+    noway_assert((callTargetMask & callKillSet) == callTargetMask);
 
     if (addr == nullptr)
     {
         // This is an indirect call to a runtime helper.
-        // Load the helper function address and call through register.
-
-        if (callTargetReg == REG_NA)
-        {
-            // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
-            // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
-            callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
-        }
-
-        regMaskTP callTargetMask = genRegMask(callTargetReg);
-        regMaskTP callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
-
-        // assert that all registers in callTargetMask are in the callKillSet
-        noway_assert((callTargetMask & callKillSet) == callTargetMask);
-
-        callTarget = callTargetReg;
-
-        // Load the 64-bit address directly (no relocation support for now)
-        // Use instGen_Set_Reg_To_Imm to load the address of the helper table entry
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, callTarget, (ssize_t)pAddr);
+        // Load the helper function address from the indirection table.
+        
+        // Load the 64-bit address of the helper table entry
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, callTargetReg, (ssize_t)pAddr);
         
         // Load the actual function pointer from the helper table
-        // ld callTarget, 0(callTarget)
-        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, callTarget, callTarget, 0);
-        
-        regSet.verifyRegUsed(callTarget);
-
-        callType = emitter::EC_INDIR_R;
+        // ld callTargetReg, 0(callTargetReg)
+        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, callTargetReg, callTargetReg, 0);
     }
+    else
+    {
+        // Direct call to helper - materialize the full 64-bit address
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, callTargetReg, (ssize_t)addr);
+    }
+    
+    // Move address to CTR for indirect call
+    GetEmitter()->emitIns_R(INS_mtctr, EA_PTRSIZE, callTargetReg);
+    
+    regSet.verifyRegUsed(callTargetReg);
 
-    // Emit the actual call instruction
-    GetEmitter()->emitIns_Call(callType, compiler->eeFindHelper(helper), INDEBUG_LDISASM_COMMA(nullptr) addr, argSize,
+    // Emit the actual call instruction (indirect through CTR)
+    GetEmitter()->emitIns_Call(emitter::EC_INDIR_R, compiler->eeFindHelper(helper), INDEBUG_LDISASM_COMMA(nullptr) nullptr, argSize,
                                retSize, EA_UNKNOWN, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur, DebugInfo(), /* IL offset */
-                               callTarget,                           /* ireg */
+                               callTargetReg,                        /* ireg */
                                REG_NA, 0, 0,                         /* xreg, xmul, disp */
                                false                                 /* isJump */
     );
@@ -5821,7 +5781,11 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
-        GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
+        // Load target block address into R12 using PC-relative sequence (bcl + mflr + addi)
+        // Then call via CTR to avoid ±32MB range limitation of direct bl
+        GetEmitter()->emitIns_R_L(INS_addi, EA_PTRSIZE, block->GetTarget(), REG_R12);
+        GetEmitter()->emitIns_R(INS_mtctr, EA_PTRSIZE, REG_R12);
+        GetEmitter()->emitIns(INS_bctrl);
 
         // We have a retless call, and the last instruction generated was a call.
         // If the next block is in a different EH region (or is the end of the code
@@ -5841,7 +5805,12 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // after the call is not (can not be) correct in cases where a variable has a last use in the
         // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
         GetEmitter()->emitDisableGC();
-        GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
+        
+        // Load target block address into R12 using PC-relative sequence (bcl + mflr + addi)
+        // Then call via CTR to avoid ±32MB range limitation of direct bl
+        GetEmitter()->emitIns_R_L(INS_addi, EA_PTRSIZE, block->GetTarget(), REG_R12);
+        GetEmitter()->emitIns_R(INS_mtctr, EA_PTRSIZE, REG_R12);
+        GetEmitter()->emitIns(INS_bctrl);
 
         // Now go to where the finally funclet needs to return to.
         BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();

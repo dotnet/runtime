@@ -593,26 +593,31 @@ void emitter::emitIns_Mov(
 
 /*****************************************************************************
  *
- *  Calculate the branch offset for a bl instruction
- *  Returns the offset in instruction units (not bytes)
- *  Returns 0 if the offset is out of range
+ *  Calculate the branch offset for a bl instruction.
+ *  Returns the offset in instruction units (not bytes).
+ *  Sets *outOfRange to true and returns 0 if the target exceeds the ±32MB bl limit;
+ *  sets *outOfRange to false and returns the offset otherwise.
  */
-int emitter::getBranchOffset(BYTE* dst, void* target)
+int emitter::getBranchOffset(BYTE* dst, void* target, bool* outOfRange)
 {
+    assert(outOfRange != nullptr);
+
     // Calculate the byte offset from current instruction to target
     ssize_t byteOffset = (ssize_t)target - (ssize_t)dst;
-    
+
     // Convert to instruction offset (PowerPC instructions are 4 bytes)
     ssize_t instrOffset = byteOffset >> 2;
-    
+
     // Check if offset fits in 24 bits (signed)
     // Range: -8388608 to 8388607 (0x800000 to 0x7FFFFF)
     if (instrOffset >= -0x800000 && instrOffset <= 0x7FFFFF)
     {
+        *outOfRange = false;
         return (int)instrOffset;
     }
-    
+
     // Offset out of range
+    *outOfRange = true;
     return 0;
 }
 
@@ -1925,12 +1930,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            // bl instruction - Branch and Link (direct call within ±32MB)
            {
                void* target = (void*)id->idAddr()->iiaAddr;
-               int offset = getBranchOffset(dst, target);
-               
-               // At this point, offset should be valid because emitIns_Call
-               // should have chosen the trampoline path if needed
-               assert(offset != 0 && "bl offset out of range - should use trampoline");
-               
+               bool outOfRange;
+               int offset = getBranchOffset(dst, target, &outOfRange);
+
+               // genCallInstruction always emits a trampoline for out-of-range targets,
+               // so INS_bl should never be emitted for a target beyond ±32MB.
+               assert(!outOfRange && "bl offset out of range - should use trampoline");
+
                ppc_bl(dstRW, offset);
            }
            break;
