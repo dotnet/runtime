@@ -3,23 +3,16 @@
   <!-- NOTE: these targets should be a no-op, unless _RequiresLiveILLink, computed below, is true. -->
 
   <PropertyGroup>
-    <_RequiresLiveILLinkExplicitlySet Condition="'$(_RequiresLiveILLink)' != ''">true</_RequiresLiveILLinkExplicitlySet>
-
     <!-- Keep these conditions in sync with _RequiresILLinkPack in
          https://github.com/dotnet/sdk/blob/main/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Publish.targets -->
-    <_RequiresLiveILLinkTasks Condition="'$(_RequiresLiveILLinkTasks)' == '' And '$(_RequiresLiveILLinkExplicitlySet)' == 'true' And '$(_RequiresLiveILLink)' == 'true'">true</_RequiresLiveILLinkTasks>
-    <_RequiresLiveILLinkTasks Condition="'$(_RequiresLiveILLinkTasks)' == '' And '$(_RequiresLiveILLinkExplicitlySet)' != 'true' And (
+    <EnableUnsafeAnalyzer Condition="'$(EnableUnsafeMigration)' == 'true' And '$(_RequiresLiveILLink)' != 'false'">true</EnableUnsafeAnalyzer>
+    <_RequiresLiveILLink Condition="'$(_RequiresLiveILLink)' == '' And (
         '$(PublishAot)' == 'true' Or
         '$(IsAotCompatible)' == 'true' Or '$(EnableAotAnalyzer)' == 'true' Or
         '$(PublishTrimmed)' == 'true' Or
         '$(IsTrimmable)' == 'true' Or '$(EnableTrimAnalyzer)' == 'true' Or
-        '$(EnableSingleFileAnalyzer)' == 'true')">true</_RequiresLiveILLinkTasks>
-
-    <EnableUnsafeAnalyzer Condition="'$(EnableUnsafeMigration)' == 'true' And ('$(_RequiresLiveILLinkExplicitlySet)' != 'true' Or '$(_RequiresLiveILLink)' == 'true')">true</EnableUnsafeAnalyzer>
-    <_RequiresLiveUnsafeAnalyzer Condition="'$(EnableUnsafeAnalyzer)' == 'true'">true</_RequiresLiveUnsafeAnalyzer>
-    <_RequiresLiveILLink Condition="'$(_RequiresLiveILLink)' == '' And (
-        '$(_RequiresLiveILLinkTasks)' == 'true' Or
-        '$(_RequiresLiveUnsafeAnalyzer)' == 'true')">true</_RequiresLiveILLink>
+        '$(EnableSingleFileAnalyzer)' == 'true' Or
+        '$(EnableUnsafeAnalyzer)' == 'true')">true</_RequiresLiveILLink>
     <Features Condition="'$(EnableUnsafeMigration)' == 'true' And '$(_RequiresLiveILLink)' == 'true'">$(Features);updated-memory-safety-rules</Features>
   </PropertyGroup>
 
@@ -28,17 +21,16 @@
     <ILLinkAnalyzersPropsPath>$(ToolsProjectRoot)illink\src\ILLink.RoslynAnalyzer\build\Microsoft.NET.ILLink.Analyzers.props</ILLinkAnalyzersPropsPath>
   </PropertyGroup>
 
-  <Import Project="$(_ILLinkTasksSourceDir)build\Microsoft.NET.ILLink.Tasks.props" Condition="'$(_RequiresLiveILLinkTasks)' == 'true'" />
-  <Import Project="$(ILLinkAnalyzersPropsPath)" Condition="'$(_RequiresLiveILLink)' == 'true' And '$(_RequiresLiveILLinkTasks)' != 'true'" />
+  <Import Project="$(_ILLinkTasksSourceDir)build\Microsoft.NET.ILLink.Tasks.props" Condition="'$(_RequiresLiveILLink)' == 'true'" />
 
-  <PropertyGroup Condition="'$(_RequiresLiveILLinkTasks)' == 'true'">
+  <PropertyGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
     <!-- Don't use SDK's trimming functionality. -->
     <_RequiresILLinkPack>false</_RequiresILLinkPack>
     <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(ToolsILLinkDir)net\ILLink.Tasks.dll</ILLinkTasksAssembly>
     <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(ToolsILLinkDir)netframework\ILLink.Tasks.dll</ILLinkTasksAssembly>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(_RequiresLiveILLinkTasks)' == 'true'">
+  <ItemGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
     <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
                       ReferenceOutputAssembly="false"
@@ -51,9 +43,6 @@
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">TargetFramework=$(NetFrameworkToolCurrent)</SetTargetFramework>
     </ProjectReference>
 
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
     <!-- Need to reference the analyzer project separately, because there's no easy way to get it as a transitive reference of ILLink.Tasks.csproj -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj"
                       ReferenceOutputAssembly="false"
@@ -67,30 +56,6 @@
                       Private="false"
                       OutputItemType="Analyzer"
                       SetConfiguration="Configuration=$(ToolsConfiguration)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(EnableUnsafeMigration)' == 'true' And
-                        '$(_RequiresLiveILLink)' == 'true' And
-                        '$(DesignTimeBuild)' == 'true' And
-                        '$(IsNETCoreAppSrc)' == 'true' And
-                        '$(AssemblyName)' != 'System.Private.CoreLib' And
-                        Exists('$(ArtifactsBinDir)ref\$(TargetFramework)\System.Runtime.dll') And
-                        Exists('$(ArtifactsBinDir)System.Private.CoreLib\ref\$(Configuration)\$(TargetFramework)\System.Private.CoreLib.dll') And
-                        Exists('$(ArtifactsBinDir)ILLink.RoslynAnalyzer\$(ToolsConfiguration)\netstandard2.0\ILLink.RoslynAnalyzer.dll') And
-                        Exists('$(ArtifactsBinDir)ILLink.CodeFixProvider\$(ToolsConfiguration)\netstandard2.0\ILLink.CodeFixProvider.dll')">
-    <ProjectReference Remove="@(ProjectReference)" />
-    <Reference Include="$(ArtifactsBinDir)ref\$(TargetFramework)\*.dll"
-               Exclude="$(ArtifactsBinDir)ref\$(TargetFramework)\$(AssemblyName).dll"
-               Private="false" />
-    <Analyzer Include="$(ArtifactsBinDir)ILLink.RoslynAnalyzer\$(ToolsConfiguration)\netstandard2.0\ILLink.RoslynAnalyzer.dll"
-              Condition="Exists('$(ArtifactsBinDir)ILLink.RoslynAnalyzer\$(ToolsConfiguration)\netstandard2.0\ILLink.RoslynAnalyzer.dll')" />
-    <Analyzer Include="$(ArtifactsBinDir)ILLink.CodeFixProvider\$(ToolsConfiguration)\netstandard2.0\ILLink.CodeFixProvider.dll"
-              Condition="Exists('$(ArtifactsBinDir)ILLink.CodeFixProvider\$(ToolsConfiguration)\netstandard2.0\ILLink.CodeFixProvider.dll')" />
-    <Reference Include="System.Private.CoreLib"
-               Condition="Exists('$(ArtifactsBinDir)System.Private.CoreLib\ref\$(Configuration)\$(TargetFramework)\System.Private.CoreLib.dll')">
-      <HintPath>$(ArtifactsBinDir)System.Private.CoreLib\ref\$(Configuration)\$(TargetFramework)\System.Private.CoreLib.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
   </ItemGroup>
 
 </Project>

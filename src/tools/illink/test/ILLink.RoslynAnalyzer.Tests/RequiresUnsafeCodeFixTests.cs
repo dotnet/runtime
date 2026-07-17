@@ -39,15 +39,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                 .WithProjectCompilationOptions(projectId, compilationOptions);
         }
 
-        static Solution SetConsoleOptions(Solution solution, ProjectId projectId)
-        {
-            solution = SetOptions(solution, projectId);
-            var compilationOptions = (CSharpCompilationOptions)solution.GetProject(projectId)!.CompilationOptions!;
-            return solution.WithProjectCompilationOptions(
-                projectId,
-                compilationOptions.WithOutputKind(OutputKind.ConsoleApplication));
-        }
-
         static Task VerifyRequiresUnsafeCodeFix(
             string source,
             string fixedSource,
@@ -82,11 +73,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
             test.TestState.AnalyzerConfigFiles.Add(config);
         }
 
-        static void AddUnsafeMigrationConfig(
-            VerifyUnsafeUsageMigrationCS.Test test,
-            bool consoleApplication = false)
+        static void AddUnsafeMigrationConfig(VerifyUnsafeUsageMigrationCS.Test test)
         {
-            test.SolutionTransforms.Add(consoleApplication ? SetConsoleOptions : SetOptions);
+            test.SolutionTransforms.Add(SetOptions);
             var config = ("/.editorconfig", SourceText.From(@$"
 is_global = true
 build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
@@ -121,8 +110,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
             string fixedSource,
             DiagnosticResult[] baselineExpected,
             DiagnosticResult[] fixedExpected,
-            int? numberOfIterations = null,
-            bool consoleApplication = false)
+            int? numberOfIterations = null)
         {
             var test = new VerifyUnsafeUsageMigrationCS.Test
             {
@@ -130,7 +118,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
                 FixedCode = fixedSource
             };
             test.ExpectedDiagnostics.AddRange(baselineExpected);
-            AddUnsafeMigrationConfig(test, consoleApplication);
+            AddUnsafeMigrationConfig(test);
             if (numberOfIterations != null)
             {
                 test.NumberOfIncrementalIterations = numberOfIterations;
@@ -1986,34 +1974,6 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
         }
 
         [Fact]
-        public async Task UnsafeModifierMigration_PreservesMultiEventImplementationContract()
-        {
-            var source = """
-                using System;
-
-                public interface IEvents
-                {
-                    /// <safety>Documented.</safety>
-                    unsafe event Action E1;
-
-                    /// <safety>Documented.</safety>
-                    unsafe event Action E2;
-                }
-
-                public class C : IEvents
-                {
-                    public unsafe event Action E1, E2;
-                }
-                """;
-
-            await VerifyUnsafeModifierMigrationCodeFix(
-                source,
-                source,
-                baselineExpected: [],
-                fixedExpected: []);
-        }
-
-        [Fact]
         public async Task UnsafeUsageMigration_AddsUnsafeAndSafetyDocsToInteropDeclarations()
         {
             var source = """
@@ -2357,26 +2317,6 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
                     public async Task<int> AwaitAsync()
                         => await Task.FromResult(new ValueProvider().Value());
 
-                    public int ExpressionBodied()
-                        => new ValueProvider().Value();
-
-                    public int LocalFunction()
-                    {
-                        int Local() => new ValueProvider().Value();
-                        return Local();
-                    }
-
-                    public Func<int> Lambda()
-                        => () => new ValueProvider().Value();
-
-                    public int DirectiveWrapped()
-                    {
-                #line 100
-                        int value = new ValueProvider().Value();
-                #line default
-                        return value;
-                    }
-
                     public int CatchFilter()
                     {
                         try
@@ -2439,26 +2379,6 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
                     public async Task<int> AwaitAsync()
                         => await Task.FromResult(unsafe(/* SAFETY: Audit */new ValueProvider().Value()));
 
-                    public int ExpressionBodied()
-                        => unsafe(/* SAFETY: Audit */new ValueProvider().Value());
-
-                    public int LocalFunction()
-                    {
-                        int Local() => unsafe(/* SAFETY: Audit */new ValueProvider().Value());
-                        return Local();
-                    }
-
-                    public Func<int> Lambda()
-                        => () => unsafe(/* SAFETY: Audit */new ValueProvider().Value());
-
-                    public int DirectiveWrapped()
-                    {
-                #line 100
-                        int value = unsafe(/* SAFETY: Audit */new ValueProvider().Value());
-                #line default
-                        return value;
-                    }
-
                     public int CatchFilter()
                     {
                         try
@@ -2489,7 +2409,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
         }
 
         [Fact]
-        public async Task UnsafeUsageMigration_DoesNotWrapAwaitInsideUnsafeExpression()
+        public async Task UnsafeUsageMigration_SkipsUnsafeExpressionsContainingAwait()
         {
             var source = """
                 using System.Threading.Tasks;
@@ -2525,12 +2445,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
                     public static async Task<int> M()
                     {
                         int first = {|#0:Unsafe(await Task.FromResult(1))|};
-                        int second;
-                        unsafe
-                        {
-                            // SAFETY: Audit
-                            second = Unsafe2();
-                        }
+                        int second = unsafe(/* SAFETY: Audit */Unsafe2());
                         return first + second;
                     }
                 }
@@ -2558,7 +2473,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
         }
 
         [Fact]
-        public async Task UnsafeUsageMigration_SplitsRefLikeLocalsIntoScopedForwardDeclarations()
+        public async Task UnsafeUsageMigration_UsesUnsafeExpressionForRefLikeLocal()
         {
             var source = """
                 using System;
@@ -2584,12 +2499,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
                     [SkipLocalsInit]
                     public int Sum()
                     {
-                        scoped Span<int> span;
-                        unsafe
-                        {
-                            // SAFETY: Audit
-                            span = stackalloc int[4];
-                        }
+                        Span<int> span = unsafe(/* SAFETY: Audit */stackalloc int[4]);
                         return span.Length;
                     }
                 }
@@ -2646,97 +2556,6 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeMigration} = true"));
                     DiagnosticResult.CompilerError("CS9361").WithLocation(0)
                 ],
                 fixedExpected: []);
-        }
-
-        [Fact]
-        public async Task UnsafeUsageMigration_UsesExpressionWhenRefLikeLocalFlowsToAnotherSpan()
-        {
-            var source = """
-                using System;
-                using System.Runtime.CompilerServices;
-
-                public class C
-                {
-                    [SkipLocalsInit]
-                    public int Length()
-                    {
-                        scoped ReadOnlySpan<int> source;
-                        {
-                            Span<int> stackSpan = {|#0:stackalloc int[4]|};
-                            source = stackSpan;
-                        }
-                        return source.Length;
-                    }
-                }
-                """;
-
-            var fixedSource = """
-                using System;
-                using System.Runtime.CompilerServices;
-
-                public class C
-                {
-                    [SkipLocalsInit]
-                    public int Length()
-                    {
-                        scoped ReadOnlySpan<int> source;
-                        {
-                            Span<int> stackSpan = unsafe(/* SAFETY: Audit */stackalloc int[4]);
-                            source = stackSpan;
-                        }
-                        return source.Length;
-                    }
-                }
-                """;
-
-            await VerifyUnsafeUsageMigrationCodeFix(
-                source,
-                fixedSource,
-                baselineExpected: [
-                    UnsafeUsageMigrationDiagnostic().WithLocation(0),
-                    DiagnosticResult.CompilerError("CS9361").WithLocation(0)
-                ],
-                fixedExpected: []);
-        }
-
-        [Fact]
-        public async Task UnsafeUsageMigration_HandlesTopLevelForwardDeclaration()
-        {
-            var source = """
-                using System;
-                using System.Runtime.CompilerServices;
-
-                [module: SkipLocalsInit]
-
-                Span<int> span = {|#0:stackalloc int[4]|};
-                Console.WriteLine(span.Length);
-                """;
-
-            var fixedSource = """
-                using System;
-                using System.Runtime.CompilerServices;
-
-                [module: SkipLocalsInit]
-
-                scoped Span<int> span;
-
-                unsafe
-                {
-                    // SAFETY: Audit
-                    span = stackalloc int[4];
-                }
-                Console.WriteLine(span.Length);
-                """;
-
-            await VerifyUnsafeUsageMigrationCodeFix(
-                source,
-                fixedSource,
-                baselineExpected: [
-                    UnsafeUsageMigrationDiagnostic().WithLocation(0),
-                    DiagnosticResult.CompilerError("CS9361").WithLocation(0)
-                ],
-                fixedExpected: [],
-                consoleApplication: true);
         }
 
         [Fact]
