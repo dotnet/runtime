@@ -902,17 +902,17 @@ namespace BINDER_SPACE
                 _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
                 SString fileName(pTpaEntry->m_wszILFileName);
 
+                ReleaseHolder<Assembly> pAssembly;
                 SString getAssemblyDiag;
-                pTPAAssembly.Free(); // Ensure we don't leak the previous assembly if we had one
                 hr = GetAssembly(fileName,
                                     TRUE,  // fIsInTPA
-                                    &pTPAAssembly,
+                                    &pAssembly,
                                     ProbeExtensionResult::Invalid(),
                                     &getAssemblyDiag);
                 pBindResult->AppendDiagnosticInfo(getAssemblyDiag);
                 BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
 
-                pBindResult->SetAttemptResult(hr, pTPAAssembly);
+                pBindResult->SetAttemptResult(hr, pAssembly);
 
                 // On file not found, simply fall back to app path probing
                 if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
@@ -920,18 +920,18 @@ namespace BINDER_SPACE
                     // Any other error is fatal
                     IF_FAIL_GO(hr);
 
-                    if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
+                    if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
                     {
                         // We have found the requested assembly match on TPA with validation of the full-qualified name. Bind to it.
-                        pBindResult->SetResult(pTPAAssembly);
-                        pBindResult->SetAttemptResult(S_OK, pTPAAssembly);
+                        pBindResult->SetResult(pAssembly);
+                        pBindResult->SetAttemptResult(S_OK, pAssembly);
                         GO_WITH_HRESULT(S_OK);
                     }
                     else
                     {
                         // We found the assembly on TPA but it didn't match the RequestedAssembly assembly-name. In this case, lets proceed to see if we find the requested
                         // assembly in the App paths.
-                        pBindResult->SetAttemptResult(FUSION_E_REF_DEF_MISMATCH, pTPAAssembly);
+                        pBindResult->SetAttemptResult(FUSION_E_REF_DEF_MISMATCH, pAssembly);
                         fPartialMatchOnTpa = true;
                     }
                 }
