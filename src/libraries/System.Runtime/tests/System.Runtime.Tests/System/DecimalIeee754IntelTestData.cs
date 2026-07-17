@@ -100,12 +100,64 @@ namespace System.Tests
         private static readonly HashSet<string> s_bid64Modulus = new() { "bid64_fmod" };
         private static readonly HashSet<string> s_bid128Modulus = new() { "bid128_fmod" };
 
+        // Round-to-nearest IEEE 754 remainder (Ieee754Remainder), not the truncating fmod above. Every reference
+        // row is exercised, including NaN payload propagation and the invalid operations (Inf rem y, x rem 0) that
+        // quiet to the canonical NaN.
+        private static readonly HashSet<string> s_bid32Remainder = new() { "bid32_rem" };
+        private static readonly HashSet<string> s_bid64Remainder = new() { "bid64_rem" };
+        private static readonly HashSet<string> s_bid128Remainder = new() { "bid128_rem" };
+
+        // Square root (Sqrt). Every reference row is exercised, including NaN payload propagation, sqrt(+Infinity),
+        // and the invalid operations (sqrt of a negative value) that quiet to the canonical NaN.
+        private static readonly HashSet<string> s_bid32Sqrt = new() { "bid32_sqrt" };
+        private static readonly HashSet<string> s_bid64Sqrt = new() { "bid64_sqrt" };
+        private static readonly HashSet<string> s_bid128Sqrt = new() { "bid128_sqrt" };
+
+        // Quantize (adjust to the quantum of a second operand) and Quantum (1 x 10^exp sharing the exponent). Every
+        // reference row is exercised, including NaN payload propagation, the two-infinity and mixed-infinity cases,
+        // and the invalid rows (unrepresentable quantum) that quiet to the canonical NaN.
+        private static readonly HashSet<string> s_bid32Quantize = new() { "bid32_quantize" };
+        private static readonly HashSet<string> s_bid64Quantize = new() { "bid64_quantize" };
+        private static readonly HashSet<string> s_bid128Quantize = new() { "bid128_quantize" };
+
+        private static readonly HashSet<string> s_bid32Quantum = new() { "bid32_quantum" };
+        private static readonly HashSet<string> s_bid64Quantum = new() { "bid64_quantum" };
+        private static readonly HashSet<string> s_bid128Quantum = new() { "bid128_quantum" };
+
         // Round to an integral value under each rounding mode, mapping onto the .NET Round/Ceiling/Floor/Truncate
         // surface. `round_integral_exact` takes the mode from the rounding-context column, so only its
         // round-to-nearest-even (rnd == 0) rows are consumed here; the mode-named variants ignore that column.
         private static readonly HashSet<string> s_bid32RoundIntegral = new() { "bid32_round_integral_exact", "bid32_round_integral_nearest_even", "bid32_round_integral_nearest_away", "bid32_round_integral_negative", "bid32_round_integral_positive", "bid32_round_integral_zero" };
         private static readonly HashSet<string> s_bid64RoundIntegral = new() { "bid64_round_integral_exact", "bid64_round_integral_nearest_even", "bid64_round_integral_nearest_away", "bid64_round_integral_negative", "bid64_round_integral_positive", "bid64_round_integral_zero" };
         private static readonly HashSet<string> s_bid128RoundIntegral = new() { "bid128_round_integral_exact", "bid128_round_integral_nearest_even", "bid128_round_integral_nearest_away", "bid128_round_integral_negative", "bid128_round_integral_positive", "bid128_round_integral_zero" };
+
+        // ScaleB (the `int` scaling-exponent variant). NaN operands are skipped for the same payload-convention
+        // reason as RoundIntegral; invalid-flagged rows (overflow/underflow beyond the format range) are also
+        // skipped because Intel reports them via a sentinel plus the invalid flag rather than the saturated result.
+        private static readonly HashSet<string> s_bid32ScaleB = new() { "bid32_scalbn" };
+        private static readonly HashSet<string> s_bid64ScaleB = new() { "bid64_scalbn" };
+        private static readonly HashSet<string> s_bid128ScaleB = new() { "bid128_scalbn" };
+
+        // BitIncrement/BitDecrement (IEEE 754 nextUp/nextDown). NaN operands are skipped for the same
+        // payload-convention reason as RoundIntegral.
+        private static readonly HashSet<string> s_bid32BitIncrement = new() { "bid32_nextup" };
+        private static readonly HashSet<string> s_bid64BitIncrement = new() { "bid64_nextup" };
+        private static readonly HashSet<string> s_bid128BitIncrement = new() { "bid128_nextup" };
+        private static readonly HashSet<string> s_bid32BitDecrement = new() { "bid32_nextdown" };
+        private static readonly HashSet<string> s_bid64BitDecrement = new() { "bid64_nextdown" };
+        private static readonly HashSet<string> s_bid128BitDecrement = new() { "bid128_nextdown" };
+
+        // ILogB. Only finite, non-zero operands are consumed (invalid-flagged rows cover zero/infinity/NaN, where
+        // Intel's C99 ilogb sentinels diverge from the .NET int.MinValue/int.MaxValue contract).
+        private static readonly HashSet<string> s_bid32ILogB = new() { "bid32_ilogb" };
+        private static readonly HashSet<string> s_bid64ILogB = new() { "bid64_ilogb" };
+        private static readonly HashSet<string> s_bid128ILogB = new() { "bid128_ilogb" };
+
+        // FusedMultiplyAdd. Every reference row is exercised, including NaN payload propagation and the invalid
+        // operations (0*Inf, Inf + opposite Inf) that quiet to the canonical NaN; all results match bit-exact.
+        private static readonly HashSet<string> s_bid32Fma = new() { "bid32_fma" };
+        private static readonly HashSet<string> s_bid64Fma = new() { "bid64_fma" };
+        private static readonly HashSet<string> s_bid128Fma = new() { "bid128_fma" };
 
         /// <summary>
         /// Gets a value indicating whether the Intel <c>readtest.in</c> reference vectors are available,
@@ -476,6 +528,138 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> Decimal32Remainder()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Remainder))
+            {
+                if (TryParseBid32(fields[2], out uint left) && TryParseBid32(fields[3], out uint right) && TryParseBid32(fields[4], out uint expected))
+                {
+                    yield return new object[] { left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64Remainder()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Remainder))
+            {
+                if (TryParseBid64(fields[2], out ulong left) && TryParseBid64(fields[3], out ulong right) && TryParseBid64(fields[4], out ulong expected))
+                {
+                    yield return new object[] { left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128Remainder()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Remainder))
+            {
+                if (TryParseBid128(fields[2], out UInt128 left) && TryParseBid128(fields[3], out UInt128 right) && TryParseBid128(fields[4], out UInt128 expected))
+                {
+                    yield return new object[] { left, right, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32Sqrt()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Sqrt))
+            {
+                if (TryParseBid32(fields[2], out uint value) && TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64Sqrt()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Sqrt))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128Sqrt()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Sqrt))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32Quantize()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Quantize))
+            {
+                if (TryParseBid32(fields[2], out uint value) && TryParseBid32(fields[3], out uint quantum) && TryParseBid32(fields[4], out uint expected))
+                {
+                    yield return new object[] { value, quantum, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64Quantize()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Quantize))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && TryParseBid64(fields[3], out ulong quantum) && TryParseBid64(fields[4], out ulong expected))
+                {
+                    yield return new object[] { value, quantum, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128Quantize()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Quantize))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && TryParseBid128(fields[3], out UInt128 quantum) && TryParseBid128(fields[4], out UInt128 expected))
+                {
+                    yield return new object[] { value, quantum, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32Quantum()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Quantum))
+            {
+                if (TryParseBid32(fields[2], out uint value) && TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64Quantum()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Quantum))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128Quantum()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Quantum))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
         // NaN operands are skipped: rounding leaves the value's payload untouched, but Intel canonicalizes and quiets
         // NaNs so its result column would not match the raw operand bits. The mode is taken from the operation name.
         public static IEnumerable<object[]> Decimal32RoundIntegral()
@@ -507,6 +691,172 @@ namespace System.Tests
                 if (TryParseBid128(fields[2], out UInt128 value) && !IsBid128NaN(value) && TryParseBid128(fields[3], out UInt128 expected))
                 {
                     yield return new object[] { OperationSuffix(fields[0]), value, expected };
+                }
+            }
+        }
+
+        // NaN operands are skipped for the same payload-quieting reason as RoundIntegral.
+        public static IEnumerable<object[]> Decimal32BitIncrement()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32BitIncrement))
+            {
+                if (TryParseBid32(fields[2], out uint value) && !IsBid32NaN(value) && TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64BitIncrement()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64BitIncrement))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && !IsBid64NaN(value) && TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128BitIncrement()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128BitIncrement))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && !IsBid128NaN(value) && TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32BitDecrement()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32BitDecrement))
+            {
+                if (TryParseBid32(fields[2], out uint value) && !IsBid32NaN(value) && TryParseBid32(fields[3], out uint expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64BitDecrement()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64BitDecrement))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && !IsBid64NaN(value) && TryParseBid64(fields[3], out ulong expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128BitDecrement()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128BitDecrement))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && !IsBid128NaN(value) && TryParseBid128(fields[3], out UInt128 expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32ScaleB()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32ScaleB))
+            {
+                if ((fields.Length >= 6) && TryParseBid32(fields[2], out uint value) && !IsBid32NaN(value) && TryParseScaleAmount(fields[3], out int n) && TryParseBid32(fields[4], out uint expected) && !IsInvalidFlagged(fields[5]))
+                {
+                    yield return new object[] { value, n, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64ScaleB()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64ScaleB))
+            {
+                if ((fields.Length >= 6) && TryParseBid64(fields[2], out ulong value) && !IsBid64NaN(value) && TryParseScaleAmount(fields[3], out int n) && TryParseBid64(fields[4], out ulong expected) && !IsInvalidFlagged(fields[5]))
+                {
+                    yield return new object[] { value, n, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128ScaleB()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128ScaleB))
+            {
+                if ((fields.Length >= 6) && TryParseBid128(fields[2], out UInt128 value) && !IsBid128NaN(value) && TryParseScaleAmount(fields[3], out int n) && TryParseBid128(fields[4], out UInt128 expected) && !IsInvalidFlagged(fields[5]))
+                {
+                    yield return new object[] { value, n, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32ILogB()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32ILogB))
+            {
+                if (TryParseBid32(fields[2], out uint value) && !IsInvalidFlagged(fields[4]) && int.TryParse(fields[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64ILogB()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64ILogB))
+            {
+                if (TryParseBid64(fields[2], out ulong value) && !IsInvalidFlagged(fields[4]) && int.TryParse(fields[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128ILogB()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128ILogB))
+            {
+                if (TryParseBid128(fields[2], out UInt128 value) && !IsInvalidFlagged(fields[4]) && int.TryParse(fields[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int expected))
+                {
+                    yield return new object[] { value, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal32FusedMultiplyAdd()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid32Fma))
+            {
+                if ((fields.Length >= 6) && TryParseBid32(fields[2], out uint x) && TryParseBid32(fields[3], out uint y) && TryParseBid32(fields[4], out uint z) && TryParseBid32(fields[5], out uint expected))
+                {
+                    yield return new object[] { x, y, z, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal64FusedMultiplyAdd()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid64Fma))
+            {
+                if ((fields.Length >= 6) && TryParseBid64(fields[2], out ulong x) && TryParseBid64(fields[3], out ulong y) && TryParseBid64(fields[4], out ulong z) && TryParseBid64(fields[5], out ulong expected))
+                {
+                    yield return new object[] { x, y, z, expected };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Decimal128FusedMultiplyAdd()
+        {
+            foreach (string[] fields in EnumerateRows(s_bid128Fma))
+            {
+                if ((fields.Length >= 6) && TryParseBid128(fields[2], out UInt128 x) && TryParseBid128(fields[3], out UInt128 y) && TryParseBid128(fields[4], out UInt128 z) && TryParseBid128(fields[5], out UInt128 expected))
+                {
+                    yield return new object[] { x, y, z, expected };
                 }
             }
         }
@@ -638,6 +988,29 @@ namespace System.Tests
         }
 
         private static string OperationSuffix(string operation) => operation.Substring(operation.IndexOf('_') + 1);
+
+        // The scaling amount is a plain decimal integer; Intel occasionally writes it float-style (for example
+        // `1.0`), which is accepted only when the fractional part is entirely zero.
+        private static bool TryParseScaleAmount(string token, out int value)
+        {
+            int dot = token.IndexOf('.');
+
+            if (dot >= 0)
+            {
+                for (int i = dot + 1; i < token.Length; i++)
+                {
+                    if (token[i] != '0')
+                    {
+                        value = 0;
+                        return false;
+                    }
+                }
+
+                token = token.Substring(0, dot);
+            }
+
+            return int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        }
 
         private static bool TryParseComparisonResult(string token, out bool value)
         {
