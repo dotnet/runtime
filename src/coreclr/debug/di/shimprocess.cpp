@@ -159,7 +159,6 @@ HRESULT ShimProcess::InitializeDataTarget(const ProcessDescriptor * pProcessDesc
         return hr;
     }
     m_pLiveDataTarget->HookContinueStatusChanged(ShimProcess::ContinueStatusChanged, this);
-    m_pLiveDataTarget->SetShimProcess(this);
 
     // Ref on pDataTarget is now 1.
     _ASSERTE(m_pLiveDataTarget != NULL);

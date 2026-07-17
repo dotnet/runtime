@@ -246,45 +246,7 @@ HRESULT STDMETHODCALLTYPE
 ShimRemoteDataTarget::GetPlatform(
         CorDebugPlatform *pPlatform)
 {
-    ShimProcess * pShim = GetShimProcess();
-    if (pShim != NULL)
-    {
-        CordbProcess * pProcess = static_cast<CordbProcess *>(pShim->GetProcess());
-        if (pProcess != NULL)
-        {
-            IDacDbiInterface::TargetInfo targetInfo;
-            if (SUCCEEDED(pProcess->GetTargetInfo(&targetInfo)))
-            {
-                if (targetInfo.os == IDacDbiInterface::kOSWindows)
-                {
-                    switch (targetInfo.arch)
-                    {
-                        case IDacDbiInterface::kArchX86:   *pPlatform = CORDB_PLATFORM_WINDOWS_X86;   return S_OK;
-                        case IDacDbiInterface::kArchAMD64: *pPlatform = CORDB_PLATFORM_WINDOWS_AMD64; return S_OK;
-                        case IDacDbiInterface::kArchArm:   *pPlatform = CORDB_PLATFORM_WINDOWS_ARM;   return S_OK;
-                        case IDacDbiInterface::kArchArm64: *pPlatform = CORDB_PLATFORM_WINDOWS_ARM64; return S_OK;
-                        default: break;
-                    }
-                }
-                else if (targetInfo.os == IDacDbiInterface::kOSUnix)
-                {
-                    switch (targetInfo.arch)
-                    {
-                        case IDacDbiInterface::kArchX86:         *pPlatform = CORDB_PLATFORM_POSIX_X86;         return S_OK;
-                        case IDacDbiInterface::kArchAMD64:       *pPlatform = CORDB_PLATFORM_POSIX_AMD64;       return S_OK;
-                        case IDacDbiInterface::kArchArm:         *pPlatform = CORDB_PLATFORM_POSIX_ARM;         return S_OK;
-                        case IDacDbiInterface::kArchArm64:       *pPlatform = CORDB_PLATFORM_POSIX_ARM64;       return S_OK;
-                        case IDacDbiInterface::kArchLoongArch64: *pPlatform = CORDB_PLATFORM_POSIX_LOONGARCH64; return S_OK;
-                        case IDacDbiInterface::kArchRiscV64:     *pPlatform = CORDB_PLATFORM_POSIX_RISCV64;     return S_OK;
-                        default: break;
-                    }
-                }
-                return CORDBG_E_UNSUPPORTED;
-            }
-        }
-    }
-
-    return E_FAIL;
+    return E_NOTIMPL;
 }
 
 // impl of interface method ICorDebugDataTarget::ReadVirtual
