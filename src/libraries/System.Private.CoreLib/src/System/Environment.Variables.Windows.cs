@@ -10,8 +10,6 @@ namespace System
 {
     public static partial class Environment
     {
-        internal static bool HasEnvironmentVariablesBeenModified => throw new PlatformNotSupportedException();
-
         private static unsafe string? GetEnvironmentVariableCore(string variable)
         {
             var builder = new ValueStringBuilder(stackalloc char[128]);

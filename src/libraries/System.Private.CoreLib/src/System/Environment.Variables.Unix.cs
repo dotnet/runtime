@@ -15,9 +15,6 @@ namespace System
     public partial class Environment
     {
         private static Dictionary<string, string>? s_environment;
-        private static volatile bool s_hasEnvironmentVariablesBeenModified;
-
-        internal static bool HasEnvironmentVariablesBeenModified => s_hasEnvironmentVariablesBeenModified;
 
         private static unsafe string? GetEnvironmentVariableCore(string variable)
         {
@@ -44,7 +41,6 @@ namespace System
         private static unsafe void SetEnvironmentVariableCore(string variable, string? value)
         {
             Debug.Assert(variable != null);
-            s_hasEnvironmentVariablesBeenModified = true;
 
             EnsureEnvironmentCached();
             variable = TrimStringOnFirstZero(variable);

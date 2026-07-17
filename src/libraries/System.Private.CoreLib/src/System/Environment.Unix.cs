@@ -12,6 +12,12 @@ namespace System
 {
     public static partial class Environment
     {
+        private static volatile bool s_hasEnvironmentVariablesBeenModified;
+
+        internal static bool HasEnvironmentVariablesBeenModified => s_hasEnvironmentVariablesBeenModified;
+
+        static partial void SetHasEnvironmentVariablesBeenModified() => s_hasEnvironmentVariablesBeenModified = true;
+
         public static string[] GetLogicalDrives() => Interop.Sys.GetAllMountPoints();
 
         public static string MachineName

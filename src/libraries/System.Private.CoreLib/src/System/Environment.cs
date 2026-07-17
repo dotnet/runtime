@@ -89,9 +89,12 @@ namespace System
             return GetEnvironmentVariablesFromRegistry(fromMachine);
         }
 
+        static partial void SetHasEnvironmentVariablesBeenModified();
+
         public static void SetEnvironmentVariable(string variable, string? value)
         {
             ValidateVariable(variable);
+            SetHasEnvironmentVariablesBeenModified();
             SetEnvironmentVariableCore(variable, value);
         }
 
