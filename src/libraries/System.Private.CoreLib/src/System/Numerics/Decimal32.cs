@@ -885,6 +885,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
         public static Decimal32 BitIncrement(Decimal32 x) => new Decimal32(Number.BitIncrementDecimalIeee754<Decimal32, uint>(x._value));
 
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
+        public static Decimal32 Exp(Decimal32 x) => new Decimal32(Number.ExpDecimalIeee754<Decimal32, uint>(x._value));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static Decimal32 FusedMultiplyAdd(Decimal32 left, Decimal32 right, Decimal32 addend) => new Decimal32(Number.FusedMultiplyAddDecimalIeee754<Decimal32, uint>(left._value, right._value, addend._value));
 

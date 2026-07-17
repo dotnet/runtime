@@ -1694,6 +1694,38 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x32800000U, 0x32800001U)] // exp(+0) = 1
+        [InlineData(0xB2800000U, 0x32800001U)] // exp(-0) = 1
+        [InlineData(0x78000000U, 0x78000000U)] // exp(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0x32800000U)] // exp(-Infinity) = +0
+        [InlineData(0x7C000000U, 0x7C000000U)] // exp(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC000000U, 0xFC000000U)] // exp(-NaN) = -NaN (sign preserved)
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared
+        public static void ExpTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Exp(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        [InlineData(10.0)]
+        [InlineData(-7.5)]
+        public static void ExpAccuracyTest(double input)
+        {
+            // Decimal32 evaluates exp through binary64 (as Intel does), so the result matches double.Exp
+            // to within the format's seven significant digits.
+            double expected = double.Exp(input);
+            double actual = (double)Decimal32.Exp((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(expected), $"exp({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x32800001U, 0x31800001U, 0x31800064U)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x32000019U, 0x32800001U, 0x32800002U)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x32000023U, 0x32800001U, 0x32800004U)] // quantize(3.5, 1E0) = 4 (ties to even)

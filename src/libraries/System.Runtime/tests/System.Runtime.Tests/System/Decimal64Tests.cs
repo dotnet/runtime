@@ -1700,6 +1700,38 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL)] // exp(+0) = 1
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL)] // exp(-0) = 1
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // exp(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x31C0000000000000UL)] // exp(-Infinity) = +0
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // exp(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC00000000000000UL, 0xFC00000000000000UL)] // exp(-NaN) = -NaN (sign preserved)
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void ExpTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Exp(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        [InlineData(10.0)]
+        [InlineData(-7.5)]
+        public static void ExpAccuracyTest(double input)
+        {
+            // Decimal64 evaluates exp in the software binary128 engine (as Intel does). Comparing through
+            // binary64 bounds the check to double precision; the full accuracy is covered elsewhere.
+            double expected = double.Exp(input);
+            double actual = (double)Decimal64.Exp((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(expected), $"exp({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x31C0000000000001UL, 0x3180000000000001UL, 0x3180000000000064UL)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x31A0000000000019UL, 0x31C0000000000001UL, 0x31C0000000000002UL)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x31A0000000000023UL, 0x31C0000000000001UL, 0x31C0000000000004UL)] // quantize(3.5, 1E0) = 4 (ties to even)

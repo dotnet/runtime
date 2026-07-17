@@ -11464,6 +11464,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public bool Equals(System.Numerics.Decimal128 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public static System.Numerics.Decimal128 Exp(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 Floor(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 FusedMultiplyAdd(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right, System.Numerics.Decimal128 addend) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -11664,6 +11665,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public bool Equals(System.Numerics.Decimal32 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public static System.Numerics.Decimal32 Exp(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Floor(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 FusedMultiplyAdd(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right, System.Numerics.Decimal32 addend) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -11868,6 +11870,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public bool Equals(System.Numerics.Decimal64 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public static System.Numerics.Decimal64 Exp(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 Floor(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 FusedMultiplyAdd(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right, System.Numerics.Decimal64 addend) { throw null; }
         public override int GetHashCode() { throw null; }
