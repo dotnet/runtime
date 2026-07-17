@@ -10569,23 +10569,28 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
             GenTreeLclVarCommon* lclAddrNode = op1->AsLclVarCommon();
             GenTreeIntCon*       offsetNode  = op2->AsIntCon();
             ssize_t              consVal     = offsetNode->IconValue();
-            ssize_t              newOffset   = static_cast<ssize_t>(lclAddrNode->GetLclOffs()) + consVal;
 
             // Note: the emitter does not expect out-of-bounds access for LCL_ADDR. Validate the
             // resulting offset rather than just the addend, so repeated folds cannot accumulate an
-            // offset the emitter is unable to encode.
-            if (FitsIn<uint16_t>(newOffset) && IsValidLclAddr(lclAddrNode->GetLclNum(), (uint32_t)newOffset))
+            // offset the emitter is unable to encode. Both operands are bounded to [0, UINT16_MAX],
+            // so the addition below cannot overflow.
+            if (FitsIn<uint16_t>(consVal))
             {
-                lclAddrNode->SetOper(GT_LCL_ADDR);
-                lclAddrNode->AsLclFld()->SetLclOffs(static_cast<uint16_t>(newOffset));
-                assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
+                unsigned newOffset = lclAddrNode->GetLclOffs() + static_cast<unsigned>(consVal);
 
-                lclAddrNode->SetVNsFromNode(add);
+                if (FitsIn<uint16_t>(newOffset) && IsValidLclAddr(lclAddrNode->GetLclNum(), newOffset))
+                {
+                    lclAddrNode->SetOper(GT_LCL_ADDR);
+                    lclAddrNode->AsLclFld()->SetLclOffs(static_cast<uint16_t>(newOffset));
+                    assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
 
-                DEBUG_DESTROY_NODE(offsetNode);
-                DEBUG_DESTROY_NODE(add);
+                    lclAddrNode->SetVNsFromNode(add);
 
-                return lclAddrNode;
+                    DEBUG_DESTROY_NODE(offsetNode);
+                    DEBUG_DESTROY_NODE(add);
+
+                    return lclAddrNode;
+                }
             }
         }
 
