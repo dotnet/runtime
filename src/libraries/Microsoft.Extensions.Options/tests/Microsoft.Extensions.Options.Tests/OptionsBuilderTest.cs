@@ -1046,7 +1046,7 @@ namespace Microsoft.Extensions.Options.Tests
                 .ValidateOnStart();
 
             using ServiceProvider sp = services.BuildServiceProvider();
-            var asyncValidator = sp.GetRequiredService<IAsyncStartupValidator>();
+            var asyncValidator = (IAsyncStartupValidator)sp.GetRequiredService<Microsoft.Extensions.Options.IStartupValidator>();
             await asyncValidator.ValidateAsync(CancellationToken.None);
         }
 

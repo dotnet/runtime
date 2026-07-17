@@ -12,6 +12,9 @@ namespace Microsoft.Extensions.Options.Tests
 {
     public class AsyncOptionsValidationTests
     {
+        private static IAsyncStartupValidator GetAsyncStartupValidator(IServiceProvider sp) =>
+            Assert.IsAssignableFrom<IAsyncStartupValidator>(sp.GetRequiredService<IStartupValidator>());
+
         [Fact]
         public async Task AsyncValidateOptions_SkipsWhenNameDoesNotMatch()
         {
@@ -68,7 +71,7 @@ namespace Microsoft.Extensions.Options.Tests
                 .ValidateOnStart();
 
             ServiceProvider sp = services.BuildServiceProvider();
-            var validator = sp.GetRequiredService<IAsyncStartupValidator>();
+            IAsyncStartupValidator validator = GetAsyncStartupValidator(sp);
 
             await validator.ValidateAsync(CancellationToken.None);
 
@@ -76,7 +79,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public async Task StartupValidator_TwoStage_RunsBothSyncAndAsyncValidators()
+        public async Task StartupValidator_SinglePath_RunsBothSyncAndAsyncValidators()
         {
             var services = new ServiceCollection();
             bool syncRan = false;
@@ -94,18 +97,17 @@ namespace Microsoft.Extensions.Options.Tests
 
             ServiceProvider sp = services.BuildServiceProvider();
 
-            // Two-stage orchestration: Host.cs calls Validate() then ValidateAsync() independently
-            var syncValidator = sp.GetRequiredService<IStartupValidator>();
-            syncValidator.Validate();
-            Assert.True(syncRan);
+            // Single-path orchestration: one ValidateAsync runs every validator (sync and async) for the type,
+            // dispatching each by capability.
+            IAsyncStartupValidator validator = GetAsyncStartupValidator(sp);
+            await validator.ValidateAsync(CancellationToken.None);
 
-            var asyncValidator = sp.GetRequiredService<IAsyncStartupValidator>();
-            await asyncValidator.ValidateAsync(CancellationToken.None);
+            Assert.True(syncRan);
             Assert.True(asyncRan);
         }
 
         [Fact]
-        public async Task StartupValidator_TwoStage_SyncFailureSkipsAsyncValidators()
+        public async Task StartupValidator_SinglePath_AggregatesSyncAndAsyncFailures()
         {
             var services = new ServiceCollection();
             bool asyncRan = false;
@@ -116,19 +118,21 @@ namespace Microsoft.Extensions.Options.Tests
                 .Validate(async (FakeOptions o, CancellationToken ct) =>
                 {
                     asyncRan = true;
-                    return await Task.FromResult(true);
-                }, "async")
+                    return await Task.FromResult(false);
+                }, "async validation failed")
                 .ValidateOnStart();
 
             ServiceProvider sp = services.BuildServiceProvider();
+            IAsyncStartupValidator validator = GetAsyncStartupValidator(sp);
 
-            // Stage 1: Sync throws — in Host.cs, this prevents reaching Stage 2
-            var syncValidator = sp.GetRequiredService<IStartupValidator>();
-            Assert.Throws<OptionsValidationException>(() => syncValidator.Validate());
+            // The single path does not short-circuit on the first failure: every validator runs and
+            // all failures are aggregated into one OptionsValidationException.
+            OptionsValidationException ex = await Assert.ThrowsAsync<OptionsValidationException>(
+                () => validator.ValidateAsync(CancellationToken.None));
 
-            // Stage 2 is never reached because the exception propagates.
-            // Verify async didn't run (simulating Host.cs short-circuit behavior).
-            Assert.False(asyncRan);
+            Assert.True(asyncRan);
+            Assert.Contains("sync validation failed", ex.Failures);
+            Assert.Contains("async validation failed", ex.Failures);
         }
 
         [Fact]
@@ -147,7 +151,7 @@ namespace Microsoft.Extensions.Options.Tests
                 .ValidateOnStart();
 
             ServiceProvider sp = services.BuildServiceProvider();
-            var validator = sp.GetRequiredService<IAsyncStartupValidator>();
+            IAsyncStartupValidator validator = GetAsyncStartupValidator(sp);
 
             await validator.ValidateAsync(CancellationToken.None);
 
@@ -169,7 +173,7 @@ namespace Microsoft.Extensions.Options.Tests
                 .ValidateOnStart();
 
             ServiceProvider sp = services.BuildServiceProvider();
-            var validator = sp.GetRequiredService<IAsyncStartupValidator>();
+            IAsyncStartupValidator validator = GetAsyncStartupValidator(sp);
 
             OptionsValidationException ex = await Assert.ThrowsAsync<OptionsValidationException>(
                 () => validator.ValidateAsync(CancellationToken.None));
@@ -177,11 +181,12 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public async Task ValidateOnStart_CustomSyncOnlyValidator_DoesNotThrowInvalidCast()
+        public void ValidateOnStart_CustomSyncOnlyValidator_UsesSyncPath()
         {
             var services = new ServiceCollection();
 
-            // Register a custom IStartupValidator that does NOT implement IAsyncStartupValidator
+            // A custom sync-only IStartupValidator registered before ValidateOnStart wins the
+            // TryAddTransient, so it is the resolved IStartupValidator.
             services.AddSingleton<IStartupValidator>(new CustomSyncOnlyValidator());
 
             services.AddOptions<FakeOptions>()
@@ -191,9 +196,12 @@ namespace Microsoft.Extensions.Options.Tests
 
             ServiceProvider sp = services.BuildServiceProvider();
 
-            // Should NOT throw InvalidCastException — IAsyncStartupValidator gets its own StartupValidator instance
-            var asyncValidator = sp.GetRequiredService<IAsyncStartupValidator>();
-            await asyncValidator.ValidateAsync(CancellationToken.None);
+            // The custom validator is not async-capable, so the host falls back to the sync path
+            // (validator.Validate()) — no InvalidCastException and no async validation.
+            IStartupValidator validator = sp.GetRequiredService<IStartupValidator>();
+            Assert.IsType<CustomSyncOnlyValidator>(validator);
+            Assert.False(validator is IAsyncStartupValidator);
+            validator.Validate();
         }
 
         [Fact]
@@ -212,7 +220,7 @@ namespace Microsoft.Extensions.Options.Tests
                 .ValidateOnStart();
 
             ServiceProvider sp = services.BuildServiceProvider();
-            var validator = sp.GetRequiredService<IAsyncStartupValidator>();
+            IAsyncStartupValidator validator = GetAsyncStartupValidator(sp);
 
             cts.Cancel();
             await Assert.ThrowsAsync<OperationCanceledException>(() => validator.ValidateAsync(cts.Token));
@@ -264,16 +272,55 @@ namespace Microsoft.Extensions.Options.Tests
                 .ValidateOnStart();
 
             using ServiceProvider sp = services.BuildServiceProvider();
-            var validator = sp.GetRequiredService<IAsyncStartupValidator>();
+            IAsyncStartupValidator validator = GetAsyncStartupValidator(sp);
 
             AggregateException ex = await Assert.ThrowsAsync<AggregateException>(() => validator.ValidateAsync());
             Assert.Equal(2, ex.InnerExceptions.Count);
             Assert.All(ex.InnerExceptions, e => Assert.IsType<OptionsValidationException>(e));
         }
 
+        [Fact]
+        public async Task StartupValidator_ValidatorImplementingBoth_DispatchesToAsync()
+        {
+            var spy = new CapabilitySpyValidator();
+            var services = new ServiceCollection();
+
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "test")
+                .ValidateOnStart();
+            services.AddSingleton<IValidateOptions<FakeOptions>>(spy);
+
+            ServiceProvider sp = services.BuildServiceProvider();
+            IAsyncStartupValidator validator = GetAsyncStartupValidator(sp);
+
+            await validator.ValidateAsync(CancellationToken.None);
+
+            // A validator that implements both contracts is dispatched through ValidateAsync only.
+            Assert.True(spy.AsyncCalled);
+            Assert.False(spy.SyncCalled);
+        }
+
         private class CustomSyncOnlyValidator : IStartupValidator
         {
             public void Validate() { }
+        }
+
+        private sealed class CapabilitySpyValidator : IValidateOptions<FakeOptions>, IAsyncValidateOptions<FakeOptions>
+        {
+            public bool SyncCalled { get; private set; }
+            public bool AsyncCalled { get; private set; }
+
+            public ValidateOptionsResult Validate(string? name, FakeOptions options)
+            {
+                SyncCalled = true;
+                return ValidateOptionsResult.Success;
+            }
+
+            public Task<ValidateOptionsResult> ValidateAsync(string? name, FakeOptions options, CancellationToken cancellationToken = default)
+            {
+                AsyncCalled = true;
+                return Task.FromResult(ValidateOptionsResult.Success);
+            }
         }
     }
 }
