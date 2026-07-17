@@ -5877,35 +5877,35 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, ContextBuff
         return E_INVALIDARG;
     }
 
-    HRESULT hr = S_OK;
-    ULONG32 sizeToWrite;
-    BOOL hasExtendedRegisters = FALSE;
-    IfFailThrow(GetDAC()->ContextHasExtendedRegisters(contextBuffer, &hasExtendedRegisters));
-    IfFailThrow(GetDAC()->GetTargetContextSize(
-        hasExtendedRegisters ? IDacDbiInterface::kContextSizeExtendedRegisters : IDacDbiInterface::kContextSizeBase,
-        &sizeToWrite));
-    IDacDbiInterface::TargetInfo targetInfo;
-
-    BYTE * pRemoteContext = (BYTE*) pContext.UnsafeGet();
-    BYTE * pCtxSource = contextBuffer.pContextBytes;
-    IfFailThrow(GetDAC()->GetTargetInfo(&targetInfo));
-
-// 64 bit windows puts space for the first 6 stack parameters in the CONTEXT structure so that
-// kernel to usermode transitions don't have to allocate a CONTEXT and do a separate sub rsp
-// to allocate stack spill space for the arguments. This means that writing to P1Home - P6Home
-// will overwrite the arguments of some function higher on the stack, very bad. Conceptually you
-// can think of these members as not being part of the context, ie they don't represent something
-// which gets saved or restored on context switches. They are just space we shouldn't overwrite.
-// See issue 630276 for more details.
-    if (targetInfo.arch == IDacDbiInterface::kArchAMD64)
-    {
-        pRemoteContext += offsetof(CONTEXT, ContextFlags); // immediately follows the 6 parameters P1-P6
-        pCtxSource += offsetof(CONTEXT, ContextFlags);
-        sizeToWrite -= offsetof(CONTEXT, ContextFlags);
-    }
-
     EX_TRY
     {
+        HRESULT hr = S_OK;
+        ULONG32 sizeToWrite;
+        BOOL hasExtendedRegisters = FALSE;
+        IfFailThrow(GetDAC()->ContextHasExtendedRegisters(contextBuffer, &hasExtendedRegisters));
+        IfFailThrow(GetDAC()->GetTargetContextSize(
+            hasExtendedRegisters ? IDacDbiInterface::kContextSizeExtendedRegisters : IDacDbiInterface::kContextSizeBase,
+            &sizeToWrite));
+        IDacDbiInterface::TargetInfo targetInfo;
+
+        BYTE * pRemoteContext = (BYTE*) pContext.UnsafeGet();
+        BYTE * pCtxSource = contextBuffer.pContextBytes;
+        IfFailThrow(GetDAC()->GetTargetInfo(&targetInfo));
+
+    // 64 bit windows puts space for the first 6 stack parameters in the CONTEXT structure so that
+    // kernel to usermode transitions don't have to allocate a CONTEXT and do a separate sub rsp
+    // to allocate stack spill space for the arguments. This means that writing to P1Home - P6Home
+    // will overwrite the arguments of some function higher on the stack, very bad. Conceptually you
+    // can think of these members as not being part of the context, ie they don't represent something
+    // which gets saved or restored on context switches. They are just space we shouldn't overwrite.
+    // See issue 630276 for more details.
+        if (targetInfo.arch == IDacDbiInterface::kArchAMD64)
+        {
+            pRemoteContext += offsetof(CONTEXT, ContextFlags); // immediately follows the 6 parameters P1-P6
+            pCtxSource += offsetof(CONTEXT, ContextFlags);
+            sizeToWrite -= offsetof(CONTEXT, ContextFlags);
+        }
+
         // Write the context.
         TargetBuffer tb(pRemoteContext, sizeToWrite);
         SafeWriteBuffer(tb, (const BYTE*) pCtxSource);
