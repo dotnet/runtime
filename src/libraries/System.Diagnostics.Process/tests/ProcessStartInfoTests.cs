@@ -290,35 +290,35 @@ namespace System.Diagnostics.Tests
             const string Name = "TestEnvironmentOfChildProcess_ParentSetBeforeStart";
             string? previousValue = Environment.GetEnvironmentVariable(Name);
 
-            try
+            // We run a dedicated process to ensure that each test has it's own copy of the static shared state.
+            using Process isolation = CreateProcess((expectedValue, modifyParentStr) =>
             {
-                using Process process = CreateProcess(static (expectedValue) =>
+                using Process process = CreateProcess(static (value) =>
                 {
-                    Assert.Equal(expectedValue == "null" ? null : expectedValue, Environment.GetEnvironmentVariable(Name));
+                    Assert.Equal(value == "null" ? null : value, Environment.GetEnvironmentVariable(Name));
 
                     return RemoteExecutor.SuccessExitCode;
-                }, value);
+                }, expectedValue);
 
-                if (modifyParent)
+                if (bool.Parse(modifyParentStr))
                 {
-                    Environment.SetEnvironmentVariable(Name, value == "null" ? null : value);
+                    Environment.SetEnvironmentVariable(Name, expectedValue == "null" ? null : expectedValue);
                 }
                 else
                 {
-                    process.StartInfo.Environment[Name] = value == "null" ? null : value;
+                    process.StartInfo.Environment[Name] = expectedValue == "null" ? null : expectedValue;
                 }
 
                 process.Start();
                 Assert.True(process.WaitForExit(WaitInMS));
                 Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
-            }
-            finally
-            {
-                if (modifyParent)
-                {
-                    Environment.SetEnvironmentVariable(Name, previousValue);
-                }
-            }
+
+                return RemoteExecutor.SuccessExitCode;
+            }, value, modifyParent.ToString());
+
+            isolation.Start();
+            Assert.True(isolation.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, isolation.ExitCode);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
