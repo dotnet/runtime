@@ -6610,7 +6610,7 @@ HRESULT CordbProcess::FindPatchByAddress(CORDB_ADDRESS address, bool *pfPatchFou
     if (*pfPatchFound == false)
     {
         // Read one instruction from the faulting address...
-#if defined(HOST_ARM) || defined(HOST_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
         PRD_TYPE TrapCheck = 0;
 #else
         BYTE TrapCheck = 0;
@@ -8360,9 +8360,9 @@ bool CordbProcess::IsBreakOpcodeAtAddress(const void * address)
 {
     // There should have been an int3 there already. Since we already put it in there,
     // we should be able to safely read it out.
-#if defined(HOST_ARM) || defined(HOST_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
     PRD_TYPE opcodeTest = 0;
-#elif defined(HOST_AMD64) || defined(HOST_X86)
+#elif defined(TARGET_AMD64) || defined(TARGET_X86)
     BYTE opcodeTest = 0;
 #else
     PORTABILITY_ASSERT("NYI: Architecture specific opcode type to read");

@@ -4361,9 +4361,9 @@ BOOL CordbUnmanagedThread::IsExceptionFromLastRaiseException(const EXCEPTION_REC
 // This flavor is assuming our caller already knows the opcode.
 HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress)
 {
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     const BYTE patch = CORDbg_BREAK_INSTRUCTION;
-#elif defined(HOST_ARM64)
+#elif defined(TARGET_ARM64)
     const PRD_TYPE patch = CORDbg_BREAK_INSTRUCTION;
 #else
     const BYTE patch = 0;
@@ -4378,10 +4378,10 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress)
 // Get the opcode that we're replacing.
 HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE * pOpcode)
 {
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     // Read out opcode. 1 byte on x86
     BYTE opcode;
-#elif defined(HOST_ARM64)
+#elif defined(TARGET_ARM64)
     // Read out opcode. 4 bytes on arm64
     PRD_TYPE opcode;
 #else
@@ -4405,10 +4405,10 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, P
 //-----------------------------------------------------------------------------
 HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE opcode)
 {
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     // Replace the BP w/ the opcode.
     BYTE opcode2 = (BYTE) opcode;
-#elif defined(HOST_ARM64)
+#elif defined(TARGET_ARM64)
     // 4 bytes on arm64
     PRD_TYPE opcode2 = opcode;
 #else
