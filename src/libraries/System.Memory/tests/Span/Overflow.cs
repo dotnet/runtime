@@ -21,7 +21,7 @@ namespace System.SpanTests
         public static void IndexOverflow()
         {
             // If this test is run in a 32-bit process, the 3GB allocation will fail.
-            if (Unsafe.SizeOf<IntPtr>() == sizeof(long))
+            if (sizeof(IntPtr) == sizeof(long))
             {
                 //
                 // Although Span constrains indexes to 0..2Gb, it does not similarly constrain index * sizeof(T).
@@ -74,7 +74,7 @@ namespace System.SpanTests
         public static void SliceStartInt32Overflow()
         {
             // If this test is run in a 32-bit process, the 3GB allocation will fail.
-            if (Unsafe.SizeOf<IntPtr>() == sizeof(long))
+            if (sizeof(IntPtr) == sizeof(long))
             {
                 unsafe
                 {
@@ -118,7 +118,7 @@ namespace System.SpanTests
         public static void ReadOnlySliceStartInt32Overflow()
         {
             // If this test is run in a 32-bit process, the 3GB allocation will fail.
-            if (Unsafe.SizeOf<IntPtr>() == sizeof(long))
+            if (sizeof(IntPtr) == sizeof(long))
             {
                 unsafe
                 {
@@ -157,7 +157,7 @@ namespace System.SpanTests
         private const long TwoGiB = 2L * 1024L * 1024L * 1024L;
         private const long OneGiB = 1L * 1024L * 1024L * 1024L;
 
-        private static readonly int s_guidThreeGiBLimit = (int)(ThreeGiB / Unsafe.SizeOf<Guid>());  // sizeof(Guid) requires unsafe keyword and I don't want to mark the entire class unsafe.
-        private static readonly int s_guidTwoGiBLimit = (int)(TwoGiB / Unsafe.SizeOf<Guid>());
+        private static readonly int s_guidThreeGiBLimit = (int)(ThreeGiB / sizeof(Guid));
+        private static readonly int s_guidTwoGiBLimit = (int)(TwoGiB / sizeof(Guid));
     }
 }

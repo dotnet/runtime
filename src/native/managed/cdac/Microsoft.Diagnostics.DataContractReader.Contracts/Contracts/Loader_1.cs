@@ -714,20 +714,19 @@ internal readonly struct Loader_1 : ILoader
         return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
     }
 
-    TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
+    IEnumerable<LoaderHeapBlock> ILoader.EnumerateLoaderHeapBlocks(TargetPointer loaderHeap)
     {
-        return _target.ProcessedData.GetOrAdd<Data.LoaderHeap>(loaderHeap).FirstBlock;
-    }
-
-    LoaderHeapBlockData ILoader.GetLoaderHeapBlockData(TargetPointer block)
-    {
-        Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
-        return new LoaderHeapBlockData
+        TargetPointer block = _target.ProcessedData.GetOrAdd<Data.LoaderHeap>(loaderHeap).FirstBlock;
+        HashSet<TargetPointer> visited = [];
+        while (block != TargetPointer.Null)
         {
-            Address = blockData.VirtualAddress,
-            Size = blockData.VirtualSize,
-            NextBlock = blockData.Next,
-        };
+            if (!visited.Add(block))
+                throw new InvalidOperationException("Cycle detected while enumerating loader heap blocks.");
+
+            Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
+            yield return new LoaderHeapBlock(blockData.VirtualAddress, blockData.VirtualSize);
+            block = blockData.Next;
+        }
     }
 
     IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> ILoader.GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)

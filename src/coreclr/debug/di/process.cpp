@@ -2435,7 +2435,7 @@ COM_METHOD CordbProcess::GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDe
             ThrowHR(E_INVALIDARG);
         }
 
-        PCODE diagnosticIP;
+        CORDB_ADDRESS diagnosticIP;
         CORDB_ADDRESS nextContinuation;
         UINT32 state;
         if (FAILED(m_pDacPrimitives->ParseContinuation(
