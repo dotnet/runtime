@@ -1589,7 +1589,71 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
     
     appendToCurIG(id);
 }
-// clang-format off 
+
+/*****************************************************************************
+ *
+ *  Add an instruction referencing a register and a label (basic block).
+ *  This is used for loading the address of a label into a register,
+ *  particularly for EH catch return scenarios.
+ *
+ *  For PowerPC64, we emit a sequence of instructions to load the label address:
+ *    bcl 20, 31, $+4      # Branch and link to next instruction (gets PC into LR)
+ *    mflr reg             # Move LR to target register
+ *    addi reg, reg, offset # Add offset to reach target label (computed at emit time)
+ */
+
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
+{
+    assert(dst->HasFlag(BBF_HAS_LABEL));
+    
+    // Step 1: Emit bcl 20, 31, $+4 to get current PC into LR
+    emitIns(INS_bcl);
+    
+    // Step 2: Emit mflr to move LR to target register
+    emitIns_R(INS_mflr, attr, reg);
+    
+    // Step 3: Emit addi instruction with label reference
+    // The offset will be calculated during emitJumpDistBind when label addresses are known
+    // Use emitNewInstrJmp() to get a large descriptor that supports idAddr()
+    instrDescJmp* id = emitNewInstrJmp();
+    
+    // emitNewInstrJmp() sets the size (incorrectly) to EA_1BYTE
+    // Override it to EA_PTRSIZE so the descriptor is not treated as small
+    // This allows access to idAddr() which requires a large descriptor
+    id->idOpSize(EA_PTRSIZE);
+    
+    id->idIns(INS_addi);
+    id->idReg1(reg);  // Destination register
+    id->idReg2(reg);  // Source register (same as destination)
+    id->idInsFmt(IF_RI_1C);
+    id->idjShort = false;
+    
+    // Store the target BasicBlock label
+    id->idAddr()->iiaBBlabel = dst;
+    
+    // The target needs to be relocated if in different regions
+    id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+    
+#ifdef DEBUG
+    // Mark this as a catch return if applicable
+    if (emitComp->compCurBB->KindIs(BBJ_EHCATCHRET))
+    {
+        id->idDebugOnlyInfo()->idCatchRet = true;
+    }
+#endif // DEBUG
+    
+    // Record the jump's IG and offset within it
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+    
+    // Append this jump to this IG's jump list so offset gets calculated
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+    
+    appendToCurIG(id);
+}
+
+// clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
 	    #define INST(id, nm, info, fmt, e1) info,
@@ -1913,6 +1977,38 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // Use the target register as base (not R0 which would be treated as 0)
                 regNumber targetReg = id->idReg1();
                 ppc_addi(dstRW, targetReg, targetReg, offsetLo);
+            }
+            else if (!id->idIsSmallDsc())
+            {
+                // Check if this is a jump descriptor with a BasicBlock label
+                // This is used for EH catch return continuation (emitIns_R_L)
+                instrDescJmp* jmp = (instrDescJmp*)id;
+                
+                // Only process if this has a valid BasicBlock label and is in the jump list
+                // (idjIG will be set if it was added to the jump list)
+                if (jmp->idjIG != nullptr && id->idAddr()->iiaBBlabel != nullptr)
+                {
+                    // BasicBlock label case - for EH catch return continuation
+                    // The offset was already calculated by emitJumpDistBind and stored in idjOffs
+                    
+                    // idjOffs contains the byte offset from bcl PC to target
+                    // bcl was 2 instructions before (8 bytes): at (currentCodeOffset - 8)
+                    // bcl captured PC+4, which is at (currentCodeOffset - 8) + 4 = currentCodeOffset - 4
+                    // So the offset in idjOffs is already relative to that PC
+                    int64_t offset = jmp->idjOffs;
+                    
+                    // Extract low 16 bits for addi immediate
+                    int16_t offsetImm = (int16_t)(offset & 0xFFFF);
+                    
+                    // addi rD, rD, offset@l (add offset to register containing PC)
+                    regNumber targetReg = id->idReg1();
+                    ppc_addi(dstRW, targetReg, targetReg, offsetImm);
+                }
+                else
+                {
+                    // Regular large descriptor addi (shouldn't normally happen, but handle it)
+                    ppc_addi(dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+                }
             }
             else
             {
@@ -2848,26 +2944,42 @@ void emitter::emitJumpDistBind()
         }
         
         // Calculate relative offset (in bytes)
-        NATIVE_OFFSET jmpDist = (NATIVE_OFFSET)(dstOffs - srcOffs);
-        
-        // PowerPC branches encode offset in instructions (divide by 4)
-        // B-form conditional branches: 14-bit signed field (±32KB range)
-        // I-form unconditional branch: 24-bit signed field (±32MB range)
+        NATIVE_OFFSET jmpDist;
         
         instruction ins = jmp->idIns();
         
-        // Check if offset is in range
-        if (ins == INS_b || ins == INS_bl)
+        if (ins == INS_addi && jmp->idAddr()->iiaBBlabel != nullptr)
         {
-            // I-form: 24-bit signed, word-aligned
-            assert((jmpDist >= -0x2000000) && (jmpDist < 0x2000000));
-            assert((jmpDist & 3) == 0); // Must be word-aligned
+            // Special case for addi used in emitIns_R_L (EH catch return)
+            // The offset needs to be from the bcl PC (8 bytes before addi)
+            // bcl captured PC+4, which is at (srcOffs - 8) + 4 = srcOffs - 4
+            jmpDist = (NATIVE_OFFSET)(dstOffs - (srcOffs - 4));
+            
+            // For addi, we only have 16-bit signed immediate
+            assert((jmpDist >= -0x8000) && (jmpDist < 0x8000));
         }
         else
         {
-            // B-form conditional: 14-bit signed, word-aligned  
-            assert((jmpDist >= -0x8000) && (jmpDist < 0x8000));
-            assert((jmpDist & 3) == 0); // Must be word-aligned
+            // Normal branch instruction
+            jmpDist = (NATIVE_OFFSET)(dstOffs - srcOffs);
+            
+            // PowerPC branches encode offset in instructions (divide by 4)
+            // B-form conditional branches: 14-bit signed field (±32KB range)
+            // I-form unconditional branch: 24-bit signed field (±32MB range)
+            
+            // Check if offset is in range
+            if (ins == INS_b || ins == INS_bl)
+            {
+                // I-form: 24-bit signed, word-aligned
+                assert((jmpDist >= -0x2000000) && (jmpDist < 0x2000000));
+                assert((jmpDist & 3) == 0); // Must be word-aligned
+            }
+            else
+            {
+                // B-form conditional: 14-bit signed, word-aligned
+                assert((jmpDist >= -0x8000) && (jmpDist < 0x8000));
+                assert((jmpDist & 3) == 0); // Must be word-aligned
+            }
         }
         
         // Store the distance in the jump descriptor

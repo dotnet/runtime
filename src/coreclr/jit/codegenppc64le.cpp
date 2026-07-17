@@ -3430,12 +3430,11 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-      // Load the address of the continuation point (target block) into the integer return register
+    // Load the address of the continuation point (target block) into the integer return register
     // This is used when returning from a catch handler
-    // PowerPC will use appropriate instructions to load the label address
-    //GetEmitter()->emitIns_R_L(INS_b, EA_PTRSIZE, block->GetTarget(), REG_INTRET)
-    NYI_POWERPC64("genEHCatchRet - need to implement emitIns_R_L for label address loading");
-
+    // PowerPC64 uses a 3-instruction sequence: bcl + mflr + addi
+    // to load the PC-relative address of the target label
+    GetEmitter()->emitIns_R_L(INS_addi, EA_PTRSIZE, block->GetTarget(), REG_INTRET);
 }
 
 

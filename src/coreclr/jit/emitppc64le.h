@@ -357,6 +357,8 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
+void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
+
 
 void emitIns_R_R_I(instruction ins,
                    emitAttr    attr,
