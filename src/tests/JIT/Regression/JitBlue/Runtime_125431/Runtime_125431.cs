@@ -33,7 +33,7 @@ public class Runtime_125431
         return 0;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static void Problem()
     {
         Vector256<byte> vr18 = Vector256.Create<byte>(0);
