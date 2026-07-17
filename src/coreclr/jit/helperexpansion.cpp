@@ -872,7 +872,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     JITDUMP("offsetOfThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfThreadStaticBlocks));
     JITDUMP("offsetOfBaseOfThreadLocalData= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfBaseOfThreadLocalData));
 
-    assert(call->gtArgs.CountArgs() == 1);
+    assert(call->gtArgs.CountUserArgs() == 1);
 
     // Split block right before the call tree
     BasicBlock* prevBb       = block;
@@ -1020,7 +1020,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     // Cache the tls value
     tlsValueDef                              = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* tlsLclValueUse                  = gtNewLclVarNode(tlsLclNum);
-    GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
+    GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetUserArgByIndex(0)->GetNode();
     assert(genActualType(typeThreadStaticBlockIndexValue) == TYP_INT);
 
     if (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2)
@@ -2902,7 +2902,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     // Initialize the array method table pointer.
     //
-    GenTree* const   mt      = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
+    GenTree* const   mt      = call->gtArgs.GetUserArgByIndex(typeArgIndex)->GetNode();
     GenTree* const   mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mt);
     Statement* const mtStmt  = fgNewStmtFromTree(mtStore);
 
@@ -2910,7 +2910,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     // Initialize the array length.
     //
-    GenTree* const   lengthArg     = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
+    GenTree* const   lengthArg     = call->gtArgs.GetUserArgByIndex(lengthArgIndex)->GetNode();
     GenTree* const   lengthArgInt  = fgOptimizeCast(gtNewCastNode(TYP_INT, lengthArg, false, TYP_INT));
     GenTree* const   lengthAddress = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(stackLocalAddress),
                                                    gtNewIconNode(OFFSETOF__CORINFO_Array__length, TYP_I_IMPL));
