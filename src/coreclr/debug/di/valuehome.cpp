@@ -229,7 +229,7 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
             {
                 IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
                 _ASSERTE(targetInfo.pointerSize == 8);
-                extendedVal = *(UINT64*)newValue.StartAddress();
+                extendedVal = (SIZE_T) *(UINT64*)newValue.StartAddress();
                 break;
             }
             default: _ASSERTE(!"bad size");
