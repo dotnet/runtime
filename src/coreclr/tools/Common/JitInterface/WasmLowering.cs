@@ -107,6 +107,7 @@ namespace Internal.JitInterface
         {
             return type.IsIntrinsic &&
                    Internal.TypeSystem.Interop.InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type) &&
+                   type.Instantiation.Length == 1 &&
                    VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]);
         }
 
