@@ -88,6 +88,31 @@ internal sealed class MockFramedMethodFrame : MockFrame
     }
 }
 
+internal sealed class MockInterpMethodContextFrame : TypedView
+{
+    // Field order mirrors src/coreclr/vm/interpexec.h InterpMethodContextFrame.
+    private const string StartIpFieldName = "StartIp";
+    private const string ParentPtrFieldName = "ParentPtr";
+    private const string IpFieldName = "Ip";
+    private const string NextPtrFieldName = "NextPtr";
+    private const string StackFieldName = "Stack";
+
+    public static Layout<MockInterpMethodContextFrame> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("InterpMethodContextFrame", architecture)
+            .AddPointerField(StartIpFieldName)
+            .AddPointerField(ParentPtrFieldName)
+            .AddPointerField(IpFieldName)
+            .AddPointerField(NextPtrFieldName)
+            .AddPointerField(StackFieldName)
+            .Build<MockInterpMethodContextFrame>();
+
+    public ulong StartIp { get => ReadPointerField(StartIpFieldName); set => WritePointerField(StartIpFieldName, value); }
+    public ulong ParentPtr { get => ReadPointerField(ParentPtrFieldName); set => WritePointerField(ParentPtrFieldName, value); }
+    public ulong Ip { get => ReadPointerField(IpFieldName); set => WritePointerField(IpFieldName, value); }
+    public ulong NextPtr { get => ReadPointerField(NextPtrFieldName); set => WritePointerField(NextPtrFieldName, value); }
+    public ulong Stack { get => ReadPointerField(StackFieldName); set => WritePointerField(StackFieldName, value); }
+}
+
 internal sealed class MockFuncEvalFrame : MockFrame
 {
     // Mirrors the cDAC FuncEvalFrame data class which reads DebuggerEvalPtr and
@@ -200,6 +225,7 @@ internal sealed class MockFrameBuilder
     public Layout<MockFuncEvalFrame> FuncEvalFrameLayout { get; }
     public Layout<MockDebuggerEval> DebuggerEvalLayout { get; }
     public Layout<MockResumableFrame> ResumableFrameLayout { get; }
+    public Layout<MockInterpMethodContextFrame> InterpMethodContextFrameLayout { get; }
 
     public MockFrameBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
@@ -219,6 +245,7 @@ internal sealed class MockFrameBuilder
         FuncEvalFrameLayout = MockFuncEvalFrame.CreateLayout(FrameLayout);
         DebuggerEvalLayout = MockDebuggerEval.CreateLayout(_helpers.Arch);
         ResumableFrameLayout = MockResumableFrame.CreateLayout(FrameLayout);
+        InterpMethodContextFrameLayout = MockInterpMethodContextFrame.CreateLayout(_helpers.Arch);
     }
 
     public ulong FrameTopTerminator => _terminator;
@@ -258,6 +285,19 @@ internal sealed class MockFrameBuilder
         frame.Identifier = FramedMethodFrameIdentifierValue;
         frame.Next = _terminator;
         frame.MethodDescPtr = methodDescPtr;
+        return frame;
+    }
+
+    /// <summary>
+    /// Allocates an InterpMethodContextFrame -- a node in the interpreter's per-thread
+    /// call chain walked by the interpreter virtual unwind (via <c>pParent</c>).
+    /// </summary>
+    public MockInterpMethodContextFrame AddInterpMethodContextFrame(ulong parentPtr, ulong ip, ulong stack)
+    {
+        MockInterpMethodContextFrame frame = InterpMethodContextFrameLayout.Create(_allocator.Allocate((ulong)InterpMethodContextFrameLayout.Size, "InterpMethodContextFrame"));
+        frame.ParentPtr = parentPtr;
+        frame.Ip = ip;
+        frame.Stack = stack;
         return frame;
     }
 

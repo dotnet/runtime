@@ -17,7 +17,8 @@ public unsafe class StackWalkTests
     private static TestPlaceholderTarget CreateTarget(
         MockTarget.Architecture arch,
         Action<MockThreadBuilder> configure,
-        Action<MockFrameBuilder>? configureFrames = null)
+        Action<MockFrameBuilder>? configureFrames = null,
+        RuntimeInfoArchitecture? runtimeArchitecture = null)
     {
         TestPlaceholderTarget.Builder targetBuilder = new(arch);
         MockThreadBuilder threadBuilder = new(targetBuilder.MemoryBuilder);
@@ -54,6 +55,15 @@ public unsafe class StackWalkTests
                     ("HijackFrameIdentifier", MockFrameBuilder.HijackFrameIdentifierValue));
         }
 
+        // Some paths (e.g. the interpreter virtual unwind's first-argument-register lookup)
+        // consult IRuntimeInfo for the target architecture. Register a mock when the test needs it.
+        if (runtimeArchitecture is RuntimeInfoArchitecture rtArch)
+        {
+            Mock<IRuntimeInfo> runtimeInfo = new();
+            runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(rtArch);
+            targetBuilder.AddMockContract(runtimeInfo.Object);
+        }
+
         return targetBuilder
             .AddContract<IThread>(version: "c1")
             .AddContract<IStackWalk>(version: "c1")
@@ -85,6 +95,7 @@ public unsafe class StackWalkTests
             [DataType.FramedMethodFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.FramedMethodFrameLayout),
             [DataType.FuncEvalFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.FuncEvalFrameLayout),
             [DataType.DebuggerEval] = TargetTestHelpers.CreateTypeInfo(frameBuilder.DebuggerEvalLayout),
+            [DataType.InterpMethodContextFrame] = TargetTestHelpers.CreateTypeInfo(frameBuilder.InterpMethodContextFrameLayout),
         };
 
     [Theory]
@@ -379,5 +390,76 @@ public unsafe class StackWalkTests
 
         Assert.True(context.TryReadRegister(WasmContext.InterpreterWalkFramePointerRegister, out TargetNUInt stashed));
         Assert.Equal(interpAddr, stashed.Value);
+    }
+
+    // Interpreter virtual unwind on WASM: with the WasmContext SP pointing at an
+    // InterpMethodContextFrame, each InterpreterVirtualUnwind step follows pParent to the next
+    // interpreted method, setting IP/SP/FP from the parent frame (matching native
+    // VirtualUnwindInterpreterCallFrame). Walks a three-node chain to the point of exhaustion.
+    [Fact]
+    public void InterpreterVirtualUnwind_WasmChain_StepsThroughInterpMethodContextFrames()
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+
+        const ulong ip1 = 0x0005_1000, fp1 = 0x0006_1000;
+        const ulong ip2 = 0x0005_2000, fp2 = 0x0006_2000;
+
+        ulong frame0 = 0, frame1 = 0, frame2 = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                // Build leaf-to-root so parent addresses are known when linking children.
+                frame2 = frameBuilder.AddInterpMethodContextFrame(parentPtr: 0, ip: ip2, stack: fp2).Address;
+                frame1 = frameBuilder.AddInterpMethodContextFrame(parentPtr: frame2, ip: ip1, stack: fp1).Address;
+                frame0 = frameBuilder.AddInterpMethodContextFrame(parentPtr: frame1, ip: 0, stack: 0).Address;
+            });
+
+        ContextHolder<WasmContext> context = new();
+        context.StackPointer = new TargetPointer(frame0);
+        FrameHelpers frameHelpers = new(target);
+
+        // Step 1: frame0 -> parent frame1; context takes frame1's IP/SP/FP.
+        frameHelpers.InterpreterVirtualUnwind(context);
+        Assert.Equal(ip1, context.InstructionPointer.Value);
+        Assert.Equal(frame1, context.StackPointer.Value);
+        Assert.Equal(fp1, context.FramePointer.Value);
+
+        // Step 2: frame1 -> parent frame2.
+        frameHelpers.InterpreterVirtualUnwind(context);
+        Assert.Equal(ip2, context.InstructionPointer.Value);
+        Assert.Equal(frame2, context.StackPointer.Value);
+        Assert.Equal(fp2, context.FramePointer.Value);
+    }
+
+    // When the InterpMethodContextFrame chain is exhausted (pParent == null) and no owning
+    // InterpreterFrame is stashed in the synthetic first-argument register, the WASM interpreter
+    // virtual unwind terminates gracefully without applying a transition. This also guards the
+    // WASM first-argument-register wiring: before it was mapped to InterpreterWalkFramePointer,
+    // this path threw NotSupportedException from GetFirstArgRegisterName.
+    [Fact]
+    public void InterpreterVirtualUnwind_WasmExhaustedChainNoOwningFrame_TerminatesGracefully()
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+
+        ulong frame0 = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                frame0 = frameBuilder.AddInterpMethodContextFrame(parentPtr: 0, ip: 0x0005_1000, stack: 0x0006_1000).Address;
+            },
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm);
+
+        ContextHolder<WasmContext> context = new();
+        context.StackPointer = new TargetPointer(frame0);
+        FrameHelpers frameHelpers = new(target);
+
+        frameHelpers.InterpreterVirtualUnwind(context);
+
+        // Chain exhausted with a null owning frame: context SP is left unchanged, no throw.
+        Assert.Equal(frame0, context.StackPointer.Value);
     }
 }
