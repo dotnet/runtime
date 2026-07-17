@@ -12539,7 +12539,15 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "RotateLeft",
        "get_Target",
        "get_Count",
-       "GetNonRandomizedHashCode"
+       "GetNonRandomizedHashCode",
+       "get_CtorIsPublic",
+       "get_IsInvalid",
+       "get_Preamble",
+       "get_NativeLength",
+       "get_Chars",
+       "get_UTF8",
+       "get_IsAllocated",
+       "get_EventListenersLock"
 
 
 
