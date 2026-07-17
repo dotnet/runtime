@@ -13,8 +13,6 @@
 #include "gcinfoencoder.h"
 
 static const int LINEAR_MEMORY_INDEX = 0;
-// stackPointer is the 0th global in our generated Wasm modules
-static const int STACK_POINTER_GLOBAL = 0;
 
 #ifdef TARGET_64BIT
 static const instruction INS_I_load  = INS_i64_load;
@@ -165,7 +163,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     if (!m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg)->lvIsParam)
     {
         initialSPLclIndex = spLclIndex;
-        GetEmitter()->emitIns_I(INS_global_get, EA_PTRSIZE, STACK_POINTER_GLOBAL);
+        GetEmitter()->emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+                                (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->stackPointer);
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, initialSPLclIndex);
     }
     else
@@ -1873,8 +1872,12 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
     if ((type == TYP_INT) || (type == TYP_LONG))
     {
         icon = treeNode->AsIntConCommon();
-        if (icon->ImmedValNeedsReloc(m_compiler))
+        if (icon->IsIconHandle())
         {
+            // Wasm has no absolute-address literals; every handle is materialized as a module-base-
+            // relative constant and relocated. compReloc is always on for a real AOT compile, so a
+            // handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
+            assert(icon->ImmedValNeedsReloc(m_compiler) || m_compiler->RunningSuperPmiReplay());
             GetEmitter()->emitAddressConstant((void*)icon->IntegralValue());
             WasmProduceReg(treeNode);
             return;
@@ -1892,7 +1895,11 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
             case TYP_INT:
             {
                 ins = INS_i32_const;
-                assert(FitsIn<INT32>(bits));
+                // Wasm integers are sign-agnostic: any 32-bit pattern is a valid i32.const,
+                // reduced to its signed value for a canonical SLEB128 encoding. Truncating
+                // through uint32_t keeps the low-32-bit reduction well-defined.
+                assert(FitsIn<INT32>(bits) || FitsIn<UINT32>(bits));
+                bits = static_cast<int32_t>(static_cast<uint32_t>(bits));
                 break;
             }
             case TYP_LONG:

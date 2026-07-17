@@ -942,8 +942,12 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
+#if MONO
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (short)actualValue;
+#else
+                result = (short)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
@@ -990,8 +994,12 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
+#if MONO
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (short)actualValue;
+#else
+                result = (short)actualValue;
+#endif
                 return true;
             }
             else
@@ -1021,8 +1029,12 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
+#if MONO
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (short)actualValue;
+#else
+                result = (short)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
@@ -1065,8 +1077,12 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
+#if MONO
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (short)actualValue;
+#else
+                result = (short)actualValue;
+#endif
                 return true;
             }
             else
