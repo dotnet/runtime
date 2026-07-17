@@ -906,6 +906,7 @@ public enum TargetOperatingSystem
     Unix,
 }
 
+[StructLayout(LayoutKind.Sequential)]
 public struct TargetInfo
 {
     public TargetArchitecture Arch;
