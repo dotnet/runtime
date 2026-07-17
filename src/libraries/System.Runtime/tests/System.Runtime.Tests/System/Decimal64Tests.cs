@@ -2313,6 +2313,126 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // atan(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // atan(-0) = -0
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // atan(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AtanTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Atan(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        [InlineData(100.0)]
+        [InlineData(double.PositiveInfinity)] // atan(+Infinity) = +pi/2
+        [InlineData(double.NegativeInfinity)] // atan(-Infinity) = -pi/2
+        public static void AtanAccuracyTest(double input)
+        {
+            // Decimal64 evaluates atan in the software binary128 engine (as Intel does).
+            double expected = double.Atan(input);
+            double actual = (double)Decimal64.Atan((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atan({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // asin(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // asin(-0) = -0
+        [InlineData(0x31C0000000000002UL, 0x7C00000000000000UL)] // asin(2) is outside [-1, 1] -> NaN
+        [InlineData(0xB1C0000000000002UL, 0x7C00000000000000UL)] // asin(-2) is outside [-1, 1] -> NaN
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // asin(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // asin(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // asin(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AsinTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Asin(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        public static void AsinAccuracyTest(double input)
+        {
+            // Decimal64 evaluates asin in the software binary128 engine (as Intel does).
+            double expected = double.Asin(input);
+            double actual = (double)Decimal64.Asin((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"asin({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000002UL, 0x7C00000000000000UL)] // acos(2) is outside [-1, 1] -> NaN
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // acos(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // acos(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // acos(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AcosTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Acos(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        public static void AcosAccuracyTest(double input)
+        {
+            // Decimal64 evaluates acos in the software binary128 engine (as Intel does).
+            double expected = double.Acos(input);
+            double actual = (double)Decimal64.Acos((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"acos({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL, 0x31C0000000000000UL)] // atan2(+0, +1) = +0
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL, 0xB1C0000000000000UL)] // atan2(-0, +1) = -0
+        [InlineData(0x7C00000000000000UL, 0x31C0000000000001UL, 0x7C00000000000000UL)] // atan2(NaN, x) = NaN
+        [InlineData(0x31C0000000000001UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // atan2(y, NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x31C0000000000001UL, 0x7C00000000001234UL)] // NaN payload preserved
+        public static void Atan2Test(ulong y, ulong x, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Atan2(Unsafe.BitCast<ulong, Decimal64>(y), Unsafe.BitCast<ulong, Decimal64>(x))));
+        }
+
+        [Theory]
+        [InlineData(1.0, 1.0)]
+        [InlineData(-1.0, 1.0)]
+        [InlineData(1.0, -1.0)]
+        [InlineData(-1.0, -1.0)]
+        [InlineData(0.5, 2.0)]
+        [InlineData(1.0, 0.0)]
+        [InlineData(-1.0, 0.0)]
+        [InlineData(0.0, -1.0)]
+        [InlineData(double.PositiveInfinity, 1.0)]
+        [InlineData(double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NegativeInfinity)]
+        public static void Atan2AccuracyTest(double y, double x)
+        {
+            // Decimal64 evaluates atan2 in the software binary128 engine (as Intel does).
+            double expected = double.Atan2(y, x);
+            double actual = (double)Decimal64.Atan2((Decimal64)y, (Decimal64)x);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atan2({y}, {x}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x31C0000000000001UL, 0x3180000000000001UL, 0x3180000000000064UL)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x31A0000000000019UL, 0x31C0000000000001UL, 0x31C0000000000002UL)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x31A0000000000023UL, 0x31C0000000000001UL, 0x31C0000000000004UL)] // quantize(3.5, 1E0) = 4 (ties to even)

@@ -2305,6 +2305,125 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // atan(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // atan(-0) = -0
+        [InlineData(0x7C000000U, 0x7C000000U)] // atan(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AtanTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Atan(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        [InlineData(double.PositiveInfinity)] // atan(+Infinity) = +pi/2
+        [InlineData(double.NegativeInfinity)] // atan(-Infinity) = -pi/2
+        public static void AtanAccuracyTest(double input)
+        {
+            // Decimal32 evaluates atan through binary64 (as Intel does).
+            double expected = double.Atan(input);
+            double actual = (double)Decimal32.Atan((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atan({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // asin(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // asin(-0) = -0
+        [InlineData(0x32800002U, 0x7C000000U)] // asin(2) is outside [-1, 1] -> NaN
+        [InlineData(0xB2800002U, 0x7C000000U)] // asin(-2) is outside [-1, 1] -> NaN
+        [InlineData(0x78000000U, 0x7C000000U)] // asin(+Infinity) = NaN
+        [InlineData(0xF8000000U, 0x7C000000U)] // asin(-Infinity) = NaN
+        [InlineData(0x7C000000U, 0x7C000000U)] // asin(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AsinTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Asin(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        public static void AsinAccuracyTest(double input)
+        {
+            // Decimal32 evaluates asin through binary64 (as Intel does).
+            double expected = double.Asin(input);
+            double actual = (double)Decimal32.Asin((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"asin({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800002U, 0x7C000000U)] // acos(2) is outside [-1, 1] -> NaN
+        [InlineData(0x78000000U, 0x7C000000U)] // acos(+Infinity) = NaN
+        [InlineData(0xF8000000U, 0x7C000000U)] // acos(-Infinity) = NaN
+        [InlineData(0x7C000000U, 0x7C000000U)] // acos(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AcosTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Acos(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        public static void AcosAccuracyTest(double input)
+        {
+            // Decimal32 evaluates acos through binary64 (as Intel does).
+            double expected = double.Acos(input);
+            double actual = (double)Decimal32.Acos((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"acos({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800001U, 0x32800000U)] // atan2(+0, +1) = +0
+        [InlineData(0xB2800000U, 0x32800001U, 0xB2800000U)] // atan2(-0, +1) = -0
+        [InlineData(0x7C000000U, 0x32800001U, 0x7C000000U)] // atan2(NaN, x) = NaN
+        [InlineData(0x32800001U, 0x7C000000U, 0x7C000000U)] // atan2(y, NaN) = NaN
+        [InlineData(0x7C001234U, 0x32800001U, 0x7C001234U)] // NaN payload preserved
+        public static void Atan2Test(uint y, uint x, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Atan2(Unsafe.BitCast<uint, Decimal32>(y), Unsafe.BitCast<uint, Decimal32>(x))));
+        }
+
+        [Theory]
+        [InlineData(1.0, 1.0)]
+        [InlineData(-1.0, 1.0)]
+        [InlineData(1.0, -1.0)]
+        [InlineData(-1.0, -1.0)]
+        [InlineData(0.5, 2.0)]
+        [InlineData(1.0, 0.0)]
+        [InlineData(-1.0, 0.0)]
+        [InlineData(0.0, -1.0)]
+        [InlineData(double.PositiveInfinity, 1.0)]
+        [InlineData(double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NegativeInfinity)]
+        public static void Atan2AccuracyTest(double y, double x)
+        {
+            // Decimal32 evaluates atan2 through binary64 (as Intel does).
+            double expected = double.Atan2(y, x);
+            double actual = (double)Decimal32.Atan2((Decimal32)y, (Decimal32)x);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atan2({y}, {x}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x32800001U, 0x31800001U, 0x31800064U)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x32000019U, 0x32800001U, 0x32800002U)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x32000023U, 0x32800001U, 0x32800004U)] // quantize(3.5, 1E0) = 4 (ties to even)

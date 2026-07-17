@@ -1094,4 +1094,198 @@ internal static partial class Number
         Float128SinCosPair(argument, out Float128 sin, out Float128 cos);
         return (Float128ToDecimal<TDecimal, TValue>(sin), Float128ToDecimal<TDecimal, TValue>(cos));
     }
+
+    /// <summary>Computes <c>atan(x)</c>, the result in radians.</summary>
+    internal static TValue AtanDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        bool signed = (x & TDecimal.SignMask) != TValue.Zero;
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // atan(+/-inf) = +/- pi/2.
+            if (DecimalIeee754UsesDouble<TValue>())
+            {
+                return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.CopySign(double.Pi / 2.0, signed ? -1.0 : 1.0));
+            }
+
+            Float128 halfPi = InvTrigConstants[2];
+            halfPi._sign = signed ? UxSignBit : 0;
+            return Float128ToDecimal<TDecimal, TValue>(halfPi);
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // atan(+/-0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Atan(value));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128Atan(argument));
+    }
+
+    /// <summary>Computes <c>asin(x)</c>, the result in radians.</summary>
+    internal static TValue AsinDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // asin(+/-inf) is outside the [-1, 1] domain and produces the canonical quiet NaN.
+            return TDecimal.NaNMask;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // asin(+/-0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            double result = double.Asin(value);
+            // A domain error (|x| > 1) canonicalizes to the positive quiet NaN.
+            return double.IsNaN(result) ? TDecimal.NaNMask : ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+
+        if (Float128MagnitudeExceedsOne(argument))
+        {
+            return TDecimal.NaNMask;
+        }
+        return Float128ToDecimal<TDecimal, TValue>(Float128Asin(argument));
+    }
+
+    /// <summary>Computes <c>acos(x)</c>, the result in radians.</summary>
+    internal static TValue AcosDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // acos(+/-inf) is outside the [-1, 1] domain and produces the canonical quiet NaN.
+            return TDecimal.NaNMask;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // acos(+/-0) = pi/2.
+            if (DecimalIeee754UsesDouble<TValue>())
+            {
+                return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Pi / 2.0);
+            }
+            return Float128ToDecimal<TDecimal, TValue>(InvTrigConstants[2]);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            double result = double.Acos(value);
+            // A domain error (|x| > 1) canonicalizes to the positive quiet NaN.
+            return double.IsNaN(result) ? TDecimal.NaNMask : ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+
+        if (Float128MagnitudeExceedsOne(argument))
+        {
+            return TDecimal.NaNMask;
+        }
+        return Float128ToDecimal<TDecimal, TValue>(Float128Acos(argument));
+    }
+
+    /// <summary>Computes <c>atan2(y, x)</c>, the angle of the vector (x, y) in radians.</summary>
+    internal static TValue Atan2DecimalIeee754<TDecimal, TValue>(TValue y, TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(y))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(y);
+        }
+
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            // binary64 atan2 already follows IEEE for the signed-zero and infinity quadrant cases.
+            double yValue = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(y);
+            double xValue = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Atan2(yValue, xValue));
+        }
+
+        DecodedDecimalIeee754<TValue> decodedY = UnpackDecimalIeee754<TDecimal, TValue>(y);
+        DecodedDecimalIeee754<TValue> decodedX = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        bool yInfinity = TDecimal.IsInfinity(y);
+        bool xInfinity = TDecimal.IsInfinity(x);
+        bool yZero = !yInfinity && TValue.IsZero(decodedY.Significand);
+        bool xZero = !xInfinity && TValue.IsZero(decodedX.Significand);
+
+        // Signed-zero and infinity quadrant cases resolve to a signed multiple of pi.
+        if (yInfinity || xInfinity || yZero || xZero)
+        {
+            Float128 magnitude;
+            if (yInfinity)
+            {
+                // atan2(+/-inf, +/-inf) = +/-3pi/4 or +/-pi/4; atan2(+/-inf, finite) = +/-pi/2.
+                magnitude = xInfinity ? (decodedX.Signed ? InvTrigConstants[3] : InvTrigConstants[1]) : InvTrigConstants[2];
+            }
+            else if (xInfinity)
+            {
+                // atan2(+/-finite, -inf) = +/-pi; atan2(+/-finite, +inf) = +/-0.
+                magnitude = decodedX.Signed ? InvTrigConstants[4] : InvTrigConstants[0];
+            }
+            else if (yZero)
+            {
+                // atan2(+/-0, x<0 or -0) = +/-pi; atan2(+/-0, x>=0) = +/-0.
+                magnitude = decodedX.Signed ? InvTrigConstants[4] : InvTrigConstants[0];
+            }
+            else
+            {
+                // xZero, finite non-zero y: atan2(+/-y, +/-0) = +/-pi/2.
+                magnitude = InvTrigConstants[2];
+            }
+
+            magnitude._sign = decodedY.Signed ? UxSignBit : 0;
+            return Float128ToDecimal<TDecimal, TValue>(magnitude);
+        }
+
+        Float128 argumentY = DecimalToFloat128<TDecimal, TValue>(decodedY.Signed, decodedY.UnbiasedExponent, decodedY.Significand);
+        Float128 argumentX = DecimalToFloat128<TDecimal, TValue>(decodedX.Signed, decodedX.UnbiasedExponent, decodedX.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128Atan2(argumentY, argumentX, haveX: true));
+    }
 }

@@ -11449,6 +11449,10 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 Tau { get { throw null; } }
         public static System.Numerics.Decimal128 Zero { get { throw null; } }
         public static System.Numerics.Decimal128 Abs(System.Numerics.Decimal128 value) { throw null; }
+        public static System.Numerics.Decimal128 Acos(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 Asin(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 Atan(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 Atan2(System.Numerics.Decimal128 y, System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 BitDecrement(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 BitIncrement(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 Cbrt(System.Numerics.Decimal128 x) { throw null; }
@@ -11670,6 +11674,10 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 Tau { get { throw null; } }
         public static System.Numerics.Decimal32 Zero { get { throw null; } }
         public static System.Numerics.Decimal32 Abs(System.Numerics.Decimal32 value) { throw null; }
+        public static System.Numerics.Decimal32 Acos(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 Asin(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 Atan(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 Atan2(System.Numerics.Decimal32 y, System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 BitDecrement(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 BitIncrement(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Cbrt(System.Numerics.Decimal32 x) { throw null; }
@@ -11895,6 +11903,10 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 Tau { get { throw null; } }
         public static System.Numerics.Decimal64 Zero { get { throw null; } }
         public static System.Numerics.Decimal64 Abs(System.Numerics.Decimal64 value) { throw null; }
+        public static System.Numerics.Decimal64 Acos(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 Asin(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 Atan(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 Atan2(System.Numerics.Decimal64 y, System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 BitDecrement(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 BitIncrement(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 Cbrt(System.Numerics.Decimal64 x) { throw null; }

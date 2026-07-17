@@ -870,6 +870,18 @@ namespace System.Numerics
         // IFloatingPointIeee754
         //
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        public static Decimal64 Acos(Decimal64 x) => new Decimal64(Number.AcosDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        public static Decimal64 Asin(Decimal64 x) => new Decimal64(Number.AsinDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        public static Decimal64 Atan(Decimal64 x) => new Decimal64(Number.AtanDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        public static Decimal64 Atan2(Decimal64 y, Decimal64 x) => new Decimal64(Number.Atan2DecimalIeee754<Decimal64, ulong>(y._value, x._value));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static Decimal64 BitDecrement(Decimal64 x) => new Decimal64(Number.BitDecrementDecimalIeee754<Decimal64, ulong>(x._value));
 
