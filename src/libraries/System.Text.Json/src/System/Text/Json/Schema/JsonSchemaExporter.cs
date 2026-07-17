@@ -553,34 +553,14 @@ namespace System.Text.Json.Schema
 
                 foreach (string segment in path)
                 {
-                    ReadOnlySpan<char> span = segment.AsSpan();
                     sb.Append('/');
 
-                    do
-                    {
-                        // Per RFC 6901 the characters '~' and '/' must be escaped.
-                        int pos = span.IndexOfAny('~', '/');
-                        if (pos < 0)
-                        {
-                            sb.Append(span);
-                            break;
-                        }
+                    // Per RFC 6901 the characters '~' and '/' are escaped as '~0' and '~1'.
+                    string escapedToken = segment.Replace("~", "~0").Replace("/", "~1");
 
-                        sb.Append(span.Slice(0, pos));
-
-                        if (span[pos] == '~')
-                        {
-                            sb.Append("~0");
-                        }
-                        else
-                        {
-                            Debug.Assert(span[pos] == '/');
-                            sb.Append("~1");
-                        }
-
-                        span = span.Slice(pos + 1);
-                    }
-                    while (!span.IsEmpty);
+                    // Per RFC 6901 section 6 the JSON Pointer is embedded in a URI fragment,
+                    // so percent-encode any characters that are not valid in a URI fragment.
+                    sb.Append(Uri.EscapeDataString(escapedToken));
                 }
 
                 return sb.ToString();

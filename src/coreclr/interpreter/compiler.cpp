@@ -4032,6 +4032,19 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             return true;
         }
 
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync:
+        {
+            int32_t result = m_methodInfo->args.isAsyncCall() ? 1 : 0;
+
+            AddIns(INTOP_LDC_I4);
+            m_pLastNewIns->data[0] = result;
+
+            PushInterpType(InterpTypeI4, nullptr);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+            return true;
+        }
+
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
         {
             CORINFO_CLASS_HANDLE clsHnd = sig.sigInst.methInst[0];
@@ -5140,6 +5153,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     ni == NI_System_StubHelpers_NextCallReturnAddress ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation ||
+                    ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync ||
                     ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation ||
                     ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend ||
                     ni == NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait);
@@ -5975,7 +5989,8 @@ void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
 void InterpCompiler::WrapTopOfStackInAwait()
 {
     CORINFO_LOOKUP instArgLookup;
-    CORINFO_METHOD_HANDLE awaitMethod = m_compHnd->getAwaitReturnCall(m_methodHnd, &instArgLookup);
+    CORINFO_CONTEXT_HANDLE contextHandle;
+    CORINFO_METHOD_HANDLE awaitMethod = m_compHnd->getAwaitReturnCall(m_methodHnd, &contextHandle, &instArgLookup);
 
     CORINFO_SIG_INFO awaitSig;
     m_compHnd->getMethodSig(awaitMethod, &awaitSig);
@@ -8631,7 +8646,8 @@ void InterpCompiler::CreateSynchronizedRetValVar()
         // The actual type of the return value will be the Task<T> or
         // ValueTask<T> type, so get it from the await call signature
         CORINFO_LOOKUP instArg;
-        CORINFO_METHOD_HANDLE awaitCall = m_compHnd->getAwaitReturnCall(m_methodHnd, &instArg);
+        CORINFO_CONTEXT_HANDLE contextHandle;
+        CORINFO_METHOD_HANDLE awaitCall = m_compHnd->getAwaitReturnCall(m_methodHnd, &contextHandle, &instArg);
         CORINFO_SIG_INFO awaitCallSig;
         m_compHnd->getMethodSig(awaitCall, &awaitCallSig);
 

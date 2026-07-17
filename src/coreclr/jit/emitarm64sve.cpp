@@ -3016,6 +3016,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
             return;
 
+        case INS_sve_sm4e:
         case INS_sve_sqxtnt:
         case INS_sve_uqxtnt:
         case INS_sve_sqxtunt:

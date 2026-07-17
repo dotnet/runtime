@@ -40,7 +40,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             case HW_Category_SIMD:
             {
-                GetEmitter()->emitIns(ins);
+                if ((info.id == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
+                {
+                    // A constant, fully in-range mask was lowered to an immediate i8x16.shuffle.
+                    // genConsumeMultiOpOperands left the source on the value stack once (the mask
+                    // operand is contained, so no v128.const was materialized). i8x16.shuffle
+                    // selects from two vectors, so push the source a second time and encode the
+                    // mask as the 16-byte shuffle immediate.
+                    GenTree*  src    = node->Op(1);
+                    regNumber srcReg = GetMultiUseOperandReg(src);
+                    GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(src), WasmRegToIndex(srcReg));
+                    GetEmitter()->emitIns_V128Imm(INS_i8x16_shuffle, node->Op(2)->AsVecCon()->gtSimdVal.u8);
+                }
+                else
+                {
+                    GetEmitter()->emitIns(ins);
+                }
                 break;
             }
             case HW_Category_IMM:
@@ -63,7 +78,23 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     }
     else
     {
-        NYI_WASM_SIMD("!codeGenIsTableDriven");
+        switch (info.id)
+        {
+            case NI_Vector_AsVector128Unsafe:
+            case NI_Vector_AsVector2:
+            case NI_Vector_AsVector3:
+            {
+                // These are pure reinterprets between SIMD widths. Every SIMD type occupies a
+                // full v128 on the value stack, so the consumed operand already is the result and
+                // there is nothing to emit.
+                break;
+            }
+
+            default:
+            {
+                NYI_WASM_SIMD("!codeGenIsTableDriven");
+            }
+        }
     }
 
     WasmProduceReg(node);
