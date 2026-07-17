@@ -521,6 +521,21 @@ namespace System.Tests
             Assert.Equal(m1.MethodHandle.Value, m2.MethodHandle.Value);
         }
 
+        [Fact]
+        public static void DifferentOpenVirtualDelegates()
+        {
+            MethodInfo m1 = typeof(OpenVirtualClass).GetMethod(nameof(OpenVirtualClass.M1), BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo m2 = typeof(OpenVirtualClass).GetMethod(nameof(OpenVirtualClass.M2), BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Delegate a = m1.CreateDelegate<Action<OpenVirtualClass>>();
+            Delegate b = m2.CreateDelegate<Action<OpenVirtualClass>>();
+
+            Assert.False(a.Equals(b));
+
+            Assert.Equal(m1, a.Method);
+            Assert.Equal(m2, b.Method);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
         public static void TypeEquivalentDelegatesPointingToSameMethod_AreEqualAndHaveSameHashCode()
         {
@@ -549,6 +564,12 @@ namespace System.Tests
         class ClassG { internal void M<Key, Value>() { } }
 
         struct StructG { internal void M<Key, Value>() { } }
+
+        class OpenVirtualClass
+        {
+            internal virtual void M1() { }
+            internal virtual void M2() { }
+        }
 
         private delegate void IntIntDelegate(int expected, int actual);
         private delegate void IntIntDelegateWithDefault(int expected, int actual = 7);

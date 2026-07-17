@@ -4538,6 +4538,11 @@ struct AsyncCallInfo
     // records that behavior.
     ::ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
 
+    // Is this 'await valueTask.AsTask()'? These come with special semantics as
+    // they no longer transparently forward continuation context handling to an
+    // underlying IValueTaskSource, if present.
+    bool IsValueTaskAsTask = false;
+
     // Tail awaits do not generate suspension points and the JIT instead
     // directly returns the callee's continuation to the caller.
     bool IsTailAwait = false;
@@ -6368,6 +6373,23 @@ public:
     GenTree** GetOperandArray(size_t startIndex = 0) const
     {
         return m_operands + startIndex;
+    }
+
+    // Re-point "m_operands" into this node after its raw bytes were copied from
+    // "src" (e.g. by GenTree::ReplaceWith). When a MultiOp stores its operands
+    // inline, "m_operands" points into the node's own storage, so a byte copy
+    // leaves it aliasing "src". A heap operand array lives outside "src" and is
+    // left untouched.
+    void RelocateInlineOperandsFrom(GenTree* src)
+    {
+        char* srcBegin = reinterpret_cast<char*>(src);
+        char* srcEnd   = srcBegin + src->GetNodeSize();
+        char* operands = reinterpret_cast<char*>(m_operands);
+
+        if ((operands >= srcBegin) && (operands < srcEnd))
+        {
+            m_operands = reinterpret_cast<GenTree**>(reinterpret_cast<char*>(this) + (operands - srcBegin));
+        }
     }
 
 protected:

@@ -3636,6 +3636,9 @@ public:
                                  var_types   simdBaseType,
                                  unsigned    simdSize);
 
+    GenTree* gtNewSimdNarrowWithSaturationNode(
+        var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+
     GenTree* gtNewSimdConcatNode(var_types type,
                                  GenTree*  op1,
                                  GenTree*  op2,
@@ -3676,6 +3679,15 @@ public:
                                   var_types   simdBaseType,
                                   unsigned    simdSize,
                                   bool        isShuffleNative);
+
+#if defined(TARGET_WASM)
+    GenTree* gtNewSimdWasmTwoSourceShuffleNode(var_types       type,
+                                               GenTree*        op1,
+                                               GenTree*        op2,
+                                               const uint32_t* selectors,
+                                               var_types       simdBaseType,
+                                               unsigned        simdSize);
+#endif // TARGET_WASM
 
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
@@ -5010,6 +5022,7 @@ private:
         PREFIX_IS_TASK_AWAIT = 0x00000080,
         PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
         PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT = 0x00000200,
+        PREFIX_IS_ADAPTED_FROM_VALUETASK = 0x00000400,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -5499,6 +5512,9 @@ public:
     bool impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed);
 
     const BYTE* impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal, IL_OFFSET* awaitOffset);
+    bool impMatchAsyncVersionTailCall(const BYTE* codeAddr, const BYTE* codeEndp, int*        prefixFlags, int*        numBytesMatched);
+    bool impMatchStlocLdloca(const BYTE** codeAddr, const BYTE* codeEndp, unsigned* lclNum);
+
     bool impCheckOptimizeAwait(IL_OFFSET awaitOffset);
 
     GenTree* impCastClassOrIsInstToTree(
@@ -9512,6 +9528,13 @@ public:
 
     CORINFO_ASYNC_INFO* eeGetAsyncInfo();
 
+#if defined(TARGET_WASM)
+    CORINFO_WASM_WELLKNOWN_GLOBALS wasmWellKnownGlobals;
+    bool                           wasmWellKnownGlobalsInitialized = false;
+
+    CORINFO_WASM_WELLKNOWN_GLOBALS* eeGetWasmWellKnownGlobals();
+#endif // defined(TARGET_WASM)
+
     // Gets the offset of a SDArray's first element
     static unsigned eeGetArrayDataOffset();
 
@@ -10736,6 +10759,7 @@ private:
     }
 #endif // DEBUG
 
+public:
     bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
@@ -10779,6 +10803,7 @@ private:
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
+private:
 #ifdef DEBUG
     //------------------------------------------------------------------------
     // canUseEvexEncodingDebugOnly - Answer the question: Is Evex encoding supported on this target.
