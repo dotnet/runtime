@@ -876,6 +876,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
         public static Decimal64 BitIncrement(Decimal64 x) => new Decimal64(Number.BitIncrementDecimalIeee754<Decimal64, ulong>(x._value));
 
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        public static Decimal64 Cbrt(Decimal64 x) => new Decimal64(Number.CbrtDecimalIeee754<Decimal64, ulong>(x._value));
+
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal64 Exp(Decimal64 x) => new Decimal64(Number.ExpDecimalIeee754<Decimal64, ulong>(x._value));
 

@@ -2040,6 +2040,39 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // cbrt(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // cbrt(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0xF800000000000000UL)] // cbrt(-Infinity) = -Infinity
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // cbrt(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // cbrt(-0) = -0
+        public static void CbrtTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Cbrt(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(8.0)]
+        [InlineData(-8.0)]
+        [InlineData(27.0)]
+        [InlineData(0.125)]
+        [InlineData(2.0)]
+        [InlineData(-2.0)]
+        [InlineData(1000000.0)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        public static void CbrtAccuracyTest(double input)
+        {
+            // Decimal64 evaluates cbrt through the binary128 engine (as Intel does); comparing the result
+            // cast back to binary64 stays within a few ulps of double.Cbrt.
+            double expected = double.Cbrt(input);
+            double actual = (double)Decimal64.Cbrt((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cbrt({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x7C00000000000000UL, 0x31C0000000000000UL, 0x31C0000000000001UL)] // pow(NaN, +0) = 1
         [InlineData(0x31C0000000000002UL, 0x31C0000000000000UL, 0x31C0000000000001UL)] // pow(2, +0) = 1
         [InlineData(0x31C0000000000002UL, 0xB1C0000000000000UL, 0x31C0000000000001UL)] // pow(2, -0) = 1

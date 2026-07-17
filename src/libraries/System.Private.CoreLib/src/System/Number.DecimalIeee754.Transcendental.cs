@@ -768,4 +768,39 @@ internal static partial class Number
 
         return Float128ToDecimal<TDecimal, TValue>(magnitude);
     }
+
+    /// <summary>Computes the cube root of <paramref name="x" />.</summary>
+    internal static TValue CbrtDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // cbrt(+/-inf) = +/-inf.
+            return x;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // cbrt(+/-0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Cbrt(value));
+        }
+
+        // The engine preserves the sign, so the cube root of a negative operand is handled directly.
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128Cbrt(argument));
+    }
 }

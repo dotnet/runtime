@@ -862,6 +862,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
         public static Decimal128 BitIncrement(Decimal128 x) => new Decimal128(Number.BitIncrementDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        public static Decimal128 Cbrt(Decimal128 x) => new Decimal128(Number.CbrtDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal128 Exp(Decimal128 x) => new Decimal128(Number.ExpDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 

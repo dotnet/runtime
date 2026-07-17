@@ -2034,6 +2034,39 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x7C000000U, 0x7C000000U)] // cbrt(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        [InlineData(0x78000000U, 0x78000000U)] // cbrt(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0xF8000000U)] // cbrt(-Infinity) = -Infinity
+        [InlineData(0x32800000U, 0x32800000U)] // cbrt(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // cbrt(-0) = -0
+        public static void CbrtTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Cbrt(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(8.0)]
+        [InlineData(-8.0)]
+        [InlineData(27.0)]
+        [InlineData(0.125)]
+        [InlineData(2.0)]
+        [InlineData(-2.0)]
+        [InlineData(1000000.0)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        public static void CbrtAccuracyTest(double input)
+        {
+            // Decimal32 evaluates cbrt through binary64 (as Intel does), so the result matches double.Cbrt
+            // to within the format's seven significant digits.
+            double expected = double.Cbrt(input);
+            double actual = (double)Decimal32.Cbrt((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cbrt({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x7C000000U, 0x32800000U, 0x32800001U)] // pow(NaN, +0) = 1
         [InlineData(0x32800002U, 0x32800000U, 0x32800001U)] // pow(2, +0) = 1
         [InlineData(0x32800002U, 0xB2800000U, 0x32800001U)] // pow(2, -0) = 1
