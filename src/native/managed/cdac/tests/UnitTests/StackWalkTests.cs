@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
@@ -288,5 +289,38 @@ public unsafe class StackWalkTests
 
         Assert.Equal(expectedToken, data.MethodToken);
         Assert.Equal(expectedAssembly, data.AssemblyPtr.Value);
+    }
+
+    // WASM is a 32-bit little-endian target with no native register context; the initial
+    // stack walk context is seeded from the Frame chain. This verifies that the degenerate
+    // WasmContext is routed through WasmFrameHandler and that an active InlinedCallFrame at a
+    // P/Invoke transition seeds the synthetic IP/SP/FP slots from CallSiteSP / CallerReturnAddress
+    // / CalleeSavedFP -- the common context-seeding path on WASM.
+    [Fact]
+    public void UpdateContextFromFrame_WasmInlinedCallFrame_SeedsContextFromCallSiteSP()
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+
+        const ulong callSiteSP = 0x0004_1000;
+        const ulong callerReturnAddress = 0x0004_2000;
+        const ulong calleeSavedFP = 0x0004_3000;
+
+        ulong icfAddr = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                icfAddr = frameBuilder.AddInlinedCallFrame(callerReturnAddress, datum: 0, callSiteSP, calleeSavedFP).Address;
+            });
+
+        ContextHolder<WasmContext> context = new();
+        FrameHelpers frameHelpers = new(target);
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(icfAddr);
+        frameHelpers.UpdateContextFromFrame(frame, context);
+
+        Assert.Equal(callSiteSP, context.StackPointer.Value);
+        Assert.Equal(callerReturnAddress, context.InstructionPointer.Value);
+        Assert.Equal(calleeSavedFP, context.FramePointer.Value);
     }
 }

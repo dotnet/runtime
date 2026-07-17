@@ -56,6 +56,18 @@ internal sealed class MockInlinedCallFrame : MockFrame
         get => ReadPointerField(CallerReturnAddressFieldName);
         set => WritePointerField(CallerReturnAddressFieldName, value);
     }
+
+    public ulong CallSiteSP
+    {
+        get => ReadPointerField(CallSiteSPFieldName);
+        set => WritePointerField(CallSiteSPFieldName, value);
+    }
+
+    public ulong CalleeSavedFP
+    {
+        get => ReadPointerField(CalleeSavedFPFieldName);
+        set => WritePointerField(CalleeSavedFPFieldName, value);
+    }
 }
 
 internal sealed class MockFramedMethodFrame : MockFrame
@@ -228,13 +240,15 @@ internal sealed class MockFrameBuilder
     /// Allocates an InlinedCallFrame. <paramref name="callerReturnAddress"/> set non-zero
     /// makes the frame "active" (matching native InlinedCallFrame::HasActiveCall).
     /// </summary>
-    public MockInlinedCallFrame AddInlinedCallFrame(ulong callerReturnAddress, ulong datum)
+    public MockInlinedCallFrame AddInlinedCallFrame(ulong callerReturnAddress, ulong datum, ulong callSiteSP = 0, ulong calleeSavedFP = 0)
     {
         MockInlinedCallFrame frame = InlinedCallFrameLayout.Create(_allocator.Allocate((ulong)InlinedCallFrameLayout.Size, "InlinedCallFrame"));
         frame.Identifier = InlinedCallFrameIdentifierValue;
         frame.Next = _terminator;
         frame.CallerReturnAddress = callerReturnAddress;
         frame.Datum = datum;
+        frame.CallSiteSP = callSiteSP;
+        frame.CalleeSavedFP = calleeSavedFP;
         return frame;
     }
 

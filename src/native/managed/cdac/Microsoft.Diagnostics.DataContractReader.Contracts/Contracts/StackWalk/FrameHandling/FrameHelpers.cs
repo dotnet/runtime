@@ -367,6 +367,7 @@ internal sealed class FrameHelpers
             ContextHolder<ARM64Context> contextHolder => new ARM64FrameHandler(_target, contextHolder),
             ContextHolder<RISCV64Context> contextHolder => new RISCV64FrameHandler(_target, contextHolder),
             ContextHolder<LoongArch64Context> contextHolder => new LoongArch64FrameHandler(_target, contextHolder),
+            ContextHolder<WasmContext> contextHolder => new WasmFrameHandler(_target, contextHolder),
             _ => throw new InvalidOperationException("Unsupported context type"),
         };
     }
