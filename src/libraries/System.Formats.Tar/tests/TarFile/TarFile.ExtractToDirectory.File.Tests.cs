@@ -455,7 +455,7 @@ namespace System.Formats.Tar.Tests
                 //     already exists, throwing IOException ("a file or directory with the same name already exists").
                 // Either way the archive is rejected and nothing escapes (verified below), so accept both.
                 Exception ex = Assert.ThrowsAny<Exception>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
-                Assert.True(ex is IOException or UnauthorizedAccessException, $"Unexpected exception type: {ex}");            
+                Assert.True(ex is IOException or UnauthorizedAccessException, $"Unexpected exception type: {ex}");
             }
             else
             {
