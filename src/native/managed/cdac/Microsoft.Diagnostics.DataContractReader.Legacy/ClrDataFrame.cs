@@ -537,7 +537,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         }
 
         mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)
-            ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            ?? throw new InvalidOperationException("Module has no metadata.");
         StandaloneSignatureHandle localSigHandle = MetadataTokens.StandaloneSignatureHandle(localToken);
         BlobHandle localSigBlob = mdReader.GetStandaloneSignature(localSigHandle).Signature;
         return mdReader.GetBlobReader(localSigBlob);

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -125,7 +124,7 @@ public struct TypeNameBuilder
             {
                 Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th));
                 MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)
-                    ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+                    ?? throw new InvalidOperationException("Module has no metadata.");
                 MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)rowId));
                 stringBuilder.Append(reader.GetString(methodDef.Name));
             }
@@ -227,7 +226,7 @@ public struct TypeNameBuilder
             {
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
                 MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)
-                    ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+                    ?? throw new InvalidOperationException("Module has no metadata.");
                 var handle = (GenericParameterHandle)MetadataTokens.Handle((int)genericParamToken);
                 GenericParameter genericParam = reader.GetGenericParameter(handle);
                 if (format.HasFlag(TypeNameFormat.FormatGenericParam))
@@ -295,7 +294,7 @@ public struct TypeNameBuilder
                 else
                 {
                     MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)
-                        ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+                        ?? throw new InvalidOperationException("Module has no metadata.");
                     AppendNestedTypeDef(ref tnb, reader, (TypeDefinitionHandle)MetadataTokens.EntityHandle((int)typeDefToken), format);
                 }
 
@@ -323,7 +322,7 @@ public struct TypeNameBuilder
                 // NOTE: The DAC variant of assembly name generation is different than the runtime version. The DAC variant is simpler, and only uses SimpleName
 
                 MetadataReader mr = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)
-                    ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+                    ?? throw new InvalidOperationException("Module has no metadata.");
                 string assemblySimpleName = mr.GetString(mr.GetAssemblyDefinition().Name);
 
                 tnb.AddAssemblySpec(assemblySimpleName);

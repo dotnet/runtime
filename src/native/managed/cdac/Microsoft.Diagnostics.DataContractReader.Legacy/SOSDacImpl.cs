@@ -1071,7 +1071,7 @@ public sealed unsafe partial class SOSDacImpl
             TargetPointer modulePtr = rtsContract.GetModule(ctx);
             Contracts.ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
             MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)
-                ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+                ?? throw new InvalidOperationException("Module has no metadata.");
             FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
 
             TypeHandle foundTypeHandle = rtsContract.GetFieldDescApproxTypeHandle(fieldDescTargetPtr);

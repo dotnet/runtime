@@ -299,7 +299,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_address);
             MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)
-                ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+                ?? throw new InvalidOperationException("Module has no metadata.");
 
             EnumMethodDefinitions emd = new(reader, flags, (nuint)handleLocal);
             emd.Start(fullName);
