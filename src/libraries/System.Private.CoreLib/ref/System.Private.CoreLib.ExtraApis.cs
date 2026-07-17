@@ -4,13 +4,6 @@
 // NOTE: Types/members which are not publicly exposed in System.Runtime.dll but still used internally by libraries.
 //       Manually maintained, keep in sync with System.Private.CoreLib.ExtraApis.txt
 
-namespace System
-{
-    public static partial class Environment
-    {
-        public static bool HasEnvironmentVariablesBeenModified { get { throw null; } }
-    }
-}
 namespace System.Runtime.Serialization
 {
     public readonly partial struct DeserializationToken : System.IDisposable

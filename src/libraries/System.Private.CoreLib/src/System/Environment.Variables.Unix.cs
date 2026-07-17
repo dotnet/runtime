@@ -17,11 +17,7 @@ namespace System
         private static Dictionary<string, string>? s_environment;
         private static volatile bool s_hasEnvironmentVariablesBeenModified;
 
-        public static bool HasEnvironmentVariablesBeenModified
-        {
-            get => s_hasEnvironmentVariablesBeenModified;
-            private set => s_hasEnvironmentVariablesBeenModified = value;
-        }
+        internal static bool HasEnvironmentVariablesBeenModified => s_hasEnvironmentVariablesBeenModified;
 
         private static unsafe string? GetEnvironmentVariableCore(string variable)
         {
@@ -48,7 +44,7 @@ namespace System
         private static unsafe void SetEnvironmentVariableCore(string variable, string? value)
         {
             Debug.Assert(variable != null);
-            HasEnvironmentVariablesBeenModified = true;
+            s_hasEnvironmentVariablesBeenModified = true;
 
             EnsureEnvironmentCached();
             variable = TrimStringOnFirstZero(variable);

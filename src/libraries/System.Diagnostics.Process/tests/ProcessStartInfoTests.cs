@@ -283,9 +283,9 @@ namespace System.Diagnostics.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("not_null", true)]
         [InlineData("not_null", false)]
-        [InlineData(null, false)]
-        [InlineData(null, true)]
-        public void SeesEnvironmentVariableSetBeforeStart(string? value, bool modifyParent)
+        [InlineData("null", false)]
+        [InlineData("null", true)]
+        public void SeesEnvironmentVariableSetBeforeStart(string value, bool modifyParent)
         {
             const string Name = "TestEnvironmentOfChildProcess_ParentSetBeforeStart";
             string? previousValue = Environment.GetEnvironmentVariable(Name);
@@ -294,18 +294,18 @@ namespace System.Diagnostics.Tests
             {
                 using Process process = CreateProcess(static (expectedValue) =>
                 {
-                    Assert.Equal(expectedValue, Environment.GetEnvironmentVariable(Name));
+                    Assert.Equal(expectedValue == "null" ? null : expectedValue, Environment.GetEnvironmentVariable(Name));
 
                     return RemoteExecutor.SuccessExitCode;
                 }, value);
 
                 if (modifyParent)
                 {
-                    Environment.SetEnvironmentVariable(Name, value);
+                    Environment.SetEnvironmentVariable(Name, value == "null" ? null : value);
                 }
                 else
                 {
-                    process.StartInfo.Environment[Name] = value;
+                    process.StartInfo.Environment[Name] = value == "null" ? null : value;
                 }
 
                 process.Start();

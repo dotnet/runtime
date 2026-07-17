@@ -577,6 +577,9 @@ static int32_t ForkAndExecProcessInternal(
 #endif
 
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
+    // We cannot substitute SystemNative_GetEnviron() here: this path uses posix_spawn
+    // without fork, so concurrent setenv/putenv/unsetenv/clearenv in other threads can
+    // mutate the shared process environment while posix_spawn is consuming envp.
     assert(NULL != envp);
 
 #if !HAVE_FORK

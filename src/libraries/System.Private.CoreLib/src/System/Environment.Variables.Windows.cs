@@ -10,7 +10,7 @@ namespace System
 {
     public static partial class Environment
     {
-        public static bool HasEnvironmentVariablesBeenModified => throw new PlatformNotSupportedException();
+        internal static bool HasEnvironmentVariablesBeenModified => throw new PlatformNotSupportedException();
 
         private static unsafe string? GetEnvironmentVariableCore(string variable)
         {
