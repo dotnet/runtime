@@ -2722,10 +2722,11 @@ void CodeGen::genCodeForFrameSize(GenTree* tree)
 //
 void CodeGen::genLoadLclTypeSimd12(GenTreeLclVarCommon* tree)
 {
-    bool     fpBased;
-    unsigned frameOffset = (unsigned)(m_compiler->lvaFrameAddress(tree->GetLclNum(), &fpBased) + tree->GetLclOffs());
-    unsigned fpIndex     = GetFramePointerRegIndex();
-    emitter* emit        = GetEmitter();
+    bool fpBased;
+    int  frameOffset = m_compiler->lvaFrameAddress(tree->GetLclNum(), &fpBased) + (int)tree->GetLclOffs();
+    noway_assert(frameOffset >= 0); // WASM address modes are unsigned.
+    unsigned fpIndex = GetFramePointerRegIndex();
+    emitter* emit    = GetEmitter();
 
     emit->emitIns_I(INS_local_get, EA_PTRSIZE, fpIndex);
     emit->emitIns_I(INS_local_get, EA_PTRSIZE, fpIndex);
@@ -2778,11 +2779,12 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* tree)
 
     if (addr->OperIs(GT_LCL_ADDR))
     {
-        bool     fpBased;
-        unsigned frameOffset = (unsigned)(m_compiler->lvaFrameAddress(addr->AsLclVarCommon()->GetLclNum(), &fpBased) +
-                                          addr->AsLclVarCommon()->GetLclOffs());
-        emit->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());         // [fp]
-        emit->emitIns_I(INS_local_get, EA_16BYTE, WasmRegToIndex(valReg));             // [fp, value]
+        bool fpBased;
+        int  frameOffset = m_compiler->lvaFrameAddress(addr->AsLclVarCommon()->GetLclNum(), &fpBased) +
+                          (int)addr->AsLclVarCommon()->GetLclOffs();
+        noway_assert(frameOffset >= 0);                                        // WASM address modes are unsigned.
+        emit->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex()); // [fp]
+        emit->emitIns_I(INS_local_get, EA_16BYTE, WasmRegToIndex(valReg));     // [fp, value]
         emit->emitIns_MemargLane(INS_v128_store32_lane, EA_4BYTE, frameOffset + 8, 2); // []
     }
     else
