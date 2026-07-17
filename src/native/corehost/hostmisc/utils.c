@@ -238,4 +238,3 @@ void utils_get_download_url(pal_char_t* out_url, size_t out_url_len, const pal_c
 
     free(rid);
 }
-
