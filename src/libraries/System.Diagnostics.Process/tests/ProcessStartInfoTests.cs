@@ -288,9 +288,8 @@ namespace System.Diagnostics.Tests
         public void SeesEnvironmentVariableSetBeforeStart(string value, bool modifyParent)
         {
             const string Name = "TestEnvironmentOfChildProcess_ParentSetBeforeStart";
-            string? previousValue = Environment.GetEnvironmentVariable(Name);
 
-            // We run a dedicated process to ensure that each test has it's own copy of the static shared state.
+            // We run a dedicated process to ensure that each test has its own copy of the static shared state.
             using Process isolation = CreateProcess((expectedValue, modifyParentStr) =>
             {
                 using Process process = CreateProcess(static (value) =>
