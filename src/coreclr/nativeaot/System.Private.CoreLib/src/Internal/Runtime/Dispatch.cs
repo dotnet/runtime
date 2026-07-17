@@ -55,8 +55,7 @@ namespace Internal.Runtime
 
         private static unsafe IntPtr ResolveStaticInterfaceDispatch(TypeManagerHandle typeManager, object pObject, nuint cellIndex, uint cellCount)
         {
-            if (cellIndex >= cellCount)
-                throw new BadImageFormatException();
+            Debug.Assert(cellIndex < cellCount);
 
             NativeParser parser = GetDispatchCellInfo(
                 typeManager,
@@ -68,17 +67,13 @@ namespace Internal.Runtime
             uint interfaceTypeIndex = parser.GetUnsigned();
             uint slot = parser.GetUnsigned();
 
-            if (slot > ushort.MaxValue)
-                throw new BadImageFormatException();
-
             MethodTable* interfaceType = (MethodTable*)externalReferences.GetIntPtrFromIndex(interfaceTypeIndex);
-            return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, interfaceType, (ushort)slot);
+            return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, interfaceType, checked((ushort)slot));
         }
 
         private static unsafe IntPtr ResolveGvmDispatch(TypeManagerHandle typeManager, object pObject, nuint cellIndex, uint cellCount)
         {
-            if (cellIndex >= cellCount)
-                throw new BadImageFormatException();
+            Debug.Assert(cellIndex < cellCount);
 
             NativeParser parser = GetDispatchCellInfo(
                 typeManager,
@@ -91,9 +86,6 @@ namespace Internal.Runtime
             uint instantiationIndex = parser.GetUnsigned();
             uint token = parser.GetUnsigned();
             uint isAsyncVariant = parser.GetUnsigned();
-
-            if (token > int.MaxValue || isAsyncVariant > 1)
-                throw new BadImageFormatException();
 
             MethodTable* owningType = (MethodTable*)externalReferences.GetIntPtrFromIndex(owningTypeIndex);
             void* instantiation = (void*)externalReferences.GetIntPtrFromIndex(instantiationIndex);
@@ -115,12 +107,9 @@ namespace Internal.Runtime
             out ExternalReferencesTable externalReferences)
         {
             byte* pInfo = (byte*)RuntimeImports.RhGetModuleSection(typeManager, section, out int length);
-            if (length <= 0)
-                throw new BadImageFormatException();
 
             externalReferences = default;
-            if (!externalReferences.InitializeNativeReferences(typeManager))
-                throw new BadImageFormatException();
+            externalReferences.InitializeNativeReferences(typeManager);
 
             NativeReader reader = new NativeReader(pInfo, checked((uint)length));
             NativeArray entries = new NativeArray(new NativeParser(reader, 0));
