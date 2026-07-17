@@ -1169,6 +1169,29 @@ namespace System.Text.Json.Schema.Tests
                     }
                 """);
 
+            yield return new TestData<ClassWithPropertyNameRequiringFragmentEncoding>(
+                Value: new ClassWithPropertyNameRequiringFragmentEncoding { Value = new() },
+                ExpectedJsonSchema: """
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                            "hello%20world": {
+                                "type": "object",
+                                "properties": {
+                                    "Value" : {"type":"integer"},
+                                    "Next": {
+                                        "type": ["object","null"],
+                                        "properties": {
+                                            "Value" : {"type":"integer"},
+                                            "Next": {"$ref":"#/properties/hello%2520world/properties/Next"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                """);
+
             yield return new TestData<ClassWithOptionalObjectParameter>(
                 Value: new(value: null),
                 AdditionalValues: [new(true), new(42), new(""), new(new object()), new(Array.Empty<int>())],
@@ -1611,6 +1634,12 @@ namespace System.Text.Json.Schema.Tests
         public class ClassWithJsonPointerEscapablePropertyNames
         {
             [JsonPropertyName("~/path/to/value")]
+            public PocoWithRecursiveMembers Value { get; set; }
+        }
+
+        public class ClassWithPropertyNameRequiringFragmentEncoding
+        {
+            [JsonPropertyName("hello%20world")]
             public PocoWithRecursiveMembers Value { get; set; }
         }
 
