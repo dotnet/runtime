@@ -2690,12 +2690,11 @@ inline
                 if (genIsValidFloatReg(regNum))
                 {
                     // HFA split parameter in float registers (f1-f13)
-                    // For PPC64LE, float registers don't have a parameter save area
-                    // The stack portion starts at the calculated stack offset
-                    // HFAs should typically be handled via field lists, but if we get here,
-                    // just use the regular stack offset
+                    // For PPC64LE, float registers don't have a parameter save area.
+                    // The register part should be homed to the local variable's stack location,
+                    // not to an incoming parameter area. Use the variable's stack offset directly.
                     assert(regNum >= REG_F1 && regNum <= REG_F13);
-                    varOffset = varDsc->GetStackOffset() + codeGen->genTotalFrameSize();
+                    varOffset = varDsc->GetStackOffset();
                     *pFPbased = FPbased;
                     return varOffset;
                 }
