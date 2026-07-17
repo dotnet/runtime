@@ -2758,6 +2758,91 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // asinh(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // asinh(-0) = -0
+        [InlineData(0x78000000U, 0x78000000U)] // asinh(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0xF8000000U)] // asinh(-Infinity) = -Infinity
+        [InlineData(0x7C000000U, 0x7C000000U)] // asinh(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AsinhTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Asinh(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.5)]
+        [InlineData(2.0)]
+        [InlineData(-0.25)]
+        public static void AsinhAccuracyTest(double input)
+        {
+            // Decimal32 evaluates asinh through binary64 (as Intel does).
+            double expected = double.Asinh(input);
+            double actual = (double)Decimal32.Asinh((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"asinh({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800001U, 0x32800000U)] // acosh(1) = +0
+        [InlineData(0x78000000U, 0x78000000U)] // acosh(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0x7C000000U)] // acosh(-Infinity) is a domain error -> NaN
+        [InlineData(0x32800000U, 0x7C000000U)] // acosh(+0) is a domain error -> NaN
+        [InlineData(0xB2800001U, 0x7C000000U)] // acosh(-1) is a domain error -> NaN
+        [InlineData(0x7C000000U, 0x7C000000U)] // acosh(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AcoshTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Acosh(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(1.5)]
+        [InlineData(2.0)]
+        [InlineData(5.0)]
+        [InlineData(10.0)]
+        public static void AcoshAccuracyTest(double input)
+        {
+            // Decimal32 evaluates acosh through binary64 (as Intel does).
+            double expected = double.Acosh(input);
+            double actual = (double)Decimal32.Acosh((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"acosh({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // atanh(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // atanh(-0) = -0
+        [InlineData(0x32800001U, 0x78000000U)] // atanh(+1) = +Infinity (pole)
+        [InlineData(0xB2800001U, 0xF8000000U)] // atanh(-1) = -Infinity (pole)
+        [InlineData(0x78000000U, 0x7C000000U)] // atanh(+Infinity) is a domain error -> NaN
+        [InlineData(0xF8000000U, 0x7C000000U)] // atanh(-Infinity) is a domain error -> NaN
+        [InlineData(0x7C000000U, 0x7C000000U)] // atanh(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AtanhTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Atanh(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.5)]
+        [InlineData(0.75)]
+        [InlineData(-0.9)]
+        public static void AtanhAccuracyTest(double input)
+        {
+            // Decimal32 evaluates atanh through binary64 (as Intel does).
+            double expected = double.Atanh(input);
+            double actual = (double)Decimal32.Atanh((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atanh({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x32800001U, 0x31800001U, 0x31800064U)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x32000019U, 0x32800001U, 0x32800002U)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x32000023U, 0x32800001U, 0x32800004U)] // quantize(3.5, 1E0) = 4 (ties to even)

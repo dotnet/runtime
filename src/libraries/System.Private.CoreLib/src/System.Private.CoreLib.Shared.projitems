@@ -448,6 +448,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128Conversions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128Exp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128Hyper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128InvHyper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128InvTrig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128Log.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.Float128PiTrig.cs" />

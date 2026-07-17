@@ -885,11 +885,17 @@ namespace System.Numerics
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
         public static Decimal32 AcosPi(Decimal32 x) => new Decimal32(Number.AcosPiDecimalIeee754<Decimal32, uint>(x._value));
 
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        public static Decimal32 Acosh(Decimal32 x) => new Decimal32(Number.AcoshDecimalIeee754<Decimal32, uint>(x._value));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
         public static Decimal32 Asin(Decimal32 x) => new Decimal32(Number.AsinDecimalIeee754<Decimal32, uint>(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
         public static Decimal32 AsinPi(Decimal32 x) => new Decimal32(Number.AsinPiDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        public static Decimal32 Asinh(Decimal32 x) => new Decimal32(Number.AsinhDecimalIeee754<Decimal32, uint>(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static Decimal32 Atan(Decimal32 x) => new Decimal32(Number.AtanDecimalIeee754<Decimal32, uint>(x._value));
@@ -902,6 +908,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
         public static Decimal32 AtanPi(Decimal32 x) => new Decimal32(Number.AtanPiDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        public static Decimal32 Atanh(Decimal32 x) => new Decimal32(Number.AtanhDecimalIeee754<Decimal32, uint>(x._value));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static Decimal32 BitDecrement(Decimal32 x) => new Decimal32(Number.BitDecrementDecimalIeee754<Decimal32, uint>(x._value));

@@ -876,11 +876,17 @@ namespace System.Numerics
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
         public static Decimal64 AcosPi(Decimal64 x) => new Decimal64(Number.AcosPiDecimalIeee754<Decimal64, ulong>(x._value));
 
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        public static Decimal64 Acosh(Decimal64 x) => new Decimal64(Number.AcoshDecimalIeee754<Decimal64, ulong>(x._value));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
         public static Decimal64 Asin(Decimal64 x) => new Decimal64(Number.AsinDecimalIeee754<Decimal64, ulong>(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
         public static Decimal64 AsinPi(Decimal64 x) => new Decimal64(Number.AsinPiDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        public static Decimal64 Asinh(Decimal64 x) => new Decimal64(Number.AsinhDecimalIeee754<Decimal64, ulong>(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static Decimal64 Atan(Decimal64 x) => new Decimal64(Number.AtanDecimalIeee754<Decimal64, ulong>(x._value));
@@ -893,6 +899,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
         public static Decimal64 AtanPi(Decimal64 x) => new Decimal64(Number.AtanPiDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        public static Decimal64 Atanh(Decimal64 x) => new Decimal64(Number.AtanhDecimalIeee754<Decimal64, ulong>(x._value));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static Decimal64 BitDecrement(Decimal64 x) => new Decimal64(Number.BitDecrementDecimalIeee754<Decimal64, ulong>(x._value));

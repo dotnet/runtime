@@ -256,4 +256,7 @@ internal static partial class Number
     // True when a normalized, non-zero |arg| is strictly greater than 1 (outside the asin/acos domain).
     private static bool Float128MagnitudeExceedsOne(in Float128 arg)
         => arg._exponent > 1 || (arg._exponent == 1 && (arg._hi != UxMsb || arg._lo != 0));
+
+    private static bool Float128MagnitudeIsOne(in Float128 arg)
+        => arg._exponent == 1 && arg._hi == UxMsb && arg._lo == 0;
 }

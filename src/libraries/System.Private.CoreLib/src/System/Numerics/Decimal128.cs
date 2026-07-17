@@ -862,11 +862,17 @@ namespace System.Numerics
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
         public static Decimal128 AcosPi(Decimal128 x) => new Decimal128(Number.AcosPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        public static Decimal128 Acosh(Decimal128 x) => new Decimal128(Number.AcoshDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
         public static Decimal128 Asin(Decimal128 x) => new Decimal128(Number.AsinDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
         public static Decimal128 AsinPi(Decimal128 x) => new Decimal128(Number.AsinPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        public static Decimal128 Asinh(Decimal128 x) => new Decimal128(Number.AsinhDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static Decimal128 Atan(Decimal128 x) => new Decimal128(Number.AtanDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
@@ -879,6 +885,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
         public static Decimal128 AtanPi(Decimal128 x) => new Decimal128(Number.AtanPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        public static Decimal128 Atanh(Decimal128 x) => new Decimal128(Number.AtanhDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static Decimal128 BitDecrement(Decimal128 x) => new Decimal128(Number.BitDecrementDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));

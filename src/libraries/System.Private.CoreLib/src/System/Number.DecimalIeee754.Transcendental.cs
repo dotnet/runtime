@@ -1742,4 +1742,128 @@ internal static partial class Number
         Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
         return Float128ToDecimal<TDecimal, TValue>(Float128Tanh(argument));
     }
+
+    /// <summary>Computes <c>asinh(x)</c>.</summary>
+    internal static TValue AsinhDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // asinh(+/-inf) = +/-inf.
+            return TDecimal.IsNegative(x) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // asinh(+/-0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Asinh(value));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128Asinh(argument));
+    }
+
+    /// <summary>Computes <c>acosh(x)</c>.</summary>
+    internal static TValue AcoshDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // acosh(+inf) = +inf; acosh(-inf) is outside the [1, inf) domain and produces the canonical quiet NaN.
+            return TDecimal.IsNegative(x) ? TDecimal.NaNMask : TDecimal.PositiveInfinity;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            double result = double.Acosh(value);
+            // A domain error (x < 1, including negatives and zero) canonicalizes to the positive quiet NaN.
+            return double.IsNaN(result) ? TDecimal.NaNMask : ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
+        }
+
+        // acosh is defined for x >= 1; negatives, zero, and any magnitude below 1 are a domain error.
+        if (decoded.Signed)
+        {
+            return TDecimal.NaNMask;
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+
+        if (!Float128MagnitudeExceedsOne(argument) && !Float128MagnitudeIsOne(argument))
+        {
+            return TDecimal.NaNMask;
+        }
+        return Float128ToDecimal<TDecimal, TValue>(Float128Acosh(argument));
+    }
+
+    /// <summary>Computes <c>atanh(x)</c>.</summary>
+    internal static TValue AtanhDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // atanh(+/-inf) is outside the [-1, 1] domain and produces the canonical quiet NaN.
+            return TDecimal.NaNMask;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // atanh(+/-0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            double result = double.Atanh(value);
+            // |x| > 1 is a domain error (canonical quiet NaN); |x| == 1 is the +/-inf pole (both from double.Atanh).
+            return double.IsNaN(result) ? TDecimal.NaNMask : ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+
+        if (Float128MagnitudeIsOne(argument))
+        {
+            // atanh(+/-1) = +/-inf (pole).
+            return decoded.Signed ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+        }
+
+        if (Float128MagnitudeExceedsOne(argument))
+        {
+            // |x| > 1 is a domain error.
+            return TDecimal.NaNMask;
+        }
+
+        return Float128ToDecimal<TDecimal, TValue>(Float128Atanh(argument));
+    }
 }

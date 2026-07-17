@@ -142,6 +142,19 @@ internal static partial class Number
     private static Float128 Float128Log10(scoped in Float128 arg) => Float128Log(arg, scaleValid: true, LogLog10Of2);
 
     /// <summary>
+    /// Evaluates the natural log of the value whose reduced ratio is <paramref name="w"/> (Intel's
+    /// <c>UX_LOG_POLY</c>): the log2 polynomial <c>w*p(w^2)</c> post-multiplied by <c>ln2</c>. Callers pass
+    /// a carefully formed <c>w</c> to avoid the loss of significance in <c>UX_LOG</c>'s <c>(g-1)/(g+1)</c>.
+    /// </summary>
+    private static Float128 Float128LogPoly(scoped in Float128 w)
+    {
+        Float128EvaluateLogPolynomial(w, Log2Coefficients, Log2Degree, Log2TrailingExponent, out Float128 result);
+        Float128 ln2 = LogLn2;
+        Float128Multiply(ref result, ref ln2, out result);
+        return result;
+    }
+
+    /// <summary>
     /// Computes <c>log_b(1 + arg)</c> for a finite <paramref name="arg"/> (Intel's <c>F_LOG1P</c>). The
     /// small path evaluates the polynomial at <c>arg / (2 + arg)</c> to avoid the loss of significance in
     /// forming <c>1 + arg</c>; the big path forms <c>1 + arg</c> and calls <see cref="Float128Log"/>.
