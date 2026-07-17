@@ -21,22 +21,22 @@
 #include "localeventchannel.cpp"
 #endif
 
-#if HOST_X86
+#if TARGET_X86
 #include "i386/cordbregisterset.cpp"
 #include "i386/primitives.cpp"
-#elif HOST_AMD64
+#elif TARGET_AMD64
 #include "amd64/cordbregisterset.cpp"
 #include "amd64/primitives.cpp"
-#elif HOST_ARM
+#elif TARGET_ARM
 #include "arm/cordbregisterset.cpp"
 #include "arm/primitives.cpp"
-#elif HOST_ARM64
+#elif TARGET_ARM64
 #include "arm64/cordbregisterset.cpp"
 #include "arm64/primitives.cpp"
-#elif HOST_LOONGARCH64
+#elif TARGET_LOONGARCH64
 #include "loongarch64/cordbregisterset.cpp"
 #include "loongarch64/primitives.cpp"
-#elif HOST_RISCV64
+#elif TARGET_RISCV64
 #include "riscv64/cordbregisterset.cpp"
 #include "riscv64/primitives.cpp"
 #else
