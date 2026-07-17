@@ -11470,6 +11470,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 CopySign(System.Numerics.Decimal128 value, System.Numerics.Decimal128 sign) { throw null; }
         public static System.Numerics.Decimal128 Cos(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 CosPi(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 Cosh(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Decimal128 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Decimal128 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
@@ -11621,6 +11622,7 @@ namespace System.Numerics
         public static (System.Numerics.Decimal128 Sin, System.Numerics.Decimal128 Cos) SinCos(System.Numerics.Decimal128 x) { throw null; }
         public static (System.Numerics.Decimal128 SinPi, System.Numerics.Decimal128 CosPi) SinCosPi(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 SinPi(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 Sinh(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 Sqrt(System.Numerics.Decimal128 x) { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal128>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal128>.GetExponentShortestBitLength() { throw null; }
@@ -11642,6 +11644,7 @@ namespace System.Numerics
         static bool System.Numerics.INumberBase<System.Numerics.Decimal128>.TryConvertToTruncating<TOther>(System.Numerics.Decimal128 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         public static System.Numerics.Decimal128 Tan(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 TanPi(System.Numerics.Decimal128 x) { throw null; }
+        public static System.Numerics.Decimal128 Tanh(System.Numerics.Decimal128 x) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
@@ -11703,6 +11706,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 CopySign(System.Numerics.Decimal32 value, System.Numerics.Decimal32 sign) { throw null; }
         public static System.Numerics.Decimal32 Cos(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 CosPi(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 Cosh(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Decimal32 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Decimal32 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
@@ -11858,6 +11862,7 @@ namespace System.Numerics
         public static (System.Numerics.Decimal32 Sin, System.Numerics.Decimal32 Cos) SinCos(System.Numerics.Decimal32 x) { throw null; }
         public static (System.Numerics.Decimal32 SinPi, System.Numerics.Decimal32 CosPi) SinCosPi(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 SinPi(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 Sinh(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Sqrt(System.Numerics.Decimal32 x) { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal32>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal32>.GetExponentShortestBitLength() { throw null; }
@@ -11879,6 +11884,7 @@ namespace System.Numerics
         static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertToTruncating<TOther>(System.Numerics.Decimal32 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         public static System.Numerics.Decimal32 Tan(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 TanPi(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 Tanh(System.Numerics.Decimal32 x) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
@@ -11940,6 +11946,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 CopySign(System.Numerics.Decimal64 value, System.Numerics.Decimal64 sign) { throw null; }
         public static System.Numerics.Decimal64 Cos(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 CosPi(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 Cosh(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Decimal64 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Decimal64 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
@@ -12093,6 +12100,7 @@ namespace System.Numerics
         public static (System.Numerics.Decimal64 Sin, System.Numerics.Decimal64 Cos) SinCos(System.Numerics.Decimal64 x) { throw null; }
         public static (System.Numerics.Decimal64 SinPi, System.Numerics.Decimal64 CosPi) SinCosPi(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 SinPi(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 Sinh(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 Sqrt(System.Numerics.Decimal64 x) { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal64>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<System.Numerics.Decimal64>.GetExponentShortestBitLength() { throw null; }
@@ -12114,6 +12122,7 @@ namespace System.Numerics
         static bool System.Numerics.INumberBase<System.Numerics.Decimal64>.TryConvertToTruncating<TOther>(System.Numerics.Decimal64 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         public static System.Numerics.Decimal64 Tan(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 TanPi(System.Numerics.Decimal64 x) { throw null; }
+        public static System.Numerics.Decimal64 Tanh(System.Numerics.Decimal64 x) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }

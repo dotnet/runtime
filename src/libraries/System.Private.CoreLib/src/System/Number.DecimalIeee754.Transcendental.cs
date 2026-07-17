@@ -1640,4 +1640,106 @@ internal static partial class Number
         Float128Divide(Float128Atan2(argumentY, argumentX, haveX: true), InvTrigConstants[4], Float128FullPrecision, out Float128 result);
         return Float128ToDecimal<TDecimal, TValue>(result);
     }
+
+    /// <summary>Computes <c>sinh(x)</c>.</summary>
+    internal static TValue SinhDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // sinh(+/-inf) = +/-inf.
+            return TDecimal.IsNegative(x) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // sinh(+/-0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Sinh(value));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128Sinh(argument));
+    }
+
+    /// <summary>Computes <c>cosh(x)</c>.</summary>
+    internal static TValue CoshDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // cosh(+/-inf) = +inf.
+            return TDecimal.PositiveInfinity;
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // cosh(+/-0) = 1.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed: false, TValue.One, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Cosh(value));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128Cosh(argument));
+    }
+
+    /// <summary>Computes <c>tanh(x)</c>.</summary>
+    internal static TValue TanhDecimalIeee754<TDecimal, TValue>(TValue x)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        if (TDecimal.IsNaN(x))
+        {
+            return CanonicalizeIfNaN<TDecimal, TValue>(x);
+        }
+
+        if (TDecimal.IsInfinity(x))
+        {
+            // tanh(+/-inf) = +/-1.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(TDecimal.IsNegative(x), TValue.One, 0);
+        }
+
+        DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
+
+        if (TValue.IsZero(decoded.Significand))
+        {
+            // tanh(+/-0) = +/-0.
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(decoded.Signed, TValue.Zero, 0);
+        }
+
+        if (DecimalIeee754UsesDouble<TValue>())
+        {
+            double value = ConvertDecimalIeee754ToFloat<TDecimal, TValue, double>(x);
+            return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Tanh(value));
+        }
+
+        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return Float128ToDecimal<TDecimal, TValue>(Float128Tanh(argument));
+    }
 }

@@ -2676,6 +2676,88 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // sinh(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // sinh(-0) = -0
+        [InlineData(0x78000000U, 0x78000000U)] // sinh(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0xF8000000U)] // sinh(-Infinity) = -Infinity
+        [InlineData(0x7C000000U, 0x7C000000U)] // sinh(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void SinhTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Sinh(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.5)]
+        [InlineData(2.0)]
+        [InlineData(-0.25)]
+        public static void SinhAccuracyTest(double input)
+        {
+            // Decimal32 evaluates sinh through binary64 (as Intel does).
+            double expected = double.Sinh(input);
+            double actual = (double)Decimal32.Sinh((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"sinh({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800001U)] // cosh(+0) = 1
+        [InlineData(0xB2800000U, 0x32800001U)] // cosh(-0) = 1
+        [InlineData(0x78000000U, 0x78000000U)] // cosh(+Infinity) = +Infinity
+        [InlineData(0xF8000000U, 0x78000000U)] // cosh(-Infinity) = +Infinity
+        [InlineData(0x7C000000U, 0x7C000000U)] // cosh(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void CoshTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Cosh(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.5)]
+        [InlineData(2.0)]
+        public static void CoshAccuracyTest(double input)
+        {
+            // Decimal32 evaluates cosh through binary64 (as Intel does).
+            double expected = double.Cosh(input);
+            double actual = (double)Decimal32.Cosh((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cosh({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x32800000U)] // tanh(+0) = +0
+        [InlineData(0xB2800000U, 0xB2800000U)] // tanh(-0) = -0
+        [InlineData(0x78000000U, 0x32800001U)] // tanh(+Infinity) = 1
+        [InlineData(0xF8000000U, 0xB2800001U)] // tanh(-Infinity) = -1
+        [InlineData(0x7C000000U, 0x7C000000U)] // tanh(NaN) = NaN
+        [InlineData(0x7C001234U, 0x7C001234U)] // NaN payload preserved
+        [InlineData(0xFC100000U, 0xFC000000U)] // out-of-range NaN payload cleared (sign preserved)
+        public static void TanhTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Tanh(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.5)]
+        [InlineData(2.0)]
+        public static void TanhAccuracyTest(double input)
+        {
+            // Decimal32 evaluates tanh through binary64 (as Intel does).
+            double expected = double.Tanh(input);
+            double actual = (double)Decimal32.Tanh((Decimal32)input);
+            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"tanh({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x32800001U, 0x31800001U, 0x31800064U)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x32000019U, 0x32800001U, 0x32800002U)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x32000023U, 0x32800001U, 0x32800004U)] // quantize(3.5, 1E0) = 4 (ties to even)

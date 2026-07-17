@@ -909,6 +909,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
         public static Decimal64 CosPi(Decimal64 x) => new Decimal64(Number.CosPiDecimalIeee754<Decimal64, ulong>(x._value));
 
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        public static Decimal64 Cosh(Decimal64 x) => new Decimal64(Number.CoshDecimalIeee754<Decimal64, ulong>(x._value));
+
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal64 Exp(Decimal64 x) => new Decimal64(Number.ExpDecimalIeee754<Decimal64, ulong>(x._value));
 
@@ -989,6 +992,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
         public static Decimal64 SinPi(Decimal64 x) => new Decimal64(Number.SinPiDecimalIeee754<Decimal64, ulong>(x._value));
 
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        public static Decimal64 Sinh(Decimal64 x) => new Decimal64(Number.SinhDecimalIeee754<Decimal64, ulong>(x._value));
+
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static Decimal64 Sqrt(Decimal64 x) => new Decimal64(Number.SqrtDecimalIeee754<Decimal64, ulong>(x._value));
 
@@ -997,6 +1003,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
         public static Decimal64 TanPi(Decimal64 x) => new Decimal64(Number.TanPiDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        public static Decimal64 Tanh(Decimal64 x) => new Decimal64(Number.TanhDecimalIeee754<Decimal64, ulong>(x._value));
 
         /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
         /// <param name="x">The value whose quantum is adjusted.</param>

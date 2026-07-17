@@ -895,6 +895,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
         public static Decimal128 CosPi(Decimal128 x) => new Decimal128(Number.CosPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        public static Decimal128 Cosh(Decimal128 x) => new Decimal128(Number.CoshDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal128 Exp(Decimal128 x) => new Decimal128(Number.ExpDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
@@ -975,6 +978,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
         public static Decimal128 SinPi(Decimal128 x) => new Decimal128(Number.SinPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        public static Decimal128 Sinh(Decimal128 x) => new Decimal128(Number.SinhDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static Decimal128 Sqrt(Decimal128 x) => new Decimal128(Number.SqrtDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
@@ -983,6 +989,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
         public static Decimal128 TanPi(Decimal128 x) => new Decimal128(Number.TanPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        public static Decimal128 Tanh(Decimal128 x) => new Decimal128(Number.TanhDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
         /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
         /// <param name="x">The value whose quantum is adjusted.</param>

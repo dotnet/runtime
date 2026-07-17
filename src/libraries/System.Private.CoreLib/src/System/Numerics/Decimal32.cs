@@ -918,6 +918,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
         public static Decimal32 CosPi(Decimal32 x) => new Decimal32(Number.CosPiDecimalIeee754<Decimal32, uint>(x._value));
 
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        public static Decimal32 Cosh(Decimal32 x) => new Decimal32(Number.CoshDecimalIeee754<Decimal32, uint>(x._value));
+
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal32 Exp(Decimal32 x) => new Decimal32(Number.ExpDecimalIeee754<Decimal32, uint>(x._value));
 
@@ -998,6 +1001,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
         public static Decimal32 SinPi(Decimal32 x) => new Decimal32(Number.SinPiDecimalIeee754<Decimal32, uint>(x._value));
 
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        public static Decimal32 Sinh(Decimal32 x) => new Decimal32(Number.SinhDecimalIeee754<Decimal32, uint>(x._value));
+
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static Decimal32 Sqrt(Decimal32 x) => new Decimal32(Number.SqrtDecimalIeee754<Decimal32, uint>(x._value));
 
@@ -1006,6 +1012,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
         public static Decimal32 TanPi(Decimal32 x) => new Decimal32(Number.TanPiDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        public static Decimal32 Tanh(Decimal32 x) => new Decimal32(Number.TanhDecimalIeee754<Decimal32, uint>(x._value));
 
         /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
         /// <param name="x">The value whose quantum is adjusted.</param>
