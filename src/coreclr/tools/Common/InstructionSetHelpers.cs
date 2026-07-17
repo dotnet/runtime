@@ -355,10 +355,6 @@ namespace System.CommandLine
                 targetArchitecture);
         }
 
-        // Produces an InstructionSetSupport for targets that cannot generate code at runtime. Every
-        // specifiable instruction set that is not supported is marked explicitly unsupported so that
-        // hardware intrinsic IsSupported checks resolve at compile time instead of emitting runtime
-        // fixups, and the optimistic set is collapsed onto the supported set.
         public static InstructionSetSupport GetFixedInstructionSetSupport(InstructionSetSupport instructionSetSupport)
         {
             InstructionSetFlags unsupportedInstructionSets = instructionSetSupport.ExplicitlyUnsupportedFlags;
