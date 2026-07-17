@@ -481,7 +481,13 @@ private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNu
 
     TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
     if(peImageLayout == TargetPointer.Null)
-        throw new InvalidOperationException("PEImage does not have a LoadedImageLayout associated with it.");
+    {
+        // Images that are never mapped/loaded (e.g. a webcil ReadyToRun image on WASM) have no
+        // loaded layout; fall back to the flat layout (m_pLayouts[IMAGE_FLAT]).
+        peImageLayout = target.ReadPointer(peImage + /* PEImage::FlatImageLayout offset */);
+        if(peImageLayout == TargetPointer.Null)
+            throw new InvalidOperationException("PEImage does not have a usable image layout associated with it.");
+    }
 
     // Get base address and flags from PEImageLayout
     TargetPointer baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);

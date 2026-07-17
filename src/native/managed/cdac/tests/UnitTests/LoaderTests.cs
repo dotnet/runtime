@@ -517,7 +517,8 @@ public unsafe class LoaderTests
         MockTarget.Architecture arch,
         ushort coffSections,
         SectionDef[] sections,
-        ushort versionMajor = 0)
+        ushort versionMajor = 0,
+        bool useFlatLayout = false)
     {
         TargetTestHelpers helpers = new(arch);
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
@@ -532,6 +533,7 @@ public unsafe class LoaderTests
             new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
         ]);
         var peImageLayout = helpers.LayoutFields([
+            new(nameof(Data.PEImage.FlatImageLayout), DataType.pointer),
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
             new(nameof(Data.PEImage.ProbeExtensionResult), DataType.ProbeExtensionResult, probeExtLayout.Stride),
         ]);
@@ -608,7 +610,8 @@ public unsafe class LoaderTests
         helpers.Write(layoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Format)].Offset, sizeof(uint)), 1u);
 
         var peImageFrag = allocator.Allocate(peImageLayout.Stride, "PEImage");
-        helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[nameof(Data.PEImage.LoadedImageLayout)].Offset, helpers.PointerSize), layoutFrag.Address);
+        string imageLayoutField = useFlatLayout ? nameof(Data.PEImage.FlatImageLayout) : nameof(Data.PEImage.LoadedImageLayout);
+        helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[imageLayoutField].Offset, helpers.PointerSize), layoutFrag.Address);
 
         var peAssemblyFrag = allocator.Allocate(peAssemblyLayout.Stride, "PEAssembly");
         helpers.WritePointer(peAssemblyFrag.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.PEImage)].Offset, helpers.PointerSize), peImageFrag.Address);
@@ -641,6 +644,23 @@ public unsafe class LoaderTests
 
         // RVA in second section: offset = (0x4500 - 0x4000) + 0x2200 = 0x2700
         Assert.Equal((TargetPointer)(imageBase + 0x2700u), contract.GetILAddr(peAssemblyAddr, 0x4500));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetILAddr_WebcilFlatLayout_ResolvesViaFlatFallback(MockTarget.Architecture arch)
+    {
+        // On WASM a webcil ReadyToRun image has no loaded layout -- only the flat layout. RVA
+        // resolution must fall back to the flat layout instead of throwing "no loaded layout".
+        SectionDef[] sections =
+        [
+            new(VirtualSize: 0x2000, VirtualAddress: 0x1000, SizeOfRawData: 0x2000, PointerToRawData: 0x200),
+        ];
+        var (target, peAssemblyAddr, imageBase) = CreateWebcilTarget(arch, (ushort)sections.Length, sections, useFlatLayout: true);
+        ILoader contract = target.Contracts.Loader;
+
+        // RVA in first section resolves through the flat layout: offset = (0x1100 - 0x1000) + 0x200 = 0x300
+        Assert.Equal((TargetPointer)(imageBase + 0x300u), contract.GetILAddr(peAssemblyAddr, 0x1100));
     }
 
     [Theory]
