@@ -103,45 +103,53 @@ public struct WasmContext : IPlatformContext
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {
-        switch (name.ToLowerInvariant())
+        if (name.Equals("pc", StringComparison.OrdinalIgnoreCase) || name.Equals("ip", StringComparison.OrdinalIgnoreCase))
         {
-            case "pc" or "ip":
-                _interpreterIP = (uint)value.Value;
-                return true;
-            case "sp":
-                _interpreterSP = (uint)value.Value;
-                return true;
-            case "fp":
-                _interpreterFP = (uint)value.Value;
-                return true;
-            case InterpreterWalkFramePointerRegister:
-                _interpreterWalkFramePointer = (uint)value.Value;
-                return true;
-            default:
-                return false;
+            _interpreterIP = (uint)value.Value;
+            return true;
         }
+        if (name.Equals("sp", StringComparison.OrdinalIgnoreCase))
+        {
+            _interpreterSP = (uint)value.Value;
+            return true;
+        }
+        if (name.Equals("fp", StringComparison.OrdinalIgnoreCase))
+        {
+            _interpreterFP = (uint)value.Value;
+            return true;
+        }
+        if (name.Equals(InterpreterWalkFramePointerRegister, StringComparison.OrdinalIgnoreCase))
+        {
+            _interpreterWalkFramePointer = (uint)value.Value;
+            return true;
+        }
+        return false;
     }
 
     public readonly bool TryReadRegister(string name, out TargetNUInt value)
     {
-        switch (name.ToLowerInvariant())
+        if (name.Equals("pc", StringComparison.OrdinalIgnoreCase) || name.Equals("ip", StringComparison.OrdinalIgnoreCase))
         {
-            case "pc" or "ip":
-                value = new TargetNUInt(_interpreterIP);
-                return true;
-            case "sp":
-                value = new TargetNUInt(_interpreterSP);
-                return true;
-            case "fp":
-                value = new TargetNUInt(_interpreterFP);
-                return true;
-            case InterpreterWalkFramePointerRegister:
-                value = new TargetNUInt(_interpreterWalkFramePointer);
-                return true;
-            default:
-                value = default;
-                return false;
+            value = new TargetNUInt(_interpreterIP);
+            return true;
         }
+        if (name.Equals("sp", StringComparison.OrdinalIgnoreCase))
+        {
+            value = new TargetNUInt(_interpreterSP);
+            return true;
+        }
+        if (name.Equals("fp", StringComparison.OrdinalIgnoreCase))
+        {
+            value = new TargetNUInt(_interpreterFP);
+            return true;
+        }
+        if (name.Equals(InterpreterWalkFramePointerRegister, StringComparison.OrdinalIgnoreCase))
+        {
+            value = new TargetNUInt(_interpreterWalkFramePointer);
+            return true;
+        }
+        value = default;
+        return false;
     }
 
     public bool TrySetRegister(int number, TargetNUInt value) => false;

@@ -43,5 +43,5 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
     }
 
     public void HandleHijackFrame(HijackFrame frame)
-        => throw new NotSupportedException("HijackFrame handling is not supported on WASM.");
+        => throw new PlatformNotSupportedException("HijackFrame handling is not supported on WASM.");
 }

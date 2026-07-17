@@ -30,10 +30,12 @@ public sealed class WasmR2RInfo : IWasmR2RInfo
     // Mirrors ExecutionManager::FindFunctionTableIndexRangeSection.
     private Data.FunctionTableIndexRangeSection? FindSection(uint functionTableIndex)
     {
-        if (!_target.TryReadGlobalPointer(Constants.Globals.FunctionTableIndexRangeList, out TargetPointer? head))
+        if (!_target.TryReadGlobalPointer(Constants.Globals.FunctionTableIndexRangeList, out TargetPointer? listHeadSlot))
             return null;
 
-        TargetPointer current = head.Value;
+        // The global holds the address of the s_pFunctionTableIndexRangeList slot (a pointer-to-
+        // pointer); dereference it once to obtain the actual list head.
+        TargetPointer current = _target.ReadPointer(listHeadSlot.Value);
         while (current != TargetPointer.Null)
         {
             Data.FunctionTableIndexRangeSection section = _target.ProcessedData.GetOrAdd<Data.FunctionTableIndexRangeSection>(current);
