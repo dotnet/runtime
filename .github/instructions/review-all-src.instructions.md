@@ -77,7 +77,7 @@ Before reviewing individual lines of code, evaluate the PR as a whole. Consider 
 ### Established Conventions
 
 - **Store error strings in `.resx`, not inline code.** Reference via the `SR` class. When removing code that uses a resx string, delete the unused string entry.
-- **Sort lists and entries alphabetically.** Lists of areas, configuration entries, resx entries, entrypoint/export lists, and ref source members should be maintained in alphabetical order.
+- **Preserve existing alphabetical ordering in modified lists.** When a PR adds or reorders entries in an alphabetized list—especially items within a `.csproj` item group, such as `Compile`, `ProjectReference`, and `PackageReference`—verify that the changed entries preserve the surrounding order. Flag only ordering regressions introduced by the PR; do not require unrelated cleanup of pre-existing unsorted entries. This also applies to lists of areas, configuration entries, resx entries, entrypoint/export lists, and ref source members.
 - **Don't modify auto-generated files or `eng/common` manually.** Change the generator or source definition instead. Files in `eng/common` are synced from dotnet/arcade.
 - **Use `DOTNET_` prefix for environment variables, not `COMPlus_`.** New runtime environment variables must use `DOTNET_` exclusively.
 - **Match existing style in modified files.** The existing style in a file takes precedence over general guidelines. Do not change existing code for style alone.
