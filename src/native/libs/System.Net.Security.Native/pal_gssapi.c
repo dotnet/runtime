@@ -343,6 +343,10 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
     if (cbtSize < 0)
     {
         *minorStatus = 0;
+        outBuffer->length = 0;
+        outBuffer->data = NULL;
+        *retFlags = 0;
+        *isNtlmUsed = 0;
         return GSS_S_BAD_BINDINGS;
     }
 
@@ -435,6 +439,10 @@ uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
     if (cbtSize < 0)
     {
         *minorStatus = 0;
+        outBuffer->length = 0;
+        outBuffer->data = NULL;
+        *retFlags = 0;
+        *isNtlmUsed = 0;
         return GSS_S_BAD_BINDINGS;
     }
 
