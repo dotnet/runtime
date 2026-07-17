@@ -15,6 +15,8 @@ namespace System.Text.Json
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct ReadStack
     {
+        private const int InitialStackCapacity = 4;
+
         /// <summary>
         /// Exposes the stack frame that is currently active.
         /// </summary>
@@ -92,7 +94,7 @@ namespace System.Text.Json
         {
             if (_stack is null)
             {
-                _stack = ArrayPool<ReadStackFrame>.Shared.Rent(4);
+                _stack = ArrayPool<ReadStackFrame>.Shared.Rent(InitialStackCapacity);
             }
             else if (_count - 1 == _stack.Length)
             {

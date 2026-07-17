@@ -18,6 +18,8 @@ namespace System.Text.Json
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
+        private const int InitialStackCapacity = 4;
+
         public readonly int CurrentDepth => _count;
 
         /// <summary>
@@ -128,7 +130,7 @@ namespace System.Text.Json
         {
             if (_stack is null)
             {
-                _stack = ArrayPool<WriteStackFrame>.Shared.Rent(4);
+                _stack = ArrayPool<WriteStackFrame>.Shared.Rent(InitialStackCapacity);
             }
             else if (_count - _indexOffset == _stack.Length)
             {
