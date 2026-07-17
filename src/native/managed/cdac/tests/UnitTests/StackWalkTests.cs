@@ -328,6 +328,13 @@ public unsafe class StackWalkTests
         Assert.Equal(HResults.E_INVALIDARG, stackWalk.GetContext(expectedContext.AllContextFlags, (uint)smallBuffer.Length, &contextSize, smallBuffer));
         Assert.Equal(expectedContext.Size, contextSize);
 
+        if (!arch.Is64Bit)
+        {
+            byte[] contextWithoutExtendedRegisters = new byte[0xcc];
+            Assert.Equal(HResults.S_OK, stackWalk.GetContext(expectedContext.FullContextFlags, (uint)contextWithoutExtendedRegisters.Length, &contextSize, contextWithoutExtendedRegisters));
+            Assert.Equal((uint)contextWithoutExtendedRegisters.Length, contextSize);
+        }
+
         TargetPointer frameAddress = new(0x1234);
         contract.Setup(s => s.GetFrameAddress(exception)).Returns(frameAddress);
         ulong frameData;

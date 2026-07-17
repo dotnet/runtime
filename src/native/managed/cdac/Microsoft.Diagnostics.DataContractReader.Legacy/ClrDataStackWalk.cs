@@ -384,7 +384,8 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             }
         }
 #else
-        _legacyImpl?.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer);
+        if (reqCode == RequestSetFirstFrame)
+            _legacyImpl?.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer);
 #endif
         return hr;
     }
@@ -454,7 +455,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 
     private uint GetContextSizeForFlags(IPlatformAgnosticContext context, uint contextFlags)
     {
-        const uint X86ContextExtendedRegisters = 0x00100020;
+        const uint X86ContextExtendedRegisters = 0x00010020;
         const uint X86ExtendedRegistersOffset = 0xcc;
 
         return _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86
