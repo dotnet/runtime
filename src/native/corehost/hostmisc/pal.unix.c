@@ -325,7 +325,7 @@ bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
     return true;
 }
 
-void pal_unload_library(void* library)
+void pal_unload_library(pal_dll_t library)
 {
     if (dlclose(library) != 0)
     {
@@ -333,7 +333,7 @@ void pal_unload_library(void* library)
     }
 }
 
-pal_proc_t pal_get_symbol(void* library, const char* name)
+pal_proc_t pal_get_symbol(pal_dll_t library, const char* name)
 {
     void* result = dlsym(library, name);
     if (result == NULL)

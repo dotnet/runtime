@@ -584,15 +584,15 @@ bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
     return true;
 }
 
-void pal_unload_library(void* library)
+void pal_unload_library(pal_dll_t library)
 {
     // No-op. On Windows the host pins loaded libraries so they are not unloaded.
     (void)library;
 }
 
-pal_proc_t pal_get_symbol(void* library, const char* name)
+pal_proc_t pal_get_symbol(pal_dll_t library, const char* name)
 {
-    FARPROC proc = GetProcAddress((HMODULE)library, name);
+    FARPROC proc = GetProcAddress(library, name);
     if (proc == NULL)
     {
         trace_info(_X("Probed for and did not resolve library symbol %S"), name);

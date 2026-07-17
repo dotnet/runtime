@@ -219,10 +219,10 @@ bool pal_is_path_fully_qualified(const pal_char_t* path);
 bool pal_load_library(const pal_char_t* path, pal_dll_t* dll);
 
 // Unload a library previously loaded with pal_load_library.
-void pal_unload_library(void* library);
+void pal_unload_library(pal_dll_t library);
 
 // Resolve an exported symbol from a loaded library, or NULL if not found.
-pal_proc_t pal_get_symbol(void* library, const char* name);
+pal_proc_t pal_get_symbol(pal_dll_t library, const char* name);
 
 // Convert a UTF-8 string into the platform character type
 bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len);
