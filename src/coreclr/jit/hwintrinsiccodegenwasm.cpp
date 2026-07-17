@@ -26,9 +26,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    // emitIns_Lane
-    // emitIns_Memarg_Lane
-
     const HWIntrinsic info(node);
     genConsumeMultiOpOperands(node);
 
@@ -40,7 +37,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             case HW_Category_SIMD:
             {
-                GetEmitter()->emitIns(ins);
+                if (info.id == NI_PackedSimd_Shuffle)
+                {
+                    simd16_t shuffleMask = info.GetImmediateVecOperand();
+                    GetEmitter()->emitIns_V128Imm(ins, shuffleMask.u8);
+                }
+                else
+                {
+                    GetEmitter()->emitIns(ins);
+                }
                 break;
             }
             case HW_Category_IMM:
