@@ -711,6 +711,15 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
 //    temporary registers for its operands.
 void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* node)
 {
+    // A constant, in-range mask Swizzle is lowered to an immediate i8x16.shuffle, which reuses the
+    // source operand as both shuffle inputs. Lowering marked the source multiply-used (and contained
+    // the mask), so release its temporary register here.
+    if ((node->GetHWIntrinsicId() == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
+    {
+        ConsumeTemporaryRegForOperand(node->Op(1) DEBUGARG("i8x16.shuffle source reuse"));
+        return;
+    }
+
     // Only intrinsics with an immediate operand can need the jump-table fallback.
     if (!HWIntrinsicInfo::HasImmediateOperand(node->GetHWIntrinsicId()))
     {
