@@ -10569,16 +10569,15 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
             GenTreeLclVarCommon* lclAddrNode = op1->AsLclVarCommon();
             GenTreeIntCon*       offsetNode  = op2->AsIntCon();
             ssize_t              consVal     = offsetNode->IconValue();
+            ssize_t              newOffset   = static_cast<ssize_t>(lclAddrNode->GetLclOffs()) + consVal;
 
-            // Note: the emitter does not expect out-of-bounds access for LCL_ADDR.
-            if (FitsIn<uint16_t>(consVal) && IsValidLclAddr(lclAddrNode->GetLclNum(), (uint32_t)consVal))
+            // Note: the emitter does not expect out-of-bounds access for LCL_ADDR. Validate the
+            // resulting offset rather than just the addend, so repeated folds cannot accumulate an
+            // offset the emitter is unable to encode.
+            if (FitsIn<uint16_t>(newOffset) && IsValidLclAddr(lclAddrNode->GetLclNum(), (uint32_t)newOffset))
             {
-                ClrSafeInt<uint16_t> newOffset =
-                    ClrSafeInt<uint16_t>(lclAddrNode->GetLclOffs()) + ClrSafeInt<uint16_t>(consVal);
-                assert(!newOffset.IsOverflow());
-
                 lclAddrNode->SetOper(GT_LCL_ADDR);
-                lclAddrNode->AsLclFld()->SetLclOffs(newOffset.Value());
+                lclAddrNode->AsLclFld()->SetLclOffs(static_cast<uint16_t>(newOffset));
                 assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
 
                 lclAddrNode->SetVNsFromNode(add);
