@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -233,7 +234,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public void RuntimeTypeSystem_IsObjRef_AreConsistent(TestConfiguration config)
+    public void RuntimeTypeSystem_IsCorElementTypeObjRef_AreConsistent(TestConfiguration config)
     {
         InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -248,10 +249,10 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
         TypeHandle intPtrHandle = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.IntPtr");
 
-        Assert.True(rts.IsObjRef(objectHandle));
-        Assert.True(rts.IsObjRef(stringHandle));
-        Assert.True(rts.IsObjRef(objectArrayHandle));
-        Assert.False(rts.IsObjRef(intPtrHandle));
+        Assert.True(rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(objectHandle)));
+        Assert.True(rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(stringHandle)));
+        Assert.True(rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(objectArrayHandle)));
+        Assert.False(rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(intPtrHandle)));
     }
 
     [ConditionalTheory]

@@ -25,6 +25,11 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/stackstring.hpp"
 
+#include <signal.h>
+#if defined(TARGET_WASI)
+#include "pal/wasi/pal_wasi_missing.h"
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -37,9 +42,8 @@ extern "C"
 */
 extern Volatile<LONG> terminator;
 
-// The process and session ID of this process, so we can avoid excessive calls to getpid() and getsid().
+// The process ID of this process, so we can avoid excessive calls to getpid().
 extern DWORD gPID;
-extern DWORD gSID;
 
 extern LPWSTR pAppDir;
 
@@ -49,15 +53,6 @@ extern LPCSTR gApplicationGroupId;
 extern int gApplicationGroupIdLength;
 #endif // __APPLE__
 extern PathCharString *gSharedFilesPath;
-
-/*++
-Function:
-  PROCGetProcessIDFromHandle
-
-Abstract
-  Return the process ID from a process handle
---*/
-DWORD PROCGetProcessIDFromHandle(HANDLE hProcess);
 
 /*++
 Function:
@@ -78,22 +73,6 @@ Notes :
     This function takes ownership of lpwstrCmdLine, but not of lpwstrFullPath
 --*/
 BOOL PROCCreateInitialProcess(LPWSTR lpwstrCmdLine, LPWSTR lpwstrFullPath);
-
-/*++
-Function:
-  PROCCleanupInitialProcess
-
-Abstract
-  Cleanup all the structures for the initial process.
-
-Parameter
-  VOID
-
-Return
-  VOID
-
---*/
-VOID PROCCleanupInitialProcess(VOID);
 
 /*++
 Function

@@ -205,6 +205,14 @@ namespace System.ComponentModel.DataAnnotations
         ///     This property will never be null, but the dictionary may be empty.  Changes made
         ///     to items in this dictionary will never affect the original dictionary specified in the constructor.
         /// </value>
+        /// <remarks>
+        ///     <see cref="Items" /> is designed as a read-only input channel populated before validation
+        ///     begins. The validation pipeline does not guarantee attribute execution order (beyond
+        ///     <see cref="RequiredAttribute" /> priority), and no built-in attribute mutates
+        ///     <see cref="Items" /> during validation. Custom validators should treat <see cref="Items" />
+        ///     as read-only during validation execution. Mutating <see cref="Items" /> from within a
+        ///     validator is unsupported and may produce race conditions under parallel async validation.
+        /// </remarks>
         public IDictionary<object, object?> Items => _items;
 
         #endregion

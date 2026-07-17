@@ -43,7 +43,13 @@ namespace System.Text.Json.Serialization.Converters
                 Type? nullableCaseType = typeInfo.UnionNullableCaseType;
                 if (nullableCaseType is null)
                 {
-                    ThrowHelper.ThrowJsonException_UnionDoesNotAcceptNull(typeToConvert);
+                    // Round-trip symmetry with the serializer: default(union) writes
+                    // JSON null (deconstructor returns (null, null)), so JSON null must
+                    // read back as default(union). For value-type unions this is the
+                    // zero-init struct; for reference-type unions this is null.
+                    // See https://github.com/dotnet/runtime/issues/128834.
+                    value = default;
+                    return true;
                 }
 
                 value = constructor(nullableCaseType, null);

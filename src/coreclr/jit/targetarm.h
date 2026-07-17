@@ -24,6 +24,7 @@
 #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register (including HFA support)
 #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register (including passing HFAs)
 #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register (including HFA returns)
+#define FEATURE_HAS_ZERO_REG          0  // Target does not have a hardware "zero register" usable as a containable source
 #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (double).
 #define MAX_PASS_MULTIREG_BYTES      32  // Maximum size of a struct that could be passed in more than one register (Max is an HFA of 4 doubles)
 #define MAX_RET_MULTIREG_BYTES       32  // Maximum size of a struct that could be returned in more than one register (Max is an HFA of 4 doubles)
@@ -174,8 +175,8 @@
 #define RBM_SECRET_STUB_PARAM     RBM_R12
 
 // R2R indirect call. Use the same registers as VSD
-#define REG_R2R_INDIRECT_PARAM          REG_R4
-#define RBM_R2R_INDIRECT_PARAM          RBM_R4
+#define REG_R2R_INDIRECT_PARAM          REG_R12
+#define RBM_R2R_INDIRECT_PARAM          RBM_R12
 
 // JMP Indirect call register
 #define REG_INDIRECT_CALL_TARGET_REG REG_R12

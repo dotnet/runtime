@@ -3,7 +3,9 @@
 
 using Xunit;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Microsoft.DotNet.RemoteExecutor;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0
 
@@ -1248,6 +1250,140 @@ namespace System.Tests
             Assert.Equal(double.NegativeInfinity, Math.Round(double.NegativeInfinity, 3, MidpointRounding.AwayFromZero));
         }
 
+        public static IEnumerable<object[]> Round_Double_Digits_ExactValue_TestData()
+        {
+            // 655.925 is not exactly representable; the nearest double is 655.924999999999954525...,
+            // which is just below the 655.925 decimal midpoint. Scaling by 100 produces exactly 65592.5
+            // and so the value used to incorrectly round as if it were a midpoint.
+            yield return new object[] { 655.925, 2, MidpointRounding.ToEven, 655.92 };
+            yield return new object[] { 655.925, 2, MidpointRounding.AwayFromZero, 655.92 };
+            yield return new object[] { 655.925, 2, MidpointRounding.ToZero, 655.92 };
+            yield return new object[] { 655.925, 2, MidpointRounding.ToNegativeInfinity, 655.92 };
+            yield return new object[] { 655.925, 2, MidpointRounding.ToPositiveInfinity, 655.93 };
+            yield return new object[] { -655.925, 2, MidpointRounding.ToEven, -655.92 };
+            yield return new object[] { -655.925, 2, MidpointRounding.AwayFromZero, -655.92 };
+            yield return new object[] { -655.925, 2, MidpointRounding.ToZero, -655.92 };
+            yield return new object[] { -655.925, 2, MidpointRounding.ToNegativeInfinity, -655.93 };
+            yield return new object[] { -655.925, 2, MidpointRounding.ToPositiveInfinity, -655.92 };
+
+            // Large magnitudes below the integer boundary previously lost their fractional bits when
+            // scaled by a power of 10 (1111111111111111.5 * 10 is not exactly representable).
+            yield return new object[] { 1111111111111111.5, 1, MidpointRounding.ToEven, 1111111111111111.5 };
+            yield return new object[] { 1111111111111111.5, 1, MidpointRounding.AwayFromZero, 1111111111111111.5 };
+
+            // 0.25 is an exactly representable decimal midpoint at one fractional digit.
+            yield return new object[] { 0.25, 1, MidpointRounding.ToEven, 0.2 };
+            yield return new object[] { 0.25, 1, MidpointRounding.AwayFromZero, 0.3 };
+            yield return new object[] { 0.35, 1, MidpointRounding.ToEven, 0.3 }; // 0.35 -> 0.34999999999999997...
+            yield return new object[] { 0.35, 1, MidpointRounding.AwayFromZero, 0.3 };
+
+            // Values at or above the integer boundary (2^52) are already integers and are unchanged.
+            yield return new object[] { 4503599627370496.0, 5, MidpointRounding.AwayFromZero, 4503599627370496.0 };
+            yield return new object[] { 2e16, 3, MidpointRounding.AwayFromZero, 2e16 };
+
+            // Subnormals and other tiny magnitudes have an enormous binary exponent, so the fraction sits
+            // far below the midpoint and rounds to zero except when directed rounding forces it up.
+            yield return new object[] { double.Epsilon, 15, MidpointRounding.ToEven, 0.0 };
+            yield return new object[] { double.Epsilon, 15, MidpointRounding.AwayFromZero, 0.0 };
+            yield return new object[] { double.Epsilon, 15, MidpointRounding.ToPositiveInfinity, 1e-15 };
+            yield return new object[] { -double.Epsilon, 15, MidpointRounding.ToNegativeInfinity, -1e-15 };
+            yield return new object[] { 5e-320, 10, MidpointRounding.ToEven, 0.0 };
+
+            // The historical 0-15 digit cap has been lifted; any non-negative digit count is now accepted.
+            // Rounding to a digit count at or beyond the precision needed to round-trip a double (17) is a
+            // no-op, since the exactly rounded decimal converts back to the original value.
+            yield return new object[] { 0.1, 16, MidpointRounding.ToEven, 0.1 };
+            yield return new object[] { 0.1, 17, MidpointRounding.ToEven, 0.1 };
+            yield return new object[] { 0.1, 20, MidpointRounding.AwayFromZero, 0.1 };
+            yield return new object[] { 655.925, 30, MidpointRounding.AwayFromZero, 655.925 };
+            yield return new object[] { 0.1, 1000, MidpointRounding.ToEven, 0.1 };
+
+            // A fractional part first appears beyond the 15th digit here, so rounding at 16 digits is
+            // meaningful and was unreachable under the old cap.
+            yield return new object[] { 2.5e-16, 16, MidpointRounding.ToEven, 3e-16 };
+            yield return new object[] { 2.5e-16, 16, MidpointRounding.AwayFromZero, 3e-16 };
+
+            // The fast rounding path is exact through 19 fractional digits for double; exercise the boundary
+            // (18, 19) and confirm the exact routine takes over just beyond it (20) while staying correct.
+            yield return new object[] { 2.5e-18, 18, MidpointRounding.ToEven, 3e-18 };
+            yield return new object[] { 2.5e-18, 18, MidpointRounding.AwayFromZero, 3e-18 };
+            yield return new object[] { 2.5e-19, 19, MidpointRounding.ToEven, 3e-19 };
+            yield return new object[] { 2.5e-19, 19, MidpointRounding.AwayFromZero, 3e-19 };
+            yield return new object[] { 2.5e-20, 20, MidpointRounding.ToEven, 2e-20 };
+            yield return new object[] { 2.5e-20, 20, MidpointRounding.AwayFromZero, 2e-20 };
+
+            // The smallest subnormals combined with very large digit counts exercise the deepest part of the
+            // exact arbitrary-precision path (near its worst-case buffer size), which must stay correct.
+            yield return new object[] { double.Epsilon, 324, MidpointRounding.AwayFromZero, double.Epsilon };
+            yield return new object[] { double.Epsilon, 323, MidpointRounding.AwayFromZero, 0.0 };
+            yield return new object[] { 2.2250738585072014e-308, 1074, MidpointRounding.AwayFromZero, 2.2250738585072014e-308 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Round_Double_Digits_ExactValue_TestData))]
+        public static void Round_Double_Digits_ExactValue(double value, int digits, MidpointRounding mode, double expected)
+        {
+            double actual = Math.Round(value, digits, mode);
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Round_Double_Digits_ExactValue_IntegerFallback()
+        {
+            // The digit-rounding fast path uses a double-double FusedMultiplyAdd implementation where the
+            // hardware accelerates it (FMA3 on x86, baseline on Arm64) and an exact integer implementation
+            // otherwise. On accelerated hardware the theory above only covers the FusedMultiplyAdd path, so
+            // re-run the same vectors with hardware intrinsics disabled to deterministically exercise the
+            // integer fallback and confirm it produces bit-for-bit identical results.
+            var psi = new ProcessStartInfo();
+            psi.Environment["DOTNET_EnableHWIntrinsic"] = "0";
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                // The integer fallback is only consulted for finite magnitudes below the integer boundary
+                // (2^52) with a digit count in the fast-path range; every other vector takes the dedicated
+                // integer-rounding overload or the arbitrary-precision routine regardless of the intrinsic
+                // switch, so skip them to keep the remote run focused and avoid redundant work.
+                const int MaxFastRoundingDigits = 19;
+                const double IntegerBoundary = 4503599627370496.0; // 2^52
+
+                foreach (object[] testData in Round_Double_Digits_ExactValue_TestData())
+                {
+                    double value = (double)testData[0];
+                    int digits = (int)testData[1];
+                    MidpointRounding mode = (MidpointRounding)testData[2];
+                    double expected = (double)testData[3];
+
+                    if (digits is < 1 or > MaxFastRoundingDigits || Math.Abs(value) >= IntegerBoundary)
+                    {
+                        continue;
+                    }
+
+                    double actual = Math.Round(value, digits, mode);
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual));
+                }
+            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+        }
+
+        [Theory]
+        [InlineData(0.5)]                    // below the integer boundary
+        [InlineData(9e15)]                   // between the integer boundary (2^52) and the old 1e16 limit
+        [InlineData(double.NaN)]
+        [InlineData(double.PositiveInfinity)]
+        public static void Round_Double_Digits_InvalidMidpointRounding_ThrowsArgumentException(double value)
+        {
+            AssertExtensions.Throws<ArgumentException>("mode", () => Math.Round(value, 3, (MidpointRounding)(-1)));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public static void Round_Double_Digits_NegativeDigits_ThrowsArgumentOutOfRangeException(int digits)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("digits", () => Math.Round(1.5, digits));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("digits", () => Math.Round(1.5, digits, MidpointRounding.ToEven));
+        }
+
         [Fact]
         public static void Sign_Decimal()
         {
@@ -2477,6 +2613,32 @@ namespace System.Tests
             Assert.Equal(double.NegativeInfinity, Math.Round(double.NegativeInfinity, 3, mode));
         }
 
+        public static IEnumerable<object[]> Round_Digits_Decimal_TestData
+        {
+            get
+            {
+                yield return new object[] {0m, 0m, 3, MidpointRounding.ToEven};
+                yield return new object[] {3.42156m, 3.422m, 3, MidpointRounding.ToEven};
+                yield return new object[] {-3.42156m, -3.422m, 3, MidpointRounding.ToEven};
+
+                yield return new object[] {0m, 0m, 3, MidpointRounding.AwayFromZero};
+                yield return new object[] {3.42156m, 3.422m, 3, MidpointRounding.AwayFromZero};
+                yield return new object[] {-3.42156m, -3.422m, 3, MidpointRounding.AwayFromZero};
+
+                yield return new object[] {0m, 0m, 3, MidpointRounding.ToZero};
+                yield return new object[] {3.42156m, 3.421m, 3, MidpointRounding.ToZero};
+                yield return new object[] {-3.42156m, -3.421m, 3, MidpointRounding.ToZero};
+
+                yield return new object[] {0m, 0m, 3, MidpointRounding.ToNegativeInfinity};
+                yield return new object[] {3.42156m, 3.421m, 3, MidpointRounding.ToNegativeInfinity};
+                yield return new object[] {-3.42156m, -3.422m, 3, MidpointRounding.ToNegativeInfinity};
+
+                yield return new object[] {0m, 0m, 3, MidpointRounding.ToPositiveInfinity};
+                yield return new object[] {3.42156m, 3.422m, 3, MidpointRounding.ToPositiveInfinity};
+                yield return new object[] {-3.42156m, -3.421m, 3, MidpointRounding.ToPositiveInfinity};
+              }
+        }
+
         [Theory]
         [MemberData(nameof(Round_Digits_TestData))]
         public static void Round_Double_Digits(double x, double expected, int digits, MidpointRounding mode)
@@ -2485,7 +2647,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Round_Digits_TestData))]
+        [MemberData(nameof(Round_Digits_Decimal_TestData))]
         public static void Round_Decimal_Digits(decimal x, decimal expected, int digits, MidpointRounding mode)
         {
             Assert.Equal(expected, Math.Round(x, digits, mode));

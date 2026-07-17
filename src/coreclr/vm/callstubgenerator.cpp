@@ -1734,7 +1734,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, MethodDe
     totalStackSize = ALIGN_UP(totalStackSize, CALL_STACK_ALIGN_SIZE);
 #endif // TARGET_ARM
 
-    xxHash hashState;
+    xxHash<xxHashDefaultTraits> hashState;
     for (int i = 0; i < m_routineIndex; i++)
     {
         hashState.AddPointer((void*)pRoutines[i]);

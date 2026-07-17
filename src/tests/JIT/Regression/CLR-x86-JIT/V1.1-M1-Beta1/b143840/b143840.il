@@ -9,6 +9,7 @@
 
 .assembly 'b143840' {}
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .class private auto ansi beforefieldinit ExternalClass
        extends [mscorlib]System.Object
 {

@@ -87,7 +87,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.RiscV64:
                     return ((RiscV64.Registers)regnum).ToString();
                 case WasmMachine.Wasm32:
-                    throw new NotImplementedException($"No implementation for machine type {machine}.");
+                    return $"NYI '{regnum}'"; // WASM-TODO Implement this correctly.
                 default:
                     throw new NotImplementedException($"No implementation for machine type {machine}.");
             }
@@ -245,12 +245,39 @@ namespace ILCompiler.Reflection.ReadyToRun
             NibbleReader reader = new NibbleReader(imageReader, offset);
             uint nativeVarCount = reader.ReadUInt();
 
+            int version = _runtimeFunction.ReadyToRunReader.ReadyToRunHeader.MajorVersion;
+            int implicitILAdjust = version switch
+            {
+                >= 22 => (int)ImplicitILArguments.MaxV22,
+                >= 20 => (int)ImplicitILArguments.MaxV20,
+                <  20 => (int)ImplicitILArguments.MaxV19,
+            };
+
             for (int i = 0; i < nativeVarCount; ++i)
             {
                 var entry = new NativeVarInfo();
-                entry.StartOffset = reader.ReadUInt();
-                entry.EndOffset = entry.StartOffset + reader.ReadUInt();
-                entry.VariableNumber = (uint)(reader.ReadUInt() + (int)ImplicitILArguments.Max);
+
+                if (version >= 22)
+                {
+                    entry.VariableNumber = (uint)(reader.ReadUInt() + implicitILAdjust);
+                    entry.StartOffset = reader.ReadUInt();
+
+                    if (entry.VariableNumber == unchecked((uint)ImplicitILArguments.CallReturnValue))
+                    {
+                        entry.CallReturnValueILOffset = reader.ReadUInt();
+                        entry.EndOffset = entry.StartOffset + 1;
+                    }
+                    else
+                    {
+                        entry.EndOffset = entry.StartOffset + reader.ReadUInt();
+                    }
+                }
+                else
+                {
+                    entry.StartOffset = reader.ReadUInt();
+                    entry.EndOffset = entry.StartOffset + reader.ReadUInt();
+                    entry.VariableNumber = (uint)(reader.ReadUInt() + implicitILAdjust);
+                }
                 entry.Variable = new Variable();
                 // TODO: This is probably incomplete
                 // This does not handle any implicit arguments or var args

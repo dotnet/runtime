@@ -95,6 +95,9 @@
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DehydratedData.cs">
       <Link>Internal\Runtime\DehydratedData.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DispatchCell.cs">
+      <Link>Internal\Runtime\DispatchCell.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>
     </Compile>
@@ -213,6 +216,7 @@
       <Link>Common\System\Runtime\InteropServices\IDynamicInterfaceCastable.cs</Link>
     </Compile>
     <Compile Include="..\..\System.Private.CoreLib\src\System\Runtime\CompilerServices\AnalysisCharacteristicAttribute.cs" />
+    <Compile Include="Internal\Runtime\Dispatch.cs" />
     <Compile Include="Internal\Runtime\MethodTable.Runtime.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastCache.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />

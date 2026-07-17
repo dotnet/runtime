@@ -26,8 +26,6 @@
 #include <sanitizer/asan_interface.h>
 #endif
 
-#if !defined(_LIBUNWIND_NATIVEAOT)
-
 #if !defined(__USING_SJLJ_EXCEPTIONS__) && !defined(__wasm__)
 #include "AddressSpace.hpp"
 #include "UnwindCursor.hpp"
@@ -548,8 +546,6 @@ int __unw_remove_find_dynamic_unwind_sections(
 }
 
 #endif // __APPLE__
-
-#endif // !defined(_LIBUNWIND_NATIVEAOT)
 
 // Add logging hooks in Debug builds only
 #ifndef NDEBUG

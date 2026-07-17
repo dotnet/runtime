@@ -15,6 +15,7 @@ using Internal.TypeSystem.Ecma;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using System.Runtime.CompilerServices;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -29,7 +30,6 @@ namespace Internal.JitInterface
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
 
-        private uint OffsetOfDelegateFirstTarget => (uint)(4 * PointerSize); // Delegate._functionPointer
         private int SizeOfReversePInvokeTransitionFrame => 2 * PointerSize;
 
         private RyuJitCompilation _compilation;
@@ -101,7 +101,8 @@ namespace Internal.JitInterface
             CFI_ADJUST_CFA_OFFSET,    // Offset is adjusted relative to the current one.
             CFI_DEF_CFA_REGISTER,     // New register is used to compute CFA
             CFI_REL_OFFSET,           // Register is saved at offset from the current CFA
-            CFI_DEF_CFA               // Take address from register and add offset to it.
+            CFI_DEF_CFA,              // Take address from register and add offset to it.
+            CFI_NEGATE_RA_STATE,      // Sign the return address in lr with the platform PAC key
         }
 
         // Get the CFI data in the same shape as clang/LLVM generated one. This improves the compatibility with libunwind and other unwind solutions
@@ -132,6 +133,7 @@ namespace Internal.JitInterface
             }
 
             int offset = 0;
+            bool shouldAddPacOpCode = false;
             while (offset < blobData.Length)
             {
                 codeOffset = Math.Max(codeOffset, blobData[offset++]);
@@ -185,6 +187,15 @@ namespace Internal.JitInterface
                             }
                         }
                         break;
+
+                    case CFI_OPCODE.CFI_NEGATE_RA_STATE:
+                        Debug.Assert(cfaRegister == spReg);
+                        Debug.Assert(cfaOffset == 0);
+                        // TODO-PAC: Support prologs that adjust SP before signing LR.
+                        // Currently we require PAC to be emitted before any stack adjustment.
+                        Debug.Assert(spOffset == 0);
+                        shouldAddPacOpCode = true;
+                        break;
                 }
             }
 
@@ -194,6 +205,14 @@ namespace Internal.JitInterface
 
                 using (BinaryWriter cfiWriter = new BinaryWriter(cfiStream))
                 {
+                    if (shouldAddPacOpCode)
+                    {
+                        cfiWriter.Write((byte)codeOffset);
+                        cfiWriter.Write((byte)CFI_OPCODE.CFI_NEGATE_RA_STATE);
+                        cfiWriter.Write((short)-1);
+                        cfiWriter.Write(0);
+                    }
+
                     if (cfaRegister != -1)
                     {
                         cfiWriter.Write((byte)codeOffset);
@@ -253,6 +272,11 @@ namespace Internal.JitInterface
 
         private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle, ref CORINFO_LOOKUP lookup)
         {
+            ComputeLookup(pResolvedToken.tokenContext != contextFromMethodBeingCompiled(), entity, helperId, callerHandle, ref lookup);
+        }
+
+        private void ComputeLookup(bool isInlining, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle, ref CORINFO_LOOKUP lookup)
+        {
             Debug.Assert(callerHandle != null);
 
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
@@ -270,7 +294,7 @@ namespace Internal.JitInterface
                     // currently do it for an inline. This is not a big issue because ReadyToRun helpers
                     // in optimized code only happen in special build configurations (such as
                     // `-O --noscan` or multimodule build).
-                    if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
+                    if (isInlining)
                     {
                         lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
                         return;
@@ -770,7 +794,9 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GVMLookupForSlot;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT:
-                    if ((_compilation._compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
+                    if ((_compilation._compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0
+                        // Not implemented on x86: https://github.com/dotnet/runtime/issues/99516
+                        && _compilation.NodeFactory.TypeSystemContext.Target.Architecture != TargetArchitecture.X86)
                         return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatchGuarded"u8));
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatch"u8));
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
@@ -826,37 +852,6 @@ namespace Internal.JitInterface
             }
 
             pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(method));
-        }
-
-        private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
-        {
-            // Assume we can tail call unless proved otherwise
-            bool result = true;
-
-            if (!fIsTailPrefix)
-            {
-                MethodDesc caller = HandleToObject(callerHnd);
-
-                if (caller.OwningType is EcmaType ecmaOwningType
-                    && ecmaOwningType.Module.EntryPoint == caller)
-                {
-                    // Do not tailcall from the application entrypoint.
-                    // We want Main to be visible in stack traces.
-                    result = false;
-                }
-
-                if (caller.IsNoInlining)
-                {
-                    // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
-                    // to mean "I want to always see this method in stacktrace")
-                    //
-                    // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
-                    // to emit fast tail calls if optimizations are disabled.
-                    result = false;
-                }
-            }
-
-            return result;
         }
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
@@ -1259,7 +1254,7 @@ namespace Internal.JitInterface
                     // null since the virtual method resolves to System.Enum's implementation and that's a reference type.
                     // We can't do this for any other method since ToString and Equals have different semantics for enums
                     // and their underlying type.
-                    if (method.OwningType.IsObject && method.Name.SequenceEqual("GetHashCode"u8))
+                    if (method.OwningType.IsObject && method.Name == "GetHashCode"u8)
                     {
                         constrainedType = constrainedType.UnderlyingType;
                     }
@@ -1600,11 +1595,29 @@ namespace Internal.JitInterface
                     ((MethodILScope)HandleToObject((void*)pResolvedToken.tokenScope)).OwningMethod,
                     targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
-                ComputeLookup(ref pResolvedToken,
-                    targetOfLookup,
-                    ReadyToRunHelperId.MethodHandle,
-                    HandleToObject(callerHandle),
-                    ref pResult->codePointerOrStubLookup);
+
+                if (pResult->exactContextNeedsRuntimeLookup)
+                {
+                    ComputeLookup(ref pResolvedToken,
+                        targetOfLookup,
+                        ReadyToRunHelperId.DispatchCell,
+                        HandleToObject(callerHandle),
+                        ref pResult->codePointerOrStubLookup);
+                    Debug.Assert(pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
+                }
+                else
+                {
+                    pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
+                    pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+#pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
+                    pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                        _compilation.NodeFactory.DispatchCell(targetOfLookup
+#if !SUPPORT_JIT
+                        , _methodCodeNode
+#endif
+                        ));
+#pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly
+                }
 
                 // RyuJIT will assert if we report CORINFO_CALLCONV_PARAMTYPE for a result of a ldvirtftn
                 // We don't need an instantiation parameter, so let's just not report it. Might be nice to
@@ -1620,7 +1633,7 @@ namespace Internal.JitInterface
                 {
                     ComputeLookup(ref pResolvedToken,
                         GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
-                        ReadyToRunHelperId.VirtualDispatchCell,
+                        ReadyToRunHelperId.DispatchCell,
                         HandleToObject(callerHandle),
                         ref pResult->codePointerOrStubLookup);
                     Debug.Assert(pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
@@ -1631,7 +1644,7 @@ namespace Internal.JitInterface
                     pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
 #pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
                     pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
+                        _compilation.NodeFactory.DispatchCell(targetMethod
 #if !SUPPORT_JIT
                         , _methodCodeNode
 #endif
@@ -1699,8 +1712,6 @@ namespace Internal.JitInterface
             {
                 pResult->sig.flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
             }
-
-            pResult->_wrapperDelegateInvoke = 0;
         }
 
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)

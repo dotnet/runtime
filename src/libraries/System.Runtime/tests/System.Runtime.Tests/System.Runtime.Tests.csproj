@@ -63,6 +63,7 @@
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs" Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="Helpers.cs" />
+    <Compile Include="TestEquivalentTypes\System.TestEquivalentTypes.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="System\AccessViolationExceptionTests.cs" />
@@ -82,6 +83,10 @@
     <Compile Include="System\Attributes.cs" />
     <Compile Include="System\AttributeUsageAttributeTests.cs" />
     <Compile Include="System\BadImageFormatExceptionTests.cs" />
+    <Compile Include="System\Decimal128Tests.cs" />
+    <Compile Include="System\Decimal32Tests.cs" />
+    <Compile Include="System\Decimal64Tests.cs" />
+    <Compile Include="System\DecimalIeee754IntelTestData.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\ExperimentalAttributeTests.cs" />
     <Compile Include="System\NumberFormatTestHelper.cs" />
     <Compile Include="System\StringTests.GenericMath.cs" />
@@ -371,6 +376,7 @@
     <ProjectReference Include="$(CommonPath)..\tests\System\TestILAssembly\TestILAssembly.ilproj" Link="Common\System\TestILAssembly\TestILAssembly.ilproj" />
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
+    <ProjectReference Include="TestEquivalentTypes\System.TestEquivalentTypes.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
     <ProjectReference Include="TestStructs\System.TestStructs.ilproj" />
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />

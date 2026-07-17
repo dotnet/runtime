@@ -87,7 +87,7 @@ class DiagnosticSession extends DiagnosticConnectionBase implements IDiagnosticC
 
     // this is message from the diagnostic server, which is dotnet VM in this browser
     send(message: Uint8Array): number {
-        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer();
+        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer(0);
         if (this.isAdvertMessage(message)) {
             // eslint-disable-next-line @typescript-eslint/no-this-alias
             serverSession = this;
@@ -119,7 +119,7 @@ class DiagnosticSession extends DiagnosticConnectionBase implements IDiagnosticC
     // this is message to the diagnostic server, which is dotnet VM in this browser
     respond(message: Uint8Array): void {
         this.messagesReceived.push(message);
-        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer();
+        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer(0);
     }
 
     close(): number {
