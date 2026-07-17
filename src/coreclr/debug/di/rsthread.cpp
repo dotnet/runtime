@@ -8376,7 +8376,7 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
                     break;
                 case IDacDbiInterface::kArchAMD64:
                     hr = m_nativeFrame->GetLocalFloatingPointValue(
-                        pNativeVarInfo->loc.vlReg.vlrReg - ICorDebugInfo::REGNUM_FP_FIRST,
+                        ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlReg.vlrReg) - REGISTER_AMD64_XMM0,
                         type,
                         ppValue);
                     break;
