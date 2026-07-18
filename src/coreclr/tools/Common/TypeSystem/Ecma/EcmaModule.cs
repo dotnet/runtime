@@ -573,7 +573,7 @@ namespace Internal.TypeSystem.Ecma
 
             EcmaSignatureParser parser = new EcmaSignatureParser(this, signatureReader, NotFoundBehavior.ReturnResolutionFailure);
 
-            TypeDesc parsedType = parser.ParseTypeSpec();
+            TypeDesc parsedType = parser.ParseTypeSpec(handle);
             if (parsedType == null)
                 return parser.ResolutionFailure;
             else

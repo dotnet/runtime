@@ -225,16 +225,12 @@ namespace ILVerify
             }
             catch (VerifierException e)
             {
-                reportException(e);
-            }
-            catch (BadTypeSpecException)
-            {
                 builder.Add(new VerificationResult()
                 {
-                    Code = VerifierError.BadTypeSpec,
+                    Code = e.Code,
                     Method = methodHandle,
                     ErrorArguments = Array.Empty<ErrorArgument>(),
-                    Message = _stringResourceManager.Value.GetString(nameof(VerifierError.BadTypeSpec), CultureInfo.InvariantCulture)
+                    Message = e.Message
                 });
             }
             catch (TypeSystemException e)
@@ -306,16 +302,13 @@ namespace ILVerify
             }
             catch (VerifierException e)
             {
-                reportException(e);
-            }
-            catch (BadTypeSpecException)
-            {
                 builder.Add(new VerificationResult()
                 {
-                    Code = VerifierError.BadTypeSpec,
+                    Code = e.Code,
                     Type = typeHandle,
                     ErrorArguments = Array.Empty<ErrorArgument>(),
-                    Message = $"[MD]: Error: {_stringResourceManager.Value.GetString(nameof(VerifierError.BadTypeSpec), CultureInfo.InvariantCulture)}"
+                    // Type verification results are printed directly, so metadata errors include the prefix in the message.
+                    Message = e.Code == VerifierError.None ? e.Message : $"[MD]: Error: {e.Message}"
                 });
             }
             catch (TypeSystemException e)
