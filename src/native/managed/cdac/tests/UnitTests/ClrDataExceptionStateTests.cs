@@ -132,7 +132,7 @@ public unsafe class ExceptionStateTests
     private static IXCLRDataExceptionState CreateExceptionStateWithRecord(
         MockTarget.Architecture arch,
         ulong exceptionAddress,
-        bool hasExceptionInfo = false)
+        bool hasPreviousExceptionInfo = false)
     {
         TargetTestHelpers helpers = new(arch);
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
@@ -143,17 +143,17 @@ public unsafe class ExceptionStateTests
             exceptionRecord.Data.AsSpan(sizeof(uint) * 2 + helpers.PointerSize, helpers.PointerSize),
             exceptionAddress);
 
-        TargetPointer exceptionInfoAddress = TargetPointer.Null;
-        if (hasExceptionInfo)
+        TargetPointer previousExInfoAddress = TargetPointer.Null;
+        if (hasPreviousExceptionInfo)
         {
             MockMemorySpace.HeapFragment exceptionInfo =
                 allocator.Allocate((ulong)helpers.PointerSize, "ExceptionInfo");
             helpers.WritePointer(exceptionInfo.Data, exceptionRecord.Address);
-            exceptionInfoAddress = new TargetPointer(exceptionInfo.Address);
+            previousExInfoAddress = new TargetPointer(exceptionInfo.Address);
             var mockException = new Mock<IException>();
             SetupGetNestedExceptionInfo(
                 mockException,
-                exceptionInfoAddress,
+                previousExInfoAddress,
                 nextNestedException: TargetPointer.Null,
                 thrownObjectHandle: TargetPointer.Null);
             targetBuilder.AddMockContract(mockException);
@@ -193,7 +193,7 @@ public unsafe class ExceptionStateTests
             DebuggerFilterContext: TargetPointer.Null,
             GCFrame: TargetPointer.Null,
             IsExceptionInProgress: true,
-            OSExceptionRecord: hasExceptionInfo ? TargetPointer.Null : new TargetPointer(exceptionRecord.Address),
+            OSExceptionRecord: hasPreviousExceptionInfo ? TargetPointer.Null : new TargetPointer(exceptionRecord.Address),
             OSExceptionContextRecord: TargetPointer.Null));
 
         TestPlaceholderTarget target = targetBuilder
@@ -205,7 +205,7 @@ public unsafe class ExceptionStateTests
             (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
             exceptionInfoAddress: TargetPointer.Null,
             thrownObjectHandle: TargetPointer.Null,
-            previousExInfoAddress: exceptionInfoAddress,
+            previousExInfoAddress: previousExInfoAddress,
             legacyImpl: null);
     }
 
@@ -410,7 +410,7 @@ public unsafe class ExceptionStateTests
     public void IsSameState2_MatchingNestedAddress(MockTarget.Architecture arch)
     {
         const ulong exceptionAddress = 0x1234_5678;
-        IXCLRDataExceptionState exceptionState = CreateExceptionStateWithRecord(arch, exceptionAddress, hasExceptionInfo: true);
+        IXCLRDataExceptionState exceptionState = CreateExceptionStateWithRecord(arch, exceptionAddress, hasPreviousExceptionInfo: true);
         DacComNullableByRef<IXCLRDataExceptionState> previous = new(isNullRef: false);
         Assert.Equal(HResults.S_OK, exceptionState.GetPrevious(previous));
         Assert.NotNull(previous.Interface);

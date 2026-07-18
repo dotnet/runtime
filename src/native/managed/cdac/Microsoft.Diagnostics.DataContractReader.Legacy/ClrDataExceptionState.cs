@@ -91,13 +91,13 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
                     out TargetPointer nextNestedException,
                     out TargetPointer prevExThrownObjectHandle);
                 exState.Interface = new ClrDataExceptionState(
-                    _target,
-                    _threadAddress,
-                    (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
-                    _previousExInfoAddress,
-                    prevExThrownObjectHandle,
-                    nextNestedException,
-                    legacyPrevious
+                    target: _target,
+                    threadAddress: _threadAddress,
+                    flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+                    exceptionInfoAddress: _previousExInfoAddress,
+                    thrownObjectHandle: prevExThrownObjectHandle,
+                    previousExInfoAddress: nextNestedException,
+                    legacyImpl: legacyPrevious
                 );
             }
         }
