@@ -150,7 +150,7 @@ internal static partial class Number
         {
             // Reduced argument is (y-x)/(y+x).
             index += InvTrigAtanMapWidth;
-            Span<DiyFp128> tmp = stackalloc DiyFp128[2];
+            Span<DiyFp128> tmp = [default, default];
             DiyFp128AddSub(y, auxX, UxAddSub | UxMagnitudeOnly | UxNoNormalization, tmp);
             y = tmp[1];
             x = tmp[0];
@@ -173,7 +173,7 @@ internal static partial class Number
         }
 
         reduced._exponent += 1; // P_SCALE(1)
-        Span<DiyFp128> result = stackalloc DiyFp128[2];
+        Span<DiyFp128> result = [default, default];
         int flags = (TrigSquareTerm | TrigPostMultiply) | (TrigSquareTerm << TrigNumeratorFieldWidth);
         DiyFp128EvaluateRational(reduced, InvTrigAtanNumeratorCoefficients, 0, InvTrigAtanDenominatorCoefficients, 1, InvTrigAtanDegree, flags, result);
         DiyFp128 value = result[0];
@@ -189,9 +189,9 @@ internal static partial class Number
                      + ((long)48 << (5 * InvTrigAtanMapWidth));
             int constantOffset = (int)((map >> index) & (0xFL << 3));
             DiyFp128Normalize(ref value);
-            Span<DiyFp128> sum = stackalloc DiyFp128[1];
-            DiyFp128AddSub(InvTrigConstants[constantOffset / 24], value, UxAdd | UxNoNormalization, sum);
-            value = sum[0];
+            DiyFp128 sum = default;
+            DiyFp128AddSub(InvTrigConstants[constantOffset / 24], value, UxAdd | UxNoNormalization, new Span<DiyFp128>(ref sum));
+            value = sum;
         }
 
         value._sign = signY;
@@ -217,9 +217,9 @@ internal static partial class Number
             {
                 // 1/2 <= |x| < 1: compute sqrt((1-x)/2).
                 exponentIncrement = 1;
-                Span<DiyFp128> t = stackalloc DiyFp128[1];
-                DiyFp128AddSub(new DiyFp128(0, 1, UxMsb, 0), arg, UxSub | UxMagnitudeOnly, t);
-                arg = t[0];
+                DiyFp128 t = default;
+                DiyFp128AddSub(new DiyFp128(0, 1, UxMsb, 0), arg, UxSub | UxMagnitudeOnly, new Span<DiyFp128>(ref t));
+                arg = t;
                 arg._exponent -= 1;
                 arg = DiyFp128Sqrt(arg);
             }
@@ -231,7 +231,7 @@ internal static partial class Number
         }
 
         arg._exponent += 1; // P_SCALE(1)
-        Span<DiyFp128> result = stackalloc DiyFp128[2];
+        Span<DiyFp128> result = [default, default];
         int flags = (TrigSquareTerm | TrigPostMultiply | TrigAlternateSign)
                   | ((TrigSquareTerm | TrigAlternateSign) << TrigNumeratorFieldWidth);
         DiyFp128EvaluateRational(arg, InvTrigAsinNumeratorCoefficients, 0, InvTrigAsinDenominatorCoefficients, 1, InvTrigAsinDegree, flags, result);
@@ -241,9 +241,9 @@ internal static partial class Number
         value._sign = ((mapInfo & 8) != 0) ? UxSignBit : 0;
         value._exponent += exponentIncrement;
 
-        Span<DiyFp128> sum = stackalloc DiyFp128[1];
-        DiyFp128AddSub(InvTrigConstants[(mapInfo & 0xf0) / 24], value, UxAdd | UxNoNormalization, sum);
-        value = sum[0];
+        DiyFp128 sum = default;
+        DiyFp128AddSub(InvTrigConstants[(mapInfo & 0xf0) / 24], value, UxAdd | UxNoNormalization, new Span<DiyFp128>(ref sum));
+        value = sum;
 
         value._sign = ((mapInfo & 4) != 0) ? UxSignBit : 0;
         return value;

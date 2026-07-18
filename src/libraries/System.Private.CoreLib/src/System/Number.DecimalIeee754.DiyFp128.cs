@@ -505,8 +505,8 @@ internal static partial class Number
     /// </summary>
     private static DiyFp128 Float128UnpackFinite(UInt128 packed)
     {
-        ulong word0 = (ulong)(packed >> 64);
-        ulong word1 = (ulong)packed;
+        ulong word0 = packed.Upper;
+        ulong word1 = packed.Lower;
 
         uint sign = (uint)((word0 & UxMsb) >> 32);
         int biasedExponent = (int)((word0 >> Float128ExponentPos) & ((1UL << Float128ExponentWidth) - 1));
@@ -547,7 +547,7 @@ internal static partial class Number
         if (exponent == UxZeroExponent)
         {
             // Encoded +/-0.
-            return (UInt128)((ulong)value._sign << 32) << 64;
+            return new UInt128((ulong)value._sign << 32, 0);
         }
 
         int shift = (Float128MinBinaryExponent + 1) - exponent;
@@ -556,9 +556,9 @@ internal static partial class Number
             // Subnormal: add the rounding boundary as a same-signed value so the shared rounding logic
             // below produces the correctly rounded denormal, then recover the biased exponent.
             var half = new DiyFp128(value._sign, exponent + shift, UxMsb, 0);
-            Span<DiyFp128> rounded = stackalloc DiyFp128[1];
-            DiyFp128AddSub(half, value, UxAdd, rounded);
-            value = rounded[0];
+            DiyFp128 rounded = default;
+            DiyFp128AddSub(half, value, UxAdd, new Span<DiyFp128>(ref rounded));
+            value = rounded;
 
             exponent = 1 - Float128ExponentBias;
             if ((shift > Float128Precision) && (shift != -(UxZeroExponent - Float128MinBinaryExponent - 1)))
@@ -592,6 +592,6 @@ internal static partial class Number
         currentDigit += biasedExponent << (UxCShift - 1);
         currentDigit |= (ulong)value._sign << 32;
 
-        return ((UInt128)currentDigit << 64) | lowWord;
+        return new UInt128(currentDigit, lowWord);
     }
 }

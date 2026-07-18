@@ -117,16 +117,16 @@ internal static partial class Number
 
         arg._exponent -= (int)m; // g in [1/sqrt2, sqrt2)
 
-        Span<DiyFp128> tmp = stackalloc DiyFp128[2];
+        Span<DiyFp128> tmp = [default, default];
         DiyFp128AddSub(arg, DiyFp128One, UxAddSub | UxMagnitudeOnly, tmp); // tmp[0] = g + 1, tmp[1] = g - 1
 
         DiyFp128Divide(tmp[1], tmp[0], DiyFp128FullPrecision, out DiyFp128 z);
         DiyFp128EvaluateLogPolynomial(z, Log2Coefficients, Log2Degree, Log2TrailingExponent, out DiyFp128 poly);
 
         DiyFp128 result = DiyFp128FromWord(m);
-        Span<DiyFp128> sum = stackalloc DiyFp128[1];
-        DiyFp128AddSub(result, poly, UxAdd | UxNoNormalization, sum);
-        result = sum[0];
+        DiyFp128 sum = default;
+        DiyFp128AddSub(result, poly, UxAdd | UxNoNormalization, new Span<DiyFp128>(ref sum));
+        result = sum;
 
         if (scaleValid)
         {
@@ -185,9 +185,9 @@ internal static partial class Number
 
         if (small)
         {
-            Span<DiyFp128> t = stackalloc DiyFp128[1];
-            DiyFp128AddSub(LogTwo, arg, UxAdd, t);
-            DiyFp128Divide(arg, t[0], DiyFp128FullPrecision, out DiyFp128 reduced);
+            DiyFp128 t = default;
+            DiyFp128AddSub(LogTwo, arg, UxAdd, new Span<DiyFp128>(ref t));
+            DiyFp128Divide(arg, t, DiyFp128FullPrecision, out DiyFp128 reduced);
             DiyFp128EvaluateLogPolynomial(reduced, Log2Coefficients, Log2Degree, Log2TrailingExponent, out DiyFp128 result);
 
             if (scaleValid)
@@ -200,9 +200,9 @@ internal static partial class Number
         }
         else
         {
-            Span<DiyFp128> t = stackalloc DiyFp128[1];
-            DiyFp128AddSub(DiyFp128One, arg, UxAdd, t);
-            return DiyFp128Log(t[0], scaleValid, scale);
+            DiyFp128 t = default;
+            DiyFp128AddSub(DiyFp128One, arg, UxAdd, new Span<DiyFp128>(ref t));
+            return DiyFp128Log(t, scaleValid, scale);
         }
     }
 

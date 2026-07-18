@@ -35,7 +35,7 @@ internal static partial class Number
 
         // value = fraction * 2^(exponent - 128); with fraction = coefficient << leadingZeros this is
         // exactly coefficient, so exponent = 128 - leadingZeros.
-        return new DiyFp128(sign, 128 - leadingZeros, (ulong)(fraction >> 64), (ulong)fraction);
+        return new DiyFp128(sign, 128 - leadingZeros, fraction.Upper, fraction.Lower);
     }
 
     /// <summary>
@@ -110,10 +110,12 @@ internal static partial class Number
         // value in [2^(exp-1), 2^exp), so floor(log10(value)) is floor((exp-1)*log10(2)) or one greater.
         // Target q = d - (P-1) puts value/10^q in [10^(P-1), 10^P); the loop corrects the +/-1 estimate.
         int binaryExponent = value._exponent - 1;
-        int d = (int)double.Floor(binaryExponent * 0.30102999566398119521);
+        const double Log10Of2 = 0.30102999566398119521;
+        int d = (int)double.Floor(binaryExponent * Log10Of2);
         int q = d - (precision - 1);
 
-        UInt128 pow10P = UInt128.CreateTruncating(TDecimal.MaxSignificand) + UInt128.One; // 10^P
+        UInt128 pow10P = UInt128.CreateTruncating(TDecimal.MaxSignificand);
+        pow10P++;                                                                         // 10^P
         UInt128 pow10Pm1 = UInt128.CreateTruncating(TDecimal.Power10(precision - 1));     // 10^(P-1)
 
         UInt128 coefficient;
@@ -153,12 +155,12 @@ internal static partial class Number
         int shift = 128 - value._exponent;
         Debug.Assert(shift is > 0 and < 128);
 
-        UInt128 fraction = ((UInt128)value._hi << 64) | value._lo;
+        UInt128 fraction = new UInt128(value._hi, value._lo);
         UInt128 integer = fraction >> shift;
         UInt128 remainder = fraction & ((UInt128.One << shift) - UInt128.One);
         UInt128 half = UInt128.One << (shift - 1);
 
-        if ((remainder > half) || ((remainder == half) && ((integer & UInt128.One) != UInt128.Zero)))
+        if ((remainder > half) || ((remainder == half) && UInt128.IsOddInteger(integer)))
         {
             integer++;
         }
@@ -190,17 +192,18 @@ internal static partial class Number
             // Fold the extra magnitude into the coefficient as a subnormal, rounding ties-to-even.
             int deficit = TDecimal.MinAdjustedExponent - exponent;
 
-            if (deficit > 39)
+            if (deficit >= UInt128.PowersOf10.Length)
             {
+                // The coefficient has at most 34 digits, so a larger divisor rounds it entirely to zero.
                 return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, TValue.Zero, TDecimal.MinAdjustedExponent);
             }
 
-            UInt128 power = Pow10ToUInt128(deficit);
+            UInt128 power = UInt128.PowersOf10[deficit];
             UInt128 quotient = coefficient / power;
             UInt128 remainder = coefficient - (quotient * power);
             UInt128 half = power >> 1; // 10^deficit is even, so this is an exact half
 
-            if ((remainder > half) || ((remainder == half) && ((quotient & UInt128.One) != UInt128.Zero)))
+            if ((remainder > half) || ((remainder == half) && UInt128.IsOddInteger(quotient)))
             {
                 quotient++;
             }
@@ -215,22 +218,5 @@ internal static partial class Number
         }
 
         return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, TValue.CreateTruncating(coefficient), exponent);
-    }
-
-    /// <summary>
-    /// Computes <c>10^<paramref name="exponent"/></c> as a <see cref="UInt128"/> for a small exponent
-    /// (used only on the rare subnormal-folding path).
-    /// </summary>
-    private static UInt128 Pow10ToUInt128(int exponent)
-    {
-        UInt128 result = UInt128.One;
-        UInt128 ten = new UInt128(0, 10);
-
-        for (int i = 0; i < exponent; i++)
-        {
-            result *= ten;
-        }
-
-        return result;
     }
 }

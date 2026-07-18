@@ -134,9 +134,9 @@ internal static partial class Number
     /// </summary>
     private static DiyFp128 DiyFp128Pow(DiyFp128 x, DiyFp128 y)
     {
-        Span<DiyFp128> tmp = stackalloc DiyFp128[3];
-        Span<DiyFp128> single = stackalloc DiyFp128[1];
-        Span<DiyFp128> pair = stackalloc DiyFp128[2];
+        Span<DiyFp128> tmp = [default, default, default];
+        DiyFp128 single = default;
+        Span<DiyFp128> pair = [default, default];
 
         // Put x = 2^n * g with 1/sqrt(2) <= g < sqrt(2); the local exponent holds n.
         long exponent = x._exponent;
@@ -210,16 +210,16 @@ internal static partial class Number
             tmp[0] = extendedHigh;
             tmp[2] = extendedLow;
 
-            DiyFp128AddSub(tmp[1], tmp[0], UxSub, single); tmp[0] = single[0];
-            DiyFp128AddSub(tmp[0], tmp[2], UxSub, single); tmp[0] = single[0];
+            DiyFp128AddSub(tmp[1], tmp[0], UxSub, new Span<DiyFp128>(ref single)); tmp[0] = single;
+            DiyFp128AddSub(tmp[0], tmp[2], UxSub, new Span<DiyFp128>(ref single)); tmp[0] = single;
             DiyFp128Multiply(ref tmp[0], ref r, out tmp[0]);
 
             DiyFp128 ln2LoOverLn2 = PowLn2LoOverLn2;
             DiyFp128Multiply(ref z, ref ln2LoOverLn2, out tmp[1]);
-            DiyFp128AddSub(tmp[0], tmp[1], UxSub, single); z = single[0];
+            DiyFp128AddSub(tmp[0], tmp[1], UxSub, new Span<DiyFp128>(ref single)); z = single;
         }
 
-        DiyFp128AddSub(z, log2Lo, UxAdd, single); log2Lo = single[0];
+        DiyFp128AddSub(z, log2Lo, UxAdd, new Span<DiyFp128>(ref single)); log2Lo = single;
 
         // When x is very close to 1, promote high bits of log2_lo into log2Hi.
         ulong increment = log2Lo._hi;
@@ -276,13 +276,13 @@ internal static partial class Number
             }
 
             tmp[1] = new DiyFp128(sign, (int)exponent, integerPart, 0);
-            DiyFp128AddSub(h, tmp[1], UxSub, single); h = single[0];
-            DiyFp128AddSub(h, tmp[0], UxAdd, single); h = single[0];
+            DiyFp128AddSub(h, tmp[1], UxSub, new Span<DiyFp128>(ref single)); h = single;
+            DiyFp128AddSub(h, tmp[0], UxAdd, new Span<DiyFp128>(ref single)); h = single;
         }
 
         DiyFp128 logLoMultiply = y;
         DiyFp128Multiply(ref logLoMultiply, ref log2Lo, out tmp[0]);
-        DiyFp128AddSub(tmp[0], h, UxAdd, single); h = single[0];
+        DiyFp128AddSub(tmp[0], h, UxAdd, new Span<DiyFp128>(ref single)); h = single;
 
         DiyFp128EvaluatePow2Polynomial(h, out DiyFp128 result);
 

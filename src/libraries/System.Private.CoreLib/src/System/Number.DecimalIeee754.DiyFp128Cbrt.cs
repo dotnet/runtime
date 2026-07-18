@@ -19,10 +19,6 @@ internal static partial class Number
     // 2^(i/3) factor for the residual exponent), then a single binary128 Newton iteration lifts the
     // result to the full ~34-digit accuracy Decimal64/Decimal128 require.
 
-    private const int CbrtDoubleExponentBias = 1023;
-    private const int CbrtDoubleExponentPosition = 52;
-    private const int CbrtDoubleExponentWidth = 11;
-
     // RECIP_CBRT_POLY coefficients (dpml_cbrt_x.h), Horner form over [1, 2).
     private static ReadOnlySpan<double> CbrtCoefficients =>
     [
@@ -50,7 +46,7 @@ internal static partial class Number
     {
         // f is the ux mantissa reinterpreted as a double in [1, 2).
         ulong msd = arg._hi;
-        double f = BitConverter.UInt64BitsToDouble((((ulong)(CbrtDoubleExponentBias - 1)) << CbrtDoubleExponentPosition) + (msd >> CbrtDoubleExponentWidth));
+        double f = BitConverter.UInt64BitsToDouble((((ulong)(double.ExponentBias - 1)) << double.BiasedExponentShift) + (msd >> (64 - double.SignificandLength)));
 
         ReadOnlySpan<double> c = CbrtCoefficients;
         double z = c[0] + (f * (c[1] + (f * (c[2] + (f * (c[3] + (f * (c[4] + (f * c[5])))))))));
@@ -71,8 +67,8 @@ internal static partial class Number
         ulong yBits = BitConverter.DoubleToUInt64Bits(y);
         DiyFp128 result = default;
         result._sign = arg._sign;
-        result._exponent = (int)(yBits >> CbrtDoubleExponentPosition) + m - (CbrtDoubleExponentBias - 1);
-        result._hi = (yBits << CbrtDoubleExponentWidth) | UxMsb;
+        result._exponent = (int)(yBits >> double.BiasedExponentShift) + m - (double.ExponentBias - 1);
+        result._hi = (yBits << (64 - double.SignificandLength)) | UxMsb;
         result._lo = 0;
 
         // One binary128 Newton iteration: result <- (result / 2) * (result^3 + 2x) / (result^3 + x/2).
@@ -81,7 +77,7 @@ internal static partial class Number
         DiyFp128Multiply(ref r, ref cube, out cube);
 
         DiyFp128 term = arg;
-        Span<DiyFp128> sums = stackalloc DiyFp128[2];
+        Span<DiyFp128> sums = [default, default];
         term._exponent += 1; // 2*x
         DiyFp128AddSub(cube, term, UxAdd, sums.Slice(0, 1));
         term._exponent -= 2; // x/2

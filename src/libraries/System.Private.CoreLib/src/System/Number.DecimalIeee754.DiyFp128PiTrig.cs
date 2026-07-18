@@ -92,11 +92,14 @@ internal static partial class Number
             return default;
         }
 
-        UInt128 significand = ((UInt128)value._hi << 64) | value._lo;
+        UInt128 significand = new UInt128(value._hi, value._lo);
         int shift = 128 - exponent;
-        UInt128 integer = significand >> shift;
         UInt128 fractionBits = significand & ((UInt128.One << shift) - UInt128.One);
-        oddInteger = (integer & UInt128.One) != UInt128.Zero;
+
+        // The integer part's low bit is bit `shift` of the significand; read it from the half that
+        // holds it rather than materializing the full 128-bit shifted integer for one bit.
+        oddInteger = (shift < 64) ? (((value._lo >> shift) & 1) != 0)
+                                  : (((value._hi >> (shift - 64)) & 1) != 0);
 
         if (fractionBits == UInt128.Zero)
         {
@@ -105,7 +108,7 @@ internal static partial class Number
         }
 
         isInteger = false;
-        DiyFp128 result = new DiyFp128(0, exponent, (ulong)(fractionBits >> 64), (ulong)fractionBits);
+        DiyFp128 result = new DiyFp128(0, exponent, fractionBits.Upper, fractionBits.Lower);
         DiyFp128Normalize(ref result);
         return result;
     }
@@ -124,9 +127,9 @@ internal static partial class Number
 
     private static DiyFp128 DiyFp128Difference(in DiyFp128 a, in DiyFp128 b)
     {
-        Span<DiyFp128> result = stackalloc DiyFp128[1];
-        DiyFp128AddSub(a, b, UxSub, result);
-        return result[0];
+        DiyFp128 result = default;
+        DiyFp128AddSub(a, b, UxSub, new Span<DiyFp128>(ref result));
+        return result;
     }
 
     private static DiyFp128 DiyFp128WithSignFlipped(DiyFp128 value, uint sign)

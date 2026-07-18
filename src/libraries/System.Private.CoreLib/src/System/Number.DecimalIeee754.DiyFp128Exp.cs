@@ -119,9 +119,9 @@ internal static partial class Number
     {
         get
         {
-            Span<DiyFp128> single = stackalloc DiyFp128[1];
-            DiyFp128AddSub(new DiyFp128(0, 0, ExpLn2High, 0), ExpLn2Low, UxSub, single);
-            return single[0];
+            DiyFp128 single = default;
+            DiyFp128AddSub(new DiyFp128(0, 0, ExpLn2High, 0), ExpLn2Low, UxSub, new Span<DiyFp128>(ref single));
+            return single;
         }
     }
 
@@ -157,11 +157,9 @@ internal static partial class Number
         scale &= unchecked((ulong)(-(long)(1UL << shift)));
 
         // Normalize scale; it has at most two leading zeros.
-        while ((long)scale > 0)
-        {
-            scale += scale;
-            shift++;
-        }
+        int leadingZeros = (int)ulong.LeadingZeroCount(scale);
+        scale <<= leadingZeros;
+        shift += leadingZeros;
 
         int scaleExponent = 64 - shift;
 
@@ -177,16 +175,16 @@ internal static partial class Number
         }
 
         var tmp = new DiyFp128(sign, exponent + reduceConstantExponent, msd, lsd);
-        Span<DiyFp128> single = stackalloc DiyFp128[1];
-        DiyFp128AddSub(orig, tmp, UxSub, single);
-        tmp = single[0];
+        DiyFp128 single = default;
+        DiyFp128AddSub(orig, tmp, UxSub, new Span<DiyFp128>(ref single));
+        tmp = single;
 
         // Subtract scale*low_bits_of_ln2 to complete the reduced argument.
         var uxScale = new DiyFp128(sign, scaleExponent, scale, 0);
         DiyFp128 ln2LowLocal = ln2Low;
         DiyFp128Multiply(ref uxScale, ref ln2LowLocal, out reduced);
-        DiyFp128AddSub(tmp, reduced, UxSub | UxNoNormalization, single);
-        reduced = single[0];
+        DiyFp128AddSub(tmp, reduced, UxSub | UxNoNormalization, new Span<DiyFp128>(ref single));
+        reduced = single;
 
         scale >>= shift;
         return (int)((sign != 0) ? -(long)scale : (long)scale);
@@ -588,9 +586,9 @@ internal static partial class Number
             DiyFp128EvaluateExpPolynomial(reduced, coefficients, degree, trailingExponent, out result);
             result._exponent += scale;
 
-            Span<DiyFp128> single = stackalloc DiyFp128[1];
-            DiyFp128AddSub(result, DiyFp128One, UxSub | UxNoNormalization | UxMagnitudeOnly, single);
-            result = single[0];
+            DiyFp128 single = default;
+            DiyFp128AddSub(result, DiyFp128One, UxSub | UxNoNormalization | UxMagnitudeOnly, new Span<DiyFp128>(ref single));
+            result = single;
         }
 
         return result;

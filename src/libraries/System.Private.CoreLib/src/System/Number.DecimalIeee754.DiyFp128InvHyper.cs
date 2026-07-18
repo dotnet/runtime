@@ -37,9 +37,9 @@ internal static partial class Number
         DiyFp128 square = x;
         DiyFp128Multiply(ref square, ref square, out DiyFp128 tmp); // x^2
 
-        Span<DiyFp128> one = stackalloc DiyFp128[1];
-        DiyFp128AddSub(tmp, DiyFp128One, UxAdd, one); // x^2 + 1
-        tmp = one[0];
+        DiyFp128 one = default;
+        DiyFp128AddSub(tmp, DiyFp128One, UxAdd, new Span<DiyFp128>(ref one)); // x^2 + 1
+        tmp = one;
         DiyFp128Normalize(ref tmp);
         tmp = DiyFp128Sqrt(tmp); // sqrt(x^2 + 1)
 
@@ -47,14 +47,14 @@ internal static partial class Number
 
         if ((exponent < -1) || ((exponent == -1) && (fHi <= InvHyperSqrt2Over4)))
         {
-            DiyFp128AddSub(tmp, DiyFp128One, UxAdd, one); // sqrt(x^2 + 1) + 1
-            DiyFp128Divide(x, one[0], DiyFp128FullPrecision, out tmp); // x / (sqrt(x^2 + 1) + 1)
+            DiyFp128AddSub(tmp, DiyFp128One, UxAdd, new Span<DiyFp128>(ref one)); // sqrt(x^2 + 1) + 1
+            DiyFp128Divide(x, one, DiyFp128FullPrecision, out tmp); // x / (sqrt(x^2 + 1) + 1)
             result = DiyFp128LogPoly(tmp);
         }
         else
         {
-            DiyFp128AddSub(tmp, x, UxAdd, one); // sqrt(x^2 + 1) + x
-            tmp = one[0];
+            DiyFp128AddSub(tmp, x, UxAdd, new Span<DiyFp128>(ref one)); // sqrt(x^2 + 1) + x
+            tmp = one;
             DiyFp128Normalize(ref tmp);
             result = DiyFp128Ln(tmp);
         }
@@ -69,7 +69,7 @@ internal static partial class Number
         int exponent = x._exponent;
         ulong fHi = x._hi;
 
-        Span<DiyFp128> parts = stackalloc DiyFp128[2];
+        Span<DiyFp128> parts = [default, default];
         DiyFp128AddSub(x, DiyFp128One, UxAddSub, parts); // parts[0] = x + 1, parts[1] = x - 1
 
         if ((exponent == 1) && (fHi <= InvHyperThreeSqrt2Over4))
@@ -82,9 +82,9 @@ internal static partial class Number
         DiyFp128Normalize(ref product);
         DiyFp128 root = DiyFp128Sqrt(product); // sqrt(x^2 - 1)
 
-        Span<DiyFp128> sum = stackalloc DiyFp128[1];
-        DiyFp128AddSub(root, x, UxAdd, sum); // sqrt(x^2 - 1) + x
-        return DiyFp128Ln(sum[0]);
+        DiyFp128 sum = default;
+        DiyFp128AddSub(root, x, UxAdd, new Span<DiyFp128>(ref sum)); // sqrt(x^2 - 1) + x
+        return DiyFp128Ln(sum);
     }
 
     /// <summary>Computes <c>atanh(x)</c> for a finite <paramref name="x"/> with <c>|x| &lt; 1</c> (Intel's <c>F_ATANH</c>).</summary>
@@ -104,14 +104,14 @@ internal static partial class Number
         }
         else
         {
-            Span<DiyFp128> parts = stackalloc DiyFp128[2];
+            Span<DiyFp128> parts = [default, default];
             DiyFp128AddSub(x, DiyFp128One, UxAddSub, parts); // parts[0] = |x| + 1, parts[1] = |x| - 1
             DiyFp128Divide(parts[1], parts[0], DiyFp128FullPrecision, out DiyFp128 ratio); // (|x| - 1) / (|x| + 1)
             DiyFp128Normalize(ref ratio);
             result = DiyFp128Ln(ratio); // magnitude only: log((1 - |x|) / (1 + |x|))
         }
 
-        result._sign = sign;  // atanh is odd; overwrites the sign the log picked up
+        result._sign = sign; // atanh is odd; overwrites the sign the log picked up
         result._exponent -= 1; // multiply by 1/2
         return result;
     }

@@ -1520,7 +1520,7 @@ namespace System
             // coefficient when the exponent is odd, so its square root is sqrt(coefficient) * 10^idealExponent.
             TValue coefficient = a.Significand;
 
-            if ((a.UnbiasedExponent & 1) != 0)
+            if (int.IsOddInteger(a.UnbiasedExponent))
             {
                 coefficient *= TDecimal.Power10(1);
             }
@@ -2066,8 +2066,8 @@ namespace System
             else if (typeof(TValue) == typeof(ulong))
             {
                 UInt128 product = (UInt128)ulong.CreateTruncating(left) * ulong.CreateTruncating(right);
-                high = TValue.CreateTruncating(product >> 64);
-                low = TValue.CreateTruncating(product);
+                high = TValue.CreateTruncating(product.Upper);
+                low = TValue.CreateTruncating(product.Lower);
                 return;
             }
 
@@ -2260,7 +2260,7 @@ namespace System
             }
             else if (typeof(TValue) == typeof(ulong))
             {
-                UInt128 wide = ((UInt128)ulong.CreateTruncating(high) << 64) | ulong.CreateTruncating(low);
+                UInt128 wide = new UInt128(ulong.CreateTruncating(high), ulong.CreateTruncating(low));
                 return FormattingHelpers.CountDigits(wide);
             }
 
@@ -2340,12 +2340,8 @@ namespace System
             {
                 ulong wide = ((ulong)uint.CreateTruncating(high) << 32) | uint.CreateTruncating(low);
 
-                ulong scale = 1;
-                for (int i = 1; i < dropCount; i++)
-                {
-                    scale *= 10;
-                }
-                ulong power = scale * 10;
+                ulong scale = (ulong)UInt128.PowersOf10[dropCount - 1];
+                ulong power = (ulong)UInt128.PowersOf10[dropCount];
 
                 (ulong quotient, ulong remainder) = ulong.DivRem(wide, power);
                 roundDigit = int.CreateTruncating(remainder / scale);
@@ -2357,14 +2353,10 @@ namespace System
             }
             else if (typeof(TValue) == typeof(ulong))
             {
-                UInt128 wide = ((UInt128)ulong.CreateTruncating(high) << 64) | ulong.CreateTruncating(low);
+                UInt128 wide = new UInt128(ulong.CreateTruncating(high), ulong.CreateTruncating(low));
 
-                UInt128 scale = UInt128.One;
-                for (int i = 1; i < dropCount; i++)
-                {
-                    scale *= 10;
-                }
-                UInt128 power = scale * 10;
+                UInt128 scale = UInt128.PowersOf10[dropCount - 1];
+                UInt128 power = UInt128.PowersOf10[dropCount];
 
                 (UInt128 quotient, UInt128 remainder) = UInt128.DivRem(wide, power);
                 roundDigit = int.CreateTruncating(remainder / scale);
@@ -2976,17 +2968,14 @@ namespace System
             {
                 // magnitude = significand * 10^exponent. UInt128 holds at most 39 digits, so any exponent that
                 // would push the product past that bound overflows every integer type and saturates/throws.
-                for (int i = 0; (i < exponent) && !exceedsUInt128; i++)
+                if ((exponent >= UInt128.PowersOf10.Length) || (significand > UInt128.MaxValue / UInt128.PowersOf10[exponent]))
                 {
-                    if (significand > UInt128.MaxValue / 10)
-                    {
-                        exceedsUInt128 = true;
-                        break;
-                    }
-                    significand *= 10;
+                    exceedsUInt128 = true;
                 }
-
-                magnitude = exceedsUInt128 ? UInt128.Zero : significand;
+                else
+                {
+                    magnitude = significand * UInt128.PowersOf10[exponent];
+                }
             }
             else
             {
@@ -2994,12 +2983,7 @@ namespace System
                 // digits than the significand the quotient is zero.
                 int drop = -exponent;
 
-                for (int i = 0; (i < drop) && (significand != UInt128.Zero); i++)
-                {
-                    significand /= 10;
-                }
-
-                magnitude = significand;
+                magnitude = (drop < UInt128.PowersOf10.Length) ? (significand / UInt128.PowersOf10[drop]) : UInt128.Zero;
             }
 
             return DecimalIeee754ToIntegerStatus.Finite;
@@ -3112,7 +3096,7 @@ namespace System
 
             // For a negative value CreateTruncating sign-extends the two's-complement pattern to 128 bits, so a
             // width-independent negate recovers the true magnitude (including the most-negative value).
-            UInt128 magnitude = isNegative ? (~bits) + UInt128.One : bits;
+            UInt128 magnitude = isNegative ? -bits : bits;
 
             return DecimalIeee754FromMagnitude<TDecimal, TValue>(isNegative, magnitude, 0);
         }

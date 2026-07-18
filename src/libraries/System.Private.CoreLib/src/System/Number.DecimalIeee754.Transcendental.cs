@@ -512,16 +512,16 @@ internal static partial class Number
 
         // Guard the 1 + x domain in the binary128 engine (the double path gets this from IEEE): the
         // conversion error is always below the decimal granularity near x = -1, so 1 + x is exact here.
-        Span<DiyFp128> onePlus = stackalloc DiyFp128[1];
-        DiyFp128AddSub(DiyFp128One, argument, UxAdd, onePlus);
+        DiyFp128 onePlus = default;
+        DiyFp128AddSub(DiyFp128One, argument, UxAdd, new Span<DiyFp128>(ref onePlus));
 
-        if ((onePlus[0]._hi | onePlus[0]._lo) == 0)
+        if ((onePlus._hi | onePlus._lo) == 0)
         {
             // logP1(-1) = -inf.
             return TDecimal.NegativeInfinity;
         }
 
-        if (onePlus[0]._sign != 0)
+        if (onePlus._sign != 0)
         {
             // logP1(x < -1) is invalid and produces the canonical quiet NaN.
             return TDecimal.NaNMask;

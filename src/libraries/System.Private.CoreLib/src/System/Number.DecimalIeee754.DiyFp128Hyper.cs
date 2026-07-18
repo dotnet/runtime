@@ -88,7 +88,7 @@ internal static partial class Number
 
         if (scale != 0)
         {
-            Span<DiyFp128> tmp = stackalloc DiyFp128[2];
+            Span<DiyFp128> tmp = [default, default];
 
             // cosh(z) +/- sinh(z) = exp(z):exp(-z), then scale to exp(x)/2 and exp(-x)/2.
             DiyFp128AddSub(result[1], result[0], UxAddSub | UxNoNormalization, tmp);
@@ -109,21 +109,21 @@ internal static partial class Number
 
     private static DiyFp128 DiyFp128Sinh(scoped in DiyFp128 argument)
     {
-        Span<DiyFp128> result = stackalloc DiyFp128[2];
+        Span<DiyFp128> result = [default, default];
         DiyFp128Hyperbolic(argument, HyperSinhFunc, HyperSinhEval, UxSub, result);
         return result[0];
     }
 
     private static DiyFp128 DiyFp128Cosh(scoped in DiyFp128 argument)
     {
-        Span<DiyFp128> result = stackalloc DiyFp128[2];
+        Span<DiyFp128> result = [default, default];
         DiyFp128Hyperbolic(argument, HyperCoshFunc, HyperCoshEval, UxAdd, result);
         return result[0];
     }
 
     private static DiyFp128 DiyFp128Tanh(scoped in DiyFp128 argument)
     {
-        Span<DiyFp128> result = stackalloc DiyFp128[2];
+        Span<DiyFp128> result = [default, default];
         DiyFp128Hyperbolic(argument, HyperTanhFunc, HyperTanhEval, UxSubAdd, result);
         return result[0];
     }

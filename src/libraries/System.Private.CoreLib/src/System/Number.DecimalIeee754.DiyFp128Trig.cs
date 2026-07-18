@@ -162,43 +162,43 @@ internal static partial class Number
     private static void TrigXMul(ulong a, ulong b, out ulong hi, out ulong lo)
     {
         UInt128 p = (UInt128)a * b;
-        hi = (ulong)(p >> 64);
-        lo = (ulong)p;
+        hi = p.Upper;
+        lo = p.Lower;
     }
 
     private static void TrigXMulAdd(ulong a, ulong b, ulong addLo, out ulong hi, out ulong lo)
     {
         UInt128 p = (UInt128)a * b + addLo;
-        hi = (ulong)(p >> 64);
-        lo = (ulong)p;
+        hi = p.Upper;
+        lo = p.Lower;
     }
 
     private static void TrigXMulXAdd(ulong a, ulong b, ulong addHi, ulong addLo, out ulong hi, out ulong lo)
     {
-        UInt128 p = (UInt128)a * b + (((UInt128)addHi << 64) | addLo);
-        hi = (ulong)(p >> 64);
-        lo = (ulong)p;
+        UInt128 p = (UInt128)a * b + new UInt128(addHi, addLo);
+        hi = p.Upper;
+        lo = p.Lower;
     }
 
     private static void TrigXMulXAddC(ulong a, ulong b, ulong addHi, ulong addLo, out ulong carryOut, out ulong hi, out ulong lo)
     {
         UInt128 prod = (UInt128)a * b;
-        UInt128 addend = ((UInt128)addHi << 64) | addLo;
+        UInt128 addend = new UInt128(addHi, addLo);
         UInt128 s = prod + addend;
         carryOut = (s < addend) ? 1UL : 0UL;
-        hi = (ulong)(s >> 64);
-        lo = (ulong)s;
+        hi = s.Upper;
+        lo = s.Lower;
     }
 
     private static void TrigXMulXAddCwCarryIn(ulong a, ulong b, ulong addHi, ulong addLo, ulong carryIn, out ulong carryOut, out ulong hi, out ulong lo)
     {
         // carry_in is injected at bit 64 (no carry out possible there); carry_out is from the addend add.
-        UInt128 prod = (UInt128)a * b + ((UInt128)carryIn << 64);
-        UInt128 addend = ((UInt128)addHi << 64) | addLo;
+        UInt128 prod = (UInt128)a * b + new UInt128(carryIn, 0);
+        UInt128 addend = new UInt128(addHi, addLo);
         UInt128 s = prod + addend;
         carryOut = (s < addend) ? 1UL : 0UL;
-        hi = (ulong)(s >> 64);
-        lo = (ulong)s;
+        hi = s.Upper;
+        lo = s.Lower;
     }
 
     // W_HAS_M_BIT_LOSS (dpml_rdx_x.h): true when the MSD is close to a multiple of pi/2.
@@ -226,9 +226,9 @@ internal static partial class Number
 
             if (jd != 0)
             {
-                Span<DiyFp128> r = stackalloc DiyFp128[1];
-                DiyFp128AddSub(x, TrigPiOverFour, jd < 0 ? UxSub : UxAdd, r);
-                reduced = r[0];
+                DiyFp128 r = default;
+                DiyFp128AddSub(x, TrigPiOverFour, jd < 0 ? UxSub : UxAdd, new Span<DiyFp128>(ref r));
+                reduced = r;
             }
             else
             {
@@ -285,7 +285,7 @@ internal static partial class Number
         }
 
         int scale = 0;
-        ulong extraW = 0;
+        ulong extraW;
 
         while (true)
         {
@@ -331,7 +331,6 @@ internal static partial class Number
             g2 = g1;
             g1 = g0;
             g0 = extraW;
-            extraW = 0;
             scale += 64;
         }
 
@@ -346,8 +345,7 @@ internal static partial class Number
         {
             g3 = g2;
             g2 = g1;
-            g1 = g0;
-            g0 = extraW;
+            g1 = g0; // g0 (the LSD) is not consumed past this point, so it is not rotated in
             scale += 64;
         }
 
@@ -520,21 +518,21 @@ internal static partial class Number
 
     private static DiyFp128 DiyFp128Sin(scoped in DiyFp128 arg)
     {
-        Span<DiyFp128> r = stackalloc DiyFp128[2];
+        Span<DiyFp128> r = [default, default];
         DiyFp128SinCos(arg, 0, 1, r);
         return r[0];
     }
 
     private static DiyFp128 DiyFp128Cos(scoped in DiyFp128 arg)
     {
-        Span<DiyFp128> r = stackalloc DiyFp128[2];
+        Span<DiyFp128> r = [default, default];
         DiyFp128SinCos(arg, 2, 2, r);
         return r[0];
     }
 
     private static void DiyFp128SinCosPair(scoped in DiyFp128 arg, out DiyFp128 sin, out DiyFp128 cos)
     {
-        Span<DiyFp128> r = stackalloc DiyFp128[2];
+        Span<DiyFp128> r = [default, default];
         DiyFp128SinCos(arg, 0, TrigSinCosFunc, r);
         sin = r[0];
         cos = r[1];
@@ -555,7 +553,7 @@ internal static partial class Number
                   | ((TrigSquareTerm | TrigAlternateSign) << TrigNumeratorFieldWidth)
                   | divideFlag;
 
-        Span<DiyFp128> r = stackalloc DiyFp128[2];
+        Span<DiyFp128> r = [default, default];
         DiyFp128EvaluateRational(reduced, TrigTanNumeratorCoefficients, 1, TrigTanDenominatorCoefficients, 1, TrigTanCotDegree, flags, r);
 
         if ((quadrant & 1) != 0)

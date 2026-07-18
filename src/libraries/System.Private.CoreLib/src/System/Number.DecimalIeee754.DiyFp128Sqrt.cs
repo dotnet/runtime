@@ -19,10 +19,6 @@ internal static partial class Number
     // in the wide binary128 domain (whose exponent range cannot overflow for finite decimal inputs)
     // and takes the square root.
 
-    private const int SqrtDoubleExponentBias = 1023;
-    private const int SqrtDoubleExponentPosition = 52;
-    private const int SqrtSinglePrecision = 24;
-    private const int SqrtDoublePrecision = 53;
     private const int SqrtNumFractionBits = 7;
 
     private const double SqrtRootTwo = 1.4142135623730951;
@@ -318,15 +314,15 @@ internal static partial class Number
         ulong lsd = x._lo;
 
         // f' is the ux mantissa reinterpreted as a double in [1/2, 1).
-        double f = BitConverter.UInt64BitsToDouble((msd >> 11) + ((ulong)(SqrtDoubleExponentBias - 2) << SqrtDoubleExponentPosition));
+        double f = BitConverter.UInt64BitsToDouble((msd >> (64 - double.SignificandLength)) + ((ulong)(double.ExponentBias - 2) << double.BiasedExponentShift));
 
         int exponent = x._exponent;
         int parity = exponent & 1;
         exponent = (exponent + parity) >> 1;
 
-        int shift = (64 + parity) - SqrtSinglePrecision;
+        int shift = (64 + parity) - float.SignificandLength;
 
-        lsd = ((msd << (64 - shift)) | (lsd >> shift)) >> (64 - SqrtDoublePrecision);
+        lsd = ((msd << (64 - shift)) | (lsd >> shift)) >> (64 - double.SignificandLength);
         double fLo = (double)lsd;
         double fHi = ((double)(msd >> shift)) * SqrtReciprocalTwoPow24;
         fLo *= SqrtReciprocalTwoPow77;
@@ -357,9 +353,9 @@ internal static partial class Number
         DiyFp128 sCopy = s;
         DiyFp128Multiply(ref sCopy, ref sx, out DiyFp128 y);
 
-        Span<DiyFp128> diff = stackalloc DiyFp128[1];
-        DiyFp128AddSub(UxThree, y, UxSub | UxNoNormalization, diff);
-        y = diff[0];
+        DiyFp128 diff = default;
+        DiyFp128AddSub(UxThree, y, UxSub | UxNoNormalization, new Span<DiyFp128>(ref diff));
+        y = diff;
 
         DiyFp128Multiply(ref y, ref sx, out DiyFp128 result);
         result._exponent -= 1;
@@ -371,10 +367,10 @@ internal static partial class Number
         DiyFp128Multiply(ref x, ref x, out DiyFp128 x2);
         DiyFp128Multiply(ref y, ref y, out DiyFp128 y2);
 
-        Span<DiyFp128> sum = stackalloc DiyFp128[1];
-        DiyFp128AddSub(x2, y2, UxAdd, sum);
+        DiyFp128 sum = default;
+        DiyFp128AddSub(x2, y2, UxAdd, new Span<DiyFp128>(ref sum));
 
-        DiyFp128 s = sum[0];
+        DiyFp128 s = sum;
         DiyFp128Normalize(ref s);
         return DiyFp128Sqrt(s);
     }
