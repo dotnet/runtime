@@ -24,27 +24,27 @@ internal static partial class Number
     private const int CbrtDoubleExponentWidth = 11;
 
     // RECIP_CBRT_POLY coefficients (dpml_cbrt_x.h), Horner form over [1, 2).
-    private static readonly double[] s_cbrtCoefficients =
+    private static ReadOnlySpan<double> CbrtCoefficients =>
     [
-        BitConverter.UInt64BitsToDouble(0x4006ED4D2E803C66),
-        BitConverter.UInt64BitsToDouble(0xC0102E13C6230110),
-        BitConverter.UInt64BitsToDouble(0x400C33EEA71AF473),
-        BitConverter.UInt64BitsToDouble(0xBFFC42EFA7679244),
-        BitConverter.UInt64BitsToDouble(0x3FDE3D1A896AD7DA),
-        BitConverter.UInt64BitsToDouble(0xBFAAD21E367E9BA1),
+        2.8658698685535908,     // 0x4006ED4D2E803C66
+        -4.044997306715473,     // 0xC0102E13C6230110
+        3.5253575377560593,     // 0x400C33EEA71AF473
+        -1.7663418330422624,    // 0xBFFC42EFA7679244
+        0.47247947139419255,    // 0x3FDE3D1A896AD7DA
+        -0.052384323265236128,  // 0xBFAAD21E367E9BA1
     ];
 
     // POW_CBRT_2_TABLE (dpml_cbrt_x.h): 2^(i/3) for i = 0, 1, 2.
-    private static readonly double[] s_cbrtPow2Thirds =
+    private static ReadOnlySpan<double> CbrtPow2Thirds =>
     [
-        BitConverter.UInt64BitsToDouble(0x3FF0000000000000),
-        BitConverter.UInt64BitsToDouble(0x3FF428A2F98D728B),
-        BitConverter.UInt64BitsToDouble(0x3FF965FEA53D6E3D),
+        1.0,                 // 0x3FF0000000000000
+        1.2599210498948732,  // 0x3FF428A2F98D728B
+        1.5874010519681996,  // 0x3FF965FEA53D6E3D
     ];
 
-    private static double CbrtFourteenNinths => BitConverter.UInt64BitsToDouble(0x3FF8E38E38E38E39);
-    private static double CbrtSevenNinths => BitConverter.UInt64BitsToDouble(0x3FE8E38E38E38E39);
-    private static double CbrtTwoNinths => BitConverter.UInt64BitsToDouble(0x3FCC71C71C71C71C);
+    private const double CbrtFourteenNinths = 1.5555555555555556;  // 0x3FF8E38E38E38E39
+    private const double CbrtSevenNinths = 0.77777777777777779;  // 0x3FE8E38E38E38E39
+    private const double CbrtTwoNinths = 0.22222222222222221;  // 0x3FCC71C71C71C71C
 
     private static DiyFp128 DiyFp128Cbrt(DiyFp128 arg)
     {
@@ -52,7 +52,7 @@ internal static partial class Number
         ulong msd = arg._hi;
         double f = BitConverter.UInt64BitsToDouble((((ulong)(CbrtDoubleExponentBias - 1)) << CbrtDoubleExponentPosition) + (msd >> CbrtDoubleExponentWidth));
 
-        ReadOnlySpan<double> c = s_cbrtCoefficients;
+        ReadOnlySpan<double> c = CbrtCoefficients;
         double z = c[0] + (f * (c[1] + (f * (c[2] + (f * (c[3] + (f * (c[4] + (f * c[5])))))))));
 
         // The true binary exponent of arg (value = f * 2^n with f in [1, 2)) is _exponent - 1. Split it
@@ -64,7 +64,7 @@ internal static partial class Number
         double z2 = z * z;
         double z4 = z2 * z2;
         double f2 = f * f;
-        double y = s_cbrtPow2Thirds[i] * ((((CbrtFourteenNinths * f) * z)
+        double y = CbrtPow2Thirds[i] * ((((CbrtFourteenNinths * f) * z)
                        - (z4 * ((CbrtSevenNinths * f) * f2)))
                        + ((z4 * (z2 * z)) * ((CbrtTwoNinths * f) * (f2 * f2))));
 

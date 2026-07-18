@@ -109,7 +109,7 @@ internal static partial class Number
     ];
 
     // dpml_four_over_pi.c: the leading 263 x 64-bit digits of 4/pi (with two words of zero padding).
-    private static readonly ulong[] TrigFourOverPi =
+    private static ReadOnlySpan<ulong> TrigFourOverPi =>
     [
         0x0000000000000000, 0x0000000000000000, 0x0028be60db939105, 0x4a7f09d5f47d4d37, 0x7036d8a5664f10e4, 0x107f9458eaf7aef1,
         0x586dc91b8e909374, 0xb801924bba827464, 0x873f877ac72c4a69, 0xcfba208d7d4baed1, 0x213a671c09ad17df, 0x904e64758e60d4ce,
