@@ -630,11 +630,6 @@ typedef BOOL(WINAPI* PSETXSTATEFEATURESMASK)(PCONTEXT Context, DWORD64 FeatureMa
 extern PSETXSTATEFEATURESMASK g_pfnSetXStateFeaturesMask;
 #endif // TARGET_ARM64
 
-#ifdef TARGET_X86
-typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
-extern PRTLRESTORECONTEXT g_pfnRtlRestoreContext;
-#endif // TARGET_X86
-
 #endif // TARGET_WINDOWS
 
 #endif /* _VARS_HPP */

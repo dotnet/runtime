@@ -410,11 +410,6 @@ static BOOLEAN WINAPI RtlDllShutdownInProgressFallback()
 }
 PRTLDLLSHUTDOWNINPROGRESS g_pfnRtlDllShutdownInProgress = &RtlDllShutdownInProgressFallback;
 
-#ifdef TARGET_X86
-typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
-PRTLRESTORECONTEXT g_pfnRtlRestoreContext = NULL;
-#endif // TARGET_X86
-
 void InitializeOptionalWindowsAPIPointers()
 {
     HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
@@ -430,10 +425,6 @@ void InitializeOptionalWindowsAPIPointers()
     PRTLDLLSHUTDOWNINPROGRESS pfn = (PRTLDLLSHUTDOWNINPROGRESS)GetProcAddress(hm, "RtlDllShutdownInProgress");
     if (pfn != NULL)
         g_pfnRtlDllShutdownInProgress = pfn;
-
-#ifdef TARGET_X86
-    g_pfnRtlRestoreContext = (PRTLRESTORECONTEXT)GetProcAddress(hm, "RtlRestoreContext");
-#endif //TARGET_X86
 }
 #endif // TARGET_WINDOWS
 

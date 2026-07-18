@@ -2476,92 +2476,6 @@ void RedirectedThreadFrame::ExceptionUnwind_Impl()
 
 #ifndef TARGET_UNIX
 
-#ifdef TARGET_X86
-
-//****************************************************************************************
-// This will check who caused the exception.  If it was caused by the redirect function,
-// the reason is to resume the thread back at the point it was redirected in the first
-// place.  If the exception was not caused by the function, then it was caused by the call
-// out to the I[GC|Debugger]ThreadControl client and we need to determine if it's an
-// exception that we can just eat and let the runtime resume the thread, or if it's an
-// uncatchable exception that we need to pass on to the runtime.
-//
-int RedirectedHandledJITCaseExceptionFilter(
-    PEXCEPTION_POINTERS pExcepPtrs,     // Exception data
-    RedirectedThreadFrame *pFrame,      // Frame on stack
-    CONTEXT *pCtx,                      // Saved context
-    DWORD dwLastError)                  // saved last error
-{
-    // !!! Do not use a non-static contract here.
-    // !!! Contract may insert an exception handling record.
-    // !!! This function assumes that GetCurrentSEHRecord() returns the exception record set up in
-    // !!! Thread::RestoreContextSimulated
-    //
-    // !!! Do not use an object with dtor, since it injects a fs:0 entry.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    if (pExcepPtrs->ExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
-    // Get the thread handle
-    Thread *pThread = GetThread();
-    STRESS_LOG1(LF_SYNC, LL_INFO100, "In RedirectedHandledJITCaseExceptionFilter pFrame = %p\n", pFrame);
-    _ASSERTE(pExcepPtrs->ExceptionRecord->ExceptionCode == EXCEPTION_HIJACK);
-
-    // Unlink the frame in preparation for resuming in managed code
-    pFrame->Pop();
-
-    // Copy everything in the saved context record into the EH context.
-    // Historically the EH context has enough space for every enabled context feature.
-    // That may not hold for the future features beyond AVX, but this codepath is
-    // supposed to be used only on OSes that do not have RtlRestoreContext.
-    CONTEXT* pTarget = pExcepPtrs->ContextRecord;
-    if (!CopyContext(pTarget, pCtx->ContextFlags, pCtx))
-    {
-        STRESS_LOG1(LF_SYNC, LL_ERROR, "ERROR: Could not set context record, lastError = 0x%x\n", GetLastError());
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    }
-
-    DWORD espValue = pCtx->Esp;
-
-    // Allow future use to avoid repeatedly new'ing
-    pThread->UnmarkRedirectContextInUse(pCtx);
-
-    /////////////////////////////////////////////////////////////////////////////
-    // NOTE: Ugly, ugly workaround.
-    // We need to resume the thread into the managed code where it was redirected,
-    // and the corresponding ESP is below the current one.  But C++ expects that
-    // on an EXCEPTION_CONTINUE_EXECUTION that the ESP will be above where it has
-    // installed the SEH handler.  To solve this, we need to remove all handlers
-    // that reside above the resumed ESP, but we must leave the OS-installed
-    // handler at the top, so we grab the top SEH handler, call
-    // PopSEHRecords which will remove all SEH handlers above the target ESP and
-    // then link the OS handler back in with SetCurrentSEHRecord.
-
-    // Get the special OS handler and save it until PopSEHRecords is done
-    EXCEPTION_REGISTRATION_RECORD *pCurSEH = GetCurrentSEHRecord();
-
-    // Unlink all records above the target resume ESP
-    PopSEHRecords((LPVOID)(size_t)espValue);
-
-    // Link the special OS handler back in to the top
-    pCurSEH->Next = GetCurrentSEHRecord();
-
-    // Register the special OS handler as the top handler with the OS
-    SetCurrentSEHRecord(pCurSEH);
-
-    // restore last error
-    SetLastError(dwLastError);
-
-    // Resume execution at point where thread was originally redirected
-    return (EXCEPTION_CONTINUE_EXECUTION);
-}
-#endif // TARGET_X86
-
 void NotifyHostOnGCSuspension()
 {
     CONTRACTL
@@ -2587,36 +2501,6 @@ extern "C" PCONTEXT __stdcall GetCurrentSavedRedirectContext()
 
     return pContext;
 }
-
-#ifdef TARGET_X86
-
-void Thread::RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame, DWORD dwLastError)
-{
-    // A counter to avoid a nasty case where an
-    // up-stack filter throws another exception
-    // causing our filter to be run again for
-    // some unrelated exception.
-    int filter_count = 0;
-
-    __try
-    {
-        // Save the instruction pointer where we redirected last.  This does not race with the check
-        // against this variable in HandledJitCase because the GC will not attempt to redirect the
-        // thread until the instruction pointer of this thread is back in managed code.
-        pThread->m_LastRedirectIP = GetIP(pCtx);
-        pThread->m_SpinCount = 0;
-
-        RaiseException(EXCEPTION_HIJACK, 0, 0, NULL);
-    }
-    __except (++filter_count == 1
-            ? RedirectedHandledJITCaseExceptionFilter(GetExceptionInformation(), dac_cast<PTR_RedirectedThreadFrame>(pFrame), pCtx, dwLastError)
-            : EXCEPTION_CONTINUE_SEARCH)
-    {
-        _ASSERTE(!"Reached body of __except in Thread::RedirectedHandledJITCase");
-    }
-}
-
-#endif // TARGET_X86
 
 void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 {
@@ -2701,16 +2585,6 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
         SetIP(pCtx, uAbortAddr);
     }
 
-#ifdef TARGET_X86
-    if (!g_pfnRtlRestoreContext)
-    {
-        RestoreContextSimulated(pThread, pCtx, &frame, dwLastError);
-
-        // we never return to the caller.
-        UNREACHABLE();
-    }
-#endif // TARGET_X86
-
     // Unlink the frame in preparation for resuming in managed code
     frame.Pop();
 
@@ -2721,11 +2595,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     SetLastError(dwLastError);
 
     __asan_handle_no_return();
-#ifdef TARGET_X86
-    g_pfnRtlRestoreContext(pCtx, NULL);
-#else
     RtlRestoreContext(pCtx, NULL);
-#endif
 
     // we never return to the caller.
     UNREACHABLE();
