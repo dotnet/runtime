@@ -2914,6 +2914,20 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(typeStack.Data(), typeStack.Height());
 
+    // R2R keeps its shadow SP in a local and leaves the __stack_pointer global stale; the PInvoke
+    // prolog (JIT_PInvokeBegin) normally publishes the current SP to __stack_pointer before native
+    // code runs, but that prolog/epilog is skipped for SuppressGCTransition calls (see Lowering).
+    // Without a publish, the native SuppressGCTransition callee allocates its shadow frame from the
+    // stale global (our caller's SP, above our frame) and overlaps/clobbers our address-taken locals.
+    // Publish our shadow SP here so the callee allocates below our frame. This is a net-zero operation
+    // on the Wasm operand stack, so it is safe to emit with the call arguments already pushed.
+    if (call->IsUnmanaged() && call->IsSuppressGCTransition())
+    {
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+        GetEmitter()->emitIns_I(INS_global_set, EA_HANDLE_CNS_RELOC,
+                                (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->stackPointer);
+    }
+
     // A non-null target expression always indicates an indirect call on Wasm,
     // as currently the only possible result of the target expression would be a
     // table index which must be used via call_indirect
