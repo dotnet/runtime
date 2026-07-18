@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
@@ -130,7 +131,8 @@ public unsafe class ExceptionStateTests
 
     private static IXCLRDataExceptionState CreateExceptionStateWithRecord(
         MockTarget.Architecture arch,
-        ulong exceptionAddress)
+        ulong exceptionAddress,
+        bool hasExceptionInfo = false)
     {
         TargetTestHelpers helpers = new(arch);
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
@@ -140,6 +142,33 @@ public unsafe class ExceptionStateTests
         helpers.WritePointer(
             exceptionRecord.Data.AsSpan(sizeof(uint) * 2 + helpers.PointerSize, helpers.PointerSize),
             exceptionAddress);
+
+        TargetPointer exceptionInfoAddress = TargetPointer.Null;
+        if (hasExceptionInfo)
+        {
+            MockMemorySpace.HeapFragment exceptionInfo =
+                allocator.Allocate((ulong)helpers.PointerSize, "ExceptionInfo");
+            helpers.WritePointer(exceptionInfo.Data, exceptionRecord.Address);
+            exceptionInfoAddress = new TargetPointer(exceptionInfo.Address);
+            var mockException = new Mock<IException>();
+            SetupGetNestedExceptionInfo(
+                mockException,
+                exceptionInfoAddress,
+                nextNestedException: TargetPointer.Null,
+                thrownObjectHandle: TargetPointer.Null);
+            targetBuilder.AddMockContract(mockException);
+            targetBuilder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.ExceptionInfo] = new Target.TypeInfo
+                {
+                    Size = (uint)helpers.PointerSize,
+                    Fields = new Dictionary<string, Target.FieldInfo>
+                    {
+                        ["ExceptionRecord"] = new Target.FieldInfo { Offset = 0 }
+                    }
+                }
+            });
+        }
 
         TargetPointer threadAddress = new(0x1000);
         var mockThread = new Mock<IThread>();
@@ -164,7 +193,7 @@ public unsafe class ExceptionStateTests
             DebuggerFilterContext: TargetPointer.Null,
             GCFrame: TargetPointer.Null,
             IsExceptionInProgress: true,
-            OSExceptionRecord: new TargetPointer(exceptionRecord.Address),
+            OSExceptionRecord: hasExceptionInfo ? TargetPointer.Null : new TargetPointer(exceptionRecord.Address),
             OSExceptionContextRecord: TargetPointer.Null));
 
         TestPlaceholderTarget target = targetBuilder
@@ -174,8 +203,9 @@ public unsafe class ExceptionStateTests
             target,
             threadAddress,
             (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            exceptionInfoAddress: TargetPointer.Null,
             thrownObjectHandle: TargetPointer.Null,
-            previousExInfoAddress: TargetPointer.Null,
+            previousExInfoAddress: exceptionInfoAddress,
             legacyImpl: null);
     }
 
@@ -190,6 +220,7 @@ public unsafe class ExceptionStateTests
             target: null!,
             threadAddress: new TargetPointer(0x1000),
             flags: inputFlags,
+            exceptionInfoAddress: TargetPointer.Null,
             thrownObjectHandle: new TargetPointer(0x2000),
             previousExInfoAddress: previousExInfo,
             legacyImpl: null);
@@ -206,7 +237,7 @@ public unsafe class ExceptionStateTests
         (TestPlaceholderTarget target, TargetPointer thrownObjectHandle) = CreateTargetWithException(arch, messageAddr, expectedMessage);
         IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
             target, new TargetPointer(0x1000), (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
-            thrownObjectHandle, TargetPointer.Null, null);
+            TargetPointer.Null, thrownObjectHandle, TargetPointer.Null, null);
 
         (int hr, uint strLen, char[] buffer) = CallGetString(exceptionState, bufLen: 256);
         Assert.Equal(HResults.S_OK, hr);
@@ -221,7 +252,7 @@ public unsafe class ExceptionStateTests
         (TestPlaceholderTarget target, TargetPointer thrownObjectHandle) = CreateTargetWithException(arch, TargetPointer.Null, null);
         IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
             target, new TargetPointer(0x1000), (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
-            thrownObjectHandle, TargetPointer.Null, null);
+            TargetPointer.Null, thrownObjectHandle, TargetPointer.Null, null);
 
         (int hr, uint strLen, char[] buffer) = CallGetString(exceptionState, bufLen: 256);
         Assert.Equal(HResults.S_OK, hr);
@@ -236,7 +267,7 @@ public unsafe class ExceptionStateTests
         (TestPlaceholderTarget target, TargetPointer thrownObjectHandle) = CreateTargetWithException(arch, TargetPointer.Null, null);
         IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
             target, new TargetPointer(0x1000), (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
-            thrownObjectHandle, TargetPointer.Null, null);
+            TargetPointer.Null, thrownObjectHandle, TargetPointer.Null, null);
 
         uint bufferSize = 256;
         char* str = null;
@@ -255,7 +286,7 @@ public unsafe class ExceptionStateTests
         (TestPlaceholderTarget target, TargetPointer thrownObjectHandle) = CreateTargetWithException(arch, messageAddr, expectedMessage);
         IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
             target, new TargetPointer(0x1000), (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
-            thrownObjectHandle, TargetPointer.Null, null);
+            TargetPointer.Null, thrownObjectHandle, TargetPointer.Null, null);
 
         (int hr, uint strLen, _) = CallGetString(exceptionState, bufLen: 5);
         Assert.Equal(HResults.S_FALSE, hr);
@@ -273,6 +304,7 @@ public unsafe class ExceptionStateTests
             target: null!,
             threadAddress: default,
             flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            exceptionInfoAddress: default,
             thrownObjectHandle: default,
             previousExInfoAddress: default,
             legacyImpl: null);
@@ -292,6 +324,7 @@ public unsafe class ExceptionStateTests
             target: null!,
             threadAddress: default,
             flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            exceptionInfoAddress: default,
             thrownObjectHandle: default,
             previousExInfoAddress: default,
             legacyImpl: null);
@@ -313,6 +346,7 @@ public unsafe class ExceptionStateTests
             target: null!,
             threadAddress: default,
             flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            exceptionInfoAddress: default,
             thrownObjectHandle: default,
             previousExInfoAddress: default,
             legacyImpl: null);
@@ -334,6 +368,7 @@ public unsafe class ExceptionStateTests
             target: null!,
             threadAddress: new TargetPointer(0x1000),
             flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            exceptionInfoAddress: TargetPointer.Null,
             thrownObjectHandle: new TargetPointer(0x2000),
             previousExInfoAddress: TargetPointer.Null,
             legacyImpl: null);
@@ -365,27 +400,44 @@ public unsafe class ExceptionStateTests
         IXCLRDataExceptionState exceptionState = CreateExceptionStateWithRecord(arch, exceptionAddress);
         EXCEPTION_RECORD64 inputRecord = new() { ExceptionAddress = exceptionAddress + 1 };
 
-        int hr = exceptionState.IsSameState2(0, &inputRecord, 0, null);
+        int hr = exceptionState.IsSameState2((uint)CLRDataExceptionSameFlag.CLRDATA_EXSAME_SECOND_CHANCE, &inputRecord, 0, null);
 
         Assert.Equal(HResults.S_FALSE, hr);
     }
 
     [Theory]
-    [InlineData(0u)]
-    [InlineData(1u)]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsSameState2_MatchingNestedAddress(MockTarget.Architecture arch)
+    {
+        const ulong exceptionAddress = 0x1234_5678;
+        IXCLRDataExceptionState exceptionState = CreateExceptionStateWithRecord(arch, exceptionAddress, hasExceptionInfo: true);
+        DacComNullableByRef<IXCLRDataExceptionState> previous = new(isNullRef: false);
+        Assert.Equal(HResults.S_OK, exceptionState.GetPrevious(previous));
+        Assert.NotNull(previous.Interface);
+        EXCEPTION_RECORD64 inputRecord = new() { ExceptionAddress = exceptionAddress };
+
+        int hr = previous.Interface.IsSameState2((uint)CLRDataExceptionSameFlag.CLRDATA_EXSAME_SECOND_CHANCE, &inputRecord, 0, null);
+
+        Assert.Equal(HResults.S_OK, hr);
+    }
+
+    [Theory]
+    [InlineData((uint)CLRDataExceptionSameFlag.CLRDATA_EXSAME_SECOND_CHANCE)]
+    [InlineData((uint)CLRDataExceptionSameFlag.CLRDATA_EXSAME_FIRST_CHANCE)]
     public void IsSameState2_PartialState(uint flags)
     {
         IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
             target: null!,
             threadAddress: TargetPointer.Null,
             flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL,
+            exceptionInfoAddress: TargetPointer.Null,
             thrownObjectHandle: TargetPointer.Null,
             previousExInfoAddress: TargetPointer.Null,
             legacyImpl: null);
 
         int hr = exceptionState.IsSameState2(flags, null, 0, null);
 
-        Assert.Equal(flags == 1 ? HResults.S_OK : HResults.S_FALSE, hr);
+        Assert.Equal(flags == (uint)CLRDataExceptionSameFlag.CLRDATA_EXSAME_FIRST_CHANCE ? HResults.S_OK : HResults.S_FALSE, hr);
     }
 
     [Theory]
@@ -397,6 +449,7 @@ public unsafe class ExceptionStateTests
             target: null!,
             threadAddress: TargetPointer.Null,
             flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL,
+            exceptionInfoAddress: TargetPointer.Null,
             thrownObjectHandle: TargetPointer.Null,
             previousExInfoAddress: TargetPointer.Null,
             legacyImpl: null);
@@ -468,6 +521,7 @@ public unsafe class ExceptionStateTests
             target: null!,
             threadAddress: new TargetPointer(0x1000),
             flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            exceptionInfoAddress: TargetPointer.Null,
             thrownObjectHandle: new TargetPointer(0x2000),
             previousExInfoAddress: TargetPointer.Null,
             legacyImpl: null);
@@ -498,6 +552,7 @@ public unsafe class ExceptionStateTests
             target,
             threadAddress: new TargetPointer(0x1000),
             flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            exceptionInfoAddress: TargetPointer.Null,
             thrownObjectHandle: new TargetPointer(0x2000),
             previousExInfoAddress: previousExInfoAddr,
             legacyImpl: null);
@@ -533,6 +588,7 @@ public unsafe class ExceptionStateTests
             target,
             threadAddress: new TargetPointer(0x1000),
             flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            exceptionInfoAddress: TargetPointer.Null,
             thrownObjectHandle: new TargetPointer(0x2000),
             previousExInfoAddress: firstNestedAddr,
             legacyImpl: null);

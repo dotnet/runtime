@@ -681,6 +681,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                             _target,
                             exception.ThreadAddress,
                             (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+                            TargetPointer.Null,
                             thrownObjectHandle,
                             threadData.FirstNestedException,
                             null));
