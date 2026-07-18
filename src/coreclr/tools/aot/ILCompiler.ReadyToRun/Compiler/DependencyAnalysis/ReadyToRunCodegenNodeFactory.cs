@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
 
     // To make the code future compatible to the composite R2R story
     // do NOT attempt to pass and store _inputModule here
-    public sealed class NodeFactory
+    public sealed partial class NodeFactory
     {
         private bool _markingComplete;
 
@@ -154,8 +154,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(method.IsVirtual);
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            canonMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(canonMethod);
-            return _gvmDependenciesNode.GetOrAdd(canonMethod);
+            MethodDesc canonSlotMethodDefinition = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(canonMethod.GetMethodDefinition());
+            return _gvmDependenciesNode.GetOrAdd(canonSlotMethodDefinition.MakeInstantiatedMethod(canonMethod.Instantiation));
         }
 
         private NodeCache<MethodDesc, VirtualMethodUseNode> _virtualMethodUseNodes;

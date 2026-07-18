@@ -275,11 +275,10 @@ function stringToMonoStringNewRoot (string: string, result: WasmRoot<MonoString>
 }
 
 // When threading is enabled, TextDecoder does not accept a view of a
-// SharedArrayBuffer, we must make a copy of the array first.
+// SharedArrayBuffer or resizable, we must make a copy of the array first.
 // See https://github.com/whatwg/encoding/issues/172
 export function viewOrCopy (view: Uint8Array, start: CharPtr, end: CharPtr): Uint8Array {
-    // this condition should be eliminated by rollup on non-threading builds
-    const needsCopy = isSharedArrayBuffer(view.buffer);
+    const needsCopy = isSharedArrayBuffer(view.buffer) || view.buffer.resizable;
     return needsCopy
         ? view.slice(<any>start >>> 0, <any>end >>> 0)
         : view.subarray(<any>start >>> 0, <any>end >>> 0);

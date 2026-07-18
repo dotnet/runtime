@@ -1172,6 +1172,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Unix.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509MruCache.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Persistence.cs" />
   </ItemGroup>
@@ -2068,7 +2069,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.StackTrace\src\System.Diagnostics.StackTrace.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.MemoryMappedFiles\src\System.IO.MemoryMappedFiles.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />

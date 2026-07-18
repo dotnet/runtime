@@ -94,6 +94,7 @@ namespace System.Text.Json.Serialization.Metadata
             typeInfo.AddMethodDelegate = addFunc;
             typeInfo.SetCreateObjectIfCompatible(collectionInfo.ObjectCreator);
             PopulatePolymorphismMetadata(typeInfo, collectionInfo.PolymorphismOptions, collectionInfo.TypeClassifierFactory);
+
             typeInfo.MapInterfaceTypesToCallbacks();
 
             // Plug in any converter configuration -- should be run last.

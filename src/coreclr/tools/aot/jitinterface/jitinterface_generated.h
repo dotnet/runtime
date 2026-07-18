@@ -131,7 +131,7 @@ struct JitInterfaceCallbacks
     bool (* runWithSPMIErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     void (* getEEInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_EE_INFO* pEEInfoOut);
     void (* getAsyncInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ASYNC_INFO* pAsyncInfoOut);
-    CORINFO_METHOD_HANDLE (* getAwaitReturnCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg);
+    CORINFO_METHOD_HANDLE (* getAwaitReturnCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
     mdMethodDef (* getMethodDefFromMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod);
     size_t (* printMethodName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     const char* (* getMethodNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName, const char** enclosingClassNames, size_t maxEnclosingClassNames);
@@ -141,6 +141,7 @@ struct JitInterfaceCallbacks
     void (* getFpStructLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
     CorInfoWasmType (* getWasmLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
     uint32_t (* getAddressAlignment)(void * thisHandle, CorInfoExceptionClass** ppException, void* address);
+    void (* getWasmWellKnownGlobals)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     void (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethod);
@@ -1364,10 +1365,11 @@ public:
 
     virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(
           CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
           CORINFO_LOOKUP* instArg)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CORINFO_METHOD_HANDLE temp = _callbacks->getAwaitReturnCall(_thisHandle, &pException, callerHandle, instArg);
+    CORINFO_METHOD_HANDLE temp = _callbacks->getAwaitReturnCall(_thisHandle, &pException, callerHandle, contextHandle, instArg);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1459,6 +1461,14 @@ public:
     uint32_t temp = _callbacks->getAddressAlignment(_thisHandle, &pException, address);
     if (pException != nullptr) throw pException;
     return temp;
+}
+
+    virtual void getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->getWasmWellKnownGlobals(_thisHandle, &pException, pWellKnownGlobalsOut);
+    if (pException != nullptr) throw pException;
 }
 
     virtual uint32_t getThreadTLSIndex(
