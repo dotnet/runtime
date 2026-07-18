@@ -2879,15 +2879,19 @@ interp_type_as_ptr (MonoType *tp)
 		return TRUE;
 	if ((tp)->type == MONO_TYPE_CHAR)
 		return TRUE;
-	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (tp)))
+	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (tp))) {
 		/*
-		 * An enum is only pointer-compatible if its underlying type is. Checking the
-		 * underlying type ensures a 64-bit enum (e.g. 'enum : ulong') is not treated as a
-		 * pointer-sized icall argument on 32-bit targets such as wasm32, where it would
-		 * otherwise be passed through do_icall's gpointer signature and cause a native
-		 * call_indirect signature mismatch.
+		 * A 64-bit enum (e.g. 'enum : ulong') must not be treated as a pointer-sized icall
+		 * argument on 32-bit targets such as wasm32: it would otherwise be passed through
+		 * do_icall's gpointer signature and cause a native call_indirect signature mismatch.
+		 * Defer to the underlying type, which is width-guarded, for those cases; enums with
+		 * a smaller underlying type keep their existing classification.
 		 */
-		return interp_type_as_ptr (mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (tp)));
+		MonoType *base_type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (tp));
+		if (base_type->type == MONO_TYPE_I8 || base_type->type == MONO_TYPE_U8)
+			return interp_type_as_ptr (base_type);
+		return TRUE;
+	}
 	if (is_scalar_vtype (tp))
 		return TRUE;
 	return FALSE;
