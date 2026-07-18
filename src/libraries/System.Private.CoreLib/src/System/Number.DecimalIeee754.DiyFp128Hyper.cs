@@ -35,38 +35,38 @@ internal static partial class Number
     private const int HyperTanhEval = (TrigSquareTerm | TrigPostMultiply) | (TrigSquareTerm << TrigNumeratorFieldWidth);
     private const int HyperSinhCoshEval = HyperTanhEval | TrigNoDivide;
 
-    private const int HyperSinhCoshDegree = 0xb;
+    private const int HyperSinhCoshDegree = 0xB;
     private const int HyperSinhCoshTrailingExponent = 1;
 
     // Fixed point coefficients for sinh/cosh evaluation (dpml_exp_x.h, SINHCOSH_COEF_ARRAY numerator).
     private static readonly DiyFp128FixedCoefficient[] HyperSinhCoefficients =
     [
         new(0x0000000000000000, 0x0000000000000000),
-        new(0x2e4690eb84e45693, 0x0000000000000000),
-        new(0xd268b21c12ffd219, 0x000000000000004b),
-        new(0x1dc1787345bbf199, 0x000000000000654b),
-        new(0x9ccece4dde16535a, 0x00000000006b9fcf),
-        new(0xa1b4271d9e5e08b2, 0x000000005849184e),
-        new(0x89c71fc2391817aa, 0x00000035cc8acfea),
-        new(0x338faac219c8d92f, 0x0000171de3a556c7),
-        new(0x8068068066ce9bd9, 0x0006806806806806),
+        new(0x2E4690EB84E45693, 0x0000000000000000),
+        new(0xD268B21C12FFD219, 0x000000000000004B),
+        new(0x1DC1787345BBF199, 0x000000000000654B),
+        new(0x9CCECE4DDE16535A, 0x00000000006B9FCF),
+        new(0xA1B4271D9E5E08B2, 0x000000005849184E),
+        new(0x89C71FC2391817AA, 0x00000035CC8ACFEA),
+        new(0x338FAAC219C8D92F, 0x0000171DE3A556C7),
+        new(0x8068068066CE9BD9, 0x0006806806806806),
         new(0x1111111111137719, 0x0111111111111111),
-        new(0x555555555555537e, 0x1555555555555555),
+        new(0x555555555555537E, 0x1555555555555555),
         new(0x0000000000000000, 0x8000000000000000),
     ];
 
     // Fixed point coefficients for sinh/cosh evaluation (dpml_exp_x.h, SINHCOSH_COEF_ARRAY denominator).
     private static readonly DiyFp128FixedCoefficient[] HyperCoshCoefficients =
     [
-        new(0x021a7acfab2871a0, 0x0000000000000000),
-        new(0xca853bed72a41925, 0x0000000000000003),
-        new(0x9e18f89af7b71018, 0x00000000000005a0),
-        new(0xf9ccecdb5c564d82, 0x000000000006b9fc),
-        new(0x301f275eee64c398, 0x00000000064e5d2a),
-        new(0x3625ed50108a94fe, 0x000000047bb63bfe),
-        new(0xeb8e5de0376e0580, 0x0000024fc9f6ef13),
-        new(0xd00d00d00ccc1e48, 0x0000d00d00d00d00),
-        new(0x82d82d82d82e2a61, 0x002d82d82d82d82d),
+        new(0x021A7ACFAB2871A0, 0x0000000000000000),
+        new(0xCA853BED72A41925, 0x0000000000000003),
+        new(0x9E18F89AF7B71018, 0x00000000000005A0),
+        new(0xF9CCECDB5C564D82, 0x000000000006B9FC),
+        new(0x301F275EEE64C398, 0x00000000064E5D2A),
+        new(0x3625ED50108A94FE, 0x000000047BB63BFE),
+        new(0xEB8E5DE0376E0580, 0x0000024FC9F6EF13),
+        new(0xD00D00D00CCC1E48, 0x0000D00D00D00D00),
+        new(0x82D82D82D82E2A61, 0x002D82D82D82D82D),
         new(0x5555555555555442, 0x0555555555555555),
         new(0x0000000000000001, 0x4000000000000000),
         new(0x0000000000000000, 0x8000000000000000),

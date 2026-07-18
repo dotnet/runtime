@@ -21,9 +21,9 @@ internal static partial class Number
     // engine, so Decimal64/Decimal128 obtain the full ~34-digit accuracy Intel's reference does.
 
     // Loss-of-significance thresholds (dpml_inv_hyper_x.h): the MSD boundaries selecting the small path.
-    private const ulong InvHyperSqrt2Over4 = 0xb504f333f9de6484;         // sqrt(2) / 4
-    private const ulong InvHyperThreeSqrt2Over4 = 0x87c3b666fb66cb63;    // 3 * sqrt(2) / 4
-    private const ulong InvHyperSqrt2Minus1Squared = 0xafb0ccc06219b7ba; // (sqrt(2) - 1)^2
+    private const ulong InvHyperSqrt2Over4 = 0xB504F333F9DE6484;         // sqrt(2) / 4
+    private const ulong InvHyperThreeSqrt2Over4 = 0x87C3B666FB66CB63;    // 3 * sqrt(2) / 4
+    private const ulong InvHyperSqrt2Minus1Squared = 0xAFB0CCC06219B7BA; // (sqrt(2) - 1)^2
 
     /// <summary>Computes <c>asinh(x)</c> for a finite <paramref name="x"/> (Intel's <c>F_ASINH</c>).</summary>
     private static DiyFp128 DiyFp128Asinh(DiyFp128 x)

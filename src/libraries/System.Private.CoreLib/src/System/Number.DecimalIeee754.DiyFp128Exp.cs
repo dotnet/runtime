@@ -35,38 +35,38 @@ internal static partial class Number
 
     // ---- exp (base e) constant table (dpml_exp_x.h) ----
 
-    private const ulong ExpReciprocalLn2High = 0x5c551d94ae0bf85e; // high digits of 1/ln2
-    private const ulong ExpLn2High = 0xb17217f7d1cf79ac;           // high digits of ln2
+    private const ulong ExpReciprocalLn2High = 0x5C551D94AE0BF85E; // high digits of 1/ln2
+    private const ulong ExpLn2High = 0xB17217F7D1CF79AC;           // high digits of ln2
     private const int ExpReduceConstantExponent = 0;               // binary exponent of ln2
     private const int ExpDegree = 22;
     private const int ExpTrailingExponent = 1;
 
     // ln2_lo = ln2 - ln2_hi, as an unpacked value.
-    private static DiyFp128 ExpLn2Low => new DiyFp128(UxSignBit, -66, 0xd871319ff0342542, 0xfc32f366359d2749);
+    private static DiyFp128 ExpLn2Low => new DiyFp128(UxSignBit, -66, 0xD871319FF0342542, 0xFC32F366359D2749);
 
     private static readonly DiyFp128FixedCoefficient[] ExpCoefficients =
     [
-        new(0x0219c7290393a749, 0x0000000000000000),
-        new(0x2e468fc7b47b630c, 0x0000000000000000),
-        new(0xca85ad657f5c80bd, 0x0000000000000003),
-        new(0xd268b2cb49b64eae, 0x000000000000004b),
-        new(0x9e18d9e0eb90c661, 0x00000000000005a0),
-        new(0x1dc178468fe824f4, 0x000000000000654b),
-        new(0xf9ccf1842631a1a2, 0x000000000006b9fc),
-        new(0x9ccece542f079eeb, 0x00000000006b9fcf),
-        new(0x301f26eff3934011, 0x00000000064e5d2a),
-        new(0xa1b4271d14562c06, 0x000000005849184e),
-        new(0x3625ed5697a1173a, 0x000000047bb63bfe),
-        new(0x89c71fc24062e495, 0x00000035cc8acfea),
-        new(0xeb8e5ddff9b4c26e, 0x0000024fc9f6ef13),
-        new(0x338faac2198cd02d, 0x0000171de3a556c7),
-        new(0xd00d00d00e2c1d71, 0x0000d00d00d00d00),
-        new(0x8068068066cfb7b5, 0x0006806806806806),
-        new(0x82d82d82d829d3b1, 0x002d82d82d82d82d),
-        new(0x111111111113746f, 0x0111111111111111),
-        new(0x5555555555555aa3, 0x0555555555555555),
+        new(0x0219C7290393A749, 0x0000000000000000),
+        new(0x2E468FC7B47B630C, 0x0000000000000000),
+        new(0xCA85AD657F5C80BD, 0x0000000000000003),
+        new(0xD268B2CB49B64EAE, 0x000000000000004B),
+        new(0x9E18D9E0EB90C661, 0x00000000000005A0),
+        new(0x1DC178468FE824F4, 0x000000000000654B),
+        new(0xF9CCF1842631A1A2, 0x000000000006B9FC),
+        new(0x9CCECE542F079EEB, 0x00000000006B9FCF),
+        new(0x301F26EFF3934011, 0x00000000064E5D2A),
+        new(0xA1B4271D14562C06, 0x000000005849184E),
+        new(0x3625ED5697A1173A, 0x000000047BB63BFE),
+        new(0x89C71FC24062E495, 0x00000035CC8ACFEA),
+        new(0xEB8E5DDFF9B4C26E, 0x0000024FC9F6EF13),
+        new(0x338FAAC2198CD02D, 0x0000171DE3A556C7),
+        new(0xD00D00D00E2C1D71, 0x0000D00D00D00D00),
+        new(0x8068068066CFB7B5, 0x0006806806806806),
+        new(0x82D82D82D829D3B1, 0x002D82D82D82D82D),
+        new(0x111111111113746F, 0x0111111111111111),
+        new(0x5555555555555AA3, 0x0555555555555555),
         new(0x5555555555555380, 0x1555555555555555),
-        new(0xfffffffffffffffe, 0x3fffffffffffffff),
+        new(0xFFFFFFFFFFFFFFFE, 0x3FFFFFFFFFFFFFFF),
         new(0x0000000000000000, 0x8000000000000000),
         new(0x0000000000000000, 0x8000000000000000),
     ];
@@ -75,39 +75,39 @@ internal static partial class Number
     // The exp10 polynomial approximates 10^t directly, so the reduction subtracts scale*log10(2) and the
     // result is 10^reduced * 2^scale.
 
-    private const ulong Exp10ReciprocalHigh = 0xd49a784bcd1b8afe; // high digits of log2(10)/4
-    private const ulong Exp10Ln2High = 0x9a209a84fbcff799;        // high digits of log10(2)*2
+    private const ulong Exp10ReciprocalHigh = 0xD49A784BCD1B8AFE; // high digits of log2(10)/4
+    private const ulong Exp10Ln2High = 0x9A209A84FBCFF799;        // high digits of log10(2)*2
     private const int Exp10ReduceConstantExponent = -1;           // binary exponent of log10(2)
     private const int Exp10Degree = 22;
     private const int Exp10TrailingExponent = 2;
 
     // log10(2)_lo, as an unpacked value.
-    private static DiyFp128 Exp10Ln2Low => new DiyFp128(UxSignBit, -66, 0xe0ed4ca7e906dd0f, 0xb2a59e75785c196c);
+    private static DiyFp128 Exp10Ln2Low => new DiyFp128(UxSignBit, -66, 0xE0ED4CA7E906DD0F, 0xB2A59E75785C196C);
 
     private static readonly DiyFp128FixedCoefficient[] Exp10Coefficients =
     [
-        new(0xaa326d76e12a5f3d, 0x000000000005d18c),
-        new(0xbb46d2d76a135c14, 0x000000000037bd19),
-        new(0x2188762e74d6a84b, 0x0000000001fba820),
-        new(0x10a5eebae5e25723, 0x0000000011396f18),
-        new(0xb3fcd05a246ea126, 0x000000008e20e630),
-        new(0x11f8f23a20dd37fd, 0x00000004570fb29c),
-        new(0x167b5d1d64bf3431, 0x000000200af8fbff),
-        new(0xb407c79f854435f8, 0x000000dea8177bc6),
-        new(0xaef77a1b0616e83b, 0x000005aa7a612e29),
-        new(0x119b2348d3c5fba9, 0x0000227315a5882e),
-        new(0x20d8613a1e07d507, 0x0000c27f096fc05f),
-        new(0x7f472bc73dd8f81c, 0x0003f59fabb213ac),
-        new(0x674c9f4591a76481, 0x0012ea52b2d182af),
-        new(0xc9822f93893bb4f4, 0x005225f11764f507),
-        new(0xf088ae28f92f4908, 0x014116b05fdaa5cd),
-        new(0xc160bba8aa4224b1, 0x045b937f0ccea1ac),
-        new(0xd9f3dcd36ebee310, 0x0d3f6b8423e45aeb),
-        new(0x5c6542259124b3bc, 0x22853ffa3a9aec44),
-        new(0xea51f65ed9f90d3b, 0x4af5d827f6631131),
-        new(0x6a4f9d820d46ba57, 0x82382c8ef1652304),
-        new(0x80a99ce52d65a6ec, 0xa9a92639e753443a),
-        new(0xea56d62b82d30a2c, 0x935d8dddaaa8ac16),
+        new(0xAA326D76E12A5F3D, 0x000000000005D18C),
+        new(0xBB46D2D76A135C14, 0x000000000037BD19),
+        new(0x2188762E74D6A84B, 0x0000000001FBA820),
+        new(0x10A5EEBAE5E25723, 0x0000000011396F18),
+        new(0xB3FCD05A246EA126, 0x000000008E20E630),
+        new(0x11F8F23A20DD37FD, 0x00000004570FB29C),
+        new(0x167B5D1D64BF3431, 0x000000200AF8FBFF),
+        new(0xB407C79F854435F8, 0x000000DEA8177BC6),
+        new(0xAEF77A1B0616E83B, 0x000005AA7A612E29),
+        new(0x119B2348D3C5FBA9, 0x0000227315A5882E),
+        new(0x20D8613A1E07D507, 0x0000C27F096FC05F),
+        new(0x7F472BC73DD8F81C, 0x0003F59FABB213AC),
+        new(0x674C9F4591A76481, 0x0012EA52B2D182AF),
+        new(0xC9822F93893BB4F4, 0x005225F11764F507),
+        new(0xF088AE28F92F4908, 0x014116B05FDAA5CD),
+        new(0xC160BBA8AA4224B1, 0x045B937F0CCEA1AC),
+        new(0xD9F3DCD36EBEE310, 0x0D3F6B8423E45AEB),
+        new(0x5C6542259124B3BC, 0x22853FFA3A9AEC44),
+        new(0xEA51F65ED9F90D3B, 0x4AF5D827F6631131),
+        new(0x6A4F9D820D46BA57, 0x82382C8EF1652304),
+        new(0x80A99CE52D65A6EC, 0xA9A92639E753443A),
+        new(0xEA56D62B82D30A2C, 0x935D8DDDAAA8AC16),
         new(0x0000000000000000, 0x4000000000000000),
     ];
 

@@ -21,14 +21,14 @@ internal static partial class Number
     // in high/low pieces so the integer part I = rint(y*log2(x)) separates exactly from the fractional
     // 2^h that the polynomial evaluates.
 
-    private const ulong PowMsdOfLn2 = 0xb17217f7d1cf79ab; // dpml_pow_x.h high word of ln2
+    private const ulong PowMsdOfLn2 = 0xB17217F7D1CF79AB; // dpml_pow_x.h high word of ln2
     private const int PowExponentGuard = Float128ExponentWidth + 2; // F_EXP_WIDTH + 2 overflow screen
     private const int UxOverflowExponent = 1 << Float128ExponentWidth;
     private const int UxUnderflowExponent = -(1 << Float128ExponentWidth);
 
     // Unpacked 2/ln2 and log2_lo/ln2 (dpml_pow_x.h).
-    private static DiyFp128 PowTwoOverLn2 => new DiyFp128(0, 2, 0xb8aa3b295c17f0bb, 0xbe87fed0691d3e88);
-    private static DiyFp128 PowLn2LoOverLn2 => new DiyFp128(0, -63, 0x91a1e8f29e45c2c0, 0xb3dc7e64505ad73a);
+    private static DiyFp128 PowTwoOverLn2 => new DiyFp128(0, 2, 0xB8AA3B295C17F0BB, 0xBE87FED0691D3E88);
+    private static DiyFp128 PowLn2LoOverLn2 => new DiyFp128(0, -63, 0x91A1E8F29E45C2C0, 0xB3DC7E64505AD73A);
 
     // log2 fixed-point coefficients for pow (dpml_pow_x.h), degree 17, trailing exponent -4.
     private const int PowLog2Degree = 17;
@@ -36,24 +36,24 @@ internal static partial class Number
 
     private static readonly DiyFp128FixedCoefficient[] PowLog2Coefficients =
     [
-        new(0x846f0cdb9c3d3269, 0x0000000000000116),
-        new(0x0ed54db254ec30fa, 0x000000000000072b),
-        new(0xc9fa6284dfe33a4b, 0x00000000000041bc),
-        new(0x99f674defc256daa, 0x0000000000024519),
-        new(0xd7b95b07fbd9eaf3, 0x0000000000143436),
-        new(0xa13ba5817dba85bc, 0x0000000000b4aaab),
-        new(0xb7a943e619ecd788, 0x0000000006587797),
-        new(0x50fcda140e2310dc, 0x00000000396c809c),
-        new(0x20dc94f8fc4954a4, 0x000000020b9cbe4a),
-        new(0x726ae205a00351a9, 0x00000012d2328609),
-        new(0x746df3952e72008c, 0x000000af210e17e1),
-        new(0x13599009fb43dec4, 0x00000674700e7651),
-        new(0xd038e4eaf62944cf, 0x00003e01d7c437db),
-        new(0xaee9df3b28865f8f, 0x00026219e54d1542),
-        new(0x5d557e397a082390, 0x0018402256fd52e7),
-        new(0x2932877a7aa6f59b, 0x0103950187a04e84),
-        new(0x47a3ed398c267804, 0x0bd19a0fd62f144c),
-        new(0x5079024edd11fee3, 0xa3fe9ffd641da382),
+        new(0x846F0CDB9C3D3269, 0x0000000000000116),
+        new(0x0ED54DB254EC30FA, 0x000000000000072B),
+        new(0xC9FA6284DFE33A4B, 0x00000000000041BC),
+        new(0x99F674DEFC256DAA, 0x0000000000024519),
+        new(0xD7B95B07FBD9EAF3, 0x0000000000143436),
+        new(0xA13BA5817DBA85BC, 0x0000000000B4AAAB),
+        new(0xB7A943E619ECD788, 0x0000000006587797),
+        new(0x50FCDA140E2310DC, 0x00000000396C809C),
+        new(0x20DC94F8FC4954A4, 0x000000020B9CBE4A),
+        new(0x726AE205A00351A9, 0x00000012D2328609),
+        new(0x746DF3952E72008C, 0x000000AF210E17E1),
+        new(0x13599009FB43DEC4, 0x00000674700E7651),
+        new(0xD038E4EAF62944CF, 0x00003E01D7C437DB),
+        new(0xAEE9DF3B28865F8F, 0x00026219E54D1542),
+        new(0x5D557E397A082390, 0x0018402256FD52E7),
+        new(0x2932877A7AA6F59B, 0x0103950187A04E84),
+        new(0x47A3ED398C267804, 0x0BD19A0FD62F144C),
+        new(0x5079024EDD11FEE3, 0xA3FE9FFD641DA382),
     ];
 
     // 2^h fixed-point coefficients (dpml_pow_x.h), degree 22, trailing exponent 1.
@@ -62,28 +62,28 @@ internal static partial class Number
 
     private static readonly DiyFp128FixedCoefficient[] Pow2Coefficients =
     [
-        new(0x00002b4c151832ab, 0x0000000000000000),
-        new(0x000561d142ddb787, 0x0000000000000000),
-        new(0x00a2d67fd1c367c8, 0x0000000000000000),
-        new(0x125a7da057182134, 0x0000000000000000),
-        new(0xf7176bc7ba507c6d, 0x0000000000000001),
-        new(0x088968a28fac4875, 0x0000000000000033),
-        new(0xa26b9e85115b54c3, 0x00000000000004e3),
-        new(0xa10ec0e8d6ab2988, 0x00000000000070db),
-        new(0x26ac3c533fcb6035, 0x0000000000098a4b),
-        new(0x8b3687ce8532c06f, 0x0000000000c0b0c9),
-        new(0x7e14c2f18e3a0b6b, 0x000000000e1deb28),
-        new(0x8dd9260757ee4711, 0x00000000f465639a),
-        new(0xc764fb7ecc717d30, 0x0000000f267a8ac5),
-        new(0x3e1ed2538c4cb47e, 0x000000da929e9caf),
-        new(0x11fec7ff3074cb1a, 0x00000b160111d2e4),
-        new(0x1a1ac54731ee7ad0, 0x00007ff2ff1622c3),
-        new(0xdbd2c2a261aa9a77, 0x00050c244be1b1e1),
-        new(0x20e2fed34a2a80b1, 0x002bb0ffcf14ce62),
-        new(0x9ccbbe0b53eeb456, 0x013b2ab6fba4e772),
-        new(0xcce9d8aeccaf4903, 0x071ac235c1282fe2),
-        new(0x6f16b06ec9735fbe, 0x1ebfbdff82c58ea8),
-        new(0xe4f1d9cc01f97b59, 0x58b90bfbe8e7bcd5),
+        new(0x00002B4C151832AB, 0x0000000000000000),
+        new(0x000561D142DDB787, 0x0000000000000000),
+        new(0x00A2D67FD1C367C8, 0x0000000000000000),
+        new(0x125A7DA057182134, 0x0000000000000000),
+        new(0xF7176BC7BA507C6D, 0x0000000000000001),
+        new(0x088968A28FAC4875, 0x0000000000000033),
+        new(0xA26B9E85115B54C3, 0x00000000000004E3),
+        new(0xA10EC0E8D6AB2988, 0x00000000000070DB),
+        new(0x26AC3C533FCB6035, 0x0000000000098A4B),
+        new(0x8B3687CE8532C06F, 0x0000000000C0B0C9),
+        new(0x7E14C2F18E3A0B6B, 0x000000000E1DEB28),
+        new(0x8DD9260757EE4711, 0x00000000F465639A),
+        new(0xC764FB7ECC717D30, 0x0000000F267A8AC5),
+        new(0x3E1ED2538C4CB47E, 0x000000DA929E9CAF),
+        new(0x11FEC7FF3074CB1A, 0x00000B160111D2E4),
+        new(0x1A1AC54731EE7AD0, 0x00007FF2FF1622C3),
+        new(0xDBD2C2A261AA9A77, 0x00050C244BE1B1E1),
+        new(0x20E2FED34A2A80B1, 0x002BB0FFCF14CE62),
+        new(0x9CCBBE0B53EEB456, 0x013B2AB6FBA4E772),
+        new(0xCCE9D8AECCAF4903, 0x071AC235C1282FE2),
+        new(0x6F16B06EC9735FBE, 0x1EBFBDFF82C58EA8),
+        new(0xE4F1D9CC01F97B59, 0x58B90BFBE8E7BCD5),
         new(0x0000000000000000, 0x8000000000000000),
     ];
 

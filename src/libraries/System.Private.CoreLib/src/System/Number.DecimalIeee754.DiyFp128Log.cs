@@ -28,34 +28,34 @@ internal static partial class Number
 
     private static readonly DiyFp128FixedCoefficient[] Log2Coefficients =
     [
-        new(0x271eee7d56dac09b, 0x06cc4d0d2a1966ce),
-        new(0x1ba3468b6f81e43d, 0x056711399caac22d),
-        new(0xf7ca0b25a20f818f, 0x05f8b50232b2540a),
-        new(0x7adfa93e3f28f8fe, 0x065df4e9cb8d055c),
-        new(0xce5c4ea3f7891d9d, 0x06d6e7804c87d854),
-        new(0xe820f58a9feb8d1e, 0x0762f8145c44b19a),
-        new(0xe8c1f4c0f720bb2c, 0x080766bf41dad530),
-        new(0x80535f751df3812c, 0x08cb27637d59049f),
-        new(0x96e6a1d72c2ac1eb, 0x09b81e0fa68ac838),
-        new(0x8c3b0c947df70971, 0x0adcd64dba1f8070),
-        new(0xa70095aa11d8754e, 0x0c4f9d8b4a67ff05),
-        new(0x64f2a61e05f3cefe, 0x0e347ab4698bb00e),
-        new(0x572dc64d3936b199, 0x10c9a84994022d28),
-        new(0x6a80ddd58c4ac6fe, 0x1484b13d7c02a8f8),
-        new(0x645c921fa5c4559c, 0x1a61762a7aded93f),
-        new(0x594e6629ae4a965a, 0x24eed8a1df37fcf2),
-        new(0x3f82aa45785f1acb, 0x3d8e13b87407fae9),
-        new(0xbe87fed0691d3e89, 0xb8aa3b295c17f0bb),
+        new(0x271EEE7D56DAC09B, 0x06CC4D0D2A1966CE),
+        new(0x1BA3468B6F81E43D, 0x056711399CAAC22D),
+        new(0xF7CA0B25A20F818F, 0x05F8B50232B2540A),
+        new(0x7ADFA93E3F28F8FE, 0x065DF4E9CB8D055C),
+        new(0xCE5C4EA3F7891D9D, 0x06D6E7804C87D854),
+        new(0xE820F58A9FEB8D1E, 0x0762F8145C44B19A),
+        new(0xE8C1F4C0F720BB2C, 0x080766BF41DAD530),
+        new(0x80535F751DF3812C, 0x08CB27637D59049F),
+        new(0x96E6A1D72C2AC1EB, 0x09B81E0FA68AC838),
+        new(0x8C3B0C947DF70971, 0x0ADCD64DBA1F8070),
+        new(0xA70095AA11D8754E, 0x0C4F9D8B4A67FF05),
+        new(0x64F2A61E05F3CEFE, 0x0E347AB4698BB00E),
+        new(0x572DC64D3936B199, 0x10C9A84994022D28),
+        new(0x6A80DDD58C4AC6FE, 0x1484B13D7C02A8F8),
+        new(0x645C921FA5C4559C, 0x1A61762A7ADED93F),
+        new(0x594E6629AE4A965A, 0x24EED8A1DF37FCF2),
+        new(0x3F82AA45785F1ACB, 0x3D8E13B87407FAE9),
+        new(0xBE87FED0691D3E89, 0xB8AA3B295C17F0BB),
     ];
 
     // 1/sqrt(2) fraction MSD and the I_RECIP_SQRT_2 / I_SQRT_2 range constants (dpml_log_x.h).
-    private const ulong LogOneOverSqrt2 = 0xb504f333f9de6484;
-    private const ulong LogIRecipSqrt2 = 0x5a827999fcef3242;
-    private const ulong LogISqrt2 = 0xb504f333f9de6484;
+    private const ulong LogOneOverSqrt2 = 0xB504F333F9DE6484;
+    private const ulong LogIRecipSqrt2 = 0x5A827999FCEF3242;
+    private const ulong LogISqrt2 = 0xB504F333F9DE6484;
 
     // Unpacked ln2, log10(2), and 2.0 (dpml_log_x.h).
-    private static DiyFp128 LogLn2 => new DiyFp128(0, 0, 0xb17217f7d1cf79ab, 0xc9e3b39803f2f6af);
-    private static DiyFp128 LogLog10Of2 => new DiyFp128(0, -1, 0x9a209a84fbcff798, 0x8f8959ac0b7c9178);
+    private static DiyFp128 LogLn2 => new DiyFp128(0, 0, 0xB17217F7D1CF79AB, 0xC9E3B39803F2F6AF);
+    private static DiyFp128 LogLog10Of2 => new DiyFp128(0, -1, 0x9A209A84FBCFF798, 0x8F8959AC0B7C9178);
     private static DiyFp128 LogTwo => new DiyFp128(0, 2, 0x8000000000000000, 0);
 
     /// <summary>Converts a signed integer to an unpacked binary128 value (Intel's <c>WORD_TO_UX</c>).</summary>

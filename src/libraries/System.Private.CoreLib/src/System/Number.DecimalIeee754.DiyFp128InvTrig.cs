@@ -22,87 +22,87 @@ internal static partial class Number
 
     private const int InvTrigAtanMapWidth = 4;
     private const int InvTrigAsinMapWidth = 6;
-    private const int InvTrigAtanDegree = 0xb;
-    private const int InvTrigAsinDegree = 0xb;
+    private const int InvTrigAtanDegree = 0xB;
+    private const int InvTrigAsinDegree = 0xB;
 
     // ASIN/ACOS interval maps (dpml_ux_inv_trig.c), precomputed from ASIN_MAP_FIELD.
-    private const int InvTrigAsinMap = 0xf04e00;
-    private const int InvTrigAcosMap = 0x1a30038;
+    private const int InvTrigAsinMap = 0xF04E00;
+    private const int InvTrigAcosMap = 0x1A30038;
 
-    private static DiyFp128 InvTrigOneThird => new DiyFp128(0, -1, 0xaaaaaaaaaaaaaaaa, 0xaaaaaaaaaaaaaaaa);
+    private static DiyFp128 InvTrigOneThird => new DiyFp128(0, -1, 0xAAAAAAAAAAAAAAAA, 0xAAAAAAAAAAAAAAAA);
 
     // INV_TRIG_CONS_BASE (dpml_inv_trig_x.h): 0, pi/4, pi/2, 3pi/4, pi. Intel spaces these entries
     // 24 bytes apart, so the packed byte offset divided by 24 selects the constant.
     private static readonly DiyFp128[] InvTrigConstants =
     [
         new DiyFp128(0, UxZeroExponent, 0, 0),                      // 0
-        new DiyFp128(0, 0, 0xc90fdaa22168c234, 0xc4c6628b80dc1cd1), // pi/4
-        new DiyFp128(0, 1, 0xc90fdaa22168c234, 0xc4c6628b80dc1cd1), // pi/2
-        new DiyFp128(0, 2, 0x96cbe3f9990e91a7, 0x9394c9e8a0a5159c), // 3pi/4
-        new DiyFp128(0, 2, 0xc90fdaa22168c234, 0xc4c6628b80dc1cd1), // pi
+        new DiyFp128(0, 0, 0xC90FDAA22168C234, 0xC4C6628B80DC1CD1), // pi/4
+        new DiyFp128(0, 1, 0xC90FDAA22168C234, 0xC4C6628B80DC1CD1), // pi/2
+        new DiyFp128(0, 2, 0x96CBE3F9990E91A7, 0x9394C9E8A0A5159C), // 3pi/4
+        new DiyFp128(0, 2, 0xC90FDAA22168C234, 0xC4C6628B80DC1CD1), // pi
     ];
 
     private static readonly DiyFp128FixedCoefficient[] InvTrigAtanNumeratorCoefficients =
     [
         new(0x0000000000000000, 0x0000000000000000),
-        new(0x9b21db1817b033de, 0x00000000036a28b8),
-        new(0x7af48d0cbbb9e258, 0x00000004a9d8aeac),
-        new(0x710b595cb5f5477a, 0x000001d601b80364),
-        new(0x82ff5ad5bdc83502, 0x00005360db2203cd),
-        new(0xa46ea356b3ace8e0, 0x000803a15271c15d),
-        new(0x511728bc47fd897a, 0x00752012d71df9b4),
-        new(0xb0eebd1d38e6ccd7, 0x04261aad0c0e0aef),
-        new(0x715215ee2223a644, 0x178d58e7069e5e06),
-        new(0x1a5b5968daa31b09, 0x515e68b909775969),
-        new(0xa67de44d68db7ef7, 0x9c53edb8b65e0e57),
+        new(0x9B21DB1817B033DE, 0x00000000036A28B8),
+        new(0x7AF48D0CBBB9E258, 0x00000004A9D8AEAC),
+        new(0x710B595CB5F5477A, 0x000001D601B80364),
+        new(0x82FF5AD5BDC83502, 0x00005360DB2203CD),
+        new(0xA46EA356B3ACE8E0, 0x000803A15271C15D),
+        new(0x511728BC47FD897A, 0x00752012D71DF9B4),
+        new(0xB0EEBD1D38E6CCD7, 0x04261AAD0C0E0AEF),
+        new(0x715215EE2223A644, 0x178D58E7069E5E06),
+        new(0x1A5B5968DAA31B09, 0x515E68B909775969),
+        new(0xA67DE44D68DB7EF7, 0x9C53EDB8B65E0E57),
         new(0x0000000000000000, 0x8000000000000000),
     ];
 
     private static readonly DiyFp128FixedCoefficient[] InvTrigAtanDenominatorCoefficients =
     [
-        new(0x753b0a86a07a791a, 0x0000000000060285),
-        new(0xb62b5e42f41004bb, 0x000000001a6a8474),
-        new(0x6af09bc24e1e2dad, 0x00000012cf340cf3),
-        new(0x49426ee8106af1a7, 0x00000523bce40e29),
-        new(0xd77ad56c6ccae258, 0x0000b5f6388d7935),
-        new(0x95aa5864a5d93fd4, 0x000e856c505d9ab5),
-        new(0xf9512f8649a8f559, 0x00b744f2c988c73a),
-        new(0x247ce9cc4ddd2493, 0x05c2135495031b41),
-        new(0xc6922892f40a72fc, 0x1d8eb88dde3bc4f4),
-        new(0x0785210e97ff604a, 0x5daf5bd2629e79e5),
-        new(0x51288ef813862999, 0xa6fe98636108b902),
+        new(0x753B0A86A07A791A, 0x0000000000060285),
+        new(0xB62B5E42F41004BB, 0x000000001A6A8474),
+        new(0x6AF09BC24E1E2DAD, 0x00000012CF340CF3),
+        new(0x49426EE8106AF1A7, 0x00000523BCE40E29),
+        new(0xD77AD56C6CCAE258, 0x0000B5F6388D7935),
+        new(0x95AA5864A5D93FD4, 0x000E856C505D9AB5),
+        new(0xF9512F8649A8F559, 0x00B744F2C988C73A),
+        new(0x247CE9CC4DDD2493, 0x05C2135495031B41),
+        new(0xC6922892F40A72FC, 0x1D8EB88DDE3BC4F4),
+        new(0x0785210E97FF604A, 0x5DAF5BD2629E79E5),
+        new(0x51288EF813862999, 0xA6FE98636108B902),
         new(0x0000000000000000, 0x8000000000000000),
     ];
 
     private static readonly DiyFp128FixedCoefficient[] InvTrigAsinNumeratorCoefficients =
     [
-        new(0xbc844bd3285a9adb, 0x000000000018a298),
-        new(0x24543a40ff2fc62e, 0x000000004b712f53),
-        new(0x2553512c4db90d47, 0x0000002b42b22a11),
-        new(0x4670c8ac9560de1d, 0x00000a0239855097),
-        new(0x022dda0e53ef4cb8, 0x00013575bd533bc9),
-        new(0xafc38a68688e8800, 0x00160d59ece50095),
-        new(0x6123e0eea5f3e527, 0x00fcc7ee91e17495),
-        new(0xfa699043ffd8cc09, 0x074facfd5647265e),
-        new(0x7dd602b0df4a1e6d, 0x22edbcfce68005c2),
-        new(0xa938fa69d688d50a, 0x67f826ed129b3e51),
-        new(0xff93b5cb3865c5f2, 0xaf5c9b73f163dd08),
+        new(0xBC844BD3285A9ADB, 0x000000000018A298),
+        new(0x24543A40FF2FC62E, 0x000000004B712F53),
+        new(0x2553512C4DB90D47, 0x0000002B42B22A11),
+        new(0x4670C8AC9560DE1D, 0x00000A0239855097),
+        new(0x022DDA0E53EF4CB8, 0x00013575BD533BC9),
+        new(0xAFC38A68688E8800, 0x00160D59ECE50095),
+        new(0x6123E0EEA5F3E527, 0x00FCC7EE91E17495),
+        new(0xFA699043FFD8CC09, 0x074FACFD5647265E),
+        new(0x7DD602B0DF4A1E6D, 0x22EDBCFCE68005C2),
+        new(0xA938FA69D688D50A, 0x67F826ED129B3E51),
+        new(0xFF93B5CB3865C5F2, 0xAF5C9B73F163DD08),
         new(0x0000000000000000, 0x8000000000000000),
     ];
 
     private static readonly DiyFp128FixedCoefficient[] InvTrigAsinDenominatorCoefficients =
     [
-        new(0xede27d48152467c1, 0x0000000000882734),
-        new(0x1d75e618be470341, 0x00000000ca5275d0),
-        new(0x001c0ab3c7d6f6e2, 0x000000559cc8243b),
-        new(0x36449091ea1af30d, 0x000010830f45b29d),
-        new(0x9692608b4850f9dd, 0x0001c28a726a35f0),
-        new(0x755313b950b194c6, 0x001d43c1aa0112de),
-        new(0x555ff65fd5bd1184, 0x013820000042983f),
-        new(0xa448034f044ad977, 0x0884c1099a59728a),
-        new(0x0743cfa35361e105, 0x26caad31c3ec7bec),
-        new(0x5329169c42d6fdeb, 0x6ee5f75bdbf406d1),
-        new(0x54e90b208dbb1b38, 0xb4b1f0c946b9325e),
+        new(0xEDE27D48152467C1, 0x0000000000882734),
+        new(0x1D75E618BE470341, 0x00000000CA5275D0),
+        new(0x001C0AB3C7D6F6E2, 0x000000559CC8243B),
+        new(0x36449091EA1AF30D, 0x000010830F45B29D),
+        new(0x9692608B4850F9DD, 0x0001C28A726A35F0),
+        new(0x755313B950B194C6, 0x001D43C1AA0112DE),
+        new(0x555FF65FD5BD1184, 0x013820000042983F),
+        new(0xA448034F044AD977, 0x0884C1099A59728A),
+        new(0x0743CFA35361E105, 0x26CAAD31C3EC7BEC),
+        new(0x5329169C42D6FDEB, 0x6EE5F75BDBF406D1),
+        new(0x54E90B208DBB1B38, 0xB4B1F0C946B9325E),
         new(0x0000000000000000, 0x8000000000000000),
     ];
 
@@ -242,7 +242,7 @@ internal static partial class Number
         value._exponent += exponentIncrement;
 
         DiyFp128 sum = default;
-        DiyFp128AddSub(InvTrigConstants[(mapInfo & 0xf0) / 24], value, UxAdd | UxNoNormalization, new Span<DiyFp128>(ref sum));
+        DiyFp128AddSub(InvTrigConstants[(mapInfo & 0xF0) / 24], value, UxAdd | UxNoNormalization, new Span<DiyFp128>(ref sum));
         value = sum;
 
         value._sign = ((mapInfo & 4) != 0) ? UxSignBit : 0;
