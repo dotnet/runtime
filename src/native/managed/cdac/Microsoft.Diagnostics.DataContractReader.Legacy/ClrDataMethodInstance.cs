@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -31,42 +31,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
         public EnumMethodExtents(ClrDataAddressRange extent)
         {
-            Enumerator = new SingleExtentEnumerator(extent);
-        }
-    }
-
-    private sealed class SingleExtentEnumerator : IEnumerator<ClrDataAddressRange>
-    {
-        private readonly ClrDataAddressRange _extent;
-        private bool _hasCurrent;
-
-        public SingleExtentEnumerator(ClrDataAddressRange extent)
-        {
-            _extent = extent;
-        }
-
-        public ClrDataAddressRange Current => _hasCurrent ? _extent : throw new InvalidOperationException("Enumeration has not started or has already finished.");
-
-        object IEnumerator.Current => Current;
-
-        public bool MoveNext()
-        {
-            if (_hasCurrent)
-            {
-                return false;
-            }
-
-            _hasCurrent = true;
-            return true;
-        }
-
-        public void Reset()
-        {
-            _hasCurrent = false;
-        }
-
-        public void Dispose()
-        {
+            Enumerator = Enumerable.Repeat(extent, 1).GetEnumerator();
         }
     }
 
