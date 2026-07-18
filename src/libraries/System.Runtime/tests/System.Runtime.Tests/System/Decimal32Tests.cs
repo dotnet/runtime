@@ -2131,6 +2131,7 @@ namespace System.Tests
         [InlineData(0.5, 2)]
         [InlineData(2.0, -2)]
         [InlineData(8.0, -3)]
+        [InlineData(2.0, int.MinValue)]
         public static void RootNAccuracyTest(double input, int n)
         {
             // Decimal32 evaluates rootn in the binary128 engine, so the result matches double.RootN

@@ -766,7 +766,7 @@ internal static partial class Number
 
         if (dx.Signed && yIsOddInteger)
         {
-            magnitude = new DiyFp128(1u, magnitude._exponent, magnitude._hi, magnitude._lo);
+            magnitude = new DiyFp128(UxSignBit, magnitude._exponent, magnitude._hi, magnitude._lo);
         }
 
         return DiyFp128ToDecimal<TDecimal, TValue>(magnitude);
@@ -940,9 +940,10 @@ internal static partial class Number
         }
 
         // The engine evaluates |x|^(1/n) with the reciprocal formed exactly in the binary128 domain;
-        // a negative base only reaches here with an odd n, so it simply carries the sign.
+        // a negative base only reaches here with an odd n, so it simply carries the sign. `n` is taken
+        // through `long` so `int.MinValue`'s magnitude does not overflow.
         DiyFp128 one = new DiyFp128(0u, 1, 0x8000_0000_0000_0000, 0);
-        DiyFp128 degree = DecimalToDiyFp128<TDecimal, TValue>(nNegative, 0, TValue.CreateTruncating(int.Abs(n)));
+        DiyFp128 degree = DecimalToDiyFp128<TDecimal, TValue>(nNegative, 0, TValue.CreateTruncating(long.Abs(n)));
         DiyFp128Divide(one, degree, DiyFp128FullPrecision, out DiyFp128 exponent);
 
         DiyFp128 baseValue = DecimalToDiyFp128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
@@ -950,7 +951,7 @@ internal static partial class Number
 
         if (dx.Signed)
         {
-            magnitude = new DiyFp128(1u, magnitude._exponent, magnitude._hi, magnitude._lo);
+            magnitude = new DiyFp128(UxSignBit, magnitude._exponent, magnitude._hi, magnitude._lo);
         }
 
         return DiyFp128ToDecimal<TDecimal, TValue>(magnitude);
