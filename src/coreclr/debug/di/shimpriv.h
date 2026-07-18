@@ -463,6 +463,8 @@ public:
     // Get the data target to access the debuggee.
     ICorDebugMutableDataTarget * GetDataTarget();
 
+    void SetRuntimeBase(CORDB_ADDRESS runtimeBase);
+
     // Get the native event pipeline
     INativeEventPipeline * GetNativePipeline();
 
@@ -1046,4 +1048,3 @@ private:
 
 
 #endif // SHIMPRIV_H
-

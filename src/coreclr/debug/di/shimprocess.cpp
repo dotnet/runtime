@@ -921,6 +921,12 @@ ICorDebugMutableDataTarget * ShimProcess::GetDataTarget()
     return m_pLiveDataTarget;
 };
 
+void ShimProcess::SetRuntimeBase(CORDB_ADDRESS runtimeBase)
+{
+    _ASSERTE(m_pLiveDataTarget != NULL);
+    m_pLiveDataTarget->SetRuntimeBase(runtimeBase);
+}
+
 
 // Trivial accessor to get the raw native event pipeline.
 // In V3, ICorDebug no longer owns the event thread and it does not own the event pipeline either.

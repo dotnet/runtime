@@ -211,6 +211,20 @@ interface ICLRRuntimeLocator : IUnknown
     HRESULT GetRuntimeBase([out] CLRDATA_ADDRESS* baseAddress);
 };
 
+[
+    object,
+    local,
+    uuid(17d5b8c6-34a9-407f-af4f-a930201d4e02),
+    pointer_default(unique)
+]
+interface ICLRContractLocator : IUnknown
+{
+    /*
+     Returns the address of the runtime's contract descriptor.
+     */
+    HRESULT GetContractDescriptor([out] CLRDATA_ADDRESS* contractAddress);
+}
+
 /*
  * Interface used by the data access services layer to locate metadata
  * of assemblies in a target.
@@ -340,4 +354,3 @@ interface ICLRDataEnumMemoryRegions : IUnknown
                               [in] ULONG32 miniDumpFlags,
                               [in] CLRDataEnumMemoryFlags clrFlags);
 }
-
