@@ -537,7 +537,14 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
         return NULL;
 
     LPCUTF8 ownerCompositeExecutableName = NULL;
-    if (pLayout->IsMapped())
+    if (pLayout->IsWebcilFormat())
+    {
+        // Webcil is wasm-only and flat-mapped by construction (PointerToRawData == VirtualAddress),
+        // so this is equivalent to GetBase() + virtualAddress; use the decoder's GetRvaData as the
+        // format-correct idiom for resolving an RVA.
+        ownerCompositeExecutableName = (LPCUTF8)pLayout->GetRvaData(virtualAddress);
+    }
+    else if (pLayout->IsMapped())
     {
         ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + virtualAddress;
     }

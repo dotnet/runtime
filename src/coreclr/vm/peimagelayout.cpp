@@ -248,6 +248,21 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     SSIZE_T tableBaseDelta = GetTableBaseOffset();
 #endif // FEATURE_WEBCIL
 
+#ifdef TARGET_WASM
+    // Host-probed webcil R2R images share one in-memory buffer, so the binder can open the same
+    // image twice (identity probe + load) and relocate it twice. WASM table-index relocations are
+    // additive (index += tableBase), so re-relocating doubles tableBase and corrupts indirect calls.
+    // Skip if this base was already relocated. INTERIM: production should relocate the buffer once at
+    // the host-probe boundary and skip webcil here; not synchronized (single-threaded wasm runtime).
+    typedef SetSHash< TADDR,
+                      NoRemoveSHashTraits< NonDacAwareSHashTraits< SetSHashTraits<TADDR> > > > RelocatedWebcilSet;
+    static RelocatedWebcilSet s_relocatedWebcilBases;
+    const bool isHostProbedWebcil = IsWebcilFormat();
+    const TADDR webcilBase = isHostProbedWebcil ? (TADDR)GetBase() : (TADDR)0;
+    if (isHostProbedWebcil && s_relocatedWebcilBases.Contains(webcilBase))
+        return;
+#endif // TARGET_WASM
+
     // Nothing to do - image is loaded at preferred base and no table base offset
     if (delta == 0
 #ifdef FEATURE_WEBCIL
@@ -306,6 +321,8 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
         DWORD rva = VAL32(r->VirtualAddress);
 
+        // For webcil (wasm-only) this relies on the flat-mapped invariant PointerToRawData ==
+        // VirtualAddress, so GetBase() + rva is the correct address (equivalent to GetRvaData(rva)).
         BYTE * pageAddress = (BYTE *)GetBase() + rva;
 
         // Check whether the page is outside the unprotected region.
@@ -455,6 +472,13 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     {
         ClrFlushInstructionCache(pFlushRegion, cbFlushRegion);
     }
+
+#ifdef TARGET_WASM
+    // Record the base only now that relocations have been applied successfully, so a throw partway
+    // through does not leave the shared buffer marked relocated and cause a later open to skip it.
+    if (isHostProbedWebcil)
+        s_relocatedWebcilBases.Add(webcilBase);
+#endif // TARGET_WASM
 }
 
 static SIZE_T AllocatedPart(PVOID part)
