@@ -23,10 +23,10 @@ internal static partial class Number
     // documented later refinement.
 
     /// <summary>
-    /// Builds a normalized <see cref="Float128"/> holding the exact value of the non-zero magnitude
+    /// Builds a normalized <see cref="DiyFp128"/> holding the exact value of the non-zero magnitude
     /// <paramref name="coefficient"/> (which must be below 2^128) with the given <paramref name="sign"/>.
     /// </summary>
-    private static Float128 Float128FromUInt128(UInt128 coefficient, uint sign)
+    private static DiyFp128 DiyFp128FromUInt128(UInt128 coefficient, uint sign)
     {
         Debug.Assert(coefficient != UInt128.Zero);
 
@@ -35,7 +35,7 @@ internal static partial class Number
 
         // value = fraction * 2^(exponent - 128); with fraction = coefficient << leadingZeros this is
         // exactly coefficient, so exponent = 128 - leadingZeros.
-        return new Float128(sign, 128 - leadingZeros, (ulong)(fraction >> 64), (ulong)fraction);
+        return new DiyFp128(sign, 128 - leadingZeros, (ulong)(fraction >> 64), (ulong)fraction);
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ internal static partial class Number
     /// format's existing pow10 table in chunks of at most <c>Precision - 1</c> digits, each an exact
     /// binary128 multiplier.
     /// </summary>
-    private static Float128 Float128ScaleByPow10<TDecimal, TValue>(Float128 value, int power)
+    private static DiyFp128 DiyFp128ScaleByPow10<TDecimal, TValue>(DiyFp128 value, int power)
         where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
         where TValue : unmanaged, IBinaryInteger<TValue>
     {
@@ -54,16 +54,16 @@ internal static partial class Number
         while (remaining > 0)
         {
             int chunk = int.Min(remaining, maxChunk);
-            Float128 pow = Float128FromUInt128(UInt128.CreateTruncating(TDecimal.Power10(chunk)), 0);
+            DiyFp128 pow = DiyFp128FromUInt128(UInt128.CreateTruncating(TDecimal.Power10(chunk)), 0);
 
             if (power > 0)
             {
-                Float128Multiply(ref value, ref pow, out value);
-                Float128Normalize(ref value);
+                DiyFp128Multiply(ref value, ref pow, out value);
+                DiyFp128Normalize(ref value);
             }
             else
             {
-                Float128Divide(value, pow, Float128FullPrecision, out value);
+                DiyFp128Divide(value, pow, DiyFp128FullPrecision, out value);
             }
 
             remaining -= chunk;
@@ -76,14 +76,14 @@ internal static partial class Number
     /// Converts the decoded finite, non-zero BID decimal <c>(sign, unbiasedExponent, significand)</c> to
     /// the engine's binary128 form.
     /// </summary>
-    private static Float128 DecimalToFloat128<TDecimal, TValue>(bool signed, int unbiasedExponent, TValue significand)
+    private static DiyFp128 DecimalToDiyFp128<TDecimal, TValue>(bool signed, int unbiasedExponent, TValue significand)
         where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
         where TValue : unmanaged, IBinaryInteger<TValue>
     {
         Debug.Assert(!TValue.IsZero(significand));
 
-        Float128 value = Float128FromUInt128(UInt128.CreateTruncating(significand), signed ? UxSignBit : 0);
-        return Float128ScaleByPow10<TDecimal, TValue>(value, unbiasedExponent);
+        DiyFp128 value = DiyFp128FromUInt128(UInt128.CreateTruncating(significand), signed ? UxSignBit : 0);
+        return DiyFp128ScaleByPow10<TDecimal, TValue>(value, unbiasedExponent);
     }
 
     /// <summary>
@@ -92,12 +92,12 @@ internal static partial class Number
     /// format's infinity, subnormal, or zero as required. <paramref name="value"/> is assumed positive-
     /// magnitude in <paramref name="value"/><c>._hi/_lo</c>; the sign is taken from <c>value._sign</c>.
     /// </summary>
-    private static TValue Float128ToDecimal<TDecimal, TValue>(Float128 value)
+    private static TValue DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128 value)
         where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
         where TValue : unmanaged, IBinaryInteger<TValue>
     {
         bool signed = value.IsNegative;
-        Float128Normalize(ref value);
+        DiyFp128Normalize(ref value);
 
         if ((value._hi | value._lo) == 0)
         {
@@ -120,8 +120,8 @@ internal static partial class Number
 
         while (true)
         {
-            Float128 scaled = Float128ScaleByPow10<TDecimal, TValue>(value, -q);
-            coefficient = Float128RoundToUInt128(scaled);
+            DiyFp128 scaled = DiyFp128ScaleByPow10<TDecimal, TValue>(value, -q);
+            coefficient = DiyFp128RoundToUInt128(scaled);
 
             if (coefficient >= pow10P)
             {
@@ -144,11 +144,11 @@ internal static partial class Number
     }
 
     /// <summary>
-    /// Rounds a finite <see cref="Float128"/> whose magnitude is below 2^128 to the nearest integer
+    /// Rounds a finite <see cref="DiyFp128"/> whose magnitude is below 2^128 to the nearest integer
     /// (ties-to-even) and returns it. The value is assumed normalized with a fractional part (i.e. its
     /// binary exponent is below 128), which holds for the in-range decimal coefficients this is used for.
     /// </summary>
-    private static UInt128 Float128RoundToUInt128(Float128 value)
+    private static UInt128 DiyFp128RoundToUInt128(DiyFp128 value)
     {
         int shift = 128 - value._exponent;
         Debug.Assert(shift is > 0 and < 128);

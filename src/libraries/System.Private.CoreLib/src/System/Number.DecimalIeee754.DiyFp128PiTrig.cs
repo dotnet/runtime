@@ -17,33 +17,33 @@ internal static partial class Number
     // below 2^113), so the pi-scaled reduction avoids the large-argument cancellation that motivates a
     // dedicated *Pi routine. The inverse variants are the radian result divided by pi.
 
-    private static readonly Float128 UxQuarter = new Float128(0, -1, UxMsb, 0);
-    private static readonly Float128 UxHalf = new Float128(0, 0, UxMsb, 0);
-    private static readonly Float128 UxThreeQuarter = new Float128(0, 0, 0xC000000000000000, 0);
-    private static readonly Float128 UxOne = new Float128(0, 1, UxMsb, 0);
+    private static readonly DiyFp128 UxQuarter = new DiyFp128(0, -1, UxMsb, 0);
+    private static readonly DiyFp128 UxHalf = new DiyFp128(0, 0, UxMsb, 0);
+    private static readonly DiyFp128 UxThreeQuarter = new DiyFp128(0, 0, 0xC000000000000000, 0);
+    private static readonly DiyFp128 UxOne = new DiyFp128(0, 1, UxMsb, 0);
 
     // 0, 1/4, 1/2, 3/4, 1 -- InvTrigConstants (0, pi/4, pi/2, 3pi/4, pi) divided by pi, for the exact
     // signed-zero/infinity quadrant results of the inverse *Pi variants.
-    private static readonly Float128[] PiFractionConstants = new Float128[]
+    private static readonly DiyFp128[] PiFractionConstants = new DiyFp128[]
     {
-        new Float128(0, UxZeroExponent, 0, 0), // 0
+        new DiyFp128(0, UxZeroExponent, 0, 0), // 0
         UxQuarter,                             // 1/4
         UxHalf,                                // 1/2
         UxThreeQuarter,                        // 3/4
         UxOne,                                 // 1
     };
 
-    private static bool Float128IsZero(in Float128 value) => (value._hi | value._lo) == 0;
+    private static bool DiyFp128IsZero(in DiyFp128 value) => (value._hi | value._lo) == 0;
 
-    // Compares the magnitudes of two normalized non-negative Float128 values (returns a <= b).
-    private static bool Float128MagnitudeLessOrEqual(in Float128 a, in Float128 b)
+    // Compares the magnitudes of two normalized non-negative DiyFp128 values (returns a <= b).
+    private static bool DiyFp128MagnitudeLessOrEqual(in DiyFp128 a, in DiyFp128 b)
     {
-        if (Float128IsZero(a))
+        if (DiyFp128IsZero(a))
         {
             return true;
         }
 
-        if (Float128IsZero(b))
+        if (DiyFp128IsZero(b))
         {
             return false;
         }
@@ -63,9 +63,9 @@ internal static partial class Number
 
     // Splits |value| (assumed normalized) into its fractional part in [0, 1); reports whether floor(|value|)
     // is odd and whether the value is an exact integer.
-    private static Float128 Float128SplitInteger(in Float128 value, out bool oddInteger, out bool isInteger)
+    private static DiyFp128 DiyFp128SplitInteger(in DiyFp128 value, out bool oddInteger, out bool isInteger)
     {
-        if (Float128IsZero(value))
+        if (DiyFp128IsZero(value))
         {
             oddInteger = false;
             isInteger = true;
@@ -79,7 +79,7 @@ internal static partial class Number
             // |value| < 1, so the whole value is fractional and floor is 0 (even).
             oddInteger = false;
             isInteger = false;
-            Float128 fraction = value;
+            DiyFp128 fraction = value;
             fraction._sign = 0;
             return fraction;
         }
@@ -105,112 +105,112 @@ internal static partial class Number
         }
 
         isInteger = false;
-        Float128 result = new Float128(0, exponent, (ulong)(fractionBits >> 64), (ulong)fractionBits);
-        Float128Normalize(ref result);
+        DiyFp128 result = new DiyFp128(0, exponent, (ulong)(fractionBits >> 64), (ulong)fractionBits);
+        DiyFp128Normalize(ref result);
         return result;
     }
 
-    private static Float128 Float128Product(in Float128 a, in Float128 b)
+    private static DiyFp128 DiyFp128Product(in DiyFp128 a, in DiyFp128 b)
     {
-        Float128 x = a;
-        Float128 y = b;
-        Float128Multiply(ref x, ref y, out Float128 z);
-        Float128Normalize(ref z);
+        DiyFp128 x = a;
+        DiyFp128 y = b;
+        DiyFp128Multiply(ref x, ref y, out DiyFp128 z);
+        DiyFp128Normalize(ref z);
         return z;
     }
 
     // reduced (in [0, 1/4]) * pi -> a small angle in [0, pi/4].
-    private static Float128 Float128TimesPi(in Float128 reduced) => Float128Product(reduced, InvTrigConstants[4]);
+    private static DiyFp128 DiyFp128TimesPi(in DiyFp128 reduced) => DiyFp128Product(reduced, InvTrigConstants[4]);
 
-    private static Float128 Float128Difference(in Float128 a, in Float128 b)
+    private static DiyFp128 DiyFp128Difference(in DiyFp128 a, in DiyFp128 b)
     {
-        Span<Float128> result = stackalloc Float128[1];
-        Float128AddSub(a, b, UxSub, result);
+        Span<DiyFp128> result = stackalloc DiyFp128[1];
+        DiyFp128AddSub(a, b, UxSub, result);
         return result[0];
     }
 
-    private static Float128 Float128WithSignFlipped(Float128 value, uint sign)
+    private static DiyFp128 DiyFp128WithSignFlipped(DiyFp128 value, uint sign)
     {
         value._sign ^= sign;
         return value;
     }
 
     /// <summary>Computes <c>sin(pi * x)</c> for a finite non-zero binary128 argument.</summary>
-    private static Float128 Float128SinPi(in Float128 x)
+    private static DiyFp128 DiyFp128SinPi(in DiyFp128 x)
     {
-        Float128 magnitude = x;
+        DiyFp128 magnitude = x;
         magnitude._sign = 0;
-        Float128 fraction = Float128SplitInteger(magnitude, out bool oddInteger, out bool isInteger);
+        DiyFp128 fraction = DiyFp128SplitInteger(magnitude, out bool oddInteger, out bool isInteger);
 
         if (isInteger)
         {
             // sin(pi * n) = +/-0, keeping the sign of x.
-            return new Float128(x._sign, UxZeroExponent, 0, 0);
+            return new DiyFp128(x._sign, UxZeroExponent, 0, 0);
         }
 
         uint sign = x._sign ^ (oddInteger ? UxSignBit : 0u);
-        Float128 result;
+        DiyFp128 result;
 
-        if (Float128MagnitudeLessOrEqual(fraction, UxQuarter))
+        if (DiyFp128MagnitudeLessOrEqual(fraction, UxQuarter))
         {
-            result = Float128Sin(Float128TimesPi(fraction));
+            result = DiyFp128Sin(DiyFp128TimesPi(fraction));
         }
-        else if (Float128MagnitudeLessOrEqual(fraction, UxHalf))
+        else if (DiyFp128MagnitudeLessOrEqual(fraction, UxHalf))
         {
-            result = Float128Cos(Float128TimesPi(Float128Difference(UxHalf, fraction)));
+            result = DiyFp128Cos(DiyFp128TimesPi(DiyFp128Difference(UxHalf, fraction)));
         }
-        else if (Float128MagnitudeLessOrEqual(fraction, UxThreeQuarter))
+        else if (DiyFp128MagnitudeLessOrEqual(fraction, UxThreeQuarter))
         {
-            result = Float128Cos(Float128TimesPi(Float128Difference(fraction, UxHalf)));
+            result = DiyFp128Cos(DiyFp128TimesPi(DiyFp128Difference(fraction, UxHalf)));
         }
         else
         {
-            result = Float128Sin(Float128TimesPi(Float128Difference(UxOne, fraction)));
+            result = DiyFp128Sin(DiyFp128TimesPi(DiyFp128Difference(UxOne, fraction)));
         }
 
-        return Float128WithSignFlipped(result, sign);
+        return DiyFp128WithSignFlipped(result, sign);
     }
 
     /// <summary>Computes <c>cos(pi * x)</c> for a finite non-zero binary128 argument.</summary>
-    private static Float128 Float128CosPi(in Float128 x)
+    private static DiyFp128 DiyFp128CosPi(in DiyFp128 x)
     {
-        Float128 magnitude = x;
+        DiyFp128 magnitude = x;
         magnitude._sign = 0;
-        Float128 fraction = Float128SplitInteger(magnitude, out bool oddInteger, out bool isInteger);
+        DiyFp128 fraction = DiyFp128SplitInteger(magnitude, out bool oddInteger, out bool isInteger);
 
         if (isInteger)
         {
             // cos(pi * n) = (-1)^n.
-            return Float128WithSignFlipped(UxOne, oddInteger ? UxSignBit : 0u);
+            return DiyFp128WithSignFlipped(UxOne, oddInteger ? UxSignBit : 0u);
         }
 
         uint sign = oddInteger ? UxSignBit : 0u;
-        Float128 result;
+        DiyFp128 result;
 
-        if (Float128MagnitudeLessOrEqual(fraction, UxQuarter))
+        if (DiyFp128MagnitudeLessOrEqual(fraction, UxQuarter))
         {
-            result = Float128Cos(Float128TimesPi(fraction));
+            result = DiyFp128Cos(DiyFp128TimesPi(fraction));
         }
-        else if (Float128MagnitudeLessOrEqual(fraction, UxHalf))
+        else if (DiyFp128MagnitudeLessOrEqual(fraction, UxHalf))
         {
-            result = Float128Sin(Float128TimesPi(Float128Difference(UxHalf, fraction)));
+            result = DiyFp128Sin(DiyFp128TimesPi(DiyFp128Difference(UxHalf, fraction)));
         }
-        else if (Float128MagnitudeLessOrEqual(fraction, UxThreeQuarter))
+        else if (DiyFp128MagnitudeLessOrEqual(fraction, UxThreeQuarter))
         {
-            result = Float128WithSignFlipped(Float128Sin(Float128TimesPi(Float128Difference(fraction, UxHalf))), UxSignBit);
+            result = DiyFp128WithSignFlipped(DiyFp128Sin(DiyFp128TimesPi(DiyFp128Difference(fraction, UxHalf))), UxSignBit);
         }
         else
         {
-            result = Float128WithSignFlipped(Float128Cos(Float128TimesPi(Float128Difference(UxOne, fraction))), UxSignBit);
+            result = DiyFp128WithSignFlipped(DiyFp128Cos(DiyFp128TimesPi(DiyFp128Difference(UxOne, fraction))), UxSignBit);
         }
 
-        return Float128WithSignFlipped(result, sign);
+        return DiyFp128WithSignFlipped(result, sign);
     }
 
     /// <summary>Computes <c>sin(pi * x)</c> and <c>cos(pi * x)</c> for a finite non-zero binary128 argument.</summary>
-    private static void Float128SinCosPi(in Float128 x, out Float128 sin, out Float128 cos)
+    private static void DiyFp128SinCosPi(in DiyFp128 x, out DiyFp128 sin, out DiyFp128 cos)
     {
-        sin = Float128SinPi(x);
-        cos = Float128CosPi(x);
+        sin = DiyFp128SinPi(x);
+        cos = DiyFp128CosPi(x);
     }
 }

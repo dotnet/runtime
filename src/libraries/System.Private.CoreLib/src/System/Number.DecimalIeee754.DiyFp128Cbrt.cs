@@ -46,7 +46,7 @@ internal static partial class Number
     private static double CbrtSevenNinths => BitConverter.UInt64BitsToDouble(0x3FE8E38E38E38E39);
     private static double CbrtTwoNinths => BitConverter.UInt64BitsToDouble(0x3FCC71C71C71C71C);
 
-    private static Float128 Float128Cbrt(Float128 arg)
+    private static DiyFp128 DiyFp128Cbrt(DiyFp128 arg)
     {
         // f is the ux mantissa reinterpreted as a double in [1, 2).
         ulong msd = arg._hi;
@@ -69,26 +69,26 @@ internal static partial class Number
                        + ((z4 * (z2 * z)) * ((CbrtTwoNinths * f) * (f2 * f2))));
 
         ulong yBits = BitConverter.DoubleToUInt64Bits(y);
-        Float128 result = default;
+        DiyFp128 result = default;
         result._sign = arg._sign;
         result._exponent = (int)(yBits >> CbrtDoubleExponentPosition) + m - (CbrtDoubleExponentBias - 1);
         result._hi = (yBits << CbrtDoubleExponentWidth) | UxMsb;
         result._lo = 0;
 
         // One binary128 Newton iteration: result <- (result / 2) * (result^3 + 2x) / (result^3 + x/2).
-        Float128 r = result;
-        Float128Multiply(ref r, ref r, out Float128 cube);
-        Float128Multiply(ref r, ref cube, out cube);
+        DiyFp128 r = result;
+        DiyFp128Multiply(ref r, ref r, out DiyFp128 cube);
+        DiyFp128Multiply(ref r, ref cube, out cube);
 
-        Float128 term = arg;
-        Span<Float128> sums = stackalloc Float128[2];
+        DiyFp128 term = arg;
+        Span<DiyFp128> sums = stackalloc DiyFp128[2];
         term._exponent += 1; // 2*x
-        Float128AddSub(cube, term, UxAdd, sums.Slice(0, 1));
+        DiyFp128AddSub(cube, term, UxAdd, sums.Slice(0, 1));
         term._exponent -= 2; // x/2
-        Float128AddSub(cube, term, UxAdd, sums.Slice(1, 1));
+        DiyFp128AddSub(cube, term, UxAdd, sums.Slice(1, 1));
 
-        Float128Divide(sums[0], sums[1], Float128FullPrecision, out Float128 ratio);
-        Float128Multiply(ref r, ref ratio, out result);
+        DiyFp128Divide(sums[0], sums[1], DiyFp128FullPrecision, out DiyFp128 ratio);
+        DiyFp128Multiply(ref r, ref ratio, out result);
         result._exponent -= 1;
         return result;
     }

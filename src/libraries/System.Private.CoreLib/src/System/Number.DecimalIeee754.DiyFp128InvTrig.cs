@@ -29,20 +29,20 @@ internal static partial class Number
     private const int InvTrigAsinMap = 0xf04e00;
     private const int InvTrigAcosMap = 0x1a30038;
 
-    private static Float128 InvTrigOneThird => new Float128(0, -1, 0xaaaaaaaaaaaaaaaa, 0xaaaaaaaaaaaaaaaa);
+    private static DiyFp128 InvTrigOneThird => new DiyFp128(0, -1, 0xaaaaaaaaaaaaaaaa, 0xaaaaaaaaaaaaaaaa);
 
     // INV_TRIG_CONS_BASE (dpml_inv_trig_x.h): 0, pi/4, pi/2, 3pi/4, pi. Intel spaces these entries
     // 24 bytes apart, so the packed byte offset divided by 24 selects the constant.
-    private static readonly Float128[] InvTrigConstants =
+    private static readonly DiyFp128[] InvTrigConstants =
     [
-        new Float128(0, UxZeroExponent, 0, 0),                      // 0
-        new Float128(0, 0, 0xc90fdaa22168c234, 0xc4c6628b80dc1cd1), // pi/4
-        new Float128(0, 1, 0xc90fdaa22168c234, 0xc4c6628b80dc1cd1), // pi/2
-        new Float128(0, 2, 0x96cbe3f9990e91a7, 0x9394c9e8a0a5159c), // 3pi/4
-        new Float128(0, 2, 0xc90fdaa22168c234, 0xc4c6628b80dc1cd1), // pi
+        new DiyFp128(0, UxZeroExponent, 0, 0),                      // 0
+        new DiyFp128(0, 0, 0xc90fdaa22168c234, 0xc4c6628b80dc1cd1), // pi/4
+        new DiyFp128(0, 1, 0xc90fdaa22168c234, 0xc4c6628b80dc1cd1), // pi/2
+        new DiyFp128(0, 2, 0x96cbe3f9990e91a7, 0x9394c9e8a0a5159c), // 3pi/4
+        new DiyFp128(0, 2, 0xc90fdaa22168c234, 0xc4c6628b80dc1cd1), // pi
     ];
 
-    private static readonly Float128FixedCoefficient[] InvTrigAtanNumeratorCoefficients =
+    private static readonly DiyFp128FixedCoefficient[] InvTrigAtanNumeratorCoefficients =
     [
         new(0x0000000000000000, 0x0000000000000000),
         new(0x9b21db1817b033de, 0x00000000036a28b8),
@@ -58,7 +58,7 @@ internal static partial class Number
         new(0x0000000000000000, 0x8000000000000000),
     ];
 
-    private static readonly Float128FixedCoefficient[] InvTrigAtanDenominatorCoefficients =
+    private static readonly DiyFp128FixedCoefficient[] InvTrigAtanDenominatorCoefficients =
     [
         new(0x753b0a86a07a791a, 0x0000000000060285),
         new(0xb62b5e42f41004bb, 0x000000001a6a8474),
@@ -74,7 +74,7 @@ internal static partial class Number
         new(0x0000000000000000, 0x8000000000000000),
     ];
 
-    private static readonly Float128FixedCoefficient[] InvTrigAsinNumeratorCoefficients =
+    private static readonly DiyFp128FixedCoefficient[] InvTrigAsinNumeratorCoefficients =
     [
         new(0xbc844bd3285a9adb, 0x000000000018a298),
         new(0x24543a40ff2fc62e, 0x000000004b712f53),
@@ -90,7 +90,7 @@ internal static partial class Number
         new(0x0000000000000000, 0x8000000000000000),
     ];
 
-    private static readonly Float128FixedCoefficient[] InvTrigAsinDenominatorCoefficients =
+    private static readonly DiyFp128FixedCoefficient[] InvTrigAsinDenominatorCoefficients =
     [
         new(0xede27d48152467c1, 0x0000000000882734),
         new(0x1d75e618be470341, 0x00000000ca5275d0),
@@ -107,11 +107,11 @@ internal static partial class Number
     ];
 
     // UX_ATAN2. When haveX is false this is the single-argument atan (Intel's null x pointer, aux_x = 1).
-    private static Float128 Float128Atan2(Float128 y, Float128 x, bool haveX)
+    private static DiyFp128 DiyFp128Atan2(DiyFp128 y, DiyFp128 x, bool haveX)
     {
-        Float128 one = new Float128(0, 1, UxMsb, 0);
+        DiyFp128 one = new DiyFp128(0, 1, UxMsb, 0);
         int quotientExponent;
-        Float128 auxX;
+        DiyFp128 auxX;
         uint sign;
 
         if (!haveX)
@@ -150,14 +150,14 @@ internal static partial class Number
         {
             // Reduced argument is (y-x)/(y+x).
             index += InvTrigAtanMapWidth;
-            Span<Float128> tmp = stackalloc Float128[2];
-            Float128AddSub(y, auxX, UxAddSub | UxMagnitudeOnly | UxNoNormalization, tmp);
+            Span<DiyFp128> tmp = stackalloc DiyFp128[2];
+            DiyFp128AddSub(y, auxX, UxAddSub | UxMagnitudeOnly | UxNoNormalization, tmp);
             y = tmp[1];
             x = tmp[0];
-            Float128Normalize(ref y);
+            DiyFp128Normalize(ref y);
         }
 
-        Float128Divide(y, x, Float128FullPrecision, out Float128 reduced);
+        DiyFp128Divide(y, x, DiyFp128FullPrecision, out DiyFp128 reduced);
 
         quotientExponent = reduced._exponent;
         if ((UxMsb & reduced._hi) == 0)
@@ -173,10 +173,10 @@ internal static partial class Number
         }
 
         reduced._exponent += 1; // P_SCALE(1)
-        Span<Float128> result = stackalloc Float128[2];
+        Span<DiyFp128> result = stackalloc DiyFp128[2];
         int flags = (TrigSquareTerm | TrigPostMultiply) | (TrigSquareTerm << TrigNumeratorFieldWidth);
-        Float128EvaluateRational(reduced, InvTrigAtanNumeratorCoefficients, 0, InvTrigAtanDenominatorCoefficients, 1, InvTrigAtanDegree, flags, result);
-        Float128 value = result[0];
+        DiyFp128EvaluateRational(reduced, InvTrigAtanNumeratorCoefficients, 0, InvTrigAtanDenominatorCoefficients, 1, InvTrigAtanDegree, flags, result);
+        DiyFp128 value = result[0];
 
         value._sign ^= sign;
         if (index != 0)
@@ -188,9 +188,9 @@ internal static partial class Number
                      + ((long)72 << (4 * InvTrigAtanMapWidth))
                      + ((long)48 << (5 * InvTrigAtanMapWidth));
             int constantOffset = (int)((map >> index) & (0xFL << 3));
-            Float128Normalize(ref value);
-            Span<Float128> sum = stackalloc Float128[1];
-            Float128AddSub(InvTrigConstants[constantOffset / 24], value, UxAdd | UxNoNormalization, sum);
+            DiyFp128Normalize(ref value);
+            Span<DiyFp128> sum = stackalloc DiyFp128[1];
+            DiyFp128AddSub(InvTrigConstants[constantOffset / 24], value, UxAdd | UxNoNormalization, sum);
             value = sum[0];
         }
 
@@ -198,10 +198,10 @@ internal static partial class Number
         return value;
     }
 
-    private static Float128 Float128Atan(scoped in Float128 arg) => Float128Atan2(arg, default, false);
+    private static DiyFp128 DiyFp128Atan(scoped in DiyFp128 arg) => DiyFp128Atan2(arg, default, false);
 
     // UX_ASIN_ACOS with the asin/acos interval maps precomputed. Callers guarantee |arg| <= 1.
-    private static Float128 Float128AsinAcos(Float128 arg, bool isAcos)
+    private static DiyFp128 DiyFp128AsinAcos(DiyFp128 arg, bool isAcos)
     {
         int indexMap = isAcos ? InvTrigAcosMap : InvTrigAsinMap;
 
@@ -217,46 +217,46 @@ internal static partial class Number
             {
                 // 1/2 <= |x| < 1: compute sqrt((1-x)/2).
                 exponentIncrement = 1;
-                Span<Float128> t = stackalloc Float128[1];
-                Float128AddSub(new Float128(0, 1, UxMsb, 0), arg, UxSub | UxMagnitudeOnly, t);
+                Span<DiyFp128> t = stackalloc DiyFp128[1];
+                DiyFp128AddSub(new DiyFp128(0, 1, UxMsb, 0), arg, UxSub | UxMagnitudeOnly, t);
                 arg = t[0];
                 arg._exponent -= 1;
-                arg = Float128Sqrt(arg);
+                arg = DiyFp128Sqrt(arg);
             }
             else if (exponent == 1 && arg._hi == UxMsb && arg._lo == 0)
             {
                 // |x| == 1: the reduced argument is zero.
-                arg = new Float128(0, UxZeroExponent, 0, 0);
+                arg = new DiyFp128(0, UxZeroExponent, 0, 0);
             }
         }
 
         arg._exponent += 1; // P_SCALE(1)
-        Span<Float128> result = stackalloc Float128[2];
+        Span<DiyFp128> result = stackalloc DiyFp128[2];
         int flags = (TrigSquareTerm | TrigPostMultiply | TrigAlternateSign)
                   | ((TrigSquareTerm | TrigAlternateSign) << TrigNumeratorFieldWidth);
-        Float128EvaluateRational(arg, InvTrigAsinNumeratorCoefficients, 0, InvTrigAsinDenominatorCoefficients, 1, InvTrigAsinDegree, flags, result);
-        Float128 value = result[0];
+        DiyFp128EvaluateRational(arg, InvTrigAsinNumeratorCoefficients, 0, InvTrigAsinDenominatorCoefficients, 1, InvTrigAsinDegree, flags, result);
+        DiyFp128 value = result[0];
 
         int mapInfo = indexMap >> index;
         value._sign = ((mapInfo & 8) != 0) ? UxSignBit : 0;
         value._exponent += exponentIncrement;
 
-        Span<Float128> sum = stackalloc Float128[1];
-        Float128AddSub(InvTrigConstants[(mapInfo & 0xf0) / 24], value, UxAdd | UxNoNormalization, sum);
+        Span<DiyFp128> sum = stackalloc DiyFp128[1];
+        DiyFp128AddSub(InvTrigConstants[(mapInfo & 0xf0) / 24], value, UxAdd | UxNoNormalization, sum);
         value = sum[0];
 
         value._sign = ((mapInfo & 4) != 0) ? UxSignBit : 0;
         return value;
     }
 
-    private static Float128 Float128Asin(scoped in Float128 arg) => Float128AsinAcos(arg, false);
+    private static DiyFp128 DiyFp128Asin(scoped in DiyFp128 arg) => DiyFp128AsinAcos(arg, false);
 
-    private static Float128 Float128Acos(scoped in Float128 arg) => Float128AsinAcos(arg, true);
+    private static DiyFp128 DiyFp128Acos(scoped in DiyFp128 arg) => DiyFp128AsinAcos(arg, true);
 
     // True when a normalized, non-zero |arg| is strictly greater than 1 (outside the asin/acos domain).
-    private static bool Float128MagnitudeExceedsOne(in Float128 arg)
+    private static bool DiyFp128MagnitudeExceedsOne(in DiyFp128 arg)
         => arg._exponent > 1 || (arg._exponent == 1 && (arg._hi != UxMsb || arg._lo != 0));
 
-    private static bool Float128MagnitudeIsOne(in Float128 arg)
+    private static bool DiyFp128MagnitudeIsOne(in DiyFp128 arg)
         => arg._exponent == 1 && arg._hi == UxMsb && arg._lo == 0;
 }

@@ -16,7 +16,7 @@ internal static partial class Number
     //
     // Decimal32 evaluates the hyperbolic functions in binary64; Decimal64/Decimal128 route through this
     // engine so the wider formats keep their precision. The engine operates entirely in the wide-exponent
-    // `Float128` (`ux`) domain, so unlike Intel's hardware-binary128 BID wrappers it does not spuriously
+    // `DiyFp128` (`ux`) domain, so unlike Intel's hardware-binary128 BID wrappers it does not spuriously
     // overflow for large arguments -- the final pack to the decimal format performs the only saturation.
 
     // ADD_SUB (2) is defined in the log file; SUB_ADD writes the difference to result[0] and the sum to
@@ -39,7 +39,7 @@ internal static partial class Number
     private const int HyperSinhCoshTrailingExponent = 1;
 
     // Fixed point coefficients for sinh/cosh evaluation (dpml_exp_x.h, SINHCOSH_COEF_ARRAY numerator).
-    private static readonly Float128FixedCoefficient[] HyperSinhCoefficients =
+    private static readonly DiyFp128FixedCoefficient[] HyperSinhCoefficients =
     [
         new(0x0000000000000000, 0x0000000000000000),
         new(0x2e4690eb84e45693, 0x0000000000000000),
@@ -56,7 +56,7 @@ internal static partial class Number
     ];
 
     // Fixed point coefficients for sinh/cosh evaluation (dpml_exp_x.h, SINHCOSH_COEF_ARRAY denominator).
-    private static readonly Float128FixedCoefficient[] HyperCoshCoefficients =
+    private static readonly DiyFp128FixedCoefficient[] HyperCoshCoefficients =
     [
         new(0x021a7acfab2871a0, 0x0000000000000000),
         new(0xca853bed72a41925, 0x0000000000000003),
@@ -74,57 +74,57 @@ internal static partial class Number
 
     // Intel's UX_HYPERBOLIC: argument reduction x = I*ln2 + z (|z| < ln2/2) then either a direct
     // polynomial (|x| < ln2/2, to avoid loss of significance) or exp(z)/exp(-z) reconstruction.
-    private static void Float128Hyperbolic(scoped in Float128 argument, int funcCode, int evalFlags, int addsubOp, Span<Float128> result)
+    private static void DiyFp128Hyperbolic(scoped in DiyFp128 argument, int funcCode, int evalFlags, int addsubOp, Span<DiyFp128> result)
     {
-        Float128 reduceArg = argument;
+        DiyFp128 reduceArg = argument;
         uint sign = reduceArg._sign;
         reduceArg._sign = 0;
         sign = (funcCode == HyperCoshFunc) ? 0 : sign;
 
-        int scale = Float128ExpReduce(reduceArg, out Float128 reduced, ExpReciprocalLn2High, ExpLn2High, ExpReduceConstantExponent, ExpLn2Low);
+        int scale = DiyFp128ExpReduce(reduceArg, out DiyFp128 reduced, ExpReciprocalLn2High, ExpLn2High, ExpReduceConstantExponent, ExpLn2Low);
 
         int rationalFlags = (scale == 0) ? evalFlags : HyperSinhCoshEval;
-        Float128EvaluateRational(reduced, HyperSinhCoefficients, HyperSinhCoshTrailingExponent, HyperCoshCoefficients, HyperSinhCoshTrailingExponent, HyperSinhCoshDegree, rationalFlags, result);
+        DiyFp128EvaluateRational(reduced, HyperSinhCoefficients, HyperSinhCoshTrailingExponent, HyperCoshCoefficients, HyperSinhCoshTrailingExponent, HyperSinhCoshDegree, rationalFlags, result);
 
         if (scale != 0)
         {
-            Span<Float128> tmp = stackalloc Float128[2];
+            Span<DiyFp128> tmp = stackalloc DiyFp128[2];
 
             // cosh(z) +/- sinh(z) = exp(z):exp(-z), then scale to exp(x)/2 and exp(-x)/2.
-            Float128AddSub(result[1], result[0], UxAddSub | UxNoNormalization, tmp);
+            DiyFp128AddSub(result[1], result[0], UxAddSub | UxNoNormalization, tmp);
             tmp[0]._exponent += scale - 1;
             tmp[1]._exponent -= scale + 1;
 
             // sinh(x)/cosh(x) = exp(x)/2 -/+ exp(-x)/2; for tanh divide the two results.
-            Float128AddSub(tmp[0], tmp[1], addsubOp | UxMagnitudeOnly | UxNoNormalization, result);
+            DiyFp128AddSub(tmp[0], tmp[1], addsubOp | UxMagnitudeOnly | UxNoNormalization, result);
 
             if (funcCode == HyperTanhFunc)
             {
-                Float128Divide(result[0], result[1], Float128FullPrecision, out result[0]);
+                DiyFp128Divide(result[0], result[1], DiyFp128FullPrecision, out result[0]);
             }
         }
 
         result[0]._sign = sign;
     }
 
-    private static Float128 Float128Sinh(scoped in Float128 argument)
+    private static DiyFp128 DiyFp128Sinh(scoped in DiyFp128 argument)
     {
-        Span<Float128> result = stackalloc Float128[2];
-        Float128Hyperbolic(argument, HyperSinhFunc, HyperSinhEval, UxSub, result);
+        Span<DiyFp128> result = stackalloc DiyFp128[2];
+        DiyFp128Hyperbolic(argument, HyperSinhFunc, HyperSinhEval, UxSub, result);
         return result[0];
     }
 
-    private static Float128 Float128Cosh(scoped in Float128 argument)
+    private static DiyFp128 DiyFp128Cosh(scoped in DiyFp128 argument)
     {
-        Span<Float128> result = stackalloc Float128[2];
-        Float128Hyperbolic(argument, HyperCoshFunc, HyperCoshEval, UxAdd, result);
+        Span<DiyFp128> result = stackalloc DiyFp128[2];
+        DiyFp128Hyperbolic(argument, HyperCoshFunc, HyperCoshEval, UxAdd, result);
         return result[0];
     }
 
-    private static Float128 Float128Tanh(scoped in Float128 argument)
+    private static DiyFp128 DiyFp128Tanh(scoped in DiyFp128 argument)
     {
-        Span<Float128> result = stackalloc Float128[2];
-        Float128Hyperbolic(argument, HyperTanhFunc, HyperTanhEval, UxSubAdd, result);
+        Span<DiyFp128> result = stackalloc DiyFp128[2];
+        DiyFp128Hyperbolic(argument, HyperTanhFunc, HyperTanhEval, UxSubAdd, result);
         return result[0];
     }
 }

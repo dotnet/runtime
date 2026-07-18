@@ -34,7 +34,7 @@ internal static partial class Number
     private static double SqrtReciprocalTwoPow24 => double.ScaleB(1.0, -24);
     private static double SqrtReciprocalTwoPow77 => double.ScaleB(1.0, -77);
 
-    private static Float128 UxThree => new Float128(0, 2, 0xC000_0000_0000_0000, 0);
+    private static DiyFp128 UxThree => new DiyFp128(0, 2, 0xC000_0000_0000_0000, 0);
 
     private readonly struct SqrtCoefficients
     {
@@ -312,7 +312,7 @@ internal static partial class Number
         new(2.664649487e-1f, -8.864814043e-1f, 1.3271232372059093815),
     ];
 
-    private static Float128 Float128Sqrt(Float128 x)
+    private static DiyFp128 DiyFp128Sqrt(DiyFp128 x)
     {
         ulong msd = x._hi;
         ulong lsd = x._lo;
@@ -350,32 +350,32 @@ internal static partial class Number
         ulong clamp = ((seed & (1UL << 62)) != 0) ? (UxMsb - 1) : ~0UL;
         seed = ((long)seed < 0) ? seed : clamp;
 
-        Float128 s = new Float128(0, 1 - exponent, seed, 0);
+        DiyFp128 s = new DiyFp128(0, 1 - exponent, seed, 0);
 
         // One binary128 Newton iteration: result <- (s*x) * (3 - x*s^2) / 2.
-        Float128Multiply(ref s, ref x, out Float128 sx);
-        Float128 sCopy = s;
-        Float128Multiply(ref sCopy, ref sx, out Float128 y);
+        DiyFp128Multiply(ref s, ref x, out DiyFp128 sx);
+        DiyFp128 sCopy = s;
+        DiyFp128Multiply(ref sCopy, ref sx, out DiyFp128 y);
 
-        Span<Float128> diff = stackalloc Float128[1];
-        Float128AddSub(UxThree, y, UxSub | UxNoNormalization, diff);
+        Span<DiyFp128> diff = stackalloc DiyFp128[1];
+        DiyFp128AddSub(UxThree, y, UxSub | UxNoNormalization, diff);
         y = diff[0];
 
-        Float128Multiply(ref y, ref sx, out Float128 result);
+        DiyFp128Multiply(ref y, ref sx, out DiyFp128 result);
         result._exponent -= 1;
         return result;
     }
 
-    private static Float128 Float128Hypot(Float128 x, Float128 y)
+    private static DiyFp128 DiyFp128Hypot(DiyFp128 x, DiyFp128 y)
     {
-        Float128Multiply(ref x, ref x, out Float128 x2);
-        Float128Multiply(ref y, ref y, out Float128 y2);
+        DiyFp128Multiply(ref x, ref x, out DiyFp128 x2);
+        DiyFp128Multiply(ref y, ref y, out DiyFp128 y2);
 
-        Span<Float128> sum = stackalloc Float128[1];
-        Float128AddSub(x2, y2, UxAdd, sum);
+        Span<DiyFp128> sum = stackalloc DiyFp128[1];
+        DiyFp128AddSub(x2, y2, UxAdd, sum);
 
-        Float128 s = sum[0];
-        Float128Normalize(ref s);
-        return Float128Sqrt(s);
+        DiyFp128 s = sum[0];
+        DiyFp128Normalize(ref s);
+        return DiyFp128Sqrt(s);
     }
 }

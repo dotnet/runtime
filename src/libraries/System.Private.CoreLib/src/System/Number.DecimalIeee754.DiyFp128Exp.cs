@@ -24,14 +24,14 @@ internal static partial class Number
 
     /// <summary>A 128-bit fixed-point polynomial coefficient (Intel's <c>FIXED_128</c>): <c>digits[0]</c>
     /// is the low limb, <c>digits[1]</c> the high limb.</summary>
-    private readonly struct Float128FixedCoefficient(ulong lo, ulong hi)
+    private readonly struct DiyFp128FixedCoefficient(ulong lo, ulong hi)
     {
         internal readonly ulong Low = lo;
         internal readonly ulong High = hi;
     }
 
     // High 64 bits of a 64x64 product (Intel's UMULH).
-    private static ulong Float128MultiplyHigh(ulong a, ulong b) => Math.BigMul(a, b, out _);
+    private static ulong DiyFp128MultiplyHigh(ulong a, ulong b) => Math.BigMul(a, b, out _);
 
     // ---- exp (base e) constant table (dpml_exp_x.h) ----
 
@@ -42,9 +42,9 @@ internal static partial class Number
     private const int ExpTrailingExponent = 1;
 
     // ln2_lo = ln2 - ln2_hi, as an unpacked value.
-    private static Float128 ExpLn2Low => new Float128(UxSignBit, -66, 0xd871319ff0342542, 0xfc32f366359d2749);
+    private static DiyFp128 ExpLn2Low => new DiyFp128(UxSignBit, -66, 0xd871319ff0342542, 0xfc32f366359d2749);
 
-    private static readonly Float128FixedCoefficient[] ExpCoefficients =
+    private static readonly DiyFp128FixedCoefficient[] ExpCoefficients =
     [
         new(0x0219c7290393a749, 0x0000000000000000),
         new(0x2e468fc7b47b630c, 0x0000000000000000),
@@ -82,9 +82,9 @@ internal static partial class Number
     private const int Exp10TrailingExponent = 2;
 
     // log10(2)_lo, as an unpacked value.
-    private static Float128 Exp10Ln2Low => new Float128(UxSignBit, -66, 0xe0ed4ca7e906dd0f, 0xb2a59e75785c196c);
+    private static DiyFp128 Exp10Ln2Low => new DiyFp128(UxSignBit, -66, 0xe0ed4ca7e906dd0f, 0xb2a59e75785c196c);
 
-    private static readonly Float128FixedCoefficient[] Exp10Coefficients =
+    private static readonly DiyFp128FixedCoefficient[] Exp10Coefficients =
     [
         new(0xaa326d76e12a5f3d, 0x000000000005d18c),
         new(0xbb46d2d76a135c14, 0x000000000037bd19),
@@ -112,15 +112,15 @@ internal static partial class Number
     ];
 
     // 1.0 as an unpacked value (Intel's UX_ONE).
-    private static Float128 Float128One => new Float128(0, 1, 0x8000000000000000, 0);
+    private static DiyFp128 DiyFp128One => new DiyFp128(0, 1, 0x8000000000000000, 0);
 
     // ln2 as a full unpacked value, built from the exp table's high and low pieces.
-    private static Float128 Float128Ln2
+    private static DiyFp128 DiyFp128Ln2
     {
         get
         {
-            Span<Float128> single = stackalloc Float128[1];
-            Float128AddSub(new Float128(0, 0, ExpLn2High, 0), ExpLn2Low, UxSub, single);
+            Span<DiyFp128> single = stackalloc DiyFp128[1];
+            DiyFp128AddSub(new DiyFp128(0, 0, ExpLn2High, 0), ExpLn2Low, UxSub, single);
             return single[0];
         }
     }
@@ -130,7 +130,7 @@ internal static partial class Number
     /// ln2/2</c> (Intel's <c>UX_EXP_REDUCE</c>), returning <c>scale</c>. For <c>|x| &gt; 2^17</c> it
     /// returns a scale that forces the pack step to over/underflow.
     /// </summary>
-    private static int Float128ExpReduce(scoped in Float128 orig, out Float128 reduced, ulong reciprocalLn2High, ulong ln2High, int reduceConstantExponent, scoped in Float128 ln2Low)
+    private static int DiyFp128ExpReduce(scoped in DiyFp128 orig, out DiyFp128 reduced, ulong reciprocalLn2High, ulong ln2High, int reduceConstantExponent, scoped in DiyFp128 ln2Low)
     {
         int exponent = orig._exponent;
         uint sign = orig._sign;
@@ -151,7 +151,7 @@ internal static partial class Number
 
         // scale ~ nint(x*lnb/ln2), computed from the high bits of the significand.
         ulong msd = orig._hi >> 1;
-        ulong scale = Float128MultiplyHigh(msd, reciprocalLn2High);
+        ulong scale = DiyFp128MultiplyHigh(msd, reciprocalLn2High);
         int shift = (64 - 3) - exponent;
         scale += 1UL << (shift - 1);
         scale &= unchecked((ulong)(-(long)(1UL << shift)));
@@ -167,7 +167,7 @@ internal static partial class Number
 
         // scale*high_bits_of_ln2, renormalized so the following subtraction keeps x's last bit.
         ulong lsd = scale * ln2High;
-        msd = Float128MultiplyHigh(scale, ln2High);
+        msd = DiyFp128MultiplyHigh(scale, ln2High);
         exponent = scaleExponent;
         if ((long)msd > 0)
         {
@@ -176,16 +176,16 @@ internal static partial class Number
             lsd += lsd;
         }
 
-        var tmp = new Float128(sign, exponent + reduceConstantExponent, msd, lsd);
-        Span<Float128> single = stackalloc Float128[1];
-        Float128AddSub(orig, tmp, UxSub, single);
+        var tmp = new DiyFp128(sign, exponent + reduceConstantExponent, msd, lsd);
+        Span<DiyFp128> single = stackalloc DiyFp128[1];
+        DiyFp128AddSub(orig, tmp, UxSub, single);
         tmp = single[0];
 
         // Subtract scale*low_bits_of_ln2 to complete the reduced argument.
-        var uxScale = new Float128(sign, scaleExponent, scale, 0);
-        Float128 ln2LowLocal = ln2Low;
-        Float128Multiply(ref uxScale, ref ln2LowLocal, out reduced);
-        Float128AddSub(tmp, reduced, UxSub | UxNoNormalization, single);
+        var uxScale = new DiyFp128(sign, scaleExponent, scale, 0);
+        DiyFp128 ln2LowLocal = ln2Low;
+        DiyFp128Multiply(ref uxScale, ref ln2LowLocal, out reduced);
+        DiyFp128AddSub(tmp, reduced, UxSub | UxNoNormalization, single);
         reduced = single[0];
 
         scale >>= shift;
@@ -196,7 +196,7 @@ internal static partial class Number
     /// Evaluates a Horner polynomial with positive argument (Intel's <c>__eval_pos_poly</c>):
     /// <c>s(k) = c(k) + x*s(k+1)</c>. Coefficients are stored in reverse order <c>c(n)..c(0)</c>.
     /// </summary>
-    private static void Float128EvaluatePositivePolynomial(scoped in Float128 x, long shift, ReadOnlySpan<Float128FixedCoefficient> coefficients, int index, long count, out Float128 result)
+    private static void DiyFp128EvaluatePositivePolynomial(scoped in DiyFp128 x, long shift, ReadOnlySpan<DiyFp128FixedCoefficient> coefficients, int index, long count, out DiyFp128 result)
     {
         ulong xHigh = x._hi;
         ulong xLow = x._lo;
@@ -243,7 +243,7 @@ internal static partial class Number
             }
 
         Shift64To127:
-            p1 = Float128MultiplyHigh(sLow, xHigh);
+            p1 = DiyFp128MultiplyHigh(sLow, xHigh);
             cLow = coefficients[index].High >> (int)(shift - 64);
             shift += shiftIncrement;
             index++;
@@ -267,7 +267,7 @@ internal static partial class Number
             }
 
         Shift1To63ZeroLoop:
-            p1 = Float128MultiplyHigh(sLow, xHigh);
+            p1 = DiyFp128MultiplyHigh(sLow, xHigh);
             cHigh = coefficients[index].High;
             cLow = coefficients[index].Low;
             cLow = (cLow >> (int)shift) | (cHigh << (int)(64 - shift));
@@ -295,17 +295,17 @@ internal static partial class Number
                 cLow = (cLow >> (int)shift) | (cHigh << (int)(64 - shift));
                 cHigh >>= (int)shift;
 
-                p2 = Float128MultiplyHigh(sHigh, xLow);
+                p2 = DiyFp128MultiplyHigh(sHigh, xLow);
                 cLow += p1;
                 carry = (cLow < p1) ? 1UL : 0UL;
                 count--;
 
-                p1 = Float128MultiplyHigh(sLow, xHigh);
+                p1 = DiyFp128MultiplyHigh(sLow, xHigh);
                 cLow += p2;
                 carry += (cLow < p2) ? 1UL : 0UL;
                 shift += shiftIncrement;
 
-                p2 = Float128MultiplyHigh(sHigh, xHigh);
+                p2 = DiyFp128MultiplyHigh(sHigh, xHigh);
                 sLow = cLow + p1;
                 carry += (sLow < p1) ? 1UL : 0UL;
                 cHigh += carry;
@@ -334,16 +334,16 @@ internal static partial class Number
                 cHigh = coefficients[index].High;
                 cLow = coefficients[index].Low;
 
-                p2 = Float128MultiplyHigh(sHigh, xLow);
+                p2 = DiyFp128MultiplyHigh(sHigh, xLow);
                 cLow += p1;
                 carry = (cLow < p1) ? 1UL : 0UL;
                 count--;
 
-                p1 = Float128MultiplyHigh(sLow, xHigh);
+                p1 = DiyFp128MultiplyHigh(sLow, xHigh);
                 cLow += p2;
                 carry += (cLow < p2) ? 1UL : 0UL;
 
-                p2 = Float128MultiplyHigh(sHigh, xHigh);
+                p2 = DiyFp128MultiplyHigh(sHigh, xHigh);
                 sLow = cLow + p1;
                 carry += (sLow < p1) ? 1UL : 0UL;
                 cHigh += carry;
@@ -365,14 +365,14 @@ internal static partial class Number
                 }
             }
 
-        result = new Float128(0, (int)exponent, sHigh, sLow);
+        result = new DiyFp128(0, (int)exponent, sHigh, sLow);
     }
 
     /// <summary>
     /// Evaluates a Horner polynomial with negative argument (Intel's <c>__eval_neg_poly</c>):
     /// <c>s(k) = c(k) - x*s(k+1)</c>. Coefficients are stored in reverse order <c>c(n)..c(0)</c>.
     /// </summary>
-    private static void Float128EvaluateNegativePolynomial(scoped in Float128 x, long shift, ReadOnlySpan<Float128FixedCoefficient> coefficients, int index, long count, out Float128 result)
+    private static void DiyFp128EvaluateNegativePolynomial(scoped in DiyFp128 x, long shift, ReadOnlySpan<DiyFp128FixedCoefficient> coefficients, int index, long count, out DiyFp128 result)
     {
         ulong xHigh = x._hi;
         ulong xLow = x._lo;
@@ -418,7 +418,7 @@ internal static partial class Number
             }
 
         Shift64To127:
-            p1 = Float128MultiplyHigh(sLow, xHigh);
+            p1 = DiyFp128MultiplyHigh(sLow, xHigh);
             cLow = coefficients[index].High >> (int)(shift - 64);
             shift += shiftIncrement;
             index++;
@@ -440,7 +440,7 @@ internal static partial class Number
             }
 
         Shift1To63ZeroLoop:
-            p1 = Float128MultiplyHigh(sLow, xHigh);
+            p1 = DiyFp128MultiplyHigh(sLow, xHigh);
             cHigh = coefficients[index].High;
             cLow = coefficients[index].Low;
             cLow = (cLow >> (int)shift) | (cHigh << (int)(64 - shift));
@@ -466,17 +466,17 @@ internal static partial class Number
             cLow = (cLow >> (int)shift) | (cHigh << (int)(64 - shift));
             cHigh >>= (int)shift;
 
-            p2 = Float128MultiplyHigh(sHigh, xLow);
+            p2 = DiyFp128MultiplyHigh(sHigh, xLow);
             tmp = cLow - p1;
             cHigh -= (tmp > cLow) ? 1UL : 0UL;
             count--;
 
-            p1 = Float128MultiplyHigh(sLow, xHigh);
+            p1 = DiyFp128MultiplyHigh(sLow, xHigh);
             cLow = tmp - p2;
             cHigh -= (cLow > tmp) ? 1UL : 0UL;
             shift += shiftIncrement;
 
-            p2 = Float128MultiplyHigh(sHigh, xHigh);
+            p2 = DiyFp128MultiplyHigh(sHigh, xHigh);
             sLow = cLow - p1;
             cHigh -= (sLow > cLow) ? 1UL : 0UL;
             index++;
@@ -494,16 +494,16 @@ internal static partial class Number
                 cHigh = coefficients[index].High;
                 cLow = coefficients[index].Low;
 
-                p2 = Float128MultiplyHigh(sHigh, xLow);
+                p2 = DiyFp128MultiplyHigh(sHigh, xLow);
                 tmp = cLow - p1;
                 cHigh -= (tmp > cLow) ? 1UL : 0UL;
                 count--;
 
-                p1 = Float128MultiplyHigh(sLow, xHigh);
+                p1 = DiyFp128MultiplyHigh(sLow, xHigh);
                 cLow = tmp - p2;
                 cHigh -= (cLow > tmp) ? 1UL : 0UL;
 
-                p2 = Float128MultiplyHigh(sHigh, xHigh);
+                p2 = DiyFp128MultiplyHigh(sHigh, xHigh);
                 sLow = cLow - p1;
                 cHigh -= (sLow > cLow) ? 1UL : 0UL;
                 index++;
@@ -511,44 +511,44 @@ internal static partial class Number
                 sHigh = cHigh - p2;
             }
 
-        result = new Float128(0, 0, sHigh, sLow);
+        result = new DiyFp128(0, 0, sHigh, sLow);
     }
 
     /// <summary>
     /// Evaluates the exp-family polynomial on the reduced argument (Intel's <c>EVALUATE_RATIONAL</c>
     /// specialized to the numerator-only <c>STANDARD</c> form).
     /// </summary>
-    private static void Float128EvaluateExpPolynomial(Float128 argument, ReadOnlySpan<Float128FixedCoefficient> coefficients, int degree, int trailingExponent, out Float128 result)
+    private static void DiyFp128EvaluateExpPolynomial(DiyFp128 argument, ReadOnlySpan<DiyFp128FixedCoefficient> coefficients, int degree, int trailingExponent, out DiyFp128 result)
     {
-        Float128Normalize(ref argument);
+        DiyFp128Normalize(ref argument);
         long shift = -(long)degree * argument._exponent;
 
         if (argument._sign != 0)
         {
-            Float128EvaluateNegativePolynomial(argument, shift, coefficients, 0, degree, out result);
+            DiyFp128EvaluateNegativePolynomial(argument, shift, coefficients, 0, degree, out result);
         }
         else
         {
-            Float128EvaluatePositivePolynomial(argument, shift, coefficients, 0, degree, out result);
+            DiyFp128EvaluatePositivePolynomial(argument, shift, coefficients, 0, degree, out result);
         }
 
         result._exponent += trailingExponent;
     }
 
     /// <summary>Computes <c>e^x</c> for an unpacked argument (Intel's <c>UX_EXP</c>).</summary>
-    private static Float128 Float128Exp(scoped in Float128 argument)
+    private static DiyFp128 DiyFp128Exp(scoped in DiyFp128 argument)
     {
-        int scale = Float128ExpReduce(argument, out Float128 reduced, ExpReciprocalLn2High, ExpLn2High, ExpReduceConstantExponent, ExpLn2Low);
-        Float128EvaluateExpPolynomial(reduced, ExpCoefficients, ExpDegree, ExpTrailingExponent, out Float128 result);
+        int scale = DiyFp128ExpReduce(argument, out DiyFp128 reduced, ExpReciprocalLn2High, ExpLn2High, ExpReduceConstantExponent, ExpLn2Low);
+        DiyFp128EvaluateExpPolynomial(reduced, ExpCoefficients, ExpDegree, ExpTrailingExponent, out DiyFp128 result);
         result._exponent += scale;
         return result;
     }
 
     /// <summary>Computes <c>10^x</c> for an unpacked argument (Intel's <c>UX_EXP10</c>).</summary>
-    private static Float128 Float128Exp10(scoped in Float128 argument)
+    private static DiyFp128 DiyFp128Exp10(scoped in DiyFp128 argument)
     {
-        int scale = Float128ExpReduce(argument, out Float128 reduced, Exp10ReciprocalHigh, Exp10Ln2High, Exp10ReduceConstantExponent, Exp10Ln2Low);
-        Float128EvaluateExpPolynomial(reduced, Exp10Coefficients, Exp10Degree, Exp10TrailingExponent, out Float128 result);
+        int scale = DiyFp128ExpReduce(argument, out DiyFp128 reduced, Exp10ReciprocalHigh, Exp10Ln2High, Exp10ReduceConstantExponent, Exp10Ln2Low);
+        DiyFp128EvaluateExpPolynomial(reduced, Exp10Coefficients, Exp10Degree, Exp10TrailingExponent, out DiyFp128 result);
         result._exponent += scale;
         return result;
     }
@@ -558,38 +558,38 @@ internal static partial class Number
     /// base-b table). For small reduced arguments a direct polynomial avoids the cancellation of
     /// <c>b^x - 1</c>; otherwise <c>b^x</c> is formed and one is subtracted.
     /// </summary>
-    private static Float128 Float128ExpM1(scoped in Float128 argument, ulong reciprocalHigh, ulong ln2High, int reduceConstantExponent, scoped in Float128 ln2Low, ReadOnlySpan<Float128FixedCoefficient> coefficients, int degree, int trailingExponent)
+    private static DiyFp128 DiyFp128ExpM1(scoped in DiyFp128 argument, ulong reciprocalHigh, ulong ln2High, int reduceConstantExponent, scoped in DiyFp128 ln2Low, ReadOnlySpan<DiyFp128FixedCoefficient> coefficients, int degree, int trailingExponent)
     {
-        int scale = Float128ExpReduce(argument, out Float128 reduced, reciprocalHigh, ln2High, reduceConstantExponent, ln2Low);
-        Float128 result;
+        int scale = DiyFp128ExpReduce(argument, out DiyFp128 reduced, reciprocalHigh, ln2High, reduceConstantExponent, ln2Low);
+        DiyFp128 result;
 
         if (scale == 0)
         {
             // |reduced| <= ln2/2: use the low degree-1 terms of the polynomial, post-multiplied by the
             // reduced argument. This leaves the exponent low by the table's trailing exponent.
-            Float128Normalize(ref reduced);
+            DiyFp128Normalize(ref reduced);
             long shift = -(long)(degree - 1) * reduced._exponent;
 
             if (reduced._sign != 0)
             {
-                Float128EvaluateNegativePolynomial(reduced, shift, coefficients, 0, degree - 1, out result);
+                DiyFp128EvaluateNegativePolynomial(reduced, shift, coefficients, 0, degree - 1, out result);
             }
             else
             {
-                Float128EvaluatePositivePolynomial(reduced, shift, coefficients, 0, degree - 1, out result);
+                DiyFp128EvaluatePositivePolynomial(reduced, shift, coefficients, 0, degree - 1, out result);
             }
 
-            Float128 reducedLocal = reduced;
-            Float128Multiply(ref reducedLocal, ref result, out result);
+            DiyFp128 reducedLocal = reduced;
+            DiyFp128Multiply(ref reducedLocal, ref result, out result);
             result._exponent += trailingExponent;
         }
         else
         {
-            Float128EvaluateExpPolynomial(reduced, coefficients, degree, trailingExponent, out result);
+            DiyFp128EvaluateExpPolynomial(reduced, coefficients, degree, trailingExponent, out result);
             result._exponent += scale;
 
-            Span<Float128> single = stackalloc Float128[1];
-            Float128AddSub(result, Float128One, UxSub | UxNoNormalization | UxMagnitudeOnly, single);
+            Span<DiyFp128> single = stackalloc DiyFp128[1];
+            DiyFp128AddSub(result, DiyFp128One, UxSub | UxNoNormalization | UxMagnitudeOnly, single);
             result = single[0];
         }
 
@@ -597,32 +597,32 @@ internal static partial class Number
     }
 
     /// <summary>Computes <c>e^x - 1</c> for an unpacked argument.</summary>
-    private static Float128 Float128ExpM1(scoped in Float128 argument) =>
-        Float128ExpM1(argument, ExpReciprocalLn2High, ExpLn2High, ExpReduceConstantExponent, ExpLn2Low, ExpCoefficients, ExpDegree, ExpTrailingExponent);
+    private static DiyFp128 DiyFp128ExpM1(scoped in DiyFp128 argument) =>
+        DiyFp128ExpM1(argument, ExpReciprocalLn2High, ExpLn2High, ExpReduceConstantExponent, ExpLn2Low, ExpCoefficients, ExpDegree, ExpTrailingExponent);
 
     /// <summary>Computes <c>10^x - 1</c> for an unpacked argument.</summary>
-    private static Float128 Float128Exp10M1(scoped in Float128 argument) =>
-        Float128ExpM1(argument, Exp10ReciprocalHigh, Exp10Ln2High, Exp10ReduceConstantExponent, Exp10Ln2Low, Exp10Coefficients, Exp10Degree, Exp10TrailingExponent);
+    private static DiyFp128 DiyFp128Exp10M1(scoped in DiyFp128 argument) =>
+        DiyFp128ExpM1(argument, Exp10ReciprocalHigh, Exp10Ln2High, Exp10ReduceConstantExponent, Exp10Ln2Low, Exp10Coefficients, Exp10Degree, Exp10TrailingExponent);
 
     // Intel's software engine has no dedicated exp2 table (its decimal exp2 routes through a separate
     // templated binary128 engine), so 2^x is evaluated as e^(x*ln2) using the exp table's own ln2. A
     // dedicated exp2 table is a faithful-fidelity follow-up.
 
     /// <summary>Computes <c>2^x</c> for an unpacked argument as <c>e^(x*ln2)</c>.</summary>
-    private static Float128 Float128Exp2(scoped in Float128 argument)
+    private static DiyFp128 DiyFp128Exp2(scoped in DiyFp128 argument)
     {
-        Float128 argumentLocal = argument;
-        Float128 ln2 = Float128Ln2;
-        Float128Multiply(ref argumentLocal, ref ln2, out Float128 scaled);
-        return Float128Exp(scaled);
+        DiyFp128 argumentLocal = argument;
+        DiyFp128 ln2 = DiyFp128Ln2;
+        DiyFp128Multiply(ref argumentLocal, ref ln2, out DiyFp128 scaled);
+        return DiyFp128Exp(scaled);
     }
 
     /// <summary>Computes <c>2^x - 1</c> for an unpacked argument as <c>expm1(x*ln2)</c>.</summary>
-    private static Float128 Float128Exp2M1(scoped in Float128 argument)
+    private static DiyFp128 DiyFp128Exp2M1(scoped in DiyFp128 argument)
     {
-        Float128 argumentLocal = argument;
-        Float128 ln2 = Float128Ln2;
-        Float128Multiply(ref argumentLocal, ref ln2, out Float128 scaled);
-        return Float128ExpM1(scaled);
+        DiyFp128 argumentLocal = argument;
+        DiyFp128 ln2 = DiyFp128Ln2;
+        DiyFp128Multiply(ref argumentLocal, ref ln2, out DiyFp128 scaled);
+        return DiyFp128ExpM1(scaled);
     }
 }

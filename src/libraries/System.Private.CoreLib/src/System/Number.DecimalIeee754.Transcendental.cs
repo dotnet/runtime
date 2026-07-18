@@ -45,8 +45,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Exp(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Exp(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Exp(argument));
     }
 
     /// <summary>Computes <c>2^x</c>.</summary>
@@ -79,8 +79,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Exp2(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Exp2(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Exp2(argument));
     }
 
     /// <summary>Computes <c>10^x</c>.</summary>
@@ -113,8 +113,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Exp10(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Exp10(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Exp10(argument));
     }
 
     /// <summary>Computes <c>e^x - 1</c>.</summary>
@@ -149,8 +149,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.ExpM1(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128ExpM1(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128ExpM1(argument));
     }
 
     /// <summary>Computes <c>2^x - 1</c>.</summary>
@@ -185,8 +185,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Exp2M1(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Exp2M1(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Exp2M1(argument));
     }
 
     /// <summary>Computes <c>10^x - 1</c>.</summary>
@@ -221,8 +221,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Exp10M1(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Exp10M1(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Exp10M1(argument));
     }
 
     /// <summary>Accurate binary64 <c>ln(1 + x)</c> (Kahan), avoiding the cancellation in the naive
@@ -307,8 +307,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Log(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Ln(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Ln(argument));
     }
 
     /// <summary>Computes <c>log_newBase(x)</c> as <c>log(x) / log(newBase)</c>, mirroring the
@@ -388,8 +388,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Log2(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Log2(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Log2(argument));
     }
 
     /// <summary>Computes <c>log10(x)</c>.</summary>
@@ -428,8 +428,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Log10(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Log10(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Log10(argument));
     }
 
     /// <summary>Computes <c>ln(1 + x)</c>.</summary>
@@ -508,12 +508,12 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
         // Guard the 1 + x domain in the binary128 engine (the double path gets this from IEEE): the
         // conversion error is always below the decimal granularity near x = -1, so 1 + x is exact here.
-        Span<Float128> onePlus = stackalloc Float128[1];
-        Float128AddSub(Float128One, argument, UxAdd, onePlus);
+        Span<DiyFp128> onePlus = stackalloc DiyFp128[1];
+        DiyFp128AddSub(DiyFp128One, argument, UxAdd, onePlus);
 
         if ((onePlus[0]._hi | onePlus[0]._lo) == 0)
         {
@@ -527,14 +527,14 @@ internal static partial class Number
             return TDecimal.NaNMask;
         }
 
-        Float128 result128 = logBase switch
+        DiyFp128 result128 = logBase switch
         {
-            LogBase.Two => Float128Log2P1(argument),
-            LogBase.Ten => Float128Log10P1(argument),
-            _ => Float128Ln1p(argument),
+            LogBase.Two => DiyFp128Log2P1(argument),
+            LogBase.Ten => DiyFp128Log10P1(argument),
+            _ => DiyFp128Ln1p(argument),
         };
 
-        return Float128ToDecimal<TDecimal, TValue>(result128);
+        return DiyFp128ToDecimal<TDecimal, TValue>(result128);
     }
 
     /// <summary>
@@ -757,16 +757,16 @@ internal static partial class Number
         }
 
         // The engine evaluates |x|^y; a negative base with an odd integer exponent carries the sign.
-        Float128 baseValue = DecimalToFloat128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
-        Float128 exponentValue = DecimalToFloat128<TDecimal, TValue>(dy.Signed, dy.UnbiasedExponent, dy.Significand);
-        Float128 magnitude = Float128Pow(baseValue, exponentValue);
+        DiyFp128 baseValue = DecimalToDiyFp128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
+        DiyFp128 exponentValue = DecimalToDiyFp128<TDecimal, TValue>(dy.Signed, dy.UnbiasedExponent, dy.Significand);
+        DiyFp128 magnitude = DiyFp128Pow(baseValue, exponentValue);
 
         if (dx.Signed && yIsOddInteger)
         {
-            magnitude = new Float128(1u, magnitude._exponent, magnitude._hi, magnitude._lo);
+            magnitude = new DiyFp128(1u, magnitude._exponent, magnitude._hi, magnitude._lo);
         }
 
-        return Float128ToDecimal<TDecimal, TValue>(magnitude);
+        return DiyFp128ToDecimal<TDecimal, TValue>(magnitude);
     }
 
     /// <summary>Computes the cube root of <paramref name="x" />.</summary>
@@ -800,8 +800,8 @@ internal static partial class Number
         }
 
         // The engine preserves the sign, so the cube root of a negative operand is handled directly.
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Cbrt(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Cbrt(argument));
     }
 
     /// <summary>Computes the hypotenuse (sqrt(<paramref name="x" />^2 + <paramref name="y" />^2)).</summary>
@@ -850,9 +850,9 @@ internal static partial class Number
         }
 
         // The result depends only on the magnitudes; the engine squares both operands.
-        Float128 xMagnitude = DecimalToFloat128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
-        Float128 yMagnitude = DecimalToFloat128<TDecimal, TValue>(signed: false, dy.UnbiasedExponent, dy.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Hypot(xMagnitude, yMagnitude));
+        DiyFp128 xMagnitude = DecimalToDiyFp128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
+        DiyFp128 yMagnitude = DecimalToDiyFp128<TDecimal, TValue>(signed: false, dy.UnbiasedExponent, dy.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Hypot(xMagnitude, yMagnitude));
     }
 
     /// <summary>Computes the <paramref name="n" />th root of <paramref name="x" />.</summary>
@@ -938,19 +938,19 @@ internal static partial class Number
 
         // The engine evaluates |x|^(1/n) with the reciprocal formed exactly in the binary128 domain;
         // a negative base only reaches here with an odd n, so it simply carries the sign.
-        Float128 one = new Float128(0u, 1, 0x8000_0000_0000_0000, 0);
-        Float128 degree = DecimalToFloat128<TDecimal, TValue>(nNegative, 0, TValue.CreateTruncating(int.Abs(n)));
-        Float128Divide(one, degree, Float128FullPrecision, out Float128 exponent);
+        DiyFp128 one = new DiyFp128(0u, 1, 0x8000_0000_0000_0000, 0);
+        DiyFp128 degree = DecimalToDiyFp128<TDecimal, TValue>(nNegative, 0, TValue.CreateTruncating(int.Abs(n)));
+        DiyFp128Divide(one, degree, DiyFp128FullPrecision, out DiyFp128 exponent);
 
-        Float128 baseValue = DecimalToFloat128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
-        Float128 magnitude = Float128Pow(baseValue, exponent);
+        DiyFp128 baseValue = DecimalToDiyFp128<TDecimal, TValue>(signed: false, dx.UnbiasedExponent, dx.Significand);
+        DiyFp128 magnitude = DiyFp128Pow(baseValue, exponent);
 
         if (dx.Signed)
         {
-            magnitude = new Float128(1u, magnitude._exponent, magnitude._hi, magnitude._lo);
+            magnitude = new DiyFp128(1u, magnitude._exponent, magnitude._hi, magnitude._lo);
         }
 
-        return Float128ToDecimal<TDecimal, TValue>(magnitude);
+        return DiyFp128ToDecimal<TDecimal, TValue>(magnitude);
     }
 
     /// <summary>Computes <c>sin(x)</c> (x in radians).</summary>
@@ -983,8 +983,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Sin(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Sin(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Sin(argument));
     }
 
     /// <summary>Computes <c>cos(x)</c> (x in radians).</summary>
@@ -1017,8 +1017,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Cos(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Cos(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Cos(argument));
     }
 
     /// <summary>Computes <c>tan(x)</c> (x in radians).</summary>
@@ -1051,8 +1051,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Tan(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Tan(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Tan(argument));
     }
 
     /// <summary>Computes <c>sin(x)</c> and <c>cos(x)</c> in a single evaluation (x in radians).</summary>
@@ -1090,9 +1090,9 @@ internal static partial class Number
                     ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(cosValue));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        Float128SinCosPair(argument, out Float128 sin, out Float128 cos);
-        return (Float128ToDecimal<TDecimal, TValue>(sin), Float128ToDecimal<TDecimal, TValue>(cos));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128SinCosPair(argument, out DiyFp128 sin, out DiyFp128 cos);
+        return (DiyFp128ToDecimal<TDecimal, TValue>(sin), DiyFp128ToDecimal<TDecimal, TValue>(cos));
     }
 
     /// <summary>Computes <c>atan(x)</c>, the result in radians.</summary>
@@ -1115,9 +1115,9 @@ internal static partial class Number
                 return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.CopySign(double.Pi / 2.0, signed ? -1.0 : 1.0));
             }
 
-            Float128 halfPi = InvTrigConstants[2];
+            DiyFp128 halfPi = InvTrigConstants[2];
             halfPi._sign = signed ? UxSignBit : 0;
-            return Float128ToDecimal<TDecimal, TValue>(halfPi);
+            return DiyFp128ToDecimal<TDecimal, TValue>(halfPi);
         }
 
         DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
@@ -1134,8 +1134,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Atan(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Atan(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Atan(argument));
     }
 
     /// <summary>Computes <c>asin(x)</c>, the result in radians.</summary>
@@ -1170,13 +1170,13 @@ internal static partial class Number
             return double.IsNaN(result) ? TDecimal.NaNMask : ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
-        if (Float128MagnitudeExceedsOne(argument))
+        if (DiyFp128MagnitudeExceedsOne(argument))
         {
             return TDecimal.NaNMask;
         }
-        return Float128ToDecimal<TDecimal, TValue>(Float128Asin(argument));
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Asin(argument));
     }
 
     /// <summary>Computes <c>acos(x)</c>, the result in radians.</summary>
@@ -1204,7 +1204,7 @@ internal static partial class Number
             {
                 return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Pi / 2.0);
             }
-            return Float128ToDecimal<TDecimal, TValue>(InvTrigConstants[2]);
+            return DiyFp128ToDecimal<TDecimal, TValue>(InvTrigConstants[2]);
         }
 
         if (DecimalIeee754UsesDouble<TValue>())
@@ -1215,13 +1215,13 @@ internal static partial class Number
             return double.IsNaN(result) ? TDecimal.NaNMask : ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
-        if (Float128MagnitudeExceedsOne(argument))
+        if (DiyFp128MagnitudeExceedsOne(argument))
         {
             return TDecimal.NaNMask;
         }
-        return Float128ToDecimal<TDecimal, TValue>(Float128Acos(argument));
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Acos(argument));
     }
 
     /// <summary>Computes <c>atan2(y, x)</c>, the angle of the vector (x, y) in radians.</summary>
@@ -1258,7 +1258,7 @@ internal static partial class Number
         // Signed-zero and infinity quadrant cases resolve to a signed multiple of pi.
         if (yInfinity || xInfinity || yZero || xZero)
         {
-            Float128 magnitude;
+            DiyFp128 magnitude;
             if (yInfinity)
             {
                 // atan2(+/-inf, +/-inf) = +/-3pi/4 or +/-pi/4; atan2(+/-inf, finite) = +/-pi/2.
@@ -1281,12 +1281,12 @@ internal static partial class Number
             }
 
             magnitude._sign = decodedY.Signed ? UxSignBit : 0;
-            return Float128ToDecimal<TDecimal, TValue>(magnitude);
+            return DiyFp128ToDecimal<TDecimal, TValue>(magnitude);
         }
 
-        Float128 argumentY = DecimalToFloat128<TDecimal, TValue>(decodedY.Signed, decodedY.UnbiasedExponent, decodedY.Significand);
-        Float128 argumentX = DecimalToFloat128<TDecimal, TValue>(decodedX.Signed, decodedX.UnbiasedExponent, decodedX.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Atan2(argumentY, argumentX, haveX: true));
+        DiyFp128 argumentY = DecimalToDiyFp128<TDecimal, TValue>(decodedY.Signed, decodedY.UnbiasedExponent, decodedY.Significand);
+        DiyFp128 argumentX = DecimalToDiyFp128<TDecimal, TValue>(decodedX.Signed, decodedX.UnbiasedExponent, decodedX.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Atan2(argumentY, argumentX, haveX: true));
     }
 
     /// <summary>Computes <c>sin(pi * x)</c>.</summary>
@@ -1319,8 +1319,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.SinPi(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128SinPi(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128SinPi(argument));
     }
 
     /// <summary>Computes <c>cos(pi * x)</c>.</summary>
@@ -1353,8 +1353,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.CosPi(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128CosPi(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128CosPi(argument));
     }
 
     /// <summary>Computes <c>tan(pi * x)</c>.</summary>
@@ -1387,17 +1387,17 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.TanPi(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        Float128SinCosPi(argument, out Float128 sin, out Float128 cos);
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128SinCosPi(argument, out DiyFp128 sin, out DiyFp128 cos);
 
-        if (Float128IsZero(cos))
+        if (DiyFp128IsZero(cos))
         {
             // A half-integer argument is a pole; tanPi returns a signed infinity matching sinPi's sign.
             return (sin._sign != 0) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
         }
 
-        Float128Divide(sin, cos, Float128FullPrecision, out Float128 tangent);
-        return Float128ToDecimal<TDecimal, TValue>(tangent);
+        DiyFp128Divide(sin, cos, DiyFp128FullPrecision, out DiyFp128 tangent);
+        return DiyFp128ToDecimal<TDecimal, TValue>(tangent);
     }
 
     /// <summary>Computes <c>sin(pi * x)</c> and <c>cos(pi * x)</c> in a single evaluation.</summary>
@@ -1435,9 +1435,9 @@ internal static partial class Number
                     ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(cosValue));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        Float128SinCosPi(argument, out Float128 sin, out Float128 cos);
-        return (Float128ToDecimal<TDecimal, TValue>(sin), Float128ToDecimal<TDecimal, TValue>(cos));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128SinCosPi(argument, out DiyFp128 sin, out DiyFp128 cos);
+        return (DiyFp128ToDecimal<TDecimal, TValue>(sin), DiyFp128ToDecimal<TDecimal, TValue>(cos));
     }
 
     /// <summary>Computes <c>atan(x) / pi</c>.</summary>
@@ -1460,9 +1460,9 @@ internal static partial class Number
                 return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.CopySign(0.5, signed ? -1.0 : 1.0));
             }
 
-            Float128 half = PiFractionConstants[2];
+            DiyFp128 half = PiFractionConstants[2];
             half._sign = signed ? UxSignBit : 0;
-            return Float128ToDecimal<TDecimal, TValue>(half);
+            return DiyFp128ToDecimal<TDecimal, TValue>(half);
         }
 
         DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(x);
@@ -1479,9 +1479,9 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.AtanPi(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        Float128Divide(Float128Atan(argument), InvTrigConstants[4], Float128FullPrecision, out Float128 result);
-        return Float128ToDecimal<TDecimal, TValue>(result);
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128Divide(DiyFp128Atan(argument), InvTrigConstants[4], DiyFp128FullPrecision, out DiyFp128 result);
+        return DiyFp128ToDecimal<TDecimal, TValue>(result);
     }
 
     /// <summary>Computes <c>asin(x) / pi</c>.</summary>
@@ -1516,15 +1516,15 @@ internal static partial class Number
             return double.IsNaN(result) ? TDecimal.NaNMask : ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
-        if (Float128MagnitudeExceedsOne(argument))
+        if (DiyFp128MagnitudeExceedsOne(argument))
         {
             return TDecimal.NaNMask;
         }
 
-        Float128Divide(Float128Asin(argument), InvTrigConstants[4], Float128FullPrecision, out Float128 quotient);
-        return Float128ToDecimal<TDecimal, TValue>(quotient);
+        DiyFp128Divide(DiyFp128Asin(argument), InvTrigConstants[4], DiyFp128FullPrecision, out DiyFp128 quotient);
+        return DiyFp128ToDecimal<TDecimal, TValue>(quotient);
     }
 
     /// <summary>Computes <c>acos(x) / pi</c>.</summary>
@@ -1552,7 +1552,7 @@ internal static partial class Number
             {
                 return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(0.5);
             }
-            return Float128ToDecimal<TDecimal, TValue>(PiFractionConstants[2]);
+            return DiyFp128ToDecimal<TDecimal, TValue>(PiFractionConstants[2]);
         }
 
         if (DecimalIeee754UsesDouble<TValue>())
@@ -1563,15 +1563,15 @@ internal static partial class Number
             return double.IsNaN(result) ? TDecimal.NaNMask : ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
-        if (Float128MagnitudeExceedsOne(argument))
+        if (DiyFp128MagnitudeExceedsOne(argument))
         {
             return TDecimal.NaNMask;
         }
 
-        Float128Divide(Float128Acos(argument), InvTrigConstants[4], Float128FullPrecision, out Float128 quotient);
-        return Float128ToDecimal<TDecimal, TValue>(quotient);
+        DiyFp128Divide(DiyFp128Acos(argument), InvTrigConstants[4], DiyFp128FullPrecision, out DiyFp128 quotient);
+        return DiyFp128ToDecimal<TDecimal, TValue>(quotient);
     }
 
     /// <summary>Computes <c>atan2(y, x) / pi</c>.</summary>
@@ -1609,7 +1609,7 @@ internal static partial class Number
         // fraction of a half turn (atan2 result divided by pi).
         if (yInfinity || xInfinity || yZero || xZero)
         {
-            Float128 magnitude;
+            DiyFp128 magnitude;
             if (yInfinity)
             {
                 // atan2Pi(+/-inf, +/-inf) = +/-3/4 or +/-1/4; atan2Pi(+/-inf, finite) = +/-1/2.
@@ -1632,13 +1632,13 @@ internal static partial class Number
             }
 
             magnitude._sign = decodedY.Signed ? UxSignBit : 0;
-            return Float128ToDecimal<TDecimal, TValue>(magnitude);
+            return DiyFp128ToDecimal<TDecimal, TValue>(magnitude);
         }
 
-        Float128 argumentY = DecimalToFloat128<TDecimal, TValue>(decodedY.Signed, decodedY.UnbiasedExponent, decodedY.Significand);
-        Float128 argumentX = DecimalToFloat128<TDecimal, TValue>(decodedX.Signed, decodedX.UnbiasedExponent, decodedX.Significand);
-        Float128Divide(Float128Atan2(argumentY, argumentX, haveX: true), InvTrigConstants[4], Float128FullPrecision, out Float128 result);
-        return Float128ToDecimal<TDecimal, TValue>(result);
+        DiyFp128 argumentY = DecimalToDiyFp128<TDecimal, TValue>(decodedY.Signed, decodedY.UnbiasedExponent, decodedY.Significand);
+        DiyFp128 argumentX = DecimalToDiyFp128<TDecimal, TValue>(decodedX.Signed, decodedX.UnbiasedExponent, decodedX.Significand);
+        DiyFp128Divide(DiyFp128Atan2(argumentY, argumentX, haveX: true), InvTrigConstants[4], DiyFp128FullPrecision, out DiyFp128 result);
+        return DiyFp128ToDecimal<TDecimal, TValue>(result);
     }
 
     /// <summary>Computes <c>sinh(x)</c>.</summary>
@@ -1671,8 +1671,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Sinh(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Sinh(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Sinh(argument));
     }
 
     /// <summary>Computes <c>cosh(x)</c>.</summary>
@@ -1705,8 +1705,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Cosh(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Cosh(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Cosh(argument));
     }
 
     /// <summary>Computes <c>tanh(x)</c>.</summary>
@@ -1739,8 +1739,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Tanh(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Tanh(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Tanh(argument));
     }
 
     /// <summary>Computes <c>asinh(x)</c>.</summary>
@@ -1773,8 +1773,8 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Asinh(value));
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
-        return Float128ToDecimal<TDecimal, TValue>(Float128Asinh(argument));
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Asinh(argument));
     }
 
     /// <summary>Computes <c>acosh(x)</c>.</summary>
@@ -1809,13 +1809,13 @@ internal static partial class Number
             return TDecimal.NaNMask;
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
-        if (!Float128MagnitudeExceedsOne(argument) && !Float128MagnitudeIsOne(argument))
+        if (!DiyFp128MagnitudeExceedsOne(argument) && !DiyFp128MagnitudeIsOne(argument))
         {
             return TDecimal.NaNMask;
         }
-        return Float128ToDecimal<TDecimal, TValue>(Float128Acosh(argument));
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Acosh(argument));
     }
 
     /// <summary>Computes <c>atanh(x)</c>.</summary>
@@ -1850,20 +1850,20 @@ internal static partial class Number
             return double.IsNaN(result) ? TDecimal.NaNMask : ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
         }
 
-        Float128 argument = DecimalToFloat128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
 
-        if (Float128MagnitudeIsOne(argument))
+        if (DiyFp128MagnitudeIsOne(argument))
         {
             // atanh(+/-1) = +/-inf (pole).
             return decoded.Signed ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
         }
 
-        if (Float128MagnitudeExceedsOne(argument))
+        if (DiyFp128MagnitudeExceedsOne(argument))
         {
             // |x| > 1 is a domain error.
             return TDecimal.NaNMask;
         }
 
-        return Float128ToDecimal<TDecimal, TValue>(Float128Atanh(argument));
+        return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Atanh(argument));
     }
 }

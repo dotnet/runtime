@@ -46,9 +46,9 @@ internal static partial class Number
     private const int TrigNumExtraBits = 6;
 
     // Unpacked pi/4 (dpml_trig_x.h) and pi (pi/4 with binary exponent + 2).
-    private static Float128 TrigPiOverFour => new Float128(0, 0, 0xc90fdaa22168c234, 0xc4c6628b80dc1cd1);
+    private static DiyFp128 TrigPiOverFour => new DiyFp128(0, 0, 0xc90fdaa22168c234, 0xc4c6628b80dc1cd1);
 
-    private static readonly Float128FixedCoefficient[] TrigSinCoefficients =
+    private static readonly DiyFp128FixedCoefficient[] TrigSinCoefficients =
     [
         new(0x000000039e634562, 0x0000000000000000),
         new(0x000009f9dce17a1d, 0x0000000000000000),
@@ -66,7 +66,7 @@ internal static partial class Number
         new(0x0000000000000000, 0x8000000000000000),
     ];
 
-    private static readonly Float128FixedCoefficient[] TrigCosCoefficients =
+    private static readonly DiyFp128FixedCoefficient[] TrigCosCoefficients =
     [
         new(0x00000061a9fb87e2, 0x0000000000000000),
         new(0x0000f96669688c7c, 0x0000000000000000),
@@ -84,7 +84,7 @@ internal static partial class Number
         new(0x0000000000000000, 0x8000000000000000),
     ];
 
-    private static readonly Float128FixedCoefficient[] TrigTanNumeratorCoefficients =
+    private static readonly DiyFp128FixedCoefficient[] TrigTanNumeratorCoefficients =
     [
         new(0x0000000000000000, 0x0000000000000000),
         new(0x02e36384ab86d966, 0x00000000004583dc),
@@ -96,7 +96,7 @@ internal static partial class Number
         new(0x0000000000000000, 0x8000000000000000),
     ];
 
-    private static readonly Float128FixedCoefficient[] TrigTanDenominatorCoefficients =
+    private static readonly DiyFp128FixedCoefficient[] TrigTanDenominatorCoefficients =
     [
         new(0x196c967acbfc02d6, 0x000000000000a9ba),
         new(0xd03d3831cf5f2fe6, 0x000000000e1ae92d),
@@ -205,10 +205,10 @@ internal static partial class Number
     private static bool TrigWordHasBitLoss(ulong msd) => ((msd + 0x40000000000000UL) & 0x3f80000000000000UL) == 0;
 
     // UX_RADIAN_REDUCE (Payne-Hanek). Returns quadrant (0..3); reduced lies in [-pi/4, pi/4].
-    private static int Float128RadianReduce(scoped in Float128 xIn, int octant, out Float128 reduced)
+    private static int DiyFp128RadianReduce(scoped in DiyFp128 xIn, int octant, out DiyFp128 reduced)
     {
-        Float128 x = xIn;
-        Float128Normalize(ref x);
+        DiyFp128 x = xIn;
+        DiyFp128Normalize(ref x);
 
         // GET_F_DIGITS: F1 = high fraction limb, F0 = low.
         ulong f1 = x._hi;
@@ -226,8 +226,8 @@ internal static partial class Number
 
             if (jd != 0)
             {
-                Span<Float128> r = stackalloc Float128[1];
-                Float128AddSub(x, TrigPiOverFour, jd < 0 ? UxSub : UxAdd, r);
+                Span<DiyFp128> r = stackalloc DiyFp128[1];
+                DiyFp128AddSub(x, TrigPiOverFour, jd < 0 ? UxSub : UxAdd, r);
                 reduced = r[0];
             }
             else
@@ -375,7 +375,7 @@ internal static partial class Number
         reduced._exponent = 3;
         reduced._hi = g3; // PUT_W_DIGITS
         reduced._lo = g2;
-        Float128Normalize(ref reduced);
+        DiyFp128Normalize(ref reduced);
 
         int normExponent = reduced._exponent;
         int reinjectOffset = normExponent - 3;
@@ -386,27 +386,27 @@ internal static partial class Number
         }
         reduced._exponent = normExponent - scale;
 
-        Float128 piOverFour = TrigPiOverFour;
-        Float128Multiply(ref reduced, ref piOverFour, out reduced);
+        DiyFp128 piOverFour = TrigPiOverFour;
+        DiyFp128Multiply(ref reduced, ref piOverFour, out reduced);
 
         return (int)((quadrant >> 62) & 3);
     }
 
     // EVALUATE_RATIONAL (dpml_ux_ops_64.c) with the numerator/denominator supplied as explicit
     // coefficient blocks plus their trailing exponent adjust. An absent half is passed as default.
-    private static void Float128EvaluateRational(scoped in Float128 argIn,
-        ReadOnlySpan<Float128FixedCoefficient> numerator, int numeratorTrailingExponent,
-        ReadOnlySpan<Float128FixedCoefficient> denominator, int denominatorTrailingExponent,
-        int degree, int flags, Span<Float128> result)
+    private static void DiyFp128EvaluateRational(scoped in DiyFp128 argIn,
+        ReadOnlySpan<DiyFp128FixedCoefficient> numerator, int numeratorTrailingExponent,
+        ReadOnlySpan<DiyFp128FixedCoefficient> denominator, int denominatorTrailingExponent,
+        int degree, int flags, Span<DiyFp128> result)
     {
-        Float128 argument = argIn;
+        DiyFp128 argument = argIn;
         int sign = flags;
 
-        Float128 polyArg;
+        DiyFp128 polyArg;
         if ((flags & (TrigSquareTerm | (TrigSquareTerm << TrigNumeratorFieldWidth))) != 0)
         {
-            Float128 a = argument;
-            Float128Multiply(ref a, ref a, out polyArg);
+            DiyFp128 a = argument;
+            DiyFp128Multiply(ref a, ref a, out polyArg);
         }
         else
         {
@@ -415,7 +415,7 @@ internal static partial class Number
             sign = flags ^ adjust;
         }
 
-        Float128Normalize(ref polyArg);
+        DiyFp128Normalize(ref polyArg);
         long shift = -(long)degree * polyArg._exponent;
 
         int tmp = (((flags & TrigSwap) == 0) || ((flags & TrigSkip) != 0)) ? 0 : 1;
@@ -428,19 +428,19 @@ internal static partial class Number
         if (hasNumerator)
         {
             int index = hasDenominator ? firstIndex : 0;
-            Float128 r;
+            DiyFp128 r;
             if ((sign & TrigAlternateSign) != 0)
             {
-                Float128EvaluateNegativePolynomial(polyArg, shift, numerator, 0, degree, out r);
+                DiyFp128EvaluateNegativePolynomial(polyArg, shift, numerator, 0, degree, out r);
             }
             else
             {
-                Float128EvaluatePositivePolynomial(polyArg, shift, numerator, 0, degree, out r);
+                DiyFp128EvaluatePositivePolynomial(polyArg, shift, numerator, 0, degree, out r);
             }
             if ((flags & TrigPostMultiply) != 0)
             {
-                Float128 a = argument;
-                Float128Multiply(ref a, ref r, out r);
+                DiyFp128 a = argument;
+                DiyFp128Multiply(ref a, ref r, out r);
             }
             r._exponent += numeratorTrailingExponent;
             result[index] = r;
@@ -453,19 +453,19 @@ internal static partial class Number
 
         if (hasDenominator)
         {
-            Float128 r;
+            DiyFp128 r;
             if ((sign & (TrigAlternateSign << TrigNumeratorFieldWidth)) != 0)
             {
-                Float128EvaluateNegativePolynomial(polyArg, shift, denominator, 0, degree, out r);
+                DiyFp128EvaluateNegativePolynomial(polyArg, shift, denominator, 0, degree, out r);
             }
             else
             {
-                Float128EvaluatePositivePolynomial(polyArg, shift, denominator, 0, degree, out r);
+                DiyFp128EvaluatePositivePolynomial(polyArg, shift, denominator, 0, degree, out r);
             }
             if ((flags & (TrigPostMultiply << TrigNumeratorFieldWidth)) != 0)
             {
-                Float128 a = argument;
-                Float128Multiply(ref a, ref r, out r);
+                DiyFp128 a = argument;
+                DiyFp128Multiply(ref a, ref r, out r);
             }
             r._exponent += denominatorTrailingExponent;
             result[secondIndex] = r;
@@ -481,14 +481,14 @@ internal static partial class Number
 
         if ((flags & TrigNoDivide) == 0)
         {
-            Float128Divide(result[0], result[1], Float128FullPrecision, out result[0]);
+            DiyFp128Divide(result[0], result[1], DiyFp128FullPrecision, out result[0]);
         }
     }
 
     // UX_SINCOS: fills result[0] (sin/primary) and, for sincos, result[1] (cos).
-    private static void Float128SinCos(scoped in Float128 arg, int octant, int functionCode, Span<Float128> result)
+    private static void DiyFp128SinCos(scoped in DiyFp128 arg, int octant, int functionCode, Span<DiyFp128> result)
     {
-        int quadrant = Float128RadianReduce(arg, octant, out Float128 reduced);
+        int quadrant = DiyFp128RadianReduce(arg, octant, out DiyFp128 reduced);
 
         if (functionCode == TrigSinCosFunc)
         {
@@ -497,15 +497,15 @@ internal static partial class Number
             {
                 flags |= TrigSwap;
             }
-            Float128EvaluateRational(reduced, TrigSinCoefficients, 1, TrigCosCoefficients, 1, TrigSinCosDegree, flags, result);
+            DiyFp128EvaluateRational(reduced, TrigSinCoefficients, 1, TrigCosCoefficients, 1, TrigSinCosDegree, flags, result);
         }
         else if ((quadrant & 1) != 0)
         {
-            Float128EvaluateRational(reduced, default, 0, TrigCosCoefficients, 1, TrigSinCosDegree, TrigSkip | TrigCosPolyFlags, result);
+            DiyFp128EvaluateRational(reduced, default, 0, TrigCosCoefficients, 1, TrigSinCosDegree, TrigSkip | TrigCosPolyFlags, result);
         }
         else
         {
-            Float128EvaluateRational(reduced, TrigSinCoefficients, 1, default, 0, TrigSinCosDegree, TrigSkip | TrigSinPolyFlags, result);
+            DiyFp128EvaluateRational(reduced, TrigSinCoefficients, 1, default, 0, TrigSinCosDegree, TrigSkip | TrigSinPolyFlags, result);
         }
 
         if ((quadrant & 2) != 0)
@@ -518,31 +518,31 @@ internal static partial class Number
         }
     }
 
-    private static Float128 Float128Sin(scoped in Float128 arg)
+    private static DiyFp128 DiyFp128Sin(scoped in DiyFp128 arg)
     {
-        Span<Float128> r = stackalloc Float128[2];
-        Float128SinCos(arg, 0, 1, r);
+        Span<DiyFp128> r = stackalloc DiyFp128[2];
+        DiyFp128SinCos(arg, 0, 1, r);
         return r[0];
     }
 
-    private static Float128 Float128Cos(scoped in Float128 arg)
+    private static DiyFp128 DiyFp128Cos(scoped in DiyFp128 arg)
     {
-        Span<Float128> r = stackalloc Float128[2];
-        Float128SinCos(arg, 2, 2, r);
+        Span<DiyFp128> r = stackalloc DiyFp128[2];
+        DiyFp128SinCos(arg, 2, 2, r);
         return r[0];
     }
 
-    private static void Float128SinCosPair(scoped in Float128 arg, out Float128 sin, out Float128 cos)
+    private static void DiyFp128SinCosPair(scoped in DiyFp128 arg, out DiyFp128 sin, out DiyFp128 cos)
     {
-        Span<Float128> r = stackalloc Float128[2];
-        Float128SinCos(arg, 0, TrigSinCosFunc, r);
+        Span<DiyFp128> r = stackalloc DiyFp128[2];
+        DiyFp128SinCos(arg, 0, TrigSinCosFunc, r);
         sin = r[0];
         cos = r[1];
     }
 
-    private static Float128 Float128Tan(scoped in Float128 arg)
+    private static DiyFp128 DiyFp128Tan(scoped in DiyFp128 arg)
     {
-        int quadrant = Float128RadianReduce(arg, 0, out Float128 reduced);
+        int quadrant = DiyFp128RadianReduce(arg, 0, out DiyFp128 reduced);
 
         if ((reduced._hi | reduced._lo) == 0)
         {
@@ -555,8 +555,8 @@ internal static partial class Number
                   | ((TrigSquareTerm | TrigAlternateSign) << TrigNumeratorFieldWidth)
                   | divideFlag;
 
-        Span<Float128> r = stackalloc Float128[2];
-        Float128EvaluateRational(reduced, TrigTanNumeratorCoefficients, 1, TrigTanDenominatorCoefficients, 1, TrigTanCotDegree, flags, r);
+        Span<DiyFp128> r = stackalloc DiyFp128[2];
+        DiyFp128EvaluateRational(reduced, TrigTanNumeratorCoefficients, 1, TrigTanDenominatorCoefficients, 1, TrigTanCotDegree, flags, r);
 
         if ((quadrant & 1) != 0)
         {

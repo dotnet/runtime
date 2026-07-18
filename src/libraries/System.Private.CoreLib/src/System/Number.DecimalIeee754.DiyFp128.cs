@@ -27,11 +27,16 @@ internal static partial class Number
     // finite computation.
 
     /// <summary>
-    /// An unpacked software binary128 value (Intel's <c>UX_FLOAT</c>). The represented value is
+    /// An unpacked software binary128 value (Intel's <c>UX_FLOAT</c>); the 128-bit-significand analogue
+    /// of <see cref="DiyFp"/>. This is a working type, not a storage encoding: the represented value is
     /// <c>(-1)^sign * fraction * 2^(exponent - 128)</c>, where the 128-bit <c>fraction</c> is held in
-    /// two 64-bit limbs and, when normalized, lies in <c>[2^127, 2^128)</c> (its high bit is set).
+    /// two 64-bit limbs and, when normalized, lies in <c>[2^127, 2^128)</c> (its high bit is set). It
+    /// carries the full 128-bit fraction (15 guard bits beyond the binary128 significand) and a wide
+    /// <see cref="int"/> exponent with sentinels across chained operations, rounding to the packed
+    /// binary128 format only at the boundaries (<see cref="Float128UnpackFinite"/> /
+    /// <see cref="Float128PackFinite"/>).
     /// </summary>
-    internal struct Float128
+    internal struct DiyFp128
     {
         // The sign is stored as Intel does (0 for positive, 0x8000_0000 for negative) so the XOR-based
         // sign arithmetic in Multiply/AddSub ports verbatim.
@@ -40,7 +45,7 @@ internal static partial class Number
         internal ulong _hi; // fraction[0] == G_UX_MSD (most significant limb)
         internal ulong _lo; // fraction[1] == G_UX_LSD (least significant limb)
 
-        internal Float128(uint sign, int exponent, ulong hi, ulong lo)
+        internal DiyFp128(uint sign, int exponent, ulong hi, ulong lo)
         {
             _sign = sign;
             _exponent = exponent;
@@ -51,7 +56,7 @@ internal static partial class Number
         internal readonly bool IsNegative => _sign != 0;
     }
 
-    // UX_SIGN_BIT: sign flag stored in Float128._sign.
+    // UX_SIGN_BIT: sign flag stored in DiyFp128._sign.
     private const uint UxSignBit = 0x8000_0000;
 
     // UX_MSB: the most significant bit of a 64-bit fraction limb.
@@ -83,8 +88,8 @@ internal static partial class Number
 
     // DIVIDE precision selectors (Intel's dpml_ux.h): HALF stops after the double-precision estimate;
     // FULL performs the integer refinement to the complete 128-bit significand.
-    private const int Float128HalfPrecision = 1;
-    private const int Float128FullPrecision = 2;
+    private const int DiyFp128HalfPrecision = 1;
+    private const int DiyFp128FullPrecision = 2;
 
     // DIVIDE scaling constants (Intel's dpml_ux_ops_64.c), all exact powers of two.
     private const double TwoPow62 = 4611686018427387904.0;              // 2^62
@@ -98,7 +103,7 @@ internal static partial class Number
     /// (Intel's <c>FFS_AND_SHIFT</c> with <c>FFS_NORMALIZE</c>). A zero fraction is canonicalized to the
     /// zero encoding. The shift is exact, so the leading-zero-count result matches Intel's bit search.
     /// </summary>
-    private static void Float128Normalize(ref Float128 x)
+    private static void DiyFp128Normalize(ref DiyFp128 x)
     {
         ulong hi = x._hi;
 
@@ -145,7 +150,7 @@ internal static partial class Number
     /// low partial products are intentionally dropped, giving Intel's documented ~6 lsb error bound; the
     /// result is left un-normalized for the caller to normalize, exactly as the reference does.
     /// </summary>
-    private static void Float128Multiply(ref Float128 x, ref Float128 y, out Float128 z)
+    private static void DiyFp128Multiply(ref DiyFp128 x, ref DiyFp128 y, out DiyFp128 z)
     {
         ulong xHi = x._hi;
         ulong yHi = y._hi;
@@ -168,14 +173,14 @@ internal static partial class Number
 
         zHi += p2;
 
-        z = new Float128(sign, exponent, zHi, zLo);
+        z = new DiyFp128(sign, exponent, zHi, zLo);
     }
 
     /// <summary>
     /// Computes the exact 256-bit product of two unpacked values, returned as high and low unpacked
     /// halves (Intel's <c>EXTENDED_MULTIPLY</c>). The low half carries an exponent 128 less than the high.
     /// </summary>
-    private static void Float128ExtendedMultiply(ref Float128 x, ref Float128 y, out Float128 hi, out Float128 lo)
+    private static void DiyFp128ExtendedMultiply(ref DiyFp128 x, ref DiyFp128 y, out DiyFp128 hi, out DiyFp128 lo)
     {
         ulong xLo = x._lo;
         ulong yLo = y._lo;
@@ -215,8 +220,8 @@ internal static partial class Number
 
         ulong hiHi = p2 + carry;
 
-        hi = new Float128(sign, exponent, hiHi, hiLo);
-        lo = new Float128(sign, exponent - 128, loHi, loLo);
+        hi = new DiyFp128(sign, exponent, hiHi, hiLo);
+        lo = new DiyFp128(sign, exponent - 128, loHi, loLo);
     }
 
     /// <summary>
@@ -224,10 +229,10 @@ internal static partial class Number
     /// exponent, so operands may need explicit normalization first. <paramref name="result"/> receives one
     /// value for a single operation or two for the combined <c>ADD_SUB</c>/<c>SUB_ADD</c> forms.
     /// </summary>
-    private static void Float128AddSub(scoped in Float128 xIn, scoped in Float128 yIn, int flags, Span<Float128> result)
+    private static void DiyFp128AddSub(scoped in DiyFp128 xIn, scoped in DiyFp128 yIn, int flags, Span<DiyFp128> result)
     {
-        Float128 x = xIn;
-        Float128 y = yIn;
+        DiyFp128 x = xIn;
+        DiyFp128 y = yIn;
 
         uint sign = x._sign;
         int op = flags << 31;
@@ -237,7 +242,7 @@ internal static partial class Number
         op = (tmp2 != 0) ? op : tmp1;
         op = (op >> 31) & 1;
 
-        Float128 uxSave = default;
+        DiyFp128 uxSave = default;
         int exponent = x._exponent;
         int shift = exponent - y._exponent;
 
@@ -352,7 +357,7 @@ internal static partial class Number
 
             if ((flags & UxDoNormalization) != 0)
             {
-                Float128Normalize(ref result[0]);
+                DiyFp128Normalize(ref result[0]);
             }
 
             if ((flags & 0x2) == 0)
@@ -374,20 +379,20 @@ internal static partial class Number
     /// <summary>
     /// Divides two unpacked values (Intel's <c>DIVIDE</c>). It estimates <c>1/b</c> in double precision to
     /// more than 70 bits with a Newton-style refinement, forms <c>q = a * (1/b)</c> in high/low double
-    /// pieces, then (unless <paramref name="flags"/> is <see cref="Float128HalfPrecision"/>) corrects the
+    /// pieces, then (unless <paramref name="flags"/> is <see cref="DiyFp128HalfPrecision"/>) corrects the
     /// quotient to the full 128-bit significand with integer arithmetic. <paramref name="b"/> must be non-zero; it is normalized on a
     /// local copy if necessary, so the algorithm's assumption that the divisor is normalized holds.
     /// </summary>
-    private static void Float128Divide(scoped in Float128 a, scoped in Float128 b, int flags, out Float128 c)
+    private static void DiyFp128Divide(scoped in DiyFp128 a, scoped in DiyFp128 b, int flags, out DiyFp128 c)
     {
-        Float128 bLocal = b;
+        DiyFp128 bLocal = b;
         ulong b1 = bLocal._hi;
         ulong b2 = bLocal._lo;
 
         // If b isn't normalized the whole algorithm falls apart, so make sure that it is.
         if ((long)b1 >= 0)
         {
-            Float128Normalize(ref bLocal);
+            DiyFp128Normalize(ref bLocal);
             b1 = bLocal._hi;
             b2 = bLocal._lo;
         }
@@ -435,7 +440,7 @@ internal static partial class Number
         s += (q1 < e) ? 1UL : 0UL;
         ulong q2 = 0;
 
-        if (flags != Float128HalfPrecision)
+        if (flags != DiyFp128HalfPrecision)
         {
             // Refine R to an integer approximation of 1/b (R/2^63 ~ 1/b); 2^64 saturates to 2^64 - 1.
             bigR = (bigR << 2) + (ulong)(long)(TwoPow62 * rLo);
@@ -487,7 +492,7 @@ internal static partial class Number
         }
 
         int shift = (int)s;
-        c = new Float128(
+        c = new DiyFp128(
             sign,
             exponent + shift,
             (s << 63) | (q1 >> shift),
@@ -495,10 +500,10 @@ internal static partial class Number
     }
 
     /// <summary>
-    /// Unpacks a finite (normal or subnormal) binary128 value into <see cref="Float128"/> form. Special
+    /// Unpacks a finite (normal or subnormal) binary128 value into <see cref="DiyFp128"/> form. Special
     /// classes (NaN/Infinity) are handled by the callers before reaching this path.
     /// </summary>
-    private static Float128 Float128UnpackFinite(UInt128 packed)
+    private static DiyFp128 Float128UnpackFinite(UInt128 packed)
     {
         ulong word0 = (ulong)(packed >> 64);
         ulong word1 = (ulong)packed;
@@ -509,7 +514,7 @@ internal static partial class Number
         ulong hi = UxMsb | (word0 << UxShift) | (word1 >> UxCShift);
         ulong lo = word1 << UxShift;
 
-        var result = new Float128(sign, biasedExponent - Float128ExponentBias + 1, hi, lo);
+        var result = new DiyFp128(sign, biasedExponent - Float128ExponentBias + 1, hi, lo);
 
         if (biasedExponent == 0)
         {
@@ -523,20 +528,20 @@ internal static partial class Number
             // Subnormal: remove the (incorrectly assumed) hidden bit, adjust, and normalize.
             result._hi = hi - UxMsb;
             result._exponent++;
-            Float128Normalize(ref result);
+            DiyFp128Normalize(ref result);
         }
 
         return result;
     }
 
     /// <summary>
-    /// Packs a finite <see cref="Float128"/> into a binary128 bit pattern (Intel's <c>PACK</c>),
+    /// Packs a finite <see cref="DiyFp128"/> into a binary128 bit pattern (Intel's <c>PACK</c>),
     /// including subnormal handling and the round-to-nearest step the reference applies. Overflow to
     /// infinity and NaN encodings are produced by the callers.
     /// </summary>
-    private static UInt128 Float128PackFinite(Float128 value)
+    private static UInt128 Float128PackFinite(DiyFp128 value)
     {
-        Float128Normalize(ref value);
+        DiyFp128Normalize(ref value);
         int exponent = value._exponent;
 
         if (exponent == UxZeroExponent)
@@ -550,9 +555,9 @@ internal static partial class Number
         {
             // Subnormal: add the rounding boundary as a same-signed value so the shared rounding logic
             // below produces the correctly rounded denormal, then recover the biased exponent.
-            var half = new Float128(value._sign, exponent + shift, UxMsb, 0);
-            Span<Float128> rounded = stackalloc Float128[1];
-            Float128AddSub(half, value, UxAdd, rounded);
+            var half = new DiyFp128(value._sign, exponent + shift, UxMsb, 0);
+            Span<DiyFp128> rounded = stackalloc DiyFp128[1];
+            DiyFp128AddSub(half, value, UxAdd, rounded);
             value = rounded[0];
 
             exponent = 1 - Float128ExponentBias;
