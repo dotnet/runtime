@@ -875,6 +875,48 @@ namespace System.Numerics
             return false;
         }
 
+        //
+        // IFloatingPointIeee754
+        //
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
+        public static Decimal32 BitDecrement(Decimal32 x) => new Decimal32(Number.BitDecrementDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
+        public static Decimal32 BitIncrement(Decimal32 x) => new Decimal32(Number.BitIncrementDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        public static Decimal32 FusedMultiplyAdd(Decimal32 left, Decimal32 right, Decimal32 addend) => new Decimal32(Number.FusedMultiplyAddDecimalIeee754<Decimal32, uint>(left._value, right._value, addend._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
+        public static Decimal32 Ieee754Remainder(Decimal32 left, Decimal32 right) => new Decimal32(Number.Ieee754RemainderDecimalIeee754<Decimal32, uint>(left._value, right._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(Decimal32 x) => Number.ILogBDecimalIeee754<Decimal32, uint>(x._value);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
+        public static Decimal32 ScaleB(Decimal32 x, int n) => new Decimal32(Number.ScaleBDecimalIeee754<Decimal32, uint>(x._value, n));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        public static Decimal32 Sqrt(Decimal32 x) => new Decimal32(Number.SqrtDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
+        /// <param name="x">The value whose quantum is adjusted.</param>
+        /// <param name="y">The value that provides the target quantum.</param>
+        /// <returns><paramref name="x" /> expressed with the quantum of <paramref name="y" />, or NaN when the value cannot be represented at that quantum.</returns>
+        public static Decimal32 Quantize(Decimal32 x, Decimal32 y) => new Decimal32(Number.QuantizeDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <summary>Computes the quantum of a value: one unit in the last place sharing its exponent.</summary>
+        /// <param name="x">The value whose quantum is returned.</param>
+        /// <returns>The quantum of <paramref name="x" />.</returns>
+        public static Decimal32 Quantum(Decimal32 x) => new Decimal32(Number.QuantumDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <summary>Determines whether two values have the same quantum (exponent).</summary>
+        /// <param name="x">The first value to compare.</param>
+        /// <param name="y">The second value to compare.</param>
+        /// <returns><c>true</c> if <paramref name="x" /> and <paramref name="y" /> have the same quantum; otherwise, <c>false</c>.</returns>
+        public static bool SameQuantum(Decimal32 x, Decimal32 y) => Number.SameQuantumDecimalIeee754<Decimal32, uint>(x._value, y._value);
+
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
         /// <returns>The absolute of <paramref name="value" />.</returns>
