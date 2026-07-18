@@ -903,6 +903,9 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         case GT_CNS_STR:
         case GT_FIELD_ADDR:
         case GT_LCL_ADDR:
+#ifdef TARGET_WASM
+        case GT_PARTIALLY_CONTAINED_LCL_ADDR:
+#endif
             return false;
 
         case GT_IND:
@@ -1000,7 +1003,11 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
 
     // Ignore the offset for locals
 
+#ifdef TARGET_WASM
+    if (op->OperIs(GT_LCL_ADDR, GT_PARTIALLY_CONTAINED_LCL_ADDR))
+#else
     if (op->OperIs(GT_LCL_ADDR))
+#endif
     {
         return false;
     }
