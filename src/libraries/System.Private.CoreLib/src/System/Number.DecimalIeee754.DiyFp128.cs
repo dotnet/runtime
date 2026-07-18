@@ -17,11 +17,12 @@ internal static partial class Number
     // Licensed under the BSD 3-Clause "New" or "Revised" License
     // See THIRD-PARTY-NOTICES.TXT for the full license text
     //
-    // The decimal transcendental operations route through this software binary128 core exactly as
-    // Intel does (Decimal64/Decimal128 evaluate in binary128; Decimal32 stays on binary64). This is
-    // the 64-bit-word specialization of Intel's engine (`NUM_UX_FRACTION_DIGITS == 2`), so the
-    // 128-bit significand is a pair of <see cref="ulong"/> limbs. Intel's table-driven exception
-    // dispatcher (the `class_to_action_map` machinery inside `UNPACK_X_OR_Y`/`PACK`) is intentionally
+    // All three decimal formats route their transcendental operations through this software binary128
+    // core. Intel keeps Decimal32 on binary64, but routing it through the engine is both faster and
+    // more accurate at 7 digits. This is the 64-bit-word specialization of Intel's engine
+    // (`NUM_UX_FRACTION_DIGITS == 2`), so the 128-bit significand is a pair of <see cref="ulong"/>
+    // limbs. Intel's table-driven exception dispatcher (the `class_to_action_map` machinery inside
+    // `UNPACK_X_OR_Y`/`PACK`) is intentionally
     // not ported; NaN/Infinity/zero canonicalization is handled explicitly by the per-function
     // wrappers, matching the existing exact operations. That does not affect the result bits of any
     // finite computation.

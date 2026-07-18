@@ -14,10 +14,11 @@ internal static partial class Number
     // Licensed under the BSD 3-Clause "New" or "Revised" License
     // See THIRD-PARTY-NOTICES.TXT for the full license text
     //
-    // Decimal32 evaluates the hyperbolic functions in binary64; Decimal64/Decimal128 route through this
-    // engine so the wider formats keep their precision. The engine operates entirely in the wide-exponent
-    // `DiyFp128` (`ux`) domain, so unlike Intel's hardware-binary128 BID wrappers it does not spuriously
-    // overflow for large arguments -- the final pack to the decimal format performs the only saturation.
+    // Decimal32, Decimal64, and Decimal128 all route through this engine so each keeps its precision;
+    // binary64 cannot carry Decimal64's 16 or Decimal128's 34 significant digits. The engine operates
+    // entirely in the wide-exponent `DiyFp128` (`ux`) domain, so unlike Intel's hardware-binary128 BID
+    // wrappers it does not spuriously overflow for large arguments -- the final pack to the decimal
+    // format performs the only saturation.
 
     // ADD_SUB (2) is defined in the log file; SUB_ADD writes the difference to result[0] and the sum to
     // result[1].

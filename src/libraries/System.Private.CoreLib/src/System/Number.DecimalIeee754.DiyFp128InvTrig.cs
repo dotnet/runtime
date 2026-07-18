@@ -17,8 +17,8 @@ internal static partial class Number
     // Licensed under the BSD 3-Clause "New" or "Revised" License
     // See THIRD-PARTY-NOTICES.TXT for the full license text
     //
-    // Decimal32 evaluates the inverse trig functions in binary64; Decimal64/Decimal128 route
-    // through this engine so the wider formats keep their precision.
+    // Decimal32, Decimal64, and Decimal128 all route through this engine so each keeps its precision;
+    // binary64 cannot carry Decimal64's 16 or Decimal128's 34 significant digits.
 
     private const int InvTrigAtanMapWidth = 4;
     private const int InvTrigAsinMapWidth = 6;
