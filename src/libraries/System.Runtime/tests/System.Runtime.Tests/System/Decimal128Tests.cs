@@ -4283,5 +4283,11 @@ namespace System.Tests
             Assert.Equal(123, Decimal128.ConvertToInteger<int>(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x303C000000000000, 0x0000000000003039))));
         }
 
+        [Fact]
+        public static void IFloatingPointIeee754_GenericSurface()
+        {
+            GenericIeee754Surface.Verify<Decimal128>();
+        }
+
     }
 }

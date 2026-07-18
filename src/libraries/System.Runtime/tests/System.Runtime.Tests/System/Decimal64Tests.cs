@@ -4228,5 +4228,11 @@ namespace System.Tests
             Assert.Equal(123, Decimal64.ConvertToInteger<int>(Unsafe.BitCast<ulong, Decimal64>(0x3180000000003039UL)));
         }
 
+        [Fact]
+        public static void IFloatingPointIeee754_GenericSurface()
+        {
+            GenericIeee754Surface.Verify<Decimal64>();
+        }
+
     }
 }

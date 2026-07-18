@@ -4203,5 +4203,11 @@ namespace System.Tests
             Assert.Equal(123, Decimal32.ConvertToInteger<int>(Unsafe.BitCast<uint, Decimal32>(0x31803039U)));
         }
 
+        [Fact]
+        public static void IFloatingPointIeee754_GenericSurface()
+        {
+            GenericIeee754Surface.Verify<Decimal32>();
+        }
+
     }
 }

@@ -13,7 +13,7 @@ namespace System.Numerics
         : IComparable,
           IComparable<Decimal64>,
           IEquatable<Decimal64>,
-          IFloatingPoint<Decimal64>,
+          IFloatingPointIeee754<Decimal64>,
           ISpanFormattable,
           ISpanParsable<Decimal64>,
           IMinMaxValue<Decimal64>,
