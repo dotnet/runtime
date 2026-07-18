@@ -81,6 +81,15 @@ HARDWARE_INTRINSIC(PackedSimd,      Xor,                                        
 HARDWARE_INTRINSIC(PackedSimd,      ZeroExtendWideningLower,                                         16,              1,     INS_i16x8_extend_low_u_i8x16,         INS_i16x8_extend_low_u_i8x16,         INS_i32x4_extend_low_u_i16x8,         INS_i32x4_extend_low_u_i16x8,         INS_i64x2_extend_low_u_i32x4,     INS_i64x2_extend_low_u_i32x4,     INS_invalid,                          INS_invalid,                          INS_invalid,                          INS_invalid,                          -1,        -1,         HW_Category_SIMD,                   HW_Flag_BaseTypeFromFirstArg)
 HARDWARE_INTRINSIC(PackedSimd,      ZeroExtendWideningUpper,                                         16,              1,     INS_i16x8_extend_high_u_i8x16,        INS_i16x8_extend_high_u_i8x16,        INS_i32x4_extend_high_u_i16x8,        INS_i32x4_extend_high_u_i16x8,        INS_i64x2_extend_high_u_i32x4,    INS_i64x2_extend_high_u_i32x4,    INS_invalid,                          INS_invalid,                          INS_invalid,                          INS_invalid,                          -1,        -1,         HW_Category_SIMD,                   HW_Flag_BaseTypeFromFirstArg)
 #define LAST_NI_PackedSimd NI_PackedSimd_ZeroExtendWideningUpper
+
+//  WasmBase Intrinsics
+//  These scalar intrinsics are special-imported (see hwintrinsicwasm.cpp) and always rewritten into the
+//  existing NI_PRIMITIVE_*ZeroCount GT_INTRINSIC nodes (which codegen already emits as wasm clz/ctz), so
+//  they never materialize as GenTreeHWIntrinsic nodes -- hence HW_Flag_InvalidNodeId.
+#define FIRST_NI_WasmBase           NI_WasmBase_LeadingZeroCount
+HARDWARE_INTRINSIC(WasmBase,        LeadingZeroCount,                                                0,               1,     INS_invalid,                          INS_invalid,                          INS_invalid,                          INS_invalid,                          INS_invalid,                      INS_invalid,                      INS_invalid,                          INS_invalid,                          INS_invalid,                          INS_invalid,                          -1,        -1,         HW_Category_Scalar,                 HW_Flag_InvalidNodeId|HW_Flag_NoFloatingPointUsed)
+HARDWARE_INTRINSIC(WasmBase,        TrailingZeroCount,                                               0,               1,     INS_invalid,                          INS_invalid,                          INS_invalid,                          INS_invalid,                          INS_invalid,                      INS_invalid,                      INS_invalid,                          INS_invalid,                          INS_invalid,                          INS_invalid,                          -1,        -1,         HW_Category_Scalar,                 HW_Flag_InvalidNodeId|HW_Flag_NoFloatingPointUsed)
+#define LAST_NI_WasmBase            NI_WasmBase_TrailingZeroCount
 #endif // FEATURE_HW_INTRINSICS
 
 #undef HARDWARE_INTRINSIC
