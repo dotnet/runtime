@@ -113,7 +113,6 @@ MetadataReader? GetMetadata(ModuleHandle handle)
             // For each table, test its bit in CMiniMdSchema::Sorted to determine whether it is sorted.
             // Decode CMiniMdSchema::Heaps to determine whether the string, GUID, and blob heaps use large indexes.
             // Record CMiniMdRW::All4ByteColumns so the reconstructed image can preserve fixed-width variable columns.
-            // See [MetadataReader](https://github.com/dotnet/runtime/blob/1b945942604aa94b4717243b6d301a17b7ae41f1/src/libraries/System.Reflection.Metadata/src/System/Reflection/Metadata/MetadataReader.cs#L166).
             //
             // To read a storage pool:
             // Read the pool head using the StgPool descriptor.
@@ -134,7 +133,11 @@ MetadataReader? GetMetadata(ModuleHandle handle)
             // Create a builder for a new contiguous ECMA-335 metadata image.
             // Write the metadata root header and version string.
             // Add stream headers for #Strings, #Blob, #GUID, #US, and the uncompressed tables stream #-.
-            // If all variable-width columns are 4 bytes, also add the #JTD marker stream.
+            // If all variable-width columns are 4 bytes, also add the #JTD marker
+            // stream. The official ECMA-335 metadata format doesn't encode columns this
+            // way but System.Reflection.Metadata does support this encoding variation
+            // when it observes the #JTD marker stream.
+            // See [MetadataReader](https://github.com/dotnet/runtime/blob/1b945942604aa94b4717243b6d301a17b7ae41f1/src/libraries/System.Reflection.Metadata/src/System/Reflection/Metadata/MetadataReader.cs#L166)
             // Append the string, blob, GUID, and user-string heap data and fill in their stream offsets.
             //
             // Begin the #- tables stream.
