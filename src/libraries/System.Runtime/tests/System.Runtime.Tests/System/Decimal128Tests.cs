@@ -4285,7 +4285,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void IFloatingPointIeee754_GenericSurface()
+        public static void IDecimalFloatingPointIeee754_GenericSurface()
         {
             GenericIeee754Surface.Verify<Decimal128>();
         }
