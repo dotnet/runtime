@@ -16,7 +16,7 @@ applyTo: "src/libraries/System.Security.Cryptography/**"
 
 ## Security
 
-- Clear owned writable buffers containing keys or other secret material with `CryptographicOperations.ZeroMemory` as soon as they are no longer needed. Use `CryptoPool.Rent` and `CryptoPool.Return` for rented buffers. For pinned arrays that should be cleared on disposal, use `PinAndClear.Track`.
+- Clear owned writable buffers containing keys or other secret material with `CryptographicOperations.ZeroMemory` as soon as they are no longer needed. Use `CryptoPoolLease` or `CryptoPool.Rent` and `CryptoPool.Return` for rented buffers. For pinned arrays that should be cleared on disposal, use `PinAndClear.Track`.
 - Use `CryptographicOperations.FixedTimeEquals` for secret-dependent comparisons; do not implement ad hoc comparison loops or use ordinary sequence equality.
 
 ## Tests
