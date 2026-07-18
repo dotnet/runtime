@@ -7,12 +7,12 @@ using Xunit;
 namespace System.Tests
 {
     // Confirms a decimal IEEE 754 type is consumable through the generic
-    // IFloatingPointIeee754<TSelf> surface, dispatching every function family
-    // through the interface. Accuracy is covered by the per-function tests.
+    // IDecimalFloatingPointIeee754<TSelf> surface, dispatching every function
+    // family through the interface. Accuracy is covered by the per-function tests.
     internal static class GenericIeee754Surface
     {
         public static void Verify<TSelf>()
-            where TSelf : IFloatingPointIeee754<TSelf>
+            where TSelf : IDecimalFloatingPointIeee754<TSelf>
         {
             Assert.True(TSelf.IsNaN(TSelf.NaN));
             Assert.True(TSelf.IsNegative(TSelf.NegativeZero));
@@ -44,6 +44,10 @@ namespace System.Tests
             Assert.True(TSelf.IsFinite(TSelf.FusedMultiplyAdd(one, one, one)));
             Assert.True(TSelf.IsFinite(TSelf.ScaleB(one, 1)));
             Assert.Equal(0, TSelf.ILogB(one));
+
+            Assert.Equal(one, TSelf.Quantize(one, one));
+            Assert.True(TSelf.IsFinite(TSelf.Quantum(one)));
+            Assert.True(TSelf.SameQuantum(one, one));
         }
     }
 }
