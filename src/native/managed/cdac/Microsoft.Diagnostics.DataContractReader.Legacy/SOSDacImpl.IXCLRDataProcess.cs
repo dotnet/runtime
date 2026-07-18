@@ -125,27 +125,23 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.SetDesiredExecutionState(uint state)
         => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.SetDesiredExecutionState(state) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.GetAddressType(ClrDataAddress address, /*CLRDataAddressType*/ uint* type)
+    int IXCLRDataProcess.GetAddressType(ClrDataAddress address, CLRDataAddressType* type)
     {
-        const uint ClrDataAddressUnrecognized = 0;
-        const uint ClrDataAddressManagedMethod = 1;
-        const uint ClrDataAddressRuntimeUnmanagedStub = 6;
-
         int hr = HResults.S_OK;
         try
         {
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
-            *type = ClrDataAddressUnrecognized;
+            *type = CLRDataAddressType.CLRDATA_ADDRESS_UNRECOGNIZED;
             TargetCodePointer codeAddress = address.ToTargetCodePointer(_target);
             if (_target.TryRead(codeAddress, out byte _))
             {
                 *type = _target.Contracts.ExecutionManager.GetCodeKind(codeAddress) switch
                 {
-                    CodeKind.Unknown => ClrDataAddressUnrecognized,
-                    CodeKind.Jitted or CodeKind.ReadyToRun or CodeKind.Interpreter => ClrDataAddressManagedMethod,
-                    _ => ClrDataAddressRuntimeUnmanagedStub,
+                    CodeKind.Unknown => CLRDataAddressType.CLRDATA_ADDRESS_UNRECOGNIZED,
+                    CodeKind.Jitted or CodeKind.ReadyToRun or CodeKind.Interpreter => CLRDataAddressType.CLRDATA_ADDRESS_MANAGED_METHOD,
+                    _ => CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB,
                 };
             }
         }
@@ -157,7 +153,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 #if DEBUG
         if (_legacyProcess is not null)
         {
-            uint typeLocal = default;
+            CLRDataAddressType typeLocal = default;
             int hrLocal = _legacyProcess.GetAddressType(address, type is null ? null : &typeLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr >= 0)
@@ -281,8 +277,16 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
     private static string? GetStubName(Contracts.CodeKind codeKind)
     {
-        if (codeKind == Contracts.CodeKind.Unknown || codeKind == Contracts.CodeKind.Jitted || codeKind == Contracts.CodeKind.ReadyToRun)
+        if (codeKind is Contracts.CodeKind.Unknown
+            or Contracts.CodeKind.Jitted
+            or Contracts.CodeKind.ReadyToRun
+            or Contracts.CodeKind.ThePreStub
+            or Contracts.CodeKind.VarargPInvokeStub
+            or Contracts.CodeKind.GenericPInvokeCalliHelper
+            or Contracts.CodeKind.JIT_TailCall)
+        {
             return null;
+        }
         if (codeKind == Contracts.CodeKind.StubPrecode || codeKind == Contracts.CodeKind.FixupPrecode)
             return "Prestub";
         return codeKind.ToString();

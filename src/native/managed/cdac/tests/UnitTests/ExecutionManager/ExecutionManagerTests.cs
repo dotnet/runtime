@@ -42,13 +42,16 @@ public class ExecutionManagerTests
         return types;
     }
 
-    private static Target CreateTarget(MockExecutionManagerBuilder emBuilder)
+    private static Target CreateTarget(
+        MockExecutionManagerBuilder emBuilder,
+        params (string Name, ulong Value)[] additionalGlobals)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
         return new TestPlaceholderTarget.Builder(arch)
             .UseReader(emBuilder.Builder.GetMemoryContext().ReadFromTarget)
             .AddTypes(CreateContractTypes(emBuilder))
             .AddGlobals(emBuilder.Globals)
+            .AddGlobals(additionalGlobals)
             .AddContract<IExecutionManager>(version: emBuilder.Version)
             .AddMockContract<IPlatformMetadata>(Mock.Of<IPlatformMetadata>())
             .Build();
@@ -665,6 +668,29 @@ public class ExecutionManagerTests
         IExecutionManager em = CreateExecutionManagerContract(version, arch);
 
         Assert.Equal(CodeKind.Unknown, em.GetCodeKind(new TargetCodePointer(0x00aa_9000)));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetStubKind_GlobalStubs(string version, MockTarget.Architecture arch)
+    {
+        (string Name, ulong Address, CodeKind Kind)[] stubs =
+        [
+            (nameof(CodeKind.ThePreStub), 0x00aa_1000, CodeKind.ThePreStub),
+            (nameof(CodeKind.VarargPInvokeStub), 0x00aa_2000, CodeKind.VarargPInvokeStub),
+            ("VarargPInvokeStub_RetBuffArg", 0x00aa_3000, CodeKind.VarargPInvokeStub),
+            (nameof(CodeKind.GenericPInvokeCalliHelper), 0x00aa_4000, CodeKind.GenericPInvokeCalliHelper),
+            (nameof(CodeKind.JIT_TailCall), 0x00aa_5000, CodeKind.JIT_TailCall),
+        ];
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        Target target = CreateTarget(
+            emBuilder,
+            stubs.Select(stub => (stub.Name, emBuilder.AddPointerGlobal(stub.Address, stub.Name))).ToArray());
+
+        foreach ((_, ulong address, CodeKind kind) in stubs)
+        {
+            Assert.Equal(kind, target.Contracts.ExecutionManager.GetCodeKind(new TargetCodePointer(address)));
+        }
     }
 
     [Theory]

@@ -147,18 +147,22 @@ public unsafe class IXCLRDataProcessTests
     public void GetAddressType(MockTarget.Architecture arch)
     {
         const ulong CodeAddress = 0x7000;
-        (CodeKind Kind, uint Expected)[] cases =
+        (CodeKind Kind, CLRDataAddressType Expected)[] cases =
         [
-            (CodeKind.Unknown, 0),
-            (CodeKind.Jitted, 1),
-            (CodeKind.ReadyToRun, 1),
-            (CodeKind.Interpreter, 1),
-            (CodeKind.JumpStub, 6),
-            (CodeKind.StubPrecode, 6),
-            (CodeKind.VSD_DispatchStub, 6),
+            (CodeKind.Unknown, CLRDataAddressType.CLRDATA_ADDRESS_UNRECOGNIZED),
+            (CodeKind.Jitted, CLRDataAddressType.CLRDATA_ADDRESS_MANAGED_METHOD),
+            (CodeKind.ReadyToRun, CLRDataAddressType.CLRDATA_ADDRESS_MANAGED_METHOD),
+            (CodeKind.Interpreter, CLRDataAddressType.CLRDATA_ADDRESS_MANAGED_METHOD),
+            (CodeKind.JumpStub, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
+            (CodeKind.StubPrecode, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
+            (CodeKind.VSD_DispatchStub, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
+            (CodeKind.ThePreStub, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
+            (CodeKind.VarargPInvokeStub, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
+            (CodeKind.GenericPInvokeCalliHelper, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
+            (CodeKind.JIT_TailCall, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
         ];
 
-        foreach ((CodeKind kind, uint expected) in cases)
+        foreach ((CodeKind kind, CLRDataAddressType expected) in cases)
         {
             Mock<IExecutionManager> executionManager = new(MockBehavior.Strict);
             executionManager.Setup(e => e.GetCodeKind(new TargetCodePointer(CodeAddress))).Returns(kind);
@@ -166,7 +170,7 @@ public unsafe class IXCLRDataProcessTests
                 arch,
                 executionManager: executionManager.Object,
                 readableAddress: CodeAddress);
-            uint type;
+            CLRDataAddressType type;
 
             int hr = process.GetAddressType(CodeAddress, &type);
 
@@ -175,10 +179,10 @@ public unsafe class IXCLRDataProcessTests
         }
 
         IXCLRDataProcess unreadableProcess = CreateProcess(arch);
-        uint unreadableType;
+        CLRDataAddressType unreadableType;
         int unreadableHr = unreadableProcess.GetAddressType(CodeAddress, &unreadableType);
         Assert.Equal(HResults.S_OK, unreadableHr);
-        Assert.Equal(0u, unreadableType);
+        Assert.Equal(CLRDataAddressType.CLRDATA_ADDRESS_UNRECOGNIZED, unreadableType);
     }
 
     [Theory]

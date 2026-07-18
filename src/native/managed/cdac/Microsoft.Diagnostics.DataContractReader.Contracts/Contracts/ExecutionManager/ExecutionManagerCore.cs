@@ -22,6 +22,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
     private readonly InterpreterJitManager _interpreterJitManager;
+    private readonly TargetPointer _thePreStub;
+    private readonly TargetPointer _varargPInvokeStub;
+    private readonly TargetPointer _varargPInvokeStubRetBuffArg;
+    private readonly TargetPointer _genericPInvokeCalliHelper;
+    private readonly TargetPointer _jitTailCall;
 
     private Data.RangeSectionMap _topRangeSectionMap
         => _target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(_topRangeSectionMapAddress);
@@ -35,6 +40,19 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
         _interpreterJitManager = new InterpreterJitManager(_target, nibbleMap);
+        _thePreStub = ReadGlobalStub(nameof(CodeKind.ThePreStub));
+        _varargPInvokeStub = ReadGlobalStub(nameof(CodeKind.VarargPInvokeStub));
+        _varargPInvokeStubRetBuffArg = ReadGlobalStub("VarargPInvokeStub_RetBuffArg");
+        _genericPInvokeCalliHelper = ReadGlobalStub(nameof(CodeKind.GenericPInvokeCalliHelper));
+        _jitTailCall = ReadGlobalStub(nameof(CodeKind.JIT_TailCall));
+    }
+
+    private TargetPointer ReadGlobalStub(string name)
+    {
+        if (!_target.TryReadGlobalPointer(name, out TargetPointer? value))
+            return TargetPointer.Null;
+
+        return _target.ReadPointer(value.Value);
     }
 
     public void Flush(FlushScope scope)
@@ -624,7 +642,22 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeAddress);
         if (range.Data == null)
+        {
+            TargetPointer address = new(codeAddress.Value);
+            if (address == _thePreStub && _thePreStub != TargetPointer.Null)
+                return CodeKind.ThePreStub;
+            if ((address == _varargPInvokeStub && _varargPInvokeStub != TargetPointer.Null)
+                || (address == _varargPInvokeStubRetBuffArg && _varargPInvokeStubRetBuffArg != TargetPointer.Null))
+            {
+                return CodeKind.VarargPInvokeStub;
+            }
+            if (address == _genericPInvokeCalliHelper && _genericPInvokeCalliHelper != TargetPointer.Null)
+                return CodeKind.GenericPInvokeCalliHelper;
+            if (address == _jitTailCall && _jitTailCall != TargetPointer.Null)
+                return CodeKind.JIT_TailCall;
+
             return CodeKind.Unknown;
+        }
 
         // check if this is a stub
         JitManager? jitManager = GetJitManager(range);

@@ -40,6 +40,17 @@ public enum CLRDataByNameFlag : uint
     CLRDATA_BYNAME_CASE_INSENSITIVE = 1
 }
 
+public enum CLRDataAddressType : uint
+{
+    CLRDATA_ADDRESS_UNRECOGNIZED,
+    CLRDATA_ADDRESS_MANAGED_METHOD,
+    CLRDATA_ADDRESS_RUNTIME_MANAGED_CODE,
+    CLRDATA_ADDRESS_RUNTIME_UNMANAGED_CODE,
+    CLRDATA_ADDRESS_GC_DATA,
+    CLRDATA_ADDRESS_RUNTIME_MANAGED_STUB,
+    CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB,
+}
+
 [Flags]
 public enum CLRDataMethodCodeNotification : uint
 {
@@ -201,7 +212,7 @@ public unsafe partial interface IXCLRDataProcess
     int SetDesiredExecutionState(uint state);
 
     [PreserveSig]
-    int GetAddressType(ClrDataAddress address, /*CLRDataAddressType*/ uint* type);
+    int GetAddressType(ClrDataAddress address, CLRDataAddressType* type);
 
     [PreserveSig]
     int GetRuntimeNameByAddress(

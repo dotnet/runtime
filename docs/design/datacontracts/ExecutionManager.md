@@ -144,7 +144,11 @@ public enum CodeKind : uint
     MethodCallThunk = 10,
     Jitted = 11,
     ReadyToRun = 12,
-    Interpreter = 13
+    Interpreter = 13,
+    ThePreStub = 14,
+    VarargPInvokeStub = 15,
+    GenericPInvokeCalliHelper = 16,
+    JIT_TailCall = 17
 }
 ```
 
@@ -246,6 +250,11 @@ Global variables used:
 | `ExecutionManagerCodeRangeMapAddress` | TargetPointer | Pointer to the global RangeSectionMap |
 | `EEJitManagerAddress` | TargetPointer | Address of the global pointer to the EEJitManager instance (read a TargetPointer from this address to obtain the instance address) |
 | `StubCodeBlockLast` | uint8 | Maximum sentinel code header value indentifying a stub code block |
+| `ThePreStub` | TargetPointer | Address of the global containing the prestub entrypoint |
+| `VarargPInvokeStub` | TargetPointer | Address of the global containing the vararg P/Invoke stub entrypoint |
+| `VarargPInvokeStub_RetBuffArg` | TargetPointer | Address of the global containing the vararg P/Invoke ret-buffer stub entrypoint, when applicable |
+| `GenericPInvokeCalliHelper` | TargetPointer | Address of the global containing the generic P/Invoke calli helper entrypoint |
+| `JIT_TailCall` | TargetPointer | Address of the global containing the x86 Windows tail-call helper entrypoint |
 | `HashMapSlotsPerBucket` | uint32 | Number of slots in each bucket of a `HashMap` |
 | `HashMapValueMask` | uint64 | Bitmask used when storing values in a `HashMap` |
 | `FeatureEHFunclets` | uint8 | 1 if EH funclets are enabled, 0 otherwise |
@@ -539,7 +548,7 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 
 `IExecutionManager.IsGcSafe` returns whether a given instruction pointer is in managed code at a GC-safe point. First it resolves the instruction pointer to a `CodeBlockHandle` via `GetCodeBlockHandle`; if the pointer is not in managed code, it returns `false`. Otherwise it obtains the code block's relative offset and GC info, decodes the GC info via the `GCInfo` contract, and delegates to `GCInfo` `IsGcSafe`.
 
-`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), ReadyToRun code, and interpreter code. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
+`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), ReadyToRun code, interpreter code, and global runtime stubs. If no range section owns the address, it compares the address against the exposed global stub entrypoints. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
 ### FindReadyToRunModule
 
 `FindReadyToRunModule` locates the ReadyToRun module whose PE image contains the given address. Unlike `GetCodeBlockHandle` (which only matches code regions), this API matches against the full PE image range - including data sections such as import tables. This is used in GCRefMap resolution as it requires finding the module that owns an import section indirection address, which is in the data section rather than the code section.
