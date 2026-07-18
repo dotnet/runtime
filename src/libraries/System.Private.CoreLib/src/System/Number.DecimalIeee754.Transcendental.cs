@@ -7,15 +7,20 @@ namespace System;
 
 internal static partial class Number
 {
-    // Format-agnostic dispatch for the decimal IEEE 754 transcendental surface. Following Intel's
-    // reference, Decimal32 evaluates in binary64 (`double`) while Decimal64/Decimal128 evaluate in the
-    // software binary128 (`ux`) engine so the wider formats keep their full precision. The `typeof`
-    // guard is a JIT-time constant, so each concrete instantiation compiles to a single path.
+    // Format-agnostic dispatch for the decimal IEEE 754 transcendental surface. Intel's reference
+    // evaluates Decimal32 in binary64 (`double`) and Decimal64/Decimal128 in the software binary128
+    // (`ux`) engine. The `double` branch below preserves that faithful Decimal32 path, but it is
+    // presently a measured pessimization for every format: reconstructing the decimal from the `double`
+    // result runs through `ConvertFloatToDecimalIeee754`, which computes the full Dragon4 exact
+    // expansion of the result before rounding -- far more work than the engine's direct
+    // `DiyFp128ToDecimal` rounding. Until that conversion is replaced with a bounded correctly-rounded
+    // form, routing every format through the engine is both faster and (for Decimal32) more accurate,
+    // so the gate is disabled. The gate stays a single JIT-time-foldable call so re-enabling it is a
+    // one-line change once the conversion cost is addressed.
 
-    private static bool DecimalIeee754UsesDouble<TValue>() => typeof(TValue) == typeof(uint);
+    private static bool DecimalIeee754UsesDouble<TValue>() => false;
 
-    /// <summary>Computes <c>e^x</c> (Intel routes Decimal32 through <c>double</c>, wider formats through
-    /// the binary128 engine).</summary>
+    /// <summary>Computes <c>e^x</c>.</summary>
     internal static TValue ExpDecimalIeee754<TDecimal, TValue>(TValue x)
         where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
         where TValue : unmanaged, IBinaryInteger<TValue>
@@ -270,8 +275,7 @@ internal static partial class Number
         return significand == TDecimal.Power10(k);
     }
 
-    /// <summary>Computes <c>ln(x)</c> (Intel routes Decimal32 through <c>double</c>, wider formats through
-    /// the binary128 engine).</summary>
+    /// <summary>Computes <c>ln(x)</c>.</summary>
     internal static TValue LogDecimalIeee754<TDecimal, TValue>(TValue x)
         where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
         where TValue : unmanaged, IBinaryInteger<TValue>
@@ -619,8 +623,7 @@ internal static partial class Number
         return significand > power ? 1 : -1;
     }
 
-    /// <summary>Computes <c>x^y</c> (Intel routes Decimal32 through <c>double</c>, wider formats through
-    /// the binary128 engine).</summary>
+    /// <summary>Computes <c>x^y</c>.</summary>
     internal static TValue PowDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
         where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
         where TValue : unmanaged, IBinaryInteger<TValue>

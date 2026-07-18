@@ -1718,7 +1718,7 @@ namespace System.Tests
         [InlineData(-7.5)]
         public static void ExpAccuracyTest(double input)
         {
-            // Decimal32 evaluates exp through binary64 (as Intel does), so the result matches double.Exp
+            // Decimal32 evaluates exp in the binary128 engine, so the result matches double.Exp
             // to within the format's seven significant digits.
             double expected = double.Exp(input);
             double actual = (double)Decimal32.Exp((Decimal32)input);
@@ -1875,7 +1875,7 @@ namespace System.Tests
         [InlineData(0.001)]
         public static void LogAccuracyTest(double input)
         {
-            // Decimal32 evaluates log through binary64 (as Intel does), so the result matches double.Log
+            // Decimal32 evaluates log in the binary128 engine, so the result matches double.Log
             // to within the format's seven significant digits.
             double expected = double.Log(input);
             double actual = (double)Decimal32.Log((Decimal32)input);
@@ -2059,7 +2059,7 @@ namespace System.Tests
         [InlineData(0.5)]
         public static void CbrtAccuracyTest(double input)
         {
-            // Decimal32 evaluates cbrt through binary64 (as Intel does), so the result matches double.Cbrt
+            // Decimal32 evaluates cbrt in the binary128 engine, so the result matches double.Cbrt
             // to within the format's seven significant digits.
             double expected = double.Cbrt(input);
             double actual = (double)Decimal32.Cbrt((Decimal32)input);
@@ -2092,7 +2092,7 @@ namespace System.Tests
         [InlineData(2.5, -6.5)]
         public static void HypotAccuracyTest(double x, double y)
         {
-            // Decimal32 evaluates hypot through binary64 (as Intel does), so the result matches double.Hypot
+            // Decimal32 evaluates hypot in the binary128 engine, so the result matches double.Hypot
             // to within the format's seven significant digits.
             double expected = double.Hypot(x, y);
             double actual = (double)Decimal32.Hypot((Decimal32)x, (Decimal32)y);
@@ -2133,7 +2133,7 @@ namespace System.Tests
         [InlineData(8.0, -3)]
         public static void RootNAccuracyTest(double input, int n)
         {
-            // Decimal32 evaluates rootn through binary64 (as Intel does), so the result matches double.RootN
+            // Decimal32 evaluates rootn in the binary128 engine, so the result matches double.RootN
             // to within the format's seven significant digits.
             double expected = double.RootN(input, n);
             double actual = (double)Decimal32.RootN((Decimal32)input, n);
@@ -2179,7 +2179,7 @@ namespace System.Tests
         [InlineData(9.0, 0.5)]   // fractional exponent (square root)
         public static void PowAccuracyTest(double x, double y)
         {
-            // Decimal32 evaluates pow through binary64 (as Intel does), so the result matches double.Pow
+            // Decimal32 evaluates pow in the binary128 engine, so the result matches double.Pow
             // to within the format's seven significant digits.
             double expected = double.Pow(x, y);
             double actual = (double)Decimal32.Pow((Decimal32)x, (Decimal32)y);
@@ -2215,7 +2215,7 @@ namespace System.Tests
         [InlineData(-3.25)]
         public static void SinAccuracyTest(double input)
         {
-            // Decimal32 evaluates sin through binary64 (as Intel does), so the result matches double.Sin
+            // Decimal32 evaluates sin in the binary128 engine, so the result matches double.Sin
             // to within the format's seven significant digits.
             double expected = double.Sin(input);
             double actual = (double)Decimal32.Sin((Decimal32)input);
@@ -2245,7 +2245,7 @@ namespace System.Tests
         [InlineData(-3.25)]
         public static void CosAccuracyTest(double input)
         {
-            // Decimal32 evaluates cos through binary64 (as Intel does).
+            // Decimal32 evaluates cos in the binary128 engine.
             double expected = double.Cos(input);
             double actual = (double)Decimal32.Cos((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cos({input}): expected {expected}, got {actual}");
@@ -2274,7 +2274,7 @@ namespace System.Tests
         [InlineData(-0.75)]
         public static void TanAccuracyTest(double input)
         {
-            // Decimal32 evaluates tan through binary64 (as Intel does).
+            // Decimal32 evaluates tan in the binary128 engine.
             double expected = double.Tan(input);
             double actual = (double)Decimal32.Tan((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"tan({input}): expected {expected}, got {actual}");
@@ -2327,7 +2327,7 @@ namespace System.Tests
         [InlineData(double.NegativeInfinity)] // atan(-Infinity) = -pi/2
         public static void AtanAccuracyTest(double input)
         {
-            // Decimal32 evaluates atan through binary64 (as Intel does).
+            // Decimal32 evaluates atan in the binary128 engine.
             double expected = double.Atan(input);
             double actual = (double)Decimal32.Atan((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atan({input}): expected {expected}, got {actual}");
@@ -2358,7 +2358,7 @@ namespace System.Tests
         [InlineData(-0.75)]
         public static void AsinAccuracyTest(double input)
         {
-            // Decimal32 evaluates asin through binary64 (as Intel does).
+            // Decimal32 evaluates asin in the binary128 engine.
             double expected = double.Asin(input);
             double actual = (double)Decimal32.Asin((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"asin({input}): expected {expected}, got {actual}");
@@ -2386,7 +2386,7 @@ namespace System.Tests
         [InlineData(-0.75)]
         public static void AcosAccuracyTest(double input)
         {
-            // Decimal32 evaluates acos through binary64 (as Intel does).
+            // Decimal32 evaluates acos in the binary128 engine.
             double expected = double.Acos(input);
             double actual = (double)Decimal32.Acos((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"acos({input}): expected {expected}, got {actual}");
@@ -2417,7 +2417,7 @@ namespace System.Tests
         [InlineData(double.NegativeInfinity, double.NegativeInfinity)]
         public static void Atan2AccuracyTest(double y, double x)
         {
-            // Decimal32 evaluates atan2 through binary64 (as Intel does).
+            // Decimal32 evaluates atan2 in the binary128 engine.
             double expected = double.Atan2(y, x);
             double actual = (double)Decimal32.Atan2((Decimal32)y, (Decimal32)x);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atan2({y}, {x}): expected {expected}, got {actual}");
@@ -2437,14 +2437,16 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(1.0)] // sinPi(1) = +0 (sign of x)
-        [InlineData(-1.0)] // sinPi(-1) = -0
-        [InlineData(2.0)] // sinPi(2) = +0
-        public static void SinPiIntegerTest(double input)
+        [InlineData(1.0, false)] // sinPi(1) = +0 (sign of x)
+        [InlineData(-1.0, true)] // sinPi(-1) = -0
+        [InlineData(2.0, false)] // sinPi(2) = +0
+        public static void SinPiIntegerTest(double input, bool negative)
         {
             // Integer arguments land exactly on a zero of sinPi; the result is a zero with the sign of x.
-            uint expected = Unsafe.BitCast<Decimal32, uint>((Decimal32)double.SinPi(input));
-            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.SinPi((Decimal32)input)));
+            // The exact zero is verified independent of the decimal cohort the engine selects.
+            double actual = (double)Decimal32.SinPi((Decimal32)input);
+            Assert.Equal(0.0, actual);
+            Assert.Equal(negative, double.IsNegative(actual));
         }
 
         [Theory]
@@ -2455,7 +2457,7 @@ namespace System.Tests
         [InlineData(-2.75)]
         public static void SinPiAccuracyTest(double input)
         {
-            // Decimal32 evaluates sinPi through binary64 (as Intel does).
+            // Decimal32 evaluates sinPi in the binary128 engine.
             double expected = double.SinPi(input);
             double actual = (double)Decimal32.SinPi((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"sinPi({input}): expected {expected}, got {actual}");
@@ -2475,13 +2477,13 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(1.0)] // cosPi(1) = -1
-        [InlineData(2.0)] // cosPi(2) = 1
-        [InlineData(0.5)] // cosPi(0.5) = 0
-        public static void CosPiExactTest(double input)
+        [InlineData(1.0, -1.0)] // cosPi(1) = -1
+        [InlineData(2.0, 1.0)]  // cosPi(2) = 1
+        [InlineData(0.5, 0.0)]  // cosPi(0.5) = 0
+        public static void CosPiExactTest(double input, double expected)
         {
-            uint expected = Unsafe.BitCast<Decimal32, uint>((Decimal32)double.CosPi(input));
-            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.CosPi((Decimal32)input)));
+            // The exact value is verified independent of the decimal cohort the engine selects.
+            Assert.Equal(expected, (double)Decimal32.CosPi((Decimal32)input));
         }
 
         [Theory]
@@ -2492,7 +2494,7 @@ namespace System.Tests
         [InlineData(-2.75)]
         public static void CosPiAccuracyTest(double input)
         {
-            // Decimal32 evaluates cosPi through binary64 (as Intel does).
+            // Decimal32 evaluates cosPi in the binary128 engine.
             double expected = double.CosPi(input);
             double actual = (double)Decimal32.CosPi((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cosPi({input}): expected {expected}, got {actual}");
@@ -2527,7 +2529,7 @@ namespace System.Tests
         [InlineData(-0.4)]
         public static void TanPiAccuracyTest(double input)
         {
-            // Decimal32 evaluates tanPi through binary64 (as Intel does).
+            // Decimal32 evaluates tanPi in the binary128 engine.
             double expected = double.TanPi(input);
             double actual = (double)Decimal32.TanPi((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"tanPi({input}): expected {expected}, got {actual}");
@@ -2579,7 +2581,7 @@ namespace System.Tests
         [InlineData(double.NegativeInfinity)] // atanPi(-Infinity) = -1/2
         public static void AtanPiAccuracyTest(double input)
         {
-            // Decimal32 evaluates atanPi through binary64 (as Intel does).
+            // Decimal32 evaluates atanPi in the binary128 engine.
             double expected = double.AtanPi(input);
             double actual = (double)Decimal32.AtanPi((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atanPi({input}): expected {expected}, got {actual}");
@@ -2610,7 +2612,7 @@ namespace System.Tests
         [InlineData(-0.75)]
         public static void AsinPiAccuracyTest(double input)
         {
-            // Decimal32 evaluates asinPi through binary64 (as Intel does).
+            // Decimal32 evaluates asinPi in the binary128 engine.
             double expected = double.AsinPi(input);
             double actual = (double)Decimal32.AsinPi((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"asinPi({input}): expected {expected}, got {actual}");
@@ -2638,7 +2640,7 @@ namespace System.Tests
         [InlineData(-0.75)]
         public static void AcosPiAccuracyTest(double input)
         {
-            // Decimal32 evaluates acosPi through binary64 (as Intel does).
+            // Decimal32 evaluates acosPi in the binary128 engine.
             double expected = double.AcosPi(input);
             double actual = (double)Decimal32.AcosPi((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"acosPi({input}): expected {expected}, got {actual}");
@@ -2669,7 +2671,7 @@ namespace System.Tests
         [InlineData(double.NegativeInfinity, double.NegativeInfinity)]
         public static void Atan2PiAccuracyTest(double y, double x)
         {
-            // Decimal32 evaluates atan2Pi through binary64 (as Intel does).
+            // Decimal32 evaluates atan2Pi in the binary128 engine.
             double expected = double.Atan2Pi(y, x);
             double actual = (double)Decimal32.Atan2Pi((Decimal32)y, (Decimal32)x);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atan2Pi({y}, {x}): expected {expected}, got {actual}");
@@ -2697,7 +2699,7 @@ namespace System.Tests
         [InlineData(-0.25)]
         public static void SinhAccuracyTest(double input)
         {
-            // Decimal32 evaluates sinh through binary64 (as Intel does).
+            // Decimal32 evaluates sinh in the binary128 engine.
             double expected = double.Sinh(input);
             double actual = (double)Decimal32.Sinh((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"sinh({input}): expected {expected}, got {actual}");
@@ -2724,7 +2726,7 @@ namespace System.Tests
         [InlineData(2.0)]
         public static void CoshAccuracyTest(double input)
         {
-            // Decimal32 evaluates cosh through binary64 (as Intel does).
+            // Decimal32 evaluates cosh in the binary128 engine.
             double expected = double.Cosh(input);
             double actual = (double)Decimal32.Cosh((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cosh({input}): expected {expected}, got {actual}");
@@ -2751,7 +2753,7 @@ namespace System.Tests
         [InlineData(2.0)]
         public static void TanhAccuracyTest(double input)
         {
-            // Decimal32 evaluates tanh through binary64 (as Intel does).
+            // Decimal32 evaluates tanh in the binary128 engine.
             double expected = double.Tanh(input);
             double actual = (double)Decimal32.Tanh((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"tanh({input}): expected {expected}, got {actual}");
@@ -2779,7 +2781,7 @@ namespace System.Tests
         [InlineData(-0.25)]
         public static void AsinhAccuracyTest(double input)
         {
-            // Decimal32 evaluates asinh through binary64 (as Intel does).
+            // Decimal32 evaluates asinh in the binary128 engine.
             double expected = double.Asinh(input);
             double actual = (double)Decimal32.Asinh((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"asinh({input}): expected {expected}, got {actual}");
@@ -2807,7 +2809,7 @@ namespace System.Tests
         [InlineData(10.0)]
         public static void AcoshAccuracyTest(double input)
         {
-            // Decimal32 evaluates acosh through binary64 (as Intel does).
+            // Decimal32 evaluates acosh in the binary128 engine.
             double expected = double.Acosh(input);
             double actual = (double)Decimal32.Acosh((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"acosh({input}): expected {expected}, got {actual}");
@@ -2836,7 +2838,7 @@ namespace System.Tests
         [InlineData(-0.9)]
         public static void AtanhAccuracyTest(double input)
         {
-            // Decimal32 evaluates atanh through binary64 (as Intel does).
+            // Decimal32 evaluates atanh in the binary128 engine.
             double expected = double.Atanh(input);
             double actual = (double)Decimal32.Atanh((Decimal32)input);
             Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atanh({input}): expected {expected}, got {actual}");
