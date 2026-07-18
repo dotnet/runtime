@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -423,6 +424,13 @@ namespace System.Text.Json.Schema
 
             JsonSchema CompleteSchema(ref GenerationState state, JsonSchema schema)
             {
+                if (HasObsoleteAttribute(typeInfo.Type) ||
+                    HasObsoleteAttribute(propertyInfo?.AttributeProvider))
+                {
+                    JsonSchema.EnsureMutable(ref schema);
+                    schema.Deprecated = true;
+                }
+
                 if (schema.Ref is null)
                 {
                     if (IsNullableSchema(state.ExporterOptions))
@@ -469,6 +477,28 @@ namespace System.Text.Json.Schema
             }
 
             options.MakeReadOnly();
+        }
+
+        private static bool HasObsoleteAttribute(ICustomAttributeProvider? attributeProvider)
+        {
+            if (attributeProvider is null)
+            {
+                return false;
+            }
+
+            // Identify ObsoleteAttribute using its full type name rather than typeof(ObsoleteAttribute).
+            // On downlevel targets System.Text.Json compiles in an internal ObsoleteAttribute polyfill
+            // that would otherwise shadow the framework type, causing the typeof comparison to never match
+            // the ObsoleteAttribute applied by user code.
+            foreach (object attribute in attributeProvider.GetCustomAttributes(inherit: true))
+            {
+                if (attribute.GetType().FullName == "System.ObsoleteAttribute")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool IsPolymorphicTypeThatSpecifiesItselfAsDerivedType(JsonTypeInfo typeInfo)
