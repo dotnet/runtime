@@ -26,6 +26,9 @@ public struct MyInlineArray {
     public int element0;
 }
 
+public enum U64Enum : ulong { A = 0, B = 0xFF00FF00FF00FF00UL }
+public enum I64Enum : long { A = 0, B = -3 }
+
 public class Test
 {
     public static unsafe int Main(string[] argv)
@@ -66,6 +69,14 @@ public class Test
         var fares = accept_and_return_fixedarray(fa);
         Console.WriteLine("TestOutput -> fares.elements[1]=" + fares.elements[1]);
 
+        // Regression test for https://github.com/dotnet/runtime/issues/112262: a pinvoke
+        // with a 64-bit enum argument must not be routed through the pointer-sized fast
+        // icall path on wasm, otherwise the native call traps with a signature mismatch.
+        var euRes = direct_enum_u64(U64Enum.B);
+        Console.WriteLine("TestOutput -> eu (eu)=" + (ulong)euRes);
+        var eiRes = direct_enum_i64(I64Enum.B);
+        Console.WriteLine("TestOutput -> ei (ei)=" + (long)eiRes);
+
         int exitCode = (int)res.Value;
         return exitCode;
     }
@@ -104,4 +115,10 @@ public class Test
 
     [DllImport("wasm-abi", EntryPoint="accept_and_return_inlinearray")]
     public static extern MyInlineArray accept_and_return_inlinearray(MyInlineArray arg);
+
+    [DllImport("wasm-abi", EntryPoint="accept_and_return_ulong")]
+    public static extern U64Enum direct_enum_u64(U64Enum arg);
+
+    [DllImport("wasm-abi", EntryPoint="accept_and_return_long")]
+    public static extern I64Enum direct_enum_i64(I64Enum arg);
 }
