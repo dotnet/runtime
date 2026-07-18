@@ -3024,7 +3024,7 @@ interface ICorDebugProcess5 : IUnknown
 
     HRESULT GetArrayLayout([in] COR_TYPEID id, [out] COR_ARRAY_LAYOUT *pLayout);
     HRESULT GetTypeLayout([in] COR_TYPEID id, [out] COR_TYPE_LAYOUT *pLayout);
-    HRESULT GetTypeFields([in] COR_TYPEID id, [in] ULONG32 celt, [out, size_is(celt), length_is(*pceltFetched)] COR_FIELD fields[], [out] ULONG32 *pceltNeeded);
+    HRESULT GetTypeFields([in] COR_TYPEID id, [in] ULONG32 celt, [out, size_is(celt), length_is(*pceltNeeded)] COR_FIELD fields[], [out] ULONG32 *pceltNeeded);
 
     /*
      *  Enables the specified policy.
