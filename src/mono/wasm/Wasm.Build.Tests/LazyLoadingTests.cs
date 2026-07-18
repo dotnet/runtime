@@ -51,6 +51,28 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     }
 
     [Fact]
+    [TestCategory("native-mono")]
+    public async Task LoadLazyAssemblyWithAOT()
+    {
+        // Regression coverage for https://github.com/dotnet/runtime/issues/125794:
+        // AOT combined with BlazorWebAssemblyLazyLoad must still initialize the runtime
+        // and lazily load assemblies at runtime. AOT is only supported when publishing
+        // in Release, so this exercises the publish + AOT + lazy-load combination that
+        // the Debug build/run tests above do not cover.
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.WasmBasicTestApp, "LazyLoadingTestsAOT");
+        PublishProject(info, config, new PublishOptions(AOT: true, ExtraMSBuildArgs: "-p:TestLazyLoading=true"));
+
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            config,
+            AOT: true,
+            TestScenario: "LazyLoadingTest"
+        ));
+
+        Assert.True(result.TestOutput.Any(m => m.Contains("FirstName")), "The lazy loading test didn't emit expected message with JSON");
+    }
+
+    [Fact]
     public async Task FailOnMissingLazyAssembly()
     {
         Configuration config = Configuration.Debug;
