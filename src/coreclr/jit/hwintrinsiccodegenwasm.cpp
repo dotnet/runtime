@@ -75,8 +75,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 emitAttr elemSize = emitActualTypeSize(node->GetSimdBaseType());
                 GenTree* addr     = nullptr;
-                assert(node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr));
-                assert(addr != nullptr);
+                bool isMem = node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr);
+                assert(isMem && addr != nullptr);
 
                 regNumber addrReg = GetMultiUseOperandReg(addr);
                 genEmitNullCheck(addrReg);
