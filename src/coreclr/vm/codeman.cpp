@@ -92,19 +92,6 @@ unsigned   ExecutionManager::m_LCG_JumpStubBlockFullCount;
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
 
-// Support for new style unwind information (to allow OS to stack crawl JIT compiled code).
-
-typedef NTSTATUS (WINAPI* RtlAddGrowableFunctionTableFnPtr) (
-        PVOID *DynamicTable, PRUNTIME_FUNCTION FunctionTable, ULONG EntryCount,
-        ULONG MaximumEntryCount, ULONG_PTR rangeStart, ULONG_PTR rangeEnd);
-typedef VOID (WINAPI* RtlGrowFunctionTableFnPtr) (PVOID DynamicTable, ULONG NewEntryCount);
-typedef VOID (WINAPI* RtlDeleteGrowableFunctionTableFnPtr) (PVOID DynamicTable);
-
-// OS entry points (only exist on Win8 and above)
-static RtlAddGrowableFunctionTableFnPtr pRtlAddGrowableFunctionTable;
-static RtlGrowFunctionTableFnPtr pRtlGrowFunctionTable;
-static RtlDeleteGrowableFunctionTableFnPtr pRtlDeleteGrowableFunctionTable;
-
 static bool s_publishingActive;              // Publishing to ETW is turned on
 
 namespace
@@ -200,40 +187,6 @@ namespace
 }
 
 /****************************************************************************/
-// initialize the entry points for new win8 unwind info publishing functions.
-// return true if the initialize is successful (the functions exist)
-bool InitUnwindFtns()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HINSTANCE hNtdll = GetModuleHandle(W("ntdll.dll"));
-    if (hNtdll != NULL)
-    {
-        void* growFunctionTable = GetProcAddress(hNtdll, "RtlGrowFunctionTable");
-        void* deleteGrowableFunctionTable = GetProcAddress(hNtdll, "RtlDeleteGrowableFunctionTable");
-        void* addGrowableFunctionTable = GetProcAddress(hNtdll, "RtlAddGrowableFunctionTable");
-
-        // All or nothing AddGroableFunctionTable is last (marker)
-        if (growFunctionTable != NULL &&
-            deleteGrowableFunctionTable != NULL &&
-            addGrowableFunctionTable != NULL)
-        {
-            pRtlGrowFunctionTable = (RtlGrowFunctionTableFnPtr) growFunctionTable;
-            pRtlDeleteGrowableFunctionTable = (RtlDeleteGrowableFunctionTableFnPtr) deleteGrowableFunctionTable;
-            pRtlAddGrowableFunctionTable = (RtlAddGrowableFunctionTableFnPtr) addGrowableFunctionTable;
-        }
-        // Don't call FreeLibrary(hNtdll) because GetModuleHandle did *NOT* increment the reference count!
-    }
-
-    return (pRtlAddGrowableFunctionTable != NULL);
-}
-
-/****************************************************************************/
 UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd)
     : m_publishLock(CrstUnwindInfoTablePublishLock)
     , m_pendingLock(CrstUnwindInfoTablePendingLock)
@@ -285,7 +238,7 @@ UnwindInfoTable::~UnwindInfoTable()
 void UnwindInfoTable::Register()
 {
     // Caller holds m_publishLock.
-    NTSTATUS ret = pRtlAddGrowableFunctionTable(&hHandle, pTable, cTableCurCount, cTableMaxCount, iRangeStart, iRangeEnd);
+    NTSTATUS ret = RtlAddGrowableFunctionTable(&hHandle, pTable, cTableCurCount, cTableMaxCount, iRangeStart, iRangeEnd);
     if (ret != STATUS_SUCCESS)
     {
         _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
@@ -307,7 +260,7 @@ void UnwindInfoTable::UnRegister()
     if (handle != 0)
     {
         STRESS_LOG3(LF_JIT, LL_INFO100, "UnwindInfoTable::UnRegister Handle: %p [%p, %p]\n", handle, iRangeStart, iRangeEnd);
-        pRtlDeleteGrowableFunctionTable(handle);
+        RtlDeleteGrowableFunctionTable(handle);
     }
 }
 
@@ -408,7 +361,7 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 
         if (hHandle != NULL)
         {
-            pRtlGrowFunctionTable(hHandle, cTableCurCount);
+            RtlGrowFunctionTable(hHandle, cTableCurCount);
         }
         else
         {
@@ -686,10 +639,6 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     CONTRACTL_END;
 
     _ASSERTE(!s_publishingActive);
-
-    // If we don't have the APIs we need, give up
-    if (!InitUnwindFtns())
-        return;
 
     s_publishingActive = true;
 }
