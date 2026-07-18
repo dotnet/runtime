@@ -3451,7 +3451,9 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
             "HijackedForSync=%d RaiseExceptionHijacked=%d.\n",
             IsContextSet(), IsGenericHijacked(), IsBlockingForSync(), IsRaiseExceptionHijacked()));
         LOG((LF_CORDB, LL_INFO10000, "CUT::GTC: hijackCtx is:\n"));
+#ifdef FEATURE_INTEROP_DEBUGGING
         LogContext(GetHijackCtx());
+#endif // FEATURE_INTEROP_DEBUGGING
         CORDbgCopyThreadContext(pContext, GetHijackCtx());
     }
     // use the LS for M2UHandoff
@@ -3483,7 +3485,9 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
     {
         UnsetSSFlag(pContext);
     }
+#ifdef FEATURE_INTEROP_DEBUGGING
     LogContext(pContext);
+#endif // FEATURE_INTEROP_DEBUGGING
 
     return hr;
 }
@@ -3498,7 +3502,9 @@ HRESULT CordbUnmanagedThread::SetThreadContext(DT_CONTEXT* pContext)
     LOG((LF_CORDB, LL_INFO10000,
         "CUT::STC: thread=0x%p, flags=0x%x.\n", this, pContext->ContextFlags));
 
+#ifdef FEATURE_INTEROP_DEBUGGING
     LogContext(pContext);
+#endif // FEATURE_INTEROP_DEBUGGING
 
     // If the thread is first chance hijacked, then write the context into the remote process. If the thread is generic
     // hijacked, then update the copy of the context that we already have. Otherwise call the normal Win32 function.
@@ -3596,6 +3602,7 @@ VOID CordbUnmanagedThread::EndStepping()
 }
 
 
+#ifdef FEATURE_INTEROP_DEBUGGING
 // Writes some details of the given context into the debugger log
 VOID CordbUnmanagedThread::LogContext(DT_CONTEXT* pContext)
 {
@@ -3620,6 +3627,7 @@ VOID CordbUnmanagedThread::LogContext(DT_CONTEXT* pContext)
     PORTABILITY_ASSERT("LogContext needs a PC and stack pointer.");
 #endif
 }
+#endif // FEATURE_INTEROP_DEBUGGING
 
 // Hijacks this thread using the FirstChanceSuspend hijack
 HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
@@ -3651,7 +3659,9 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
 
     // snapshot the current context so we can start spoofing it
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: hijackCtx started as:\n"));
+#ifdef FEATURE_INTEROP_DEBUGGING
     LogContext(GetHijackCtx());
+#endif // FEATURE_INTEROP_DEBUGGING
 
     // Save the thread's full context + DT_CONTEXT_EXTENDED_REGISTERS
     // to avoid getting incomplete information and corrupt the thread context
@@ -3676,7 +3686,9 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
 #endif
     CORDbgCopyThreadContext(GetHijackCtx(), &context);
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: thread=0x%x Hijacking for sync. Original context is:\n", this));
+#ifdef FEATURE_INTEROP_DEBUGGING
     LogContext(GetHijackCtx());
+#endif // FEATURE_INTEROP_DEBUGGING
 
     // We're hijacking now...
     SetState(CUTS_FirstChanceHijacked);

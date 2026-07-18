@@ -10505,8 +10505,10 @@ public:
     HRESULT RestoreLeafSeh();
 #endif
 
+#ifdef FEATURE_INTEROP_DEBUGGING
     // Logs basic data about a context to the debugging log
     static VOID LogContext(DT_CONTEXT* pContext);
+#endif // FEATURE_INTEROP_DEBUGGING
 
 public:
     HANDLE                     m_handle;
