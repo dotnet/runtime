@@ -424,6 +424,11 @@ public:
         return CORDB_ADDRESS_TO_PTR((CORDB_ADDRESS)m_ptr);
     }
 
+    CORDB_ADDRESS UnsafeGetAddr()
+    {
+        return (CORDB_ADDRESS)m_ptr;
+    }
+
     static LsPointer<T> NullPtr()
     {
         return MakePtr(NULL);
@@ -592,7 +597,7 @@ DEFINE_LSPTR_TYPE(class DebuggerEval,       LSPTR_DEBUGGEREVAL);
 DEFINE_LSPTR_TYPE(class DebuggerStepper,    LSPTR_STEPPER);
 
 // Need to be careful not to annoy the compiler here since DT_CONTEXT is a typedef, not a struct.
-typedef LsPointer<DT_CONTEXT> LSPTR_CONTEXT;
+typedef LsPointer<T_CONTEXT> LSPTR_CONTEXT;
 
 DEFINE_LSPTR_TYPE(struct OBJECTHANDLE__,    LSPTR_OBJECTHANDLE);
 DEFINE_LSPTR_TYPE(class TypeHandleDummyPtr, LSPTR_TYPEHANDLE); // TypeHandle in the LS is not a direct pointer.
@@ -762,11 +767,6 @@ DEFINE_VMPTR(class AppDomain,       PTR_AppDomain,      VMPTR_AppDomain);
 
 // Need to be careful not to annoy the compiler here since DT_CONTEXT is a typedef, not a struct.
 // DEFINE_VMPTR(struct _CONTEXT,       PTR_CONTEXT,        VMPTR_CONTEXT);
-#if defined(ALLOW_VMPTR_ACCESS)
-typedef VMPTR_Base<DT_CONTEXT, PTR_CONTEXT> VMPTR_CONTEXT;
-#else
-typedef VMPTR_Base<DT_CONTEXT, void > VMPTR_CONTEXT;
-#endif
 
 DEFINE_VMPTR(class Module,          PTR_Module,         VMPTR_Module);
 
@@ -957,8 +957,6 @@ struct MSLAYOUT IPCENames // We use a class/struct so that the function can rema
 };
 
 #endif // !DACCESS_COMPILE
-
-#define CORDB_MAX_FLOAT_REGISTERS 32
 
 
 class MSLAYOUT FramePointer

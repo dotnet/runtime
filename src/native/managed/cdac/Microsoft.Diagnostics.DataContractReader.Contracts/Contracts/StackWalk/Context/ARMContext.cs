@@ -162,6 +162,16 @@ internal struct ARMContext : IPlatformContext
         }
     }
 
+    // D0-D31 are the 64-bit views of the VFP/NEON register file, an 8-byte stride.
+    private const int DRegisterCount = 32;
+    private const int DRegisterStride = 8;
+
+    public readonly bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(context, (int)Marshal.OffsetOf<ARMContext>(nameof(D)), DRegisterStride, DRegisterCount, index, out value);
+
+    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
+        => SimdRegisterAccess.TryWriteRegister(context, (int)Marshal.OffsetOf<ARMContext>(nameof(D)), DRegisterStride, DRegisterCount, index, value);
+
     public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
     public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
 

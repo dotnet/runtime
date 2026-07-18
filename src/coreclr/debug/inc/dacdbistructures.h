@@ -546,10 +546,10 @@ struct MSLAYOUT Debugger_JITFuncData
 #endif                          // ARM context structures have a 16-byte alignment requirement
 struct MSLAYOUT Debugger_STRData
 {
-    // fp is fixed-width across target architectures. ctx points to a DBI-owned
-    // buffer containing the target's opaque CONTEXT byte image.
+    // fp is fixed-width across target architectures. ctx wraps a DBI-owned buffer
+    // (pointer plus size) holding the target's opaque CONTEXT byte image.
     CORDB_ADDRESS           fp;
-    BYTE *                  ctx;
+    ContextBuffer           ctx;
     VMPTR_AppDomain         vmCurrentAppDomainToken;
 
 

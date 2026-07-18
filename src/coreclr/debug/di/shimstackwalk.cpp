@@ -28,14 +28,14 @@ namespace
                      ContextBuffer contextBuffer,
                      CorDebugRegister reg)
     {
-        TADDR value = 0;
+        CORDB_REGISTER value = 0;
         IDacDbiInterface * pDAC = pThread->GetProcess()->GetDAC();
         IfFailThrow(pDAC->ReadRegistersFromContext(
             contextBuffer,
             &reg,
             1,
             &value));
-        return value;
+        return (TADDR)value;
     }
 }
 
@@ -378,8 +378,7 @@ void ShimStackWalk::Populate()
                     {
                         // If we have hit any managed stack frame, then we may need to send
                         // an enter-managed chain later.  Save the CONTEXT now.
-                        ContextBuffer contextBuffer = { chainInfo.GetLeafManagedContext(), chainInfo.m_contextSize };
-                        SaveChainContext(pSW, &chainInfo, contextBuffer);
+                        SaveChainContext(pSW, &chainInfo, chainInfo.GetLeafManagedContext());
                         chainInfo.m_fNeedEnterManagedChain = true;
                     }
 
@@ -434,8 +433,7 @@ void ShimStackWalk::Populate()
                 // we have exhausted all the stack frames.
 
                 // We need to save the CONTEXT to start tracking an unmanaged chain.
-                ContextBuffer contextBuffer = { chainInfo.GetLeafNativeContext(), chainInfo.m_contextSize };
-                SaveChainContext(pSW, &chainInfo, contextBuffer);
+                SaveChainContext(pSW, &chainInfo, chainInfo.GetLeafNativeContext());
                 chainInfo.m_fLeafNativeContextIsValid = true;
 
                 // begin tracking UM chain if we're supposed to
@@ -1130,7 +1128,7 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
         fManagedChain = TRUE;
     }
 
-    const BYTE * pChainContext = NULL;
+    ContextBuffer pChainContext = { NULL, 0 };
     if (fManagedChain)
     {
         // The chain to be added is managed itself.  So we don't need to send an enter-managed chain.
@@ -1145,7 +1143,7 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
             // We need to send an extra enter-managed chain.
             _ASSERTE(pChainInfo->m_fLeafNativeContextIsValid);
             CordbThread * pThread = static_cast<CordbThread *>(m_pThread.GetValue());
-            ContextBuffer nativeContext = { pChainInfo->GetLeafNativeContext(), GetContextSize() };
+            ContextBuffer nativeContext = pChainInfo->GetLeafNativeContext();
             BYTE * sp = reinterpret_cast<BYTE *>(
                 ReadCtxReg(pThread, nativeContext, REGISTER_STACK_POINTER));
 #if !defined(TARGET_ARM) &&  !defined(TARGET_ARM64)
@@ -1156,7 +1154,7 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
 #endif
             FramePointer fp = FramePointer::MakeFramePointer(sp);
 
-            ContextBuffer managedContext = { pChainInfo->GetLeafManagedContext(), pChainInfo->m_contextSize };
+            ContextBuffer managedContext = pChainInfo->GetLeafManagedContext();
             AppendChainWorker(pStackWalkInfo,
                               managedContext,
                               fp,
@@ -1170,9 +1168,8 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
     }
 
     // Add the actual chain.
-    ContextBuffer chainContext = { const_cast<BYTE *>(pChainContext), pChainInfo->m_contextSize };
     AppendChainWorker(pStackWalkInfo,
-                      chainContext,
+                      pChainContext,
                       pChainInfo->m_rootFP,
                       pChainInfo->m_reason,
                       fManagedChain);
@@ -1467,7 +1464,7 @@ void ShimStackWalk::TrackUMChain(ChainInfo * pChainInfo, StackWalkInfo * pStackW
     {
         // check whether we get any stack range
         _ASSERTE(pChainInfo->m_fLeafNativeContextIsValid);
-        ContextBuffer contextBuffer = { pChainInfo->GetLeafNativeContext(), pChainInfo->m_contextSize };
+        ContextBuffer contextBuffer = pChainInfo->GetLeafNativeContext();
         FramePointer fpLeaf = GetFramePointerForChain(contextBuffer);
 
         // Don't bother creating an unmanaged chain if the stack range is empty.

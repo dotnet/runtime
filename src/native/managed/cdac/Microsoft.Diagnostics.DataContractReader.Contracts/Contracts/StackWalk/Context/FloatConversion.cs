@@ -4,7 +4,7 @@
 using System;
 using System.Buffers.Binary;
 
-namespace Microsoft.Diagnostics.DataContractReader.Legacy;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 internal static class FloatConversion
 {
@@ -87,5 +87,63 @@ internal static class FloatConversion
         if (disc > half || (disc == half && (res & 1) != 0))
             res++;
         return BitConverter.Int64BitsToDouble(unchecked((long)(sign | res)));
+    }
+
+    // Encode an IEEE-754 binary64 value into an x87 80-bit double-extended slot
+    // (the inverse of X87ExtendedToDouble). Every finite binary64 is represented
+    // exactly, since the 64-bit extended significand and 15-bit exponent strictly
+    // contain binary64's 52-bit fraction and 11-bit exponent. Layout: bytes 0-7 =
+    // 64-bit significand with an explicit integer bit at 63; bytes 8-9 = 15-bit
+    // biased exponent (bias 16383) in bits 0-14 and the sign in bit 15.
+    public static void X87DoubleToExtended(double value, Span<byte> slot10)
+    {
+        ulong bits = (ulong)BitConverter.DoubleToInt64Bits(value);
+        ulong sign = (bits >> 63) & 1;
+        uint exp = (uint)((bits >> 52) & 0x7FF);
+        ulong frac = bits & ((1UL << 52) - 1);
+
+        ulong mant;      // 64-bit significand with explicit integer bit at 63
+        ushort signExp;  // sign (bit 15) + 15-bit biased exponent
+
+        if (exp == 0x7FF)
+        {
+            // Infinity or NaN: max exponent, integer bit set. Preserve the NaN
+            // payload (shifted into the extended fraction) and force it quiet.
+            mant = (1UL << 63) | (frac << 11);
+            if (frac != 0)
+                mant |= 1UL << 62;   // quiet bit
+            signExp = (ushort)((sign << 15) | 0x7FFF);
+        }
+        else if (exp == 0 && frac == 0)
+        {
+            // Signed zero.
+            mant = 0;
+            signExp = (ushort)(sign << 15);
+        }
+        else if (exp == 0)
+        {
+            // Binary64 subnormal: normalize into the wider extended exponent range.
+            // value = frac * 2^(-1074); shift the leading fraction bit up to bit 63.
+            int leadingZeros = 0;
+            ulong m = frac;
+            while ((m & (1UL << 51)) == 0)
+            {
+                m <<= 1;
+                leadingZeros++;
+            }
+            mant = m << 12;                                  // integer bit lands at 63
+            int e = -1023 - leadingZeros + 16383;            // rebias to extended
+            signExp = (ushort)((sign << 15) | (uint)(e & 0x7FFF));
+        }
+        else
+        {
+            // Normal: prepend the implicit integer bit, align to bit 63, rebias.
+            mant = ((1UL << 52) | frac) << 11;
+            int e = (int)exp - 1023 + 16383;
+            signExp = (ushort)((sign << 15) | (uint)(e & 0x7FFF));
+        }
+
+        BinaryPrimitives.WriteUInt64LittleEndian(slot10, mant);
+        BinaryPrimitives.WriteUInt16LittleEndian(slot10.Slice(8), signExp);
     }
 }

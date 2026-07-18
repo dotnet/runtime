@@ -196,6 +196,16 @@ internal struct AMD64Context : IPlatformContext
         }
     }
 
+    // XMM0-XMM15 occupy the FltSave area with a 16-byte (128-bit) stride.
+    private const int XmmRegisterCount = 16;
+    private const int XmmRegisterStride = 16;
+
+    public readonly bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(context, (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)), XmmRegisterStride, XmmRegisterCount, index, out value);
+
+    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
+        => SimdRegisterAccess.TryWriteRegister(context, (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)), XmmRegisterStride, XmmRegisterCount, index, value);
+
 
     public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
     public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;

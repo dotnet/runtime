@@ -13449,7 +13449,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
         Thread *pEEThread = debuggerBreakInThread ? NULL : g_pEEInterface->GetThread();
 
         // Hook up the memory so RS can get to it
-        fcd.pLeftSideContext.Set((DT_CONTEXT*)pContext);
+        fcd.pLeftSideContext.Set((T_CONTEXT*)pContext);
         fcd.action = HIJACK_ACTION_EXIT_UNHANDLED;
         fcd.debugCounter = 0;
 

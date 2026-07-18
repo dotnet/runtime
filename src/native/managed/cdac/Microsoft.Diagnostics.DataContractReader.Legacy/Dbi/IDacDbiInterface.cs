@@ -319,8 +319,8 @@ public struct DebuggerIPCE_STRData_StubFrame
 
 // Holds data for each stack frame or chain, passed from the RC to the DI during a
 // stack walk. Mirrors the native Debugger_STRData in src/coreclr/debug/inc/dacdbistructures.h.
-// ctx is a host-sized pointer to a DBI-owned buffer containing the target's opaque
-// CONTEXT byte image; paths that produce no context leave it 0.
+// ctx wraps a host-sized pointer to a DBI-owned buffer (plus its size) holding the
+// target's opaque CONTEXT byte image; paths that produce no context leave it zeroed.
 [StructLayout(LayoutKind.Explicit)]
 public struct Debugger_STRData
 {
@@ -332,12 +332,12 @@ public struct Debugger_STRData
     }
 
     [FieldOffset(0)] public ulong fp;                           // CORDB_ADDRESS
-    [FieldOffset(8)] public nuint ctx;                          // BYTE* (host-sized)
-    [FieldOffset(16)] public ulong vmCurrentAppDomainToken;     // VMPTR_AppDomain
-    [FieldOffset(24)] public EType eType;
+    [FieldOffset(8)] public ContextBuffer ctx;                  // ContextBuffer (host-sized pointer + size)
+    [FieldOffset(24)] public ulong vmCurrentAppDomainToken;     // VMPTR_AppDomain
+    [FieldOffset(32)] public EType eType;
     // v (method frame) and stubFrame overlap, mirroring the native anonymous union.
-    [FieldOffset(32)] public DebuggerIPCE_STRData_MethodFrame v;
-    [FieldOffset(32)] public DebuggerIPCE_STRData_StubFrame stubFrame;
+    [FieldOffset(40)] public DebuggerIPCE_STRData_MethodFrame v;
+    [FieldOffset(40)] public DebuggerIPCE_STRData_StubFrame stubFrame;
 }
 
 #pragma warning restore CS0649
@@ -498,37 +498,6 @@ public enum CorDebugSetContextFlags
 {
     SET_CONTEXT_FLAG_ACTIVE_FRAME = 0x1,
     SET_CONTEXT_FLAG_UNWIND_FRAME = 0x2,
-}
-
-public enum TargetArchitecture : int
-{
-    Unknown = 0,
-    X86,
-    AMD64,
-    Arm,
-    Arm64,
-    LoongArch64,
-    RiscV64,
-    Wasm,
-}
-
-public enum TargetOperatingSystem : int
-{
-    Unknown = 0,
-    Windows,
-    Unix,
-}
-
-public struct TargetInfo
-{
-    public TargetArchitecture Arch;
-    public TargetOperatingSystem OS;
-}
-
-public enum ContextSizeFlags : int
-{
-    Base = 0,
-    ExtendedRegisters,
 }
 
 public enum CorDebugRegister : int
@@ -1070,13 +1039,13 @@ public unsafe partial interface IDacDbiInterface
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
 
     [PreserveSig]
-    int GetTargetContextSize(ContextSizeFlags flags, uint* pSize);
+    int GetTargetContextSize(uint contextFlags, uint* pSize);
 
     [PreserveSig]
     int WriteRegistersToContext(ContextBuffer contextBuffer, CorDebugRegister* regs, uint nRegs, nuint* values);
 
     [PreserveSig]
-    int ReadRegistersFromContext(ContextBuffer contextBuffer, CorDebugRegister* regs, uint nRegs, nuint* pValues);
+    int ReadRegistersFromContext(ContextBuffer contextBuffer, CorDebugRegister* regs, uint nRegs, ulong* pValues);
 
     [PreserveSig]
     int GetAvailableRegistersMask(Interop.BOOL fActive, Interop.BOOL fQuickUnwind, uint regCount, byte* pAvailable);
@@ -1085,10 +1054,7 @@ public unsafe partial interface IDacDbiInterface
     int ConvertJitRegNumToCorDebugRegister(uint jitRegNum, CorDebugRegister* pReg);
 
     [PreserveSig]
-    int ReadFloatRegistersFromContext(ContextBuffer contextBuffer, uint maxValues, double* values, uint* pValuesCount, int* pFirstFloatReg, uint* pFloatStackTop);
-
-    [PreserveSig]
-    int GetTargetInfo(TargetInfo* pTargetInfo);
+    int WriteFloatRegisterToContext(ContextBuffer contextBuffer, CorDebugRegister reg, byte* pValue, uint valueSize);
 
     [PreserveSig]
     int ContextHasExtendedRegisters(ContextBuffer contextBuffer, Interop.BOOL* pResult);

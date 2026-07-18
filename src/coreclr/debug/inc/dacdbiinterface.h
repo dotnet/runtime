@@ -1051,7 +1051,7 @@ public:
     //    we don't have a filter CONTEXT on the LS anymore.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE GetManagedStoppedContext(VMPTR_Thread vmThread, OUT VMPTR_CONTEXT * pRetVal) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetManagedStoppedContext(VMPTR_Thread vmThread, OUT CORDB_ADDRESS * pRetVal) = 0;
 
     typedef enum
     {
@@ -2207,13 +2207,7 @@ public:
         VMPTR_MethodDesc vmMethod,
         OUT UINT32* pTokenIndex) = 0;
 
-    typedef enum
-    {
-        kContextSizeBase = 0,
-        kContextSizeExtendedRegisters,
-    } ContextSizeFlags;
-
-    virtual HRESULT STDMETHODCALLTYPE GetTargetContextSize(ContextSizeFlags flags, OUT ULONG32 * pSize) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetTargetContextSize(ULONG32 contextFlags, OUT ULONG32 * pSize) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE WriteRegistersToContext(
         IN ContextBuffer contextBuffer,
@@ -2225,7 +2219,7 @@ public:
         IN ContextBuffer contextBuffer,
         IN const CorDebugRegister * regs,
         IN ULONG32 nRegs,
-        OUT TADDR * pValues) = 0;
+        OUT CORDB_REGISTER * pValues) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetAvailableRegistersMask(
         IN BOOL fActive,
@@ -2237,40 +2231,11 @@ public:
         IN ULONG32 jitRegNum,
         OUT CorDebugRegister * pReg) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE ReadFloatRegistersFromContext(
+    virtual HRESULT STDMETHODCALLTYPE WriteFloatRegisterToContext(
         IN  ContextBuffer contextBuffer,
-        IN  ULONG32 regCount,
-        OUT DOUBLE values[CORDB_MAX_FLOAT_REGISTERS],
-        OUT ULONG32 * pValuesCount,
-        OUT int * pFirstFloatReg,
-        OUT ULONG32 * pFloatStackTop) = 0;
-
-    typedef enum
-    {
-        kArchUnknown = 0,
-        kArchX86,
-        kArchAMD64,
-        kArchArm,
-        kArchArm64,
-        kArchLoongArch64,
-        kArchRiscV64,
-        kArchWasm,
-    } TargetArchitecture;
-
-    typedef enum
-    {
-        kOSUnknown = 0,
-        kOSWindows,
-        kOSUnix,
-    } TargetOperatingSystem;
-
-    struct TargetInfo
-    {
-        TargetArchitecture    arch;
-        TargetOperatingSystem os;
-    };
-
-    virtual HRESULT STDMETHODCALLTYPE GetTargetInfo(OUT TargetInfo * pTargetInfo) = 0;
+        IN  CorDebugRegister reg,
+        IN  const BYTE * pValue,
+        IN  ULONG32 valueSize) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE ContextHasExtendedRegisters(
         IN ContextBuffer contextBuffer,

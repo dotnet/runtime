@@ -238,6 +238,16 @@ internal struct ARM64Context : IPlatformContext
         }
     }
 
+    // V0-V31 are the 128-bit NEON registers, a 16-byte stride within the context.
+    private const int VRegisterCount = 32;
+    private const int VRegisterStride = 16;
+
+    public readonly bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(context, (int)Marshal.OffsetOf<ARM64Context>(nameof(V)), VRegisterStride, VRegisterCount, index, out value);
+
+    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
+        => SimdRegisterAccess.TryWriteRegister(context, (int)Marshal.OffsetOf<ARM64Context>(nameof(V)), VRegisterStride, VRegisterCount, index, value);
+
     public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
     public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
 

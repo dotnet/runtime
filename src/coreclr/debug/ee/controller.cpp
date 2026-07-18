@@ -9253,8 +9253,8 @@ TP_RESULT DebuggerFuncEvalComplete::TriggerPatch(DebuggerControllerPatch *patch,
     #error Not supported
 #endif
 #endif
-    CORDbgCopyThreadContext(reinterpret_cast<T_CONTEXT *>(pCtx),
-                            reinterpret_cast<T_CONTEXT *>(&(m_pDE->m_context)));
+    CORDbgCopyThreadContext(reinterpret_cast<BYTE *>(pCtx), sizeof(T_CONTEXT),
+                            reinterpret_cast<const BYTE *>(&(m_pDE->m_context)), sizeof(T_CONTEXT));
 
     // We've hit our patch, so simply disable all (which removes the
     // patch) and trigger the event.

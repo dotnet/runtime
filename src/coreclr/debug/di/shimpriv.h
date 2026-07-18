@@ -700,8 +700,8 @@ private:
         void CancelUMChain() { m_reason = CHAIN_NONE; }
         BOOL IsTrackingUMChain() { return (m_reason == CHAIN_ENTER_UNMANAGED); }
 
-        BYTE * GetLeafNativeContext()  { return m_leafNativeContext; }
-        BYTE * GetLeafManagedContext() { return m_leafManagedContext; }
+        ContextBuffer GetLeafNativeContext()  { return { m_leafNativeContext, m_contextSize }; }
+        ContextBuffer GetLeafManagedContext() { return { m_leafManagedContext, m_contextSize }; }
 
         // Leaf CONTEXT buffers, sized at construction to the target's CONTEXT size.
         NewArrayHolder<BYTE> m_leafNativeContext;

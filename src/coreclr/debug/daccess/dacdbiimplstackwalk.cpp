@@ -579,9 +579,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
         Frame *     pFrame     = pThread->GetFrame();
         AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
-        // cStubFrame entries have no DT_CONTEXT buffer; leave ctx as NULL so consumers
+        // cStubFrame entries have no DT_CONTEXT buffer; leave ctx empty so consumers
         // (and the cDAC cross-check, which sets ctx = 0) don't observe a garbage value.
-        frameData.ctx = NULL;
+        frameData.ctx = {};
         frameData.eType = Debugger_STRData::cStubFrame;
 
         while (pFrame != FRAME_TOP)
@@ -812,8 +812,8 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
     {
         pFrameData->eType = Debugger_STRData::cRuntimeNativeFrame;
 
-        _ASSERTE(pFrameData->ctx != NULL);
-        GetStackWalkCurrentContext(pIter, reinterpret_cast<DT_CONTEXT *>(pFrameData->ctx));
+        _ASSERTE(pFrameData->ctx.pContextBytes != NULL);
+        GetStackWalkCurrentContext(pIter, reinterpret_cast<DT_CONTEXT *>(pFrameData->ctx.pContextBytes));
     }
     else if (ft == kManagedStackFrame)
     {
@@ -843,8 +843,8 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
 
         pFrameData->eType = Debugger_STRData::cMethodFrame;
 
-        _ASSERTE(pFrameData->ctx != NULL);
-        GetStackWalkCurrentContext(pIter, reinterpret_cast<DT_CONTEXT *>(pFrameData->ctx));
+        _ASSERTE(pFrameData->ctx.pContextBytes != NULL);
+        GetStackWalkCurrentContext(pIter, reinterpret_cast<DT_CONTEXT *>(pFrameData->ctx.pContextBytes));
 
         //
         // initialize the fields in Debugger_STRData::v

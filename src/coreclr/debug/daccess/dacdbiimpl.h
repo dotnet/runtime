@@ -151,21 +151,17 @@ public:
     HRESULT STDMETHODCALLTYPE EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData);
     HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex);
 
-    HRESULT STDMETHODCALLTYPE GetTargetContextSize(ContextSizeFlags flags, OUT ULONG32 * pSize);
+    HRESULT STDMETHODCALLTYPE GetTargetContextSize(ULONG32 contextFlags, OUT ULONG32 * pSize);
 
     HRESULT STDMETHODCALLTYPE WriteRegistersToContext(IN ContextBuffer contextBuffer, IN const CorDebugRegister * regs, IN ULONG32 nRegs, IN const TADDR * values);
-    HRESULT STDMETHODCALLTYPE ReadRegistersFromContext(IN ContextBuffer contextBuffer, IN const CorDebugRegister * regs, IN ULONG32 nRegs, OUT TADDR * pValues);
+    HRESULT STDMETHODCALLTYPE ReadRegistersFromContext(IN ContextBuffer contextBuffer, IN const CorDebugRegister * regs, IN ULONG32 nRegs, OUT CORDB_REGISTER * pValues);
     HRESULT STDMETHODCALLTYPE GetAvailableRegistersMask(IN BOOL fActive, IN BOOL fQuickUnwind, IN ULONG32 regCount, OUT BYTE pAvailable[]);
     HRESULT STDMETHODCALLTYPE ConvertJitRegNumToCorDebugRegister(IN ULONG32 jitRegNum, OUT CorDebugRegister * pReg);
-    HRESULT STDMETHODCALLTYPE ReadFloatRegistersFromContext(
+    HRESULT STDMETHODCALLTYPE WriteFloatRegisterToContext(
         IN  ContextBuffer contextBuffer,
-        IN  ULONG32 regCount,
-        OUT DOUBLE values[CORDB_MAX_FLOAT_REGISTERS],
-        OUT ULONG32 * pValuesCount,
-        OUT int * pFirstFloatReg,
-        OUT ULONG32 * pFloatStackTop);
-
-    HRESULT STDMETHODCALLTYPE GetTargetInfo(OUT TargetInfo * pTargetInfo);
+        IN  CorDebugRegister reg,
+        IN  const BYTE * pValue,
+        IN  ULONG32 valueSize);
 
     HRESULT STDMETHODCALLTYPE ContextHasExtendedRegisters(IN ContextBuffer contextBuffer, OUT BOOL * pResult);
 
@@ -689,7 +685,7 @@ public:
     HRESULT STDMETHODCALLTYPE Hijack(VMPTR_Thread vmThread, ULONG32 dwThreadId, const EXCEPTION_RECORD * pRecord, T_CONTEXT * pOriginalContext, ULONG32 cbSizeContext, EHijackReason::EHijackReason reason, void * pUserData, CORDB_ADDRESS * pRemoteContextAddr);
 
     // Return the filter CONTEXT on the LS.
-    HRESULT STDMETHODCALLTYPE GetManagedStoppedContext(VMPTR_Thread vmThread, OUT VMPTR_CONTEXT * pRetVal);
+    HRESULT STDMETHODCALLTYPE GetManagedStoppedContext(VMPTR_Thread vmThread, OUT CORDB_ADDRESS * pRetVal);
 
     // Create and return a stackwalker on the specified thread.
     HRESULT STDMETHODCALLTYPE CreateStackWalk(VMPTR_Thread vmThread, ContextBuffer contextBuffer, OUT StackWalkHandle * ppSFIHandle);

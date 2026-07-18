@@ -228,6 +228,16 @@ internal struct RISCV64Context : IPlatformContext
         }
     }
 
+    // F0-F31 are the 64-bit floating-point registers, an 8-byte stride within the context.
+    private const int FRegisterCount = 32;
+    private const int FRegisterStride = 8;
+
+    public readonly bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(context, (int)Marshal.OffsetOf<RISCV64Context>(nameof(F)), FRegisterStride, FRegisterCount, index, out value);
+
+    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
+        => SimdRegisterAccess.TryWriteRegister(context, (int)Marshal.OffsetOf<RISCV64Context>(nameof(F)), FRegisterStride, FRegisterCount, index, value);
+
     public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
     public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
 

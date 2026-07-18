@@ -50,7 +50,6 @@ typedef ULONG64 VMPTR_Assembly;
 typedef ULONG64 VMPTR_Module;
 typedef ULONG64 VMPTR_Thread;
 typedef ULONG64 VMPTR_MethodDesc;
-typedef ULONG64 VMPTR_CONTEXT;
 typedef ULONG64 VMPTR_TypeHandle;
 typedef ULONG64 VMPTR_FieldDesc;
 typedef ULONG64 VMPTR_Object;
@@ -64,6 +63,7 @@ typedef ULONG64 VMPTR_NativeCodeVersionNode;
 
 // Address and token types
 typedef ULONG64 CORDB_ADDRESS;
+typedef ULONG64 CORDB_REGISTER;
 typedef ULONG64 GENERICS_TYPE_TOKEN;
 typedef ULONG64 PCODE;
 typedef ULONG64 TADDR;
@@ -277,7 +277,7 @@ interface IDacDbiInterface : IUnknown
         [in] CALLBACK_DATA pUserData);
 
     // Context and Stack Walking
-    HRESULT GetManagedStoppedContext([in] VMPTR_Thread vmThread, [out] VMPTR_CONTEXT * pRetVal);
+    HRESULT GetManagedStoppedContext([in] VMPTR_Thread vmThread, [out] CORDB_ADDRESS * pRetVal);
     HRESULT CreateStackWalk([in] VMPTR_Thread vmThread, [in] ContextBuffer contextBuffer, [out] StackWalkHandle * ppSFIHandle);
     HRESULT DeleteStackWalk([in] StackWalkHandle ppSFIHandle);
     HRESULT GetStackWalkCurrentContext([in] StackWalkHandle pSFIHandle, [in] ContextBuffer contextBuffer);
@@ -451,7 +451,7 @@ interface IDacDbiInterface : IUnknown
 
     // CONTEXT register accessors.
     HRESULT WriteRegistersToContext([in] ContextBuffer contextBuffer, [in] const int * regs, [in] ULONG32 nRegs, [in] const TADDR * values);
-    HRESULT ReadRegistersFromContext([in] ContextBuffer contextBuffer, [in] const int * regs, [in] ULONG32 nRegs, [out] TADDR * pValues);
+    HRESULT ReadRegistersFromContext([in] ContextBuffer contextBuffer, [in] const int * regs, [in] ULONG32 nRegs, [out] CORDB_REGISTER * pValues);
 
     // Returns the full availability bitmask for the target architecture in
     // CorDebugRegister bit positions, including both integer (GPR) and
@@ -465,22 +465,15 @@ interface IDacDbiInterface : IUnknown
     // Translates a JIT ICorDebugInfo::RegNum to a CorDebugRegister value
     HRESULT ConvertJitRegNumToCorDebugRegister([in] ULONG32 jitRegNum, [out] int * pReg);
 
-    // Decodes the floating-point / SIMD register area of a DBI-side context buffer
-    // Out params:
-    //   values[]        - populated doubles
-    //   pValuesCount    - number of valid slots in values[]
-    //   pFirstFloatReg  - CorDebugRegister value of values[0] (logical
-    //                     numbering); -1 if the target arch exposes no floats
-    //                     via CordbRegisterSet (e.g. ARM today)
-    //   pFloatStackTop  - x87 top-of-stack depth on x86 (so DBI can preserve
-    //                     its stack-relative dispatch); 0 on every other arch
-    HRESULT ReadFloatRegistersFromContext(
+    // Writes a single floating-point / SIMD register into a DBI-side context
+    // buffer. SIMD register files receive a raw byte copy into the low bytes of
+    // the slot; x87 slots are numerically re-encoded into 80-bit double-extended
+    // form. valueSize is the natural width of the value (4 for R4, 8 for R8).
+    HRESULT WriteFloatRegisterToContext(
         [in]  ContextBuffer contextBuffer,
-        [in]  ULONG32 regCount,
-        [out] DOUBLE values[32],
-        [out] ULONG32 * pValuesCount,
-        [out] int * pFirstFloatReg,
-        [out] ULONG32 * pFloatStackTop);
+        [in]  int reg,
+        [in]  const BYTE * pValue,
+        [in]  ULONG32 valueSize);
 
     // Returns the target's processor architecture and OS family.
     HRESULT GetTargetInfo([out] struct TargetInfo * pTargetInfo);

@@ -374,9 +374,17 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
 {
     _ASSERTE((newValue.Size() == 4) || (newValue.Size() == 8));
 
-    // update the thread's floating point stack
-    void * valueAddress = (void *) &(m_pFrame->m_pThread->m_floatValues[m_floatIndex]);
-    memcpy(valueAddress, newValue.StartAddress(), newValue.Size());
+    IDacDbiInterface * pDAC = m_pFrame->GetProcess()->GetDAC();
+    HRESULT hr = pDAC->WriteFloatRegisterToContext(
+        contextBuffer,
+        m_regNum,
+        (const BYTE *)newValue.StartAddress(),
+        (ULONG32)newValue.Size());
+    if (FAILED(hr))
+    {
+        _ASSERTE(!"Failed to write floating point register to context");
+        ThrowHR(E_FAIL);
+    }
 } // FloatValueHome::SetEnregisteredValue
 
 // FloatRegValueHome::GetEnregisteredValue

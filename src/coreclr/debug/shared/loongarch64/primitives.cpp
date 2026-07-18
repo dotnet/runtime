@@ -17,8 +17,14 @@
 // CopyThreadContext() does an intelligent copy from pSrc to pDst,
 // respecting the ContextFlags of both contexts.
 //
-void CORDbgCopyThreadContext(T_CONTEXT* pDst, const T_CONTEXT* pSrc)
+void CORDbgCopyThreadContext(BYTE* pDstBuffer, ULONG32 cbDst, const BYTE* pSrcBuffer, ULONG32 cbSrc)
 {
+    _ASSERTE(cbDst >= sizeof(DT_CONTEXT));
+    _ASSERTE(cbSrc >= sizeof(DT_CONTEXT));
+
+    DT_CONTEXT* pDst = reinterpret_cast<DT_CONTEXT*>(pDstBuffer);
+    const DT_CONTEXT* pSrc = reinterpret_cast<const DT_CONTEXT*>(pSrcBuffer);
+
     DWORD dstFlags = pDst->ContextFlags;
     DWORD srcFlags = pSrc->ContextFlags;
     LOG((LF_CORDB, LL_INFO1000000,

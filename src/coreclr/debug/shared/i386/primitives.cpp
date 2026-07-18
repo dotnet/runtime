@@ -16,10 +16,27 @@
 // CopyThreadContext() does an intelligent copy from pSrc to pDst,
 // respecting the ContextFlags of both contexts.
 //
-void CORDbgCopyThreadContext(T_CONTEXT* pDst, const T_CONTEXT* pSrc)
+void CORDbgCopyThreadContext(BYTE* pDstBuffer, ULONG32 cbDst, const BYTE* pSrcBuffer, ULONG32 cbSrc)
 {
+    // The buffers must at least be large enough to hold the ContextFlags field, which
+    // selects how much of the rest of the CONTEXT the copy below reads/writes.
+    _ASSERTE(cbDst >= offsetof(DT_CONTEXT, ContextFlags) + sizeof(DWORD));
+    _ASSERTE(cbSrc >= offsetof(DT_CONTEXT, ContextFlags) + sizeof(DWORD));
+
+    DT_CONTEXT* pDst = reinterpret_cast<DT_CONTEXT*>(pDstBuffer);
+    const DT_CONTEXT* pSrc = reinterpret_cast<const DT_CONTEXT*>(pSrcBuffer);
+
     DWORD dstFlags = pDst->ContextFlags;
     DWORD srcFlags = pSrc->ContextFlags;
+
+    // The copy only touches the trailing ExtendedRegisters region when
+    // CONTEXT_EXTENDED_REGISTERS is set, so a smaller CONTEXT buffer that omits that
+    // array (e.g. CONTEXT_FULL without extended registers) is valid.
+    _ASSERTE(cbDst >= (((dstFlags & CONTEXT_EXTENDED_REGISTERS) == CONTEXT_EXTENDED_REGISTERS)
+                           ? sizeof(DT_CONTEXT) : offsetof(DT_CONTEXT, ExtendedRegisters)));
+    _ASSERTE(cbSrc >= (((srcFlags & CONTEXT_EXTENDED_REGISTERS) == CONTEXT_EXTENDED_REGISTERS)
+                           ? sizeof(DT_CONTEXT) : offsetof(DT_CONTEXT, ExtendedRegisters)));
+
     LOG((LF_CORDB, LL_INFO1000000,
          "CP::CTC: pDst=0x%08x dstFlags=0x%x, pSrc=0x%08x srcFlags=0x%x\n",
          pDst, dstFlags, pSrc, srcFlags));

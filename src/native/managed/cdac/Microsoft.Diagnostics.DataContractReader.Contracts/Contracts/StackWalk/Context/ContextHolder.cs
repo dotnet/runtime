@@ -60,6 +60,8 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
     public bool TryReadRegister(string fieldName, out TargetNUInt value) => Context.TryReadRegister(fieldName, out value);
     public bool TrySetRegister(int number, TargetNUInt value) => Context.TrySetRegister(number, value);
     public bool TryReadRegister(int number, out TargetNUInt value) => Context.TryReadRegister(number, out value);
+    public bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value) => Context.TryReadFloatingPointRegister(context, index, out value);
+    public bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value) => Context.TryWriteFloatingPointRegister(context, index, value);
 
     public (uint Flag, string Name)[] GetScalarRegisters() => Context.GetScalarRegisters();
     public (uint Flag, int Start, int End)[] GetWideSpans() => Context.GetWideSpans();

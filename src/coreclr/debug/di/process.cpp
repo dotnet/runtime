@@ -1463,7 +1463,7 @@ ULONG32 CordbProcess::GetTargetContextSize()
     if (m_ctxSize == 0)
     {
         ULONG32 size = 0;
-        IfFailThrow(GetDAC()->GetTargetContextSize(IDacDbiInterface::kContextSizeExtendedRegisters, &size));
+        IfFailThrow(GetDAC()->GetTargetContextSize(DT_CONTEXT_ALL, &size));
         m_ctxSize = size;
     }
     return m_ctxSize;
@@ -5812,7 +5812,7 @@ HRESULT CordbProcess::IsOSSuspended(DWORD threadID, BOOL *pbSuspended)
 // This routine reads a thread context from the process being debugged, taking into account the fact that the context
 // record may be a different size than the one we compiled with.
 //
-HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, ContextBuffer contextBuffer)
+HRESULT CordbProcess::SafeReadThreadContext(CORDB_ADDRESS remoteContextAddr, ContextBuffer contextBuffer)
 {
     HRESULT hr = S_OK;
 
@@ -5821,14 +5821,13 @@ HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, ContextBuffe
 
     EX_TRY
     {
-        void *pRemoteContext = pContext.UnsafeGet();
         ULONG32 fullContextSize = GetTargetContextSize();
         if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < fullContextSize))
         {
             ThrowHR(E_INVALIDARG);
         }
 
-        TargetBuffer tbFull(pRemoteContext, fullContextSize);
+        TargetBuffer tbFull(remoteContextAddr, fullContextSize);
 
         // The context may have 2 parts:
         // 1. Base register, which are always present.
@@ -5837,7 +5836,7 @@ HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, ContextBuffe
 
         // At a minimum we have room for a whole context up to the extended registers.
         ULONG32 minContextSize;
-        IfFailThrow(GetDAC()->GetTargetContextSize(IDacDbiInterface::kContextSizeBase, &minContextSize));
+        IfFailThrow(GetDAC()->GetTargetContextSize(DT_CONTEXT_FULL, &minContextSize));
 
         // Read the minimum part.
         TargetBuffer tbMin = tbFull.SubBuffer(0, minContextSize);
@@ -5869,7 +5868,7 @@ HRESULT CordbProcess::SafeReadThreadContext(LSPTR_CONTEXT pContext, ContextBuffe
 // This routine writes a thread context to the process being debugged, taking into account the fact that the context
 // record may be a different size than the one we compiled with.
 //
-HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, ContextBuffer contextBuffer)
+HRESULT CordbProcess::SafeWriteThreadContext(CORDB_ADDRESS remoteContextAddr, ContextBuffer contextBuffer)
 {
     INTERNAL_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -5879,20 +5878,18 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, ContextBuff
         return E_INVALIDARG;
     }
 
+    HRESULT hr = S_OK;
     EX_TRY
     {
-        HRESULT hr = S_OK;
         ULONG32 sizeToWrite;
         BOOL hasExtendedRegisters = FALSE;
         IfFailThrow(GetDAC()->ContextHasExtendedRegisters(contextBuffer, &hasExtendedRegisters));
         IfFailThrow(GetDAC()->GetTargetContextSize(
-            hasExtendedRegisters ? IDacDbiInterface::kContextSizeExtendedRegisters : IDacDbiInterface::kContextSizeBase,
+            hasExtendedRegisters ? DT_CONTEXT_ALL : DT_CONTEXT_FULL,
             &sizeToWrite));
-        IDacDbiInterface::TargetInfo targetInfo;
 
-        BYTE * pRemoteContext = (BYTE*) pContext.UnsafeGet();
+        CORDB_ADDRESS pRemoteContext = remoteContextAddr;
         BYTE * pCtxSource = contextBuffer.pContextBytes;
-        IfFailThrow(GetDAC()->GetTargetInfo(&targetInfo));
 
     // 64 bit windows puts space for the first 6 stack parameters in the CONTEXT structure so that
     // kernel to usermode transitions don't have to allocate a CONTEXT and do a separate sub rsp
@@ -5901,12 +5898,11 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, ContextBuff
     // can think of these members as not being part of the context, ie they don't represent something
     // which gets saved or restored on context switches. They are just space we shouldn't overwrite.
     // See issue 630276 for more details.
-        if (targetInfo.os == IDacDbiInterface::kOSWindows && targetInfo.arch == IDacDbiInterface::kArchAMD64)
-        {
-            pRemoteContext += offsetof(CONTEXT, ContextFlags); // immediately follows the 6 parameters P1-P6
-            pCtxSource += offsetof(CONTEXT, ContextFlags);
-            sizeToWrite -= offsetof(CONTEXT, ContextFlags);
-        }
+#if defined TARGET_AMD64
+        pRemoteContext += offsetof(CONTEXT, ContextFlags); // immediately follows the 6 parameters P1-P6
+        pCtxSource += offsetof(CONTEXT, ContextFlags);
+        sizeToWrite -= offsetof(CONTEXT, ContextFlags);
+#endif
 
         // Write the context.
         TargetBuffer tb(pRemoteContext, sizeToWrite);
@@ -5917,7 +5913,7 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, ContextBuff
     return hr;
 }
 
-HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, T_CONTEXT * pCtx)
+HRESULT CordbProcess::SafeWriteThreadContext(CORDB_ADDRESS remoteContextAddr, T_CONTEXT * pCtx)
 {
     INTERNAL_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -5925,7 +5921,6 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, T_CONTEXT *
     HRESULT hr = S_OK;
     DWORD sizeToWrite = sizeof(T_CONTEXT);
 
-    BYTE * pRemoteContext = (BYTE*) pContext.UnsafeGet();
     BYTE * pCtxSource = (BYTE*) pCtx;
 
 
@@ -5938,7 +5933,7 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, T_CONTEXT *
 
     EX_TRY
     {
-        TargetBuffer tb(pRemoteContext, sizeToWrite);
+        TargetBuffer tb(remoteContextAddr, sizeToWrite);
         SafeWriteBuffer(tb, (const BYTE*) pCtxSource);
     }
     EX_CATCH_HRESULT(hr);
@@ -5967,6 +5962,12 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
         {
             LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x, thread id is invalid.\n", threadID));
 
+            return E_INVALIDARG;
+        }
+
+        if (contextSize < sizeof(T_CONTEXT))
+        {
+            LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x, context size is invalid.\n", threadID));
             return E_INVALIDARG;
         }
 
@@ -6043,6 +6044,12 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
         if (ut == NULL)
         {
             LOG((LF_CORDB, LL_INFO10000, "CP::STC: thread=0x%x, thread is invalid.\n", threadID));
+            return E_INVALIDARG;
+        }
+
+        if (contextSize < sizeof(T_CONTEXT))
+        {
+            LOG((LF_CORDB, LL_INFO10000, "CP::STC: thread=0x%x, context size is invalid.\n", threadID));
             return E_INVALIDARG;
         }
 
@@ -12793,7 +12800,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
                     _ASSERTE(fcd.pLeftSideContext != NULL);
                     LOG((LF_CORDB, LL_INFO10000, "W32ET::W32EL: updating LS context at 0x%p\n", fcd.pLeftSideContext));
                     // write the new context over the old one on the LS
-                    SafeWriteThreadContext(fcd.pLeftSideContext, &tempContext);
+                    SafeWriteThreadContext(fcd.pLeftSideContext.UnsafeGetAddr(), &tempContext);
                 }
 
                 // Write the new Fcd data to the LS

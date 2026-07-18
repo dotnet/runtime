@@ -7,7 +7,7 @@
 // Common cross-platform behavior of reg sets. The ICorDebugRegisterSet /
 // ICorDebugRegisterSet2 surface is implemented in CordbRegisterSet.cpp using the
 // ReadRegistersFromContext / WriteRegistersToContext / GetAvailableRegistersMask
-// DDIs; float / SIMD register VALUES come from ReadFloatRegistersFromContext.
+// DDIs, which cover both integer (GPR) and floating-point / SIMD registers.
 //
 //*****************************************************************************
 #include "stdafx.h"
@@ -33,8 +33,7 @@ CordbRegisterSet::CordbRegisterSet(
         ThrowHR(E_INVALIDARG);
     }
 
-    m_pContext     = contextBuffer.pContextBytes;
-    m_contextSize  = contextBuffer.contextSize;
+    m_contextBuffer = contextBuffer;
     m_fOwnsContext = fTakeOwnershipOfContext;
     m_thread       = pThread;
     m_active       = fActive;
@@ -56,10 +55,10 @@ void CordbRegisterSet::Neuter()
 
     if (m_fOwnsContext)
     {
-        delete[] m_pContext;
+        delete[] m_contextBuffer.pContextBytes;
     }
-    m_pContext = NULL;
-    m_contextSize = 0;
+    m_contextBuffer.pContextBytes = NULL;
+    m_contextBuffer.contextSize = 0;
 
     CordbBase::Neuter();
 }
@@ -124,7 +123,7 @@ HRESULT CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
     EX_TRY
     {
         _ASSERTE( m_thread != NULL );
-        if( contextSize < m_contextSize)
+        if( contextSize < GetProcess()->GetTargetContextSize())
         {
             ThrowHR(E_INVALIDARG);
         }
@@ -164,8 +163,7 @@ HRESULT CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
         // Overlay this frame's registers from the cached CONTEXT buffer, honoring the destination's
         // ContextFlags (the leaf's if copied above, otherwise the caller's incoming flags).
         ContextBuffer destinationContext = { context, contextSize };
-        ContextBuffer sourceContext = { m_pContext, m_contextSize };
-        IfFailThrow(pDAC->CopyContext(destinationContext, sourceContext, 0));
+        IfFailThrow(pDAC->CopyContext(destinationContext, m_contextBuffer, 0));
     }
     EX_CATCH_HRESULT(hr);
     return hr;

@@ -37,10 +37,9 @@ void CordbStackWalk::Init()
     IDacDbiInterface * pDAC = pProcess->GetDAC();
     ULONG32 contextSize = pProcess->GetTargetContextSize();
     m_pContextBuffer = new BYTE[contextSize];
-    ContextBuffer contextBuffer = { m_pContextBuffer, contextSize };
 
     IfFailThrow(pDAC->CreateStackWalk(m_pCordbThread->m_vmThreadToken,
-                                      contextBuffer,
+                                      GetContextBuffer(),
                                       &m_pSFIHandle));
 
     // see the function header of code:CordbStackWalk::CheckForLegacyHijackCase
@@ -79,14 +78,17 @@ void CordbStackWalk::CheckForLegacyHijackCase()
             {
                 // The GetThreadContext function hides the effects of hijacking and returns the unhijacked context
                 IDacDbiInterface * pDAC = GetProcess()->GetDAC();
+                if (GetProcess()->GetTargetContextSize() < sizeof(T_CONTEXT))
+                {
+                    ThrowHR(E_FAIL);
+                }
                 T_CONTEXT * pContext = reinterpret_cast<T_CONTEXT *>(m_pContextBuffer.GetValue());
                 pContext->ContextFlags = CONTEXT_FULL;
                 pUT->GetThreadContext(pContext);
-                ContextBuffer contextBuffer = { m_pContextBuffer, GetProcess()->GetTargetContextSize() };
                 IfFailThrow(pDAC->SetStackWalkCurrentContext(m_pCordbThread->m_vmThreadToken,
                                                  m_pSFIHandle,
                                                  SET_CONTEXT_FLAG_ACTIVE_FRAME,
-                                                 contextBuffer));
+                                                 GetContextBuffer()));
             }
         }
     }
@@ -209,9 +211,8 @@ void CordbStackWalk::RefreshIfNeeded()
         DeleteAll();
 
         // create a new stackwalk handle
-        ContextBuffer contextBuffer = { m_pContextBuffer, pProcess->GetTargetContextSize() };
         IfFailThrow(pProcess->GetDAC()->CreateStackWalk(m_pCordbThread->m_vmThreadToken,
-                                                        contextBuffer,
+                                                        GetContextBuffer(),
                                                         &m_pSFIHandle));
 
         // advance the stackwalker to where we originally were
@@ -252,7 +253,7 @@ HRESULT CordbStackWalk::GetContext(ULONG32   contextFlags,
         // set the required size for the CONTEXT buffer
         if (pContextSize != NULL)
         {
-            *pContextSize = GetProcess()->GetTargetContextSize();
+            *pContextSize = ContextSizeForFlags(contextFlags);
         }
 
         // If all the user wants to know is the CONTEXT size, then we are done.
@@ -264,7 +265,7 @@ HRESULT CordbStackWalk::GetContext(ULONG32   contextFlags,
             }
 
             // check the size of the incoming buffer
-            if (contextBufSize < GetProcess()->GetTargetContextSize())
+            if (contextBufSize < ContextSizeForFlags(contextFlags))
             {
                 ThrowWin32(ERROR_INSUFFICIENT_BUFFER);
             }
@@ -292,8 +293,7 @@ HRESULT CordbStackWalk::GetContext(ULONG32   contextFlags,
                 // Stamp the requested contextFlags on the destination so the copy
                 // pulls exactly those chunks from the source.
                 ContextBuffer destinationContext = { pbContextBuf, contextBufSize };
-                ContextBuffer sourceContext = { m_pContextBuffer, GetProcess()->GetTargetContextSize() };
-                IfFailThrow(pDAC->CopyContext(destinationContext, sourceContext, contextFlags));
+                IfFailThrow(pDAC->CopyContext(destinationContext, GetContextBuffer(), contextFlags));
             }
         }
     }
@@ -341,7 +341,7 @@ void CordbStackWalk::SetContextWorker(CorDebugSetContextFlag flag, ULONG32 conte
         ThrowHR(E_INVALIDARG);
     }
 
-    if (contextSize < GetProcess()->GetTargetContextSize())
+    if (!CheckContextSizeForBuffer(contextSize, context))
     {
         ThrowWin32(ERROR_INSUFFICIENT_BUFFER);
     }
@@ -360,11 +360,10 @@ void CordbStackWalk::SetContextWorker(CorDebugSetContextFlag flag, ULONG32 conte
     memcpy(m_pContextBuffer, tmpCtx, cbCtx);
     m_cachedSetContextFlag = flag;
 
-    ContextBuffer currentContext = { m_pContextBuffer, cbCtx };
     IfFailThrow(pDAC->SetStackWalkCurrentContext(m_pCordbThread->m_vmThreadToken,
                                      m_pSFIHandle,
                                      flag,
-                                     currentContext));
+                                     GetContextBuffer()));
 }
 
 //---------------------------------------------------------------------------------------
@@ -391,8 +390,7 @@ BOOL CordbStackWalk::UnwindStackFrame()
     // Now that we have unwound, make sure we update the CONTEXT buffer to reflect the current stack frame.
     if (retVal)
     {
-        ContextBuffer contextBuffer = { m_pContextBuffer, pProcess->GetTargetContextSize() };
-        IfFailThrow(pDAC->GetStackWalkCurrentContext(m_pSFIHandle, contextBuffer));
+        IfFailThrow(pDAC->GetStackWalkCurrentContext(m_pSFIHandle, GetContextBuffer()));
     }
 
     return retVal;
@@ -506,7 +504,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
     // see the comment on Debugger_STRData in dbgipcevents.h for the protocol.
     NewArrayHolder<BYTE> frameCtx(new BYTE[GetProcess()->GetTargetContextSize()]);
     ZeroMemory(frameCtx, GetProcess()->GetTargetContextSize());
-    frameData.ctx = frameCtx;
+    frameData.ctx = { frameCtx, GetProcess()->GetTargetContextSize() };
 
     IDacDbiInterface::FrameType ft = IDacDbiInterface::kInvalid;
 

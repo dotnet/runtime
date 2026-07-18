@@ -5027,7 +5027,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::Hijack(VMPTR_Thread vmThread, ULO
 }
 
 // Return the filter CONTEXT on the LS.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Thread vmThread, OUT VMPTR_CONTEXT * pRetVal)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Thread vmThread, OUT CORDB_ADDRESS * pRetVal)
 {
     DD_ENTER_MAY_THROW;
 
@@ -5035,13 +5035,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Th
     EX_TRY
     {
 
-        VMPTR_CONTEXT vmContext = VMPTR_CONTEXT::NullPtr();
+        CORDB_ADDRESS contextAddr = (CORDB_ADDRESS)NULL;
 
         Thread * pThread = vmThread.GetDacPtr();
         if (pThread->GetInteropDebuggingHijacked())
         {
             _ASSERTE(!ISREDIRECTEDTHREAD(pThread));
-            vmContext = VMPTR_CONTEXT::NullPtr();
+            contextAddr = (CORDB_ADDRESS)NULL;
         }
         else
         {
@@ -5049,7 +5049,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Th
             if (pLSContext != NULL)
             {
                 _ASSERTE(!ISREDIRECTEDTHREAD(pThread));
-                vmContext.SetHostPtr(pLSContext);
+                contextAddr = (CORDB_ADDRESS)PTR_HOST_TO_TADDR(pLSContext);
             }
             else if (ISREDIRECTEDTHREAD(pThread))
             {
@@ -5058,12 +5058,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Th
 
                 if (pLSContext != NULL)
                 {
-                    vmContext.SetHostPtr(pLSContext);
+                    contextAddr = (CORDB_ADDRESS)PTR_HOST_TO_TADDR(pLSContext);
                 }
             }
         }
 
-        *pRetVal = vmContext;
+        *pRetVal = contextAddr;
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -5514,66 +5514,23 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread,
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetContextSize(ContextSizeFlags flags, OUT ULONG32 * pSize)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetContextSize(ULONG32 contextFlags, OUT ULONG32 * pSize)
 {
     DD_ENTER_MAY_THROW;
 
     if (pSize == NULL)
         return E_INVALIDARG;
 
-    switch (flags)
-    {
-    case kContextSizeBase:
 #if defined(DT_CONTEXT_EXTENDED_REGISTERS)
+    if ((contextFlags & DT_CONTEXT_EXTENDED_REGISTERS) != DT_CONTEXT_EXTENDED_REGISTERS)
+    {
         *pSize = offsetof(DT_CONTEXT, ExtendedRegisters);
-#else
-        *pSize = sizeof(DT_CONTEXT);
-#endif
-        break;
-
-    case kContextSizeExtendedRegisters:
-        *pSize = sizeof(DT_CONTEXT);
-        break;
-
-    default:
-        return E_INVALIDARG;
     }
-
-    return S_OK;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetInfo(OUT TargetInfo * pTargetInfo)
-{
-    DD_ENTER_MAY_THROW;
-
-    if (pTargetInfo == NULL)
-        return E_INVALIDARG;
-
-#if defined(TARGET_X86)
-    pTargetInfo->arch = kArchX86;
-#elif defined(TARGET_AMD64)
-    pTargetInfo->arch = kArchAMD64;
-#elif defined(TARGET_ARM)
-    pTargetInfo->arch = kArchArm;
-#elif defined(TARGET_ARM64)
-    pTargetInfo->arch = kArchArm64;
-#elif defined(TARGET_LOONGARCH64)
-    pTargetInfo->arch = kArchLoongArch64;
-#elif defined(TARGET_RISCV64)
-    pTargetInfo->arch = kArchRiscV64;
-#elif defined(TARGET_WASM)
-    pTargetInfo->arch = kArchWasm;
-#else
-    pTargetInfo->arch = kArchUnknown;
+    else
 #endif
-
-#if defined(TARGET_UNIX)
-    pTargetInfo->os = kOSUnix;
-#elif defined(TARGET_WINDOWS)
-    pTargetInfo->os = kOSWindows;
-#else
-    pTargetInfo->os = kOSUnknown;
-#endif
+    {
+        *pSize = sizeof(DT_CONTEXT);
+    }
 
     return S_OK;
 }
@@ -5718,11 +5675,16 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WriteRegistersToContext(
     return S_OK;
 }
 
+namespace
+{
+    bool TryReadFloatRegisterFromContext(BYTE * ctxBuf, CorDebugRegister reg, DOUBLE * pValue);
+}
+
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ReadRegistersFromContext(
     IN ContextBuffer contextBuffer,
     IN const CorDebugRegister * regs,
     IN ULONG32 nRegs,
-    OUT TADDR * pValues)
+    OUT CORDB_REGISTER * pValues)
 {
     DD_ENTER_MAY_THROW;
 
@@ -5733,9 +5695,18 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ReadRegistersFromContext(
 
     for (ULONG32 i = 0; i < nRegs; i++)
     {
-        // Registers with no CONTEXT slot (e.g. float / SIMD registers) read as zero.
         UINT_PTR * pSlot = GetRegisterSlotFromContext(contextBuffer.pContextBytes, regs[i]);
-        pValues[i] = (pSlot != NULL) ? (TADDR)*pSlot : (TADDR)0;
+        if (pSlot != NULL)
+        {
+            pValues[i] = (CORDB_REGISTER)(UINT_PTR)*pSlot;
+            continue;
+        }
+
+        DOUBLE floatValue = 0.0;
+        if (TryReadFloatRegisterFromContext(contextBuffer.pContextBytes, regs[i], &floatValue))
+            memcpy(&pValues[i], &floatValue, sizeof(CORDB_REGISTER));
+        else
+            pValues[i] = (CORDB_REGISTER)0;
     }
     return S_OK;
 }
@@ -5909,18 +5880,30 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CopyContext(
 
     if (destinationContext.pContextBytes == NULL || sourceContext.pContextBytes == NULL)
         return E_INVALIDARG;
-    if (destinationContext.contextSize < sizeof(DT_CONTEXT) || sourceContext.contextSize < sizeof(DT_CONTEXT))
+
+    // The chunk-wise copy below only touches the CONTEXT regions selected by the
+    // ContextFlags.
+    if (!CheckContextSizeForBuffer(sourceContext.contextSize, sourceContext.pContextBytes))
         return E_INVALIDARG;
 
-    // flags != 0 stamps the destination's ContextFlags before the copy, so the
-    // chunk-wise copy below pulls exactly the requested pieces from the source.
-    // flags == 0 preserves the destination's existing ContextFlags.
     if (flags != 0)
+    {
+        // flags != 0 stamps the destination's ContextFlags before the copy, so the
+        // chunk-wise copy pulls exactly the requested pieces from the source.
+        if (!CheckContextSizeForFlags(destinationContext.contextSize, flags))
+            return E_INVALIDARG;
         reinterpret_cast<DT_CONTEXT *>(destinationContext.pContextBytes)->ContextFlags = flags;
+    }
+    else
+    {
+        // flags == 0 preserves the destination's existing ContextFlags.
+        if (!CheckContextSizeForBuffer(destinationContext.contextSize, destinationContext.pContextBytes))
+            return E_INVALIDARG;
+    }
 
     CORDbgCopyThreadContext(
-        reinterpret_cast<T_CONTEXT *>(destinationContext.pContextBytes),
-        reinterpret_cast<const T_CONTEXT *>(sourceContext.pContextBytes));
+        destinationContext.pContextBytes, destinationContext.contextSize,
+        sourceContext.pContextBytes, sourceContext.contextSize);
     return S_OK;
 }
 
@@ -6032,26 +6015,137 @@ namespace
         return BitsToDouble(sign | result);
     }
 
-    double Reinterpret64ToDouble(const BYTE * slot)
+    UINT64 DoubleToBits(double d)
     {
-        double d;
-        memcpy(&d, slot, sizeof(double));
-        return d;
+        UINT64 bits;
+        memcpy(&bits, &d, sizeof(UINT64));
+        return bits;
+    }
+
+    void X87DoubleToExtended(double value, BYTE * slot10)
+    {
+        UINT64 bits = DoubleToBits(value);
+        UINT64 sign = (bits >> 63) & 1;
+        UINT32 exp  = (UINT32)((bits >> 52) & 0x7FF);
+        UINT64 frac = bits & ((1ULL << 52) - 1);
+
+        UINT64 mant;      // 64-bit significand with explicit integer bit at 63
+        UINT16 signExp;   // sign (bit 15) + 15-bit biased exponent
+
+        if (exp == 0x7FF)
+        {
+            // Infinity or NaN: max exponent, integer bit set. Preserve the NaN
+            // payload (shifted into the extended fraction) and force it quiet.
+            mant = (1ULL << 63) | (frac << 11);
+            if (frac != 0)
+                mant |= (1ULL << 62);   // quiet bit
+            signExp = (UINT16)((sign << 15) | 0x7FFF);
+        }
+        else if (exp == 0 && frac == 0)
+        {
+            // Signed zero.
+            mant    = 0;
+            signExp = (UINT16)(sign << 15);
+        }
+        else if (exp == 0)
+        {
+            // Binary64 subnormal: normalize into the wider extended exponent range.
+            // value = frac * 2^(-1074); shift the leading fraction bit up to bit 63.
+            int leadingZeros = 0;
+            UINT64 m = frac;
+            while ((m & (1ULL << 51)) == 0)
+            {
+                m <<= 1;
+                leadingZeros++;
+            }
+            mant = m << 12;                                  // integer bit lands at 63
+            int e = -1023 - leadingZeros + 16383;            // rebias to extended
+            signExp = (UINT16)((sign << 15) | (UINT32)(e & 0x7FFF));
+        }
+        else
+        {
+            // Normal: prepend the implicit integer bit, align to bit 63, rebias.
+            mant = ((1ULL << 52) | frac) << 11;
+            int e = (int)exp - 1023 + 16383;
+            signExp = (UINT16)((sign << 15) | (UINT32)(e & 0x7FFF));
+        }
+
+        memcpy(slot10, &mant, sizeof(UINT64));
+        memcpy(slot10 + 8, &signExp, sizeof(UINT16));
+    }
+
+    // Read a single floating-point / SIMD register from a target CONTEXT buffer.
+    bool TryReadFloatRegisterFromContext(BYTE * ctxBuf, CorDebugRegister reg, DOUBLE * pValue)
+    {
+        DT_CONTEXT * pCtx = (DT_CONTEXT *)ctxBuf;
+
+#if defined(TARGET_X86)
+        if ((int)reg < REGISTER_X86_FPSTACK_0 || (int)reg > REGISTER_X86_FPSTACK_7)
+            return false;
+
+        const DT_FLOATING_SAVE_AREA * pFp = &pCtx->FloatSave;
+        ULONG32 rawTop        = (pFp->StatusWord >> 11) & 0x7;
+        ULONG32 floatStackTop = 7 - rawTop;
+        ULONG32 logical       = (ULONG32)((int)reg - REGISTER_X86_FPSTACK_0);
+
+        // The availability mask exposes all 8 FPSTACK registers even when the
+        // live stack is shallower; those out-of-depth slots read 0.
+        if (logical > floatStackTop)
+        {
+            *pValue = 0.0;
+            return true;
+        }
+
+        // REGISTER_X86_FPSTACK_0 names the bottom of the logical stack, so a
+        // logical index counts up from the bottom: ST(i) with i = top - logical.
+        ULONG32 physIdx = (rawTop + (floatStackTop - logical)) & 0x7;
+        *pValue = X87ExtendedToDouble((const BYTE *)pFp->RegisterArea + physIdx * 10);
+        return true;
+#elif defined(TARGET_AMD64)
+        if ((int)reg < REGISTER_AMD64_XMM0 || (int)reg > REGISTER_AMD64_XMM0 + 15)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->Xmm0 + (ULONG32)((int)reg - REGISTER_AMD64_XMM0) * 16, sizeof(DOUBLE));
+        return true;
+#elif defined(TARGET_ARM64)
+        if ((int)reg < REGISTER_ARM64_V0 || (int)reg > REGISTER_ARM64_V0 + 31)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->V + (ULONG32)((int)reg - REGISTER_ARM64_V0) * 16, sizeof(DOUBLE));
+        return true;
+#elif defined(TARGET_LOONGARCH64)
+        if ((int)reg < REGISTER_LOONGARCH64_F0 || (int)reg > REGISTER_LOONGARCH64_F0 + 31)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->F + (ULONG32)((int)reg - REGISTER_LOONGARCH64_F0) * 32, sizeof(DOUBLE));
+        return true;
+#elif defined(TARGET_RISCV64)
+        if ((int)reg < REGISTER_RISCV64_F0 || (int)reg > REGISTER_RISCV64_F0 + 31)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->F + (ULONG32)((int)reg - REGISTER_RISCV64_F0) * 8, sizeof(DOUBLE));
+        return true;
+#elif defined(TARGET_ARM)
+        if ((int)reg < REGISTER_ARM_D0 || (int)reg > REGISTER_ARM_D0 + 31)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->D + (ULONG32)((int)reg - REGISTER_ARM_D0) * 8, sizeof(DOUBLE));
+        return true;
+#else
+        UNREFERENCED_PARAMETER(pCtx);
+        UNREFERENCED_PARAMETER(reg);
+        UNREFERENCED_PARAMETER(pValue);
+        return false;
+#endif
     }
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ReadFloatRegistersFromContext(
+// Write a single floating-point / SIMD register into a target CONTEXT buffer.
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WriteFloatRegisterToContext(
     IN  ContextBuffer contextBuffer,
-    IN  ULONG32 maxValues,
-    OUT DOUBLE values[CORDB_MAX_FLOAT_REGISTERS],
-    OUT ULONG32 * pValuesCount,
-    OUT int * pFirstFloatReg,
-    OUT ULONG32 * pFloatStackTop)
+    IN  CorDebugRegister reg,
+    IN  const BYTE * pValue,
+    IN  ULONG32 valueSize)
 {
     DD_ENTER_MAY_THROW;
 
-    if (contextBuffer.pContextBytes == NULL || values == NULL || pValuesCount == NULL ||
-        pFirstFloatReg == NULL || pFloatStackTop == NULL || maxValues == 0)
+    if (contextBuffer.pContextBytes == NULL || pValue == NULL ||
+        (valueSize != sizeof(float) && valueSize != sizeof(double)))
     {
         return E_INVALIDARG;
     }
@@ -6060,69 +6154,49 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ReadFloatRegistersFromContext(
 
     DT_CONTEXT * pCtx = reinterpret_cast<DT_CONTEXT *>(contextBuffer.pContextBytes);
 
-    *pValuesCount   = 0;
-    *pFirstFloatReg = -1;
-    *pFloatStackTop = 0;
-    memset(values, 0, sizeof(DOUBLE) * maxValues);
-
 #if defined(TARGET_X86)
-    const DT_FLOATING_SAVE_AREA * pFp = &pCtx->FloatSave;
-    ULONG32 rawTop      = (pFp->StatusWord >> 11) & 0x7;
+    if ((int)reg < REGISTER_X86_FPSTACK_0 || (int)reg > REGISTER_X86_FPSTACK_7)
+        return E_INVALIDARG;
+
+    DT_FLOATING_SAVE_AREA * pFp = &pCtx->FloatSave;
+    ULONG32 rawTop        = (pFp->StatusWord >> 11) & 0x7;
     ULONG32 floatStackTop = 7 - rawTop;
-    *pFloatStackTop = floatStackTop;
-    *pFirstFloatReg = REGISTER_X86_FPSTACK_0;
+    ULONG32 logical       = (ULONG32)((int)reg - REGISTER_X86_FPSTACK_0);
+    if (logical > floatStackTop)
+        return E_INVALIDARG;
 
-    ULONG32 count = floatStackTop + 1;
-    if (count > maxValues)
-        count = maxValues;
-    *pValuesCount = count;
-
-    const BYTE * regArea = (const BYTE *)pFp->RegisterArea;
-    for (ULONG32 i = 0; i < count; i++)
-    {
-        ULONG32 physIdx = (rawTop + i) & 0x7;
-        values[i] = X87ExtendedToDouble(regArea + physIdx * 10);
-    }
+    // REGISTER_X86_FPSTACK_0 names the bottom of the logical stack: ST(i) with
+    // i = top - logical. Map to the physical RegisterArea slot and re-encode.
+    ULONG32 physIdx = (rawTop + (floatStackTop - logical)) & 0x7;
+    BYTE * slot     = (BYTE *)pFp->RegisterArea + physIdx * 10;
+    double d = (valueSize == sizeof(float)) ? (double)(*(const float *)pValue)
+                                            : *(const double *)pValue;
+    X87DoubleToExtended(d, slot);
 #elif defined(TARGET_AMD64)
-    const BYTE * base = (const BYTE *)&pCtx->Xmm0;
-    ULONG32 count = 16;
-    if (count > maxValues) count = maxValues;
-    *pValuesCount   = count;
-    *pFirstFloatReg = REGISTER_AMD64_XMM0;
-    for (ULONG32 i = 0; i < count; i++)
-        values[i] = Reinterpret64ToDouble(base + i * 16);
+    if ((int)reg < REGISTER_AMD64_XMM0 || (int)reg > REGISTER_AMD64_XMM0 + 15)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->Xmm0 + (ULONG32)((int)reg - REGISTER_AMD64_XMM0) * 16, pValue, valueSize);
 #elif defined(TARGET_ARM64)
-    const BYTE * base = (const BYTE *)&pCtx->V;
-    ULONG32 count = 32;
-    if (count > maxValues) count = maxValues;
-    *pValuesCount   = count;
-    *pFirstFloatReg = REGISTER_ARM64_V0;
-    for (ULONG32 i = 0; i < count; i++)
-        values[i] = Reinterpret64ToDouble(base + i * 16);
-#elif defined(TARGET_ARM)
-    const BYTE * base = (const BYTE *)&pCtx->D;
-    ULONG32 count = 32;
-    if (count > maxValues) count = maxValues;
-    *pValuesCount   = count;
-    for (ULONG32 i = 0; i < count; i++)
-        values[i] = Reinterpret64ToDouble(base + i * 8);
+    if ((int)reg < REGISTER_ARM64_V0 || (int)reg > REGISTER_ARM64_V0 + 31)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->V + (ULONG32)((int)reg - REGISTER_ARM64_V0) * 16, pValue, valueSize);
 #elif defined(TARGET_LOONGARCH64)
-    const BYTE * base = (const BYTE *)&pCtx->F;
-    ULONG32 count = 32;
-    if (count > maxValues) count = maxValues;
-    *pValuesCount   = count;
-    *pFirstFloatReg = REGISTER_LOONGARCH64_F0;
-    for (ULONG32 i = 0; i < count; i++)
-        values[i] = Reinterpret64ToDouble(base + i * 32);
+    if ((int)reg < REGISTER_LOONGARCH64_F0 || (int)reg > REGISTER_LOONGARCH64_F0 + 31)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->F + (ULONG32)((int)reg - REGISTER_LOONGARCH64_F0) * 32, pValue, valueSize);
 #elif defined(TARGET_RISCV64)
-    const BYTE * base = (const BYTE *)&pCtx->F;
-    ULONG32 count = 32;
-    if (count > maxValues) count = maxValues;
-    *pValuesCount   = count;
-    *pFirstFloatReg = REGISTER_RISCV64_F0;
-    for (ULONG32 i = 0; i < count; i++)
-        values[i] = Reinterpret64ToDouble(base + i * 8);
+    if ((int)reg < REGISTER_RISCV64_F0 || (int)reg > REGISTER_RISCV64_F0 + 31)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->F + (ULONG32)((int)reg - REGISTER_RISCV64_F0) * 8, pValue, valueSize);
+#elif defined(TARGET_ARM)
+    if ((int)reg < REGISTER_ARM_D0 || (int)reg > REGISTER_ARM_D0 + 31)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->D + (ULONG32)((int)reg - REGISTER_ARM_D0) * 8, pValue, valueSize);
 #else
+    UNREFERENCED_PARAMETER(pCtx);
+    UNREFERENCED_PARAMETER(reg);
+    UNREFERENCED_PARAMETER(pValue);
+    UNREFERENCED_PARAMETER(valueSize);
     return E_NOTIMPL;
 #endif
 

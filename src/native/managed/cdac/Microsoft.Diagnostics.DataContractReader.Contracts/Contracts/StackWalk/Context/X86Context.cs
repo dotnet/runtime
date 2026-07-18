@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Buffers.Binary;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
@@ -179,6 +180,61 @@ public struct X86Context : IPlatformContext
             case 7: value = new TargetNUInt(Edi); return true;
             default: value = default; return false;
         }
+    }
+
+    // The x87 FP stack exposes 8 logical registers ST(0)-ST(7); each occupies a 10-byte
+    // 80-bit slot in the FloatSave register area.
+    private const int X87RegisterCount = 8;
+
+    private static int Float80Size
+        => (int)Marshal.OffsetOf<X86Context>(nameof(ST1)) - (int)Marshal.OffsetOf<X86Context>(nameof(ST0));
+
+    public readonly bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value)
+    {
+        value = 0.0;
+        if ((uint)index >= X87RegisterCount)
+            return false;
+
+        // The availability mask exposes all 8 slots even when the live stack is shallower;
+        // out-of-depth slots read as 0.
+        if (!TryGetX87SlotOffset(context, index, out int offset))
+            return true;
+
+        if (offset + Float80Size <= context.Length)
+            value = FloatConversion.X87ExtendedToDouble(context.Slice(offset, Float80Size));
+        return true;
+    }
+
+    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
+    {
+        if ((uint)index >= X87RegisterCount)
+            return false;
+
+        // Writing an out-of-depth (or otherwise unresolvable) slot is not supported.
+        if (!TryGetX87SlotOffset(context, index, out int offset) || offset + Float80Size > context.Length)
+            return false;
+
+        double d = value.Length == sizeof(float)
+            ? BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(value))
+            : BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(value));
+        FloatConversion.X87DoubleToExtended(d, context.Slice(offset, Float80Size));
+        return true;
+    }
+
+    // Resolves the byte offset of the 80-bit slot backing logical register ST(<paramref name="logicalIndex"/>).
+    // REGISTER_X86_FPSTACK_0 names the bottom of the logical stack: ST(i) with i = top - logicalIndex.
+    // Returns false when logicalIndex is beyond the live stack depth.
+    private static bool TryGetX87SlotOffset(ReadOnlySpan<byte> context, int logicalIndex, out int offset)
+    {
+        offset = 0;
+        uint statusWord = BinaryPrimitives.ReadUInt32LittleEndian(context.Slice((int)Marshal.OffsetOf<X86Context>(nameof(StatusWord))));
+        uint rawTop = (statusWord >> 11) & 0x7;
+        uint floatStackTop = 7 - rawTop;
+        if ((uint)logicalIndex > floatStackTop)
+            return false;
+        uint physIdx = (rawTop + (floatStackTop - (uint)logicalIndex)) & 0x7;
+        offset = (int)Marshal.OffsetOf<X86Context>(nameof(ST0)) + ((int)physIdx * Float80Size);
+        return true;
     }
 
     public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;

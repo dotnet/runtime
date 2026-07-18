@@ -3583,9 +3583,9 @@ public:
     void AddToLeftSideResourceCleanupList(CordbBase * pObject);
 
     // Routines to read and write thread context records between the processes safely.
-    HRESULT SafeReadThreadContext(LSPTR_CONTEXT pRemoteContext, ContextBuffer contextBuffer);
-    HRESULT SafeWriteThreadContext(LSPTR_CONTEXT pRemoteContext, ContextBuffer contextBuffer);
-    HRESULT SafeWriteThreadContext(LSPTR_CONTEXT pRemoteContext, T_CONTEXT * pCtx);
+    HRESULT SafeReadThreadContext(CORDB_ADDRESS remoteContextAddr, ContextBuffer contextBuffer);
+    HRESULT SafeWriteThreadContext(CORDB_ADDRESS remoteContextAddr, ContextBuffer contextBuffer);
+    HRESULT SafeWriteThreadContext(CORDB_ADDRESS remoteContextAddr, T_CONTEXT * pCtx);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Record a win32 event for debugging purposes.
@@ -6081,9 +6081,6 @@ public:
     void MarkStackFramesDirty();
 
 
-   void LoadFloatState();
-
-
     HRESULT SetIP(  bool fCanSetIPOnly,
                     CordbNativeCode * pNativeCode,
                     SIZE_T offset,
@@ -6193,7 +6190,7 @@ public:
     // (breakpoint / single-step exception) or hijacked w/ a redirected frame because
     // another thread synced the LS.
     // This context is used by the RS to set enregistered vars.
-    VMPTR_CONTEXT         m_vmLeftSideContext;
+    CORDB_ADDRESS         m_vmLeftSideContext;
 
     // indicates whether m_pContext is up-to-date
     bool                  m_fContextFresh;
@@ -6224,12 +6221,6 @@ public:
     //  We don't clear the cache in CleanupStack() because we don't refresh the cache every time we stop.
     //  Instead, we mark m_fFramesFresh in CleanupStack() and clear the cache only when it is used next time.
     CDynArray<CordbFrame *> m_stackFrames;
-
-    bool                  m_fFloatStateValid;
-    unsigned int          m_floatStackTop;
-    int                   m_firstFloatReg;
-    ULONG32               m_floatValuesCount;
-    double                m_floatValues[CORDB_MAX_FLOAT_REGISTERS];
 
 private:
     // True for the window after an Exception callback, but before it's been continued.
@@ -6362,6 +6353,8 @@ private:
     // unwind the frame and update m_context with the new context
     BOOL UnwindStackFrame();
 
+    ContextBuffer GetContextBuffer() const { return { m_pContextBuffer, GetProcess()->GetTargetContextSize() }; }
+
     // the thread on which this CordbStackWalk is created
     CordbThread * m_pCordbThread;
 
@@ -6467,10 +6460,14 @@ public:
     // This is basically a complicated cast function.  We are casting from an ICorDebugFrame to a CordbFrame.
     static CordbFrame* GetCordbFrameFromInterface(ICorDebugFrame *pFrame);
 
-    virtual const BYTE * GetContext() const { return NULL; }
+    virtual const ContextBuffer GetContext() const { return ContextBuffer{}; }
 
     // Reads an integer register from this frame's CONTEXT buffer via the DAC.
     HRESULT ReadContextRegister(CorDebugRegister reg, TADDR * pValue) const;
+
+    // Reads a floating-point / SIMD register's scalar value (as a double bit
+    // pattern) from this frame's CONTEXT buffer via the DAC.
+    HRESULT ReadFloatContextRegister(CorDebugRegister reg, double * pValue) const;
 
 public:
     // this represents the IL offset for a CordbJITILFrame, the native offset for a CordbNativeFrame,
@@ -6749,7 +6746,7 @@ public:
         return NULL;
     }
 
-    virtual const BYTE * GetContext() const;
+    virtual const ContextBuffer GetContext() const;
 
 private:
     NewArrayHolder<BYTE> m_pContextBuffer;
@@ -6951,7 +6948,7 @@ public:
 
     CordbFunction * GetFunction();
     CordbNativeCode * GetNativeCode();
-    virtual const BYTE * GetContext() const;
+    virtual const ContextBuffer GetContext() const;
 
     // Given the native variable information of a variable, return its value.
     // This function assumes that the value is either in a register or on the stack
@@ -7164,8 +7161,7 @@ public:
     }
 
 protected:
-    BYTE                *m_pContext;
-    ULONG32             m_contextSize;
+    ContextBuffer       m_contextBuffer;
     CordbThread         *m_thread;
     bool                m_active; // true if we're the leafmost register set.
     bool                m_quickUnwind;
@@ -8123,11 +8119,14 @@ public:
     // Arguments:
     //     input:  pFrame - frame to which the value belongs
     //             index  - index into the floating point stack where the value resides
+    //             regNum - CorDebugRegister naming the fp / SIMD register
     //     output: no out parameters, but the instance has been initialized
     FloatRegValueHome(const CordbNativeFrame *      pFrame,
-                      DWORD                         index):
+                      DWORD                         index,
+                      CorDebugRegister              regNum):
         EnregisteredValueHome(pFrame),
-        m_floatIndex(index)
+        m_floatIndex(index),
+        m_regNum(regNum)
     {};
 
     // copy constructor
@@ -8137,7 +8136,8 @@ public:
     //     output: no out parameters, but the instance has been initialized
     FloatRegValueHome(const FloatRegValueHome * pRemoteRegAddr):
         EnregisteredValueHome(pRemoteRegAddr->m_pFrame),
-        m_floatIndex(pRemoteRegAddr->m_floatIndex)
+        m_floatIndex(pRemoteRegAddr->m_floatIndex),
+        m_regNum(pRemoteRegAddr->m_regNum)
     {};
 
     // make a copy of this instance of FloatRegValueHome
@@ -8164,6 +8164,10 @@ public:
 protected:
     // index into the FP registers for the register in which the floating point value resides
     const DWORD            m_floatIndex;
+
+    // CorDebugRegister naming the fp / SIMD register, used to write the value
+    // back into the target CONTEXT via the DAC.
+    const CorDebugRegister m_regNum;
  }; // class FloatRegValueHome
 
 // ----------------------------------------------------------------------------

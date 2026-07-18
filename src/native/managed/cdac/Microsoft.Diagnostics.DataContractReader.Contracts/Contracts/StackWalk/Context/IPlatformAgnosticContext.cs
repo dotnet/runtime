@@ -31,6 +31,8 @@ public interface IPlatformAgnosticContext
     public abstract bool TryReadRegister(string fieldName, out TargetNUInt value);
     public abstract bool TrySetRegister(int number, TargetNUInt value);
     public abstract bool TryReadRegister(int number, out TargetNUInt value);
+    public abstract bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value);
+    public abstract bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value);
 
     // The register copy set derived from the context's [Register]-tagged fields, used to
     // implement CONTEXT-flag-gated copies. Integer/control/segment registers are named and
