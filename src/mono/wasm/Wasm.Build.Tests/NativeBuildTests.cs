@@ -63,7 +63,7 @@ namespace Wasm.Build.Tests
             UpdateBrowserProgramFile();
             ReplaceMainJsWithMinimalRunMain();
 
-            string tempWithParens = Path.Combine(BuildEnvironment.TmpPath, $"tmp ({info.ProjectName})");
+            string tempWithParens = Path.Combine(BuildEnvironment.TmpPath, $"tmp ({GetRandomId()})");
             Directory.CreateDirectory(tempWithParens);
             var envVars = new Dictionary<string, string>
             {
