@@ -1578,6 +1578,10 @@ namespace System.Numerics
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MinExponent => MinExponent;
 
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MaxAdjustedExponent => MaxExponent - Precision + 1;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MinAdjustedExponent => MinExponent - Precision + 1;
+
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.PositiveInfinity => PositiveInfinityValue;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NegativeInfinity => NegativeInfinityValue;
