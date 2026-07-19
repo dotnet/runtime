@@ -1821,8 +1821,8 @@ internal static partial class Number
             return double.IsNaN(result) ? TDecimal.NaNMask : ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(result);
         }
 
-        // acosh is defined for x >= 1; negatives, zero, and any magnitude below 1 are a domain error.
-        if (decoded.Signed)
+        // acosh is defined for x >= 1; negatives and zero are a domain error, as is any magnitude below 1.
+        if (decoded.Signed || TValue.IsZero(decoded.Significand))
         {
             return TDecimal.NaNMask;
         }
