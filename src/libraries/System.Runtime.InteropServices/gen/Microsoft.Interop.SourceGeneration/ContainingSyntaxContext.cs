@@ -99,19 +99,21 @@ namespace Microsoft.Interop
             return code;
         }
 
-        public MemberDeclarationSyntax WrapMemberInContainingSyntaxWithUnsafeModifier(MemberDeclarationSyntax member)
+        /// <summary>
+        /// Wraps <paramref name="member"/> in its containing types and namespace.
+        /// Unlike the containing-type modifiers that are copied verbatim from the user's declaration,
+        /// this intentionally does not add an <c>unsafe</c> modifier to any containing type: generated
+        /// members that require an unsafe context open an explicit <c>unsafe</c> block in their body instead.
+        /// This keeps the output valid under both the legacy and the updated (unsafe-evolution) memory-safety rules.
+        /// </summary>
+        public MemberDeclarationSyntax WrapMemberInContainingSyntax(MemberDeclarationSyntax member)
         {
-            bool addedUnsafe = false;
             MemberDeclarationSyntax wrappedMember = member;
             foreach (var containingType in ContainingSyntax)
             {
                 TypeDeclarationSyntax type = TypeDeclaration(containingType.TypeKind, containingType.Identifier)
                     .WithModifiers(containingType.Modifiers)
                     .AddMembers(wrappedMember);
-                if (!addedUnsafe)
-                {
-                    type = type.WithModifiers(type.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword));
-                }
                 if (containingType.TypeParameters is not null)
                 {
                     type = type.AddTypeParameterListParameters(containingType.TypeParameters.Parameters.ToArray());
