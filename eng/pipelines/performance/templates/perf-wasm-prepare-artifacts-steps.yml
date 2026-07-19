@@ -16,17 +16,15 @@ steps:
   # Stage the CoreCLR browser-wasm runtime pack (built by the wasm_coreclr job) into the local
   # package feed so the wasm-tools workload install below can resolve it.
   - ${{ if eq(parameters.downloadCoreClrRuntimePack, true) }}:
-    - task: DownloadBuildArtifacts@0
+    - task: DownloadPipelineArtifact@2
       displayName: "Download CoreCLR runtime pack for workload install"
       inputs:
         buildType: current
         artifactName: BrowserWasmCoreCLRRuntimePack_$(_hostedOs)
-        downloadType: single
-        downloadPath: $(Build.SourcesDirectory)/artifacts/coreclr-runtimepack
-
+        targetPath: $(Build.SourcesDirectory)/artifacts/coreclr-runtimepack
     - script: >-
         mkdir -p $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping &&
-        cp $(Build.SourcesDirectory)/artifacts/coreclr-runtimepack/BrowserWasmCoreCLRRuntimePack_$(_hostedOs)/*.nupkg $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/
+        cp $(Build.SourcesDirectory)/artifacts/coreclr-runtimepack/*.nupkg $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/
       displayName: "Stage CoreCLR runtime pack into local feed"
 
   - script: >-
@@ -60,13 +58,12 @@ steps:
         mkdir -p $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtimepack &&
         find $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping -maxdepth 1 -name 'Microsoft.NETCore.App.Runtime.browser-wasm.*.nupkg' -not -name '*.symbols.nupkg' -exec cp {} $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtimepack \;
       displayName: "Stage CoreCLR runtime pack for workload"
-
-    - template: /eng/pipelines/common/templates/publish-build-artifacts.yml
+    - template: /eng/pipelines/common/templates/publish-pipeline-artifacts.yml
       parameters:
         isOfficialBuild: false
         displayName: Publish CoreCLR runtime pack for workload
         inputs:
-          PathtoPublish: $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtimepack
+          targetPath: $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtimepack
           artifactName: BrowserWasmCoreCLRRuntimePack_$(_hostedOs)
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
