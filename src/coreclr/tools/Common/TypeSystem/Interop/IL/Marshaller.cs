@@ -412,7 +412,7 @@ namespace Internal.TypeSystem.Interop
                 if (runtimeMarshallingEnabled)
                 {
                     marshallers[i] = CreateMarshaller(parameterType,
-                                                        parameterIndex,
+                                                        i,
                                                         methodSig.GetEmbeddedSignatureData(),
                                                         MarshallerType.Argument,
                                                         parameterMetadata.MarshalAsDescriptor,

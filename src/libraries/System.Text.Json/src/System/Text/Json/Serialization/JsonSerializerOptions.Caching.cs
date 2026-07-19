@@ -543,6 +543,7 @@ namespace System.Text.Json
                     left._indentSize == right._indentSize &&
                     left._typeInfoResolver == right._typeInfoResolver &&
                     left._allowDuplicateProperties == right._allowDuplicateProperties &&
+                    left._inferClosedTypePolymorphism == right._inferClosedTypePolymorphism &&
                     CompareLists(left._converters, right._converters) &&
                     CompareLists(left._typeClassifiers, right._typeClassifiers);
 
@@ -605,6 +606,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._indentSize);
                 AddHashCode(ref hc, options._typeInfoResolver);
                 AddHashCode(ref hc, options._allowDuplicateProperties);
+                AddHashCode(ref hc, options._inferClosedTypePolymorphism);
                 AddListHashCode(ref hc, options._converters);
                 AddListHashCode(ref hc, options._typeClassifiers);
 

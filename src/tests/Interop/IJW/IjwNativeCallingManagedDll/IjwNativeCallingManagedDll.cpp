@@ -96,6 +96,15 @@ public:
         else
             return 100;
     }
+
+    // Throws from a managed method in this C++/CLI module so a test can capture a stack trace and
+    // assert that source file/line resolve. That path forces the runtime to read this module's
+    // classic PDB through the symbol reader (which is handed the no-op metadata importer), proving
+    // the PDB is deployed and the reader path is exercised rather than silently skipped.
+    static void ThrowFromManaged()
+    {
+        throw gcnew System::InvalidOperationException("IJW managed throw for symbol-reader PDB coverage");
+    }
 };
 
 int ManagedCallee()
