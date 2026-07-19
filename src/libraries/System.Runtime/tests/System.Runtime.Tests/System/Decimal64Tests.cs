@@ -2472,28 +2472,27 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(1.0, 0.0)] // sinPi(integer) is an exact zero
-        [InlineData(2.0, 0.0)]
-        [InlineData(0.5, 1.0)] // sinPi(1/2) = 1 exactly
-        [InlineData(-0.5, -1.0)] // sinPi(-1/2) = -1 exactly
-        public static void SinPiExactTest(double input, double expected)
+        [InlineData("0.25", "0.707106781186547524400844362104849039284835938")]
+        [InlineData("-0.75", "-0.707106781186547524400844362104849039284835938")]
+        [InlineData("2.25", "0.707106781186547524400844362104849039284835938")]
+        [InlineData("0.1", "0.309016994374947424102293417182819058860154590")]
+        [InlineData("-2.75", "-0.707106781186547524400844362104849039284835938")]
+        [InlineData("1234.567", "0.977929339830721821623106314809873749321959736")]
+        [InlineData("0.5", "1.00000000000000000000000000000000000000000000")] // sinPi(1/2) = 1 exactly
+        [InlineData("-0.5", "-1.00000000000000000000000000000000000000000000")]
+        [InlineData("1", "0.0")] // sinPi(integer) is an exact zero
+        [InlineData("2", "0.0")]
+        public static void SinPiAccuracyTest(string input, string oracle)
         {
-            Assert.Equal(expected, (double)Decimal64.SinPi((Decimal64)input));
-        }
-
-        [Theory]
-        [InlineData(0.0)]
-        [InlineData(0.25)]
-        [InlineData(-0.5)]
-        [InlineData(0.1)]
-        [InlineData(-2.75)]
-        [InlineData(100.25)]
-        public static void SinPiAccuracyTest(double input)
-        {
-            // Decimal64 evaluates sinPi in the software binary128 engine (as Intel does).
-            double expected = double.SinPi(input);
-            double actual = (double)Decimal64.SinPi((Decimal64)input);
-            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"sinPi({input}): expected {expected}, got {actual}");
+            // The engine evaluates in software binary128 (as Intel does), so the result is compared to a
+            // high-precision oracle -- the true value rounded to Decimal64 by the independently tested parser --
+            // in decimal ULPs rather than round-tripped through double.
+            Decimal64 actual = Decimal64.SinPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
         }
 
         [Theory]
@@ -2507,16 +2506,6 @@ namespace System.Tests
         public static void CosPiTest(ulong value, ulong expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.CosPi(Unsafe.BitCast<ulong, Decimal64>(value))));
-        }
-
-        [Theory]
-        [InlineData(1.0, -1.0)] // cosPi(odd integer) = -1 exactly
-        [InlineData(2.0, 1.0)] // cosPi(even integer) = 1 exactly
-        [InlineData(0.5, 0.0)] // cosPi(half-integer) is an exact zero
-        [InlineData(1.5, 0.0)]
-        public static void CosPiExactTest(double input, double expected)
-        {
-            Assert.Equal(expected, (double)Decimal64.CosPi((Decimal64)input));
         }
 
         [Theory]
@@ -2537,18 +2526,24 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(0.0)]
-        [InlineData(0.25)]
-        [InlineData(-0.75)]
-        [InlineData(0.1)]
-        [InlineData(-2.75)]
-        [InlineData(100.25)]
-        public static void CosPiAccuracyTest(double input)
+        [InlineData("0.25", "0.707106781186547524400844362104849039284835938")]
+        [InlineData("-0.75", "-0.707106781186547524400844362104849039284835938")]
+        [InlineData("2.25", "0.707106781186547524400844362104849039284835938")]
+        [InlineData("0.1", "0.951056516295153572116439333379382143405698634")]
+        [InlineData("1234.567", "-0.208935890402411702274907259384464393664923236")]
+        [InlineData("0.4999999", "0.000000314159265358974156133484288383422682765979151")]
+        [InlineData("1", "-1.00000000000000000000000000000000000000000000")] // cosPi(odd integer) = -1 exactly
+        [InlineData("2", "1.00000000000000000000000000000000000000000000")] // cosPi(even integer) = 1 exactly
+        [InlineData("0.5", "0.0")] // cosPi(half-integer) is an exact zero
+        [InlineData("1.5", "0.0")]
+        public static void CosPiAccuracyTest(string input, string oracle)
         {
-            // Decimal64 evaluates cosPi in the software binary128 engine (as Intel does).
-            double expected = double.CosPi(input);
-            double actual = (double)Decimal64.CosPi((Decimal64)input);
-            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cosPi({input}): expected {expected}, got {actual}");
+            Decimal64 actual = Decimal64.CosPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
         }
 
         [Theory]
@@ -2573,17 +2568,21 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(0.0)]
-        [InlineData(0.25)]
-        [InlineData(-0.2)]
-        [InlineData(0.1)]
-        [InlineData(-0.4)]
-        public static void TanPiAccuracyTest(double input)
+        [InlineData("0.125", "0.414213562373095048801688724209698078569671875")]
+        [InlineData("-0.375", "-2.41421356237309504880168872420969807856967188")]
+        [InlineData("0.1", "0.324919696232906326155871412215134464954903472")]
+        [InlineData("0.499", "318.308838985550445921686695436921420182774937")]
+        [InlineData("0", "0.0")]
+        [InlineData("1", "-0")] // tanPi(odd integer) = -0 (sin=+0, cos=-1)
+        [InlineData("2", "0.0")]
+        public static void TanPiAccuracyTest(string input, string oracle)
         {
-            // Decimal64 evaluates tanPi in the software binary128 engine (as Intel does).
-            double expected = double.TanPi(input);
-            double actual = (double)Decimal64.TanPi((Decimal64)input);
-            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"tanPi({input}): expected {expected}, got {actual}");
+            Decimal64 actual = Decimal64.TanPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
         }
 
         [Theory]
@@ -2599,15 +2598,22 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(0.0)]
-        [InlineData(0.25)]
-        [InlineData(-0.75)]
-        [InlineData(2.5)]
-        public static void SinCosPiAccuracyTest(double input)
+        [InlineData("0.25", "0.707106781186547524400844362104849039284835938", "0.707106781186547524400844362104849039284835938")]
+        [InlineData("-0.75", "-0.707106781186547524400844362104849039284835938", "-0.707106781186547524400844362104849039284835938")]
+        [InlineData("0.1", "0.309016994374947424102293417182819058860154590", "0.951056516295153572116439333379382143405698634")]
+        [InlineData("1234.567", "0.977929339830721821623106314809873749321959736", "-0.208935890402411702274907259384464393664923236")]
+        [InlineData("0.5", "1.00000000000000000000000000000000000000000000", "0.0")]
+        public static void SinCosPiAccuracyTest(string input, string sinOracle, string cosOracle)
         {
-            (Decimal64 sin, Decimal64 cos) = Decimal64.SinCosPi((Decimal64)input);
-            Assert.True(double.Abs((double)sin - double.SinPi(input)) <= 1e-13 * double.Abs(double.MaxMagnitude(double.SinPi(input), 1.0)), $"sinCosPi({input}).SinPi");
-            Assert.True(double.Abs((double)cos - double.CosPi(input)) <= 1e-13 * double.Abs(double.MaxMagnitude(double.CosPi(input), 1.0)), $"sinCosPi({input}).CosPi");
+            (Decimal64 sin, Decimal64 cos) = Decimal64.SinCosPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(sin),
+                Unsafe.BitCast<Decimal64, ulong>(Decimal64.Parse(sinOracle, CultureInfo.InvariantCulture)),
+                recordedUlp: 0.0);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(cos),
+                Unsafe.BitCast<Decimal64, ulong>(Decimal64.Parse(cosOracle, CultureInfo.InvariantCulture)),
+                recordedUlp: 0.0);
         }
 
         [Theory]
@@ -2630,18 +2636,20 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(0.0)]
-        [InlineData(0.5)]
-        [InlineData(-0.5)]
-        [InlineData(1.0)]
-        [InlineData(-1.0)]
-        [InlineData(2.5)]
-        public static void AtanPiAccuracyTest(double input)
+        [InlineData("0.5", "0.147583617650433274175401076224740525951134524")]
+        [InlineData("-1.25", "-0.285223287477277274422189653693486081234733538")]
+        [InlineData("0.1", "0.0317255174305535695149771186013020006193286726")]
+        [InlineData("9999999", "0.499999968169008198521858801725742756587314478")]
+        [InlineData("0.25", "0.0779791303773693254605128897731301351165246188")]
+        [InlineData("0", "0.0")]
+        public static void AtanPiAccuracyTest(string input, string oracle)
         {
-            // Decimal64 evaluates atanPi in the software binary128 engine (as Intel does).
-            double expected = double.AtanPi(input);
-            double actual = (double)Decimal64.AtanPi((Decimal64)input);
-            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atanPi({input}): expected {expected}, got {actual}");
+            Decimal64 actual = Decimal64.AtanPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
         }
 
         [Theory]
@@ -2660,19 +2668,22 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(0.0)]
-        [InlineData(0.5)] // asinPi(1/2) = 1/6
-        [InlineData(-0.5)]
-        [InlineData(1.0)] // asinPi(1) = 1/2
-        [InlineData(-1.0)]
-        [InlineData(0.25)]
-        [InlineData(-0.75)]
-        public static void AsinPiAccuracyTest(double input)
+        [InlineData("0.25", "0.0804306232551662437709501933284842555840644312")]
+        [InlineData("-0.5", "-0.166666666666666666666666666666666666666666667")]
+        [InlineData("0.999", "0.485763562593760344929193647583989467842912869")]
+        [InlineData("0.9999999", "0.499857647490130293655918256194735962900618804")]
+        [InlineData("0.5", "0.166666666666666666666666666666666666666666667")]
+        [InlineData("1", "0.500000000000000000000000000000000000000000000")] // asinPi(1) = 1/2
+        [InlineData("-1", "-0.500000000000000000000000000000000000000000000")]
+        [InlineData("0", "0.0")]
+        public static void AsinPiAccuracyTest(string input, string oracle)
         {
-            // Decimal64 evaluates asinPi in the software binary128 engine (as Intel does).
-            double expected = double.AsinPi(input);
-            double actual = (double)Decimal64.AsinPi((Decimal64)input);
-            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"asinPi({input}): expected {expected}, got {actual}");
+            Decimal64 actual = Decimal64.AsinPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
         }
 
         [Theory]
@@ -2696,19 +2707,22 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(0.0)] // acosPi(0) = 1/2
-        [InlineData(0.5)]
-        [InlineData(-0.5)]
-        [InlineData(1.0)] // acosPi(1) = 0
-        [InlineData(-1.0)] // acosPi(-1) = 1
-        [InlineData(0.25)]
-        [InlineData(-0.75)]
-        public static void AcosPiAccuracyTest(double input)
+        [InlineData("0.25", "0.419569376744833756229049806671515744415935569")]
+        [InlineData("-0.5", "0.666666666666666666666666666666666666666666667")]
+        [InlineData("0.999", "0.0142364374062396550708063524160105321570871313")]
+        [InlineData("0.9999999", "0.000142352509869706344081743805264037099381195810")]
+        [InlineData("0.5", "0.333333333333333333333333333333333333333333333")]
+        [InlineData("0", "0.500000000000000000000000000000000000000000000")] // acosPi(0) = 1/2
+        [InlineData("1", "0.0")] // acosPi(1) = 0
+        [InlineData("-1", "1.00000000000000000000000000000000000000000000")] // acosPi(-1) = 1
+        public static void AcosPiAccuracyTest(string input, string oracle)
         {
-            // Decimal64 evaluates acosPi in the software binary128 engine (as Intel does).
-            double expected = double.AcosPi(input);
-            double actual = (double)Decimal64.AcosPi((Decimal64)input);
-            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"acosPi({input}): expected {expected}, got {actual}");
+            Decimal64 actual = Decimal64.AcosPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
         }
 
         [Theory]
@@ -2723,23 +2737,31 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(1.0, 1.0)]
-        [InlineData(-1.0, 1.0)]
-        [InlineData(1.0, -1.0)]
-        [InlineData(-1.0, -1.0)]
-        [InlineData(0.5, 2.0)]
-        [InlineData(1.0, 0.0)]
-        [InlineData(-1.0, 0.0)]
-        [InlineData(0.0, -1.0)]
-        [InlineData(double.PositiveInfinity, 1.0)]
-        [InlineData(double.PositiveInfinity, double.PositiveInfinity)]
-        [InlineData(double.NegativeInfinity, double.NegativeInfinity)]
-        public static void Atan2PiAccuracyTest(double y, double x)
+        [InlineData(double.PositiveInfinity, 1.0, 0.5)] // atan2Pi(+Infinity, finite) = 1/2
+        [InlineData(double.PositiveInfinity, double.PositiveInfinity, 0.25)] // atan2Pi(+Infinity, +Infinity) = 1/4
+        [InlineData(double.NegativeInfinity, double.NegativeInfinity, -0.75)] // atan2Pi(-Infinity, -Infinity) = -3/4
+        public static void Atan2PiInfinityTest(double y, double x, double expected)
         {
-            // Decimal64 evaluates atan2Pi in the software binary128 engine (as Intel does).
-            double expected = double.Atan2Pi(y, x);
-            double actual = (double)Decimal64.Atan2Pi((Decimal64)y, (Decimal64)x);
-            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atan2Pi({y}, {x}): expected {expected}, got {actual}");
+            Assert.Equal(expected, (double)Decimal64.Atan2Pi((Decimal64)y, (Decimal64)x));
+        }
+
+        [Theory]
+        [InlineData("1", "2", "0.147583617650433274175401076224740525951134524")]
+        [InlineData("-1", "2", "-0.147583617650433274175401076224740525951134524")]
+        [InlineData("2", "1", "0.352416382349566725824598923775259474048865476")]
+        [InlineData("1", "-2", "0.852416382349566725824598923775259474048865476")]
+        [InlineData("0.1", "0.7", "0.0451672353008665483508021524494810519022690478")]
+        [InlineData("1234", "-5", "0.501289741265151584446027359785209733861286641")]
+        [InlineData("-1", "-1", "-0.750000000000000000000000000000000000000000000")] // atan2Pi(-1, -1) = -3/4
+        [InlineData("1", "0", "0.500000000000000000000000000000000000000000000")] // atan2Pi(1, 0) = 1/2
+        public static void Atan2PiAccuracyTest(string y, string x, string oracle)
+        {
+            Decimal64 actual = Decimal64.Atan2Pi(Decimal64.Parse(y, CultureInfo.InvariantCulture), Decimal64.Parse(x, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
         }
 
         [Theory]

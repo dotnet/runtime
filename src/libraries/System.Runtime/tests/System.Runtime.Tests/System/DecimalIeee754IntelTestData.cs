@@ -1268,7 +1268,10 @@ namespace System.Tests
         private const double Bid64UlpLimit = 0.55;
         private const double Bid128UlpLimit = 2.0;
 
-        public static void AssertResultWithinUlp(uint actualBits, uint expectedBits, double recordedUlp)
+        public static void AssertResultWithinUlp(uint actualBits, uint expectedBits, double recordedUlp) =>
+            AssertResultWithinUlp(actualBits, expectedBits, recordedUlp, Bid32UlpLimit);
+
+        public static void AssertResultWithinUlp(uint actualBits, uint expectedBits, double recordedUlp, double limit)
         {
             Decimal32 expected = Unsafe.BitCast<uint, Decimal32>(expectedBits);
             Decimal32 actual = Unsafe.BitCast<uint, Decimal32>(actualBits);
@@ -1278,10 +1281,13 @@ namespace System.Tests
 
             AssertResultCore(Decimal32.IsNaN(expected), Decimal32.IsInfinity(expected), negE, cE, eE,
                              Decimal32.IsNaN(actual), Decimal32.IsInfinity(actual), negA, cA, eA,
-                             recordedUlp, Bid32UlpLimit, $"{expectedBits:X8}", $"{actualBits:X8}");
+                             recordedUlp, limit, $"{expectedBits:X8}", $"{actualBits:X8}");
         }
 
-        public static void AssertResultWithinUlp(ulong actualBits, ulong expectedBits, double recordedUlp)
+        public static void AssertResultWithinUlp(ulong actualBits, ulong expectedBits, double recordedUlp) =>
+            AssertResultWithinUlp(actualBits, expectedBits, recordedUlp, Bid64UlpLimit);
+
+        public static void AssertResultWithinUlp(ulong actualBits, ulong expectedBits, double recordedUlp, double limit)
         {
             Decimal64 expected = Unsafe.BitCast<ulong, Decimal64>(expectedBits);
             Decimal64 actual = Unsafe.BitCast<ulong, Decimal64>(actualBits);
@@ -1291,10 +1297,13 @@ namespace System.Tests
 
             AssertResultCore(Decimal64.IsNaN(expected), Decimal64.IsInfinity(expected), negE, cE, eE,
                              Decimal64.IsNaN(actual), Decimal64.IsInfinity(actual), negA, cA, eA,
-                             recordedUlp, Bid64UlpLimit, $"{expectedBits:X16}", $"{actualBits:X16}");
+                             recordedUlp, limit, $"{expectedBits:X16}", $"{actualBits:X16}");
         }
 
-        public static void AssertResultWithinUlp(UInt128 actualBits, UInt128 expectedBits, double recordedUlp)
+        public static void AssertResultWithinUlp(UInt128 actualBits, UInt128 expectedBits, double recordedUlp) =>
+            AssertResultWithinUlp(actualBits, expectedBits, recordedUlp, Bid128UlpLimit);
+
+        public static void AssertResultWithinUlp(UInt128 actualBits, UInt128 expectedBits, double recordedUlp, double limit)
         {
             Decimal128 expected = Unsafe.BitCast<UInt128, Decimal128>(expectedBits);
             Decimal128 actual = Unsafe.BitCast<UInt128, Decimal128>(actualBits);
@@ -1304,7 +1313,7 @@ namespace System.Tests
 
             AssertResultCore(Decimal128.IsNaN(expected), Decimal128.IsInfinity(expected), negE, cE, eE,
                              Decimal128.IsNaN(actual), Decimal128.IsInfinity(actual), negA, cA, eA,
-                             recordedUlp, Bid128UlpLimit, expectedBits.ToString("X32"), actualBits.ToString("X32"));
+                             recordedUlp, limit, expectedBits.ToString("X32"), actualBits.ToString("X32"));
         }
 
         // Compares an implementation result against Intel's stored result classified from the expected value:
