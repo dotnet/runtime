@@ -256,26 +256,31 @@ namespace System.Diagnostics.Tests
             object value = new object();
             object tags = CreateTagsLinkedList(new KeyValuePair<string, object?>("key", value));
 
-            tags.GetType().GetMethod("Remove").Invoke(tags, new object[] { "key" });
+            MethodInfo remove = Assert.IsAssignableFrom<MethodInfo>(tags.GetType().GetMethod("Remove"));
+            PropertyInfo first = Assert.IsAssignableFrom<PropertyInfo>(tags.GetType().GetProperty("First"));
+            FieldInfo storedValue = Assert.IsAssignableFrom<FieldInfo>(tags.GetType().GetField("Value"));
+            remove.Invoke(tags, new object[] { "key" });
 
-            Assert.Null(tags.GetType().GetProperty("First").GetValue(tags));
-            Assert.Equal(default, (KeyValuePair<string, object?>)tags.GetType().GetField("Value").GetValue(tags));
+            Assert.Null(first.GetValue(tags));
+            Assert.Equal(default, (KeyValuePair<string, object?>)storedValue.GetValue(tags));
         }
 
         [Fact]
         public void TagsLinkedListDoesNotRetainIgnoredSetValue()
         {
             object tags = CreateTagsLinkedList(new KeyValuePair<string, object?>("key", null), set: true);
+            PropertyInfo first = Assert.IsAssignableFrom<PropertyInfo>(tags.GetType().GetProperty("First"));
+            FieldInfo storedValue = Assert.IsAssignableFrom<FieldInfo>(tags.GetType().GetField("Value"));
 
-            Assert.Null(tags.GetType().GetProperty("First").GetValue(tags));
-            Assert.Equal(default, (KeyValuePair<string, object?>)tags.GetType().GetField("Value").GetValue(tags));
+            Assert.Null(first.GetValue(tags));
+            Assert.Equal(default, (KeyValuePair<string, object?>)storedValue.GetValue(tags));
         }
 
         [Fact]
         public void TagsLinkedListToStringFormatsValues()
         {
             object tags = CreateTagsLinkedList(new KeyValuePair<string, object?>("string", "value"));
-            MethodInfo add = tags.GetType().GetMethod("Add", new Type[] { typeof(KeyValuePair<string, object>) });
+            MethodInfo add = Assert.IsAssignableFrom<MethodInfo>(tags.GetType().GetMethod("Add", new Type[] { typeof(KeyValuePair<string, object>) }));
             add.Invoke(tags, new object[] { new KeyValuePair<string, object?>("object", 42) });
             add.Invoke(tags, new object[] { new KeyValuePair<string, object?>("null", null) });
 
@@ -284,9 +289,11 @@ namespace System.Diagnostics.Tests
 
         private static object CreateTagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false)
         {
-            Type tagsType = typeof(Activity).GetNestedType("TagsLinkedList", BindingFlags.NonPublic);
+            Type? tagsType = typeof(Activity).GetNestedType("TagsLinkedList", BindingFlags.NonPublic);
             Assert.NotNull(tagsType);
-            return Activator.CreateInstance(tagsType, new object[] { firstValue, set });
+            object? tags = Activator.CreateInstance(tagsType, new object[] { firstValue, set });
+            Assert.NotNull(tags);
+            return tags;
         }
 
         /// <summary>

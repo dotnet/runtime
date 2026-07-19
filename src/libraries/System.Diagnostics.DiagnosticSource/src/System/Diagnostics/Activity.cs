@@ -1711,7 +1711,7 @@ namespace System.Diagnostics
             // Add doesn't take the lock because it is called from the Activity creation before sharing the activity object to the caller.
             public void Add(IEnumerable<KeyValuePair<string, object?>> list)
             {
-                IEnumerator<KeyValuePair<string, object?>> e = list.GetEnumerator();
+                using IEnumerator<KeyValuePair<string, object?>> e = list.GetEnumerator();
                 if (!e.MoveNext())
                 {
                     return;
@@ -1737,8 +1737,6 @@ namespace System.Diagnostics
 
             public void Add(KeyValuePair<string, object?> value)
             {
-                DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
-
                 lock (this)
                 {
                     if (_last is null)
@@ -1750,6 +1748,7 @@ namespace System.Diagnostics
 
                     Debug.Assert(_last != null);
 
+                    DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
                     _last!.Next = newNode;
                     _last = newNode;
                 }
@@ -1841,7 +1840,6 @@ namespace System.Diagnostics
                         current = current.Next;
                     }
 
-                    DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
                     if (_last is null)
                     {
                         Value = value;
@@ -1851,6 +1849,7 @@ namespace System.Diagnostics
 
                     Debug.Assert(_last != null);
 
+                    DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
                     _last!.Next = newNode;
                     _last = newNode;
                 }
