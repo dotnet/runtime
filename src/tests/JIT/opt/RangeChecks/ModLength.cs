@@ -7,7 +7,7 @@ using Xunit;
 
 public class ModLength
 {
-        [Fact]
+    [Fact]
     public static void TestEntryPoint()
     {
         Throws<DivideByZeroException>(() => Test1(new int[0], 0));
