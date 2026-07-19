@@ -494,13 +494,32 @@ namespace System.Collections.Immutable.Tests
                 (b, v) => b.IndexOf(v),
                 (b, v, i) => b.IndexOf(v, i),
                 (b, v, i, c) => b.IndexOf(v, i, c),
-                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq));
+                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq),
+                "index");
             IndexOfTests.IndexOfTest(
                 seq => (IImmutableList<int>)ImmutableList.CreateRange(seq),
                 (b, v) => b.IndexOf(v),
                 (b, v, i) => b.IndexOf(v, i),
                 (b, v, i, c) => b.IndexOf(v, i, c),
-                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq));
+                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq),
+                "index");
+        }
+
+        [Fact]
+        public void IndexOfConsistentWithArray()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3, 4);
+            int[] array = new[] { 1, 2, 3, 4 };
+
+            Assert.Equal(-1, list.IndexOf(2, list.Count, 0));
+            Assert.Equal(-1, Array.IndexOf(array, 2, array.Length, 0));
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                int listResult = list.IndexOf(list[i], 0, list.Count);
+                int arrayResult = Array.IndexOf(array, array[i], 0, array.Length);
+                Assert.Equal(listResult, arrayResult);
+            }
         }
 
         [Fact]

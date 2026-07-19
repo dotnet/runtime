@@ -5,7 +5,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(DotNetCdacBinDir)$(LibPrefix)mscordaccore_universal$(LibSuffix)">
+    <!--
+      Consume the stripped binary that the runtime-component build installs into the CoreCLR
+      artifacts directory. Using a NativeBinary item (instead of a bare File) lets the packaging
+      infrastructure auto-discover the adjacent symbol file (.so.dbg/.dylib.dwarf/.pdb) and add
+      it to the symbol package.
+    -->
+    <NativeBinary Include="$(CoreCLRArtifactsPath)$(LibPrefix)mscordaccore_universal$(LibSuffix)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <File Include="@(NativeBinary)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       <IsNative>true</IsNative>
     </File>

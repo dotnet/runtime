@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -182,7 +183,27 @@ namespace System.Text.Json.Schema
                 JsonTypeInfo elementTypeInfo = typeInfo.Options.GetTypeInfo(elementConverter.Type!);
                 schema = MapJsonSchemaCore(ref state, elementTypeInfo, customConverter: elementConverter, cacheResult: false);
 
-                if (schema.Enum != null)
+                if (elementConverter.IsIeeeFloatingPointConverter &&
+                    (effectiveNumberHandling & JsonNumberHandling.AllowNamedFloatingPointLiterals) != 0)
+                {
+                    // IEEE floating-point types with AllowNamedFloatingPointLiterals generate an anyOf schema.
+                    // Fold null into the numeric branch to preserve nullability for nullable wrappers.
+                    Debug.Assert(schema.AnyOf is not null, "IEEE floating-point types with AllowNamedFloatingPointLiterals should generate an anyOf schema.");
+
+                    List<JsonSchema> anyOf = schema.AnyOf;
+                    Debug.Assert(anyOf.Exists(b => (b.Type & JsonSchemaType.Number) != 0),
+                        "IEEE floating-point anyOf schema should have a numeric branch.");
+
+                    foreach (JsonSchema branch in anyOf)
+                    {
+                        if ((branch.Type & JsonSchemaType.Number) != 0)
+                        {
+                            branch.Type |= JsonSchemaType.Null;
+                            break;
+                        }
+                    }
+                }
+                else if (schema.Enum != null)
                 {
                     Debug.Assert(elementTypeInfo.Type.IsEnum, "The enum keyword should only be populated by schemas for enum types.");
                     schema.Enum.Add(null); // Append null to the enum array.
@@ -337,6 +358,64 @@ namespace System.Text.Json.Schema
                         AdditionalProperties = valueSchema.IsTrue ? null : valueSchema,
                     });
 
+                case JsonTypeInfoKind.Union:
+                    if (typeInfo.UnionCases is { Count: > 0 } unionCases)
+                    {
+                        JsonSchemaType unionSchemaType = JsonSchemaType.Any;
+                        List<JsonSchema>? unionAnyOf = new(unionCases.Count);
+
+                        state.PushSchemaNode(JsonSchema.AnyOfPropertyName);
+
+                        foreach (JsonUnionCaseInfo caseInfo in unionCases)
+                        {
+                            JsonTypeInfo caseTypeInfo = typeInfo.Options.GetTypeInfoInternal(caseInfo.CaseType);
+
+                            state.PushSchemaNode(unionAnyOf.Count.ToString(CultureInfo.InvariantCulture));
+                            JsonSchema caseSchema = MapJsonSchemaCore(ref state, caseTypeInfo, cacheResult: false);
+                            state.PopSchemaNode();
+
+                            if (caseInfo.IsNullable)
+                            {
+                                caseSchema.Type |= JsonSchemaType.Null;
+                            }
+
+                            if (unionAnyOf.Count == 0)
+                            {
+                                unionSchemaType = caseSchema.Type;
+                            }
+                            else if (unionSchemaType != caseSchema.Type)
+                            {
+                                unionSchemaType = JsonSchemaType.Any;
+                            }
+
+                            unionAnyOf.Add(caseSchema);
+                        }
+
+                        state.PopSchemaNode();
+
+                        if (unionSchemaType is not JsonSchemaType.Any)
+                        {
+                            foreach (JsonSchema caseSchema in unionAnyOf)
+                            {
+                                caseSchema.Type = JsonSchemaType.Any;
+
+                                if (caseSchema.KeywordCount == 0)
+                                {
+                                    unionAnyOf = null;
+                                    break;
+                                }
+                            }
+                        }
+
+                        return CompleteSchema(ref state, new()
+                        {
+                            Type = unionSchemaType,
+                            AnyOf = unionAnyOf,
+                        });
+                    }
+
+                    return CompleteSchema(ref state, JsonSchema.CreateTrueSchema());
+
                 default:
                     Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.None);
                     // Return a `true` schema for types with user-defined converters.
@@ -345,6 +424,13 @@ namespace System.Text.Json.Schema
 
             JsonSchema CompleteSchema(ref GenerationState state, JsonSchema schema)
             {
+                if (HasObsoleteAttribute(typeInfo.Type) ||
+                    HasObsoleteAttribute(propertyInfo?.AttributeProvider))
+                {
+                    JsonSchema.EnsureMutable(ref schema);
+                    schema.Deprecated = true;
+                }
+
                 if (schema.Ref is null)
                 {
                     if (IsNullableSchema(state.ExporterOptions))
@@ -391,6 +477,28 @@ namespace System.Text.Json.Schema
             }
 
             options.MakeReadOnly();
+        }
+
+        private static bool HasObsoleteAttribute(ICustomAttributeProvider? attributeProvider)
+        {
+            if (attributeProvider is null)
+            {
+                return false;
+            }
+
+            // Identify ObsoleteAttribute using its full type name rather than typeof(ObsoleteAttribute).
+            // On downlevel targets System.Text.Json compiles in an internal ObsoleteAttribute polyfill
+            // that would otherwise shadow the framework type, causing the typeof comparison to never match
+            // the ObsoleteAttribute applied by user code.
+            foreach (object attribute in attributeProvider.GetCustomAttributes(inherit: true))
+            {
+                if (attribute.GetType().FullName == "System.ObsoleteAttribute")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool IsPolymorphicTypeThatSpecifiesItselfAsDerivedType(JsonTypeInfo typeInfo)
@@ -475,34 +583,14 @@ namespace System.Text.Json.Schema
 
                 foreach (string segment in path)
                 {
-                    ReadOnlySpan<char> span = segment.AsSpan();
                     sb.Append('/');
 
-                    do
-                    {
-                        // Per RFC 6901 the characters '~' and '/' must be escaped.
-                        int pos = span.IndexOfAny('~', '/');
-                        if (pos < 0)
-                        {
-                            sb.Append(span);
-                            break;
-                        }
+                    // Per RFC 6901 the characters '~' and '/' are escaped as '~0' and '~1'.
+                    string escapedToken = segment.Replace("~", "~0").Replace("/", "~1");
 
-                        sb.Append(span.Slice(0, pos));
-
-                        if (span[pos] == '~')
-                        {
-                            sb.Append("~0");
-                        }
-                        else
-                        {
-                            Debug.Assert(span[pos] == '/');
-                            sb.Append("~1");
-                        }
-
-                        span = span.Slice(pos + 1);
-                    }
-                    while (!span.IsEmpty);
+                    // Per RFC 6901 section 6 the JSON Pointer is embedded in a URI fragment,
+                    // so percent-encode any characters that are not valid in a URI fragment.
+                    sb.Append(Uri.EscapeDataString(escapedToken));
                 }
 
                 return sb.ToString();

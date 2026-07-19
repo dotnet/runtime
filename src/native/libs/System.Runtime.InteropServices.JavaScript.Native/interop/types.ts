@@ -111,25 +111,11 @@ export type BindingClosureCS = {
     isDisposed: boolean,
 }
 
-
-// TODO-WASM: drop mono prefixes, move the type
 export const enum MeasuredBlock {
-    emscriptenStartup = "mono.emscriptenStartup",
-    instantiateWasm = "mono.instantiateWasm",
-    preRun = "mono.preRun",
-    preRunWorker = "mono.preRunWorker",
-    onRuntimeInitialized = "mono.onRuntimeInitialized",
-    postRun = "mono.postRun",
-    postRunWorker = "mono.postRunWorker",
-    startRuntime = "mono.startRuntime",
-    loadRuntime = "mono.loadRuntime",
-    bindingsInit = "mono.bindingsInit",
-    bindJsFunction = "mono.bindJsFunction:",
-    bindCsFunction = "mono.bindCsFunction:",
-    callJsFunction = "mono.callJsFunction:",
-    callCsFunction = "mono.callCsFunction:",
-    getAssemblyExports = "mono.getAssemblyExports:",
-    instantiateAsset = "mono.instantiateAsset:",
+    bindJsFunction = "clr.bindJsFunction:",
+    bindCsFunction = "clr.bindCsFunction:",
+    callJsFunction = "clr.callJsFunction:",
+    callCsFunction = "clr.callCsFunction:",
 }
 
 export const JavaScriptMarshalerArgSize = 32;

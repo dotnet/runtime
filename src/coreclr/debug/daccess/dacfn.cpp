@@ -49,12 +49,14 @@ DacExceptionFilter(Exception* ex, ClrDataAccess* access,
     // other than an unexpected SEH exception.
     // If we're not debugging, handle SEH exceptions also
     // so that dac absorbs all exceptions by default.
+#ifdef TARGET_WINDOWS
     if ((access && access->m_debugMode) &&
         ex->IsType(SEHException::GetType()))
     {
         // Indicate this exception should be rethrown.
         return FALSE;
     }
+#endif // TARGET_WINDOWS
 
     // Indicate this exception is handled.
     // XXX Microsoft - The C++-based EH has broken the ability

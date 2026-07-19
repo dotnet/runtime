@@ -14,6 +14,8 @@
     <BuildCoreHostDependsOn>GenerateRuntimeVersionFile</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildCoreHostDependsOn);GenerateEmccExports;ResolveRuntimeFilesFromLocalBuild</BuildCoreHostDependsOn>
+    <!-- WASI: the corehost native build needs the wasi-sdk (WASI_SDK_PATH, passed below). -->
+    <BuildCoreHostDependsOn Condition="'$(TargetsWasi)' == 'true'">AcquireWasiSdk;$(BuildCoreHostDependsOn)</BuildCoreHostDependsOn>
     <CopyWasmNativeFilesDependsOn Condition="'$(TargetOS)' == 'windows'">BuildCoreHostOnWindows</CopyWasmNativeFilesDependsOn>
     <CopyWasmNativeFilesDependsOn Condition="'$(TargetOS)' != 'windows'">BuildCoreHostOnUnix</CopyWasmNativeFilesDependsOn>
     <IntermediateOutputRootPath>$(ArtifactsObjDir)$(TargetRid).$(Configuration)\</IntermediateOutputRootPath>
@@ -80,7 +82,7 @@
       <BuildArgs Condition="'$(PortableBuild)' != 'true'">$(BuildArgs) -portablebuild=false</BuildArgs>
       <BuildArgs Condition="'$(KeepNativeSymbols)' != 'false'">$(BuildArgs) -keepnativesymbols</BuildArgs>
       <BuildArgs Condition="'$(CrossBuild)' == 'true'">$(BuildArgs) -cross</BuildArgs>
-      <BuildArgs Condition="'$(Compiler)' != ''">$(BuildArgs) $(Compiler)</BuildArgs>
+      <BuildArgs Condition="'$(CppCompilerAndLinker)' != ''">$(BuildArgs) $(CppCompilerAndLinker)</BuildArgs>
       <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) -cmakeargs "$(CMakeArgs)"</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) -ninja</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' != 'true'">$(BuildArgs) -ninja false</BuildArgs>
@@ -92,12 +94,17 @@
       <BuildArgs>$(BuildArgs) -cmakeargs "-DCLR_CMAKE_BUILD_HOST_PRODUCT=$(BuildNativeHostProduct.ToUpper())"</BuildArgs>
     </PropertyGroup>
 
+    <!-- WASI: pass the acquired wasi-sdk to the native build. -->
+    <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
+      <_CoreHostBuildEnvironmentVariables>WASI_SDK_PATH=$(RuntimeBuildWasiSdkPath)</_CoreHostBuildEnvironmentVariables>
+    </PropertyGroup>
+
     <!--
       Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid
       upgrading compiler warnings to errors in release branches.
     -->
     <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs) @(NativeCMakeArg, ' ')" Importance="High"/>
-    <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs) @(NativeCMakeArg, ' ')" IgnoreStandardErrorWarningFormat="true"/>
+    <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs) @(NativeCMakeArg, ' ')" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="$(_CoreHostBuildEnvironmentVariables)"/>
   </Target>
 
   <!-- 
@@ -169,13 +176,18 @@
       <BuildArgs>$(BuildArgs) -cmakeargs "-DCLR_CMAKE_BUILD_HOST_PRODUCT=$(BuildNativeHostProduct.ToUpper())"</BuildArgs>
     </PropertyGroup>
 
+    <!-- WASI: gen-buildsys.cmd needs WASI_SDK_PATH (set by the AcquireWasiSdk dependency above). -->
+    <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
+      <_CoreHostBuildEnvironmentVariables>WASI_SDK_PATH=$(RuntimeBuildWasiSdkPath)</_CoreHostBuildEnvironmentVariables>
+    </PropertyGroup>
+
     <!--
       Run script that invokes Cmake to create VS files, and then calls msbuild to compile them. Use
       IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid
       upgrading compiler warnings to errors in release branches.
     -->
     <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs) @(NativeCMakeArg, ' ')" Importance="High"/>
-    <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs) @(NativeCMakeArg, ' ')" IgnoreStandardErrorWarningFormat="true"/>
+    <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs) @(NativeCMakeArg, ' ')" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="$(_CoreHostBuildEnvironmentVariables)"/>
   </Target>
 
   <Target Name="CopyWasmNativeFiles" AfterTargets="Build" DependsOnTargets="$(CopyWasmNativeFilesDependsOn)" Condition="'$(TargetsBrowser)' == 'true'">
@@ -190,6 +202,19 @@
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js.symbols" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.wasm" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MicrosoftNetCoreAppRuntimePackNativeDirFiles)"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- WASI CoreCLR: stage libWasiHost.a into the runtime pack native dir for the per-app relink,
+       mirroring the browser CopyWasmNativeFiles above. Depends on both host-build targets (one is
+       skipped by its HostOS condition) so the copy is ordered after the archive on either host. -->
+  <Target Name="CopyWasiNativeFiles" AfterTargets="Build" DependsOnTargets="BuildCoreHostOnUnix;BuildCoreHostOnWindows" Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <ItemGroup>
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)libWasiHost.a" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MicrosoftNetCoreAppRuntimePackNativeDirFiles)"

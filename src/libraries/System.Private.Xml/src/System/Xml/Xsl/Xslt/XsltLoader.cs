@@ -918,7 +918,7 @@ namespace System.Xml.Xsl.Xslt
             new XsltAttribute("pattern-separator",  V1Opt | V2Opt),
             new XsltAttribute("minus-sign",         V1Opt | V2Opt)
         };
-        private void LoadDecimalFormat(NsDecl? stylesheetNsList)
+        private unsafe void LoadDecimalFormat(NsDecl? stylesheetNsList)
         {
             const int NumCharAttrs = 8, NumSignAttrs = 7;
             ContextInfo ctxInfo = _input.GetAttributes(_decimalFormatAttributes);

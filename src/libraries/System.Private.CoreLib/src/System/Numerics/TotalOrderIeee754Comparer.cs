@@ -136,7 +136,7 @@ namespace System.Numerics
                     // One or two of the values are NaN
                     // totalOrder defines that -qNaN < -sNaN < x < +sNaN < + qNaN
 
-                    static int CompareSignificand(T x, T y)
+                    static unsafe int CompareSignificand(T x, T y)
                     {
                         // IEEE 754 totalOrder only defines the order of NaN type bit (the first bit of significand)
                         // To match the integer semantic comparison above, here we compare all the significand bits

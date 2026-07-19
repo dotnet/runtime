@@ -16,6 +16,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "jitstd/algorithm.h"
+#ifdef TARGET_WASM
+#include "fgwasm.h" // for WasmInterval, used in CanRemoveJumpToNext
+#endif
 
 #if MEASURE_BLOCK_SIZE
 /* static  */
@@ -404,7 +407,27 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
-    return JumpsToNext() && !IsLastHotBlock(compiler);
+    if (!JumpsToNext() || IsLastHotBlock(compiler))
+    {
+        return false;
+    }
+#ifdef TARGET_WASM
+    // Fall-through across a Try/ExnRefWrapper end injects an `unreachable`
+    // or an exnref `local.set` that would trap or fail validation.
+    //
+    if (compiler->fgWasmIntervals != nullptr)
+    {
+        unsigned const targetIndex = GetTarget()->bbPreorderNum;
+        for (WasmInterval* const interval : *compiler->fgWasmIntervals)
+        {
+            if ((interval->IsTry() || interval->IsExnRefWrapper()) && (interval->End() == targetIndex))
+            {
+                return false;
+            }
+        }
+    }
+#endif
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -506,7 +529,7 @@ void BasicBlock::dspFlags() const
         {BBF_BACKWARD_JUMP, "bwd"},
         {BBF_BACKWARD_JUMP_TARGET, "bwd-target"},
         {BBF_BACKWARD_JUMP_SOURCE, "bwd-src"},
-        {BBF_PATCHPOINT, "ppoint"},
+        {BBF_OSR_PATCHPOINT, "osr-ppoint"},
         {BBF_PARTIAL_COMPILATION_PATCHPOINT, "pc-ppoint"},
         {BBF_HAS_HISTOGRAM_PROFILE, "hist"},
         {BBF_TAILCALL_SUCCESSOR, "tail-succ"},
@@ -524,7 +547,8 @@ void BasicBlock::dspFlags() const
         {BBF_NEEDS_GCPOLL, "gcpoll"},
         {BBF_HAS_VALUE_PROFILE, "val-prof"},
         {BBF_MAY_HAVE_BOUNDS_CHECKS, "bnds-chk"},
-        {BBF_ASYNC_RESUMPTION, "resume"},
+        {BBF_ASYNC_RESUMPTION, "a-resume"},
+        {BBF_CATCH_RESUMPTION, "c-resume"},
         {BBF_THROW_HELPER, "throw-hlpr"},
     };
 
@@ -1012,6 +1036,38 @@ bool BasicBlock::isEmpty() const
     }
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// hasSideEffects: check if block has side effects
+//
+// Returns:
+//   True if any non-phi statement or node in the block has side effects.
+//
+bool BasicBlock::hasSideEffects() const
+{
+    if (!IsLIR())
+    {
+        for (Statement* const stmt : NonPhiStatements())
+        {
+            if ((stmt->GetRootNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
+            {
+                return true;
+            }
+        }
+    }
+    else
+    {
+        for (GenTree* node : LIR::AsRange(this))
+        {
+            if ((node->gtFlags & GTF_SIDE_EFFECT) != 0)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------

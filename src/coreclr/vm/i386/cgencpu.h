@@ -31,12 +31,6 @@ class ComCallMethodDesc;
 
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
-#define COMMETHOD_PREPAD                        8   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-#ifdef FEATURE_COMINTEROP
-#define COMMETHOD_CALL_PRESTUB_SIZE             5   // x86: CALL(E8) xx xx xx xx
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   1   // the offset of the call target address inside the prestub
-#endif // FEATURE_COMINTEROP
-
 #define STACK_ALIGN_SIZE                        4
 
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction
@@ -213,22 +207,6 @@ inline INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDe
     return (INT32)(target - baseAddr);
 }
 
-#ifdef FEATURE_COMINTEROP
-inline void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    WRAPPER_NO_CONTRACT;
-
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    pBufferRW[0] = X86_INSTR_CALL_REL32; //CALLNEAR32
-    *((LPVOID*)(1+pBufferRW)) = (LPVOID) (((LPBYTE)target) - (pBufferRX+5));
-
-    _ASSERTE(IS_ALIGNED(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
-        *((SSIZE_T*)(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == ((LPBYTE)target - (LPBYTE)pCOMMethodRX));
-}
-#endif // FEATURE_COMINTEROP
-
 //------------------------------------------------------------------------
 WORD GetUnpatchedCodeData(LPCBYTE pAddr);
 
@@ -341,11 +319,6 @@ inline PCODE decodeBackToBackJump(PCODE pCode)
     CONSISTENCY_CHECK(*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32);
     return rel32Decode(pCode+1);
 }
-
-
-EXTERN_C void __stdcall setFPReturn(int fpSize, INT64 retVal);
-EXTERN_C void __stdcall getFPReturn(int fpSize, INT64 *pretval);
-
 
 // SEH info forward declarations
 

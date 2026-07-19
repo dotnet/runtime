@@ -20,14 +20,14 @@ public class DataDescriptorModel
     public IReadOnlyDictionary<string, TypeModel> Types { get; }
     public IReadOnlyDictionary<string, GlobalModel> Globals { get; }
     public IReadOnlyDictionary<string, GlobalModel> SubDescriptors { get; }
-    public IReadOnlyDictionary<string, int> Contracts { get; }
+    public IReadOnlyDictionary<string, string> Contracts { get; }
     [JsonIgnore]
     public uint PlatformFlags { get; }
     // The number of indirect globals plus 1 for the placeholder at index 0
     [JsonIgnore]
     public int PointerDataCount => 1 + Globals.Values.Count(g => g.Value.Kind == GlobalValue.KindEnum.Indirect) + SubDescriptors.Values.Count(s => s.Value.Kind == GlobalValue.KindEnum.Indirect);
 
-    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, GlobalModel> subDescriptors, IReadOnlyDictionary<string, int> contracts, uint platformFlags)
+    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, GlobalModel> subDescriptors, IReadOnlyDictionary<string, string> contracts, uint platformFlags)
     {
         Baseline = baseline;
         Types = types;
@@ -155,7 +155,7 @@ public class DataDescriptorModel
             return subDescriptor;
         }
 
-        public void AddOrUpdateContract(string name, int version)
+        public void AddOrUpdateContract(string name, string version)
         {
             if (!_contracts.TryGetValue(name, out var contract))
             {
@@ -223,7 +223,7 @@ public class DataDescriptorModel
                 }
                 subDescriptors[subDescriptorName] = new GlobalModel { Type = subDescriptorBuilder.Type, Value = v.Value };
             }
-            var contracts = new Dictionary<string, int>();
+            var contracts = new Dictionary<string, string>();
             foreach (var (contractName, contractBuilder) in _contracts)
             {
                 contracts[contractName] = contractBuilder.Build();
@@ -403,17 +403,17 @@ public class DataDescriptorModel
 
     public class ContractBuilder
     {
-        private int? _version;
+        private string? _version;
         public ContractBuilder()
         {
         }
 
-        public int? Version
+        public string? Version
         {
             get => _version;
             set
             {
-                if (_version != null && _version != value)
+                if (_version is not null && _version != value)
                 {
                     throw new InvalidOperationException($"Version already set to {_version} cannot set to {value}");
                 }
@@ -422,15 +422,15 @@ public class DataDescriptorModel
         }
 
         // There is no ContractModel right now because the only info we keep is the version.
-        // As a result it is convenient to use a Dictionary<string,int> for the contracts since
+        // As a result it is convenient to use a Dictionary<string,string> for the contracts since
         // the JSON serialization coincides with what we want.
-        public int Build()
+        public string Build()
         {
-            if (_version == null)
+            if (_version is null)
             {
                 throw new InvalidOperationException("Version must be set for contract");
             }
-            return _version.Value;
+            return _version;
         }
     }
 }

@@ -74,7 +74,7 @@ namespace System.Net
             _version = HttpVersion.Version10;
         }
 
-        internal void SetRequestLine(string req)
+        internal unsafe void SetRequestLine(string req)
         {
             Span<Range> parts = stackalloc Range[3];
             if (req.AsSpan().Split(parts, ' ') != 3)

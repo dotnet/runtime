@@ -36,6 +36,8 @@ namespace Wasm.Build.Tests
         protected static readonly string s_unicodeChars = "\u9FC0\u8712\u679B\u906B\u486B\u7149";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
+        private static bool s_xharnessToolRestored;
+        private static readonly object s_xharnessRestoreLock = new();
         protected readonly ITestOutputHelper _testOutput;
         protected string _logPath;
         protected bool _enablePerTestCleanup = false;
@@ -115,6 +117,64 @@ namespace Wasm.Build.Tests
             _testOutput = new TestOutputWrapper(output);
             _logPath = s_buildEnv.LogRootPath; // FIXME:
             _providerOfBaseType = providerBase;
+        }
+
+        /// <summary>
+        /// Ensures the xharness CLI is available as a local dotnet tool by running
+        /// <c>dotnet tool restore</c> if needed.  This is a no-op when
+        /// <c>XHARNESS_CLI_PATH</c> is set (CI provides the tool externally).
+        /// </summary>
+        protected static void EnsureXHarnessAvailable()
+        {
+            if (!string.IsNullOrEmpty(EnvironmentVariables.XHarnessCliPath))
+                return;
+
+            if (s_xharnessToolRestored)
+                return;
+
+            lock (s_xharnessRestoreLock)
+            {
+                if (s_xharnessToolRestored)
+                    return;
+
+                // Find repo root by walking up to NuGet.config
+                DirectoryInfo? repoRoot = new(AppContext.BaseDirectory);
+                while (repoRoot is not null && !File.Exists(Path.Combine(repoRoot.FullName, "NuGet.config")))
+                    repoRoot = repoRoot.Parent;
+
+                if (repoRoot is null)
+                    throw new InvalidOperationException("Could not find repo root (directory containing NuGet.config) to restore xharness tool");
+
+                Console.WriteLine($"[xharness] Restoring dotnet tools from {repoRoot.FullName} using {s_buildEnv.DotNet}");
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = s_buildEnv.DotNet,
+                    Arguments = "tool restore",
+                    WorkingDirectory = repoRoot.FullName,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false
+                };
+                psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
+
+                using var process = Process.Start(psi)
+                    ?? throw new InvalidOperationException("Failed to start 'dotnet tool restore' process");
+
+                var stdoutTask = process.StandardOutput.ReadToEndAsync();
+                var stderrTask = process.StandardError.ReadToEndAsync();
+                process.WaitForExit();
+
+                string stdout = stdoutTask.Result;
+                string stderr = stderrTask.Result;
+
+                if (process.ExitCode != 0)
+                    throw new InvalidOperationException(
+                        $"'dotnet tool restore' failed with exit code {process.ExitCode}.\nStdout: {stdout}\nStderr: {stderr}");
+
+                Console.WriteLine($"[xharness] Tool restore completed successfully");
+                s_xharnessToolRestored = true;
+            }
         }
 
         public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, Configuration config = Configuration.Undefined)
@@ -240,6 +300,12 @@ namespace Wasm.Build.Tests
             if (Directory.Exists(dir))
                 Directory.Delete(dir, recursive: true);
             Directory.CreateDirectory(dir);
+
+            // Create an empty global.json so the SDK resolver doesn't walk up
+            // to the repo root's global.json which may contain relative "paths"
+            // entries that don't apply in the test directory.
+            File.WriteAllText(Path.Combine(dir, "global.json"), "{}");
+
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
             if (UseWBTOverridePackTargets)

@@ -1,0 +1,27 @@
+trigger: none
+
+pr:
+  branches:
+    include:
+    - main
+    - release/*.0
+  paths:
+    include:
+    - src/libraries/System.Net.Http/tests/StressTests/HttpStress/**
+    - src/libraries/Common/tests/System/Net/StressTests/**
+    - eng/pipelines/libraries/stress/**
+
+variables:
+  - template: ../variables.yml
+  - name: dockerfilesFolder
+    value: $(Build.SourcesDirectory)/eng/docker
+  - name: httpStressProject
+    value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress
+  - name: sdkBaseImage
+    value: dotnet-sdk-libraries-current
+
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - template: /eng/pipelines/libraries/stress/http-stages.yml

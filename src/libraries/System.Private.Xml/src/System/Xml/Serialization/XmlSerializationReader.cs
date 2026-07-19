@@ -905,6 +905,11 @@ namespace System.Xml.Serialization
             if (wrapped)
             {
                 if (ReadNull()) return null;
+                if (!LocalAppContextSwitches.UseLegacyEmptyXmlElementDeserialization && _r.IsEmptyElement)
+                {
+                    _r.Skip();
+                    return null;
+                }
                 _r.ReadStartElement();
                 _r.MoveToContent();
                 if (_r.NodeType != XmlNodeType.EndElement)
@@ -1892,8 +1897,24 @@ namespace System.Xml.Serialization
         protected void ReadEndElement()
         {
             while (_r.NodeType == XmlNodeType.Whitespace) _r.Skip();
-            if (_r.NodeType == XmlNodeType.None) _r.Skip();
-            else _r.ReadEndElement();
+
+            if (LocalAppContextSwitches.UseXmlSerializerReadEndElementWorkaround)
+            {
+                if (_r.NodeType == XmlNodeType.None)
+                    return;
+
+                // Avoid forcing the reader to pull one more token after completing a top-level element.
+                // In fragment scenarios over streaming transports, additional data may not be immediately
+                // available even though deserialization of the current element is already complete.
+                if (_r.NodeType == XmlNodeType.EndElement && _r.Depth == 0)
+                    return;
+            }
+            else if (_r.NodeType == XmlNodeType.None)
+            {
+                _r.Skip();
+            }
+
+            _r.ReadEndElement();
         }
 
         private object ReadXmlNodes(bool elementCanBeType)

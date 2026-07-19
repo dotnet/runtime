@@ -101,7 +101,6 @@ namespace System
         /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public unsafe ReadOnlySpan(void* pointer, int length)
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())

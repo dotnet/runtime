@@ -331,13 +331,19 @@ struct cdac_data<PEImage>
     static constexpr size_t ProbeExtensionResult = offsetof(PEImage, m_probeExtensionResult);
 };
 
-FORCEINLINE void PEImageRelease(PEImage *i)
+struct PEImageHolderTraits final
 {
-    WRAPPER_NO_CONTRACT;
-    i->Release();
-}
+    using Type = PEImage*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type i)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (i != NULL)
+            i->Release();
+    }
+};
 
-typedef Wrapper<PEImage *, DoNothing, PEImageRelease> PEImageHolder;
+using PEImageHolder = LifetimeHolder<PEImageHolderTraits>;
 
 // ================================================================================
 // Inline definitions

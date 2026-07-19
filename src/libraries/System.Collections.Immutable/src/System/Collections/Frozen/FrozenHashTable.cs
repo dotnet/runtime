@@ -57,11 +57,7 @@ namespace System.Collections.Frozen
             //   into hashCodes of the head element of that bucket's chain.
             // - nexts: the ith element stores the index of the next item in the chain.
             // Use long to check for overflow before allocating - very large collections can overflow int.
-#if NET
             if ((long)numBuckets + hashCodes.Length > Array.MaxLength)
-#else
-            if ((long)numBuckets + hashCodes.Length > 0x7FFFFFC7)
-#endif
             {
                 throw new OutOfMemoryException();
             }
@@ -190,11 +186,7 @@ namespace System.Collections.Frozen
             // If the minimum bucket count combined with hash codes exceeds array length limits,
             // skip the expensive collision-counting loop below — any bucket count it finds
             // would cause Create to fail. Fall back to the next prime above uniqueCodesCount.
-#if NET
             if (minNumBuckets + hashCodes.Length > Array.MaxLength)
-#else
-            if (minNumBuckets + hashCodes.Length > 0x7FFFFFC7)
-#endif
             {
                 return HashHelpers.GetPrime(uniqueCodesCount);
             }

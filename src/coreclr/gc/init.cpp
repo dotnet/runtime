@@ -1,6 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR {
+#else // SERVER_GC
+namespace WKS {
+#endif // SERVER_GC
+
 #ifdef WRITE_WATCH
 void hardware_write_watch_api_supported()
 {
@@ -882,12 +890,22 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         // Right now all the non mark array portions are commmitted since I'm calling make_card_table
         // on the whole range. This can be committed as needed.
         size_t reserve_size = regions_range;
-        uint8_t* reserve_range = (uint8_t*)virtual_alloc (reserve_size, use_large_pages_p);
+        // In large pages emulation mode, use normal reserve (not real large pages) then
+        // commit all upfront to simulate the "always committed" property.
+        bool use_real_large_pages = use_large_pages_p && !large_pages_emulation_mode_p;
+        uint8_t* reserve_range = (uint8_t*)virtual_alloc (reserve_size, use_real_large_pages);
         if (!reserve_range)
         {
             log_init_error_to_host ("Reserving %zd bytes (%zd GiB) for the regions range failed, do you have a virtual memory limit set on this process?",
                 reserve_size, gib (reserve_size));
             return E_OUTOFMEMORY;
+        }
+        if (large_pages_emulation_mode_p)
+        {
+            if (!GCToOSInterface::VirtualCommit (reserve_range, reserve_size))
+            {
+                return E_OUTOFMEMORY;
+            }
         }
 
         if (!global_region_allocator.init (reserve_range, (reserve_range + reserve_size),
@@ -905,12 +923,20 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         return E_FAIL;
     }
 #else //USE_REGIONS
+    // Large page emulation mode is not supported on the segments path.
+    // Silently disable large pages when emulation is requested.
+    if (large_pages_emulation_mode_p)
+    {
+        use_large_pages_p = false;
+        large_pages_emulation_mode_p = false;
+    }
     bool separated_poh_p = use_large_pages_p &&
                            heap_hard_limit_oh[soh] &&
                            (GCConfig::GetGCHeapHardLimitPOH() == 0) &&
                            (GCConfig::GetGCHeapHardLimitPOHPercent() == 0);
+    bool use_real_large_pages = use_large_pages_p && !large_pages_emulation_mode_p;
     if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps,
-                                 use_large_pages_p, separated_poh_p, heap_no_to_numa_node))
+                                 use_real_large_pages, separated_poh_p, heap_no_to_numa_node))
         return E_OUTOFMEMORY;
     if (use_large_pages_p)
     {
@@ -1242,6 +1268,11 @@ size_t gc_heap::get_gen0_min_size()
     return gen0size;
 }
 
+#ifndef HOST_64BIT
+// Max size of heap hard limit (2^31) to be able to be aligned and rounded up on power of 2 and not overflow
+const size_t max_heap_hard_limit = (size_t)2 * (size_t)1024 * (size_t)1024 * (size_t)1024;
+#endif //!HOST_64BIT
+
 bool gc_heap::compute_hard_limit_from_heap_limits()
 {
 #ifndef HOST_64BIT
@@ -1279,8 +1310,19 @@ bool gc_heap::compute_hard_limit()
     heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
 
 #ifdef HOST_64BIT
-    use_large_pages_p = GCConfig::GetGCLargePages();
+    int64_t large_pages_config = GCConfig::GetGCLargePages();
+    use_large_pages_p = (large_pages_config != 0);
+    large_pages_emulation_mode_p = (large_pages_config == 2);
 #endif //HOST_64BIT
+
+    // Large pages are pre-committed and cannot be decommitted, so they imply
+    // never_decommit_p. On WASM, reserve == commit (posix_memalign allocates real
+    // memory) and there is no way to give memory back to the engine.
+#if defined(HOST_WASM) || defined(__wasm__)
+    never_decommit_p = true;
+#else
+    never_decommit_p = use_large_pages_p;
+#endif // defined(HOST_WASM) || defined(__wasm__)
 
     if (heap_hard_limit_oh[soh] || heap_hard_limit_oh[loh] || heap_hard_limit_oh[poh])
     {
@@ -1552,3 +1594,5 @@ int gc_heap::refresh_memory_limit()
 
     return (int)status;
 }
+
+} // namespace WKS/SVR

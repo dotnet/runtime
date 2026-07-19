@@ -124,6 +124,7 @@ namespace
             case DynamicMethodDesc::StubPInvokeVarArg:      return "IL_STUB_PInvoke";
             case DynamicMethodDesc::StubReversePInvoke:     return "IL_STUB_ReversePInvoke";
             case DynamicMethodDesc::StubCLRToCOMInterop:    return "IL_STUB_CLRtoCOM";
+            case DynamicMethodDesc::StubCLRToCOMEvent:      return "IL_STUB_CLRtoCOM_Event";
             case DynamicMethodDesc::StubCOMToCLRInterop:    return "IL_STUB_COMtoCLR";
             case DynamicMethodDesc::StubStructMarshalInterop: return "IL_STUB_StructMarshal";
             case DynamicMethodDesc::StubArrayOp:            return "IL_STUB_Array";
@@ -131,7 +132,6 @@ namespace
             case DynamicMethodDesc::StubDelegateInvokeMethod:  return "IL_STUB_Delegate_Invoke";
             case DynamicMethodDesc::StubUnboxingIL:         return "IL_STUB_UnboxingStub";
             case DynamicMethodDesc::StubInstantiating:      return "IL_STUB_InstantiatingStub";
-            case DynamicMethodDesc::StubWrapperDelegate:    return "IL_STUB_WrapperDelegate_Invoke";
             case DynamicMethodDesc::StubTailCallStoreArgs:  return "IL_STUB_StoreTailCallArgs";
             case DynamicMethodDesc::StubTailCallCallTarget: return "IL_STUB_CallTailCallTarget";
             case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_VirtualStaticMethodDispatch";
@@ -175,7 +175,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     // the no metadata part of the method desc
     pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB";
     pMD->InitializeFlags(DynamicMethodDesc::FlagPublic | DynamicMethodDesc::FlagIsILStub);
-    pMD->SetTemporaryEntryPoint(pamTracker);
 
     if (isAsync)
     {
@@ -213,6 +212,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->SetFlags(DynamicMethodDesc::FlagStatic);
         pMD->SetStatic();
     }
+    pMD->SetTemporaryEntryPoint(pamTracker);
 
     pMD->m_pResolver = (ILStubResolver*)pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(sizeof(ILStubResolver))));
 #ifdef _DEBUG
@@ -234,11 +234,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     if (SF_IsDelegateInvokeMethod(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubDelegateInvokeMethod);
-    }
-    else
-    if (SF_IsWrapperDelegateStub(dwStubFlags))
-    {
-        pMD->SetILStubType(DynamicMethodDesc::StubWrapperDelegate);
     }
     else
     if (SF_IsUnboxingILStub(dwStubFlags))
@@ -274,6 +269,10 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         {
             pMD->SetILStubType(DynamicMethodDesc::StubCOMToCLRInterop);
         }
+        else if (SF_IsCOMEventCallStub(dwStubFlags))
+        {
+            pMD->SetILStubType(DynamicMethodDesc::StubCLRToCOMEvent);
+        }
         else
         {
             pMD->SetILStubType(DynamicMethodDesc::StubCLRToCOMInterop);
@@ -283,9 +282,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 #endif
     if (SF_IsStructMarshalStub(dwStubFlags))
     {
-        // Struct marshal stub MethodDescs might be directly called from `call` IL instructions
-        // so we want to keep their compile time data alive as long as the LoaderAllocator in case they're used again.
-        pMD->GetILStubResolver()->SetLoaderHeap(pCreationHeap);
         pMD->SetILStubType(DynamicMethodDesc::StubStructMarshalInterop);
     }
     else

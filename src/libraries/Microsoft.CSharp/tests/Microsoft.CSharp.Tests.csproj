@@ -6,9 +6,12 @@
     We wish to test operations that would result in
     "Operator '-' cannot be applied to operands of type 'ushort' and 'EnumArithmeticTests.UInt16Enum'"
     -->
-    <Features>$(Features.Replace('strict', '')</Features>
+    <Features>$(Features.Replace('strict', ''))</Features>
 
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />

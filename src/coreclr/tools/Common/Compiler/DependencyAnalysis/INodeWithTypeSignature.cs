@@ -8,11 +8,15 @@ namespace ILCompiler.DependencyAnalysis
     {
         MethodSignature Signature { get; }
         bool IsUnmanagedCallersOnly { get; }
+        bool IsAsyncCall { get; }
+        bool HasGenericContextArg { get; }
     }
 
     public interface IMethodCodeNodeWithTypeSignature : IMethodNode, INodeWithTypeSignature
     {
         MethodSignature INodeWithTypeSignature.Signature => Method.Signature;
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => Method.IsUnmanagedCallersOnly;
+        bool INodeWithTypeSignature.IsAsyncCall => Method.IsAsyncCall();
+        bool INodeWithTypeSignature.HasGenericContextArg => Method.RequiresInstMethodDescArg() || Method.RequiresInstMethodTableArg();
     }
 }

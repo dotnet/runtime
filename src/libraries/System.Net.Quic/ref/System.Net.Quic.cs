@@ -114,6 +114,7 @@ namespace System.Net.Quic
     public sealed partial class QuicStream : System.IO.Stream
     {
         internal QuicStream() { }
+        public const byte DefaultPriority = (byte)127;
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanTimeout { get { throw null; } }
@@ -121,6 +122,7 @@ namespace System.Net.Quic
         public long Id { get { throw null; } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
+        public byte Priority { get { throw null; } set { } }
         public System.Threading.Tasks.Task ReadsClosed { get { throw null; } }
         public override int ReadTimeout { get { throw null; } set { } }
         public System.Net.Quic.QuicStreamType Type { get { throw null; } }

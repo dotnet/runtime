@@ -184,6 +184,18 @@ public: // IDispatch
                 V_UNKNOWN(pVarResult) = new Enumerator(10);
                 return S_OK;
             }
+            case 8:
+            {
+                return Sum_IntArray_SafeArray_Proxy(pDispParams, pVarResult);
+            }
+            case 1000:
+            {
+                return GetDispIdAsString_Proxy(pVarResult);
+            }
+            case 1001:
+            {
+                return GetDispIdAsString2_Proxy(pVarResult);
+            }
             }
 
             return E_NOTIMPL;
@@ -272,6 +284,55 @@ public: // IDispatchTesting
         /* [retval][out] */ IUnknown** retval)
     {
         *retval = new Enumerator(10);
+        return S_OK;
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE Sum_IntArray_SafeArray(
+        /*[in]*/ SAFEARRAY *d,
+        /*[out,retval]*/ int *pRetVal)
+    {
+        if (d == nullptr || pRetVal == nullptr)
+            return E_POINTER;
+
+        VARTYPE type;
+        HRESULT hr = ::SafeArrayGetVartype(d, &type);
+        if (FAILED(hr))
+            return hr;
+
+        if (type != VT_I4)
+            return E_INVALIDARG;
+
+        LONG lowerBound, upperBound;
+        hr = ::SafeArrayGetLBound(d, 1, &lowerBound);
+        if (FAILED(hr))
+            return hr;
+
+        hr = ::SafeArrayGetUBound(d, 1, &upperBound);
+        if (FAILED(hr))
+            return hr;
+
+        int *data = static_cast<int *>(d->pvData);
+        int result = 0;
+        for (LONG i = lowerBound; i <= upperBound; ++i)
+        {
+            result += data[i - lowerBound];
+        }
+
+        *pRetVal = result;
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE GetDispIdAsString(
+        /* [out,retval] */ BSTR *pRetVal)
+    {
+        *pRetVal = SysAllocString(W("1000"));
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE GetDispIdAsString2(
+        /* [out,retval] */ BSTR *pRetVal)
+    {
+        *pRetVal = SysAllocString(W("1001"));
         return S_OK;
     }
 
@@ -521,6 +582,54 @@ private:
         return S_OK;
     }
 
+    HRESULT Sum_IntArray_SafeArray_Proxy(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
+    {
+        HRESULT hr;
+
+        size_t expectedArgCount = 1;
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
+
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        size_t argIdx = expectedArgCount - 1;
+
+        VARIANTARG *currArg = NextArg(pDispParams->rgvarg, argIdx);
+        RETURN_IF_FAILED(VerifyValues(VARENUM(VT_ARRAY | VT_I4), VARENUM(currArg->vt)));
+        SAFEARRAY *sa = currArg->parray;
+
+        RETURN_IF_FAILED(::VariantChangeType(pVarResult, pVarResult, 0, VT_I4));
+        return Sum_IntArray_SafeArray(sa, (int*)&V_I4(pVarResult));
+    }
+
+    HRESULT GetDispIdAsString_Proxy(_Inout_ VARIANT *pVarResult)
+    {
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        HRESULT hr = S_OK;
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
+        BSTR result = nullptr;
+        RETURN_IF_FAILED(GetDispIdAsString(&result));
+        V_VT(pVarResult) = VT_BSTR;
+        V_BSTR(pVarResult) = result;
+        return S_OK;
+    }
+
+    HRESULT GetDispIdAsString2_Proxy(_Inout_ VARIANT *pVarResult)
+    {
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        HRESULT hr = S_OK;
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
+        BSTR result = nullptr;
+        RETURN_IF_FAILED(GetDispIdAsString2(&result));
+        V_VT(pVarResult) = VT_BSTR;
+        V_BSTR(pVarResult) = result;
+        return S_OK;
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,
@@ -541,7 +650,8 @@ const WCHAR * const DispatchTesting::Names[] =
     W("TriggerException"),
     W("DoubleHVAValues"),
     W("PassThroughLCID"),
-    W("ExplicitGetEnumerator")
+    W("ExplicitGetEnumerator"),
+    W("Sum_IntArray_SafeArray")
 };
 
 const int DispatchTesting::NamesCount = ARRAY_SIZE(DispatchTesting::Names);

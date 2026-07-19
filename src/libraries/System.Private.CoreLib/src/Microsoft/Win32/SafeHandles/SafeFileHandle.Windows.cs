@@ -334,6 +334,18 @@ namespace Microsoft.Win32.SafeHandles
             Debug.Assert(Path is null || _fileOptions != UninitializedOptions, "When Path is set, _fileOptions are also provided.");
 
             int kernelFileType = Interop.Kernel32.GetFileType(this);
+            // GetFileType returns FILE_TYPE_UNKNOWN both when the type is unknown and when an error occurs.
+            // Check GetLastError to distinguish the two cases.
+            if (kernelFileType == Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN)
+            {
+                int error = Marshal.GetLastPInvokeError();
+                if (error != Interop.Errors.ERROR_SUCCESS)
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(error, Path);
+                }
+                return FileHandleType.Unknown;
+            }
+
             return kernelFileType switch
             {
                 Interop.Kernel32.FileTypes.FILE_TYPE_CHAR => FileHandleType.CharacterDevice,

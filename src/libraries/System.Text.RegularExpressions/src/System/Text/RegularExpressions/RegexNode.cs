@@ -720,6 +720,14 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.Nothing:
                     return child;
 
+                // If the child is a single character match or a multi-char string, it inherently
+                // can't backtrack, so the Atomic wrapper is unnecessary.
+                case RegexNodeKind.One:
+                case RegexNodeKind.Notone:
+                case RegexNodeKind.Set:
+                case RegexNodeKind.Multi:
+                    return child;
+
                 // If the child is already atomic, we can just remove the atomic node.
                 case RegexNodeKind.Oneloopatomic:
                 case RegexNodeKind.Notoneloopatomic:
@@ -1379,8 +1387,10 @@ namespace System.Text.RegularExpressions
 
                 // To keep things relatively simple, we currently only handle:
                 // - Left to right (e.g. we don't process alternations in lookbehinds)
-                // - Branches that are one or multi nodes, or that are concatenations beginning with one or multi nodes.
-                // - All branches having the same options.
+                // - Consecutive runs of branches that are one or multi nodes, or concatenations beginning with
+                //   one or multi nodes. Non-text branches (e.g. sets, loops) are skipped but don't prevent
+                //   later consecutive text branches from being factored.
+                // - All branches in a factored run having the same options.
 
                 // Only extract left-to-right prefixes.
                 if ((alternation.Options & RegexOptions.RightToLeft) != 0)
@@ -1388,14 +1398,15 @@ namespace System.Text.RegularExpressions
                     return alternation;
                 }
 
-                Span<char> scratchChar = stackalloc char[1];
+                Span<char> scratchChar = ['\0'];
                 for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
                 {
                     // Process the first branch to get the maximum possible common string.
                     RegexNode? startingNode = children[startingIndex].FindBranchOneOrMultiStart();
                     if (startingNode is null)
                     {
-                        return alternation;
+                        // Skip non-text branches; later consecutive text branches may still share a prefix.
+                        continue;
                     }
 
                     RegexOptions startingNodeOptions = startingNode.Options;
@@ -1556,7 +1567,7 @@ namespace System.Text.RegularExpressions
         /// <remarks>
         /// This method is used to determine if an alternation can be optimized using a switch on the first character.
         /// </remarks>
-        public bool TryGetAlternationStartingChars([NotNullWhen(true)] out HashSet<char>? seenChars)
+        public unsafe bool TryGetAlternationStartingChars([NotNullWhen(true)] out HashSet<char>? seenChars)
         {
             Debug.Assert(Kind is RegexNodeKind.Alternate);
             Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
@@ -1657,7 +1668,7 @@ namespace System.Text.RegularExpressions
         /// A tuple of data about the literal: only one of the Char/String/SetChars fields is relevant.
         /// The Negated value indicates whether the Char/SetChars should be considered exclusionary.
         /// </returns>
-        public StartingLiteralData? FindStartingLiteral()
+        public unsafe StartingLiteralData? FindStartingLiteral()
         {
             if (FindStartingLiteralNode() is RegexNode node)
             {
@@ -2404,9 +2415,13 @@ namespace System.Text.RegularExpressions
                         // Find the node that follows the literal in the tree and check whether
                         // the loop would be atomic with respect to it. If nothing follows (end of
                         // pattern), we can't reduce — earlier positions could still succeed.
+                        // We must not iterate past nullable nodes to the end of the pattern: if the
+                        // entire post-literal sequence is nullable, any backtrack position could
+                        // succeed (the nullable part matches empty and the branch completes), so
+                        // reducing to a single position would be incorrect.
                         return
                             FindNextNodeInSequence(literal, out _) is RegexNode afterLiteral &&
-                            CanBeMadeAtomic(loopNode, afterLiteral, iterateNullableSubsequent: true, allowLazy: false);
+                            CanBeMadeAtomic(loopNode, afterLiteral, iterateNullableSubsequent: false, allowLazy: false);
 
                     case RegexNodeKind.Multi when CharInLoopSet(loopNode, literal.Str![0]) && !CharInLoopSet(loopNode, literal.Str[1]):
                         // For a multi-character literal (e.g. \d+0x), treat it as two single characters:
@@ -3085,14 +3100,14 @@ namespace System.Text.RegularExpressions
         /// characters the group's content matches at that position.
         /// </param>
         /// <returns>true if a sequence was found; otherwise, false.</returns>
-        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false, bool forPrefixAnalysis = false)
+        public unsafe bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false, bool forPrefixAnalysis = false)
         {
             Debug.Assert(Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {Kind}");
 
             var vsb = new ValueStringBuilder(stackalloc char[32]);
 
             // We're looking in particular for sets of ASCII characters, so we focus only on sets with two characters in them, e.g. [Aa].
-            Span<char> twoChars = stackalloc char[2];
+            Span<char> twoChars = ['\0', '\0'];
 
             // Iterate from the child index to the exclusive upper bound.
             int i = childIndex;

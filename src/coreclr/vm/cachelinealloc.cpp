@@ -39,10 +39,6 @@ CCacheLineAllocator::CCacheLineAllocator()
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    m_freeList32.Init();
-    m_freeList64.Init();
-    m_registryList.Init();
 }
 
 ///////////////////////////////////////////////////////

@@ -63,7 +63,6 @@ namespace System.Reflection
 
     public sealed partial class AssemblyName
     {
-        [RequiresUnsafe]
         internal unsafe AssemblyName(NativeAssemblyNameParts* pParts)
             : this()
         {
@@ -146,32 +145,51 @@ namespace System.Reflection
             return ProcessorArchitecture.None;
         }
 
-        [RequiresUnsafe]
-        private static unsafe void ParseAsAssemblySpec(char* pAssemblyName, void* pAssemblySpec)
+        [UnmanagedCallersOnly]
+        private static unsafe void ParseAsAssemblySpec(char* pAssemblyName, void* pAssemblySpec, Exception* pException)
         {
-            AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pAssemblyName));
-
-            fixed (char* pName = parts._name)
-            fixed (char* pCultureName = parts._cultureName)
-            fixed (byte* pPublicKeyOrToken = parts._publicKeyOrToken)
+            try
             {
-                NativeAssemblyNameParts nameParts = default;
+                AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pAssemblyName));
 
-                nameParts._flags = parts._flags;
-                nameParts._pName = pName;
-                nameParts._pCultureName = pCultureName;
+                fixed (char* pName = parts._name)
+                fixed (char* pCultureName = parts._cultureName)
+                fixed (byte* pPublicKeyOrToken = parts._publicKeyOrToken)
+                {
+                    NativeAssemblyNameParts nameParts = default;
 
-                nameParts._pPublicKeyOrToken = pPublicKeyOrToken;
-                nameParts._cbPublicKeyOrToken = (parts._publicKeyOrToken != null) ? parts._publicKeyOrToken.Length : 0;
+                    nameParts._flags = parts._flags;
+                    nameParts._pName = pName;
+                    nameParts._pCultureName = pCultureName;
 
-                nameParts.SetVersion(parts._version, defaultValue: ushort.MaxValue);
+                    nameParts._pPublicKeyOrToken = pPublicKeyOrToken;
+                    nameParts._cbPublicKeyOrToken = (parts._publicKeyOrToken != null) ? parts._publicKeyOrToken.Length : 0;
 
-                InitializeAssemblySpec(&nameParts, pAssemblySpec);
+                    nameParts.SetVersion(parts._version, defaultValue: ushort.MaxValue);
+
+                    InitializeAssemblySpec(&nameParts, pAssemblySpec);
+                }
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void CreateAssemblyName(AssemblyName* pResult, NativeAssemblyNameParts* pParts, Exception* pException)
+        {
+            try
+            {
+                *pResult = new AssemblyName(pParts);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyName_InitializeAssemblySpec")]
-        [RequiresUnsafe]
         private static unsafe partial void InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, void* pAssemblySpec);
     }
 }

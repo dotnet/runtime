@@ -278,9 +278,6 @@ public:
                            SIZE_T *pEEFrameNextOffset,
                            DWORD  *pEEIsManagedExceptionStateMask);
 
-    void DebuggerModifyingLogSwitch (int iNewLevel,
-                                     const WCHAR *pLogSwitchName);
-
     HRESULT SetIPFromSrcToDst(Thread *pThread,
                               SLOT addrStart,
                               DWORD offFrom,

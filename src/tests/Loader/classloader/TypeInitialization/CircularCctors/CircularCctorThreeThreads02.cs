@@ -143,7 +143,7 @@ public class Test_CircularCctorThreeThreads02
 
 
  [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
-	[Fact]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
 	public static int TestEntryPoint()
 	{
 

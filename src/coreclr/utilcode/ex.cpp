@@ -793,6 +793,7 @@ HRESULT HRException::GetHR()
 // SEHException class.  Implements exception API for SEH exception info
 // ---------------------------------------------------------------------------
 
+#ifdef TARGET_WINDOWS
 HRESULT SEHException::GetHR()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -833,6 +834,7 @@ void SEHException::GetMessage(SString &string)
         }
     }
 }
+#endif // TARGET_WINDOWS
 
 //==============================================================================
 // DelegatingException class.  Implements exception API for "foreign" exceptions.

@@ -255,6 +255,7 @@ private:
 
 class ExceptionFlags
 {
+    friend struct ::cdac_data<ExInfo>;
 public:
     ExceptionFlags()
     {
@@ -346,7 +347,7 @@ private:
     {
         // Unused                       = 0x00000001,
         Ex_UnwindingToFindResumeFrame   = 0x00000002,
-        Ex_UnwindHasStarted             = 0x00000004,
+        Ex_UnwindHasStarted             = 0x00000004,        // [cDAC] [StackWalk]: Contract depends on this value
         Ex_UseExInfoForStackwalk        = 0x00000008,        // Use this ExInfo to unwind a fault (AV, zerodiv) back to managed code?
 
 #ifdef DEBUGGING_SUPPORTED

@@ -115,7 +115,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InternalPreserveStackTrace(Exception* pException, Exception* pOutException)
         {
             try
@@ -272,7 +271,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void CreateRuntimeWrappedException(object* pThrownObject, object* pResult, Exception* pException)
         {
             try
@@ -286,7 +284,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void CreateTypeInitializationException(char* pTypeName, Exception* pInnerException, object* pResult, Exception* pException)
         {
             try
@@ -390,6 +387,36 @@ namespace System
             {
                 Exception? inner = pInnerException is not null ? *pInnerException : null;
                 *pResult = new System.Reflection.TargetInvocationException(inner);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        // See clrex.cpp for native version.
+        internal enum ArgumentExceptionKind
+        {
+            Argument,
+            ArgumentNull,
+            ArgumentOutOfRange
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateArgumentException(ArgumentExceptionKind kind, char* pResourceName, char* pParamName, object* pThrowable, Exception* pException)
+        {
+            try
+            {
+                string? message = pResourceName is not null ? SR.GetResourceString(new string(pResourceName)) : null;
+                string? paramName = pParamName is not null ? new string(pParamName) : null;
+
+                Debug.Assert(Enum.IsDefined(kind));
+                *pThrowable = kind switch
+                {
+                    ArgumentExceptionKind.ArgumentNull => new ArgumentNullException(paramName, message),
+                    ArgumentExceptionKind.ArgumentOutOfRange => new ArgumentOutOfRangeException(paramName, message),
+                    _ /* ArgumentExceptionKind.Argument */ => new ArgumentException(message, paramName)
+                };
             }
             catch (Exception ex)
             {

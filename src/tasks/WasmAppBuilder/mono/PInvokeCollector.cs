@@ -9,7 +9,8 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.Build.Tasks;
-using WasmAppBuilder;
+
+namespace Microsoft.WebAssembly.Build.Tasks.Mono;
 
 #pragma warning disable CA1067
 #pragma warning disable CS0649
@@ -225,7 +226,12 @@ internal sealed class PInvokeCallback
         Method = method;
         TypeName = method.DeclaringType!.Name!;
         AssemblyName = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
-        Namespace = method.DeclaringType!.Namespace;
+        // Nested types: the runtime native-to-interp key (browser/runtime/runtime.c get_native_to_interp
+        // via mono_class_get_namespace) reports an empty namespace for nested types, so match that here
+        // or the emitted wasm_native_to_interp_table key won't be found at lookup time. The token+name
+        // fallback in wasm_dl_get_native_to_interp cannot recover this because bsearch compares the key
+        // first, so a key mismatch defeats both lookups.
+        Namespace = method.DeclaringType!.IsNested ? string.Empty : method.DeclaringType!.Namespace;
         MethodName = method.Name!;
         ReturnType = method.ReturnType!;
         IsVoid = ReturnType.Name == "Void";

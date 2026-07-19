@@ -46,6 +46,9 @@
   <Project Path="ILCompiler.TypeSystem.Tests/ILCompiler.TypeSystem.Tests.csproj">
     <Platform Solution="*|x64" Project="x64" />
   </Project>
+  <Project Path="ILCompiler.ReadyToRun.Tests/ILCompiler.ReadyToRun.Tests.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
   <Project Path="ILCompiler.TypeSystem/ILCompiler.TypeSystem.csproj">
     <Platform Solution="*|Any CPU" Project="x64" />
     <Platform Solution="*|x64" Project="x64" />

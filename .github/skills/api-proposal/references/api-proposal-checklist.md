@@ -31,6 +31,17 @@ Use this checklist to validate an API proposal before publishing. Items are orde
 - [ ] **DO** consider overload consistency with existing method families
 - [ ] **DO NOT** propose a narrow addition without evaluating the broader scope — reviewers will ask about it
 
+## Adoption Catalog (Usage in dotnet/runtime)
+
+- [ ] **DO** search the entire dotnet/runtime repo for every place the proposed API could or should be used
+- [ ] **DO** search for manual workarounds, verbose boilerplate, and older idioms the new API replaces
+- [ ] **DO** search for call sites of existing APIs being extended (e.g., all callers of the current overloads)
+- [ ] **DO** classify each site as Updated, Candidate, or Inapplicable
+- [ ] **DO** convert a diverse, representative subset of sites in the prototype to exercise the API in real contexts
+- [ ] **DO** include the full catalog in the proposal (Phase 4, section 6 — "Usage in dotnet/runtime")
+- [ ] **DO** explicitly state if no adoption sites were found outside the target library — this is a signal reviewers need
+- [ ] **DO NOT** limit the search to the target library alone — search `src/libraries/`, `src/coreclr/`, `src/mono/`, and other areas
+
 ## Prototype Validation
 
 - [ ] **DO** verify the prototype builds for all target frameworks in the library's `.csproj`

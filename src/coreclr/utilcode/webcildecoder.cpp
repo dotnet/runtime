@@ -34,9 +34,12 @@ bool WebcilDecoder::DetectWebcilFormat(const void* data, COUNT_T size)
 WebcilDecoder::WebcilDecoder()
     : m_base(0),
       m_size(0),
-      m_hasContents(FALSE),
+      m_hasContents(false),
+      m_hasNoReadyToRunHeader(false),
       m_pHeader(NULL),
-      m_pCorHeader(NULL)
+      m_sections(NULL),
+      m_pCorHeader(NULL),
+      m_pReadyToRunHeader(NULL)
 {
     LIMITED_METHOD_CONTRACT;
 }
@@ -56,17 +59,24 @@ void WebcilDecoder::Init(void *flatBase, COUNT_T size)
     m_size = size;
     m_hasContents = (size > 0);
     m_pHeader = (m_hasContents && size >= sizeof(WebcilHeader)) ? (const WebcilHeader *)flatBase : NULL;
+    if (m_pHeader != NULL && m_pHeader->VersionMajor >= 1)
+    {
+        // For version 1 and above, the section headers start after the larger header
+        if (size < sizeof(WebcilHeader_1))
+        {
+            m_pHeader = NULL; // Not enough data for even the header
+        }
+    }
+    if (!m_pHeader)
+    {
+        m_sections = NULL;
+    }
+    else
+    {
+        m_sections = (const WebcilSectionHeader *)(((uint8_t*)flatBase) + (m_pHeader->VersionMajor >= 1 ? sizeof(WebcilHeader_1) : sizeof(WebcilHeader)));
+    }
     m_pCorHeader = NULL;
-}
-
-void WebcilDecoder::Reset()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_base = 0;
-    m_size = 0;
-    m_hasContents = FALSE;
-    m_pHeader = NULL;
-    m_pCorHeader = NULL;
+    m_relocated = FALSE;
 }
 
 // ------------------------------------------------------------
@@ -118,7 +128,7 @@ BOOL WebcilDecoder::HasWebcilHeaders() const
         RETURN FALSE;
     }
 
-    if (pHeader->VersionMajor != WEBCIL_VERSION_MAJOR ||
+    if ((pHeader->VersionMajor != WEBCIL_VERSION_MAJOR_0 && pHeader->VersionMajor != WEBCIL_VERSION_MAJOR_1) ||
         pHeader->VersionMinor != WEBCIL_VERSION_MINOR)
     {
         RETURN FALSE;
@@ -127,11 +137,40 @@ BOOL WebcilDecoder::HasWebcilHeaders() const
     if (pHeader->CoffSections == 0 || pHeader->CoffSections > WEBCIL_MAX_SECTIONS)
         RETURN FALSE;
 
-    COUNT_T headerEnd = sizeof(WebcilHeader) + (COUNT_T)pHeader->CoffSections * sizeof(WebcilSectionHeader);
+    COUNT_T headerSize;
+    if (pHeader->VersionMajor == WEBCIL_VERSION_MAJOR_0)
+    {
+        headerSize = sizeof(WebcilHeader);
+    }
+    else
+    {
+        headerSize = sizeof(WebcilHeader_1);
+    }
+
+    if (m_size < headerSize)
+        RETURN FALSE;
+
+    COUNT_T headerEnd = headerSize + (COUNT_T)pHeader->CoffSections * sizeof(WebcilSectionHeader);
     if (m_size < headerEnd)
         RETURN FALSE;
 
     RETURN TRUE;
+}
+
+BOOL WebcilDecoder::HasBaseRelocations() const
+{
+    LIMITED_METHOD_CONTRACT;
+    if (!HasWebcilHeaders())
+        return FALSE;
+
+    const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
+    uint32_t relocSectionIndex = pHeader->Reserved0;
+    uint16_t numSections = pHeader->CoffSections;
+
+    if (relocSectionIndex == 0 || relocSectionIndex > numSections)
+        return FALSE;
+
+    return TRUE;
 }
 
 CHECK WebcilDecoder::CheckWebcilHeaders() const
@@ -148,7 +187,7 @@ CHECK WebcilDecoder::CheckWebcilHeaders() const
     CHECK(HasWebcilHeaders());
 
     const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-    const WebcilSectionHeader *sections = (const WebcilSectionHeader *)(m_base + sizeof(WebcilHeader));
+    const WebcilSectionHeader *sections = m_sections;
     uint16_t numSections = pHeader->CoffSections;
 
     for (uint16_t i = 0; i < numSections; i++)
@@ -288,6 +327,9 @@ BOOL WebcilDecoder::HasCorHeader() const
     }
     CONTRACTL_END;
 
+    if (m_pCorHeader != NULL)
+        return TRUE;
+
     if (!HasWebcilHeaders())
         return FALSE;
 
@@ -353,6 +395,9 @@ IMAGE_COR20_HEADER *WebcilDecoder::GetCorHeader() const
     }
     CONTRACT_END;
 
+    if (m_pCorHeader != NULL)
+        RETURN m_pCorHeader;
+
     FindCorHeader();
     RETURN m_pCorHeader;
 }
@@ -415,14 +460,6 @@ ULONG WebcilDecoder::GetEntryPointToken() const
 // R2R / native manifest metadata
 // ------------------------------------------------------------
 
-PTR_CVOID WebcilDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
-{
-    LIMITED_METHOD_CONTRACT;
-    if (pSize != NULL)
-        *pSize = 0;
-    return NULL;
-}
-
 // ------------------------------------------------------------
 // RVA operations
 // ------------------------------------------------------------
@@ -435,7 +472,7 @@ const WebcilSectionHeader *WebcilDecoder::RvaToSection(RVA rva) const
         return NULL;
 
     const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-    const WebcilSectionHeader *section = (const WebcilSectionHeader *)(m_base + sizeof(WebcilHeader));
+    const WebcilSectionHeader *section = m_sections;
     const WebcilSectionHeader *sectionEnd = section + pHeader->CoffSections;
 
     while (section < sectionEnd)
@@ -465,7 +502,7 @@ const WebcilSectionHeader *WebcilDecoder::OffsetToSection(COUNT_T fileOffset) co
         return NULL;
 
     const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-    const WebcilSectionHeader *section = (const WebcilSectionHeader *)(m_base + sizeof(WebcilHeader));
+    const WebcilSectionHeader *section = m_sections;
     const WebcilSectionHeader *sectionEnd = section + pHeader->CoffSections;
 
     while (section < sectionEnd)
@@ -704,7 +741,7 @@ COUNT_T WebcilDecoder::GetVirtualSize() const
         return m_size;
 
     const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-    const WebcilSectionHeader *section = (const WebcilSectionHeader *)(m_base + sizeof(WebcilHeader));
+    const WebcilSectionHeader *section = m_sections;
     COUNT_T maxVA = 0;
 
     for (uint16_t i = 0; i < pHeader->CoffSections; i++)
@@ -741,11 +778,16 @@ BOOL WebcilDecoder::HasDirectoryEntry(int entry) const
     LIMITED_METHOD_CONTRACT;
 
     // Webcil has no PE IMAGE_DATA_DIRECTORY array.
-    // Only the debug directory is stored in the WebcilHeader.
+    // Only the debug directory and base relocation directory are supported.
     if (entry == IMAGE_DIRECTORY_ENTRY_DEBUG && HasWebcilHeaders())
     {
         const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
         return pHeader->PeDebugRva != 0 && pHeader->PeDebugSize != 0;
+    }
+
+    if (entry == IMAGE_DIRECTORY_ENTRY_BASERELOC && HasWebcilHeaders())
+    {
+        return HasBaseRelocations();
     }
 
     return FALSE;
@@ -781,6 +823,36 @@ TADDR WebcilDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
             *pSize = debugSize;
 
         return GetRvaData(debugRva);
+    }
+
+    // Base relocations: Reserved0 is the 1-based index of the relocations section
+    if (entry == IMAGE_DIRECTORY_ENTRY_BASERELOC && HasWebcilHeaders())
+    {
+        const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
+        uint16_t relocSectionIndex = pHeader->Reserved0;
+        if (relocSectionIndex == 0)
+        {
+            if (pSize != NULL)
+                *pSize = 0;
+            return (TADDR)0;
+        }
+
+        // Convert from 1-based to 0-based index and validate
+        uint16_t sectionIndex = relocSectionIndex - 1;
+        if (sectionIndex >= pHeader->CoffSections)
+        {
+            if (pSize != NULL)
+                *pSize = 0;
+            return (TADDR)0;
+        }
+
+        const WebcilSectionHeader *sections = m_sections;
+        const WebcilSectionHeader *relocSection = &sections[sectionIndex];
+
+        if (pSize != NULL)
+            *pSize = relocSection->SizeOfRawData;
+
+        return (TADDR)(m_base + relocSection->PointerToRawData);
     }
 
     if (pSize != NULL)
@@ -826,6 +898,160 @@ CHECK WebcilDecoder::CheckILMethod(RVA rva)
     return CorDecoderHelpers::CheckILMethod(*this, rva);
 }
 
+BOOL WebcilDecoder::HasReadyToRunHeader() const
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    if (m_hasNoReadyToRunHeader)
+        return FALSE;
+
+    if (m_pReadyToRunHeader != NULL)
+        return TRUE;
+
+    return FindReadyToRunHeader() != NULL;
+}
+
+READYTORUN_HEADER * WebcilDecoder::GetReadyToRunHeader() const
+{
+    CONTRACT(READYTORUN_HEADER *)
+    {
+        INSTANCE_CHECK;
+        PRECONDITION(CheckWebcilHeaders());
+        PRECONDITION(HasCorHeader());
+        PRECONDITION(HasReadyToRunHeader());
+        NOTHROW;
+        GC_NOTRIGGER;
+        POSTCONDITION(CheckPointer(RETVAL));
+        SUPPORTS_DAC;
+        CANNOT_TAKE_LOCK;
+    }
+    CONTRACT_END;
+
+    if (m_pReadyToRunHeader != NULL)
+        RETURN m_pReadyToRunHeader;
+
+    RETURN FindReadyToRunHeader();
+}
+
+PTR_CVOID WebcilDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
+{
+    CONTRACT(PTR_CVOID)
+    {
+        INSTANCE_CHECK;
+        PRECONDITION(HasReadyToRunHeader());
+        POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // TBD - may not store metadata for IJW
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACT_END;
+
+    IMAGE_DATA_DIRECTORY *pDir = NULL;
+    {
+        READYTORUN_HEADER * pHeader = GetReadyToRunHeader();
+
+        PTR_READYTORUN_SECTION pSections = dac_cast<PTR_READYTORUN_SECTION>(dac_cast<TADDR>(pHeader) + sizeof(READYTORUN_HEADER));
+        for (DWORD i = 0; i < pHeader->CoreHeader.NumberOfSections; i++)
+        {
+            // Verify that section types are sorted
+            _ASSERTE(i == 0 || (pSections[i - 1].Type < pSections[i].Type));
+
+            READYTORUN_SECTION * pSection = pSections + i;
+            if (pSection->Type == ReadyToRunSectionType::ManifestMetadata)
+            {
+                // Set pDir to the address of the manifest metadata section
+                pDir = &pSection->Section;
+                break;
+            }
+        }
+
+        // Handle the no ManifestMetadata case, which will happen in a ReadyToRun file without large version bubble support.
+        if (pDir == NULL)
+        {
+            if (pSize != NULL)
+            {
+                *pSize = 0;
+            }
+
+            RETURN NULL;
+        }
+    }
+
+    if (pSize != NULL)
+        *pSize = VAL32(pDir->Size);
+
+    RETURN dac_cast<PTR_VOID>(GetDirectoryData(pDir));
+}
+
+READYTORUN_HEADER * WebcilDecoder::FindReadyToRunHeader() const
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->ManagedNativeHeader;
+
+    if (VAL32(pDir->Size) >= sizeof(READYTORUN_HEADER) && CheckDirectory(pDir))
+    {
+        PTR_READYTORUN_HEADER pHeader = PTR_READYTORUN_HEADER((TADDR)GetDirectoryData(pDir));
+        if (pHeader->Signature == READYTORUN_SIGNATURE)
+        {
+            m_pReadyToRunHeader = pHeader;
+            return pHeader;
+        }
+    }
+
+    m_hasNoReadyToRunHeader = true;
+    return NULL;
+}
+
+TADDR WebcilDecoder::GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const
+{
+    CONTRACT(TADDR)
+    {
+        INSTANCE_CHECK;
+        PRECONDITION(CheckWebcilHeaders());
+        PRECONDITION(CheckDirectory(pDir, 0, NULL_OK));
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+        POSTCONDITION(CheckPointer((void *)RETVAL, NULL_OK));
+        CANNOT_TAKE_LOCK;
+    }
+    CONTRACT_END;
+
+    RETURN GetRvaData(VAL32(pDir->VirtualAddress));
+}
+
+CHECK WebcilDecoder::CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFlags, IsNullOK ok) const
+{
+    CONTRACT_CHECK
+    {
+        INSTANCE_CHECK;
+        PRECONDITION(CheckWebcilHeaders());
+        PRECONDITION(CheckPointer(pDir));
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    }
+    CONTRACT_CHECK_END;
+
+    CHECK(CheckRva(VAL32(pDir->VirtualAddress), VAL32(pDir->Size), forbiddenFlags, ok));
+
+    CHECK_OK;
+}
+
 // ------------------------------------------------------------
 // DAC support
 // ------------------------------------------------------------
@@ -837,15 +1063,21 @@ void WebcilDecoder::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThi
 
     if (enumThis)
     {
-        DacEnumMemoryRegion(m_base, sizeof(WebcilHeader));
+        if (m_sections != NULL)
+        {
+            DacEnumMemoryRegion(m_base, dac_cast<TADDR>(m_sections) - dac_cast<TADDR>(m_base));
+        }
+        else
+        {
+            DacEnumMemoryRegion(m_base, min(m_size, (COUNT_T)sizeof(WebcilHeader)));
+        }
     }
 
-    if (HasWebcilHeaders())
+    if (HasWebcilHeaders() && m_sections != NULL)
     {
         // Enumerate section headers
         const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-        DacEnumMemoryRegion(m_base + sizeof(WebcilHeader),
-                           sizeof(WebcilSectionHeader) * pHeader->CoffSections);
+        DacEnumMemoryRegion(dac_cast<TADDR>(m_sections), sizeof(WebcilSectionHeader) * pHeader->CoffSections);
 
         // Enumerate COR header if present
         if (m_pCorHeader != NULL)

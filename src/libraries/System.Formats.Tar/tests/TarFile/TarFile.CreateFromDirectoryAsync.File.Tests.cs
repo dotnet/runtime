@@ -337,5 +337,28 @@ namespace System.Formats.Tar.Tests
                     TarFile.CreateFromDirectoryAsync(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format));
             }
         }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task CreateFromDirectoryAsync_UsesWriterOptions(bool toggle)
+        {
+            // Toggle an option property to verify changing options changes the produced archive.
+            bool preserveLinks = toggle;
+
+            using TempDirectory source = CreateSourceDirectoryForCreateFromDirectory_UsesWriterOptions();
+            using TempDirectory destination = new TempDirectory();
+
+            TarWriterOptions options = new TarWriterOptions()
+            {
+                HardLinkMode = preserveLinks ? TarHardLinkMode.PreserveLink : TarHardLinkMode.CopyContents
+            };
+
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+            await TarFile.CreateFromDirectoryAsync(source.Path, destinationArchiveFileName, includeBaseDirectory: false, options);
+
+            await using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            VerifyCreateFromDirectory_UsesWriterOptions(fileStream, preserveLinks);
+        }
     }
 }

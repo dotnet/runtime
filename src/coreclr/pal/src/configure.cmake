@@ -100,10 +100,12 @@ elseif (HAVE_PTHREAD_IN_LIBC)
   set(PTHREAD_LIBRARY c)
 endif()
 
-check_library_exists(${PTHREAD_LIBRARY} pthread_attr_get_np "" HAVE_PTHREAD_ATTR_GET_NP)
-check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETATTR_NP)
-check_library_exists(${PTHREAD_LIBRARY} pthread_getcpuclockid "" HAVE_PTHREAD_GETCPUCLOCKID)
-check_library_exists(${PTHREAD_LIBRARY} pthread_getaffinity_np "" HAVE_PTHREAD_GETAFFINITY_NP)
+if (PTHREAD_LIBRARY)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_attr_get_np "" HAVE_PTHREAD_ATTR_GET_NP)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETATTR_NP)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_getcpuclockid "" HAVE_PTHREAD_GETCPUCLOCKID)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_getaffinity_np "" HAVE_PTHREAD_GETAFFINITY_NP)
+endif()
 
 check_function_exists(fsync HAVE_FSYNC)
 check_function_exists(futimes HAVE_FUTIMES)
@@ -136,7 +138,6 @@ int main(int argc, char **argv) {
 }" HAVE_SIGALTSTACK)
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
 check_function_exists(vm_read HAVE_VM_READ)
-check_function_exists(directio HAVE_DIRECTIO)
 check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
@@ -368,7 +369,9 @@ set(CMAKE_REQUIRED_LIBRARIES)
 
 
 
-check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+if (PTHREAD_LIBRARY)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+endif()
 
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
 check_cxx_source_runs("
@@ -549,7 +552,6 @@ int main(int argc, char **argv)
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
 
-check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
 check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
 check_symbol_exists(unw_get_proc_info_in_range libunwind.h HAVE_GET_PROC_INFO_IN_RANGE)
 
@@ -617,6 +619,8 @@ elseif(CLR_CMAKE_TARGET_HAIKU)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 elseif(CLR_CMAKE_TARGET_BROWSER)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
+elseif(CLR_CMAKE_TARGET_WASI)
+  set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 else() # Anything else is Linux
   # LTTNG is not available on Android, so don't error out
   if(FEATURE_EVENTSOURCE_XPLAT AND NOT HAVE_LTTNG_TRACEPOINT_H)
@@ -650,7 +654,7 @@ check_prototype_definition(
     statfs
     "int statfs(const char *path, struct statfs *buf)"
     0
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_NON_LEGACY_STATFS)
 
 configure_file(${CMAKE_CURRENT_LIST_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

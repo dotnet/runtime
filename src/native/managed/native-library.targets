@@ -70,7 +70,7 @@
       <_StripLike Condition="'$(_StripLike)' == ''">gnu</_StripLike>
     </PropertyGroup>
 
-    <Exec Command="dsymutil --flat $(LikeCoreCLRDSymUtilMinimizeOpt) $(StripSourceFile)" Condition="'$(_StripLike)' == 'apple'"/> <!-- produces the .dylib.dwarf file -->
+    <Exec Command="dsymutil --flat $(LikeCoreCLRDSymUtilMinimizeOpt) $(StripSourceFile)" Condition="'$(_StripLike)' == 'apple'" IgnoreStandardErrorWarningFormat="true" /> <!-- produces the .dylib.dwarf file -->
     <Exec Command="strip -no_code_signature_warning -S $(StripSourceFile)" Condition="'$(_StripLike)' == 'apple'"/>
     <!-- runtime build runs "codesign -f -s - libWhatever.dylib" in release configurations -->
     <Exec Command="codesign -f -s - $(StripSourceFile)" Condition="'$(RuntimeConfiguration)' == 'Release' and '$(_StripLike)' == 'apple'" />

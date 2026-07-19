@@ -34,7 +34,6 @@ namespace System.Diagnostics.Tracing
         private int bufferNesting;          // We may merge many fields int a single blob.   If we are doing this we increment this.
         private bool writingScalars;
 
-        [RequiresUnsafe]
         internal void Enable(
             byte* scratch,
             int scratchSize,
@@ -66,14 +65,12 @@ namespace System.Diagnostics.Tracing
         /// A pointer to the next unused data descriptor, or datasEnd if they were
         /// all used. (Descriptors may be unused if a string or array was null.)
         /// </returns>
-        [RequiresUnsafe]
         internal EventSource.EventData* Finish()
         {
             this.ScalarsEnd();
             return this.datas;
         }
 
-        [RequiresUnsafe]
         internal void AddScalar(void* value, int size)
         {
             var pb = (byte*)value;
@@ -194,7 +191,7 @@ namespace System.Diagnostics.Tracing
                 length = ushort.MaxValue;
             }
 
-            int size = length * itemSize;
+            int size = checked(length * itemSize);
             if (this.bufferNesting != 0)
             {
                 this.EnsureBuffer(size + 2);

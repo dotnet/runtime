@@ -23,7 +23,6 @@ namespace System.Security
         }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe SecureString(char* value, int length)
         {
             ArgumentNullException.ThrowIfNull(value);
@@ -440,6 +439,8 @@ namespace System.Security
                 {
                     return;
                 }
+
+                Debug.Assert(bytesLength <= destination.ByteLength);
 
                 byte* srcPtr = null, dstPtr = null;
                 try

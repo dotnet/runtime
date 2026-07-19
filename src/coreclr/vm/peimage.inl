@@ -356,7 +356,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
     {
         PEImageHolder pImage(new PEImage{pPath});
         pImage->Init(probeExtensionResult);
-        return dac_cast<PTR_PEImage>(pImage.Extract());
+        return dac_cast<PTR_PEImage>(pImage.Detach());
     }
 
     CrstHolder holder(&s_hashLock);
@@ -374,7 +374,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
         pImage->Init(probeExtensionResult);
 
         pImage->AddToHashMap();
-        return dac_cast<PTR_PEImage>(pImage.Extract());
+        return dac_cast<PTR_PEImage>(pImage.Detach());
     }
 
     found->AddRef();
