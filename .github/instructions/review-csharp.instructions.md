@@ -5,8 +5,13 @@ applyTo: "**/*.cs"
 # Code Review -- C# (managed code)
 
 Rules for reviewing C# changes across `src/`. Also apply `review-all-src` (all changes),
-`review-all-tests` (test files), and any matching area file (`jit`, `system-net-*`,
-`extensions-*`, `compression`, `cdac`). Native runtime code is covered by `review-native`.
+`review-all-tests` (test files), and any matching area file (`review-core-runtime`, `jit`,
+`system-net-*`, `extensions-*`, `compression`, `cdac`). Native runtime code is covered by
+`review-native`.
+
+These are review criteria. During code authoring or local experimentation, treat PR-level gates
+such as motivation, benchmark evidence, and issue prerequisites as preparation guidance for a
+ready-for-review PR, not as reasons to block exploratory work unless the user asks for review.
 
 ## Correctness & Safety
 
@@ -42,8 +47,6 @@ Rules for reviewing C# changes across `src/`. Also apply `review-all-src` (all c
 - **Seal classes when `Equals` uses exact type matching.** If a class implements `Equals` with `GetType()` comparison, flag this as a potential bug if the class is unsealed — the solution is usually to seal the class, but don't automatically recommend sealing as the fix. Raise it as a warning for the author to evaluate.
 - **Use `Environment.ProcessPath` and `AppContext.BaseDirectory`.** Use these instead of `Process.GetCurrentProcess().MainModule?.FileName` and `Assembly.Location` for NativeAOT/single-file compatibility.
 - **File name casing must match csproj references exactly.** Linux is case-sensitive. New source files must be listed in the `.csproj` if other files in that folder are explicitly listed.
-- **Prefer correct-by-construction designs.** Prefer designs that are correct by construction (e.g., scanning IL) over manually maintained parallel data structures. A missed optimization is better than silent bad codegen.
-- **Allocate on the correct loader allocator for collectibility.** When allocating runtime data structures for generic instantiations, use the correct loader allocator accounting for collectibility of type arguments.
 - **Backport targeted fixes, not refactorings.** When backporting to servicing branches, create small targeted fixes. Backporting large refactorings introduces unnecessary risk.
 
 ## Performance & Allocations
@@ -79,7 +82,6 @@ Rules for reviewing C# changes across `src/`. Also apply `review-all-src` (all c
 - **Use `sizeof` consistently.** A pass removed calls to the equivalent `Unsafe` helper; do not reintroduce them. Use `sizeof` rather than `Marshal.SizeOf` for blittable structs; it is more correct and significantly faster when no marshalling is involved.
 - **Use the idiomatic `(uint)index >= (uint)length` bounds check.** The JIT recognizes this pattern and optimizes it. Slice spans before iterating to avoid per-element bounds checks.
 - **Source generators must be properly incremental.** Do not store Roslyn symbols (`ISymbol`, `Compilation`) in incremental pipeline steps. Output must be deterministic with Ordinal-sorted lists.
-- **Avoid LINQ and records in low-level compiler codebases.** In CG2/ILC and AOT tools, use direct loops instead of LINQ and readonly structs instead of records. Use concrete types over interfaces in private code.
 - **Use `ValueListBuilder` for dynamic array building in BCL.** Use `ValueListBuilder<T>` (with pooling) or `ArrayBuilder<T>`. Use stackalloc for small sizes, array pool when too large.
 
 ## API Design & Contracts
@@ -94,8 +96,7 @@ Rules for reviewing C# changes across `src/`. Also apply `review-all-src` (all c
 - **.NET APIs should compensate for platform quirks.** Public APIs should work consistently across platforms. When adding overloads, check F# compatibility for implicit conversion or type inference ambiguities.
 - **Follow the obsoletion process for deprecated APIs.** Pick the next available SYSLIB diagnostic ID, add `[Obsolete]`, and use `[EditorBrowsable(Never)]` with `[OverloadResolutionPriority(-1)]` for overload fixes.
 - **New virtual methods must work with unoverridden derived types.** The default implementation must behave identically to calling the pre-existing equivalent APIs.
-- **Avoid unsigned types for lengths in public APIs.** Prefer `int` or `long` for length parameters (noting `byte` is unsigned but CLS-compliant alternatives are preferred). Use named types instead of `ValueTuple` across file boundaries.
-- **Start core component changes with an issue.** Changes to host, VM, or JIT should start with a GitHub issue describing the problem and motivation before submitting a PR.
+- **Avoid non-CLS-compliant integer types in public APIs.** Preserve `byte`, `int`, or `long` according to the required range; `byte` is valid even though it is unsigned. Use named types instead of `ValueTuple` across file boundaries.
 
 ## Code Style & Formatting
 

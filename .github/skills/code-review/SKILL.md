@@ -39,9 +39,12 @@ Before analyzing anything, collect as much relevant **code** context as you can.
    - Note whether new public API was detected. If it was, you **MUST** load and execute the API approval verification procedure during Step 4. Read the file `.github/skills/code-review/api-approval-check.md` (relative to the repository root) and follow its instructions. Do not skip this step — it is blocking.
   
 ### Step 2: Discover Area-Specific Agents
-- Study **review** agents available in  `.github/agents` folder that are capable of reviewing specific areas of the codebase. Their yaml frontmatter description tells when they apply.
-- When performing the review, invoke sub-agents to perform those area-specific reviews as subtasks during all subsequent steps, integrating those results.
-- Depending on the PR, more subagents might be launched. Launch them in parallel. Always continue regular review described here as well - the subagents are addons, not replacements.
+- If the environment supports sub-agent or task invocation, study the **review** agents that
+  actually exist in `.github/agents`. Their yaml frontmatter descriptions tell when they apply.
+- Invoke only existing, matching area-specific review agents as subtasks during the subsequent
+  steps, integrating their results. Do not infer or invent an agent from an instruction file.
+- If the environment lacks sub-agent tooling or no matching agent exists, continue the review
+  yourself. Area agents are additions to, not replacements for, the regular review.
 
 ### Step 3: Form an Independent Assessment
 
@@ -183,7 +186,7 @@ Load, based on the paths in the diff:
 - **`**/*.cs` changed:** `.github/instructions/review-csharp.instructions.md` -- C# error handling, thread safety, security, correctness, performance/allocation, API design, and style rules.
 - **Native files (`*.c` / `*.cpp` / `*.h` / `*.inc` / `*.S` / `*.asm`) changed:** `.github/instructions/review-native.instructions.md` -- C++ style, VM/JIT contracts, GC protection, platform defines, and interop/marshalling rules.
 - **Test files (`**/tests/**`, `src/tests/**`) changed:** `.github/instructions/review-all-tests.instructions.md` -- testing conventions and regression-test requirements.
-- **Area matches:** also load any matching area file under `.github/instructions/` (for example `.github/instructions/jit.instructions.md`, `.github/instructions/system-net-*.instructions.md`, `.github/instructions/extensions-*.instructions.md`, `.github/instructions/compression.instructions.md`, `.github/instructions/cdac.instructions.md`). These stack on top of the language rules. The area **agents** under `.github/agents/` carry the deep per-area checklists -- launch them per Step 2.
+- **Area matches:** also load any matching area file under `.github/instructions/` (for example `.github/instructions/review-core-runtime.instructions.md`, `.github/instructions/jit.instructions.md`, `.github/instructions/system-net-*.instructions.md`, `.github/instructions/extensions-*.instructions.md`, `.github/instructions/compression.instructions.md`, `.github/instructions/cdac.instructions.md`). These stack on top of the language rules. An area instruction file does not imply that a corresponding agent exists; invoke an area **agent** under `.github/agents/` only when it actually exists and applies, as described in Step 2.
 
 If a rule in a more specific file conflicts with a general one, the more specific file
 wins. If any required instruction file cannot be loaded, note it in the review and fall

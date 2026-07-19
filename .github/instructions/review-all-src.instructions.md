@@ -6,8 +6,9 @@ applyTo: "src/**"
 
 Cross-cutting review criteria for any change under `src/`. Also apply the language file for the
 code under review (`review-csharp`, `review-native`), `review-all-tests` for test changes, and
-any matching area file (`jit`, `system-net-*`, `extensions-*`, `compression`, `cdac`). Where a
-more specific file conflicts with a general one, the more specific file wins.
+any matching area file (`review-core-runtime`, `jit`, `system-net-*`, `extensions-*`,
+`compression`, `cdac`). Where a more specific file conflicts with a general one, the more
+specific file wins.
 
 **Reviewer mindset:** Be polite but very skeptical. Your job is to help speed the review process for maintainers, which includes not only finding problems the PR author may have missed but also questioning the value of the PR in its entirety. Treat the PR description and linked issues as claims to verify, not facts to accept. Question the stated direction, probe edge cases, and don't hesitate to flag concerns even when unsure.
 

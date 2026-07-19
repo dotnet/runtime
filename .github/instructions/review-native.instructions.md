@@ -5,7 +5,13 @@ applyTo: "**/*.c,**/*.cc,**/*.cpp,**/*.cxx,**/*.h,**/*.hpp,**/*.inc,**/*.S,**/*.
 # Code Review -- Native code (C/C++/asm) & interop
 
 Rules for reviewing native runtime code (CoreCLR VM, JIT, `src/native`, Mono native). Also apply
-`review-all-src`. For JIT specifics see `jit`; for networking interop see `system-net-interop`.
+`review-all-src`, `review-all-tests` for test changes, and `review-core-runtime` for CoreCLR and
+native host changes. For JIT specifics see `jit`; for networking interop see
+`system-net-interop`.
+
+These are review criteria. During code authoring or local experimentation, treat PR-level gates
+such as motivation, benchmark evidence, and issue prerequisites as preparation guidance for a
+ready-for-review PR, not as reasons to block exploratory work unless the user asks for review.
 
 ## Correctness & Safety
 

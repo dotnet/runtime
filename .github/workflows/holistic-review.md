@@ -385,6 +385,8 @@ altering prior reviews.
 
 Read `.github/skills/code-review/SKILL.md` from the prepared workspace. This contains the comprehensive code review process, analysis categories, output format, and verdict rules for dotnet/runtime.
 
+This dispatched worker has no sub-agent or task tooling. Skip the skill's `Discover Area-Specific Agents` step and `Multi-Model Review` section. Continue with the current engine and do not attempt to fan out the review.
+
 ## Step 3: Review and Submit
 
 Follow the review skill for the range selected in Step 1. Consult existing PR comments and reviews as directed by the skill, but do not modify, hide, supersede, or otherwise remove prior comments or reviews.

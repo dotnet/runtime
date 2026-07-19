@@ -11,6 +11,10 @@ libraries tests (`src/libraries/**/tests/`) typically use xUnit with `[Fact]`/`[
 have different naming/priority requirements. Apply area-specific rules when they conflict with
 general guidance below.
 
+These are review criteria. During code authoring or local experimentation, treat PR-level gates
+such as motivation, benchmark evidence, and issue prerequisites as preparation guidance for a
+ready-for-review PR, not as reasons to block exploratory work unless the user asks for review.
+
 ## Testing
 
 - **Always add regression tests for bug fixes and behavior changes.** Prefer adding `[InlineData]` test cases to existing test files rather than creating new ones. Ensure new test files are included in the csproj.
