@@ -61,10 +61,10 @@ Visual Studio's capabilities as a full IDE provide a lot of help making the runt
 * This points to the folder containing core libraries except `System.Private.CoreLib`.
 * This step can be skipped if you are debugging CLR tests that reference only `System.Private.CoreLib`. Otherwise, it's required to debug a real-world application that references anything else, including `System.Runtime`.
 
-10. Right-click the **INSTALL** project and choose `Build`. This will build any changed code and load the layout under `artifacts\bin\coreclr` folder.
-11. Press F11 to start debugging at `wmain` in _corerun_, or set a breakpoint in source and press F5 to run to it. As an example, set a breakpoint for the `EEStartup()` function in `ceemain.cpp` to break into CoreCLR startup.
+9. Right-click the **INSTALL** project and choose `Build`. This will build any changed code and load the layout under `artifacts\bin\coreclr` folder.
+10. Press F11 to start debugging at `wmain` in _corerun_, or set a breakpoint in source and press F5 to run to it. As an example, set a breakpoint for the `EEStartup()` function in `ceemain.cpp` to break into CoreCLR startup.
 
-Steps 1-9 only need to be done once as long as there's been no changes to the CMake files in the repository. Afterwards, step 10-11 can be repeated whenever you want to start debugging. It is highly recommended to use latest version of Visual Studio.
+Steps 1-8 only need to be done once as long as there's been no changes to the CMake files in the repository. Afterwards, step 9-10 can be repeated whenever you want to start debugging. It is highly recommended to use latest version of Visual Studio.
 
 #### Using Visual Studio Open Folder with CMake
 
@@ -131,7 +131,7 @@ There are two versions of toolchain available, referred as WSL1 and WSL2 toolcha
 For more information, see [Visual Studio Remote Settings vendor map](https://learn.microsoft.com/cpp/build/cmake-presets-json-reference#visual-studio-remote-settings-vendor-map).
 
 Setup steps for WSL1 toolchain:
-1. In WSL environment, execute `/mnt/<path-to-runtime>/eng/native/version/copy_version_files.sh` at mounted Windows file system. to generate additional required files.
+1. In WSL environment, execute `/mnt/<path-to-runtime>/eng/native/version/copy_version_files.sh` at mounted Windows file system to generate additional required files.
 2. Create `CMakeUserPresets.json` besides `src\coreclr\CMakePresets.json`. Duplicate the version etc from `CMakeUserPresets.json` and clean the `configurePresets` array. Add a new `configurePresets` element with following:
 ```json
 "configurePresets": [
@@ -179,7 +179,7 @@ rsync -t -r --delete --delete-excluded /mnt/c/<path-to-runtime>/eng/native/ <wsl
         "sourceDir": "<wsl-runtime-root>/src/coreclr" // In the corresponding layout. Use $env{HOME} to replace home directory (~)
       }
     }
-  },
+  }
 ]
 ```
 
