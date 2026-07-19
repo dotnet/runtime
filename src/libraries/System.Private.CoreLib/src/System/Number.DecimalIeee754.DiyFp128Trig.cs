@@ -214,12 +214,12 @@ internal static partial class Number
         ulong f1 = x._hi;
         ulong f0 = x._lo;
         int exponent = x._exponent;
-        uint signX = x._sign;
+        int signX = unchecked((int)x._sign); // 0 or UX_SIGN_BIT, read signed so an arithmetic shift yields -1 when negative
 
         if (exponent < 0)
         {
             // |x| < 0.5: quadrant follows octant parity, with an optional +/- pi/4 adjust.
-            int jj = octant + (int)(signX >> 31);
+            int jj = octant + (signX >> 31);
             int jr = jj + (jj & 1);
             int quad = jr >> 1;
             int jd = octant - jr;
@@ -369,7 +369,7 @@ internal static partial class Number
         }
 
         reduced = default;
-        reduced._sign = sign ^ signX;
+        reduced._sign = sign ^ (uint)signX;
         reduced._exponent = 3;
         reduced._hi = g3; // PUT_W_DIGITS
         reduced._lo = g2;

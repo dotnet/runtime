@@ -207,6 +207,12 @@ internal static partial class Number
             result = DiyFp128WithSignFlipped(DiyFp128Cos(DiyFp128TimesPi(DiyFp128Difference(UxOne, fraction))), UxSignBit);
         }
 
+        // cos(pi * (n + 1/2)) is exactly +0; the reduced result is +0 and must not take the odd-integer sign.
+        if (DiyFp128IsZero(result))
+        {
+            return new DiyFp128(0, UxZeroExponent, 0, 0);
+        }
+
         return DiyFp128WithSignFlipped(result, sign);
     }
 

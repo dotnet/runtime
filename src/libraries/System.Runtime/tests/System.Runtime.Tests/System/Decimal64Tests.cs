@@ -2221,6 +2221,8 @@ namespace System.Tests
         [InlineData(2.5)]
         [InlineData(-3.25)]
         [InlineData(100.0)]
+        [InlineData(-0.1)] // negative, |x| < 0.5: exercises the small-argument quadrant sign
+        [InlineData(-0.25)]
         public static void SinAccuracyTest(double input)
         {
             // Decimal64 evaluates sin in the software binary128 engine (as Intel does). Comparing through
@@ -2252,6 +2254,8 @@ namespace System.Tests
         [InlineData(2.5)]
         [InlineData(-3.25)]
         [InlineData(100.0)]
+        [InlineData(-0.3)]
+        [InlineData(-0.1)]
         public static void CosAccuracyTest(double input)
         {
             // Decimal64 evaluates cos in the software binary128 engine (as Intel does).
@@ -2281,6 +2285,8 @@ namespace System.Tests
         [InlineData(-1.0)]
         [InlineData(0.25)]
         [InlineData(-0.75)]
+        [InlineData(-0.2)]
+        [InlineData(-0.1)]
         public static void TanAccuracyTest(double input)
         {
             // Decimal64 evaluates tan in the software binary128 engine (as Intel does).
@@ -2306,6 +2312,7 @@ namespace System.Tests
         [InlineData(0.5)]
         [InlineData(-1.0)]
         [InlineData(2.5)]
+        [InlineData(-0.1)]
         public static void SinCosAccuracyTest(double input)
         {
             (Decimal64 sin, Decimal64 cos) = Decimal64.SinCos((Decimal64)input);
@@ -2492,6 +2499,23 @@ namespace System.Tests
         public static void CosPiExactTest(double input, double expected)
         {
             Assert.Equal(expected, (double)Decimal64.CosPi((Decimal64)input));
+        }
+
+        [Theory]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.5)]
+        [InlineData(-1.5)]
+        public static void CosPiHalfIntegerReturnsPositiveZero(double input)
+        {
+            // cosPi at a half-integer is +0; comparing through double hides the sign, so check the raw sign bit.
+            Decimal64 cosPi = Decimal64.CosPi((Decimal64)input);
+            Assert.Equal(0.0, (double)cosPi);
+            Assert.Equal(0UL, Unsafe.BitCast<Decimal64, ulong>(cosPi) >> 63);
+
+            (Decimal64 _, Decimal64 cos) = Decimal64.SinCosPi((Decimal64)input);
+            Assert.Equal(0.0, (double)cos);
+            Assert.Equal(0UL, Unsafe.BitCast<Decimal64, ulong>(cos) >> 63);
         }
 
         [Theory]

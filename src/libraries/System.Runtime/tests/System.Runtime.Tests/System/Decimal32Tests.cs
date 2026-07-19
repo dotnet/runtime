@@ -2214,6 +2214,8 @@ namespace System.Tests
         [InlineData(-1.0)]
         [InlineData(2.5)]
         [InlineData(-3.25)]
+        [InlineData(-0.1)] // negative, |x| < 0.5: exercises the small-argument quadrant sign
+        [InlineData(-0.25)]
         public static void SinAccuracyTest(double input)
         {
             // Decimal32 evaluates sin in the binary128 engine, so the result matches double.Sin
@@ -2244,6 +2246,8 @@ namespace System.Tests
         [InlineData(-1.0)]
         [InlineData(2.5)]
         [InlineData(-3.25)]
+        [InlineData(-0.3)]
+        [InlineData(-0.1)]
         public static void CosAccuracyTest(double input)
         {
             // Decimal32 evaluates cos in the binary128 engine.
@@ -2273,6 +2277,8 @@ namespace System.Tests
         [InlineData(-1.0)]
         [InlineData(0.25)]
         [InlineData(-0.75)]
+        [InlineData(-0.2)]
+        [InlineData(-0.1)]
         public static void TanAccuracyTest(double input)
         {
             // Decimal32 evaluates tan in the binary128 engine.
@@ -2298,6 +2304,7 @@ namespace System.Tests
         [InlineData(0.5)]
         [InlineData(-1.0)]
         [InlineData(2.5)]
+        [InlineData(-0.1)]
         public static void SinCosAccuracyTest(double input)
         {
             (Decimal32 sin, Decimal32 cos) = Decimal32.SinCos((Decimal32)input);
@@ -2485,6 +2492,23 @@ namespace System.Tests
         {
             // The exact value is verified independent of the decimal cohort the engine selects.
             Assert.Equal(expected, (double)Decimal32.CosPi((Decimal32)input));
+        }
+
+        [Theory]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.5)]
+        [InlineData(-1.5)]
+        public static void CosPiHalfIntegerReturnsPositiveZero(double input)
+        {
+            // cosPi at a half-integer is +0; comparing through double hides the sign, so check the raw sign bit.
+            Decimal32 cosPi = Decimal32.CosPi((Decimal32)input);
+            Assert.Equal(0.0, (double)cosPi);
+            Assert.Equal(0U, Unsafe.BitCast<Decimal32, uint>(cosPi) >> 31);
+
+            (Decimal32 _, Decimal32 cos) = Decimal32.SinCosPi((Decimal32)input);
+            Assert.Equal(0.0, (double)cos);
+            Assert.Equal(0U, Unsafe.BitCast<Decimal32, uint>(cos) >> 31);
         }
 
         [Theory]
