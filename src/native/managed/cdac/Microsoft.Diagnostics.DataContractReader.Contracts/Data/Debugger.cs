@@ -7,8 +7,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class Debugger : IData<Debugger>
 {
     [Field] public int LeftSideInitialized { get; }
-    [Field] public uint Defines { get; }
-    [Field] public uint MDStructuresVersion { get; }
     [Field] public TargetPointer RCThread { get; }
 
     [Field(Writable = true)] public int RSRequestedSync { get; private set; }

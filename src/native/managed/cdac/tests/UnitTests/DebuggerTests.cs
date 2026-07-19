@@ -33,8 +33,6 @@ public class DebuggerTests
         return helpers.LayoutFields(
         [
             new(nameof(Data.Debugger.LeftSideInitialized), DataType.int32),
-            new(nameof(Data.Debugger.Defines), DataType.uint32),
-            new(nameof(Data.Debugger.MDStructuresVersion), DataType.uint32),
             new(nameof(Data.Debugger.RCThread), DataType.pointer),
             new(nameof(Data.Debugger.RSRequestedSync), DataType.int32),
             new(nameof(Data.Debugger.SendExceptionsOutsideOfJMC), DataType.int32),
@@ -54,8 +52,6 @@ public class DebuggerTests
     private static TestPlaceholderTarget BuildTarget(
         MockTarget.Architecture arch,
         int leftSideInitialized,
-        uint defines,
-        uint mdStructuresVersion,
         int? attachStateFlags = null,
         uint? debuggerControlFlags = null,
         byte? metadataUpdatesApplied = null,
@@ -85,8 +81,6 @@ public class DebuggerTests
         // Allocate and populate the Debugger struct
         MockMemorySpace.HeapFragment debuggerFrag = allocator.Allocate(debuggerLayout.Stride, "Debugger");
         helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.LeftSideInitialized)].Offset, sizeof(int)), leftSideInitialized);
-        helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.Defines)].Offset, sizeof(uint)), defines);
-        helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.MDStructuresVersion)].Offset, sizeof(uint)), mdStructuresVersion);
         helpers.WritePointer(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.RCThread)].Offset, helpers.PointerSize), debuggerRcThreadAddress);
         helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.RSRequestedSync)].Offset, sizeof(int)), 0);
         helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.SendExceptionsOutsideOfJMC)].Offset, sizeof(int)), 0);
@@ -150,26 +144,22 @@ public class DebuggerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void TryGetDebuggerData_ReturnsTrue_WhenInitialized(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0xDEADBEEF, mdStructuresVersion: 42);
+        Target target = BuildTarget(arch, leftSideInitialized: 1);
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.True(debugger.TryGetDebuggerData(out DebuggerData data));
         Assert.True(data.IsLeftSideInitialized);
-        Assert.Equal(0xDEADBEEFu, data.DefinesBitField);
-        Assert.Equal(42u, data.MDStructuresVersion);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void TryGetDebuggerData_ReturnsTrue_WhenNotInitialized(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 0, defines: 0xCAFE, mdStructuresVersion: 7);
+        Target target = BuildTarget(arch, leftSideInitialized: 0);
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.True(debugger.TryGetDebuggerData(out DebuggerData data));
         Assert.False(data.IsLeftSideInitialized);
-        Assert.Equal(0xCAFEu, data.DefinesBitField);
-        Assert.Equal(7u, data.MDStructuresVersion);
     }
 
     [Theory]
@@ -186,7 +176,7 @@ public class DebuggerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetAttachStateFlags_ReturnsValue(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, attachStateFlags: 0x42);
+        Target target = BuildTarget(arch, leftSideInitialized: 1, attachStateFlags: 0x42);
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.Equal(0x42, debugger.GetAttachStateFlags());
@@ -196,7 +186,7 @@ public class DebuggerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetAttachStateFlags_ReturnsZero_WhenValueIsZero(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, attachStateFlags: 0);
+        Target target = BuildTarget(arch, leftSideInitialized: 1, attachStateFlags: 0);
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.Equal(0, debugger.GetAttachStateFlags());
@@ -206,7 +196,7 @@ public class DebuggerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void MarkDebuggerAttachPending_SetsPendingAttachFlag(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, attachStateFlags: 0, debuggerControlFlags: 0x42);
+        Target target = BuildTarget(arch, leftSideInitialized: 1, attachStateFlags: 0, debuggerControlFlags: 0x42);
         IDebugger debugger = target.Contracts.Debugger;
 
         debugger.MarkDebuggerAttachPending();
@@ -218,7 +208,7 @@ public class DebuggerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void MarkDebuggerAttached_SetsAttachedFlag_WhenTrue(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, attachStateFlags: 0, debuggerControlFlags: DebuggerControlFlagPendingAttach);
+        Target target = BuildTarget(arch, leftSideInitialized: 1, attachStateFlags: 0, debuggerControlFlags: DebuggerControlFlagPendingAttach);
         IDebugger debugger = target.Contracts.Debugger;
 
         debugger.MarkDebuggerAttached(true);
@@ -231,7 +221,7 @@ public class DebuggerTests
     public void MarkDebuggerAttached_ClearsAttachedAndPending_WhenFalse(MockTarget.Architecture arch)
     {
         const uint originalFlags = 0x0042u | DebuggerControlFlagPendingAttach | DebuggerControlFlagAttached;
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, attachStateFlags: 0, debuggerControlFlags: originalFlags);
+        Target target = BuildTarget(arch, leftSideInitialized: 1, attachStateFlags: 0, debuggerControlFlags: originalFlags);
         IDebugger debugger = target.Contracts.Debugger;
 
         debugger.MarkDebuggerAttached(false);
@@ -243,7 +233,7 @@ public class DebuggerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void MetadataUpdatesApplied_ReturnsTrue_WhenSet(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, metadataUpdatesApplied: 1);
+        Target target = BuildTarget(arch, leftSideInitialized: 1, metadataUpdatesApplied: 1);
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.True(debugger.MetadataUpdatesApplied());
@@ -253,7 +243,7 @@ public class DebuggerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void MetadataUpdatesApplied_ReturnsFalse_WhenNotSet(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, metadataUpdatesApplied: 0);
+        Target target = BuildTarget(arch, leftSideInitialized: 1, metadataUpdatesApplied: 0);
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.False(debugger.MetadataUpdatesApplied());
@@ -263,7 +253,7 @@ public class DebuggerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void MetadataUpdatesApplied_ReturnsFalse_WhenGlobalMissing(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0);
+        Target target = BuildTarget(arch, leftSideInitialized: 1);
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.False(debugger.MetadataUpdatesApplied());
@@ -295,7 +285,7 @@ public class DebuggerTests
     public void GetDebuggerControlBlockAddress_ReturnsAddress(MockTarget.Architecture arch)
     {
         const ulong expectedAddress = 0x1234_5678;
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, debuggerControlBlockAddress: expectedAddress);
+        Target target = BuildTarget(arch, leftSideInitialized: 1, debuggerControlBlockAddress: expectedAddress);
         IDebugger debugger = target.Contracts.Debugger;
 
         TargetPointer result = debugger.GetDebuggerControlBlockAddress();
@@ -319,7 +309,7 @@ public class DebuggerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetDebuggerControlBlockAddress_ReturnsNull_WhenRCThreadNull(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0);
+        Target target = BuildTarget(arch, leftSideInitialized: 1);
         IDebugger debugger = target.Contracts.Debugger;
 
         TargetPointer result = debugger.GetDebuggerControlBlockAddress();
@@ -362,7 +352,7 @@ public class DebuggerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void RequestSyncAtEvent_WritesSyncFlag(MockTarget.Architecture arch)
     {
-        TestPlaceholderTarget target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0);
+        TestPlaceholderTarget target = BuildTarget(arch, leftSideInitialized: 1);
         IDebugger debugger = target.Contracts.Debugger;
 
         TargetPointer debuggerAddress = GetDebuggerAddress(target);
@@ -379,7 +369,7 @@ public class DebuggerTests
     [MemberData(nameof(StdArchWithBool))]
     public void SetSendExceptionsOutsideOfJMC_WritesFlag(MockTarget.Architecture arch, bool value)
     {
-        TestPlaceholderTarget target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0);
+        TestPlaceholderTarget target = BuildTarget(arch, leftSideInitialized: 1);
         IDebugger debugger = target.Contracts.Debugger;
 
         TargetPointer debuggerAddress = GetDebuggerAddress(target);
@@ -394,7 +384,7 @@ public class DebuggerTests
     [MemberData(nameof(StdArchWithBool))]
     public void EnableGCNotificationEvents_WritesFlag(MockTarget.Architecture arch, bool value)
     {
-        TestPlaceholderTarget target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0);
+        TestPlaceholderTarget target = BuildTarget(arch, leftSideInitialized: 1);
         IDebugger debugger = target.Contracts.Debugger;
 
         TargetPointer debuggerAddress = GetDebuggerAddress(target);

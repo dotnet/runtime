@@ -849,12 +849,6 @@ public unsafe partial interface IDacDbiInterface
     int AreOptimizationsDisabled(ulong vmModule, uint methodTk, Interop.BOOL* pOptimizationsDisabled);
 
     [PreserveSig]
-    int GetDefinesBitField(uint* pDefines);
-
-    [PreserveSig]
-    int GetMDStructuresVersion(uint* pMDStructuresVersion);
-
-    [PreserveSig]
     int GetActiveRejitILCodeVersionNode(ulong vmModule, uint methodTk, ulong* pVmILCodeVersionNode);
 
     [PreserveSig]
@@ -896,4 +890,10 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
+
+    [PreserveSig]
+    int GetReadWriteMetadataSize(ulong vmModule, uint* pSize);
+
+    [PreserveSig]
+    int FillReadWriteMetadata(ulong vmModule, byte* pBuffer, uint cbBuffer);
 }

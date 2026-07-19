@@ -1,11 +1,11 @@
 # Contract Debugger
 
-This contract is for reading debugger state from the target process, including initialization status, configuration flags, metadata update state, and JIT attach state.
+This contract is for reading debugger state from the target process, including initialization status, metadata update state, and JIT attach state.
 
 ## APIs of contract
 
 ```csharp
-record struct DebuggerData(bool IsLeftSideInitialized, uint DefinesBitField, uint MDStructuresVersion);
+record struct DebuggerData(bool IsLeftSideInitialized);
 ```
 
 ```csharp
@@ -48,8 +48,6 @@ The contract additionally depends on these data descriptors
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | `Debugger` | `LeftSideInitialized` | Whether the left-side debugger infrastructure is initialized |
-| `Debugger` | `Defines` | Bitfield of compile-time debugger feature defines |
-| `Debugger` | `MDStructuresVersion` | Version of metadata data structures |
 | `Debugger` | `RCThread` | Pointer to `DebuggerRCThread` |
 | `Debugger` | `RSRequestedSync` | Sync-at-event request flag |
 | `Debugger` | `SendExceptionsOutsideOfJMC` | Exception delivery policy flag |
@@ -84,10 +82,7 @@ bool TryGetDebuggerData(out DebuggerData data)
     if (debuggerPtr == TargetPointer.Null)
         return false;
     bool leftSideInitialized = target.Read<int>(debuggerPtr + /* Debugger::LeftSideInitialized offset */) != 0;
-    data = new DebuggerData(
-        IsLeftSideInitialized: leftSideInitialized,
-        DefinesBitField: target.Read<uint>(debuggerPtr + /* Debugger::Defines offset */),
-        MDStructuresVersion: target.Read<uint>(debuggerPtr + /* Debugger::MDStructuresVersion offset */));
+    data = new DebuggerData(IsLeftSideInitialized: leftSideInitialized);
     return true;
 }
 
