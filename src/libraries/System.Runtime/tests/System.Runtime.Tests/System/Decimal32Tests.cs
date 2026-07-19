@@ -2991,6 +2991,59 @@ namespace System.Tests
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32TranscendentalUnary), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void TranscendentalUnary_IntelReferenceVectors(string operation, uint value, uint expected, double recordedUlp)
+        {
+            Decimal32 x = Unsafe.BitCast<uint, Decimal32>(value);
+
+            Decimal32 result = operation switch
+            {
+                "sin" => Decimal32.Sin(x),
+                "cos" => Decimal32.Cos(x),
+                "tan" => Decimal32.Tan(x),
+                "asin" => Decimal32.Asin(x),
+                "acos" => Decimal32.Acos(x),
+                "atan" => Decimal32.Atan(x),
+                "sinh" => Decimal32.Sinh(x),
+                "cosh" => Decimal32.Cosh(x),
+                "tanh" => Decimal32.Tanh(x),
+                "asinh" => Decimal32.Asinh(x),
+                "acosh" => Decimal32.Acosh(x),
+                "atanh" => Decimal32.Atanh(x),
+                "exp" => Decimal32.Exp(x),
+                "exp2" => Decimal32.Exp2(x),
+                "exp10" => Decimal32.Exp10(x),
+                "expm1" => Decimal32.ExpM1(x),
+                "log" => Decimal32.Log(x),
+                "log2" => Decimal32.Log2(x),
+                "log10" => Decimal32.Log10(x),
+                "log1p" => Decimal32.LogP1(x),
+                "cbrt" => Decimal32.Cbrt(x),
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(Unsafe.BitCast<Decimal32, uint>(result), expected, recordedUlp);
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32TranscendentalBinary), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void TranscendentalBinary_IntelReferenceVectors(string operation, uint left, uint right, uint expected, double recordedUlp)
+        {
+            Decimal32 x = Unsafe.BitCast<uint, Decimal32>(left);
+            Decimal32 y = Unsafe.BitCast<uint, Decimal32>(right);
+
+            Decimal32 result = operation switch
+            {
+                "atan2" => Decimal32.Atan2(x, y),
+                "pow" => Decimal32.Pow(x, y),
+                "hypot" => Decimal32.Hypot(x, y),
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(Unsafe.BitCast<Decimal32, uint>(result), expected, recordedUlp);
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32Arithmetic), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void op_Arithmetic_IntelReferenceVectors(string operation, uint left, uint right, uint expected)
         {
