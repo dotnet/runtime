@@ -105,8 +105,13 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     /// to avoid colliding with component stubs that crossgen2 creates alongside the composite image.
     /// </summary>
     public string FilePath => _outputDir != null
-        ? Path.Combine(_outputDir, "CG2", Name + (IsComposite ? "-composite" : "") + ".dll")
+        ? Path.Combine(_outputDir, "CG2", Name + (IsComposite ? "-composite" : "") + OutputFileExtension)
         : throw new InvalidOperationException("Output directory not set");
+
+    /// <summary>
+    /// File extension for the crossgen2 output image.
+    /// </summary>
+    public string OutputFileExtension { get; init; } = ".dll";
 
     public void SetOutputDir(string outputDir)
     {

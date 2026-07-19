@@ -1139,13 +1139,10 @@ namespace System.Xml.Serialization
                     Type collectionType = memberMapping.TypeDesc!.Type!;
                     o = ReflectionCreateObject(memberMapping.TypeDesc.Type!);
 
-                    if (memberMapping.ChoiceIdentifier != null)
-                    {
-                        // https://github.com/dotnet/runtime/issues/1400:
-                        // To Support ArrayMapping Types Having ChoiceIdentifier
-                        throw new NotImplementedException("memberMapping.ChoiceIdentifier != null");
-                    }
-
+                    // When this array is the value of a member that carries an [XmlChoiceIdentifier]
+                    // (e.g. one of the choice element types is itself an array), the parallel choice
+                    // value is recorded by the calling WriteElement against the owning member after
+                    // this method returns, so no additional choice handling is needed here.
                     var arrayMember = new Member(memberMapping);
                     arrayMember.Collection = new CollectionMember();
                     arrayMember.ArraySource = arrayMember.Collection.Add;
@@ -1576,9 +1573,7 @@ namespace System.Xml.Serialization
             {
                 if (structMapping.TypeDesc.Type != null && typeof(XmlSchemaObject).IsAssignableFrom(structMapping.TypeDesc.Type))
                 {
-                    // https://github.com/dotnet/runtime/issues/1399:
-                    // To Support Serializing XmlSchemaObject
-                    throw new NotImplementedException(nameof(XmlSchemaObject));
+                    DecodeName = false;
                 }
 
                 object? o = ReflectionCreateObject(structMapping.TypeDesc.Type!)!;
@@ -1812,10 +1807,24 @@ namespace System.Xml.Serialization
                     {
                         MemberInfo[] memberInfos = o!.GetType().GetMember(member.Mapping.Name);
                         MemberInfo memberInfo = memberInfos[0];
-                        object? collection = null;
-                        SetCollectionObjectWithCollectionMember(ref collection, member.Collection, member.Mapping.TypeDesc!.Type!);
-                        var setMemberValue = GetSetMemberValueDelegate(o, memberInfo.Name);
-                        setMemberValue(o, collection);
+
+                        // For read-only collection properties (no setter), add items directly to the existing
+                        // collection instance returned by the getter. This matches what the IL-based serializer does.
+                        if (memberInfo is PropertyInfo pi && pi.GetSetMethod(nonPublic: true) == null)
+                        {
+                            object? existingCollection = pi.GetValue(o);
+                            if (existingCollection != null)
+                            {
+                                AddObjectsIntoTargetCollection(existingCollection, member.Collection, member.Mapping.TypeDesc!.Type!);
+                            }
+                        }
+                        else
+                        {
+                            object? collection = null;
+                            SetCollectionObjectWithCollectionMember(ref collection, member.Collection, member.Mapping.TypeDesc!.Type!);
+                            var setMemberValue = GetSetMemberValueDelegate(o, memberInfo.Name);
+                            setMemberValue(o, collection);
+                        }
                     }
 
                     member.EnsureCollection?.Invoke(o!);
@@ -1981,9 +1990,17 @@ namespace System.Xml.Serialization
                 }
                 else if (special.TypeDesc.CanBeAttributeValue)
                 {
-                    // https://github.com/dotnet/runtime/issues/1398:
-                    // To Support special.TypeDesc.CanBeAttributeValue == true
-                    throw new NotImplementedException("special.TypeDesc.CanBeAttributeValue");
+                    if (attr is not XmlAttribute xmlAttribute)
+                    {
+                         if (member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
+                         {
+                             member.CheckSpecifiedSource?.Invoke(null);
+                         }
+
+                        return;
+                    }
+
+                    value = xmlAttribute;
                 }
                 else
                     throw new InvalidOperationException(SR.XmlInternalError);

@@ -44,6 +44,8 @@ namespace ILCompiler
             new("--nativelib") { Description = "Compile as static or shared library" };
         public Option<bool> SplitExeInitialization { get; } =
             new("--splitinit") { Description = "Split initialization of an executable between the library entrypoint and a main entrypoint" };
+        public Option<string[]> AggregateExeLibrary { get; } =
+            new("--aggregateexe") { Description = "Specify aggregate executable library entrypoint modules (format: 'assemblyName=MainEntryPointName')" };
         public Option<string> ExportsFile { get; } =
             new("--exportsfile") { Description = "File to write exported symbol and method definitions" };
         public Option<bool> ExportUnmanagedEntryPoints { get; } =
@@ -204,6 +206,7 @@ namespace ILCompiler
             Options.Add(UseDwarf5);
             Options.Add(NativeLib);
             Options.Add(SplitExeInitialization);
+            Options.Add(AggregateExeLibrary);
             Options.Add(ExportsFile);
             Options.Add(ExportDynamicSymbols);
             Options.Add(ExportUnmanagedEntryPoints);

@@ -14,54 +14,29 @@ internal interface IExceptionClauseData
     uint FilterOffset { get; }
 }
 
-internal sealed class EEExceptionClause : IData<EEExceptionClause>, IExceptionClauseData
+[CdacType(nameof(DataType.EEExceptionClause))]
+internal sealed partial class EEExceptionClause : IData<EEExceptionClause>, IExceptionClauseData
 {
-    static EEExceptionClause IData<EEExceptionClause>.Create(Target target, TargetPointer address) => new EEExceptionClause(target, address);
-    public EEExceptionClause(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.EEExceptionClause);
+    [Field] public uint Flags { get; }
+    [Field] public uint TryStartPC { get; }
+    [Field] public uint TryEndPC { get; }
+    [Field] public uint HandlerStartPC { get; }
+    [Field] public uint HandlerEndPC { get; }
+    [Field] public TargetNUInt TypeHandle { get; }
 
-        Flags = target.ReadField<uint>(address, type, nameof(Flags));
-        TryStartPC = target.ReadField<uint>(address, type, nameof(TryStartPC));
-        TryEndPC = target.ReadField<uint>(address, type, nameof(TryEndPC));
-        HandlerStartPC = target.ReadField<uint>(address, type, nameof(HandlerStartPC));
-        HandlerEndPC = target.ReadField<uint>(address, type, nameof(HandlerEndPC));
-        TypeHandle = target.ReadNUIntField(address, type, nameof(TypeHandle));
-        ClassToken = (uint)TypeHandle.Value;
-        FilterOffset = ClassToken;
-    }
-
-    public uint Flags { get; init; }
-    public uint TryStartPC { get; init; }
-    public uint TryEndPC { get; init; }
-    public uint HandlerStartPC { get; init; }
-    public uint HandlerEndPC { get; init; }
-    public TargetNUInt TypeHandle { get; init; }
-    public uint ClassToken { get; init; }
-    public uint FilterOffset { get; init; }
+    public uint ClassToken => (uint)TypeHandle.Value;
+    public uint FilterOffset => ClassToken;
 }
 
-internal sealed class R2RExceptionClause : IData<R2RExceptionClause>, IExceptionClauseData
+[CdacType(nameof(DataType.R2RExceptionClause))]
+internal sealed partial class R2RExceptionClause : IData<R2RExceptionClause>, IExceptionClauseData
 {
-    static R2RExceptionClause IData<R2RExceptionClause>.Create(Target target, TargetPointer address) => new R2RExceptionClause(target, address);
-    public R2RExceptionClause(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.R2RExceptionClause);
+    [Field] public uint Flags { get; }
+    [Field] public uint TryStartPC { get; }
+    [Field] public uint TryEndPC { get; }
+    [Field] public uint HandlerStartPC { get; }
+    [Field] public uint HandlerEndPC { get; }
+    [Field] public uint ClassToken { get; }
 
-        Flags = target.ReadField<uint>(address, type, nameof(Flags));
-        TryStartPC = target.ReadField<uint>(address, type, nameof(TryStartPC));
-        TryEndPC = target.ReadField<uint>(address, type, nameof(TryEndPC));
-        HandlerStartPC = target.ReadField<uint>(address, type, nameof(HandlerStartPC));
-        HandlerEndPC = target.ReadField<uint>(address, type, nameof(HandlerEndPC));
-        ClassToken = target.ReadField<uint>(address, type, nameof(ClassToken));
-        FilterOffset = ClassToken;
-    }
-
-    public uint Flags { get; init; }
-    public uint TryStartPC { get; init; }
-    public uint TryEndPC { get; init; }
-    public uint HandlerStartPC { get; init; }
-    public uint HandlerEndPC { get; init; }
-    public uint ClassToken { get; init; }
-    public uint FilterOffset { get; init; }
+    public uint FilterOffset => ClassToken;
 }

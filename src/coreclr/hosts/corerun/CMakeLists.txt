@@ -36,9 +36,11 @@ if(CLR_CMAKE_HOST_WIN32)
         target_link_options(corerun PRIVATE "/CETCOMPAT")
     endif()
 else()
-    target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
-    # Required to expose symbols for global symbol discovery
-    target_link_libraries(corerun PRIVATE -rdynamic)
+    if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+        target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
+        # Required to expose symbols for global symbol discovery
+        target_link_libraries(corerun PRIVATE -rdynamic)
+    endif()
 
     # Android implements pthread natively.
     # WASM, linking against pthreads indicates Node.js workers are
@@ -79,41 +81,52 @@ else()
                 LINK_DEPENDS "${JS_CORE_RUN};${JS_CORE_RUN_EXTPOST};${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};"
                 LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --js-library ${JS_CORE_RUN} --extern-post-js ${JS_CORE_RUN_EXTPOST}"
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+            if (CORERUN_IN_BROWSER)
+                target_link_options(corerun PRIVATE -sWASM_BIGINT=1)
+                # Include the virtual file system data for the browser scenario.
+                set(WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")
+                if (EXISTS "${WASM_PRELOAD_DIR}")
+                    target_link_options(corerun PRIVATE --preload-file ${WASM_PRELOAD_DIR}@/)
+                endif()
+            else()
+                # Node.js doesn't have good support for WASM_BIGINT, so disable it for the Node/shell.
+                target_link_options(corerun PRIVATE -sWASM_BIGINT=0)
+
+                # remove HEAP64 and HEAPU64 from CMAKE_EMCC_EXPORTED_RUNTIME_METHODS
+                string(REPLACE "HEAP64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
+                string(REPLACE "HEAPU64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
+
+                # Add Node.js host file system support.
+                target_link_options(corerun PRIVATE -sNODERAWFS=1 -lnodefs.js)
+            endif()
             target_link_options(corerun PRIVATE
                 -sINITIAL_MEMORY=134217728
                 -sMAXIMUM_MEMORY=4294967296
                 -sALLOW_MEMORY_GROWTH=1
+                -sGROWABLE_ARRAYBUFFERS=0
                 -sALLOW_TABLE_GROWTH=1
                 -sSTACK_SIZE=5MB
                 -sMODULARIZE=1
                 -sEXPORT_ES6=1
                 -sEXIT_RUNTIME=1
                 -sEXPORTED_RUNTIME_METHODS=CORERUN,ENV,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
-                -sEXPORTED_FUNCTIONS=_main,___stack_pointer,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
+                -sEXPORTED_FUNCTIONS=_main,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
                 -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web
+                -lexports.js
                 -Wl,--error-limit=0)
-
-            if (CORERUN_IN_BROWSER)
-                # Node.js doesn't have good support for WASM_BIGINT
-                # so it only is added when running in the browser.
-                target_link_options(corerun PRIVATE
-                    -sWASM_BIGINT=1)
-
-                # Include the virtual file system data for the
-                # browser scenario.
-                set(WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")
-                if (EXISTS "${WASM_PRELOAD_DIR}")
-                    target_link_options(corerun PRIVATE
-                        --preload-file ${WASM_PRELOAD_DIR}@/)
-                endif()
-            else()
-                # If not running in the browser, add
-                # Node.js file system support.
-                target_link_options(corerun PRIVATE
-                    -sNODERAWFS=1
-                    -lnodefs.js)
-            endif()
+        elseif (CLR_CMAKE_TARGET_WASI)
+            # wasm-component-ld wraps wasi:io@0.2.x imports into the WASI
+            # component-model; the default lld produces a plain core module
+            # the component-host can't instantiate. Absolute path is
+            # required because clang only recognizes well-known linker
+            # names (lld/bfd/gold/etc.) by short name.
+            get_filename_component(_wasi_sdk_bin "${CMAKE_C_COMPILER}" DIRECTORY)
+            target_link_options(corerun PRIVATE
+                "-fuse-ld=${_wasi_sdk_bin}/wasm-component-ld"
+                -Wl,-z,stack-size=8388608
+                -Wl,--initial-memory=134217728
+                -Wl,--max-memory=4294967296)
         endif()
 
         if (CORERUN_IN_BROWSER)

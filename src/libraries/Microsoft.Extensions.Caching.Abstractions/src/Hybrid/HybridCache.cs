@@ -103,14 +103,8 @@ public abstract class HybridCache
         HybridCacheEntryOptions? options = null,
         IEnumerable<string>? tags = null,
         CancellationToken cancellationToken = default)
-    {
-        // It is *not* an error that this Clear occurs before the "await"; by definition, the implementation is *required* to copy
-        // the value locally before an await, precisely because the ref-struct cannot bridge an await. Thus: we are fine to clean
-        // the buffer even in the non-synchronous completion scenario.
-        ValueTask<T> result = GetOrCreateAsync(key.Text, factory, WrappedCallbackCache<T>.Instance, options, tags, cancellationToken);
-        key.Clear();
-        return result;
-    }
+        => ClearAndReturn(ref key,
+            GetOrCreateAsync(key.Text, factory, WrappedCallbackCache<T>.Instance, options, tags, cancellationToken));
 
     /// <summary>
     /// Asynchronously gets the value associated with the key if it exists, or generates a new entry using the provided key and a value from the given factory if the key is not found.
@@ -131,15 +125,223 @@ public abstract class HybridCache
         HybridCacheEntryOptions? options = null,
         IEnumerable<string>? tags = null,
         CancellationToken cancellationToken = default)
+        => ClearAndReturn(ref key,
+            GetOrCreateAsync(key.Text, state, factory, options, tags, cancellationToken));
+#endif
+
+    /// <summary>
+    /// Asynchronously gets the value associated with the key if it exists, or generates a new entry using the provided key and a value from the given factory if the key is not found.
+    /// </summary>
+    /// <typeparam name="TState">The type of additional state required by <paramref name="factory"/>.</typeparam>
+    /// <typeparam name="T">The type of the data being considered.</typeparam>
+    /// <param name="key">The key of the entry to look for or create.</param>
+    /// <param name="state">The state required for <paramref name="factory"/>.</param>
+    /// <param name="factory">Provides the underlying data service if the data is not available in the cache. The <see cref="HybridCacheEntryContext"/> passed to the factory allows it to influence cache entry options based on the result.</param>
+    /// <param name="options">Additional options for this cache entry.</param>
+    /// <param name="tags">The tags to associate with this cache item.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
+    /// <returns>The data, either from cache or the underlying data service.</returns>
+    public virtual async ValueTask<T> GetOrCreateAsync<TState, T>(string key, TState state,
+        Func<TState, HybridCacheEntryContext, CancellationToken, ValueTask<T>> factory,
+        HybridCacheEntryOptions? options = null, IEnumerable<string>? tags = null, CancellationToken cancellationToken = default)
     {
-        // It is *not* an error that this Clear occurs before the "await"; by definition, the implementation is *required* to copy
-        // the value locally before an await, precisely because the ref-struct cannot bridge an await. Thus: we are fine to clean
-        // the buffer even in the non-synchronous completion scenario.
-        ValueTask<T> result = GetOrCreateAsync(key.Text, state, factory, options, tags, cancellationToken);
+        // Carries state + factory into the wrapped delegate and the context back out. The context is
+        // created lazily inside the delegate, so a cache hit (where the factory never runs) does not
+        // allocate a context or seed it.
+        var packedState = new DefaultImplState<TState, T>(state, factory, options);
+
+        // Suppress writes in the inner call so we can perform a single, correct SetAsync afterwards
+        // using the options that the factory ultimately produced.
+        // This introduces some race conditions, but that's considered better than not honoring the factory's options.
+        // The common options == null case reuses a shared immutable instance instead of allocating one.
+        HybridCacheEntryOptions innerOptions = options is null
+            ? s_writesDisabled
+            : CloneWithWritesDisabled(options);
+
+        T value = await GetOrCreateAsync(key, packedState, static (packed, ct) =>
+        {
+            // Reached only on a cache miss (the underlying implementation skips this for hits and for
+            // stampede followers), so the context is allocated exactly when it is needed.
+            var context = new HybridCacheEntryContext(packed.Options);
+            packed.Context = context;
+            return packed.Factory(packed.State, context, ct);
+        }, innerOptions, tags, cancellationToken).ConfigureAwait(false);
+
+        // Context is non-null only if the wrapped factory actually ran; stampede followers reuse the
+        // leader's value (and the leader's SetAsync) without issuing a duplicate write.
+        if (packedState.Context is { } context)
+        {
+            const HybridCacheEntryFlags BothWritesDisabled =
+                HybridCacheEntryFlags.DisableLocalCacheWrite
+                | HybridCacheEntryFlags.DisableDistributedCacheWrite;
+            if ((context.Flags & BothWritesDisabled) != BothWritesDisabled)
+            {
+                // If the factory left the context unchanged, reuse the caller's original options: this
+                // avoids materializing a new instance and preserves any special handling of a null value
+                // (context.ToOptions() would always produce a non-null instance).
+                HybridCacheEntryOptions? writeOptions = context.Revision == 0
+                    ? packedState.Options
+                    : context.ToOptions();
+
+                // Cancellation of the caller should not abort the write: the factory has already
+                // produced a value that we are about to return; canceling SetAsync here would
+                // discard a completed result and force the next caller to re-run the factory.
+                await SetAsync(key, value, writeOptions, tags, CancellationToken.None).ConfigureAwait(false);
+            }
+        }
+
+        return value;
+    }
+
+    // options == null always yields the same write-disabled options, so hoist it out of the per-call
+    // path. Safe to share because HybridCacheEntryOptions is immutable.
+    private static readonly HybridCacheEntryOptions s_writesDisabled = new()
+    {
+        Flags = HybridCacheEntryFlags.DisableLocalCacheWrite | HybridCacheEntryFlags.DisableDistributedCacheWrite,
+    };
+
+    private static HybridCacheEntryOptions CloneWithWritesDisabled(HybridCacheEntryOptions options)
+    {
+        HybridCacheEntryFlags flags = (options.Flags ?? HybridCacheEntryFlags.None)
+            | HybridCacheEntryFlags.DisableLocalCacheWrite
+            | HybridCacheEntryFlags.DisableDistributedCacheWrite;
+        return new HybridCacheEntryOptions
+        {
+            Expiration = options.Expiration,
+            LocalCacheExpiration = options.LocalCacheExpiration,
+            LocalSize = options.LocalSize,
+            Flags = flags,
+        };
+    }
+
+    /// <summary>
+    /// Asynchronously gets the value associated with the key if it exists, or generates a new entry using the provided key and a value from the given factory if the key is not found.
+    /// </summary>
+    /// <typeparam name="T">The type of the data being considered.</typeparam>
+    /// <param name="key">The key of the entry to look for or create.</param>
+    /// <param name="factory">Provides the underlying data service if the data is not available in the cache. The <see cref="HybridCacheEntryContext"/> passed to the factory allows it to influence cache entry options based on the result.</param>
+    /// <param name="options">Additional options for this cache entry.</param>
+    /// <param name="tags">The tags to associate with this cache item.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
+    /// <returns>The data, either from cache or the underlying data service.</returns>
+    public ValueTask<T> GetOrCreateAsync<T>(string key,
+        Func<HybridCacheEntryContext, CancellationToken, ValueTask<T>> factory,
+        HybridCacheEntryOptions? options = null, IEnumerable<string>? tags = null, CancellationToken cancellationToken = default)
+        => GetOrCreateAsync(key, factory, WrappedOptionsCallbackCache<T>.Instance, options, tags, cancellationToken);
+
+#if NET
+    /// <summary>
+    /// Asynchronously gets the value associated with the key if it exists, or generates a new entry using the provided key and a value from the given factory if the key is not found.
+    /// </summary>
+    /// <typeparam name="T">The type of the data being considered.</typeparam>
+    /// <param name="key">The key of the entry to look for or create.</param>
+    /// <param name="factory">Provides the underlying data service if the data is not available in the cache. The <see cref="HybridCacheEntryContext"/> passed to the factory allows it to influence cache entry options based on the result.</param>
+    /// <param name="options">Additional options for this cache entry.</param>
+    /// <param name="tags">The tags to associate with this cache item.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
+    /// <returns>The data, either from cache or the underlying data service.</returns>
+    public ValueTask<T> GetOrCreateAsync<T>(
+        ReadOnlySpan<char> key,
+        Func<HybridCacheEntryContext, CancellationToken, ValueTask<T>> factory,
+        HybridCacheEntryOptions? options = null,
+        IEnumerable<string>? tags = null,
+        CancellationToken cancellationToken = default)
+        => GetOrCreateAsync(key, factory, WrappedOptionsCallbackCache<T>.Instance, options, tags, cancellationToken);
+
+    /// <summary>
+    /// Asynchronously gets the value associated with the key if it exists, or generates a new entry using the provided key and a value from the given factory if the key is not found.
+    /// </summary>
+    /// <typeparam name="TState">The type of additional state required by <paramref name="factory"/>.</typeparam>
+    /// <typeparam name="T">The type of the data being considered.</typeparam>
+    /// <param name="key">The key of the entry to look for or create.</param>
+    /// <param name="state">The state required for <paramref name="factory"/>.</param>
+    /// <param name="factory">Provides the underlying data service if the data is not available in the cache. The <see cref="HybridCacheEntryContext"/> passed to the factory allows it to influence cache entry options based on the result.</param>
+    /// <param name="options">Additional options for this cache entry.</param>
+    /// <param name="tags">The tags to associate with this cache item.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
+    /// <returns>The data, either from cache or the underlying data service.</returns>
+    public virtual ValueTask<T> GetOrCreateAsync<TState, T>(
+        ReadOnlySpan<char> key,
+        TState state,
+        Func<TState, HybridCacheEntryContext, CancellationToken, ValueTask<T>> factory,
+        HybridCacheEntryOptions? options = null,
+        IEnumerable<string>? tags = null,
+        CancellationToken cancellationToken = default)
+        => GetOrCreateAsync(key.ToString(), state, factory, options, tags, cancellationToken);
+
+    /// <summary>
+    /// Asynchronously gets the value associated with the key if it exists, or generates a new entry using the provided key and a value from the given factory if the key is not found.
+    /// </summary>
+    /// <typeparam name="T">The type of the data being considered.</typeparam>
+    /// <param name="key">The key of the entry to look for or create.</param>
+    /// <param name="factory">Provides the underlying data service if the data is not available in the cache. The <see cref="HybridCacheEntryContext"/> passed to the factory allows it to influence cache entry options based on the result.</param>
+    /// <param name="options">Additional options for this cache entry.</param>
+    /// <param name="tags">The tags to associate with this cache item.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
+    /// <returns>The data, either from cache or the underlying data service.</returns>
+    public ValueTask<T> GetOrCreateAsync<T>(
+        ref DefaultInterpolatedStringHandler key,
+        Func<HybridCacheEntryContext, CancellationToken, ValueTask<T>> factory,
+        HybridCacheEntryOptions? options = null,
+        IEnumerable<string>? tags = null,
+        CancellationToken cancellationToken = default)
+        => ClearAndReturn(ref key,
+            GetOrCreateAsync(key.Text, factory, WrappedOptionsCallbackCache<T>.Instance, options, tags, cancellationToken));
+
+    /// <summary>
+    /// Asynchronously gets the value associated with the key if it exists, or generates a new entry using the provided key and a value from the given factory if the key is not found.
+    /// </summary>
+    /// <typeparam name="TState">The type of additional state required by <paramref name="factory"/>.</typeparam>
+    /// <typeparam name="T">The type of the data being considered.</typeparam>
+    /// <param name="key">The key of the entry to look for or create.</param>
+    /// <param name="state">The state required for <paramref name="factory"/>.</param>
+    /// <param name="factory">Provides the underlying data service if the data is not available in the cache. The <see cref="HybridCacheEntryContext"/> passed to the factory allows it to influence cache entry options based on the result.</param>
+    /// <param name="options">Additional options for this cache entry.</param>
+    /// <param name="tags">The tags to associate with this cache item.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
+    /// <returns>The data, either from cache or the underlying data service.</returns>
+    public ValueTask<T> GetOrCreateAsync<TState, T>(
+        ref DefaultInterpolatedStringHandler key,
+        TState state,
+        Func<TState, HybridCacheEntryContext, CancellationToken, ValueTask<T>> factory,
+        HybridCacheEntryOptions? options = null,
+        IEnumerable<string>? tags = null,
+        CancellationToken cancellationToken = default)
+        => ClearAndReturn(ref key,
+            GetOrCreateAsync(key.Text, state, factory, options, tags, cancellationToken));
+
+    // It is *not* an error that this Clear occurs before the "await"; by definition, the implementation is *required* to copy
+    // the value locally before an await, precisely because the ref-struct cannot bridge an await. Thus: we are fine to clean
+    // the buffer even in the non-synchronous completion scenario.
+    private static ValueTask<T> ClearAndReturn<T>(ref DefaultInterpolatedStringHandler key, ValueTask<T> result)
+    {
         key.Clear();
         return result;
     }
 #endif
+
+    private static class WrappedOptionsCallbackCache<T>
+    {
+        public static readonly Func<Func<HybridCacheEntryContext, CancellationToken, ValueTask<T>>, HybridCacheEntryContext, CancellationToken, ValueTask<T>> Instance =
+            static (callback, context, ct) => callback(context, ct);
+    }
+
+    private sealed class DefaultImplState<TState, T>
+    {
+        public readonly TState State;
+        public readonly Func<TState, HybridCacheEntryContext, CancellationToken, ValueTask<T>> Factory;
+        public readonly HybridCacheEntryOptions? Options;
+
+        // Set by the wrapped delegate when the factory runs; a non-null value signals a cache miss.
+        public HybridCacheEntryContext? Context;
+
+        public DefaultImplState(TState state, Func<TState, HybridCacheEntryContext, CancellationToken, ValueTask<T>> factory, HybridCacheEntryOptions? options)
+        {
+            State = state;
+            Factory = factory;
+            Options = options;
+        }
+    }
 
     private static class WrappedCallbackCache<T> // per-T memoized helper that allows GetOrCreateAsync<T> and GetOrCreateAsync<TState, T> to share an implementation
     {

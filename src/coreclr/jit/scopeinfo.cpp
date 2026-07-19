@@ -148,8 +148,53 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack() const
 }
 
 //------------------------------------------------------------------------
-// storeVariableInRegisters: Convert the siVarLoc instance in a register
-//  location using the given registers.
+// mapRegNumToDebugRegNum: Map a JIT regNumber to the register number encoding
+// used in debug info.
+//
+// Arguments:
+//    reg - the JIT register to encode.
+//
+// Return Value:
+//    The debug-info register number for reg.
+//
+// static
+ICorDebugInfo::RegNum CodeGenInterface::siVarLoc::mapRegNumToDebugRegNum(regNumber reg)
+{
+#ifdef TARGET_AMD64
+    constexpr unsigned fpRegDebugNumBase  = ICorDebugInfo::REGNUM_FP_FIRST;
+    constexpr unsigned maxEncodableFpRegs = 16; // Only XMM0-XMM15 are in RegNum
+#else
+    constexpr unsigned fpRegDebugNumBase  = 0;
+    constexpr unsigned maxEncodableFpRegs = 0;
+#endif
+
+    if (genIsValidIntReg(reg))
+    {
+        return static_cast<ICorDebugInfo::RegNum>(reg);
+    }
+
+    if (genIsValidFloatReg(reg))
+    {
+        unsigned fpIndex = reg - REG_FP_FIRST;
+#ifdef TARGET_AMD64
+        // Only XMM0-XMM15 are representable in the debug RegNum enum.
+        // XMM16-XMM31 (AVX-512) cannot be encoded.
+        if (fpIndex >= maxEncodableFpRegs)
+        {
+            return ICorDebugInfo::REGNUM_COUNT; // sentinel: caller checks for this
+        }
+#endif
+        return static_cast<ICorDebugInfo::RegNum>(fpRegDebugNumBase + fpIndex);
+    }
+
+    // Mask registers (K0-K7) and any other non-int/non-float registers
+    // cannot be represented in the debug info encoding.
+    return ICorDebugInfo::REGNUM_COUNT;
+}
+
+//------------------------------------------------------------------------
+// storeVariableInRegisters: Convert the siVarLoc instance into a register
+// location using the given registers.
 //
 // Arguments:
 //    reg       - the first register where the variable is placed.
@@ -158,18 +203,66 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack() const
 //
 void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumber otherReg)
 {
+    // Note: mask registers (K0-K7) and XMM16+ are accepted but will produce
+    // VLT_INVALID since they can't be encoded in debug info.
+
     if (otherReg == REG_NA)
     {
-        // Only one register is used
-        vlType       = VLT_REG;
-        vlReg.vlrReg = reg;
+        if (genIsValidFloatReg(reg))
+        {
+#ifdef TARGET_AMD64
+            ICorDebugInfo::RegNum debugReg = mapRegNumToDebugRegNum(reg);
+            if (debugReg == ICorDebugInfo::REGNUM_COUNT)
+            {
+                // XMM16+ cannot be encoded in the debug info.
+                vlType = VLT_INVALID;
+                return;
+            }
+            vlType       = VLT_REG_FP;
+            vlReg.vlrReg = static_cast<regNumber>(debugReg);
+#else
+            // Non-AMD64: store 0-based FP register index (DBI adds platform base)
+            vlType       = VLT_REG_FP;
+            vlReg.vlrReg = static_cast<regNumber>(reg - REG_FP_FIRST);
+#endif
+        }
+        else if (genIsValidIntReg(reg))
+        {
+            vlType       = VLT_REG;
+            vlReg.vlrReg = reg;
+        }
+        else
+        {
+            // Mask registers or other non-encodable register types.
+            vlType = VLT_INVALID;
+            return;
+        }
     }
     else
     {
-        // Two register are used
+#ifdef TARGET_AMD64
+        ICorDebugInfo::RegNum debugReg1 = mapRegNumToDebugRegNum(reg);
+        ICorDebugInfo::RegNum debugReg2 = mapRegNumToDebugRegNum(otherReg);
+        if (debugReg1 == ICorDebugInfo::REGNUM_COUNT || debugReg2 == ICorDebugInfo::REGNUM_COUNT)
+        {
+            vlType = VLT_INVALID;
+            return;
+        }
+        vlType            = VLT_REG_REG;
+        vlRegReg.vlrrReg1 = static_cast<regNumber>(debugReg1);
+        vlRegReg.vlrrReg2 = static_cast<regNumber>(debugReg2);
+#else
+        // Non-AMD64: VLT_REG_REG only supports int registers. If either is FP,
+        // we cannot encode this — fall back to VLT_INVALID.
+        if (!genIsValidIntReg(reg) || !genIsValidIntReg(otherReg))
+        {
+            vlType = VLT_INVALID;
+            return;
+        }
         vlType            = VLT_REG_REG;
         vlRegReg.vlrrReg1 = reg;
         vlRegReg.vlrrReg2 = otherReg;
+#endif
     }
 }
 
@@ -409,11 +502,18 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 #ifdef TARGET_64BIT
         case TYP_FLOAT:
         case TYP_DOUBLE:
-            // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
-            // so no XMM registers can get debug information.
+        {
+            ICorDebugInfo::RegNum debugReg = mapRegNumToDebugRegNum(varDsc->GetRegNum());
+            if (debugReg == ICorDebugInfo::REGNUM_COUNT)
+            {
+                // XMM16+ cannot be encoded.
+                this->vlType = VLT_INVALID;
+                break;
+            }
             this->vlType       = VLT_REG_FP;
-            this->vlReg.vlrReg = varDsc->GetRegNum();
+            this->vlReg.vlrReg = static_cast<regNumber>(debugReg);
             break;
+        }
 
 #else // !TARGET_64BIT
 
@@ -440,14 +540,15 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         case TYP_MASK:
 #endif // FEATURE_MASKED_HW_INTRINSICS
         {
-            this->vlType = VLT_REG_FP;
-
-            // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
-            // so no XMM registers can get debug information.
-            //
-            // Note: Need to initialize vlrReg field, otherwise during jit dump hitting an assert
-            // in eeDispVar() --> getRegName() that regNumber is valid.
-            this->vlReg.vlrReg = varDsc->GetRegNum();
+            ICorDebugInfo::RegNum debugReg = mapRegNumToDebugRegNum(varDsc->GetRegNum());
+            if (debugReg == ICorDebugInfo::REGNUM_COUNT)
+            {
+                // XMM16+/AVX-512 registers cannot be encoded.
+                this->vlType = VLT_INVALID;
+                break;
+            }
+            this->vlType       = VLT_REG_FP;
+            this->vlReg.vlrReg = static_cast<regNumber>(debugReg);
             break;
         }
 #endif // FEATURE_SIMD
@@ -486,6 +587,7 @@ CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg,
 //
 // Arguments:
 //    varDsc       - the variable it is desired to build the "siVarLoc".
+//    offset       - offset into the variable to add
 //    stackLevel   - the current stack level. If the stack pointer changes in
 //                   the function, we must adjust stack pointer-based local
 //                   variable offsets to compensate.
@@ -494,12 +596,12 @@ CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg,
 //    A "siVarLoc" representing the variable location, which could live
 //    in a register, an stack position, or a combination of both.
 //
-CodeGenInterface::siVarLoc CodeGenInterface::getSiVarLoc(const LclVarDsc* varDsc, unsigned int stackLevel) const
+CodeGenInterface::siVarLoc CodeGenInterface::getSiVarLoc(const LclVarDsc* varDsc, int offset, int stackLevel) const
 {
     // For stack vars, find the base register, and offset
 
     regNumber baseReg;
-    signed    offset = varDsc->GetStackOffset();
+    offset += varDsc->GetStackOffset();
 
     if (!varDsc->lvFramePointerBased)
     {
@@ -524,12 +626,21 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
     {
         case VLT_REG:
         case VLT_REG_BYREF:
-        case VLT_REG_FP:
             printf("%s", getRegName(varLoc->vlReg.vlrReg));
             if (varLoc->vlType == VLT_REG_BYREF)
             {
                 printf(" byref");
             }
+            break;
+
+        case VLT_REG_FP:
+#ifdef TARGET_AMD64
+            printf("%s", getRegName(static_cast<regNumber>(REG_FP_FIRST + varLoc->vlReg.vlrReg -
+                                                           ICorDebugInfo::REGNUM_FP_FIRST)));
+#else
+            // Non-AMD64: vlrReg is a 0-based FP register index; map back to JIT regNumber
+            printf("%s", getRegName(static_cast<regNumber>(REG_FP_FIRST + varLoc->vlReg.vlrReg)));
+#endif
             break;
 
         case VLT_STK:
@@ -542,17 +653,36 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
             {
                 printf(STR_SPBASE "'[%d] (1 slot)", varLoc->vlStk.vlsOffset);
             }
-            if (varLoc->vlType == VLT_REG_BYREF)
+            if (varLoc->vlType == VLT_STK_BYREF)
             {
                 printf(" byref");
             }
             break;
 
-#ifndef TARGET_AMD64
         case VLT_REG_REG:
-            printf("%s-%s", getRegName(varLoc->vlRegReg.vlrrReg1), getRegName(varLoc->vlRegReg.vlrrReg2));
-            break;
+#ifdef TARGET_AMD64
+        {
+            // Map RegNum values (which may include FP register indices) back to
+            // JIT regNumber for display purposes.
+            auto toJitReg = [](regNumber r) -> regNumber {
+                unsigned val     = static_cast<unsigned>(r);
+                unsigned fpFirst = static_cast<unsigned>(ICorDebugInfo::REGNUM_FP_FIRST);
+                if (val >= fpFirst)
+                {
+                    return static_cast<regNumber>(REG_FP_FIRST + val - fpFirst);
+                }
+                return r;
+            };
 
+            printf("%s-%s", getRegName(toJitReg(varLoc->vlRegReg.vlrrReg1)),
+                   getRegName(toJitReg(varLoc->vlRegReg.vlrrReg2)));
+        }
+#else
+            printf("%s-%s", getRegName(varLoc->vlRegReg.vlrrReg1), getRegName(varLoc->vlRegReg.vlrrReg2));
+#endif
+        break;
+
+#ifndef TARGET_AMD64
         case VLT_REG_STK:
             if ((int)varLoc->vlRegStk.vlrsStk.vlrssBaseReg != (int)ICorDebugInfo::REGNUM_AMBIENT_SP)
             {
@@ -1080,7 +1210,7 @@ void CodeGenInterface::VariableLiveKeeper::siStartVariableLiveRange(const LclVar
     {
         // Build siVarLoc for this born "varDsc"
         CodeGenInterface::siVarLoc varLocation =
-            m_compiler->codeGen->getSiVarLoc(varDsc, m_compiler->codeGen->getCurrentStackLevel());
+            m_compiler->codeGen->getSiVarLoc(varDsc, 0, (int)m_compiler->codeGen->getCurrentStackLevel());
 
         VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];
         // this variable live range is valid from this point
@@ -1149,7 +1279,7 @@ void CodeGenInterface::VariableLiveKeeper::siUpdateVariableLiveRange(const LclVa
     {
         // Build the location of the variable
         CodeGenInterface::siVarLoc siVarLoc =
-            m_compiler->codeGen->getSiVarLoc(varDsc, m_compiler->codeGen->getCurrentStackLevel());
+            m_compiler->codeGen->getSiVarLoc(varDsc, 0, (int)m_compiler->codeGen->getCurrentStackLevel());
 
         // Report the home change for this variable
         VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];
@@ -1688,7 +1818,7 @@ NATIVE_OFFSET CodeGen::psiGetVarStackOffset(const LclVarDsc* lclVarDsc) const
 //
 void CodeGen::psiBegProlog()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     m_compiler->compResetScopeLists();
 
@@ -1735,7 +1865,18 @@ void CodeGen::psiBegProlog()
 
         if (reg1 != REG_NA)
         {
-            varLocation.storeVariableInRegisters(reg1, reg2);
+            // storeVariableInRegisters handles int and FP registers on all
+            // platforms (FP → VLT_REG_FP, mixed multi-reg → VLT_INVALID on
+            // non-AMD64). Only fall back to stack if the register is truly
+            // not representable (neither int nor FP).
+            if (genIsValidIntReg(reg1) || genIsValidFloatReg(reg1))
+            {
+                varLocation.storeVariableInRegisters(reg1, reg2);
+            }
+            else
+            {
+                varLocation.storeVariableOnStack(REG_SPBASE, psiGetVarStackOffset(lclVarDsc));
+            }
         }
         else
         {
@@ -1756,7 +1897,7 @@ void CodeGen::psiBegProlog()
 //
 void CodeGen::psiEndProlog()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     varLiveKeeper->psiClosePrologVariableRanges();
 }
 
@@ -1781,36 +1922,49 @@ void CodeGen::genSetScopeInfo()
     }
 #endif
 
-    unsigned varsLocationsCount = 0;
-
-    varsLocationsCount = (unsigned int)varLiveKeeper->getLiveRangesCount();
+    unsigned varsLocationsCount = (unsigned int)(varLiveKeeper->getLiveRangesCount() + emittedCallReturnInfo->size());
 
     if (varsLocationsCount == 0)
     {
         // No variable home to report
-        m_compiler->eeSetLVcount(0);
+        m_compiler->eeAllocateLVs(0);
         m_compiler->eeSetLVdone();
         return;
     }
 
-    noway_assert(m_compiler->opts.compScopeInfo && (m_compiler->info.compVarScopesCount > 0));
+    noway_assert((m_compiler->opts.compScopeInfo && (m_compiler->info.compVarScopesCount > 0)) ||
+                 (varLiveKeeper->getLiveRangesCount() == 0));
 
     // Initialize the table where the reported variables' home will be placed.
-    m_compiler->eeSetLVcount(varsLocationsCount);
+    m_compiler->eeAllocateLVs(varsLocationsCount);
 
 #ifdef DEBUG
     genTrnslLocalVarCount = varsLocationsCount;
     if (varsLocationsCount)
     {
-        genTrnslLocalVarInfo = new (m_compiler, CMK_DebugOnly) TrnslLocalVarInfo[varsLocationsCount];
+        genTrnslLocalVarInfo = new (m_compiler, CMK_DebugOnly) TrnslLocalVarInfo[varsLocationsCount]();
     }
 #endif
 
-    // We can have one of both flags defined, both, or none. Specially if we need to compare both
-    // both results. But we cannot report both to the debugger, since there would be overlapping
-    // intervals, and may not indicate the same variable location.
+    if (varLiveKeeper->getLiveRangesCount() > 0)
+    {
+        genSetScopeInfoUsingVariableRanges();
+    }
 
-    genSetScopeInfoUsingVariableRanges();
+    for (const EmittedCallReturnInfo& callReturnInfo : *emittedCallReturnInfo)
+    {
+        // Skip entries where the return value location couldn't be encoded
+        // (e.g., mask registers, XMM16+ on AVX-512).
+        if (callReturnInfo.returnValueLoc.vlType == VLT_INVALID)
+        {
+            continue;
+        }
+
+        UNATIVE_OFFSET retOffset = callReturnInfo.returnLocation.CodeOffset(GetEmitter());
+
+        m_compiler->eeSetLVinfo(m_compiler->eeVarsCount++, retOffset, retOffset + 1, callReturnInfo.callILOffset,
+                                ICorDebugInfo::CALL_RETURN_ILNUM, callReturnInfo.returnValueLoc);
+    }
 
     m_compiler->eeSetLVdone();
 }
@@ -1839,6 +1993,12 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
 
         auto reportRange = [this, varDsc, varNum, &liveRangeIndex](siVarLoc* loc, UNATIVE_OFFSET start,
                                                                    UNATIVE_OFFSET end) {
+            // Skip entries that couldn't be encoded (e.g., mask registers, XMM16+).
+            if (loc->vlType == VLT_INVALID)
+            {
+                return;
+            }
+
             if (varDsc->lvIsParam && (start == end))
             {
                 // If the length is zero, it means that the prolog is empty. In that case,
@@ -2001,7 +2161,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
 #endif // DEBUG
 
-    m_compiler->eeSetLVinfo(which, startOffs, length, ilVarNum, *varLoc);
+    m_compiler->eeSetLVinfo(which, startOffs, startOffs + length, 0, ilVarNum, *varLoc);
 }
 
 /*****************************************************************************/

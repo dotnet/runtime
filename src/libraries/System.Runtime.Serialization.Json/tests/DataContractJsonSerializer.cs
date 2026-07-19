@@ -2319,6 +2319,71 @@ public static partial class DataContractJsonSerializerTests
         }
     }
 
+    public static IEnumerable<object[]> ByteOrderMarkEncodings()
+    {
+        yield return new object[] { new UnicodeEncoding(bigEndian: false, byteOrderMark: true) }; // UTF-16LE with BOM
+        yield return new object[] { new UnicodeEncoding(bigEndian: true, byteOrderMark: true) };  // UTF-16BE with BOM
+        yield return new object[] { new UTF8Encoding(encoderShouldEmitUTF8Identifier: true) };    // UTF-8 with BOM
+    }
+
+    [Theory]
+    [MemberData(nameof(ByteOrderMarkEncodings))]
+    public static void DCJS_DeserializeStreamWithByteOrderMark(Encoding encoding)
+    {
+        var serializer = new DataContractJsonSerializer(typeof(Person1));
+        var value = new Person1 { Name = "John", Age = 42 };
+        byte[] bytes = GetJsonBytesWithByteOrderMark(serializer, value, encoding);
+
+        // Auto-detected encoding (no encoding specified). This is the scenario from the bug report.
+        using (var stream = new MemoryStream(bytes))
+        {
+            var result = (Person1)serializer.ReadObject(stream);
+            Assert.Equal(value.Name, result.Name);
+            Assert.Equal(value.Age, result.Age);
+        }
+
+        // Encoding explicitly specified and matching the byte order mark.
+        using (var stream = new MemoryStream(bytes))
+        {
+            XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(stream, encoding, XmlDictionaryReaderQuotas.Max, null);
+            var result = (Person1)serializer.ReadObject(reader);
+            Assert.Equal(value.Name, result.Name);
+            Assert.Equal(value.Age, result.Age);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ByteOrderMarkEncodings))]
+    public static void DCJS_DeserializeBufferWithByteOrderMark(Encoding encoding)
+    {
+        var serializer = new DataContractJsonSerializer(typeof(Person1));
+        var value = new Person1 { Name = "John", Age = 42 };
+        byte[] bytes = GetJsonBytesWithByteOrderMark(serializer, value, encoding);
+
+        XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(bytes, 0, bytes.Length, XmlDictionaryReaderQuotas.Max);
+        var result = (Person1)serializer.ReadObject(reader);
+        Assert.Equal(value.Name, result.Name);
+        Assert.Equal(value.Age, result.Age);
+    }
+
+    private static byte[] GetJsonBytesWithByteOrderMark(DataContractJsonSerializer serializer, object value, Encoding encoding)
+    {
+        string json;
+        using (var utf8Stream = new MemoryStream())
+        {
+            serializer.WriteObject(utf8Stream, value);
+            json = Encoding.UTF8.GetString(utf8Stream.ToArray());
+        }
+
+        byte[] preamble = encoding.GetPreamble();
+        Assert.NotEmpty(preamble);
+        byte[] body = encoding.GetBytes(json);
+        byte[] bytes = new byte[preamble.Length + body.Length];
+        preamble.CopyTo(bytes, 0);
+        body.CopyTo(bytes, preamble.Length);
+        return bytes;
+    }
+
     [Fact]
     public static void DCJS_MyISerializableType()
     {
@@ -3122,5 +3187,71 @@ public static partial class DataContractJsonSerializerTests
     private static string GetAmString(DateTimeFormat dateTimeFormat)
     {
         return ((CultureInfo)dateTimeFormat.FormatProvider).DateTimeFormat.AMDesignator;
+    }
+
+    // Test for the fix to ensure DataContractJsonSerializer passes ISerializationSurrogateProvider to internal XML serializer
+    // Same tests used for the regular DataContractSerializer to ensure the surrogate provider is working correctly
+    [Fact]
+    public static void DCJS_MyPersonSurrogate()
+    {
+        DataContractJsonSerializer dcjs = new DataContractJsonSerializer(typeof(Family));
+        dcjs.SetSerializationSurrogateProvider(new MyPersonSurrogateProvider());
+        MemoryStream ms = new MemoryStream();
+        Family myFamily = new Family
+        {
+            Members = new NonSerializablePerson[]
+            {
+                new NonSerializablePerson("John", 34),
+                new NonSerializablePerson("Jane", 32),
+                new NonSerializablePerson("Bob", 5),
+            }
+        };
+        dcjs.WriteObject(ms, myFamily);
+        ms.Position = 0;
+        var newFamily = (Family)dcjs.ReadObject(ms);
+        Assert.Equal(myFamily.Members.Length, newFamily.Members.Length);
+        for (int i = 0; i < myFamily.Members.Length; ++i)
+        {
+            Assert.Equal(myFamily.Members[i].Name, newFamily.Members[i].Name);
+            Assert.Equal(myFamily.Members[i].Age, newFamily.Members[i].Age);
+        }
+    }
+
+    [Fact]
+    [SkipOnPlatform(TestPlatforms.Wasi, "/tmp is not preopened in the wasmtime '--dir .' sandbox, so temp files cannot be created.")]
+    public static void DCJS_FileStreamSurrogate()
+    {
+        using (var testFile = TempFile.Create())
+        {
+            const string TestFileData = "Some data for data contract surrogate test";
+
+            // Create the serializer and specify the surrogate
+            var dcjs = new DataContractJsonSerializer(typeof(MyFileStream));
+            dcjs.SetSerializationSurrogateProvider(MyFileStreamSurrogateProvider.Singleton);
+
+            // Create and initialize the stream
+            byte[] serializedStream;
+
+            // Serialize the stream
+            using (var stream1 = new MyFileStream(testFile.Path))
+            {
+                stream1.WriteLine(TestFileData);
+                using (var memoryStream = new MemoryStream())
+                {
+                    dcjs.WriteObject(memoryStream, stream1);
+                    serializedStream = memoryStream.ToArray();
+                }
+            }
+
+            // Deserialize the stream
+            using (var stream = new MemoryStream(serializedStream))
+            {
+                using (var stream2 = (MyFileStream)dcjs.ReadObject(stream))
+                {
+                    string fileData = stream2.ReadLine();
+                    Assert.Equal(TestFileData, fileData);
+                }
+            }
+        }
     }
 }

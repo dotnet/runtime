@@ -52,6 +52,11 @@ namespace InteropLib { namespace ABI {
 GARY_DECL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
 
 #endif // FEATURE_COMWRAPPERS
+
+#ifdef FEATURE_OBJCMARSHAL
+GVAL_DECL(OBJECTHANDLE, g_ObjectiveCTrackingInfoTable);
+#endif // FEATURE_OBJCMARSHAL
+
 class DebugInterface;
 class DebugInfoManager;
 class EEDbgInterfaceImpl;

@@ -87,7 +87,7 @@ namespace ILCompiler
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
-            if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst or TargetOS.Browser)
+            if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst or TargetOS.Browser or TargetOS.Wasi)
             {
                 // These platforms do not support jitted code, so we want to ensure that we don't
                 // need to fall back to the interpreter for any hardware-intrinsic optimizations.
@@ -679,12 +679,9 @@ namespace ILCompiler
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
 
-                    if (Get(_command.EnableGenericCycleDetection))
-                    {
-                        builder.UseGenericCycleDetection(
-                            depthCutoff: Get(_command.GenericCycleDepthCutoff),
-                            breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
-                    }
+                    builder.UseGenericCycleDetection(
+                        depthCutoff: Get(_command.GenericCycleDepthCutoff),
+                        breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
@@ -818,7 +815,7 @@ namespace ILCompiler
                 int curIndex = 0;
                 foreach (var searchMethod in method.OwningType.GetMethods())
                 {
-                    if (!searchMethod.Name.SequenceEqual(method.Name))
+                    if (searchMethod.Name != method.Name)
                         continue;
 
                     curIndex++;

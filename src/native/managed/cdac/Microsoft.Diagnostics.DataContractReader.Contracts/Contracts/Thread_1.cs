@@ -23,10 +23,18 @@ internal readonly struct Thread_1 : IThread
     [Flags]
     private enum ThreadState_1
     {
+        SuspensionTrapped = 0x2,
+        GCSuspendRedirected = 0x4,
+        DebugSuspendPending = 0x8,
         Hijacked = 0x80,
         Background = 0x200,
         Unstarted = 0x400,
+        CoInitialized = 0x2000,
+        InSTA = 0x4000,
+        InMTA = 0x8000,
         Stopped = 0x10000,
+        DebugSyncSuspended = 0x80000,
+        DebugWillSync = 0x100000,
         ThreadPoolWorker = 0x1000000,
         WaitSleepJoin = 0x2000000,
         Detached = unchecked((int)0x80000000)
@@ -48,14 +56,14 @@ internal readonly struct Thread_1 : IThread
 
     void IThread.SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
     {
-        uint current = _target.ReadField<uint>(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState));
-        _target.WriteField(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState), current | (uint)state);
+        Data.Thread t = _target.ProcessedData.GetOrAdd<Data.Thread>(thread);
+        t.WriteDebuggerControlledThreadState(t.DebuggerControlledThreadState | (uint)state);
     }
 
     void IThread.ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
     {
-        uint current = _target.ReadField<uint>(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState));
-        _target.WriteField(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState), current & ~(uint)state);
+        Data.Thread t = _target.ProcessedData.GetOrAdd<Data.Thread>(thread);
+        t.WriteDebuggerControlledThreadState(t.DebuggerControlledThreadState & ~(uint)state);
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
@@ -81,18 +89,34 @@ internal readonly struct Thread_1 : IThread
     private static Contracts.ThreadState GetThreadState(ThreadState_1 state)
     {
         Contracts.ThreadState result = Contracts.ThreadState.Unknown;
+        if (state.HasFlag(ThreadState_1.SuspensionTrapped))
+            result |= Contracts.ThreadState.SuspensionTrapped;
+        if (state.HasFlag(ThreadState_1.GCSuspendRedirected))
+            result |= Contracts.ThreadState.GCSuspendRedirected;
+        if (state.HasFlag(ThreadState_1.DebugSuspendPending))
+            result |= Contracts.ThreadState.DebugSuspendPending;
         if (state.HasFlag(ThreadState_1.Hijacked))
             result |= Contracts.ThreadState.Hijacked;
         if (state.HasFlag(ThreadState_1.Background))
             result |= Contracts.ThreadState.Background;
         if (state.HasFlag(ThreadState_1.Unstarted))
             result |= Contracts.ThreadState.Unstarted;
+        if (state.HasFlag(ThreadState_1.CoInitialized))
+            result |= Contracts.ThreadState.CoInitialized;
+        if (state.HasFlag(ThreadState_1.InSTA))
+            result |= Contracts.ThreadState.InSTA;
+        if (state.HasFlag(ThreadState_1.InMTA))
+            result |= Contracts.ThreadState.InMTA;
         if (state.HasFlag(ThreadState_1.Stopped))
             result |= Contracts.ThreadState.Stopped;
-        if (state.HasFlag(ThreadState_1.WaitSleepJoin))
-            result |= Contracts.ThreadState.WaitSleepJoin;
+        if (state.HasFlag(ThreadState_1.DebugSyncSuspended))
+            result |= Contracts.ThreadState.DebugSyncSuspended;
+        if (state.HasFlag(ThreadState_1.DebugWillSync))
+            result |= Contracts.ThreadState.DebugWillSync;
         if (state.HasFlag(ThreadState_1.ThreadPoolWorker))
             result |= Contracts.ThreadState.ThreadPoolWorker;
+        if (state.HasFlag(ThreadState_1.WaitSleepJoin))
+            result |= Contracts.ThreadState.WaitSleepJoin;
         if (state.HasFlag(ThreadState_1.Detached))
             result |= Contracts.ThreadState.Detached;
         return result;
@@ -148,7 +172,13 @@ internal readonly struct Thread_1 : IThread
             thread.LastThrownObjectIsUnhandled != 0,
             hasUnhandledException,
             thread.LinkNext,
-            thread.ThreadHandle);
+            thread.ThreadHandle,
+            thread.InteropDebuggingHijacked != 0,
+            thread.DebuggerFilterContext,
+            thread.GCFrame,
+            address != TargetPointer.Null,
+            exceptionInfo?.ExceptionRecord ?? TargetPointer.Null,
+            exceptionInfo?.ContextRecord ?? TargetPointer.Null);
     }
 
     void IThread.GetThreadAllocContext(TargetPointer threadPointer, out long allocBytes, out long allocBytesLoh)
@@ -175,7 +205,7 @@ internal readonly struct Thread_1 : IThread
         TargetPointer idDispenser = _target.ReadPointer(idDispenserPtr);
         Data.IdDispenser idDispenserObj = _target.ProcessedData.GetOrAdd<Data.IdDispenser>(idDispenser);
         TargetPointer threadPtr = TargetPointer.Null;
-        if (id < idDispenserObj.HighestId)
+        if (id <= idDispenserObj.HighestId)
             threadPtr = _target.ReadPointer(idDispenserObj.IdToThread + (ulong)(id * _target.PointerSize));
         return threadPtr;
     }
@@ -214,7 +244,8 @@ internal readonly struct Thread_1 : IThread
                 if (collectibleCount > indexOffset)
                 {
                     TargetPointer collectibleArray = threadLocalData.CollectibleTlsArrayData;
-                    threadLocalStaticBase = _target.ReadPointer(collectibleArray + (ulong)(indexOffset * _target.PointerSize));
+                    TargetPointer handleSlotAddress = collectibleArray + (ulong)(indexOffset * _target.PointerSize);
+                    threadLocalStaticBase = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(handleSlotAddress).Object;
                 }
                 break;
             case TLSIndexType.DirectOnThreadLocalData:
@@ -265,109 +296,5 @@ internal readonly struct Thread_1 : IThread
     {
         var (_, exceptionInfo, exceptionTrackerAddr) = GetThreadExceptionInfo(threadPointer);
         return GetActiveExceptionPseudoHandle(exceptionInfo, exceptionTrackerAddr);
-    }
-
-    byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
-    {
-        TargetPointer readFrom;
-        var (thread, exceptionInfo, _) = GetThreadExceptionInfo(threadPointer);
-        if (exceptionInfo == null)
-            return Array.Empty<byte>();
-        TargetPointer thrownObject = exceptionInfo.ThrownObject;
-        if (thrownObject != TargetPointer.Null)
-        {
-            Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(thrownObject);
-            if (exception.WatsonBuckets != TargetPointer.Null)
-            {
-                readFrom = _target.Contracts.Object.GetArrayData(exception.WatsonBuckets, out _, out _, out _);
-            }
-            else
-            {
-                readFrom = thread.UEWatsonBucketTrackerBuckets;
-                if (readFrom == TargetPointer.Null)
-                {
-                    readFrom = exceptionInfo.ExceptionWatsonBucketTrackerBuckets;
-                }
-                else
-                {
-                    return Array.Empty<byte>();
-                }
-            }
-        }
-        else
-        {
-            readFrom = thread.UEWatsonBucketTrackerBuckets;
-        }
-
-        if (readFrom == TargetPointer.Null)
-            return Array.Empty<byte>();
-
-        byte[] rval = new byte[_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock)];
-        _target.ReadBuffer(readFrom, rval);
-        return rval;
-    }
-
-    byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags)
-    {
-        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
-        byte[] bytes = new byte[context.Size];
-        Span<byte> buffer = new Span<byte>(bytes);
-
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
-
-        TargetPointer filterContext = TargetPointer.Null;
-
-        if (contextSource.HasFlag(ThreadContextSource.Debugger))
-            filterContext = thread.DebuggerFilterContext;
-
-        if (filterContext != TargetPointer.Null)
-        {
-            _target.ReadBuffer(filterContext.Value, buffer);
-            return bytes;
-        }
-
-        if (_target.TryGetThreadContext(thread.OSId.Value, contextFlags, buffer))
-        {
-            return bytes;
-        }
-
-        // Fall back to deriving a context from the explicit Frame chain stored in the Thread object.
-        return GetContextFromFrames(threadPointer);
-    }
-
-    private byte[] GetContextFromFrames(TargetPointer threadPointer)
-    {
-        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
-
-        ThreadData threadData = ((IThread)this).GetThreadData(threadPointer);
-        FrameIterator iterator = new FrameIterator(_target, threadData);
-        while (iterator.IsValid())
-        {
-            // For InterpreterFrame, fill the context from the top InterpMethodContextFrame
-            // (matches native InterpreterFrame::SetContextToInterpMethodContextFrame).
-            if (iterator.GetCurrentFrameType() == FrameType.InterpreterFrame)
-            {
-                context.Clear();
-                iterator.UpdateContextFromCurrentFrame(context);
-                return context.GetBytes();
-            }
-
-            // For other frames, look for the first (deepest) frame that yields a context
-            // with both SP and PC set (e.g. RedirectedThreadFrame, InlinedCallFrame,
-            // DynamicHelperFrame).
-            context.Clear();
-            iterator.UpdateContextFromCurrentFrame(context);
-            if (context.StackPointer.Value != 0 && context.InstructionPointer.Value != 0)
-            {
-                context.RawContextFlags = context.FullContextFlags;
-                return context.GetBytes();
-            }
-
-            iterator.Next();
-        }
-
-        // The thread is not running managed code: return a zeroed context.
-        context.Clear();
-        return context.GetBytes();
     }
 }

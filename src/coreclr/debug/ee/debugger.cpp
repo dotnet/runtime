@@ -3027,7 +3027,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
         (void)pModule; //prevent "unused variable" error from GCC
         _ASSERTE(pModule != NULL);
 
-        SafeComHolder<ISymUnmanagedReader> pReader(pModule->GetISymUnmanagedReader());
+        ComHolderPreemp<ISymUnmanagedReader> pReader(pModule->GetISymUnmanagedReader());
 
         // If we got a reader, use it.
         if (pReader != NULL)
@@ -8886,6 +8886,40 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
 }
 
 
+void Debugger::SendCreateThreadAtInterpreterEntry(Thread *pRuntimeThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(pRuntimeThread != NULL);
+        PRECONDITION(pRuntimeThread == g_pEEInterface->GetThread());
+    }
+    CONTRACTL_END;
+
+    if (CORDBUnrecoverableError(this))
+        return;
+
+    if (!CORDebuggerAttached())
+        return;
+
+    {
+        GCX_PREEMP();
+        PollWaitingForHelper();
+    }
+
+    SENDIPCEVENT_BEGIN(this, pRuntimeThread);
+
+    if (CORDebuggerAttached())
+    {
+        ThreadStarted(pRuntimeThread);
+    }
+
+    SENDIPCEVENT_END;
+}
+
+
 //---------------------------------------------------------------------------------------
 //
 // DetachThread is called by Runtime threads when they are completing
@@ -12689,6 +12723,20 @@ HRESULT Debugger::UpdateFunction(MethodDesc* pMD, SIZE_T encVersion)
         return S_OK;
     }
 
+#ifdef FEATURE_INTERPRETER
+    // The interpreter does not support on-stack replacement via EnC remap.
+    // Skip planting remap breakpoints so we never offer a RemapOpportunity
+    // that we cannot fulfill.
+    {
+        EECodeInfo codeInfo((PCODE)pJitInfo->m_addrOfCode);
+        if (codeInfo.IsInterpretedCode())
+        {
+            LOG((LF_CORDB, LL_INFO10000, "D::UF: method is interpreted, skipping EnC remap breakpoints\n"));
+            return S_OK;
+        }
+    }
+#endif // FEATURE_INTERPRETER
+
     //
     // Mine the old version of the method with patches so that we can provide
     // remap opportunities whenever the old version of the method is executed.
@@ -15811,7 +15859,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Esp = (DWORD)GetSP(&pDE->m_context);
 
@@ -15819,7 +15866,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 #elif defined(TARGET_AMD64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(CONTEXT));
 
@@ -15845,7 +15891,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 #elif defined(TARGET_ARM)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
@@ -15869,7 +15914,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 #elif defined(TARGET_ARM64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
@@ -15908,7 +15952,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SyncRegDisplayToCurrentContext(pRD);
 #elif defined(TARGET_RISCV64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
@@ -15948,7 +15991,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SyncRegDisplayToCurrentContext(pRD);
 #elif defined(TARGET_LOONGARCH64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
