@@ -104,16 +104,13 @@ The contract depends on the following globals
 | `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects |
 | `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | byte | Number of unused slots in noncollectible TLS array |
 | `PtrArrayOffsetToDataArray` | TargetPointer | Offset from PtrArray class address to start of enclosed data array |
-| `SizeOfGenericModeBlock` | uint32 | Size of GenericModeBlock struct |
 
 The contract additionally depends on these data descriptors
 
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
-| `Exception` | `WatsonBuckets` | Pointer to exception Watson buckets |
 | `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested exception info |
 | `ExceptionInfo` | `ThrownObjectHandle` | Pointer to exception object handle |
-| `ExceptionInfo` | `ExceptionWatsonBucketTrackerBuckets` | Pointer to Watson unhandled buckets on non-Unix |
 | `ExceptionInfo` | `ExceptionRecord` | Pointer to the OS `EXCEPTION_RECORD` the OS dispatcher pushed for this exception |
 | `ExceptionInfo` | `ContextRecord` | Pointer to the OS `CONTEXT` the OS dispatcher pushed for this exception |
 | `GCAllocContext` | `Pointer` | GC allocation pointer |
@@ -151,7 +148,6 @@ The contract additionally depends on these data descriptors
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
 | `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
 | `Thread` | `ThreadHandle` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
-| `Thread` | `UEWatsonBucketTrackerBuckets` | Pointer to thread Watson buckets data (optional, Windows only) |
 | `ThreadLocalData` | `NonCollectibleTlsData` | Count of non-collectible TLS data entries |
 | `ThreadLocalData` | `NonCollectibleTlsArrayData` | Pointer to non-collectible TLS array data |
 | `ThreadLocalData` | `CollectibleTlsData` | Count of collectible TLS data entries |
@@ -163,12 +159,6 @@ The contract additionally depends on these data descriptors
 | `ThreadStore` | `BackgroundCount` | Number of background threads |
 | `ThreadStore` | `PendingCount` | Number of pending threads |
 | `ThreadStore` | `DeadCount` | Number of dead threads |
-
-The contract depends on the following other contracts
-
-| Contract |
-| --- |
-| Object |
 
 ``` csharp
 enum TLSIndexType
@@ -294,9 +284,9 @@ TargetPointer IThread.IdToThread(uint id)
 {
     TargetPointer idDispenserPointer = target.ReadGlobalPointer(Constants.Globals.ThinlockThreadIdDispenser);
     TargetPointer idDispenser = target.ReadPointer(idDispenserPointer);
-    uint HighestId = target.ReadPointer(idDispenser + /* IdDispenser::HighestId offset */);
+    uint HighestId = target.Read<uint>(idDispenser + /* IdDispenser::HighestId offset */);
     TargetPointer threadPtr = TargetPointer.Null;
-    if (id < HighestId)
+    if (id <= HighestId)
         threadPtr = target.ReadPointer(idDispenser + /* IdDispenser::IdToThread offset + (index into IdToThread array * size of array elements (== size of target pointer)) */);
     return threadPtr;
 }
@@ -375,51 +365,6 @@ TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
     // Return the address of the ThrownObject field as a pseudo-handle.
     // Callers dereference this address to read the exception Object*.
     return exceptionTrackerPtr + /* ExceptionInfo::ThrownObject field offset */;
-}
-
-byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
-{
-    TargetPointer readFrom;
-    TargetPointer exceptionTrackerPtr = _target.ReadPointer(threadPointer + /*Thread::ExceptionTracker offset */);
-    if (exceptionTrackerPtr == TargetPointer.Null)
-        return Array.Empty<byte>();
-    TargetPointer thrownObjectHandle = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ThrownObjectHandle offset */);
-    TargetPointer throwableObjectPtr = target.ReadPointer(thrownObjectHandle);
-    if (throwableObjectPtr != TargetPointer.Null)
-    {
-        TargetPointer watsonBuckets = target.ReadPointer(throwableObjectPtr + /* Exception::WatsonBuckets offset */);
-        if (watsonBuckets != TargetPointer.Null)
-        {
-            readFrom = _target.Contracts.Object.GetArrayData(watsonBuckets, out _, out _, out _);
-        }
-        else
-        {
-            readFrom = /* Has Thread::UEWatsonBucketTrackerBuckets offset */
-                ? target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */)
-                : TargetPointer.Null;
-            if (readFrom == TargetPointer.Null)
-            {
-                readFrom = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ExceptionWatsonBucketTrackerBuckets offset */);
-            }
-            else
-            {
-                return Array.Empty<byte>();
-            }
-        }
-    }
-    else
-    {
-        readFrom = /* Has Thread::UEWatsonBucketTrackerBuckets offset */
-            ? target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */)
-            : TargetPointer.Null;
-    }
-
-    Span<byte> span = new byte[_target.ReadGlobal<uint>("SizeOfGenericModeBlock")];
-    if (readFrom == TargetPointer.Null)
-        return Array.Empty<byte>();
-
-    _target.ReadBuffer(readFrom, span);
-    return span.ToArray();
 }
 
 ```
