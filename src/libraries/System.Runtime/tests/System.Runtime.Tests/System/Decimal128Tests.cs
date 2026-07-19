@@ -2215,6 +2215,33 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData("1E100", "1")]      // same sign, actual exponent absurdly larger
+        [InlineData("-1E100", "-1")]
+        [InlineData("1E-100", "123")]   // same sign, actual exponent absurdly smaller
+        [InlineData("-1E-100", "-123")]
+        [InlineData("1", "-1")]         // opposite sign, within the raw ULP window
+        [InlineData("-1", "1")]
+        public static void AssertResultWithinUlpRejectsInvalidResults(string actualText, string expectedText)
+        {
+            UInt128 actual = Unsafe.BitCast<Decimal128, UInt128>(Decimal128.Parse(actualText, CultureInfo.InvariantCulture));
+            UInt128 expected = Unsafe.BitCast<Decimal128, UInt128>(Decimal128.Parse(expectedText, CultureInfo.InvariantCulture));
+
+            Assert.ThrowsAny<Xunit.Sdk.XunitException>(() =>
+                DecimalIeee754IntelTestData.AssertResultWithinUlp(actual, expected, recordedUlp: 0, limit: 2));
+        }
+
+        [Theory]
+        [InlineData("1", "1.0000")]     // equivalent cohorts
+        [InlineData("1E-100", "1")]     // same sign, within one expected ULP
+        public static void AssertResultWithinUlpAcceptsValidResults(string actualText, string expectedText)
+        {
+            UInt128 actual = Unsafe.BitCast<Decimal128, UInt128>(Decimal128.Parse(actualText, CultureInfo.InvariantCulture));
+            UInt128 expected = Unsafe.BitCast<Decimal128, UInt128>(Decimal128.Parse(expectedText, CultureInfo.InvariantCulture));
+
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(actual, expected, recordedUlp: 0, limit: 2);
+        }
+
+        [Theory]
         [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0x3040000000000000UL, 0x0000000000000000UL)] // sin(+0) = +0
         [InlineData(0xB040000000000000UL, 0x0000000000000000UL, 0xB040000000000000UL, 0x0000000000000000UL)] // sin(-0) = -0
         [InlineData(0x7800000000000000UL, 0x0000000000000000UL, 0x7C00000000000000UL, 0x0000000000000000UL)] // sin(+Infinity) = NaN

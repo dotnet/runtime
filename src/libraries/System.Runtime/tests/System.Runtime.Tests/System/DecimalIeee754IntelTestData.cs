@@ -1351,16 +1351,30 @@ namespace System.Tests
 
         // Signed distance from the actual value to the expected value in units of the expected value's last place
         // (10^eE), computed exactly with BigInteger so a different quantum (for example 1 versus 1.000000) reads as
-        // zero. Results whose exponents differ absurdly (a wildly wrong answer) collapse to a large sentinel.
+        // zero. Opposite signs, or exponents that differ absurdly (a wildly wrong same-sign answer), collapse to a
+        // large sentinel that fails the tolerance check, matching Intel's check128_rel.
         private static double SignedUlpDistance(BigInteger cA, int eA, bool negA, BigInteger cE, int eE, bool negE)
         {
             BigInteger signedA = negA ? -cA : cA;
             BigInteger signedE = negE ? -cE : cE;
             int d = eA - eE;
 
-            if (int.Abs(d) > 40)
+            if (negA != negE)
             {
-                return (double)(signedA.Sign - signedE.Sign) * 1e30;
+                // Opposite-sign results are never within tolerance regardless of magnitude.
+                return negA ? -1e30 : 1e30;
+            }
+
+            if (signedA.IsZero || (d < -40))
+            {
+                // A zero (or vanishingly small) actual sits signedE ULP from the non-zero expected value.
+                return (double)-signedE;
+            }
+
+            if (d > 40)
+            {
+                // A same-sign actual with a wildly larger magnitude is far outside tolerance.
+                return signedA.Sign * 1e30;
             }
 
             BigInteger numerator = d >= 0
