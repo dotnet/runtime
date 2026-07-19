@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void Ctor_DefaultInterface(Type defaultInterface)
+        public void Ctor_DefaultInterface(Type? defaultInterface)
         {
             var attribute = new ComDefaultInterfaceAttribute(defaultInterface);
             Assert.Equal(defaultInterface, attribute.Value);

@@ -43,6 +43,25 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
 #undef CALLEE_SAVED_REGISTER
 }
 
+#ifdef TARGET_WINDOWS
+void UpdateRegDisplayFromArgumentRegisters(REGDISPLAY * pRD, ArgumentRegisters* pRegs)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    T_CONTEXT * pContext = pRD->pCurrentContext;
+    pContext->Rcx = pRegs->RCX;
+    pContext->Rdx = pRegs->RDX;
+    pContext->R8 = pRegs->R8;
+    pContext->R9 = pRegs->R9;
+
+    KNONVOLATILE_CONTEXT_POINTERS * pContextPointers = pRD->pCurrentContextPointers;
+    pContextPointers->Rcx = (PULONG64)&pRegs->RCX;
+    pContextPointers->Rdx = (PULONG64)&pRegs->RDX;
+    pContextPointers->R8 = (PULONG64)&pRegs->R8;
+    pContextPointers->R9 = (PULONG64)&pRegs->R9;
+}
+#endif
+
 void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
 {
     LIMITED_METHOD_CONTRACT;
@@ -68,13 +87,11 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
-        _ASSERTE(pRD->pCurrentContext->Rip == GetReturnAddress());
+        UpdateFloatingPointRegisters(pRD, GetSP());
     }
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = GetReturnAddress();
     pRD->pCurrentContext->Rsp = GetSP();
@@ -86,6 +103,58 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
+
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD, GetSP());
+        _ASSERTE(pRD->pCurrentContext->Rip == GetReturnAddress());
+        _ASSERTE(pRD->pCurrentContext->Rsp == GetSP());
+    }
+#endif // DACCESS_COMPILE
+
+    pRD->IsCallerContextValid = FALSE;
+
+    pRD->pCurrentContext->Rip = GetReturnAddress();
+    pRD->pCurrentContext->Rsp = GetSP();
+
+    UpdateRegDisplayFromCalleeSavedRegisters(pRD, GetCalleeSavedRegisters());
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
+    UpdateRegDisplayFromArgumentRegisters(pRD, GetArgumentRegisters());
+
+    SyncRegDisplayToCurrentContext(pRD);
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResolveHelperFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+}
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
+
+#ifdef FEATURE_INTERPRETER
+#ifndef DACCESS_COMPILE
+void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef UNIX_AMD64_ABI
+    // The interpreter frame saves the floating point registers in the TransitionBlock, so we need to update them in the REGDISPLAY when we update the REGDISPLAY for an interpreter frame.
+    // Note: Unix AMD64 ABI has no callee-saved floating point registers, so this is Windows-only.
+    // FP callee-saved are at TransitionBlock - 232 (8 for stack alignment + 4 * 16 for FP argument registers + 10 * 16 for callee saved floating point registers).
+    TADDR pTransitionBlock = GetTransitionBlock();
+    M128A *pCalleeSavedFloats = (M128A*)((BYTE*)pTransitionBlock - 232);
+    for (int i = 0; i < 10; i++)
+    {
+        (&pRD->pCurrentContext->Xmm6)[i] = pCalleeSavedFloats[i];
+        (&pRD->pCurrentContextPointers->Xmm6)[i] = &pCalleeSavedFloats[i];
+    }
+#endif // !UNIX_AMD64_ABI
+}
+#endif // DACCESS_COMPILE
+#endif // FEATURE_INTERPRETER
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
@@ -110,7 +179,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
+        UpdateFloatingPointRegisters(pRD, dac_cast<TADDR>(GetCallSiteSP()));
         // The float updating unwinds the stack so the pRD->pCurrentContext->Rip contains correct unwound Rip
         // This is used for exception handling and the Rip extracted from m_pCallerReturnAddress is slightly
         // off, which causes problem with searching for the return address on shadow stack on x64, so
@@ -123,7 +192,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     }
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rsp = *(DWORD64 *)&m_pCallSiteSP;
     pRD->pCurrentContext->Rbp = *(DWORD64 *)&m_pCalleeSavedFP;
@@ -137,6 +205,14 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     pRD->pCurrentContextPointers->Rbp = (DWORD64 *)&m_pCalleeSavedFP;
 
     SyncRegDisplayToCurrentContext(pRD);
+
+#ifdef FEATURE_INTERPRETER
+    if ((m_Next != FRAME_TOP) && (m_Next != NULL) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    {
+        // If the next frame is an interpreter frame, we also need to set the first argument register to point to the interpreter frame.
+        SetFirstArgReg(pRD->pCurrentContext, dac_cast<TADDR>(m_Next));
+    }
+#endif // FEATURE_INTERPRETER
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
@@ -159,24 +235,32 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->SSP = m_SSP;
 #endif
 
-    pRD->pCurrentContextPointers->Rax = &m_ctx.Rax;
-    pRD->pCurrentContextPointers->Rcx = &m_ctx.Rcx;
-    pRD->pCurrentContextPointers->Rdx = &m_ctx.Rdx;
-    pRD->pCurrentContextPointers->Rbx = &m_ctx.Rbx;
-    pRD->pCurrentContextPointers->Rbp = &m_ctx.Rbp;
-    pRD->pCurrentContextPointers->Rsi = &m_ctx.Rsi;
-    pRD->pCurrentContextPointers->Rdi = &m_ctx.Rdi;
-    pRD->pCurrentContextPointers->R8  = &m_ctx.R8;
-    pRD->pCurrentContextPointers->R9  = &m_ctx.R9;
-    pRD->pCurrentContextPointers->R10 = &m_ctx.R10;
-    pRD->pCurrentContextPointers->R11 = &m_ctx.R11;
-    pRD->pCurrentContextPointers->R12 = &m_ctx.R12;
-    pRD->pCurrentContextPointers->R13 = &m_ctx.R13;
-    pRD->pCurrentContextPointers->R14 = &m_ctx.R14;
-    pRD->pCurrentContextPointers->R15 = &m_ctx.R15;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    CONTEXT *pContext = &m_ctx;
+#endif
+
+    pRD->pCurrentContextPointers->Rax = &pContext->Rax;
+    pRD->pCurrentContextPointers->Rcx = &pContext->Rcx;
+    pRD->pCurrentContextPointers->Rdx = &pContext->Rdx;
+    pRD->pCurrentContextPointers->Rbx = &pContext->Rbx;
+    pRD->pCurrentContextPointers->Rbp = &pContext->Rbp;
+    pRD->pCurrentContextPointers->Rsi = &pContext->Rsi;
+    pRD->pCurrentContextPointers->Rdi = &pContext->Rdi;
+    pRD->pCurrentContextPointers->R8  = &pContext->R8;
+    pRD->pCurrentContextPointers->R9  = &pContext->R9;
+    pRD->pCurrentContextPointers->R10 = &pContext->R10;
+    pRD->pCurrentContextPointers->R11 = &pContext->R11;
+    pRD->pCurrentContextPointers->R12 = &pContext->R12;
+    pRD->pCurrentContextPointers->R13 = &pContext->R13;
+    pRD->pCurrentContextPointers->R14 = &pContext->R14;
+    pRD->pCurrentContextPointers->R15 = &pContext->R15;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
 
 #ifdef FEATURE_HIJACK
@@ -198,6 +282,8 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     CONTRACT_END;
 
     CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(CONTEXT));
+    // Clear the CONTEXT_XSTATE, since the REGDISPLAY contains just plain CONTEXT structure
+    pRD->pCurrentContext->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
 
     pRD->ControlPC = m_Regs->Rip;
 
@@ -220,7 +306,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->pCurrentContextPointers->R15 = &m_Regs->R15;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     RETURN;
 }
@@ -236,7 +321,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     CONTRACTL_END;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = m_ReturnAddress;
 #ifdef TARGET_WINDOWS
@@ -268,47 +352,9 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 }
 #endif // FEATURE_HIJACK
 
-BOOL isJumpRel32(PCODE pCode)
+bool isBackToBackJump(PCODE pCode)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    PTR_BYTE pbCode = PTR_BYTE(pCode);
-
-    return 0xE9 == pbCode[0];
-}
-
-//
-//  Given the same pBuffer that was used by emitJump this
-//  method decodes the instructions and returns the jump target
-//
-PCODE decodeJump32(PCODE pBuffer)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    // jmp rel32
-    _ASSERTE(isJumpRel32(pBuffer));
-
-    return rel32Decode(pBuffer+1);
-}
-
-BOOL isJumpRel64(PCODE pCode)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
+    LIMITED_METHOD_CONTRACT;
     PTR_BYTE pbCode = PTR_BYTE(pCode);
 
     return 0x48 == pbCode[0]  &&
@@ -317,19 +363,13 @@ BOOL isJumpRel64(PCODE pCode)
            0xE0 == pbCode[11];
 }
 
-PCODE decodeJump64(PCODE pBuffer)
+PCODE decodeBackToBackJump(PCODE pBuffer)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
 
     // mov rax, xxx
     // jmp rax
-    _ASSERTE(isJumpRel64(pBuffer));
+    _ASSERTE(isBackToBackJump(pBuffer));
 
     return *PTR_UINT64(pBuffer+2);
 }
@@ -342,11 +382,11 @@ BOOL GetAnyThunkTarget (CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
     *pTargetMethodDesc = (TADDR)NULL;
 
     //
-    // Check for something generated by emitJump.
+    // Check for something generated by emitBackToBackJump.
     //
-    if (isJumpRel64(pThunk))
+    if (isBackToBackJump(pThunk))
     {
-        *pTarget = decodeJump64(pThunk);
+        *pTarget = decodeBackToBackJump(pThunk);
         return TRUE;
     }
 
@@ -356,12 +396,6 @@ BOOL GetAnyThunkTarget (CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
 
 
 #ifndef DACCESS_COMPILE
-
-// Note: This is only used on server GC on Windows.
-//
-// This function returns the number of logical processors on a given physical chip.  If it cannot
-// determine the number of logical cpus, or the machine is not populated uniformly with the same
-// type of processors, this function returns 1.
 
 void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget)
 {
@@ -380,14 +414,14 @@ void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget)
     pBuffer[0]  = 0x49;
     pBuffer[1]  = 0xBA;
 
-    *((UINT64 UNALIGNED *)&pBuffer[2])  = (UINT64)pv;
+    SET_UNALIGNED_64(&pBuffer[2], pv);
 
     // mov rax, pTarget                 48 b8 xx xx xx xx xx xx xx xx
 
     pBuffer[10] = 0x48;
     pBuffer[11] = 0xB8;
 
-    *((UINT64 UNALIGNED *)&pBuffer[12]) = (UINT64)pTarget;
+    SET_UNALIGNED_64(&pBuffer[12], pTarget);
 
     // jmp rax                          ff e0
 
@@ -397,43 +431,7 @@ void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget)
     _ASSERTE(DbgIsExecutable(pBuffer, 22));
 }
 
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    // We need the target to be in a 64-bit aligned memory location and the call instruction
-    // to immediately precede the ComCallMethodDesc. We'll generate an indirect call to avoid
-    // consuming 3 qwords for this (mov rax, | target | nops & call rax).
-
-    // dq 123456789abcdef0h
-    // nop                              90
-    // nop                              90
-    // call [$ - 10]                    ff 15 f0 ff ff ff
-
-    *((UINT64 *)&pBufferRW[COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET]) = (UINT64)target;
-
-    pBufferRW[-2]  = 0x90;
-    pBufferRW[-1]  = 0x90;
-
-    pBufferRW[0] = 0xFF;
-    pBufferRW[1] = 0x15;
-    *((UINT32 UNALIGNED *)&pBufferRW[2]) = (UINT32)(COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET - COMMETHOD_CALL_PRESTUB_SIZE);
-
-    _ASSERTE(DbgIsExecutable(pBufferRX, COMMETHOD_CALL_PRESTUB_SIZE));
-
-    RETURN;
-}
-
-void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     CONTRACTL
     {
@@ -451,7 +449,7 @@ void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     pBufferRW[0]  = 0x48;
     pBufferRW[1]  = 0xB8;
 
-    *((UINT64 UNALIGNED *)&pBufferRW[2]) = (UINT64)target;
+    SET_UNALIGNED_64(&pBufferRW[2], target);
 
     pBufferRW[10] = 0xFF;
     pBufferRW[11] = 0xE0;
@@ -630,16 +628,16 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
     BEGIN_DYNAMIC_HELPER_EMIT(15);
 
 #ifdef UNIX_AMD64_ABI
-    *(UINT16 *)p = 0xBF48; // mov rdi, XXXXXX
+    SET_UNALIGNED_16(p, 0xBF48); // mov rdi, XXXXXX
 #else
-    *(UINT16 *)p = 0xB948; // mov rcx, XXXXXX
+    SET_UNALIGNED_16(p, 0xB948); // mov rcx, XXXXXX
 #endif
     p += 2;
-    *(TADDR *)p = arg;
+    SET_UNALIGNED_64(p, arg);
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator));
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -657,16 +655,16 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
     // Move an argument into the second argument register and jump to a target function.
 
 #ifdef UNIX_AMD64_ABI
-    *(UINT16 *)p = 0xBE48; // mov rsi, XXXXXX
+    SET_UNALIGNED_16(p, 0xBE48); // mov rsi, XXXXXX
 #else
-    *(UINT16 *)p = 0xBA48; // mov rdx, XXXXXX
+    SET_UNALIGNED_16(p, 0xBA48); // mov rdx, XXXXXX
 #endif
     p += 2;
-    *(TADDR *)p = arg;
+    SET_UNALIGNED_64(p, arg);
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator));
     p += 4;
 }
 
@@ -684,25 +682,25 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
     BEGIN_DYNAMIC_HELPER_EMIT(25);
 
 #ifdef UNIX_AMD64_ABI
-    *(UINT16 *)p = 0xBF48; // mov rdi, XXXXXX
+    SET_UNALIGNED_16(p, 0xBF48); // mov rdi, XXXXXX
 #else
-    *(UINT16 *)p = 0xB948; // mov rcx, XXXXXX
+    SET_UNALIGNED_16(p, 0xB948); // mov rcx, XXXXXX
 #endif
     p += 2;
-    *(TADDR *)p = arg;
+    SET_UNALIGNED_64(p, arg);
     p += 8;
 
 #ifdef UNIX_AMD64_ABI
-    *(UINT16 *)p = 0xBE48; // mov rsi, XXXXXX
+    SET_UNALIGNED_16(p, 0xBE48); // mov rsi, XXXXXX
 #else
-    *(UINT16 *)p = 0xBA48; // mov rdx, XXXXXX
+    SET_UNALIGNED_16(p, 0xBA48); // mov rdx, XXXXXX
 #endif
     p += 2;
-    *(TADDR *)p = arg2;
+    SET_UNALIGNED_64(p, arg2);
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator));
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -714,24 +712,24 @@ PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR ar
 
 #ifdef UNIX_AMD64_ABI
     *p++ = 0x48; // mov rsi, rdi
-    *(UINT16 *)p = 0xF78B;
+    SET_UNALIGNED_16(p, 0xF78B);
 #else
     *p++ = 0x48; // mov rdx, rcx
-    *(UINT16 *)p = 0xD18B;
+    SET_UNALIGNED_16(p, 0xD18B);
 #endif
     p += 2;
 
 #ifdef UNIX_AMD64_ABI
-    *(UINT16 *)p = 0xBF48; // mov rdi, XXXXXX
+    SET_UNALIGNED_16(p, 0xBF48); // mov rdi, XXXXXX
 #else
-    *(UINT16 *)p = 0xB948; // mov rcx, XXXXXX
+    SET_UNALIGNED_16(p, 0xB948); // mov rcx, XXXXXX
 #endif
     p += 2;
-    *(TADDR *)p = arg;
+    SET_UNALIGNED_64(p, arg);
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator));
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -750,9 +748,9 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 {
     BEGIN_DYNAMIC_HELPER_EMIT(11);
 
-    *(UINT16 *)p = 0xB848; // mov rax, XXXXXX
+    SET_UNALIGNED_16(p, 0xB848); // mov rax, XXXXXX
     p += 2;
-    *(TADDR *)p = arg;
+    SET_UNALIGNED_64(p, arg);
     p += 8;
 
     *p++ = 0xC3; // ret
@@ -764,9 +762,9 @@ PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR
 {
     BEGIN_DYNAMIC_HELPER_EMIT((offset != 0) ? 15 : 11);
 
-    *(UINT16 *)p = 0xA148; // mov rax, [XXXXXX]
+    SET_UNALIGNED_16(p, 0xA148); // mov rax, [XXXXXX]
     p += 2;
-    *(TADDR *)p = arg;
+    SET_UNALIGNED_64(p, arg);
     p += 8;
 
     if (offset != 0)
@@ -788,16 +786,16 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     BEGIN_DYNAMIC_HELPER_EMIT(15);
 
 #ifdef UNIX_AMD64_ABI
-    *(UINT16 *)p = 0xBA48; // mov rdx, XXXXXX
+    SET_UNALIGNED_16(p, 0xBA48); // mov rdx, XXXXXX
 #else
-    *(UINT16 *)p = 0xB849; // mov r8, XXXXXX
+    SET_UNALIGNED_16(p, 0xB849); // mov r8, XXXXXX
 #endif
     p += 2;
-    *(TADDR *)p = arg;
+    SET_UNALIGNED_64(p, arg);
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator));
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -808,25 +806,25 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     BEGIN_DYNAMIC_HELPER_EMIT(25);
 
 #ifdef UNIX_AMD64_ABI
-    *(UINT16 *)p = 0xBA48; // mov rdx, XXXXXX
+    SET_UNALIGNED_16(p, 0xBA48); // mov rdx, XXXXXX
 #else
-    *(UINT16 *)p = 0xB849; // mov r8, XXXXXX
+    SET_UNALIGNED_16(p, 0xB849); // mov r8, XXXXXX
 #endif
     p += 2;
-    *(TADDR *)p = arg;
+    SET_UNALIGNED_64(p, arg);
     p += 8;
 
 #ifdef UNIX_AMD64_ABI
-    *(UINT16 *)p = 0xB948; // mov rcx, XXXXXX
+    SET_UNALIGNED_16(p, 0xB948); // mov rcx, XXXXXX
 #else
-    *(UINT16 *)p = 0xB949; // mov r9, XXXXXX
+    SET_UNALIGNED_16(p, 0xB949); // mov r9, XXXXXX
 #endif
     p += 2;
-    *(TADDR *)p = arg2;
+    SET_UNALIGNED_64(p, arg2);
     p += 8;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target, NULL, pAllocator));
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -877,9 +875,9 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 _ASSERTE(pLookup->testForNull && i > 0);
 
                 // cmp qword ptr[rax + sizeOffset],slotOffset
-                *(UINT32*)p = 0x00b88148; p += 3;
-                *(UINT32*)p = (UINT32)pLookup->sizeOffset; p += 4;
-                *(UINT32*)p = (UINT32)slotOffset; p += 4;
+                SET_UNALIGNED_32(p, 0x00b88148); p += 3;
+                SET_UNALIGNED_32(p, (UINT32)pLookup->sizeOffset); p += 4;
+                SET_UNALIGNED_32(p, (UINT32)slotOffset); p += 4;
 
                 // jle 'HELPER CALL'
                 *p++ = 0x7e;
@@ -893,24 +891,24 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 // mov rax,qword ptr [rdi+offset]
                 if (pLookup->offsets[i] >= 0x80)
                 {
-                    *(UINT32*)p = 0x00878b48; p += 3;
-                    *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
+                    SET_UNALIGNED_32(p, 0x00878b48); p += 3;
+                    SET_UNALIGNED_32(p, (UINT32)pLookup->offsets[i]); p += 4;
                 }
                 else
                 {
-                    *(UINT32*)p = 0x00478b48; p += 3;
+                    SET_UNALIGNED_32(p, 0x00478b48); p += 3;
                     *p++ = (BYTE)pLookup->offsets[i];
                 }
 #else
                 // mov rax,qword ptr [rcx+offset]
                 if (pLookup->offsets[i] >= 0x80)
                 {
-                    *(UINT32*)p = 0x00818b48; p += 3;
-                    *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
+                    SET_UNALIGNED_32(p, 0x00818b48); p += 3;
+                    SET_UNALIGNED_32(p, (UINT32)pLookup->offsets[i]); p += 4;
                 }
                 else
                 {
-                    *(UINT32*)p = 0x00418b48; p += 3;
+                    SET_UNALIGNED_32(p, 0x00418b48); p += 3;
                     *p++ = (BYTE)pLookup->offsets[i];
                 }
 #endif
@@ -920,12 +918,12 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 // mov rax,qword ptr [rax+offset]
                 if (pLookup->offsets[i] >= 0x80)
                 {
-                    *(UINT32*)p = 0x00808b48; p += 3;
-                    *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
+                    SET_UNALIGNED_32(p, 0x00808b48); p += 3;
+                    SET_UNALIGNED_32(p, (UINT32)pLookup->offsets[i]); p += 4;
                 }
                 else
                 {
-                    *(UINT32*)p = 0x00408b48; p += 3;
+                    SET_UNALIGNED_32(p, 0x00408b48); p += 3;
                     *p++ = (BYTE)pLookup->offsets[i];
                 }
             }
@@ -945,10 +943,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
             _ASSERTE(pLookup->indirections != 0);
 
-            *(UINT32*)p = 0x00c08548; p += 3;       // test rax,rax
+            SET_UNALIGNED_32(p, 0x00c08548); p += 3;       // test rax,rax
 
             // je 'HELPER_CALL' (a jump of 1 byte)
-            *(UINT16*)p = 0x0174; p += 2;
+            SET_UNALIGNED_16(p, 0x0174); p += 2;
 
             *p++ = 0xC3;    // ret
 

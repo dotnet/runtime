@@ -21,7 +21,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, false)]
         [InlineData("", true)]
         [InlineData("description", false)]
-        public void Ctor_String(string description, bool expectedIsDefaultAttribute)
+        public void Ctor_String(string? description, bool expectedIsDefaultAttribute)
         {
             var attribute = new SubDescriptionAttribute(description);
             Assert.Equal(description, attribute.Description);
@@ -33,7 +33,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("descriptionValue")]
-        public void DescriptionValue_Set_GetReturnsExpected(string value)
+        public void DescriptionValue_Set_GetReturnsExpected(string? value)
         {
             var attribute = new SubDescriptionAttribute("Name")
             {

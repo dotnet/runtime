@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("company")]
-        public void Ctor_String(string company)
+        public void Ctor_String(string? company)
         {
             var attribute = new AssemblyCompanyAttribute(company);
             Assert.Equal(company, attribute.Company);

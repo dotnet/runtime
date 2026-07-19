@@ -14,7 +14,7 @@ namespace Microsoft.Android.Build
 {
     public sealed class AndroidProject
     {
-        private const string DefaultMinApiLevel = "21";
+        private const string DefaultMinApiLevel = "24";
         private const string Cmake = "cmake";
 
         private TaskLoggingHelper logger;
@@ -151,7 +151,7 @@ namespace Microsoft.Android.Build
                 return "linux";
         }
 
-        private static string DetermineAbi(string runtimeIdentifier) =>
+        public static string DetermineAbi(string runtimeIdentifier) =>
             runtimeIdentifier switch
             {
                 "android-x86" => "x86",

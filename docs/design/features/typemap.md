@@ -134,7 +134,7 @@ Given the above types the following would take place.
 `TypeMapAttribute` assembly attribute that declared the external type system name, a target
 type, and optionally a "trim-target" to determine if the target
 type should be included in the map. If the `TypeMapAttribute` constructor that doesn't
-take a trim-target is used, the "target type" will be treated as the "trim-target".
+take a trim-target is used the entry will always be emitted into the type map.
 
 2. Types used in a managed-to-unmanaged interop operation would use `TypeMapAssociationAttribute`
 to define a conditional link between the source and proxy type. In other words, if the
@@ -188,19 +188,19 @@ An entry in an External Type Map is included when the "trim target" type is refe
 - The argument to the `isinst` IL instruction.
 - The argument to the `castclass` IL instruction.
 - The argument to the `box` instruction.
+  - If the trimming tool can determine that this box does not escape and could be stack allocated, it can ignore this `box` instruction and any corresponding `unbox` or `unbox.any` instructions.
 - The argument to the `mkrefany` instruction.
 - The argument to the `refanyval` instruction.
 - The argument to the `newarr` instruction.
-- The argument to the `ldobj` instruction.
-- The argument to the `stobj` instruction.
-- The argument to the `.constrained` instruction prefix.
-- The type of a method argument to the `newobj` instruction.
-- The owning type of the method argument to `call`, `callvirt`, `ldftn`, or `ldvirtftn`.
+- The type of a method argument to the `newobj` instruction if it is a class type.
+- The owning type of an instance method argument to `call` or `ldftn`, or the owning type of any method argument to `callvirt` or `ldvirtftn`.
   - If the owning type is an interface and the trimming tool can determine that there is only one implementation of the interface, it is free to interpret the method token argument as though it is the method on the only implementing type.
 - The generic argument to the `Activator.CreateInstance<T>` method.
 - Calls to `Type.GetType` with a constant string representing the type name.
 
 Many of these instructions can be passed a generic parameter. In that case, the trimming tool should consider type arguments of instantiations of that type as having met one of these rules and include any entries with those types as "trim target" types.
+
+For pointer, byref, and array types as trim targets, the entries are preserved if the element type meets the requirements above to keep the entry. A trimming tool is free to remove entries if it can prove that the pointer, byref, or array type cannot be represented at runtime.
 
 ### Proxy Type Map
 
@@ -212,7 +212,6 @@ An entry in the Proxy Type Map is included when the "source type" is referenced 
 - The generic argument to the `Activator.CreateInstance<T>` method.
 - The argument to the `box` instruction.
 - The argument to the `newarr` instruction.
-- The argument to the `.constrained` instruction prefix.
 - The argument to the `mkrefany` instruction.
 - The argument to the `refanyval` instruction.
 
@@ -221,3 +220,7 @@ If the type is an interface type and the user could possibly see a `RuntimeTypeH
 - The argument to the `isinst` IL instruction.
 - The argument to the `castclass` IL instruction.
 - The owning type of the method argument to `callvirt`, or `ldvirtftn`.
+
+Finally, if the trimming tool determines that it is impossible to retrieve a `System.Type` instance the represents the "source type" at runtime, then the entry may be omitted from the Proxy Type Map as its existence is unobservable.
+
+For pointer, byref, and array types as source types, the entries are preserved if the element type meets the requirements above to keep the entry. A trimming tool is free to remove entries if it can prove that the pointer, byref, or array type cannot be represented at runtime.

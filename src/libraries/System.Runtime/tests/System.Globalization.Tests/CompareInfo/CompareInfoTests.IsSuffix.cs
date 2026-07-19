@@ -80,11 +80,8 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800\uD800", CompareOptions.None, true, 2 };
 
             // Ignore symbols
-            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
-            {
-                yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.IgnoreSymbols, true, 6 };
-                yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.None, false, 0 };
-            }
+            yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.IgnoreSymbols, true, 6 };
+            yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.None, false, 0 };
 
             // NULL character
             yield return new object[] { s_invariantCompare, "a\u0000b", "a\u0000b", CompareOptions.None, true, 3 };

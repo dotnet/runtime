@@ -188,7 +188,7 @@ namespace System.Runtime.Serialization.Json
             {
                 if (_rootContract == null)
                 {
-                    _rootContract = DataContract.GetDataContract(_rootType);
+                    _rootContract = DataContract.GetDataContract((_serializationSurrogateProvider == null) ? _rootType : GetSurrogatedType(_serializationSurrogateProvider, _rootType));
                     CheckIfTypeIsReference(_rootContract);
                 }
                 return _rootContract;
@@ -206,11 +206,20 @@ namespace System.Runtime.Serialization.Json
         // These Get/Set methods mirror the extensions that were added to DCS in the early days of Core, which allowed
         // using a slimmed-down surrogate on both NetFx and Core via type-forwarding mechanisms. That's why these are
         // a pair of methods instead of making the property itself public.
+
+        /// <summary>
+        /// Gets the current serialization surrogate provider.
+        /// </summary>
+        /// <returns>The current <see cref="ISerializationSurrogateProvider"/> instance, or <see langword="null"/> if no provider is set.</returns>
         public ISerializationSurrogateProvider? GetSerializationSurrogateProvider()
         {
             return SerializationSurrogateProvider;
         }
 
+        /// <summary>
+        /// Sets the serialization surrogate provider.
+        /// </summary>
+        /// <param name="provider">The <see cref="ISerializationSurrogateProvider"/> to use for serialization, or <see langword="null"/> to remove the current provider.</param>
         public void SetSerializationSurrogateProvider(ISerializationSurrogateProvider? provider)
         {
             SerializationSurrogateProvider = provider;
@@ -644,6 +653,13 @@ namespace System.Runtime.Serialization.Json
             DataContract contract = DataContractSerializer.GetDataContract(declaredTypeContract, declaredType, objectType);
             CheckIfTypeIsReference(contract);
             return contract;
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal static Type GetSurrogatedType(ISerializationSurrogateProvider serializationSurrogateProvider, Type type)
+        {
+            return DataContractSurrogateCaller.GetDataContractType(serializationSurrogateProvider, DataContract.UnwrapNullableType(type));
         }
     }
 }

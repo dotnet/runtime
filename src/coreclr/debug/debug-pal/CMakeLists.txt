@@ -24,10 +24,17 @@ if(CLR_CMAKE_HOST_WIN32)
 endif(CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
-    set(DEBUG_PAL_REFEREENCE_DIAGNOSTICSERVER ON)
+    if (NOT CLR_CMAKE_TARGET_WASI)
+        # ds-ipc-pal-socket.c needs UNIX/TCP sockets; re-enable once
+        # WASI PERFTRACING is wired. Tracked by https://github.com/dotnet/runtime/issues/130383
+
+        set(DEBUG_PAL_REFEREENCE_DIAGNOSTICSERVER ON)
+    endif()
 
     add_definitions(-DPAL_IMPLEMENTATION)
     add_definitions(-D_POSIX_C_SOURCE=200809L)
+
+    include_directories(../../inc) # for volatile.h
 
     set(TWO_WAY_PIPE_SOURCES
       ${EVENTPIPE_PAL_SOURCES}

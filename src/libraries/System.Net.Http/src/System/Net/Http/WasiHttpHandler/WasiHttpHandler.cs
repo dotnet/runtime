@@ -12,9 +12,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WasiHttpWorld;
-using WasiHttpWorld.wit.imports.wasi.http.v0_2_0;
-using WasiHttpWorld.wit.imports.wasi.io.v0_2_0;
-using static WasiHttpWorld.wit.imports.wasi.http.v0_2_0.ITypes;
+using WasiHttpWorld.wit.Imports.wasi.http.v0_2_8;
+using WasiHttpWorld.wit.Imports.wasi.io.v0_2_8;
+using static WasiHttpWorld.wit.Imports.wasi.http.v0_2_8.ITypesImports;
 
 namespace System.Net.Http
 {
@@ -48,7 +48,7 @@ namespace System.Net.Http
 #pragma warning restore CA2025
 #pragma warning restore CS4014
 
-                future = OutgoingHandlerInterop.Handle(outgoingRequest, null);
+                future = IOutgoingHandlerImports.Handle(outgoingRequest, null);
 
                 using var incomingResponse = await SendRequest(cancellationToken).ConfigureAwait(false);
 
@@ -148,8 +148,7 @@ namespace System.Net.Http
         public const bool SupportsProxy = false;
         public const bool SupportsRedirectConfiguration = false;
 
-        private Dictionary<string, object?>? _properties;
-        public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
+        public IDictionary<string, object?> Properties => field ??= new Dictionary<string, object?>();
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {

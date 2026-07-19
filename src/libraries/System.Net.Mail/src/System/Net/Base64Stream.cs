@@ -35,7 +35,6 @@ namespace System.Net
         ];
 
         private readonly Base64WriteStateInfo _writeState;
-        private ReadStateInfo? _readState;
         private readonly Base64Encoder _encoder;
 
         //bytes with this value in the decode map are invalid
@@ -56,7 +55,7 @@ namespace System.Net
         public override bool CanRead => BaseStream.CanRead;
         public override bool CanWrite => BaseStream.CanWrite;
 
-        private ReadStateInfo ReadState => _readState ??= new ReadStateInfo();
+        private ReadStateInfo ReadState => field ??= new ReadStateInfo();
 
         internal WriteStateInfoBase WriteState
         {
@@ -78,57 +77,52 @@ namespace System.Net
             base.Close();
         }
 
-        public unsafe int DecodeBytes(Span<byte> buffer)
+        public int DecodeBytes(Span<byte> buffer)
         {
-            fixed (byte* pBuffer = buffer)
+            int source = 0;
+            int destination = 0;
+
+            while (source < buffer.Length)
             {
-                byte* start = pBuffer;
-                byte* source = start;
-                byte* dest = start;
-                byte* end = start + buffer.Length;
+                byte current = buffer[source++];
 
-                while (source < end)
+                //space and tab are ok because folding must include a whitespace char.
+                if (current == '\r' || current == '\n' || current == '=' || current == ' ' || current == '\t')
                 {
-                    //space and tab are ok because folding must include a whitespace char.
-                    if (*source == '\r' || *source == '\n' || *source == '=' || *source == ' ' || *source == '\t')
-                    {
-                        source++;
-                        continue;
-                    }
-
-                    byte s = Base64DecodeMap[*source];
-
-                    if (s == InvalidBase64Value)
-                    {
-                        throw new FormatException(SR.MailBase64InvalidCharacter);
-                    }
-
-                    switch (ReadState.Pos)
-                    {
-                        case 0:
-                            ReadState.Val = (byte)(s << 2);
-                            ReadState.Pos++;
-                            break;
-                        case 1:
-                            *dest++ = (byte)(ReadState.Val + (s >> 4));
-                            ReadState.Val = unchecked((byte)(s << 4));
-                            ReadState.Pos++;
-                            break;
-                        case 2:
-                            *dest++ = (byte)(ReadState.Val + (s >> 2));
-                            ReadState.Val = unchecked((byte)(s << 6));
-                            ReadState.Pos++;
-                            break;
-                        case 3:
-                            *dest++ = (byte)(ReadState.Val + s);
-                            ReadState.Pos = 0;
-                            break;
-                    }
-                    source++;
+                    continue;
                 }
 
-                return (int)(dest - start);
+                byte s = Base64DecodeMap[current];
+
+                if (s == InvalidBase64Value)
+                {
+                    throw new FormatException(SR.MailBase64InvalidCharacter);
+                }
+
+                switch (ReadState.Pos)
+                {
+                    case 0:
+                        ReadState.Val = (byte)(s << 2);
+                        ReadState.Pos++;
+                        break;
+                    case 1:
+                        buffer[destination++] = (byte)(ReadState.Val + (s >> 4));
+                        ReadState.Val = unchecked((byte)(s << 4));
+                        ReadState.Pos++;
+                        break;
+                    case 2:
+                        buffer[destination++] = (byte)(ReadState.Val + (s >> 2));
+                        ReadState.Val = unchecked((byte)(s << 6));
+                        ReadState.Pos++;
+                        break;
+                    case 3:
+                        buffer[destination++] = (byte)(ReadState.Val + s);
+                        ReadState.Pos = 0;
+                        break;
+                }
             }
+
+            return destination;
         }
 
         public int EncodeBytes(ReadOnlySpan<byte> buffer) =>

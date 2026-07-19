@@ -55,6 +55,10 @@ typedef int __ptrace_request;
 #include <machine/npx.h>
 #endif  // HAVE_MACHINE_NPX_H
 
+#ifdef __OpenBSD__
+#include <sys/ptrace.h>
+#endif  // __OpenBSD__
+
 #if HAVE_PT_REGS
 #include <asm/ptrace.h>
 #endif  // HAVE_PT_REGS
@@ -399,8 +403,8 @@ bool Xstate_IsAvx512Supported()
 
 bool Xstate_IsApxSupported()
 {
-#if defined(HAVE_MACH_EXCEPTIONS)
-    // TODO-xarch-apx: I assume OSX will never support APX
+#if !defined(HOST_AMD64) || defined(TARGET_OSX)
+    // APX is AMD64 only and not supported on macOS.
     return false;
 #else
     static int Xstate_ApxSupported = -1;
@@ -499,7 +503,7 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
 #if HAVE_PT_REGS
 #define ASSIGN_REG(reg) MCREG_##reg(registers.uc_mcontext) = PTREG_##reg(ptrace_registers);
 #elif HAVE_BSD_REGS_T
-#define ASSIGN_REG(reg) MCREG_##reg(registers.uc_mcontext) = BSDREG_##reg(ptrace_registers);
+#define ASSIGN_REG(reg) MCREG_##reg(MCONTEXT_FROM_NATIVE(&registers)) = BSDREG_##reg(ptrace_registers);
 #else
 #define ASSIGN_REG(reg)
 	ASSERT("Don't know how to get the context of another process on this platform!");
@@ -701,7 +705,7 @@ Return value :
 --*/
 void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 {
-#define ASSIGN_REG(reg) MCREG_##reg(native->uc_mcontext) = lpContext->reg;
+#define ASSIGN_REG(reg) MCREG_##reg(MCONTEXT_FROM_NATIVE(native)) = lpContext->reg;
     if ((lpContext->ContextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
         ASSIGN_CONTROL_REGS
@@ -809,7 +813,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         }
 #elif defined(HOST_S390X)
         fpregset_t *fp = &native->uc_mcontext.fpregs;
-        static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
+        static_assert(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(fp->fprs, lpContext->Fpr, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
         struct sctx_info* info = (struct sctx_info*) native->uc_mcontext.__extcontext;
@@ -878,29 +882,34 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 dest = FPREG_Xstate_Hi16Zmm(native, &size);
                 _ASSERT(size == (sizeof(M512) * 16));
                 memcpy_s(dest, sizeof(M512) * 16, &lpContext->Zmm16, sizeof(M512) * 16);
-
-#ifndef TARGET_OSX
-                // TODO-xarch-apx: I suppose OSX will not support APX.
-                if (FPREG_HasApxRegisters(native))
-                {
-                    _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX);
-
-                    dest = FPREG_Xstate_Egpr(native, &size);
-                    _ASSERT(size == (sizeof(DWORD64) * 16));
-                    memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->R16, sizeof(DWORD64) * 16);
-                }
-#endif //  !TARGET_OSX
             }
+#ifndef TARGET_OSX
+            // APX xstate handling is compiled only for non-macOS targets.
+            if (FPREG_HasApxRegisters(native))
+            {
+                _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX);
+
+                dest = FPREG_Xstate_Egpr(native, &size);
+                _ASSERT(size == (sizeof(DWORD64) * 16));
+                memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->R16, sizeof(DWORD64) * 16);
+            }
+#endif //  !TARGET_OSX
         }
 #elif defined(HOST_ARM64)
         if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
         {
             //TODO-SVE: This only handles vector lengths of 128bits.
-            if (CONTEXT_GetSveLengthFromOS() == 16)
+            // Use sve->vl from the signal frame to avoid SIGILL on platforms that
+            // provide an SVE context record without supporting SVE instructions
+            // (e.g. Apple M4 with SME streaming SVE under Virtualization.Framework).
+            if (sve->vl == 16)
             {
                 _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_ARM64_SVE) == XSTATE_MASK_ARM64_SVE);
 
-                uint16_t vq = sve_vq_from_vl(lpContext->Vl);
+                // Derive vq from the signal frame's vl (the authoritative layout)
+                // rather than lpContext->Vl, to ensure offset calculations always
+                // match the actual frame even in non-debug builds.
+                uint16_t vq = sve_vq_from_vl(sve->vl);
 
                 // Vector length should not have changed.
                 _ASSERTE(lpContext->Vl == sve->vl);
@@ -1037,7 +1046,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 {
     lpContext->ContextFlags = contextFlags;
 
-#define ASSIGN_REG(reg) lpContext->reg = MCREG_##reg(native->uc_mcontext);
+#define ASSIGN_REG(reg) lpContext->reg = MCREG_##reg(MCONTEXT_FROM_NATIVE(native));
     if ((contextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
         ASSIGN_CONTROL_REGS
@@ -1166,7 +1175,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         }
 #elif defined(HOST_S390X)
         const fpregset_t *fp = &native->uc_mcontext.fpregs;
-        static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
+        static_assert(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(lpContext->Fpr, fp->fprs, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
         struct sctx_info* info = (struct sctx_info*) native->uc_mcontext.__extcontext;
@@ -1183,6 +1192,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->Fcsr = fpr->fcsr;
             lpContext->Fcc  = fpr->fcc;
             memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
+            lpContext->ContextFlags |= CONTEXT_LSX;
         }
         else if (LASX_CTX_MAGIC == info->magic)
         {
@@ -1190,6 +1200,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->Fcsr = fpr->fcsr;
             lpContext->Fcc  = fpr->fcc;
             memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
+            lpContext->ContextFlags |= CONTEXT_LASX;
         }
         else
         {
@@ -1253,9 +1264,12 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
         {
             //TODO-SVE: This only handles vector lengths of 128bits.
-            if (CONTEXT_GetSveLengthFromOS() == 16)
+            // Use sve->vl from the signal frame to avoid SIGILL on platforms that
+            // provide an SVE context record without supporting SVE instructions
+            // (e.g. Apple M4 with SME streaming SVE under Virtualization.Framework).
+            if (sve->vl == 16)
             {
-                _ASSERTE((sve->vl > 0) && (sve->vl % 16 == 0));
+                _ASSERTE(sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(16)));
                 lpContext->Vl  = sve->vl;
 
                 uint16_t vq = sve_vq_from_vl(sve->vl);
@@ -1306,7 +1320,7 @@ Return value :
 LPVOID GetNativeContextPC(const native_context_t *context)
 {
 #ifdef HOST_AMD64
-    return (LPVOID)MCREG_Rip(context->uc_mcontext);
+    return (LPVOID)MCREG_Rip(MCONTEXT_FROM_NATIVE(context));
 #elif defined(HOST_X86)
     return (LPVOID) MCREG_Eip(context->uc_mcontext);
 #elif defined(HOST_S390X)
@@ -1334,7 +1348,7 @@ Return value :
 LPVOID GetNativeContextSP(const native_context_t *context)
 {
 #ifdef HOST_AMD64
-    return (LPVOID)MCREG_Rsp(context->uc_mcontext);
+    return (LPVOID)MCREG_Rsp(MCONTEXT_FROM_NATIVE(context));
 #elif defined(HOST_X86)
     return (LPVOID) MCREG_Esp(context->uc_mcontext);
 #elif defined(HOST_S390X)
@@ -1624,12 +1638,12 @@ CONTEXT_GetThreadContextFromPort(
         // if it fails, get the FLOAT state and if that fails, take AVX512 state. Both AVX and AVX512 states
         // are supersets of the FLOAT state.
         // Check a few fields to make sure the assumption is correct.
-        static_assert_no_msg(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
-        static_assert_no_msg(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
-        static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
-        static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
-        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
-        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
+        static_assert(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
+        static_assert(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
 
         x86_avx512_state64_t State;
 
@@ -1929,12 +1943,12 @@ CONTEXT_SetThreadContextOnPort(
         // x86_avx_state64_t is identical to x86_float_state64_t
         // and x86_avx512_state64_t to _x86_avx_state64_t.
         // Check a few fields to make sure the assumption is correct.
-        static_assert_no_msg(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
-        static_assert_no_msg(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
-        static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
-        static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
-        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
-        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
+        static_assert(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
+        static_assert(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
 
         x86_avx512_state64_t State;
         if (lpContext->ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)

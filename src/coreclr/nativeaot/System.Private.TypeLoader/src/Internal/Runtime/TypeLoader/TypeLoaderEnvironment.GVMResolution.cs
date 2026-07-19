@@ -10,6 +10,7 @@ using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
@@ -106,7 +107,7 @@ namespace Internal.Runtime.TypeLoader
                 sb.AppendLine();
                 sb.AppendLine("Declaring type: " + GetTypeNameDebug(slotMethod.OwningType));
                 sb.AppendLine("Target type: " + GetTypeNameDebug(targetType));
-                sb.AppendLine("Method name: " + slotMethod.Name);
+                sb.AppendLine("Method name: " + slotMethod.GetName());
                 sb.AppendLine("Instantiation:");
                 for (int i = 0; i < slotMethod.Instantiation.Length; i++)
                 {
@@ -119,12 +120,25 @@ namespace Internal.Runtime.TypeLoader
             return resolution;
         }
 
-        internal unsafe IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle type, RuntimeMethodHandle slot)
+        internal unsafe IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, bool isAsyncVariant, void* methodInstantiation, bool isMethodInstantiationDataRelative)
         {
             TypeSystemContext context = TypeSystemContextFactory.Create();
-            DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(type);
+            TypeManagerHandle moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle);
+            MetadataReader reader = ModuleList.Instance.GetMetadataReaderForModule(moduleHandle);
 
-            InstantiatedMethod slotMethod = (InstantiatedMethod)GetMethodDescForRuntimeMethodHandle(context, slot);
+            MethodNameAndSignature nameAndSignature = new MethodNameAndSignature(reader, methodHandle);
+            RuntimeTypeHandle[] methodInstantiationHandles = GetMethodInstantiationFromList(methodInstantiation, methodHandle.GetMethod(reader).GenericParameters.Count, isMethodInstantiationDataRelative);
+
+            DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(targetTypeHandle);
+            DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
+            Instantiation methodInst = context.ResolveRuntimeTypeHandles(methodInstantiationHandles);
+            InstantiatedMethod slotMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(
+                unboxingStub: false,
+                asyncVariant: isAsyncVariant,
+                returnDroppingAsyncThunk: false,
+                declaringType,
+                nameAndSignature,
+                methodInst);
 
             InstantiatedMethod result = GVMLookupForSlotWorker(targetType, slotMethod);
 
@@ -134,7 +148,7 @@ namespace Internal.Runtime.TypeLoader
                 sb.AppendLine("Failed to create generic virtual method implementation");
                 sb.AppendLine();
                 sb.AppendLine("Declaring type: " + GetTypeNameDebug(result.OwningType));
-                sb.AppendLine("Method name: " + result.Name);
+                sb.AppendLine("Method name: " + result.GetName());
                 sb.AppendLine("Instantiation:");
                 for (int i = 0; i < result.Instantiation.Length; i++)
                 {
@@ -145,6 +159,21 @@ namespace Internal.Runtime.TypeLoader
 
             TypeSystemContextFactory.Recycle(context);
             return FunctionPointerOps.GetGenericMethodFunctionPointer(methodPointer, dictionaryPointer);
+        }
+
+        private static unsafe RuntimeTypeHandle[] GetMethodInstantiationFromList(void* methodInstantiation, int count, bool isRelative)
+        {
+            RuntimeTypeHandle[] result = new RuntimeTypeHandle[count];
+            MethodTableList instantiation = isRelative
+                ? new MethodTableList((RelativePointer<MethodTable>*)methodInstantiation)
+                : new MethodTableList((MethodTable*)methodInstantiation);
+
+            for (int i = 0; i < count; i++)
+            {
+                result[i] = instantiation[i]->ToRuntimeTypeHandle();
+            }
+
+            return result;
         }
 
         public static MethodNameAndSignature GetMethodNameAndSignatureFromToken(TypeManagerHandle moduleHandle, uint token)
@@ -311,7 +340,12 @@ namespace Internal.Runtime.TypeLoader
                                     Debug.Assert(interfaceImplType != null);
                                 }
 
-                                return (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, interfaceImplType, targetMethodNameAndSignature, slotMethod.Instantiation);
+                                bool returnDroppingAsyncThunk = slotMethod.AsyncVariant
+                                    && !slotMethod.NameAndSignature.ReturnTypeHasInstantiation
+                                    && targetMethodNameAndSignature.ReturnTypeHasInstantiation;
+                                bool asyncVariant = slotMethod.AsyncVariant && !returnDroppingAsyncThunk;
+
+                                return (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, asyncVariant, returnDroppingAsyncThunk, interfaceImplType, targetMethodNameAndSignature, slotMethod.Instantiation);
                             }
                         }
                     }
@@ -330,7 +364,7 @@ namespace Internal.Runtime.TypeLoader
             RuntimeTypeHandle openTargetTypeHandle = targetType.GetTypeDefinition().RuntimeTypeHandle;
 
 #if GVM_RESOLUTION_TRACE
-            Debug.WriteLine("INTERFACE GVM call = " + GetTypeNameDebug(slotMethod.OwningType) + "." + slotMethod.NameAndSignature.Name);
+            Debug.WriteLine("INTERFACE GVM call = " + GetTypeNameDebug(slotMethod.OwningType) + "." + slotMethod.GetName());
 #endif
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(openTargetTypeHandle)))
@@ -459,7 +493,7 @@ namespace Internal.Runtime.TypeLoader
             hashCode = ((hashCode << 13) ^ hashCode) ^ openTargetTypeHandle.GetHashCode();
 
 #if GVM_RESOLUTION_TRACE
-            Debug.WriteLine("GVM Target Resolution = " + GetTypeNameDebug(targetType) + "." + slotMethod.NameAndSignature.Name);
+            Debug.WriteLine("GVM Target Resolution = " + GetTypeNameDebug(targetType) + "." + slotMethod.GetName());
 #endif
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(openTargetTypeHandle)))
@@ -502,7 +536,13 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert(targetMethodNameAndSignature != null);
 
                     TypeSystemContext context = slotMethod.Context;
-                    return (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, targetType, targetMethodNameAndSignature, slotMethod.Instantiation);
+
+                    bool returnDroppingAsyncThunk = slotMethod.AsyncVariant
+                        && !slotMethod.NameAndSignature.ReturnTypeHasInstantiation
+                        && targetMethodNameAndSignature.ReturnTypeHasInstantiation;
+                    bool asyncVariant = slotMethod.AsyncVariant && !returnDroppingAsyncThunk;
+
+                    return (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, asyncVariant, returnDroppingAsyncThunk, targetType, targetMethodNameAndSignature, slotMethod.Instantiation);
                 }
             }
 

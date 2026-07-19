@@ -58,7 +58,6 @@ steps:
       MaxRetryAttempts: '5'
       PendingAnalysisWaitTimeoutMinutes: '5'
     env:
-      DOTNET_MULTILEVEL_LOOKUP: 0
       DOTNET_ROOT: '$(Agent.TempDirectory)/dotnet'
       DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR: '$(Agent.TempDirectory)/dotnet'
 

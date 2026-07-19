@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -52,7 +53,7 @@ namespace System.Tests
         [InlineData(-234, 234, -1)]
         [InlineData(-234, -432, 1)]
         [InlineData(234, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(int i, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(int i, object? value, int expected)
         {
             if (value is int intValue)
             {
@@ -81,7 +82,7 @@ namespace System.Tests
         [InlineData(789, null, false)]
         [InlineData(789, "789", false)]
         [InlineData(789, (long)789, false)]
-        public static void EqualsTest(int i1, object obj, bool expected)
+        public static void EqualsTest(int i1, object? obj, bool expected)
         {
             if (obj is int)
             {
@@ -987,6 +988,163 @@ namespace System.Tests
                 Assert.Equal(negativeSign, nfi.NegativeSign);
                 Assert.Equal(-9670, int.Parse("-9670", NumberStyles.Integer, nfi));
             }
+        }
+
+        public static IEnumerable<object[]> TryParsePartial_TestData()
+        {
+            // Basic integer parsing with trailing invalid characters
+            yield return new object[] { "123abc", NumberStyles.Integer, null, 123, 3 };
+            yield return new object[] { "456xyz", NumberStyles.Integer, null, 456, 3 };
+            yield return new object[] { "789!", NumberStyles.Integer, null, 789, 3 };
+            yield return new object[] { "0@#$", NumberStyles.Integer, null, 0, 1 };
+
+            // With leading whitespace
+            yield return new object[] { "  123abc", NumberStyles.Integer, null, 123, 5 };
+            yield return new object[] { "\t456xyz", NumberStyles.Integer, null, 456, 4 };
+
+            // With signs
+            yield return new object[] { "+123abc", NumberStyles.Integer, null, 123, 4 };
+            yield return new object[] { "-456xyz", NumberStyles.Integer, null, -456, 4 };
+            yield return new object[] { "+0xyz", NumberStyles.Integer, null, 0, 2 };
+            yield return new object[] { "-0xyz", NumberStyles.Integer, null, 0, 2 };
+
+            // HexNumber with trailing invalid characters
+            yield return new object[] { "ABCxyz", NumberStyles.HexNumber, null, 0xABC, 3 };
+            yield return new object[] { "FFGHxyz", NumberStyles.HexNumber, null, 0xFF, 2 };
+            yield return new object[] { "123ZZZ", NumberStyles.HexNumber, null, 0x123, 3 };
+            yield return new object[] { "0GHI", NumberStyles.HexNumber, null, 0x0, 1 };
+            yield return new object[] { "  ABCxyz", NumberStyles.HexNumber, null, 0xABC, 5 };
+
+            // BinaryNumber with trailing invalid characters
+            yield return new object[] { "101abc", NumberStyles.BinaryNumber, null, 0b101, 3 };
+            yield return new object[] { "1112", NumberStyles.BinaryNumber, null, 0b111, 3 };
+            yield return new object[] { "110xyz", NumberStyles.BinaryNumber, null, 0b110, 3 };
+            yield return new object[] { "0abc", NumberStyles.BinaryNumber, null, 0b0, 1 };
+            yield return new object[] { "  101abc", NumberStyles.BinaryNumber, null, 0b101, 5 };
+
+            // Number style with decimal point (should stop at decimal for integers)
+            yield return new object[] { "123.45", NumberStyles.Integer, null, 123, 3 };
+            yield return new object[] { "456.xyz", NumberStyles.Integer, null, 456, 3 };
+
+            // With thousands separator in invalid position
+            NumberFormatInfo customFormat = new NumberFormatInfo() { NumberGroupSeparator = "," };
+            yield return new object[] { "123,456xyz", NumberStyles.Integer, customFormat, 123, 3 };
+
+            // Currency style with trailing invalid characters
+            NumberFormatInfo currencyFormat = new NumberFormatInfo() { CurrencySymbol = "$", CurrencyGroupSeparator = "," };
+            yield return new object[] { "$123abc", NumberStyles.Currency, currencyFormat, 123, 4 };
+            yield return new object[] { "$1,234xyz", NumberStyles.Currency, currencyFormat, 1234, 6 };
+            yield return new object[] { "($123)abc", NumberStyles.Currency, currencyFormat, -123, 6 };
+
+            // Max and min values with trailing characters
+            yield return new object[] { "2147483647abc", NumberStyles.Integer, null, 2147483647, 10 };
+            yield return new object[] { "-2147483648xyz", NumberStyles.Integer, null, -2147483648, 11 };
+
+            // Edge case: only invalid characters (should fail)
+            // Edge case: valid number without trailing characters (should still work)
+            yield return new object[] { "123", NumberStyles.Integer, null, 123, 3 };
+            yield return new object[] { "456", NumberStyles.Integer, null, 456, 3 };
+
+            // Multiple styles combined
+            yield return new object[] { "  +123abc", NumberStyles.Integer, null, 123, 6 };
+            yield return new object[] { "  -456xyz", NumberStyles.Integer, null, -456, 6 };
+
+            // Trailing whitespace is not considered "invalid" in the traditional sense
+            // but should be handled when AllowTrailingWhite is not set
+            yield return new object[] { "123 ", NumberStyles.AllowLeadingWhite, null, 123, 3 };
+            yield return new object[] { "123\t", NumberStyles.AllowLeadingWhite, null, 123, 3 };
+
+            // Stop at null character
+            yield return new object[] { "123\0abc", NumberStyles.Integer, null, 123, 4 };
+        }
+
+        [Theory]
+        [MemberData(nameof(TryParsePartial_TestData))]
+        public static void TryParsePartial(string value, NumberStyles style, IFormatProvider provider, int expectedValue, int expectedCharsConsumed)
+        {
+            int result;
+            int charsConsumed;
+
+            // Test string overload with charsConsumed
+            Assert.True(NumberBaseHelper<int>.TryParsePartial(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.True(NumberBaseHelper<int>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(NumberBaseHelper<int>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(expectedValue, result);
+            // For ASCII characters, bytes consumed should equal chars consumed
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
+
+        public static IEnumerable<object[]> TryParsePartial_Invalid_TestData()
+        {
+            // Empty string
+            yield return new object[] { "", NumberStyles.Integer, null };
+
+            // Only whitespace
+            yield return new object[] { "   ", NumberStyles.Integer, null };
+
+            // Only invalid characters (no valid number)
+            yield return new object[] { "abc", NumberStyles.Integer, null };
+            yield return new object[] { "xyz", NumberStyles.Integer, null };
+            yield return new object[] { "!!!", NumberStyles.Integer, null };
+
+            // Invalid start characters
+            yield return new object[] { ".123", NumberStyles.Integer, null };
+            yield return new object[] { ",123", NumberStyles.Integer, null };
+
+            // Sign not allowed without AllowLeadingSign
+            yield return new object[] { "+123abc", NumberStyles.None, null };
+            yield return new object[] { "-123abc", NumberStyles.None, null };
+
+            // Overflow
+            yield return new object[] { "2147483648abc", NumberStyles.Integer, null };
+            yield return new object[] { "-2147483649xyz", NumberStyles.Integer, null };
+            yield return new object[] { "9999999999abc", NumberStyles.Integer, null };
+
+            // Invalid hex characters at start
+            yield return new object[] { "Gxyz", NumberStyles.HexNumber, null };
+            yield return new object[] { "Zabc", NumberStyles.HexNumber, null };
+
+            // Invalid binary characters at start
+            yield return new object[] { "2abc", NumberStyles.BinaryNumber, null };
+            yield return new object[] { "9xyz", NumberStyles.BinaryNumber, null };
+        }
+
+        [Theory]
+        [MemberData(nameof(TryParsePartial_Invalid_TestData))]
+        public static void TryParsePartial_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        {
+            int result;
+            int charsConsumed;
+
+            // Test string overload with charsConsumed
+            Assert.False(NumberBaseHelper<int>.TryParsePartial(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, charsConsumed);
+
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.False(NumberBaseHelper<int>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, charsConsumed);
+
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.False(NumberBaseHelper<int>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, bytesConsumed);
         }
     }
 }

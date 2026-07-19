@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -20,21 +20,19 @@ namespace System.IO
     // a stream "view" of the data.
     public class MemoryStream : Stream
     {
-        private byte[] _buffer;    // Either allocated internally or externally.
-        private readonly int _origin;       // For user-provided arrays, start at this origin
-        private int _position;     // read/write head.
-        private int _length;       // Number of bytes within the memory stream
-        private int _capacity;     // length of usable portion of buffer for stream
+        private byte[] _buffer;            // Either allocated internally or externally.
+        private readonly int _origin;      // For user-provided arrays, start at this origin
+        private int _position;             // read/write head.
+        private int _length;               // Number of bytes within the memory stream
+        private int _capacity;             // length of usable portion of buffer for stream
         // Note that _capacity == _buffer.Length for non-user-provided byte[]'s
 
-        private bool _expandable;  // User-provided buffers aren't expandable.
-        private bool _writable;    // Can user write to this stream?
-        private readonly bool _exposable;   // Whether the array can be returned to the user.
-        private bool _isOpen;      // Is this stream open or closed?
+        private bool _expandable;          // User-provided buffers aren't expandable.
+        private bool _writable;            // Can user write to this stream?
+        private readonly bool _exposable;  // Whether the array can be returned to the user.
+        private bool _isOpen;              // Is this stream open or closed?
 
         private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
-
-        private const int MemStreamMaxLength = int.MaxValue;
 
         public MemoryStream()
             : this(0)
@@ -45,7 +43,7 @@ namespace System.IO
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
-            _buffer = capacity != 0 ? new byte[capacity] : Array.Empty<byte>();
+            _buffer = capacity != 0 ? new byte[capacity] : [];
             _capacity = capacity;
             _expandable = true;
             _writable = true;
@@ -282,7 +280,7 @@ namespace System.IO
                     }
                     else
                     {
-                        _buffer = Array.Empty<byte>();
+                        _buffer = [];
                     }
                     _capacity = value;
                 }
@@ -310,8 +308,8 @@ namespace System.IO
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
                 EnsureNotClosed();
 
-                if (value > MemStreamMaxLength - _origin)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
+                if (value > int.MaxValue - _origin)
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
                 _position = _origin + (int)value;
             }
         }
@@ -523,8 +521,8 @@ namespace System.IO
 
         private long SeekCore(long offset, int loc)
         {
-            if (offset > MemStreamMaxLength - loc)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_StreamLength);
+            if (offset > int.MaxValue - loc)
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
             int tempPosition = unchecked(loc + (int)offset);
             if (unchecked(loc + offset) < _origin || tempPosition < _origin)
                 throw new IOException(SR.IO_SeekBeforeBegin);
@@ -547,14 +545,13 @@ namespace System.IO
         public override void SetLength(long value)
         {
             if (value < 0 || value > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
+                throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
 
             EnsureWriteable();
 
             // Origin wasn't publicly exposed above.
-            Debug.Assert(MemStreamMaxLength == int.MaxValue);  // Check parameter validation logic in this method if this fails.
             if (value > (int.MaxValue - _origin))
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
+                throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
 
             int newLength = _origin + (int)value;
             bool allocatedNewArray = EnsureCapacity(newLength);
@@ -569,7 +566,7 @@ namespace System.IO
         {
             int count = _length - _origin;
             if (count == 0)
-                return Array.Empty<byte>();
+                return [];
             byte[] copy = GC.AllocateUninitializedArray<byte>(count);
             _buffer.AsSpan(_origin, count).CopyTo(copy);
             return copy;

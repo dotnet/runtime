@@ -23,12 +23,13 @@ namespace ILCompiler
             {
                 var owningMdType = (MetadataType)owningType;
                 DefType containingType = owningMdType.ContainingType;
-                string ns = containingType?.ContainingType?.Namespace ??
-                            containingType?.Namespace ??
-                            owningMdType.Namespace;
+                string ns = containingType?.ContainingType?.GetNamespace() ??
+                            containingType?.GetNamespace() ??
+                            owningMdType.GetNamespace();
                 return method.Context.Target.Architecture switch
                 {
                     TargetArchitecture.ARM64 => ns == "System.Runtime.Intrinsics.Arm",
+                    TargetArchitecture.Wasm32 => ns == "System.Runtime.Intrinsics.Wasm",
                     TargetArchitecture.X64 or TargetArchitecture.X86 => ns == "System.Runtime.Intrinsics.X86",
                     _ => false,
                 };
@@ -60,32 +61,29 @@ namespace ILCompiler
         // Keep these enumerations in sync with cpufeatures.h in the minipal.
         private static class XArchIntrinsicConstants
         {
-            // SSE and SSE2 are baseline ISAs - they're always available
-            public const int Sse42 = (1 << 0);
-            public const int Avx = (1 << 1);
-            public const int Avx2 = (1 << 2);
-            public const int Avx512 = (1 << 3);
-
-            public const int Avx512v2 = (1 << 4);
-            public const int Avx512v3 = (1 << 5);
-            public const int Avx10v1 = (1 << 6);
-            public const int Avx10v2 = (1 << 7);
-            public const int Apx = (1 << 8);
-
-            public const int Aes = (1 << 9);
-            public const int Avx512Vp2intersect = (1 << 10);
-            public const int AvxIfma = (1 << 11);
-            public const int AvxVnni = (1 << 12);
+            // SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, and POPCNT are baseline ISAs - they're always available
+            public const int Avx = (1 << 0);
+            public const int Avx2 = (1 << 1);
+            public const int Avx512 = (1 << 2);
+            public const int Avx512v2 = (1 << 3);
+            public const int Avx512v3 = (1 << 4);
+            public const int Avx10v1 = (1 << 5);
+            public const int Avx10v2 = (1 << 6);
+            public const int Apx = (1 << 7);
+            public const int Aes = (1 << 8);
+            public const int Avx512Vp2intersect = (1 << 9);
+            public const int AvxIfma = (1 << 10);
+            public const int AvxVnni = (1 << 11);
+            public const int AvxVnniInt = (1 << 12);
             public const int Gfni = (1 << 13);
             public const int Sha = (1 << 14);
             public const int Vaes = (1 << 15);
             public const int WaitPkg = (1 << 16);
             public const int X86Serialize = (1 << 17);
+            public const int Avx512Bmm = (1 << 18); // NativeAOT does not currently consume this here.
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
-                if ((flags & Sse42) != 0)
-                    builder.AddSupportedInstructionSet("sse42");
                 if ((flags & Avx) != 0)
                     builder.AddSupportedInstructionSet("avx");
                 if ((flags & Avx2) != 0)
@@ -99,7 +97,12 @@ namespace ILCompiler
                 if ((flags & Avx10v1) != 0)
                     builder.AddSupportedInstructionSet("avx10v1");
                 if ((flags & Avx10v2) != 0)
+                {
                     builder.AddSupportedInstructionSet("avx10v2");
+                    builder.AddSupportedInstructionSet("avxvnniint_v512");
+                }
+                if ((flags & AvxVnniInt) != 0)
+                    builder.AddSupportedInstructionSet("avxvnniint");
                 if ((flags & Apx) != 0)
                     builder.AddSupportedInstructionSet("apx");
 
@@ -138,15 +141,11 @@ namespace ILCompiler
             public static int FromInstructionSet(InstructionSet instructionSet)
             {
                 Debug.Assert(InstructionSet.X64_AES == InstructionSet.X86_AES);
-                Debug.Assert(InstructionSet.X64_SSE42 == InstructionSet.X86_SSE42);
                 Debug.Assert(InstructionSet.X64_AVX2 == InstructionSet.X86_AVX2);
 
                 return instructionSet switch
                 {
                     // Optional ISAs - only available via opt-in or opportunistic light-up
-                    InstructionSet.X64_SSE42 => Sse42,
-                    InstructionSet.X64_SSE42_X64 => Sse42,
-
                     InstructionSet.X64_AVX => Avx,
                     InstructionSet.X64_AVX_X64 => Avx,
 
@@ -188,6 +187,8 @@ namespace ILCompiler
                     InstructionSet.X64_GFNI_X64 => Gfni,
                     InstructionSet.X64_GFNI_V256 => (Gfni | Avx),
                     InstructionSet.X64_GFNI_V512 => (Gfni | Avx512),
+                    InstructionSet.X64_AVXVNNIINT => AvxVnniInt,
+                    InstructionSet.X64_AVXVNNIINT_V512 => Avx10v2,
 
                     InstructionSet.X64_SHA => Sha,
                     InstructionSet.X64_SHA_X64 => Sha,
@@ -226,6 +227,12 @@ namespace ILCompiler
             public const int Rcpc2 = (1 << 8);
             public const int Sve = (1 << 9);
             public const int Sve2 = (1 << 10);
+            public const int Sha3 = (1 << 11);
+            public const int Sm4 = (1 << 12);
+            public const int SveAes = (1 << 13);
+            public const int SveSha3 = (1 << 14);
+            public const int SveSm4 = (1 << 15);
+            public const int Cssc = (1 << 16);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -251,6 +258,18 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("sve");
                 if ((flags & Sve2) != 0)
                     builder.AddSupportedInstructionSet("sve2");
+                if ((flags & Sha3) != 0)
+                    builder.AddSupportedInstructionSet("sha3");
+                if ((flags & Sm4) != 0)
+                    builder.AddSupportedInstructionSet("sm4");
+                if ((flags & SveAes) != 0)
+                    builder.AddSupportedInstructionSet("sve_aes");
+                if ((flags & SveSha3) != 0)
+                    builder.AddSupportedInstructionSet("sve_sha3");
+                if ((flags & SveSm4) != 0)
+                    builder.AddSupportedInstructionSet("sve_sm4");
+                if ((flags & Cssc) != 0)
+                    builder.AddSupportedInstructionSet("cssc");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -284,6 +303,17 @@ namespace ILCompiler
                     InstructionSet.ARM64_Sve_Arm64 => Sve,
                     InstructionSet.ARM64_Sve2 => Sve2,
                     InstructionSet.ARM64_Sve2_Arm64 => Sve2,
+                    InstructionSet.ARM64_Sha3 => Sha3,
+                    InstructionSet.ARM64_Sha3_Arm64 => Sha3,
+                    InstructionSet.ARM64_Sm4 => Sm4,
+                    InstructionSet.ARM64_Sm4_Arm64 => Sm4,
+                    InstructionSet.ARM64_SveAes => SveAes,
+                    InstructionSet.ARM64_SveAes_Arm64 => SveAes,
+                    InstructionSet.ARM64_SveSha3 => SveSha3,
+                    InstructionSet.ARM64_SveSha3_Arm64 => SveSha3,
+                    InstructionSet.ARM64_SveSm4 => SveSm4,
+                    InstructionSet.ARM64_SveSm4_Arm64 => SveSm4,
+                    InstructionSet.ARM64_Cssc => Cssc,
 
                     // Vector<T> Sizes
                     InstructionSet.ARM64_VectorT128 => 0,
@@ -298,6 +328,8 @@ namespace ILCompiler
         {
             public const int Zba = (1 << 0);
             public const int Zbb = (1 << 1);
+            public const int Zbs = (1 << 2);
+            public const int Zicond = (1 << 3);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -305,6 +337,10 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("zba");
                 if ((flags & Zbb) != 0)
                     builder.AddSupportedInstructionSet("zbb");
+                if ((flags & Zbs) != 0)
+                    builder.AddSupportedInstructionSet("zbs");
+                if ((flags & Zicond) != 0)
+                    builder.AddSupportedInstructionSet("zicond");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -317,6 +353,8 @@ namespace ILCompiler
                     // Optional ISAs - only available via opt-in or opportunistic light-up
                     InstructionSet.RiscV64_Zba => Zba,
                     InstructionSet.RiscV64_Zbb => Zbb,
+                    InstructionSet.RiscV64_Zbs => Zbs,
+                    InstructionSet.RiscV64_Zicond => Zicond,
 
                     _ => throw new NotSupportedException(((InstructionSet_RiscV64)instructionSet).ToString())
                 };

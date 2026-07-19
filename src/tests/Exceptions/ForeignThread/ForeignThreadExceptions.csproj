@@ -3,6 +3,8 @@
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <MonoAotIncompatible>true</MonoAotIncompatible>
+    <!-- Tests flowing C++ exception from native code to managed frames -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ForeignThreadExceptions.cs" />

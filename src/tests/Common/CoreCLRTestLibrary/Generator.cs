@@ -47,6 +47,11 @@ namespace TestLibrary
             }
         }
 
+        public static bool GetBool()
+        {
+            return m_rand.Next(0, 2) == 1;
+        }
+
         // returns a byte array of random data
         public static void GetBytes(int new_seed, byte[] buffer)
         {

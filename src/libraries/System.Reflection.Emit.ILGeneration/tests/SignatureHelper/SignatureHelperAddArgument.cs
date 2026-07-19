@@ -36,7 +36,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(new Type[] { typeof(int) }, null, 4)]
         [InlineData(null, new Type[] { typeof(Type) }, 4)]
         [InlineData(new Type[] { typeof(int) }, new Type[] { typeof(Type) }, 6)]
-        public void AddArgument_Type_TypeArray_TypeArray(Type[] requiredCustomModifiers, Type[] optionalCustomModifiers, int expectedLength)
+        public void AddArgument_Type_TypeArray_TypeArray(Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, int expectedLength)
         {
             ModuleBuilder module = Helpers.DynamicModule();
             SignatureHelper helper = SignatureHelper.GetFieldSigHelper(module);

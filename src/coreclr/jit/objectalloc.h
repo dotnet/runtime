@@ -89,13 +89,16 @@ struct CloneInfo : public GuardInfo
     unsigned                  m_appearanceCount = 0;
     jitstd::vector<unsigned>* m_allocTemps      = nullptr;
 
+    // The initial GDV guard block, if any.
+    BasicBlock* m_guardBlock = nullptr;
+
+    // The block where the enumerator var is assigned.
+    BasicBlock* m_defBlock = nullptr;
+
     // Where the enumerator allocation happens
     GenTree*    m_allocTree  = nullptr;
     Statement*  m_allocStmt  = nullptr;
     BasicBlock* m_allocBlock = nullptr;
-
-    // Block holding the GDV test that decides if the enumerator will be allocated
-    BasicBlock* m_domBlock = nullptr;
 
     // Blocks to clone (in order), and a set representation
     // of the same
@@ -169,8 +172,11 @@ class ObjectAllocator final : public Phase
     BitVecTraits m_bitVecTraits;
     unsigned     m_unknownSourceIndex;
     BitVec       m_EscapingPointers;
-    // We keep the set of possibly-stack-pointing pointers as a superset of the set of
-    // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
+    // Tracked locals with at least one non-trivial use (see AnalyzeParentStack).
+    // Locals that neither escape nor are used can stay as heap allocations and
+    // be removed by later DCE.
+    BitVec m_DefinitelyUsedPointers;
+    // The possibly-stack-pointing set is a superset of the definitely-stack-pointing set.
     BitVec              m_PossiblyStackPointingPointers;
     BitVec              m_DefinitelyStackPointingPointers;
     LocalToLocalMap     m_HeapLocalToStackObjLocalMap;
@@ -191,6 +197,9 @@ class ObjectAllocator final : public Phase
     // Struct fields
     bool           m_trackFields;
     NodeToIndexMap m_StoreAddressToIndexMap;
+
+    // Info to distinguish cloned blocks
+    unsigned m_initialMaxBlockID;
 
     //===============================================================================
     // Methods
@@ -218,6 +227,8 @@ private:
     unsigned     IndexToLocal(unsigned bvIndex);
     bool         CanLclVarEscape(unsigned int lclNum);
     bool         CanIndexEscape(unsigned int index);
+    bool         IsLclVarUsed(unsigned int lclNum);
+    bool         IsIndexUsed(unsigned int index);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
     void         MarkIndexAsPossiblyStackPointing(unsigned int index);
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
@@ -230,10 +241,12 @@ private:
     void         DoAnalysis();
     void         MarkLclVarAsEscaping(unsigned int lclNum);
     void         MarkIndexAsEscaping(unsigned int lclNum);
+    void         MarkIndexAsUsed(unsigned int index);
     void         MarkEscapingVarsAndBuildConnGraph();
     void         AddConnGraphEdge(unsigned int sourceLclNum, unsigned int targetLclNum);
     void         AddConnGraphEdgeIndex(unsigned int sourceIndex, unsigned int targetIndex);
     void         ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& escapingNodes);
+    void         ComputeConnGraphClosure(BitVecTraits* bitVecTraits, BitVec& nodes, const char* setName);
     void         ComputeStackObjectPointers(BitVecTraits* bitVecTraits);
     bool         MorphAllocObjNodes();
     void         MorphAllocObjNode(AllocationCandidate& candidate);
@@ -275,12 +288,15 @@ private:
     bool AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTraits,
                                           BitVec&       escapingNodes,
                                           BitVec&       escapingNodesToProcess);
+    bool AnalyzePseudoForCloning(BitVecTraits* bitVecTraits, BitVec& escapingNodes, unsigned pseudoIndex);
     bool CanClone(CloneInfo* info);
     bool CheckCanClone(CloneInfo* info);
     bool CloneOverlaps(CloneInfo* info);
     bool ShouldClone(CloneInfo* info);
     void CloneAndSpecialize(CloneInfo* info);
     void CloneAndSpecialize();
+
+    bool BlockIsCloneOrWasCloned(BasicBlock* block);
 
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 
@@ -345,6 +361,42 @@ inline bool ObjectAllocator::CanLclVarEscape(unsigned int lclNum)
     }
 
     return CanIndexEscape(LocalToIndex(lclNum));
+}
+
+//------------------------------------------------------------------------
+// IsIndexUsed:            Returns true iff the resource described by index has
+//                         at least one non-trivial use (see m_DefinitelyUsedPointers).
+//
+// Arguments:
+//    index   - bv index
+//
+// Return Value:
+//    Returns true if so
+
+inline bool ObjectAllocator::IsIndexUsed(unsigned int index)
+{
+    return BitVecOps::IsMember(&m_bitVecTraits, m_DefinitelyUsedPointers, index);
+}
+
+//------------------------------------------------------------------------
+// IsLclVarUsed:           Returns true iff the local has at least one non-trivial
+//                         use (see m_DefinitelyUsedPointers).
+//
+// Arguments:
+//    lclNum   - Local variable number
+//
+// Return Value:
+//    Returns true if so. Untracked locals conservatively return true (we know
+//    nothing about their uses; assume they are used).
+
+inline bool ObjectAllocator::IsLclVarUsed(unsigned int lclNum)
+{
+    if (!IsTrackedLocal(lclNum))
+    {
+        return true;
+    }
+
+    return IsIndexUsed(LocalToIndex(lclNum));
 }
 
 //------------------------------------------------------------------------

@@ -16,13 +16,14 @@ import { mono_log_error } from "./logging";
 export let Module: DotnetModuleInternal;
 export let INTERNAL: any;
 
-// keep in sync with src\mono\browser\runtime\loader\globals.ts and src\mono\browser\test-main.js
+// keep in sync with src\mono\browser\runtime\loader\globals.ts and src\mono\browser\test-main.mjs
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts == "function";
 export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
 export const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
 export const ENVIRONMENT_IS_WEB = typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_NODE);
 export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
+export const browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
 
 // these are imported and re-exported from emscripten internals
 export let ENVIRONMENT_IS_PTHREAD: boolean;
@@ -65,8 +66,6 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects) {
         allAssetsInMemory: createPromiseController<void>(),
         dotnetReady: createPromiseController<any>(),
         afterInstantiateWasm: createPromiseController<void>(),
-        beforePreInit: createPromiseController<void>(),
-        afterPreInit: createPromiseController<void>(),
         afterPreRun: createPromiseController<void>(),
         beforeOnRuntimeInitialized: createPromiseController<void>(),
         afterMonoStarted: createPromiseController<void>(),

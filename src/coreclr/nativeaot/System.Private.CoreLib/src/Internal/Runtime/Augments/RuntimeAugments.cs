@@ -168,7 +168,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhGetRuntimeHelperForType(type.ToMethodTable(), RuntimeHelperKind.AllocateObject);
+            return RuntimeImports.RhGetNewObjectHelper(type.ToMethodTable());
         }
 
         public static IntPtr GetFallbackDefaultConstructor()
@@ -355,38 +355,6 @@ namespace Internal.Runtime.Augments
             ClassConstructorRunner.EnsureClassConstructorRun(context);
         }
 
-        public static Type GetEnumUnderlyingType(RuntimeTypeHandle enumTypeHandle)
-        {
-            Debug.Assert(enumTypeHandle.ToMethodTable()->IsEnum);
-
-            EETypeElementType elementType = enumTypeHandle.ToMethodTable()->ElementType;
-            switch (elementType)
-            {
-                case EETypeElementType.Boolean:
-                    return typeof(bool);
-                case EETypeElementType.Char:
-                    return typeof(char);
-                case EETypeElementType.SByte:
-                    return typeof(sbyte);
-                case EETypeElementType.Byte:
-                    return typeof(byte);
-                case EETypeElementType.Int16:
-                    return typeof(short);
-                case EETypeElementType.UInt16:
-                    return typeof(ushort);
-                case EETypeElementType.Int32:
-                    return typeof(int);
-                case EETypeElementType.UInt32:
-                    return typeof(uint);
-                case EETypeElementType.Int64:
-                    return typeof(long);
-                case EETypeElementType.UInt64:
-                    return typeof(ulong);
-                default:
-                    throw new NotSupportedException();
-            }
-        }
-
         public static RuntimeTypeHandle GetRelatedParameterTypeHandle(RuntimeTypeHandle parameterTypeHandle)
         {
             MethodTable* elementType = parameterTypeHandle.ToMethodTable()->RelatedParameterType;
@@ -474,14 +442,6 @@ namespace Internal.Runtime.Augments
             return new RuntimeTypeHandle(typeHandle.ToMethodTable()->InterfaceMap[index]);
         }
 
-        public static IntPtr NewInterfaceDispatchCell(RuntimeTypeHandle interfaceTypeHandle, int slotNumber)
-        {
-            IntPtr cell = RuntimeImports.RhNewInterfaceDispatchCell(interfaceTypeHandle.ToMethodTable(), slotNumber);
-            if (cell == IntPtr.Zero)
-                throw new OutOfMemoryException();
-            return cell;
-        }
-
         [Intrinsic]
         public static RuntimeTypeHandle GetCanonType()
         {
@@ -547,6 +507,11 @@ namespace Internal.Runtime.Augments
             return result;
         }
 
+        public static unsafe IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
+        {
+            return RuntimeImports.RhResolveDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot));
+        }
+
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToMethodTable()->IsPointer;
@@ -607,6 +572,11 @@ namespace Internal.Runtime.Augments
         public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle? binderBundle)
         {
             return InvokeUtils.CheckArgument(srcObject, dstType.ToMethodTable(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
+        }
+
+        public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle? binderBundle, out bool copyBack)
+        {
+            return InvokeUtils.CheckArgument(srcObject, dstType.ToMethodTable(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle, out copyBack);
         }
 
         // FieldInfo.SetValueDirect() has a completely different set of rules on how to coerce the argument from
@@ -692,19 +662,6 @@ namespace Internal.Runtime.Augments
             {
                 return s_stackTraceMetadataCallbacks;
             }
-        }
-
-        public static string TryGetMethodDisplayStringFromIp(IntPtr ip)
-        {
-            StackTraceMetadataCallbacks callbacks = StackTraceCallbacksIfAvailable;
-            if (callbacks == null)
-                return null;
-
-            ip = RuntimeImports.RhFindMethodStartAddress(ip);
-            if (ip == IntPtr.Zero)
-                return null;
-
-            return callbacks.TryGetMethodNameFromStartAddress(ip, out _);
         }
 
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;

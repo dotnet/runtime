@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <IsAotCompatible>false</IsAotCompatible>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>

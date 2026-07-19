@@ -34,13 +34,8 @@ public:
     static void Init();
 
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
-    static FCDECL1(PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
-    static FCDECL1(MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
-    static PCODE GetWrapperInvoke(MethodDesc* pMD);
-    // determines where the delegate needs to be wrapped for non-security reason
-    static BOOL NeedsWrapperDelegate(MethodDesc* pTargetMD);
-    // on entry delegate points to the delegate to wrap
-    static DELEGATEREF CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc* pTargetMD);
+    FCDECL1(static PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
+    FCDECL1(static MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
 
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);
@@ -60,17 +55,13 @@ public:
     // Decides if pcls derives from Delegate.
     static BOOL IsDelegate(MethodTable *pMT);
 
-    // Decides if this is a wrapper delegate
-    static BOOL IsWrapperDelegate(DELEGATEREF dRef);
-
     // Get the cpu stub for a delegate invoke.
     static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
-    static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
-    static MethodDesc* GetMethodDescForOpenVirtualDelegate(OBJECTREF orDelegate);
-    static OBJECTREF GetTargetObject(OBJECTREF obj);
+    static MethodDesc* GetMethodDesc(OBJECTREF obj);
+    static MethodDesc* GetMethodDescForOpenVirtualDelegate(DELEGATEREF delegate);
 
-    static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);
+    static BOOL HasSingleTarget(DELEGATEREF delegate);
 
     // Throw if the method violates any usage restrictions
     // for UnmanagedCallersOnlyAttribute.
@@ -122,10 +113,9 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
     MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags);
 
-extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo);
+extern "C" void QCALLTYPE Delegate_CreateMethodInfo(MethodDesc* methodDesc, QCall::ObjectHandleOnStack retMethodInfo);
 
-extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandleOnStack left, QCall::ObjectHandleOnStack right);
-
+extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnStack instance);
 
 void DistributeEvent(OBJECTREF *pDelegate,
                      OBJECTREF *pDomain);
@@ -170,6 +160,7 @@ struct ShuffleEntry
 
 #include <poppack.h>
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 class ShuffleThunkCache : public StubCacheBase
 {
 public:
@@ -204,5 +195,6 @@ private:
         return sizeof(ShuffleEntry) * (UINT)(1 + (pse - (ShuffleEntry*)pRawStub));
     }
 };
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif  // _COMDELEGATE_H_

@@ -3732,6 +3732,45 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	return obj;
 }
 
+static MonoInst*
+mono_emit_cached_localloc (MonoCompile *cfg, int cache_index, int new_size)
+{
+	g_assert (cache_index < (int)G_N_ELEMENTS (cfg->localloc_cache));
+	MonoCachedLocallocInfo *info = &cfg->localloc_cache [cache_index];
+
+	// Create var or update the size. All locallocs will be patched to the max size after IR code emit ends.
+	if (info->alloc_size == 0) {
+		info->addr_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+		info->alloc_size = new_size;
+	} else if (info->alloc_size < new_size) {
+		info->alloc_size = new_size;
+	}
+
+	int cache_dreg = info->addr_var->dreg;
+	MonoInst* ins;
+	MonoBasicBlock *done_bb;
+
+	NEW_BBLOCK (cfg, done_bb);
+
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, cache_dreg, 0);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, done_bb);
+
+	// If we have no localloc-ed memory, allocate it now and save it in the cache
+	MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
+	ins->dreg = alloc_preg (cfg);
+	ins->inst_imm = new_size;
+	MONO_ADD_INS (cfg->cbb, ins);
+
+	info->localloc_ins = g_slist_append (info->localloc_ins, ins);
+
+	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cache_dreg, ins->dreg);
+
+	// Return the value from the cache
+	MONO_START_BB (cfg, done_bb);
+	EMIT_NEW_UNALU (cfg, ins, OP_MOVE, alloc_preg (cfg), cache_dreg);
+	return ins;
+}
+
 /*
  * handle_constrained_gsharedvt_call:
  *
@@ -3865,20 +3904,12 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 
 		/* Pass an array of bools which signal whenever the corresponding argument is a gsharedvt ref type */
 		if (has_gsharedvt) {
-			MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
-			ins->dreg = alloc_preg (cfg);
-			ins->inst_imm = fsig->param_count;
-			MONO_ADD_INS (cfg->cbb, ins);
-			is_gsharedvt_ins = ins;
+			is_gsharedvt_ins = mono_emit_cached_localloc (cfg, 0, fsig->param_count);
 		} else {
 			EMIT_NEW_PCONST (cfg, is_gsharedvt_ins, 0);
 		}
 		/* Pass the arguments using a localloc-ed array using the format expected by runtime_invoke () */
-		MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
-		ins->dreg = alloc_preg (cfg);
-		ins->inst_imm = fsig->param_count * sizeof (target_mgreg_t);
-		MONO_ADD_INS (cfg->cbb, ins);
-		args_ins = ins;
+		args_ins = mono_emit_cached_localloc (cfg, 1, fsig->param_count * sizeof (target_mgreg_t));
 
 		for (int i = 0; i < fsig->param_count; ++i) {
 			int addr_reg;
@@ -7462,13 +7493,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			fsig = mono_method_signature_internal (cmethod);
 			int nargs = fsig->param_count + fsig->hasthis;
-			if (cfg->llvm_only) {
+			if (cfg->llvm_only || cfg->compile_aot) {
 				MonoInst **args;
 
+				/*
+				 * A real tailcall (OP_TAILCALL) disables AOT for the method (see DISABLE_AOT
+				 * below), which under aot-only/full-AOT leaves the method out of the image and
+				 * crashes at runtime. For AOT (and llvm_only) emit the jmp as a normal call
+				 * followed by a return instead. This preserves the jmp semantics that matter
+				 * here (transfer to the target with the current arguments and return its
+				 * result), but it is not a true tailcall: it adds a stack frame, so observable
+				 * details such as stack traces can differ. Keep the real tailcall for the JIT.
+				 */
 				args = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * nargs);
 				for (int i = 0; i < nargs; ++i)
 					EMIT_NEW_ARGLOAD (cfg, args [i], i);
-				ins = mini_emit_method_call_full (cfg, cmethod, fsig, TRUE, args, NULL, NULL, NULL);
+				ins = mini_emit_method_call_full (cfg, cmethod, fsig, cfg->llvm_only, args, NULL, NULL, NULL);
 				/*
 				 * The code in mono-basic-block.c treats the rest of the code as dead, but we
 				 * have to emit a normal return since llvm expects it.
@@ -9378,6 +9418,20 @@ calli_end:
 			MonoInst *vtable_arg = NULL;
 
 			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+			/*
+			 * In AOT mode, a type-load failure while resolving the constructor (e.g. an
+			 * invalid covariant override on the declaring type) should turn the method
+			 * into one that throws TypeLoadException at runtime, matching the JIT
+			 * behavior, instead of aborting compilation. Aborting would exclude the
+			 * method from the AOT image, and calling it under full-AOT would surface a
+			 * confusing 'JIT compile while running in aot-only mode' error instead.
+			 */
+			if (cfg->compile_aot && !is_ok (cfg->error) && mono_error_get_error_code (cfg->error) == MONO_ERROR_TYPE_LOAD) {
+				clear_cfg_error (cfg);
+				INLINE_FAILURE ("type load error");
+				method_make_alwaysthrow_typeloadfailure (cfg, cmethod ? cmethod->klass : NULL);
+				goto all_bbs_done;
+			}
 			CHECK_CFG_ERROR;
 
 			fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, cfg->error);
@@ -9385,8 +9439,20 @@ calli_end:
 
 			mono_save_token_info (cfg, image, token, cmethod);
 
-			if (mono_class_has_failure (cmethod->klass) || !mono_class_init_internal (cmethod->klass))
-				TYPE_LOAD_ERROR (cmethod->klass);
+			if (mono_class_has_failure (cmethod->klass) || !mono_class_init_internal (cmethod->klass)) {
+				if (!cfg->compile_aot)
+					TYPE_LOAD_ERROR (cmethod->klass);
+				/*
+				 * In AOT mode, rather than aborting compilation of the whole method
+				 * (which would exclude it from the AOT image and make a full-AOT call
+				 * site throw a confusing 'JIT compile while running in aot-only mode'
+				 * error), turn the method into one that throws the TypeLoadException at
+				 * runtime, matching the JIT behavior.
+				 */
+				INLINE_FAILURE ("type load error");
+				method_make_alwaysthrow_typeloadfailure (cfg, cmethod->klass);
+				goto all_bbs_done;
+			}
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
 
@@ -10136,9 +10202,14 @@ calli_end:
 				if (!field || CLASS_HAS_FAILURE (klass)) {
 						HANDLE_TYPELOAD_ERROR (cfg, klass);
 
-						// Reached only in AOT. Cannot turn a token into a class. We silence the compilation error
-						// and generate a runtime exception.
-						if (cfg->error->error_code == MONO_ERROR_BAD_IMAGE)
+						/*
+						 * Reached only in AOT. After lowering the field resolution failure into a runtime
+						 * throw, consume the expected recoverable metadata errors as well. Memberref field
+						 * resolution can report MissingField/BadImage directly through cfg->error without
+						 * setting cfg->exception_type, and leaving one of those live lets an accepted inline
+						 * trip the inline_method () cfg->error assert later on.
+						 */
+						if (cfg->error->error_code == MONO_ERROR_BAD_IMAGE || cfg->error->error_code == MONO_ERROR_MISSING_FIELD)
 							clear_cfg_error (cfg);
 
 						// We need to push a dummy value onto the stack, respecting the intended type.
@@ -12335,7 +12406,24 @@ all_bbs_done:
 				cfg->cbb = init_localsbb;
 			emit_init_local (cfg, i, header->locals [i], init_locals);
 		}
+
+		// Patch all locallocs using the cache to allocate the max used size.
+		for (int i = 0; i < 2; i++) {
+			MonoCachedLocallocInfo *info = &cfg->localloc_cache [i];
+			if (info->alloc_size != 0) {
+				MONO_EMIT_NEW_PCONST (cfg, info->addr_var->dreg, NULL);
+				GSList *p = info->localloc_ins;
+				while (p != NULL) {
+					MonoInst *localloc_ins = (MonoInst*)p->data;
+					localloc_ins->inst_imm = info->alloc_size;
+					p = p->next;
+				}
+				g_slist_free (info->localloc_ins);
+				info->localloc_ins = NULL;
+			}
+		}
 	}
+
 
 	if (cfg->init_ref_vars && cfg->method == method) {
 		/* Emit initialization for ref vars */

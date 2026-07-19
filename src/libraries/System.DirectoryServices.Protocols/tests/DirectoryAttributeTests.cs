@@ -139,7 +139,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(null)]
         [InlineData(typeof(Uri))]
         [InlineData(typeof(int))]
-        public void GetValues_InvalidType_ThrowsArgumentException(Type valuesType)
+        public void GetValues_InvalidType_ThrowsArgumentException(Type? valuesType)
         {
             var attribute = new DirectoryAttribute();
             AssertExtensions.Throws<ArgumentException>("valuesType", () => attribute.GetValues(valuesType));
@@ -331,7 +331,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Theory]
         [InlineData("vaLue", null)]
         [InlineData(1, "value")]
-        public void Remove_InvalidValue_ThrowsArgumentException(object value, string paramName)
+        public void Remove_InvalidValue_ThrowsArgumentException(object value, string? paramName)
         {
             var attribute = new DirectoryAttribute { "value" };
             AssertExtensions.Throws<ArgumentException>(paramName, () => attribute.Remove(value));

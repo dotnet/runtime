@@ -39,6 +39,8 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 #include <unistd.h>
 #include <limits.h>
 #include <dlfcn.h>
+#include <minipal/utils.h>
+#include <minipal/ospagesize.h>
 
 #if HAVE_VM_ALLOCATE
 #include <mach/vm_map.h>
@@ -53,11 +55,6 @@ minipal_mutex virtual_critsec;
 static PCMI pVirtualMemory;
 
 static size_t s_virtualPageSize = 0;
-
-#if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
-void (*jit_write_protect_np)(int enabled);
-#define pthread_jit_write_protect_np jit_write_protect_np
-#endif // defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
 
 /* We need MAP_ANON. However on some platforms like HP-UX, it is defined as MAP_ANONYMOUS */
 #if !defined(MAP_ANON) && defined(MAP_ANONYMOUS)
@@ -170,7 +167,7 @@ extern "C"
 BOOL
 VIRTUALInitialize(bool initializeExecutableMemoryAllocator)
 {
-    s_virtualPageSize = getpagesize();
+    s_virtualPageSize = minipal_getpagesize();
 
     TRACE("Initializing the Virtual Critical Sections. \n");
 
@@ -182,15 +179,6 @@ VIRTUALInitialize(bool initializeExecutableMemoryAllocator)
     {
         g_executableMemoryAllocator.Initialize();
     }
-
-#if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
-    jit_write_protect_np = (void (*)(int))dlsym(RTLD_DEFAULT, "pthread_jit_write_protect_np");
-    if (jit_write_protect_np == NULL)
-    {
-        ERROR("pthread_jit_write_protect_np not available.\n");
-        return FALSE;
-    }
-#endif // defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
 
     return TRUE;
 }
@@ -545,7 +533,11 @@ static LPVOID VIRTUALReserveMemory(
         {
             ASSERT( "Unable to store the structure in the list.\n");
             pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
+#ifdef TARGET_WASM
+            free( pRetVal );
+#else
             munmap( pRetVal, MemSize );
+#endif
             pRetVal = NULL;
         }
     }
@@ -579,6 +571,32 @@ static LPVOID ReserveVirtualMemory(
 
     TRACE( "Reserving the memory now.\n");
 
+#ifdef TARGET_WASM
+    // WASM cannot honor address hints - ignore lpAddress and allocate
+    // at whatever address posix_memalign returns. Callers must handle
+    // getting a different address than requested (same as Linux with
+    // some SELinux settings).
+    (void)StartBoundary;
+    (void)fAllocationType; // Large pages / executable flags are N/A on WASM.
+
+    // WASM has no virtual memory - mmap(PROT_NONE) still consumes linear memory,
+    // munmap of partial ranges doesn't return memory, and MAP_FIXED is broken.
+    // Use posix_memalign/free instead.
+
+    LPVOID pRetVal = nullptr;
+    if (posix_memalign(&pRetVal, GetVirtualPageSize(), MemSize) != 0 || pRetVal == nullptr)
+    {
+        ERROR( "Failed due to insufficient memory.\n" );
+        pthrCurrent->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        return nullptr;
+    }
+
+    // posix_memalign may return either freshly grown linear memory (zeroed by the
+    // WASM spec) or a recycled block from the allocator's free list (which may
+    // contain stale data from a previous free()). Always zero to match the
+    // "reserved memory starts zeroed" contract of this function.
+    memset(pRetVal, 0, MemSize);
+#else // !TARGET_WASM
     // Most platforms will only commit memory if it is dirtied,
     // so this should not consume too much swap space.
     int mmapFlags = MAP_ANON | MAP_PRIVATE;
@@ -596,15 +614,11 @@ static LPVOID ReserveVirtualMemory(
 #endif
     }
 
-#ifdef __APPLE__
+#if defined(HOST_OSX)
     if ((fAllocationType & MEM_RESERVE_EXECUTABLE) && IsRunningOnMojaveHardenedRuntime())
     {
         mmapFlags |= MAP_JIT;
     }
-#endif
-
-#ifdef __HAIKU__
-        mmapFlags |= MAP_NORESERVE;
 #endif
 
     LPVOID pRetVal = mmap((LPVOID) StartBoundary,
@@ -641,13 +655,14 @@ static LPVOID ReserveVirtualMemory(
     }
 #endif  // MMAP_ANON_IGNORES_PROTECTION
 
-#ifdef MADV_DONTDUMP
+#if defined(MADV_DONTDUMP)
     // Do not include reserved uncommitted memory in coredump.
     if (!(fAllocationType & MEM_COMMIT))
     {
         madvise(pRetVal, MemSize, MADV_DONTDUMP);
     }
 #endif
+#endif // !TARGET_WASM
 
     return pRetVal;
 }
@@ -728,16 +743,24 @@ VIRTUALCommitMemory(
 
     TRACE( "Committing the memory now..\n");
 
-    nProtect = W32toUnixAccessControl(flProtect);
+    pRetVal = (void *) StartBoundary;
 
+#ifndef TARGET_WASM
+    nProtect = W32toUnixAccessControl(flProtect);
     // Commit the pages
     if (mprotect((void *) StartBoundary, MemSize, nProtect) != 0)
     {
         ERROR("mprotect() failed! Error(%d)=%s\n", errno, strerror(errno));
         goto error;
     }
+#else
+    // On WASM, reserve == commit — memory is accessible after posix_memalign.
+    // Memory is always zero here: either from ReserveVirtualMemory (initial
+    // allocation) or from the MEM_DECOMMIT path (which zeroes on decommit).
+    (void)MemSize;
+#endif
 
-#ifdef MADV_DODUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
     // Include committed memory in coredump. Any newly allocated memory included by default.
     if (!IsNewMemory)
     {
@@ -745,9 +768,9 @@ VIRTUALCommitMemory(
     }
 #endif
 
-    pRetVal = (void *) StartBoundary;
     goto done;
 
+#ifndef TARGET_WASM
 error:
     if ( flAllocationType & MEM_RESERVE || IsLocallyReserved )
     {
@@ -763,6 +786,7 @@ error:
 
     pInformation = NULL;
     pRetVal = NULL;
+#endif // !TARGET_WASM
 done:
 
     LogVaOperation(
@@ -1055,7 +1079,7 @@ VirtualFree(
 
         // mmap support on emscripten/wasm is very limited and doesn't support location hints
         // (when address is not null)
-#ifndef __wasm__
+#ifndef TARGET_WASM
         // Explicitly calling mmap instead of mprotect here makes it
         // that much more clear to the operating system that we no
         // longer need these pages.
@@ -1073,7 +1097,7 @@ VirtualFree(
             }
 #endif  // MMAP_ANON_IGNORES_PROTECTION
 
-#ifdef MADV_DONTDUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
             // Do not include freed memory in coredump.
             madvise((LPVOID) StartBoundary, MemSize, MADV_DONTDUMP);
 #endif
@@ -1086,13 +1110,12 @@ VirtualFree(
             pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
             goto VirtualFreeExit;
         }
-#else // __wasm__
-        // We can't decommit the mapping (MAP_FIXED doesn't work in emscripten), and we can't
-        //  MADV_DONTNEED it (madvise doesn't work in emscripten), but we can at least zero
-        //  the memory so that if an attempt is made to reuse it later, the memory will be
-        //  empty as PAL tests expect it to be.
+#else // TARGET_WASM
+        // On WASM, we cannot decommit (MAP_FIXED and madvise don't work in
+        // emscripten). Zero the range so it is clean for any future commit
+        // (which is a no-op).
         ZeroMemory((LPVOID) StartBoundary, MemSize);
-#endif // __wasm__
+#endif // TARGET_WASM
     }
 
     if ( dwFreeType & MEM_RELEASE )
@@ -1118,25 +1141,26 @@ VirtualFree(
         TRACE( "Releasing the following memory %d to %d.\n",
                pMemoryToBeReleased->startBoundary, pMemoryToBeReleased->memSize );
 
+#ifdef TARGET_WASM
+        free( (LPVOID)pMemoryToBeReleased->startBoundary );
+#else // !TARGET_WASM
         if ( munmap( (LPVOID)pMemoryToBeReleased->startBoundary,
-                     pMemoryToBeReleased->memSize ) == 0 )
-        {
-            if ( VIRTUALReleaseMemory( pMemoryToBeReleased ) == FALSE )
-            {
-                ASSERT( "Unable to remove the PCMI entry from the list.\n" );
-                pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
-                bRetVal = FALSE;
-                goto VirtualFreeExit;
-            }
-            pMemoryToBeReleased = NULL;
-        }
-        else
+                     pMemoryToBeReleased->memSize ) != 0 )
         {
             ASSERT( "Unable to unmap the memory, munmap() returned an abnormal value.\n" );
             pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
             bRetVal = FALSE;
             goto VirtualFreeExit;
         }
+#endif // !TARGET_WASM
+        if ( VIRTUALReleaseMemory( pMemoryToBeReleased ) == FALSE )
+        {
+            ASSERT( "Unable to remove the PCMI entry from the list.\n" );
+            pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
+            bRetVal = FALSE;
+            goto VirtualFreeExit;
+        }
+        pMemoryToBeReleased = NULL;
     }
 
 VirtualFreeExit:
@@ -1207,9 +1231,11 @@ VirtualProtect(
     }
 
     pEntry = VIRTUALFindRegionInformation( StartBoundary );
+#ifndef TARGET_WASM
     if ( 0 == mprotect( (LPVOID)StartBoundary, MemSize,
                    W32toUnixAccessControl( flNewProtect ) ) )
     {
+#endif // !TARGET_WASM
         /* Reset the access protection. */
         TRACE( "Number of pages to change %d, starting page %d \n",
                NumberOfPagesToChange, OffSet );
@@ -1220,13 +1246,14 @@ VirtualProtect(
          */
         *lpflOldProtect = PAGE_EXECUTE_READWRITE;
 
-#ifdef MADV_DONTDUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
         // Include or exclude memory from coredump based on the protection.
         int advise = flNewProtect == PAGE_NOACCESS ? MADV_DONTDUMP : MADV_DODUMP;
         madvise((LPVOID)StartBoundary, MemSize, advise);
 #endif
 
         bRetVal = TRUE;
+#ifndef TARGET_WASM
     }
     else
     {
@@ -1240,6 +1267,7 @@ VirtualProtect(
             SetLastError( ERROR_INVALID_ACCESS );
         }
     }
+#endif // !TARGET_WASM
 ExitVirtualProtect:
     minipal_mutex_leave(&virtual_critsec);
 
@@ -1251,7 +1279,7 @@ ExitVirtualProtect:
     return bRetVal;
 }
 
-#if defined(HOST_APPLE) && defined(HOST_ARM64)
+#if defined(HOST_OSX) && defined(HOST_ARM64)
 PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
 {
     thread_local int enabledCount = 0;
@@ -1271,7 +1299,7 @@ PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
         _ASSERTE(enabledCount >= 0);
     }
 }
-#endif // HOST_APPLE && HOST_ARM64
+#endif // HOST_OSX && HOST_ARM64
 
 #if HAVE_VM_ALLOCATE
 //---------------------------------------------------------------------------------------
@@ -1587,8 +1615,18 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
 
     int32_t sizeOfAllocation = MaxExecutableMemorySizeNearCoreClr;
     int32_t initialReserveLimit = -1;
+#if defined(TARGET_WASI)
+    // WASI has neither RLIMIT_AS nor RLIMIT_DATA nor RLIM_INFINITY; wasm32 has a
+    // hard 4 GiB limit and no separate VM accounting. Skip the rlimit-based
+    // sizing and let sizeOfAllocation stay at MaxExecutableMemorySizeNearCoreClr.
+#else
+#ifdef RLIMIT_AS
+    int addressSpace = RLIMIT_AS;
+#else
+    int addressSpace = RLIMIT_DATA;
+#endif
     rlimit addressSpaceLimit;
-    if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
+    if ((getrlimit(addressSpace, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
     {
         // By default reserve max 20% of the available virtual address space
         rlim_t initialExecMemoryPerc = 20;
@@ -1608,6 +1646,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
             sizeOfAllocation = initialReserveLimit;
         }
     }
+#endif // !TARGET_WASI
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
     // Smaller steps on ARM because we try hard finding a spare memory in a 128Mb
     // distance from coreclr so e.g. all calls from corelib to coreclr could use relocs

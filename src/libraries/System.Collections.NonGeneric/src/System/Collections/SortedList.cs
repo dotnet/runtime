@@ -816,7 +816,7 @@ namespace System.Collections
                 get
                 {
                     if (_version != _sortedList.version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
-                    if (_current == false) throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                    if (!_current) throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     return _key;
                 }
             }
@@ -843,7 +843,7 @@ namespace System.Collections
                 get
                 {
                     if (_version != _sortedList.version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
-                    if (_current == false) throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                    if (!_current) throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     return new DictionaryEntry(_key, _value);
                 }
             }
@@ -852,7 +852,7 @@ namespace System.Collections
             {
                 get
                 {
-                    if (_current == false) throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                    if (!_current) throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
 
                     if (_getObjectRetType == Keys)
                         return _key;
@@ -868,7 +868,7 @@ namespace System.Collections
                 get
                 {
                     if (_version != _sortedList.version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
-                    if (_current == false) throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                    if (!_current) throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     return _value;
                 }
             }

@@ -255,10 +255,7 @@ namespace System.Xml.Resolvers
         {
             set
             {
-                if (_fallbackResolver != null)
-                {
-                    _fallbackResolver.Credentials = value;
-                }
+                _fallbackResolver?.Credentials = value;
             }
         }
 

@@ -9,10 +9,7 @@ namespace System.Numerics.Tensors
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="T">The element type.</typeparam>
     public interface ITensor<TSelf, T> : ITensor, IReadOnlyTensor<TSelf, T>
-        where TSelf : ITensor<TSelf, T>
-#if NET9_0_OR_GREATER
-        , allows ref struct
-#endif
+        where TSelf : ITensor<TSelf, T>, allows ref struct
     {
         // TODO: Determine if we can implement `IEqualityOperators<TSelf, T, bool>`.
         // It looks like C#/.NET currently hits limitations here as it believes TSelf and T could be the same type
@@ -25,7 +22,7 @@ namespace System.Numerics.Tensors
         ///   <para>If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned.</para>
         ///   <para>The underlying buffer is initialized to default values.</para>
         /// </remarks>
-        static abstract TSelf Create(scoped ReadOnlySpan<nint> lengths, bool pinned = false);
+        static abstract TSelf CreateFromShape(scoped ReadOnlySpan<nint> lengths, bool pinned = false);
 
         /// <summary>Creates a new tensor with the specified lengths and strides.</summary>
         /// <param name="lengths">The lengths of each dimension.</param>
@@ -35,7 +32,7 @@ namespace System.Numerics.Tensors
         ///   <para>If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned.</para>
         ///   <para>The underlying buffer is initialized to default values.</para>
         /// </remarks>
-        static abstract TSelf Create(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
+        static abstract TSelf CreateFromShape(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
 
         /// <summary>Creates a new tensor with the specified lengths and strides.</summary>
         /// <param name="lengths">The lengths of each dimension.</param>
@@ -44,7 +41,7 @@ namespace System.Numerics.Tensors
         ///   <para>If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned.</para>
         ///   <para>The underlying buffer is not initialized.</para>
         /// </remarks>
-        static abstract TSelf CreateUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned = false);
+        static abstract TSelf CreateFromShapeUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned = false);
 
         /// <summary>Creates a new tensor with the specified lengths and strides. If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned. The underlying buffer is not initialized.</summary>
         /// <param name="lengths">The lengths of each dimension.</param>
@@ -54,7 +51,7 @@ namespace System.Numerics.Tensors
         ///   If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned.
         /// The underlying buffer is not initialized.
         /// </remarks>
-        static abstract TSelf CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
+        static abstract TSelf CreateFromShapeUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.this[ReadOnlySpan{nint}]" />
         new ref T this[params scoped ReadOnlySpan<nint> indexes] { get; }
@@ -93,5 +90,17 @@ namespace System.Numerics.Tensors
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetPinnableReference" />
         new ref T GetPinnableReference();
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetSpan(ReadOnlySpan{nint}, int)" />
+        new Span<T> GetSpan(scoped ReadOnlySpan<nint> startIndexes, int length);
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetSpan(ReadOnlySpan{NIndex}, int)" />
+        new Span<T> GetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length);
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryGetSpan(ReadOnlySpan{nint}, int, out ReadOnlySpan{T})" />
+        bool TryGetSpan(scoped ReadOnlySpan<nint> startIndexes, int length, out Span<T> span);
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryGetSpan(ReadOnlySpan{NIndex}, int, out ReadOnlySpan{T})" />
+        bool TryGetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length, out Span<T> span);
     }
 }

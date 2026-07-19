@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <Target Name="ExecuteGenerateTestsScript"
-          Inputs="$(MSBuildAllProjects);$(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_General.cs"
+          Inputs="$(MSBuildAllProjects);$(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_General.cs;$(MSBuildThisFileDirectory)/Shared/*.template"
           Outputs="$(GeneratedHWIntrinsicTestListFile)"
           Condition="'$(Language)' == 'C#'">
     <Exec Command="$(DotNetCli) build $(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_General.csproj -c $(Configuration) --no-restore /p:IntermediateOutputPath=$(IntermediateOutputPath)/GenerateHWIntrinsicTests/ /p:OutputPath=$(OutputPath)/GenerateHWIntrinsicTests/" />

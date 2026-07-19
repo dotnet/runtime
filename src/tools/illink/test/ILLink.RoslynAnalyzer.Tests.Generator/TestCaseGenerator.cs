@@ -71,12 +71,12 @@ using Xunit;
 
 namespace {TestNamespace}{suiteNamespacePart}
 {{
-	public sealed partial class {suiteClassName}Tests : LinkerTestBase
-	{{
+    public sealed partial class {suiteClassName}Tests : LinkerTestBase
+    {{
 ";
             if (newTestSuite)
                 header += $@"
-		protected override string TestSuiteName => ""{suiteName}"";
+        protected override string TestSuiteName => ""{suiteName}"";
 ";
             return header;
         }
@@ -84,18 +84,18 @@ namespace {TestNamespace}{suiteNamespacePart}
         public static string GenerateFact(string testCase)
         {
             return $@"
-		[Fact]
-		public Task {testCase} ()
-		{{
-			return RunTest (allowMissingWarnings: true);
-		}}
+        [Fact]
+        public Task {testCase}()
+        {{
+            return RunTest(allowMissingWarnings: true);
+        }}
 ";
         }
 
         public static string GenerateClassFooter()
         {
             return $@"
-	}}
+    }}
 }}
 ";
         }

@@ -11,6 +11,7 @@ namespace AAAA
     public class CtTest
     {
         private static int iTest = 5;
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

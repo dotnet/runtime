@@ -126,6 +126,7 @@ public:
     // Check if an argument is promoted (ONLY CALL DURING
     // THE PROMOTIONSGRANTED CALLBACK.)
     bool IsPromoted (Object *object);
+    bool IsPromoted2 (Object *object, bool bVerifyNextHeader);
 
     size_t GetPromotedBytes (int heap_index);
 
@@ -331,6 +332,8 @@ public:
     static void ReportGenerationBounds();
 
     virtual int RefreshMemoryLimit();
+
+    virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles);
 };
 
 #endif  // GCIMPL_H_

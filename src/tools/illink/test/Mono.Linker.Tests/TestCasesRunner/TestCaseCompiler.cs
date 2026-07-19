@@ -3,12 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using Mono.Linker.Tests.Extensions;
-using NUnit.Framework;
 #if NET
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
@@ -36,7 +34,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             _metadataProvider = metadataProvider;
         }
 
-        public NPath CompileTestIn(NPath outputDirectory, string outputName, IEnumerable<string> sourceFiles, string[] commonReferences, string[] mainAssemblyReferences, IEnumerable<string> defines, NPath[] resources, string[] additionalArguments)
+        public NPath CompileTestIn(NPath outputDirectory, string outputName, IEnumerable<string> sourceFiles, string[] commonReferences, string[] mainAssemblyReferences, IEnumerable<string> defines, NPath[] resources, bool generateTargetFrameworkAttribute, string[] additionalArguments)
         {
             var originalCommonReferences = commonReferences.Select(r => r.ToNPath()).ToArray();
             var originalDefines = defines?.ToArray() ?? Array.Empty<string>();
@@ -44,7 +42,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
             Prepare(outputDirectory);
 
             var removeFromLinkerInputAssemblies = new List<NPath>();
-            var compiledReferences = CompileBeforeTestCaseAssemblies(outputDirectory, originalCommonReferences, originalDefines, removeFromLinkerInputAssemblies).ToArray();
+            var compiledReferences = CompileBeforeTestCaseAssemblies(
+                outputDirectory,
+                originalCommonReferences,
+                originalDefines,
+                removeFromLinkerInputAssemblies,
+                generateTargetFrameworkAttribute)
+                .ToArray();
             var allTestCaseReferences = originalCommonReferences
                 .Concat(compiledReferences)
                 .Concat(mainAssemblyReferences.Select(r => r.ToNPath()))
@@ -56,6 +60,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 allTestCaseReferences,
                 originalDefines,
                 resources,
+                generateTargetFrameworkAttribute,
                 additionalArguments);
             var testAssembly = CompileAssembly(options);
 
@@ -65,7 +70,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
             // behavior of skipping the after test compile
             if (outputDirectory != _sandbox.ExpectationsDirectory)
             {
-                CompileAfterTestCaseAssemblies(outputDirectory, originalCommonReferences, originalDefines, removeFromLinkerInputAssemblies);
+                CompileAfterTestCaseAssemblies(
+                    outputDirectory,
+                    originalCommonReferences,
+                    originalDefines,
+                    removeFromLinkerInputAssemblies,
+                    generateTargetFrameworkAttribute);
 
                 foreach (var assemblyToRemove in removeFromLinkerInputAssemblies)
                     assemblyToRemove.DeleteIfExists();
@@ -78,7 +88,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
         }
 
-        protected virtual CompilerOptions CreateOptionsForTestCase(NPath outputPath, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources, string[] additionalArguments)
+        protected virtual CompilerOptions CreateOptionsForTestCase(NPath outputPath, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources, bool generateTargetFrameworkAttribute, string[] additionalArguments)
         {
             return new CompilerOptions
             {
@@ -88,11 +98,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 Defines = defines.Concat(_metadataProvider.GetDefines()).ToArray(),
                 Resources = resources,
                 AdditionalArguments = additionalArguments,
-                CompilerToUse = _metadataProvider.GetCSharpCompilerToUse()
+                CompilerToUse = _metadataProvider.GetCSharpCompilerToUse(),
+                GenerateTargetFrameworkAttribute = generateTargetFrameworkAttribute
             };
         }
 
-        protected virtual CompilerOptions CreateOptionsForSupportingAssembly(SetupCompileInfo setupCompileInfo, NPath outputDirectory, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources)
+        protected virtual CompilerOptions CreateOptionsForSupportingAssembly(SetupCompileInfo setupCompileInfo, NPath outputDirectory, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources, bool generateTargetFrameworkAttribute)
         {
             var allDefines = defines.Concat(setupCompileInfo.Defines ?? Array.Empty<string>()).ToArray();
             var allReferences = references.Concat(setupCompileInfo.References?.Select(p => MakeSupportingAssemblyReferencePathAbsolute(outputDirectory, p)) ?? Array.Empty<NPath>()).ToArray();
@@ -105,11 +116,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 Defines = allDefines,
                 Resources = resources,
                 AdditionalArguments = additionalArguments,
-                CompilerToUse = setupCompileInfo.CompilerToUse?.ToLower()
+                CompilerToUse = setupCompileInfo.CompilerToUse?.ToLower(),
+                GenerateTargetFrameworkAttribute = generateTargetFrameworkAttribute
             };
         }
 
-        private IEnumerable<NPath> CompileBeforeTestCaseAssemblies(NPath outputDirectory, NPath[] references, string[] defines, List<NPath> removeFromLinkerInputAssemblies)
+        private IEnumerable<NPath> CompileBeforeTestCaseAssemblies(NPath outputDirectory, NPath[] references, string[] defines, List<NPath> removeFromLinkerInputAssemblies, bool generateTargetFrameworkAttribute)
         {
             foreach (var setupCompileInfo in _metadataProvider.GetSetupCompileAssembliesBefore())
             {
@@ -130,7 +142,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     CollectSetupBeforeSourcesFiles(setupCompileInfo),
                     references,
                     defines,
-                    CollectSetupBeforeResourcesFiles(setupCompileInfo));
+                    CollectSetupBeforeResourcesFiles(setupCompileInfo),
+                    generateTargetFrameworkAttribute);
                 var output = CompileAssembly(options);
 
                 if (setupCompileInfo.RemoveFromLinkerInput)
@@ -141,7 +154,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
         }
 
-        private void CompileAfterTestCaseAssemblies(NPath outputDirectory, NPath[] references, string[] defines, List<NPath> removeFromLinkerInputAssemblies)
+        private void CompileAfterTestCaseAssemblies(NPath outputDirectory, NPath[] references, string[] defines, List<NPath> removeFromLinkerInputAssemblies, bool generateTargetFrameworkAttribute)
         {
             foreach (var setupCompileInfo in _metadataProvider.GetSetupCompileAssembliesAfter())
             {
@@ -151,7 +164,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     CollectSetupAfterSourcesFiles(setupCompileInfo),
                     references,
                     defines,
-                    CollectSetupAfterResourcesFiles(setupCompileInfo));
+                    CollectSetupAfterResourcesFiles(setupCompileInfo),
+                    generateTargetFrameworkAttribute);
                 var output = CompileAssembly(options);
 
                 if (setupCompileInfo.RemoveFromLinkerInput)
@@ -179,15 +193,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
             return _sandbox.AfterReferenceResourceDirectoryFor(info.OutputName).Files().ToArray();
         }
 
-        private static NPath[] CollectSourceFilesFrom(NPath directory)
+        private NPath[] CollectSourceFilesFrom(NPath directory)
         {
-            var sourceFiles = directory.Files("*.cs").ToArray();
-            if (sourceFiles.Length > 0)
-                return sourceFiles;
+            var sourceFiles = directory.Files("*.cs");
+            if (sourceFiles.Any())
+                return sourceFiles.Concat(_metadataProvider.GetCommonSourceFiles()).ToArray();
 
-            sourceFiles = directory.Files("*.il").ToArray();
-            if (sourceFiles.Length > 0)
-                return sourceFiles;
+            sourceFiles = directory.Files("*.il");
+            if (sourceFiles.Any())
+                return sourceFiles.ToArray();
 
             throw new FileNotFoundException($"Didn't find any sources files in {directory}");
         }
@@ -236,7 +250,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #if NET
             return CompileCSharpAssemblyWithRoslyn(options);
 #else
-			return CompileCSharpAssemblyWithCsc (options);
+            return CompileCSharpAssemblyWithCsc(options);
 #endif
         }
 
@@ -251,6 +265,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             // Default debug info format for the current platform.
             DebugInformationFormat debugType = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? DebugInformationFormat.Pdb : DebugInformationFormat.PortablePdb;
             bool emitPdb = false;
+            Dictionary<string, string> features = [];
             if (options.AdditionalArguments != null)
             {
                 foreach (var option in options.AdditionalArguments)
@@ -287,20 +302,48 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                 compilationOptions = compilationOptions.WithMainTypeName(mainTypeName);
                                 break;
                             }
+                            else if (splitIndex != -1 && option[..splitIndex] == "/features")
+                            {
+                                var feature = option[(splitIndex + 1)..];
+                                var featureSplit = feature.IndexOf('=');
+                                if (featureSplit == -1)
+                                    throw new InvalidOperationException($"Argument is malformed: '{option}'");
+                                features.Add(feature[..featureSplit], feature[(featureSplit + 1)..]);
+                                break;
+                            }
+                            else if (splitIndex != -1 && option[..splitIndex] == "/nowarn")
+                            {
+                                var nowarn = option[(splitIndex + 1)..];
+                                var withNoWarn = compilationOptions.SpecificDiagnosticOptions.SetItem(nowarn, ReportDiagnostic.Suppress);
+                                compilationOptions = compilationOptions.WithSpecificDiagnosticOptions(withNoWarn);
+                                break;
+                            }
                             throw new NotImplementedException(option);
                     }
                 }
             }
-            var parseOptions = new CSharpParseOptions(preprocessorSymbols: options.Defines, languageVersion: languageVersion);
+            var parseOptions = new CSharpParseOptions(preprocessorSymbols: options.Defines, languageVersion: languageVersion).WithFeatures(features);
             var emitOptions = new EmitOptions(debugInformationFormat: debugType);
             var pdbPath = (!emitPdb || debugType == DebugInformationFormat.Embedded) ? null : options.OutputPath.ChangeExtension(".pdb").ToString();
 
             var syntaxTrees = options.SourceFiles.Select(p =>
                 CSharpSyntaxTree.ParseText(
                     text: p.ReadAllText(),
-                    options: parseOptions
+                    options: parseOptions,
+                    path: p.ToString(),
+                    Encoding.UTF8
                 )
-            );
+            ).ToList();
+
+            if (options.GenerateTargetFrameworkAttribute)
+            {
+                syntaxTrees.Add(CSharpSyntaxTree.ParseText(
+                    text: GenerateTargetFrameworkAttributeSource(),
+                    options: parseOptions,
+                    path: "AssemblyInfo.g.cs",
+                    Encoding.UTF8
+                ));
+            }
 
             var compilation = CSharpCompilation.Create(
                 assemblyName: options.OutputPath.FileNameWithoutExtension,
@@ -343,72 +386,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         protected virtual NPath CompileCSharpAssemblyWithCsc(CompilerOptions options)
         {
-#if NET
             return CompileCSharpAssemblyWithRoslyn(options);
-#else
-			return CompileCSharpAssemblyWithExternalCompiler (LocateCscExecutable (), options, "/shared ");
-#endif
-        }
-
-        protected virtual NPath CompileCSharpAssemblyWithMcs(CompilerOptions options)
-        {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                CompileCSharpAssemblyWithExternalCompiler(LocateMcsExecutable(), options, string.Empty);
-
-            return CompileCSharpAssemblyWithDefaultCompiler(options);
-        }
-
-        protected static NPath CompileCSharpAssemblyWithExternalCompiler(string executable, CompilerOptions options, string compilerSpecificArguments)
-        {
-            var capturedOutput = new List<string>();
-            var process = new Process();
-            process.StartInfo.FileName = executable;
-            process.StartInfo.Arguments = OptionsToCompilerCommandLineArguments(options, compilerSpecificArguments);
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.OutputDataReceived += (sender, args) => capturedOutput.Add(args.Data);
-            process.Start();
-            process.BeginOutputReadLine();
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
-                Assert.Fail($"Failed to compile assembly with csc: {options.OutputPath}\n{capturedOutput.Aggregate((buff, s) => buff + Environment.NewLine + s)}");
-
-            return options.OutputPath;
-        }
-
-        static string LocateMcsExecutable()
-        {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                Assert.Ignore("We don't have a universal way of locating mcs on Windows");
-
-            return "mcs";
-        }
-
-        protected static string OptionsToCompilerCommandLineArguments(CompilerOptions options, string compilerSpecificArguments)
-        {
-            var builder = new StringBuilder();
-            if (!string.IsNullOrEmpty(compilerSpecificArguments))
-                builder.Append(compilerSpecificArguments);
-            builder.Append($"/out:{options.OutputPath}");
-            var target = options.OutputPath.ExtensionWithDot == ".exe" ? "exe" : "library";
-            builder.Append($" /target:{target}");
-            if (options.Defines != null && options.Defines.Length > 0)
-                builder.Append(options.Defines.Aggregate(string.Empty, (buff, arg) => $"{buff} /define:{arg}"));
-
-            builder.Append(options.References.Aggregate(string.Empty, (buff, arg) => $"{buff} /r:{arg}"));
-
-            if (options.Resources != null && options.Resources.Length > 0)
-                builder.Append(options.Resources.Aggregate(string.Empty, (buff, arg) => $"{buff} /res:{arg}"));
-
-            if (options.AdditionalArguments != null && options.AdditionalArguments.Length > 0)
-                builder.Append(options.AdditionalArguments.Aggregate(string.Empty, (buff, arg) => $"{buff} {arg}"));
-
-            builder.Append(options.SourceFiles.Aggregate(string.Empty, (buff, arg) => $"{buff} {arg}"));
-
-            return builder.ToString();
         }
 
         protected NPath CompileCSharpAssembly(CompilerOptions options)
@@ -419,15 +397,21 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (options.CompilerToUse == "csc")
                 return CompileCSharpAssemblyWithCsc(options);
 
-            if (options.CompilerToUse == "mcs")
-                return CompileCSharpAssemblyWithMcs(options);
-
             throw new ArgumentException($"Invalid compiler value `{options.CompilerToUse}`");
         }
 
         protected NPath CompileIlAssembly(CompilerOptions options)
         {
             return _ilCompiler.Compile(options);
+        }
+
+        private string GenerateTargetFrameworkAttributeSource()
+        {
+            var tfm = PathUtilities.TargetFrameworkMoniker;
+            var tfmDisplayName = PathUtilities.TargetFrameworkMonikerDisplayName;
+            return $"""
+                [assembly: System.Runtime.Versioning.TargetFramework("{tfm}", FrameworkDisplayName = "{tfmDisplayName}")]
+                """;
         }
     }
 }

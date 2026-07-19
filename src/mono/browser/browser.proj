@@ -2,9 +2,9 @@
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
+  <Import Project="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
+
   <PropertyGroup>
-    <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
-    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <!-- only use for files that are not configuration dependent -->
     <NativeGeneratedFilesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', 'generated'))</NativeGeneratedFilesDir>
   </PropertyGroup>
@@ -15,8 +15,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ICULibDir Condition="'$(WasmEnableThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
-    <ICULibDir Condition="'$(WasmEnableThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
     <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
     <WasmEnableStreamingResponse Condition="'$(WasmEnableStreamingResponse)' == ''">true</WasmEnableStreamingResponse>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
@@ -28,28 +26,19 @@
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
     <EnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">false</EnableDiagnostics>
-    <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
-    <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
-    <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
-    <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
     <EmSdkLLVMAr>$(EMSDK_PATH)\bin\llvm-ar</EmSdkLLVMAr>
     <EmSdkLLVMAr Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(EmSdkLLVMAr).exe</EmSdkLLVMAr>
   </PropertyGroup>
 
-  <Target Name="CheckEnv">
+  <Target Name="CheckEnv" DependsOnTargets="AcquireEmscriptenSdk">
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
     <Error Condition="'$(TargetOS)' != 'browser'" Text="Expected TargetOS==browser, got '$(TargetOS)'"/>
     <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
   </Target>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
-  </ItemGroup>
-
-  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
     <PropertyGroup>
       <WasmPInvokeTablePath>$(WasmObjDir)\pinvoke-table.h</WasmPInvokeTablePath>
@@ -81,78 +70,22 @@
     </ManagedToNativeGenerator>
   </Target>
 
-  <UsingTask TaskName="EmitBundleSourceFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
-  <Target Name="GenerateTimezonesArchive" Returns="@(_WasmArchivedTimezones)" Condition="'$(InvariantTimezone)' != 'true'">
+
+
+  <Target Name="GenerateEmccPropsAndRspFiles" DependsOnTargets="AcquireEmscriptenSdk">
     <PropertyGroup>
-      <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>
-      <_WasmTimezonesBundleSourceFile>wasm-bundled-timezones.c</_WasmTimezonesBundleSourceFile>
-      <_WasmTimezonesBundleArchive>$(WasmObjDir)\wasm-bundled-timezones.a</_WasmTimezonesBundleArchive>
-      <_WasmTimezonesSourcesRsp>$(WasmObjDir)\wasm-bundled-timezones-sources.rsp</_WasmTimezonesSourcesRsp>
-      <_WasmTimezonesArchiveRsp>$(WasmObjDir)\wasm-bundled-timezones-archive.rsp</_WasmTimezonesArchiveRsp>
+      <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
+      <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
+      <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
     </PropertyGroup>
-    <ItemGroup>
-      <_WasmTimezonesInternal Include="$(_WasmTimezonesPath)\**\*.*" WasmRole="Timezone"/>
-    </ItemGroup>
-    <ItemGroup>
-      <_WasmTimezonesInternal Update="@(_WasmTimezonesInternal)">
-        <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmTimezonesInternal.Identity)).Replace('\','/'))</RegisteredName>
-      </_WasmTimezonesInternal>
-    </ItemGroup>
-    <!-- TODO make this incremental compilation -->
-    <EmitBundleSourceFiles
-      FilesToBundle="@(_WasmTimezonesInternal)"
-      BundleRegistrationFunctionName="mono_register_timezones_bundle"
-      BundleFile="$(_WasmTimezonesBundleSourceFile)"
-      OutputDirectory="$(WasmObjDir)">
-      <Output TaskParameter="BundledResources" ItemName="BundledWasmTimezones" />
-    </EmitBundleSourceFiles>
-
-    <ItemGroup>
-      <_WasmBundleTimezonesSources Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(BundledWasmTimezones.DestinationFile)).Replace('\','/'))" />
-      <_WasmBundleTimezonesSources Include="$(_WasmTimezonesBundleSourceFile)" />
-    </ItemGroup>
-    <WriteLinesToFile File="$(_WasmTimezonesSourcesRsp)"
-      Overwrite="true"
-      Lines="@(_WasmBundleTimezonesSources, ' ')"
-      WriteOnlyWhenDifferent="true" />
-    <RunWithEmSdkEnv Command="$(EmccCmd) -xc -c @$(_WasmTimezonesSourcesRsp)"
-          WorkingDirectory="$(WasmObjDir)"
-          EmSdkPath="$(EMSDK_PATH)"
-          ConsoleToMsBuild="true"
-          IgnoreStandardErrorWarningFormat="true">
-    </RunWithEmSdkEnv>
-    <ItemGroup>
-      <WasmBundleTimezonesObjects Include="%(_WasmBundleTimezonesSources.Filename).o" />
-    </ItemGroup>
-    <WriteLinesToFile File="$(_WasmTimezonesArchiveRsp)"
-      Overwrite="true"
-      Lines="@(WasmBundleTimezonesObjects, ' ')"
-      WriteOnlyWhenDifferent="true" />
-    <RunWithEmSdkEnv Command="$(EmSdkLLVMAr) cs -r $(_WasmTimezonesBundleArchive) @$(_WasmTimezonesArchiveRsp)"
-          EmSdkPath="$(EMSDK_PATH)"
-          WorkingDirectory="$(WasmObjDir)"
-          ConsoleToMsBuild="true"
-          IgnoreStandardErrorWarningFormat="true">
-    </RunWithEmSdkEnv>
-
-    <ItemGroup>
-      <_WasmArchivedTimezones Include="$(WasmObjDir)\wasm-bundled-timezones.a" />
-    </ItemGroup>
-
-    <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
-    <ItemGroup>
-      <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
-      <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.c" />
-      <_WasmBundleTimezonesToDelete Remove="$(WasmObjDir)\$(_WasmTimezonesBundleSourceFile)" />
-      <_WasmBundleTimezonesToDelete Remove="%(BundledWasmTimezones.DestinationFile)" />
-      <_WasmBundleTimezonesToDelete Remove="$(WasmObjDir)\%(WasmBundleTimezonesObjects)" />
-    </ItemGroup>
-    <Delete Files="@(_WasmBundleTimezonesToDelete)" />
-  </Target>
-
-  <Target Name="GenerateEmccPropsAndRspFiles">
 
     <!-- Generate wasm-props.json -->
+
+    <!-- Clear stale _VersionLines items that may have been added by _AcquireLocalEmscriptenSdk
+         (which reads emscripten-version.txt into the same item group during SDK provisioning) -->
+    <ItemGroup>
+      <_VersionLines Remove="@(_VersionLines)" />
+    </ItemGroup>
 
     <RunWithEmSdkEnv Command="$(EmccCmd) --version"
           ConsoleToMsBuild="true"
@@ -199,6 +132,17 @@
       <EmccExportedRuntimeMethod Include="runtimeKeepalivePop" />
       <EmccExportedRuntimeMethod Include="maybeExit" />
       <EmccExportedRuntimeMethod Include="abort" />
+      <EmccExportedRuntimeMethod Include="HEAP8" />
+      <EmccExportedRuntimeMethod Include="HEAP16" />
+      <EmccExportedRuntimeMethod Include="HEAPU8" />
+      <EmccExportedRuntimeMethod Include="HEAPU16" />
+      <EmccExportedRuntimeMethod Include="HEAP32" />
+      <EmccExportedRuntimeMethod Include="HEAPU32" />
+      <EmccExportedRuntimeMethod Include="HEAPF32" />
+      <EmccExportedRuntimeMethod Include="HEAPF64" />
+      <EmccExportedRuntimeMethod Include="HEAP64" />
+      <EmccExportedRuntimeMethod Include="HEAPU64" />
+      <EmccExportedRuntimeMethod Include="PThread" Condition="'$(WasmEnableThreads)' == 'true'" />
 
       <EmccExportedFunction Include="_free" />
       <EmccExportedFunction Include="_htons" />
@@ -211,7 +155,6 @@
       <EmccExportedFunction Include="stackAlloc" />
       <EmccExportedFunction Include="stackRestore" />
       <EmccExportedFunction Include="stackSave"  />
-      <EmccExportedFunction Include="_emscripten_force_exit" />
     </ItemGroup>
     <!-- for the jiterpreter -->
     <ItemGroup>
@@ -221,10 +164,12 @@
       <EmccExportedFunction Include="_atan2" />
       <EmccExportedFunction Include="_fma" />
       <EmccExportedFunction Include="_pow" />
+      <EmccExportedFunction Include="_scalbn" />
       <EmccExportedFunction Include="_fmodf" />
       <EmccExportedFunction Include="_atan2f" />
       <EmccExportedFunction Include="_fmaf" />
       <EmccExportedFunction Include="_powf" />
+      <EmccExportedFunction Include="_scalbnf" />
 
       <EmccExportedFunction Include="_asin" />
       <EmccExportedFunction Include="_asinh" />
@@ -280,11 +225,12 @@
       <_EmccLinkFlags Include="-Wno-unused-command-line-argument" />
       <_EmccLinkFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
       <_EmccLinkFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
-      <_EmccCommonFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
+      <_EmccCommonFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread" />
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=0" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <_EmccLinkFlags Include="-s GROWABLE_ARRAYBUFFERS=0" />
       <!-- for jiterpreter -->
       <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=0" />
@@ -304,10 +250,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
-      <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext" />
-
-      <!-- workaround for https://github.com/emscripten-core/emscripten/issues/18034 -->
-      <_EmccLinkFlags Include="-s TEXTDECODER=0"/>
+      <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-nontrapping-float-to-int;--enable-sign-ext" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
@@ -320,6 +263,7 @@
     </ItemGroup>
 
     <PropertyGroup>
+      <!-- keep in sync with _WasmNativeWorkloadNeeded -->
       <_EmccPropsJson>
 <![CDATA[
 {
@@ -341,7 +285,9 @@
       { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "$(WasmEnableExceptionHandling)" },
       { "identity": "EnableDiagnostics",            "defaultValueInRuntimePack": "$(EnableDiagnostics)" },
       { "identity": "WasmProfilers",                "defaultValueInRuntimePack": "$(WasmProfilers)" },
-      { "identity": "EmccMaximumHeapSize",          "defaultValueInRuntimePack": "$(EmccMaximumHeapSize)" }
+      { "identity": "EmccMaximumHeapSize",          "defaultValueInRuntimePack": "$(EmccMaximumHeapSize)" },
+      { "identity": "EmccInitialHeapSize",          "defaultValueInRuntimePack": "$(EmccInitialHeapSize)" },
+      { "identity": "RunAOTCompilation",            "defaultValueInRuntimePack": "$(RunAOTCompilation)" }
     ]
   }
 }
@@ -371,20 +317,16 @@
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
           AfterTargets="Build"
-          DependsOnTargets="GenerateEmccPropsAndRspFiles;GenerateManagedToNative;GenerateTimezonesArchive;InstallNpmPackages;BuildWithRollup">
+          DependsOnTargets="GenerateEmccPropsAndRspFiles;GenerateManagedToNative;InstallNpmPackages;BuildWithRollup">
 
-    <ItemGroup>
-      <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
-                                  $(ICULibDir)/libicui18n.a;
-                                  $(ICULibDir)/libicudata.a" />
-      <ICULibFiles Include="$(ICULibDir)/*.dat" />
-    </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
 
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">$(CMakeConfigurationEmccFlags) -fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(WasmEnableExceptionHandling)' == 'false'">$(CMakeConfigurationEmccFlags) -fexceptions</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags) -s ASSERTIONS=1 </CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
@@ -394,6 +336,8 @@
       <CMakeConfigurationLinkFlags Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeConfigurationLinkFlags) -msimd128</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(WasmEnableThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">$(CMakeConfigurationLinkFlags) -fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags Condition="'$(WasmEnableExceptionHandling)' == 'false'">$(CMakeConfigurationLinkFlags) -fexceptions</CMakeConfigurationLinkFlags>
 
       <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/').Replace('\','/'))&quot;</CMakeConfigurationEmsdkPath>
 
@@ -404,11 +348,13 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_WASM_OPT_FLAGS=&quot;@(WasmOptConfigurationFlags, ';')&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_COMPILE_OPTIONS=&quot;-msimd128&quot; -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;simd&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' != 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;nosimd&quot;</CMakeBuildRuntimeConfigureCmd>
+      <!-- Select the EH static lib variant: standardized Wasm EH vs JS exceptions. -->
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableExceptionHandling)' != 'false'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_EH_LIB=&quot;eh-wasm&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableExceptionHandling)' == 'false'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_EH_LIB=&quot;eh-js&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableJsInteropByValue)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DENABLE_JS_INTEROP_BY_VALUE=1</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) $(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>
@@ -471,12 +417,6 @@
           DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(ICULibFiles);
-                       @(ICULibNativeFiles);
-                       @(_WasmArchivedTimezones);"
-          DestinationFolder="$(NativeBinDir)"
-          SkipUnchangedFiles="true" />
-
     <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)"
           EnvironmentVariables="@(_CmakeEnvironmentVariable)" />
     <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)"
@@ -507,16 +447,7 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="$(NativeBinDir)dotnet.native.worker.mjs"
-          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
-	        Condition="Exists('$(NativeBinDir)dotnet.native.worker.mjs')"
-          SkipUnchangedFiles="true" />
-
     <Copy SourceFiles="$(NativeBinDir)dotnet.native.js.symbols"
-          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
-          SkipUnchangedFiles="true" />
-
-    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles);@(_WasmArchivedTimezones)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
@@ -534,6 +465,7 @@
   </Target>
 
   <Target Name="InstallNpmPackages"
+          DependsOnTargets="AcquireEmscriptenSdk"
           Inputs="$(BrowserProjectRoot)runtime/package.json"
           Outputs="$(BrowserProjectRoot)runtime/node_modules/.npm-stamp"
           >
@@ -609,7 +541,7 @@
   <Target Name="BuildWithRollup"
           Inputs="@(_RollupInputs);$(_RollupEnvIntermediateFile);$(NativeGeneratedFilesDir)mintops.ts"
           Outputs="$(NativeBinDir).rollup-stamp"
-	  DependsOnTargets="WriteRollupEnvToFile;GenerateMintopsTS"
+	  DependsOnTargets="AcquireEmscriptenSdk;WriteRollupEnvToFile;GenerateMintopsTS"
           >
     <!-- code style check -->
     <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(BrowserProjectRoot)runtime/"/>

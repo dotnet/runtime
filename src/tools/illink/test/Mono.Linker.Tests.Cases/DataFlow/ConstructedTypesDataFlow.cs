@@ -58,8 +58,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             record TypeAndInstance(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-                [property: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type type,
                 object instance);
 
@@ -97,14 +97,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             record TypeAndInstanceRecordManual(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-                [property: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type type,
                 object instance)
             {
                 // The generated property getter doesn't have the same attributes???
                 // The attributes are only propagated to the generated .ctor - so suppressing the warning the this.type doesn't have the matching annotations
-                //[UnconditionalSuppressMessage ("", "IL2072")]
+                //[UnconditionalSuppressMessage("", "IL2072")]
                 public void Deconstruct([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] out Type type, out object instance)
                     => (type, instance) = (this.type, this.instance);
             }

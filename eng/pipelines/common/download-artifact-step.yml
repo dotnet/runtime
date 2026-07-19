@@ -4,6 +4,7 @@ parameters:
   artifactFileName: ''
   artifactName: ''
   displayName: ''
+  overwriteExistingFiles: false
 
 steps:
   # Download artifact
@@ -23,3 +24,4 @@ steps:
       archiveFilePatterns: $(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}/**/${{ parameters.artifactFileName }}
       destinationFolder: ${{ parameters.unpackFolder }}
       cleanDestinationFolder: ${{ parameters.cleanUnpackFolder }}
+      overwriteExistingFiles: ${{ parameters.overwriteExistingFiles }}

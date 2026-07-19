@@ -69,9 +69,24 @@ namespace System.Security.Cryptography.Xml
         private PaddingMode _padding;
         private CipherMode _mode;
         private Encoding _encoding;
-        private string? _recipient;
         private int _xmlDsigSearchDepthCounter;
         private int _xmlDsigSearchDepth;
+
+        private static readonly string[] s_defaultSafeTransformMethods =
+        {
+            // Built in canonicalization algorithms
+            SignedXml.XmlDsigC14NTransformUrl,
+            SignedXml.XmlDsigC14NWithCommentsTransformUrl,
+            SignedXml.XmlDsigExcC14NTransformUrl,
+            SignedXml.XmlDsigExcC14NWithCommentsTransformUrl,
+
+            // Other built in transform algorithms
+            SignedXml.XmlDsigBase64TransformUrl,
+            SignedXml.XmlLicenseTransformUrl,
+            // Keep this aligned with SignedXml's safe-transform allow-list. The decryption
+            // transform is further bounded by DangerousMaxRecursionDepth.
+            SignedXml.XmlDecryptionTransformUrl,
+        };
 
         //
         // public constructors
@@ -172,8 +187,8 @@ namespace System.Security.Cryptography.Xml
         [AllowNull]
         public string Recipient
         {
-            get => _recipient ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
-            set => _recipient = value;
+            get => field ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
+            set => field = value;
         }
 
         //
@@ -209,6 +224,11 @@ namespace System.Security.Cryptography.Xml
                     {
                         throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
                     }
+                    if (!ReferenceUsesSafeTransformMethods(cipherData.CipherReference))
+                    {
+                        throw new CryptographicException(SR.Cryptography_Xml_NotSupportedCryptographicTransform);
+                    }
+
                     decInputStream = tc.TransformToOctetStream(_document, _xmlResolver, baseUri);
                 }
                 else if (cipherData.CipherReference.Uri[0] == '#')
@@ -227,6 +247,11 @@ namespace System.Security.Cryptography.Xml
                     {
                         throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
                     }
+                    if (!ReferenceUsesSafeTransformMethods(cipherData.CipherReference))
+                    {
+                        throw new CryptographicException(SR.Cryptography_Xml_NotSupportedCryptographicTransform);
+                    }
+
                     decInputStream = tc.TransformToOctetStream(inputStream, _xmlResolver, baseUri);
                 }
                 else
@@ -934,6 +959,44 @@ namespace System.Security.Cryptography.Xml
                 RSAPKCS1KeyExchangeDeformatter rsaDeformatter = new RSAPKCS1KeyExchangeDeformatter(rsa);
                 return rsaDeformatter.DecryptKeyExchange(keyData);
             }
+        }
+
+        private static bool ReferenceUsesSafeTransformMethods(CipherReference reference)
+        {
+            // If the compatibility switch to allow dangerous encrypted XML transforms
+            // is enabled, skip the safe-transform allow-list check.
+            if (LocalAppContextSwitches.AllowDangerousEncryptedXmlTransforms)
+            {
+                return true;
+            }
+
+            TransformChain transformChain = reference.TransformChain;
+            int transformCount = transformChain.Count;
+
+            for (int i = 0; i < transformCount; i++)
+            {
+                Transform transform = transformChain[i];
+
+                if (!IsSafeTransform(transform.Algorithm!))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsSafeTransform(string transformAlgorithm)
+        {
+            foreach (string safeAlgorithm in s_defaultSafeTransformMethods)
+            {
+                if (string.Equals(safeAlgorithm, transformAlgorithm, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

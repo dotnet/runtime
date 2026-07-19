@@ -12,6 +12,7 @@
     <!-- Contributes to DependencyKey which ensures stable provider key - do not change -->
     <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>
     <OutputFilesCandleVariable>HostSrc</OutputFilesCandleVariable>
+
     <MajorUpgradeSchedule>afterInstallExecute</MajorUpgradeSchedule>
     <VersionInstallerName>false</VersionInstallerName>
     <UseBrandingNameInLinuxPackageDescription>true</UseBrandingNameInLinuxPackageDescription>
@@ -47,10 +48,16 @@
       <FilesToPublish Include="$(InstallerProjectRoot)pkg\LICENSE-MSFT.TXT"
             Destination="$(OutputPath)LICENSE.txt"
             Condition="'$(TargetsUnix)' != 'true'"/>
+      <FilesToPublish Include="$(MSBuildThisFileDirectory)dnx"
+            Destination="$(OutputPath)dnx"
+            Condition="'$(TargetsUnix)' == 'true'" />
     </ItemGroup>
 
     <Copy SourceFiles="@(FilesToPublish)"
           DestinationFiles="%(FilesToPublish.Destination)" />
+
+    <Exec Command="chmod 755 &quot;$(OutputPath)dnx&quot;"
+          Condition="'$(TargetsUnix)' == 'true' and !$([MSBuild]::IsOSPlatform('windows'))" />
   </Target>
 
   <Target Name="PublishSymbolsToDisk">
@@ -71,6 +78,7 @@
 
   <ItemGroup>
     <LinuxPackageSymlink Include="/usr/bin/dotnet" LinkTarget="../share/dotnet/dotnet" />
+    <LinuxPackageSymlink Include="/usr/bin/dnx" LinkTarget="../share/dotnet/dnx" />
     <LinuxPackageConflicts Include="dotnet;dotnet-nightly" />
     <RpmOwnedDirectory Include="/usr/share/dotnet" />
   </ItemGroup>

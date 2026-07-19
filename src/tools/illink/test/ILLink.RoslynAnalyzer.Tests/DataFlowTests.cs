@@ -29,6 +29,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task AssemblyGetTypeDataFlow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task AssemblyQualifiedNameDataflow()
         {
             return RunTest(nameof(AssemblyQualifiedNameDataflow));
@@ -50,6 +56,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         public Task AttributeFieldDataflow()
         {
             return RunTest(nameof(AttributeFieldDataflow));
+        }
+
+        [Fact]
+        public Task AttributePrimaryConstructorDataflow()
+        {
+            return RunTest();
         }
 
         [Fact]
@@ -84,6 +96,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 
         [Fact]
         public Task CompilerGeneratedTypes()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task CompilerGeneratedTypesNet90()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task CompilerGeneratedTypesReleaseNet90()
         {
             return RunTest();
         }
@@ -125,6 +149,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task DependencyInjectionPattern()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task DynamicDependencyDataflow()
         {
             return RunTest(nameof(DynamicDependencyDataflow));
@@ -150,6 +180,18 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task ExtensionsDataFlow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task ExtensionMembersDataFlow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task FeatureCheckDataFlow()
         {
             return RunTest();
@@ -165,6 +207,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         public Task FieldDataFlow()
         {
             return RunTest(nameof(FieldDataFlow));
+        }
+
+        [Fact]
+        public Task FieldKeyword()
+        {
+            return RunTest();
         }
 
         [Fact]
@@ -210,7 +258,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task MakeGenericDataflowIntrinsics()
+        public Task RequiresDynamicCodeAnalyzerIntrinsics()
         {
             return RunTest();
         }
@@ -275,7 +323,6 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             return RunTest(nameof(LocalDataFlow));
         }
-
 
         [Fact]
         public Task ExceptionalDataFlow()

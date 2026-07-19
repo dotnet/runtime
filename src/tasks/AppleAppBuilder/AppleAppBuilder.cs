@@ -64,6 +64,11 @@ public class AppleAppBuilderTask : Task
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
+    /// The set of environment variables
+    /// </summary>
+    public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// Additional linker arguments that apply to the app being built
     /// </summary>
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
@@ -154,7 +159,9 @@ public class AppleAppBuilderTask : Task
     public bool InvariantGlobalization { get; set; }
 
     /// <summary>
-    /// Forces the runtime to use hybrid(icu files + native functions) mode
+    /// Adds the legacy <c>HYBRID_GLOBALIZATION</c> preprocessor define to the generated native Xcode project.
+    /// This property does not control Apple mobile globalization; Hybrid mode is always used unless
+    /// <see cref="InvariantGlobalization"/> is enabled.
     /// </summary>
     public bool HybridGlobalization { get; set; }
 
@@ -315,6 +322,12 @@ public class AppleAppBuilderTask : Task
             assemblerFilesToLink.Add(nativeDependency);
         }
 
+        List<string> environmentVariables = new List<string>();
+        foreach (ITaskItem item in EnvironmentVariables)
+        {
+            environmentVariables.Add(item.ItemSpec);
+        }
+
         List<string> extraLinkerArgs = new List<string>();
         foreach (ITaskItem item in ExtraLinkerArguments)
         {
@@ -339,7 +352,7 @@ public class AppleAppBuilderTask : Task
         if (GenerateXcodeProject)
         {
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs, excludes,
-                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, targetRuntime, IsLibraryMode);
+                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, environmentVariables, NativeMainSource, targetRuntime, IsLibraryMode);
 
             if (BuildAppBundle)
             {
@@ -365,7 +378,7 @@ public class AppleAppBuilderTask : Task
         else if (GenerateCMakeProject)
         {
              generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs, excludes,
-                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, targetRuntime, IsLibraryMode);
+                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, environmentVariables, NativeMainSource, targetRuntime, IsLibraryMode);
         }
 
         return true;

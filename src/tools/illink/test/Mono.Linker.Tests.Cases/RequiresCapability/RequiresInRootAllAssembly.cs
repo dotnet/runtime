@@ -8,9 +8,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
-    [IgnoreTestCase("NativeAOT test infrastructure doesn't implement rooting behavior the same way", IgnoredBy = Tool.NativeAot)]
-    [SetupLinkerArgument("-a", "test.exe", "all")]
-
+    [SetupRootEntireAssembly("test")]
     [SkipKeptItemsValidation]
     [ExpectedNoWarnings]
     public class RequiresInRootAllAssembly

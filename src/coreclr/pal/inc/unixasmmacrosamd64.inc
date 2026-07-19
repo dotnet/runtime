@@ -53,8 +53,13 @@ C_FUNC(\Name):
 .endm
 
 .macro LEAF_END_MARKED Name, Section
-C_FUNC(\Name\()_End):
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name\()_End)
+        .private_extern C_FUNC(\Name\()_End)
+#else
         .global C_FUNC(\Name\()_End)
+#endif
+C_FUNC(\Name\()_End):
         LEAF_END \Name, \Section
         // make sure this symbol gets its own address
         nop
@@ -293,6 +298,7 @@ C_FUNC(\Name\()_End):
 
         __PWTB_StackAlloc = __PWTB_FloatArgumentRegisters + 8 * 16 + 8 // 8 floating point registers
         __PWTB_TransitionBlock = __PWTB_StackAlloc
+        __PWTB_ArgumentRegisters = __PWTB_TransitionBlock
 
         .if \stackAllocOnEntry >= 4*8
         .error "Max supported stackAllocOnEntry is 3*8"
@@ -424,6 +430,12 @@ C_FUNC(\Name\()_End):
 
 .macro INLINE_GETTHREAD
         // Inlined version of call C_FUNC(RhpGetThread)
+#ifdef FEATURE_EMULATED_TLS
+        // Emulated TLS (e.g. OpenBSD, which has no __tls_get_addr): call a C helper instead
+        // of inlining the native thread-local access.
+        call    C_FUNC(GetThreadHelper)
+#else
         INLINE_GET_TLS_VAR t_CurrentThreadInfo
         mov rax, [rax + OFFSETOF__ThreadLocalInfo__m_pThread]
+#endif
 .endm

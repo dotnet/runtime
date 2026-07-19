@@ -4,6 +4,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Buffers
@@ -17,6 +18,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         public static (Vector128<byte> Result, Vector128<byte> Prev0) ProcessInputN2(
             Vector128<byte> input,
             Vector128<byte> prev0,
@@ -90,6 +92,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         public static (Vector128<byte> Result, Vector128<byte> Prev0, Vector128<byte> Prev1) ProcessInputN3(
             Vector128<byte> input,
             Vector128<byte> prev0, Vector128<byte> prev1,
@@ -207,11 +210,16 @@ namespace System.Buffers
             return (result, match0, match1);
         }
 
-        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
-        // On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// <summary>
+        /// Read two <see cref="Vector128&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector128&lt;Byte&gt;" />.
+        /// </summary>
+        /// <remarks>
+        /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         public static Vector128<byte> LoadAndPack16AsciiChars(ref char source)
         {
             Vector128<ushort> source0 = Vector128.LoadUnsafe(ref source);
@@ -221,9 +229,13 @@ namespace System.Buffers
             {
                 return Sse2.PackUnsignedSaturate(source0.AsInt16(), source1.AsInt16());
             }
-            else if (AdvSimd.IsSupported)
+            else if (AdvSimd.Arm64.IsSupported)
             {
-                return AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0), source1);
+                return AdvSimd.Arm64.UnzipEven(source0.AsByte(), source1.AsByte());
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.ConvertNarrowingSaturateUnsigned(source0.AsInt16(), source1.AsInt16());
             }
             else
             {
@@ -233,8 +245,12 @@ namespace System.Buffers
             }
         }
 
-        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
-        // Characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// <summary>
+        /// Read two <see cref="Vector256&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector256&lt;Byte&gt;" />.
+        /// </summary>
+        /// <remarks>
+        /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
         public static Vector256<byte> LoadAndPack32AsciiChars(ref char source)
@@ -247,8 +263,12 @@ namespace System.Buffers
             return PackedSpanHelpers.FixUpPackedVector256Result(packed);
         }
 
-        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
-        // Characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// <summary>
+        /// Read two <see cref="Vector512&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector512&lt;Byte&gt;" />.
+        /// </summary>
+        /// <remarks>
+        /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
         public static Vector512<byte> LoadAndPack64AsciiChars(ref char source)
@@ -264,10 +284,13 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static (Vector128<byte> Low, Vector128<byte> High) GetNibbles(Vector128<byte> input)
         {
             // 'low' is not strictly correct here, but we take advantage of Ssse3.Shuffle's behavior
-            // of doing an implicit 'AND 0xF' in order to skip the redundant AND.
+            // of doing an implicit 'AND 0xF' in order to skip the redundant AND. PackedSimd.Swizzle
+            // and AdvSimd's table lookup return 0 for indices >= 16 (instead of masking the low 4
+            // bits), so they need the explicit AND.
             Vector128<byte> low = Ssse3.IsSupported
                 ? input
                 : input & Vector128.Create((byte)0xF);
@@ -304,6 +327,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> Shuffle(Vector128<byte> maskLow, Vector128<byte> maskHigh, Vector128<byte> low, Vector128<byte> high)
         {
             return SearchValues.ShuffleNativeModified(maskLow, low) & Vector128.ShuffleNative(maskHigh, high);
@@ -326,6 +350,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> RightShift1(Vector128<byte> left, Vector128<byte> right)
         {
             // Given input vectors like
@@ -342,6 +367,18 @@ namespace System.Buffers
             {
                 return AdvSimd.ExtractVector128(left, right, 15);
             }
+            else if (PackedSimd.IsSupported)
+            {
+                // Call PackedSimd.Swizzle directly (i8x16.swizzle) rather than through
+                // Vector128.ShuffleNative's dispatcher chain, which the Mono SIMD intrinsic
+                // recognizer doesn't always lower cleanly. Swizzle clamps out-of-range
+                // indices (>= 16) to 0 so we can compose the two halves with OR.
+                Vector128<byte> leftPart = PackedSimd.Swizzle(left,
+                    Vector128.Create((byte)15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF));
+                Vector128<byte> rightPart = PackedSimd.Swizzle(right,
+                    Vector128.Create((byte)0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14));
+                return leftPart | rightPart;
+            }
             else
             {
                 // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
@@ -353,6 +390,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> RightShift2(Vector128<byte> left, Vector128<byte> right)
         {
             // Given input vectors like
@@ -368,6 +406,14 @@ namespace System.Buffers
             else if (AdvSimd.IsSupported)
             {
                 return AdvSimd.ExtractVector128(left, right, 14);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                Vector128<byte> leftPart = PackedSimd.Swizzle(left,
+                    Vector128.Create((byte)14, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF));
+                Vector128<byte> rightPart = PackedSimd.Swizzle(right,
+                    Vector128.Create((byte)0xFF, 0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13));
+                return leftPart | rightPart;
             }
             else
             {

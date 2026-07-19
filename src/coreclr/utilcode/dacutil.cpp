@@ -12,6 +12,7 @@
 #include <winwrap.h>
 #include <utilcode.h>
 #include <dacprivate.h>
+#include <pedecoder.h>
 
 //----------------------------------------------------------------------------
 //
@@ -74,15 +75,7 @@ LiveProcDataTarget::GetMachineType(
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_X86)
-    *machine = IMAGE_FILE_MACHINE_I386;
-#elif defined(TARGET_AMD64)
-    *machine = IMAGE_FILE_MACHINE_AMD64;
-#elif defined(TARGET_ARM)
-    *machine = IMAGE_FILE_MACHINE_ARMNT;
-#else
-    PORTABILITY_ASSERT("Unknown Processor");
-#endif
+    *machine = IMAGE_FILE_MACHINE_NATIVE;
     return S_OK;
 }
 
@@ -147,7 +140,7 @@ LiveProcDataTarget::ReadVirtual(
     {
         // Calculate bytes to read and don't let read cross
         // a page boundary.
-        readSize = GetOsPageSize() - (ULONG32)(address & (GetOsPageSize() - 1));
+        readSize = minipal_getpagesize() - (ULONG32)(address & (minipal_getpagesize() - 1));
         readSize = min(request, readSize);
 
         if (!ReadProcessMemory(m_process, (PVOID)(ULONG_PTR)address,

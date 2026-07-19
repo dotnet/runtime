@@ -61,7 +61,7 @@ namespace System.Xml.Xsl.XsltOld
                         Debug.Assert(frame.Counter < _copyEvents.Count);
                         Event copyEvent = (Event)_copyEvents[frame.Counter]!;
 
-                        if (copyEvent.Output(processor, frame) == false)
+                        if (!copyEvent.Output(processor, frame))
                         {
                             // This event wasn't processed
                             break;

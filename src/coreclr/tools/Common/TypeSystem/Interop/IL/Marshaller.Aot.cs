@@ -108,7 +108,7 @@ namespace Internal.TypeSystem.Interop
         protected override void AllocManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "AllocMemoryForAnsiCharArray");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "AllocMemoryForAnsiCharArray"u8);
             LoadManagedValue(codeStream);
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
@@ -120,7 +120,7 @@ namespace Internal.TypeSystem.Interop
         protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "WideCharArrayToAnsiCharArray");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "WideCharArrayToAnsiCharArray"u8);
 
             LoadManagedValue(codeStream);
             LoadNativeValue(codeStream);
@@ -132,7 +132,7 @@ namespace Internal.TypeSystem.Interop
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "AnsiCharArrayToWideCharArray");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "AnsiCharArrayToWideCharArray"u8);
 
             LoadNativeValue(codeStream);
             LoadManagedValue(codeStream);
@@ -145,7 +145,7 @@ namespace Internal.TypeSystem.Interop
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "WideCharToAnsiChar");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "WideCharToAnsiChar"u8);
 
             LoadManagedValue(codeStream);
             codeStream.Emit(PInvokeFlags.BestFitMapping ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
@@ -157,7 +157,7 @@ namespace Internal.TypeSystem.Interop
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "AnsiCharToWideChar");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "AnsiCharToWideChar"u8);
 
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
@@ -184,7 +184,7 @@ namespace Internal.TypeSystem.Interop
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem"u8, null)));
         }
 
         protected override void AllocNativeToManaged(ILCodeStream codeStream)
@@ -205,8 +205,8 @@ namespace Internal.TypeSystem.Interop
         protected override void AllocManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            string helperMethodName = _isAnsi ? "AllocMemoryForAnsiStringBuilder" : "AllocMemoryForUnicodeStringBuilder";
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", helperMethodName);
+            ReadOnlySpan<byte> helperMethodName = _isAnsi ? "AllocMemoryForAnsiStringBuilder"u8 : "AllocMemoryForUnicodeStringBuilder"u8;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, helperMethodName);
             LoadManagedValue(codeStream);
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
@@ -217,8 +217,8 @@ namespace Internal.TypeSystem.Interop
         protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            string helperMethodName = _isAnsi ? "StringBuilderToAnsiString" : "StringBuilderToUnicodeString";
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", helperMethodName);
+            ReadOnlySpan<byte> helperMethodName = _isAnsi ? "StringBuilderToAnsiString"u8 : "StringBuilderToUnicodeString"u8;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, helperMethodName);
 
             LoadManagedValue(codeStream);
             LoadNativeValue(codeStream);
@@ -232,8 +232,8 @@ namespace Internal.TypeSystem.Interop
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
-            string helperMethodName = _isAnsi ? "AnsiStringToStringBuilder" : "UnicodeStringToStringBuilder";
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", helperMethodName);
+            ReadOnlySpan<byte> helperMethodName = _isAnsi ? "AnsiStringToStringBuilder"u8 : "UnicodeStringToStringBuilder"u8;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, helperMethodName);
             LoadNativeValue(codeStream);
             LoadManagedValue(codeStream);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(helper));
@@ -245,7 +245,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem"u8, null)));
         }
     }
 
@@ -254,7 +254,7 @@ namespace Internal.TypeSystem.Interop
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
             LoadManagedAddr(codeStream);
-            codeStream.Emit(ILOpcode.ldfld, _ilCodeStreams.Emitter.NewToken(InteropTypes.GetHandleRef(Context).GetKnownField("_handle")));
+            codeStream.Emit(ILOpcode.ldfld, _ilCodeStreams.Emitter.NewToken(InteropTypes.GetHandleRef(Context).GetKnownField("_handle"u8)));
             StoreNativeValue(codeStream);
         }
 
@@ -271,8 +271,8 @@ namespace Internal.TypeSystem.Interop
         protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
             LoadManagedAddr(codeStream);
-            codeStream.Emit(ILOpcode.ldfld, _ilCodeStreams.Emitter.NewToken(InteropTypes.GetHandleRef(Context).GetKnownField("_wrapper")));
-            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(InteropTypes.GetGC(Context).GetKnownMethod("KeepAlive", null)));
+            codeStream.Emit(ILOpcode.ldfld, _ilCodeStreams.Emitter.NewToken(InteropTypes.GetHandleRef(Context).GetKnownField("_wrapper"u8)));
+            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(InteropTypes.GetGC(Context).GetKnownMethod("KeepAlive"u8, null)));
         }
     }
 
@@ -618,12 +618,12 @@ namespace Internal.TypeSystem.Interop
 
         protected override MethodDesc GetManagedToNativeHelper()
         {
-            return Context.GetHelperEntryPoint("InteropHelpers", "StringToByValAnsiString");
+            return Context.GetHelperEntryPoint("InteropHelpers"u8, "StringToByValAnsiString"u8);
         }
 
         protected override MethodDesc GetNativeToManagedHelper()
         {
-            return Context.GetHelperEntryPoint("InteropHelpers", "ByValAnsiStringToString");
+            return Context.GetHelperEntryPoint("InteropHelpers"u8, "ByValAnsiStringToString"u8);
         }
     }
 
@@ -639,12 +639,12 @@ namespace Internal.TypeSystem.Interop
 
         protected override MethodDesc GetManagedToNativeHelper()
         {
-            return Context.GetHelperEntryPoint("InteropHelpers", "StringToUnicodeFixedArray");
+            return Context.GetHelperEntryPoint("InteropHelpers"u8, "StringToUnicodeFixedArray"u8);
         }
 
         protected override MethodDesc GetNativeToManagedHelper()
         {
-            return Context.GetHelperEntryPoint("InteropHelpers", "UnicodeToStringFixedArray");
+            return Context.GetHelperEntryPoint("InteropHelpers"u8, "UnicodeToStringFixedArray"u8);
         }
     }
 
@@ -681,8 +681,8 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.brtrue, lNonNull);
 
             codeStream.Emit(ILOpcode.ldtoken, emitter.NewToken(ManagedType));
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(InteropTypes.GetType(Context).GetMethod("GetTypeFromHandle", null)));
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(InteropTypes.GetRuntimeHelpers(Context).GetKnownMethod("GetUninitializedObject", null)));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(InteropTypes.GetType(Context).GetMethod("GetTypeFromHandle"u8, null)));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(InteropTypes.GetRuntimeHelpers(Context).GetKnownMethod("GetUninitializedObject"u8, null)));
             StoreManagedValue(codeStream);
 
             codeStream.EmitLabel(lNonNull);
@@ -708,6 +708,54 @@ namespace Internal.TypeSystem.Interop
 
     internal sealed class LayoutClassPtrMarshaller : Marshaller
     {
+        // Blittable layout classes passed by value CLR->native are marshalled by pinning the managed
+        // object and passing an interior pointer to its data directly to native code, mirroring CoreCLR's
+        // ILBlittablePtrMarshaller. This preserves pointer identity and gives implicit [In,Out] semantics
+        // regardless of [In]/[Out]. Byref, reverse, return, field, and non-blittable scenarios instead copy
+        // through the struct marshalling thunks.
+        private bool MarshalViaPinning =>
+            MarshalDirection == MarshalDirection.Forward
+            && !IsManagedByRef
+            && !Return
+            && MarshallerType == MarshallerType.Argument
+            && MarshalUtils.IsBlittableType(ManagedType);
+
+        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        {
+            if (!MarshalViaPinning)
+            {
+                base.AllocAndTransformManagedToNative(codeStream);
+                return;
+            }
+
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            ILCodeLabel lNull = emitter.NewCodeLabel();
+
+            // Default the native value to null so a null managed reference marshals as a null pointer.
+            codeStream.EmitLdc(0);
+            codeStream.Emit(ILOpcode.conv_i);
+            StoreNativeValue(codeStream);
+
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.brfalse, lNull);
+
+            // Pin the object and pass the address of its first field (the object's data) to native code.
+            ILLocalVariable vPinnedObject = emitter.NewLocal(ManagedType, isPinned: true);
+            LoadManagedValue(codeStream);
+            codeStream.EmitStLoc(vPinnedObject);
+
+            FieldDesc rawDataField = Context.SystemModule
+                .GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8)
+                .GetKnownField("Data"u8);
+
+            codeStream.EmitLdLoc(vPinnedObject);
+            codeStream.Emit(ILOpcode.ldflda, emitter.NewToken(rawDataField));
+            codeStream.Emit(ILOpcode.conv_i);
+            StoreNativeValue(codeStream);
+
+            codeStream.EmitLabel(lNull);
+        }
+
         protected override void AllocManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
@@ -735,8 +783,8 @@ namespace Internal.TypeSystem.Interop
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
             codeStream.Emit(ILOpcode.ldtoken, emitter.NewToken(ManagedType));
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(InteropTypes.GetType(Context).GetMethod("GetTypeFromHandle", null)));
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(InteropTypes.GetRuntimeHelpers(Context).GetKnownMethod("GetUninitializedObject", null)));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(InteropTypes.GetType(Context).GetMethod("GetTypeFromHandle"u8, null)));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(InteropTypes.GetRuntimeHelpers(Context).GetKnownMethod("GetUninitializedObject"u8, null)));
             StoreManagedValue(codeStream);
         }
 
@@ -758,6 +806,13 @@ namespace Internal.TypeSystem.Interop
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
+            // When marshalling via pinning the native code operates directly on the managed object's
+            // memory, so there is nothing to copy back.
+            if (MarshalViaPinning)
+            {
+                return;
+            }
+
             ILEmitter emitter = _ilCodeStreams.Emitter;
             ILCodeLabel lNull = emitter.NewCodeLabel();
 
@@ -774,6 +829,12 @@ namespace Internal.TypeSystem.Interop
 
         protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
+            // Pinning does not allocate any native resources that require cleanup.
+            if (MarshalViaPinning)
+            {
+                return;
+            }
+
             // Only do cleanup if it is IN
             if (!In)
             {
@@ -815,7 +876,7 @@ namespace Internal.TypeSystem.Interop
             LoadManagedValue(codeStream);
             codeStream.Emit(ILOpcode.brfalse, lNull);
 
-            MethodDesc getNativeSizeHelper = Context.GetHelperEntryPoint("InteropHelpers", "AsAnyGetNativeSize");
+            MethodDesc getNativeSizeHelper = Context.GetHelperEntryPoint("InteropHelpers"u8, "AsAnyGetNativeSize"u8);
 
             LoadManagedValue(codeStream);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(getNativeSizeHelper));
@@ -842,7 +903,7 @@ namespace Internal.TypeSystem.Interop
             LoadManagedValue(codeStream);
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                Context.GetHelperEntryPoint("InteropHelpers", "AsAnyMarshalManagedToNative")));
+                Context.GetHelperEntryPoint("InteropHelpers"u8, "AsAnyMarshalManagedToNative"u8)));
 
             codeStream.EmitLabel(lNull);
         }
@@ -858,7 +919,7 @@ namespace Internal.TypeSystem.Interop
             LoadNativeValue(codeStream);
             LoadManagedValue(codeStream);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                Context.GetHelperEntryPoint("InteropHelpers", "AsAnyMarshalNativeToManaged")));
+                Context.GetHelperEntryPoint("InteropHelpers"u8, "AsAnyMarshalNativeToManaged"u8)));
 
             codeStream.EmitLabel(lNull);
         }
@@ -880,7 +941,7 @@ namespace Internal.TypeSystem.Interop
             LoadNativeValue(codeStream);
             LoadManagedValue(codeStream);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                Context.GetHelperEntryPoint("InteropHelpers", "AsAnyCleanupNative")));
+                Context.GetHelperEntryPoint("InteropHelpers"u8, "AsAnyCleanupNative"u8)));
 
             codeStream.EmitLabel(lNull);
         }
@@ -911,7 +972,7 @@ namespace Internal.TypeSystem.Interop
                 for (int i = 8; i < 16; i++)
                     codeStream.EmitLdc(bytes[i]);
 
-                MetadataType guidType = Context.SystemModule.GetKnownType("System", "Guid");
+                MetadataType guidType = Context.SystemModule.GetKnownType("System"u8, "Guid"u8);
                 var int32Type = Context.GetWellKnownType(WellKnownType.Int32);
                 var int16Type = Context.GetWellKnownType(WellKnownType.Int16);
                 var byteType = Context.GetWellKnownType(WellKnownType.Byte);
@@ -921,10 +982,10 @@ namespace Internal.TypeSystem.Interop
                     returnType: Context.GetWellKnownType(WellKnownType.Void),
                     parameters: new TypeDesc[] { int32Type, int16Type, int16Type, byteType, byteType, byteType, byteType, byteType, byteType, byteType, byteType });
                 MethodDesc guidCtorHandleMethod =
-                    guidType.GetKnownMethod(".ctor", sig);
+                    guidType.GetKnownMethod(".ctor"u8, sig);
                 codeStream.Emit(ILOpcode.newobj, emitter.NewToken(guidCtorHandleMethod));
 
-                MethodDesc helper = Context.GetHelperEntryPoint("InteropHelpers", "ConvertManagedComInterfaceToNative");
+                MethodDesc helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "ConvertManagedComInterfaceToNative"u8);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
             }
             else
@@ -934,7 +995,7 @@ namespace Internal.TypeSystem.Interop
                     throw new NotSupportedException();
                 }
 
-                MethodDesc helper = Context.GetHelperEntryPoint("InteropHelpers", "ConvertManagedComInterfaceToIUnknown");
+                MethodDesc helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "ConvertManagedComInterfaceToIUnknown"u8);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
             }
 
@@ -946,7 +1007,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
             LoadNativeValue(codeStream);
-            MethodDesc helper = Context.GetHelperEntryPoint("InteropHelpers", "ConvertNativeComInterfaceToManaged");
+            MethodDesc helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "ConvertNativeComInterfaceToManaged"u8);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
             StoreManagedValue(codeStream);
@@ -965,7 +1026,7 @@ namespace Internal.TypeSystem.Interop
 
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
-            var helper = InteropTypes.GetMarshal(Context).GetKnownMethod("FreeBSTR", null);
+            var helper = InteropTypes.GetMarshal(Context).GetKnownMethod("FreeBSTR"u8, null);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
         }
         protected override void TransformManagedToNative(ILCodeStream codeStream)
@@ -973,7 +1034,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             LoadManagedValue(codeStream);
 
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "StringToAnsiBstrBuffer");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "StringToAnsiBstrBuffer"u8);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
             StoreNativeValue(codeStream);
@@ -984,7 +1045,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             LoadNativeValue(codeStream);
 
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "AnsiBstrBufferToString");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "AnsiBstrBufferToString"u8);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
             StoreManagedValue(codeStream);
@@ -998,7 +1059,7 @@ namespace Internal.TypeSystem.Interop
 
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
-            var helper = InteropTypes.GetMarshal(Context).GetKnownMethod("FreeBSTR", null);
+            var helper = InteropTypes.GetMarshal(Context).GetKnownMethod("FreeBSTR"u8, null);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
         }
         protected override void TransformManagedToNative(ILCodeStream codeStream)
@@ -1006,7 +1067,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             LoadManagedValue(codeStream);
 
-            var helper = InteropTypes.GetMarshal(Context).GetKnownMethod("StringToBSTR", null);
+            var helper = InteropTypes.GetMarshal(Context).GetKnownMethod("StringToBSTR"u8, null);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
             StoreNativeValue(codeStream);
@@ -1017,7 +1078,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             LoadNativeValue(codeStream);
 
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "BstrBufferToString");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "BstrBufferToString"u8);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
             StoreManagedValue(codeStream);
@@ -1031,7 +1092,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             LoadManagedValue(codeStream);
 
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "DateTimeToOleDateTime");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "DateTimeToOleDateTime"u8);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
             StoreNativeValue(codeStream);
@@ -1042,7 +1103,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             LoadNativeValue(codeStream);
 
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "OleDateTimeToDateTime");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "OleDateTimeToDateTime"u8);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
             StoreManagedValue(codeStream);
@@ -1056,7 +1117,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             LoadManagedValue(codeStream);
 
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "DecimalToOleCurrency");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "DecimalToOleCurrency"u8);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
             StoreNativeValue(codeStream);
@@ -1067,7 +1128,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             LoadNativeValue(codeStream);
 
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "OleCurrencyToDecimal");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "OleCurrencyToDecimal"u8);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
             StoreManagedValue(codeStream);
@@ -1107,7 +1168,7 @@ namespace Internal.TypeSystem.Interop
             LoadManagedValue(codeStream);
             LoadNativeAddr(codeStream);
 
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "ConvertObjectToVariant");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "ConvertObjectToVariant"u8);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
         }
 
@@ -1122,7 +1183,7 @@ namespace Internal.TypeSystem.Interop
 
             LoadNativeAddr(codeStream);
 
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "VariantToObject");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "VariantToObject"u8);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
             StoreManagedValue(codeStream);
@@ -1139,7 +1200,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
             LoadNativeAddr(codeStream);
-            var helper = Context.GetHelperEntryPoint("InteropHelpers", "CleanupVariant");
+            var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "CleanupVariant"u8);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
         }
     }
@@ -1162,16 +1223,16 @@ namespace Internal.TypeSystem.Interop
                 ThrowHelper.ThrowTypeLoadException(marshallerType);
             }
 
-            var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices", "ICustomMarshaler");
+            var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "ICustomMarshaler"u8);
             var getInstanceMethod = marshallerType.GetMethod(
-                "GetInstance",
+                "GetInstance"u8,
                 new MethodSignature(MethodSignatureFlags.Static, 0, customMarshallerType, [ Context.GetWellKnownType(WellKnownType.String) ]));
             if (ManagedType.IsValueType || ManagedType.IsPointer || ManagedType.IsFunctionPointer)
             {
                 ThrowHelper.ThrowMarshalDirectiveException();
             }
 
-            var initializeCustomMarshallerMethod = Context.GetHelperEntryPoint("InteropHelpers", "InitializeCustomMarshaller");
+            var initializeCustomMarshallerMethod = Context.GetHelperEntryPoint("InteropHelpers"u8, "InitializeCustomMarshaller"u8);
 
             ILEmitter emitter = _ilCodeStreams.Emitter;
             MarshallerLocalVariable = emitter.NewLocal(customMarshallerType);
@@ -1201,10 +1262,10 @@ namespace Internal.TypeSystem.Interop
         {
             var lMarshaller = InitializeMarshallerVariable();
 
-            var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices", "ICustomMarshaler");
+            var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "ICustomMarshaler"u8);
             ILEmitter emitter = _ilCodeStreams.Emitter;
             var manageToNativeMethod = customMarshallerType.GetKnownMethod(
-                "MarshalManagedToNative",
+                "MarshalManagedToNative"u8,
                 new MethodSignature(MethodSignatureFlags.None, 0, Context.GetWellKnownType(WellKnownType.IntPtr), [ Context.GetWellKnownType(WellKnownType.Object) ]));
 
             codeStream.EmitLdLoc(lMarshaller);
@@ -1230,10 +1291,10 @@ namespace Internal.TypeSystem.Interop
         {
             var lMarshaller = InitializeMarshallerVariable();
 
-            var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices", "ICustomMarshaler");
+            var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "ICustomMarshaler"u8);
             ILEmitter emitter = _ilCodeStreams.Emitter;
             var marshalNativeToManagedMethod = customMarshallerType.GetKnownMethod(
-                "MarshalNativeToManaged",
+                "MarshalNativeToManaged"u8,
                 new MethodSignature(MethodSignatureFlags.None, 0, Context.GetWellKnownType(WellKnownType.Object), [ Context.GetWellKnownType(WellKnownType.IntPtr) ]));
 
             codeStream.EmitLdLoc(lMarshaller);
@@ -1246,12 +1307,12 @@ namespace Internal.TypeSystem.Interop
         {
             var lMarshaller = InitializeMarshallerVariable();
 
-            var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices", "ICustomMarshaler");
+            var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "ICustomMarshaler"u8);
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
             // Call CleanUpManagedData on cleanup code stream.
             var cleanupManagedDataMethod = customMarshallerType.GetKnownMethod(
-                "CleanUpManagedData",
+                "CleanUpManagedData"u8,
                 new MethodSignature(MethodSignatureFlags.None, 0, Context.GetWellKnownType(WellKnownType.Void), [ Context.GetWellKnownType(WellKnownType.Object) ]));
 
             codeStream.EmitLdLoc(lMarshaller);
@@ -1263,12 +1324,12 @@ namespace Internal.TypeSystem.Interop
         {
             var lMarshaller = InitializeMarshallerVariable();
 
-            var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices", "ICustomMarshaler");
+            var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "ICustomMarshaler"u8);
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
             // Call CleanUpNativeData on cleanup code stream.
             var cleanupNativeDataMethod = customMarshallerType.GetKnownMethod(
-                "CleanUpNativeData",
+                "CleanUpNativeData"u8,
                 new MethodSignature(MethodSignatureFlags.None, 0, Context.GetWellKnownType(WellKnownType.Void), [ Context.GetWellKnownType(WellKnownType.IntPtr) ]));
 
             codeStream.EmitLdLoc(lMarshaller);

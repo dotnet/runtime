@@ -19,7 +19,7 @@ namespace System.Drawing.Configuration.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("BitmapSuffix")]
-        public void BitmapSuffix_Set_GetReturnsExpected(string bitmapSuffix)
+        public void BitmapSuffix_Set_GetReturnsExpected(string? bitmapSuffix)
         {
             var section = new SystemDrawingSection { BitmapSuffix = bitmapSuffix };
             Assert.Equal(bitmapSuffix, section.BitmapSuffix);

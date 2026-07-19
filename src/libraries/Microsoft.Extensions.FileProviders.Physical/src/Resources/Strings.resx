@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -140,5 +140,11 @@
   </data>
   <data name="FileSystemWatcher_PlatformNotSupported" xml:space="preserve">
     <value>The type '{0}' is not supported on this platform, use polling instead.</value>
+  </data>
+  <data name="RootDirectoryMissing" xml:space="preserve">
+    <value>Could not find the root directory '{0}'.</value>
+  </data>
+  <data name="FileSystemWatcherPathError" xml:space="preserve">
+    <value>The FileSystemWatcher path '{0}' must be empty, equal to, an ancestor of, or a descendant of the root '{1}'.</value>
   </data>
 </root>

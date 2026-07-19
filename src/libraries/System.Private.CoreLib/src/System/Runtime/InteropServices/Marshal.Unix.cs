@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Runtime.InteropServices
@@ -56,9 +57,9 @@ namespace System.Runtime.InteropServices
             bytes[actualByteLength] = 0;
         }
 
-        public static unsafe IntPtr AllocHGlobal(IntPtr cb)
+        public static unsafe IntPtr AllocHGlobal(nint cb)
         {
-            return (nint)NativeMemory.Alloc((nuint)(nint)cb);
+            return (nint)NativeMemory.Alloc((nuint)cb);
         }
 
         public static unsafe void FreeHGlobal(IntPtr hglobal)
@@ -66,9 +67,9 @@ namespace System.Runtime.InteropServices
             NativeMemory.Free((void*)(nint)hglobal);
         }
 
-        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
+        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, nint cb)
         {
-            return (nint)NativeMemory.Realloc((void*)(nint)pv, (nuint)(nint)cb);
+            return (nint)NativeMemory.Realloc((void*)(nint)pv, (nuint)cb);
         }
 
         public static IntPtr AllocCoTaskMem(int cb) => AllocHGlobal((nint)(uint)cb);

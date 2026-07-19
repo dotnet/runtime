@@ -122,6 +122,30 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"dateTimeOffset", @"", System.Xml.XmlConvert.ToString(dto));
         }
 
+        internal void Write_dateOnly(object? o)
+        {
+            WriteStartDocument();
+            if (o == null)
+            {
+                WriteEmptyTag(@"dateOnly", @"");
+                return;
+            }
+            DateOnly dateOnly = (DateOnly)o;
+            WriteElementStringRaw(@"dateOnly", @"", FromDateOnly(dateOnly));
+        }
+
+        internal void Write_timeOnly(object? o)
+        {
+            WriteStartDocument();
+            if (o == null)
+            {
+                WriteEmptyTag(@"timeOnly", @"");
+                return;
+            }
+            TimeOnly timeOnly = (TimeOnly)o;
+            WriteElementStringRaw(@"timeOnly", @"", FromTimeOnly(timeOnly));
+        }
+
         internal void Write_unsignedByte(object? o)
         {
             WriteStartDocument();
@@ -496,6 +520,66 @@ namespace System.Xml.Serialization
             return (object?)o;
         }
 
+        internal object? Read_dateOnly()
+        {
+            object? o = null;
+            Reader.MoveToContent();
+            if (Reader.NodeType == System.Xml.XmlNodeType.Element)
+            {
+                if (((object)Reader.LocalName == (object)_id20_dateOnly && (object)Reader.NamespaceURI == (object)_id2_Item))
+                {
+                    if (Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        o = default(DateOnly);
+                    }
+                    else
+                    {
+                        o = ToDateOnly(Reader.ReadElementString());
+                    }
+                }
+                else
+                {
+                    throw CreateUnknownNodeException();
+                }
+            }
+            else
+            {
+                UnknownNode(null);
+            }
+            return (object?)o;
+        }
+
+        internal object? Read_timeOnly()
+        {
+            object? o = null;
+            Reader.MoveToContent();
+            if (Reader.NodeType == System.Xml.XmlNodeType.Element)
+            {
+                if (((object)Reader.LocalName == (object)_id20_timeOnly && (object)Reader.NamespaceURI == (object)_id2_Item))
+                {
+                    if (Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        o = default(TimeOnly);
+                    }
+                    else
+                    {
+                        o = ToTimeOnly(Reader.ReadElementString());
+                    }
+                }
+                else
+                {
+                    throw CreateUnknownNodeException();
+                }
+            }
+            else
+            {
+                UnknownNode(null);
+            }
+            return (object?)o;
+        }
+
         internal object? Read_unsignedByte()
         {
             object? o = null;
@@ -764,6 +848,8 @@ namespace System.Xml.Serialization
         private string _id7_float = null!;
         private string _id10_dateTime = null!;
         private string _id20_dateTimeOffset = null!;
+        private string _id20_dateOnly = null!;
+        private string _id20_timeOnly = null!;
         private string _id6_long = null!;
         private string _id9_decimal = null!;
         private string _id8_double = null!;
@@ -788,6 +874,8 @@ namespace System.Xml.Serialization
             _id7_float = Reader.NameTable.Add(@"float");
             _id10_dateTime = Reader.NameTable.Add(@"dateTime");
             _id20_dateTimeOffset = Reader.NameTable.Add(@"dateTimeOffset");
+            _id20_dateOnly = Reader.NameTable.Add(@"dateOnly");
+            _id20_timeOnly = Reader.NameTable.Add(@"timeOnly");
             _id6_long = Reader.NameTable.Add(@"long");
             _id9_decimal = Reader.NameTable.Add(@"decimal");
             _id8_double = Reader.NameTable.Add(@"double");

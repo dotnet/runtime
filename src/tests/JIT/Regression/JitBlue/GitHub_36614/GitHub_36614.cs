@@ -6,11 +6,14 @@ using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 namespace projs
 {
     public class Program
     {
+        [ActiveIssue("needs triage", TestPlatforms.Android)]
+        [ActiveIssue("System.IO.FileNotFoundException: Could not load file or assembly 'xunit.assert, Version=2.4.1.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c' or one of its dependencies.", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static void TestEntryPoint()
         {

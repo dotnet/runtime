@@ -27,7 +27,7 @@ namespace Internal.Runtime
         public T? TryAllocateObject<T>() where T : class
         {
             MethodTable* pMT = MethodTable.Of<T>();
-            return Unsafe.As<T?>(TryAllocateObject(pMT, pMT->BaseSize));
+            return Unsafe.As<T>(TryAllocateObject(pMT, pMT->BaseSize));
         }
 
         private object? TryAllocateObject(MethodTable* type, nuint objectSize)

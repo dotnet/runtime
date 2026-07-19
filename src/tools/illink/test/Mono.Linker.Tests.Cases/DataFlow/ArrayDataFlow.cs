@@ -592,7 +592,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             // ILLink only incidentally matches the analyzer behavior here.
-            [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresAll), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/2737")]
+            [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresAll), Tool.All, "https://github.com/dotnet/linker/issues/2737")]
             [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(DataFlowTypeExtensions.RequiresAll), Tool.None, "https://github.com/dotnet/linker/issues/2737")]
             [ExpectedWarning("IL2072", nameof(GetTypeWithPublicConstructors), nameof(DataFlowTypeExtensions.RequiresAll), Tool.None, "https://github.com/dotnet/linker/issues/2737")]
             static void TestNullCoalescingAssignmentToEmptyComplex()
@@ -654,15 +654,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             // Inline array references are not allowed in conditionals, unlike array references.
-            // static void TestInlineArrayElementAssignment (bool b = true)
+            // static void TestInlineArrayElementAssignment(bool b = true)
             // {
-            // 	var arr1 = new InlineTypeArray ();
-            // 	arr1[0] = GetUnknownType ();
-            // 	var arr2 = new InlineTypeArray ();
-            // 	arr2[0] = GetTypeWithPublicConstructors ();
-            // 	(b ? arr1 : arr2)[0] = GetWithPublicMethods ();
-            // 	arr1[0].RequiresAll ();
-            // 	arr2[0].RequiresAll ();
+            //     var arr1 = new InlineTypeArray();
+            //     arr1[0] = GetUnknownType();
+            //     var arr2 = new InlineTypeArray();
+            //     arr2[0] = GetTypeWithPublicConstructors();
+            //     (b ? arr1 : arr2)[0] = GetWithPublicMethods();
+            //     arr1[0].RequiresAll();
+            //     arr2[0].RequiresAll();
             // }
 
             [ExpectedWarning("IL2087", nameof(T), nameof(DataFlowTypeExtensions.RequiresAll))]
@@ -707,7 +707,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 TestArrayElementAssignment();
                 TestInlineArrayElementReferenceAssignment();
-                // TestInlineArrayElementAssignment ();
+                // TestInlineArrayElementAssignment();
                 TestNullCoalesce<int, int, int>();
                 TestNullCoalescingAssignment<int, int, int>();
             }

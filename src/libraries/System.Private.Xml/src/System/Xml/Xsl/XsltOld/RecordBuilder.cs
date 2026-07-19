@@ -157,7 +157,7 @@ namespace System.Xml.Xsl.XsltOld
                 case XPathNodeType.Text:
                     break;
                 case XPathNodeType.ProcessingInstruction:
-                    if (BeginProcessingInstruction(prefix, name, nspace) == false)
+                    if (!BeginProcessingInstruction(prefix, name, nspace))
                     {
                         return Processor.OutputResult.Error;
                     }

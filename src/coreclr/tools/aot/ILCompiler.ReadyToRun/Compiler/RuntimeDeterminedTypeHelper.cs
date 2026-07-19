@@ -207,7 +207,7 @@ namespace ILCompiler
             {
                 return 0;
             }
-            return unchecked(GetHashCode(field.OwningType) + 97 * GetHashCode(field.FieldType) + 31 * field.Name.GetHashCode());
+            return unchecked(GetHashCode(field.OwningType) + 97 * GetHashCode(field.FieldType) + 31 * field.GetName().GetHashCode());
         }
 
         public static int GetHashCode(FieldWithToken field)

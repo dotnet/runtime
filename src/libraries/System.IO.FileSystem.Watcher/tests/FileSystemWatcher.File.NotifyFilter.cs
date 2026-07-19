@@ -11,7 +11,6 @@ using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public partial class File_NotifyFilter_Tests : FileSystemWatcherTest
     {
         [LibraryImport("advapi32.dll", EntryPoint = "SetNamedSecurityInfoW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
@@ -156,8 +155,6 @@ namespace System.IO.Tests
                     expected |= WatcherChangeTypes.Changed;
                 else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
                     expected |= WatcherChangeTypes.Changed;
-                else if (PlatformDetection.IsWindows7 && filter == NotifyFilters.Attributes) // win7 FSW Size change passes the Attribute filter
-                    expected |= WatcherChangeTypes.Changed;
                 ExpectEvent(watcher, expected, action, expectedPath: file);
             }
         }
@@ -183,8 +180,6 @@ namespace System.IO.Tests
                     else if (OperatingSystem.IsLinux() && ((filter & LinuxFiltersForModify) > 0))
                         expected |= WatcherChangeTypes.Changed;
                     else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
-                        expected |= WatcherChangeTypes.Changed;
-                    else if (PlatformDetection.IsWindows7 && ((filter & NotifyFilters.Attributes) > 0)) // win7 FSW Size change passes the Attribute filter
                         expected |= WatcherChangeTypes.Changed;
                     ExpectEvent(watcher, expected, action, expectedPath: file);
                 }
@@ -221,8 +216,6 @@ namespace System.IO.Tests
 
                 WatcherChangeTypes expected = 0;
                 if (filter == NotifyFilters.Security)
-                    expected |= WatcherChangeTypes.Changed;
-                else if (PlatformDetection.IsWindows7 && filter == NotifyFilters.Attributes) // win7 FSW Security change passes the Attribute filter
                     expected |= WatcherChangeTypes.Changed;
                 ExpectEvent(watcher, expected, action, expectedPath: file);
             }

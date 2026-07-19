@@ -195,7 +195,9 @@ namespace System.Xml.Xsl.Xslt
             }
 
             // Create list of all early bound objects
+#pragma warning disable SYSLIB0062 // Scripts field is obsolete
             Scripts.TrimSafeDictionary scriptClasses = compiler.Scripts.ScriptClasses;
+#pragma warning restore SYSLIB0062
             List<EarlyBoundInfo> ebTypes = new List<EarlyBoundInfo>(scriptClasses.Count);
             foreach (string key in scriptClasses.Keys)
             {
@@ -261,10 +263,12 @@ namespace System.Xml.Xsl.Xslt
             }
 
             // Register all script namespaces
+#pragma warning disable SYSLIB0062 // Scripts field is obsolete
             foreach (string scriptNs in _compiler.Scripts.ScriptClasses.Keys)
             {
                 init = _f.Add(init, _f.InvokeCheckScriptNamespace(scriptNs));
             }
+#pragma warning restore SYSLIB0062
 
             if (init.NodeType == QilNodeType.Add)
             {

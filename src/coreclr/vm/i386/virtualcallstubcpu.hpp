@@ -100,7 +100,7 @@ private:
               (sizeof(LookupStub))
              ) % sizeof(void*)];    //complete DWORD
 
-    static_assert_no_msg((sizeof(void*) -
+    static_assert((sizeof(void*) -
              ((sizeof(void*)-(offsetof(LookupStub,_token)%sizeof(void*))) +
               (sizeof(LookupStub))
              ) % sizeof(void*)) != 0);
@@ -524,21 +524,21 @@ LookupStub lookupInit;
 
 void LookupHolder::InitializeStatic()
 {
-    static_assert_no_msg(((offsetof(LookupStub, _token)+offsetof(LookupHolder, _stub)) % sizeof(void*)) == 0);
-    static_assert_no_msg((sizeof(LookupHolder) % sizeof(void*)) == 0);
+    static_assert(((offsetof(LookupStub, _token)+offsetof(LookupHolder, _stub)) % sizeof(void*)) == 0);
+    static_assert((sizeof(LookupHolder) % sizeof(void*)) == 0);
 
     lookupInit._entryPoint [0]     = 0x50;
     lookupInit._entryPoint [1]     = 0x68;
-    static_assert_no_msg(sizeof(lookupInit._entryPoint) == 2);
+    static_assert(sizeof(lookupInit._entryPoint) == 2);
     lookupInit._token              = 0xcccccccc;
 #ifdef STUB_LOGGING
     lookupInit.cntr2 [0]           = 0xff;
     lookupInit.cntr2 [1]           = 0x05;
-    static_assert_no_msg(sizeof(lookupInit.cntr2) == 2);
+    static_assert(sizeof(lookupInit.cntr2) == 2);
     lookupInit.c_lookup            = &g_call_lookup_counter;
 #endif //STUB_LOGGING
     lookupInit.part2 [0]           = 0xe9;
-    static_assert_no_msg(sizeof(lookupInit.part2) == 1);
+    static_assert(sizeof(lookupInit.part2) == 1);
     lookupInit._resolveWorkerDispl = 0xcccccccc;
 }
 
@@ -570,18 +570,18 @@ DispatchStub dispatchInit;
 void DispatchHolder::InitializeStatic()
 {
     // Check that _implDispl is aligned in the DispatchHolder for backpatching
-    static_assert_no_msg(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implDispl)) % sizeof(void*)) == 0);
-    static_assert_no_msg((sizeof(DispatchHolder) % sizeof(void*)) == 0);
+    static_assert(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implDispl)) % sizeof(void*)) == 0);
+    static_assert((sizeof(DispatchHolder) % sizeof(void*)) == 0);
 
 #ifndef STUB_LOGGING
     dispatchInit._entryPoint [0] = 0x81;
     dispatchInit._entryPoint [1] = 0x39;
-    static_assert_no_msg(sizeof(dispatchInit._entryPoint) == 2);
+    static_assert(sizeof(dispatchInit._entryPoint) == 2);
 
     dispatchInit._expectedMT     = 0xcccccccc;
     dispatchInit.jmpOp1 [0]      = 0x0f;
     dispatchInit.jmpOp1 [1]      = 0x85;
-    static_assert_no_msg(sizeof(dispatchInit.jmpOp1) == 2);
+    static_assert(sizeof(dispatchInit.jmpOp1) == 2);
 
     dispatchInit._failDispl      = 0xcccccccc;
     dispatchInit.jmpOp2          = 0xe9;
@@ -589,22 +589,22 @@ void DispatchHolder::InitializeStatic()
 #else //STUB_LOGGING
     dispatchInit._entryPoint [0] = 0xff;
     dispatchInit._entryPoint [1] = 0x05;
-    static_assert_no_msg(sizeof(dispatchInit._entryPoint) == 2);
+    static_assert(sizeof(dispatchInit._entryPoint) == 2);
 
     dispatchInit.d_call          = &g_mono_call_counter;
     dispatchInit.cmpOp [0]       = 0x81;
     dispatchInit.cmpOp [1]       = 0x39;
-    static_assert_no_msg(sizeof(dispatchInit.cmpOp) == 2);
+    static_assert(sizeof(dispatchInit.cmpOp) == 2);
 
     dispatchInit._expectedMT     = 0xcccccccc;
     dispatchInit.jmpOp1 [0]      = 0x0f;
     dispatchInit.jmpOp1 [1]      = 0x84;
-    static_assert_no_msg(sizeof(dispatchInit.jmpOp1) == 2);
+    static_assert(sizeof(dispatchInit.jmpOp1) == 2);
 
     dispatchInit._implDispl      = 0xcccccccc;
     dispatchInit.fail [0]        = 0xff;
     dispatchInit.fail [1]        = 0x05;
-    static_assert_no_msg(sizeof(dispatchInit.fail) == 2);
+    static_assert(sizeof(dispatchInit.fail) == 2);
 
     dispatchInit.d_miss          = &g_mono_miss_counter;
     dispatchInit.jmpFail         = 0xe9;
@@ -641,17 +641,17 @@ ResolveStub resolveInit;
 void ResolveHolder::InitializeStatic()
 {
     //Check that _token is aligned in ResolveHolder
-    static_assert_no_msg(((offsetof(ResolveHolder, _stub) + offsetof(ResolveStub, _token)) % sizeof(void*)) == 0);
-    static_assert_no_msg((sizeof(ResolveHolder) % sizeof(void*)) == 0);
+    static_assert(((offsetof(ResolveHolder, _stub) + offsetof(ResolveStub, _token)) % sizeof(void*)) == 0);
+    static_assert((sizeof(ResolveHolder) % sizeof(void*)) == 0);
 
     resolveInit._failEntryPoint [0]    = 0x83;
     resolveInit._failEntryPoint [1]    = 0x2d;
-    static_assert_no_msg(sizeof(resolveInit._failEntryPoint) == 2);
+    static_assert(sizeof(resolveInit._failEntryPoint) == 2);
 
     resolveInit._pCounter              = (INT32 *) (size_t) 0xcccccccc;
     resolveInit.part0 [0]              = 0x01;
     resolveInit.part0 [1]              = 0x7c;
-    static_assert_no_msg(sizeof(resolveInit.part0) == 2);
+    static_assert(sizeof(resolveInit.part0) == 2);
 
     resolveInit.toPatcher              = (offsetof(ResolveStub, patch) - (offsetof(ResolveStub, toPatcher) + 1)) & 0xFF;
 
@@ -667,51 +667,51 @@ void ResolveHolder::InitializeStatic()
     resolveInit.part1 [8]              = 0x03;
     resolveInit.part1 [9]              = 0xc2;
     resolveInit.part1 [10]             = 0x35;
-    static_assert_no_msg(sizeof(resolveInit.part1) == 11);
+    static_assert(sizeof(resolveInit.part1) == 11);
 
     resolveInit._hashedToken           = 0xcccccccc;
     resolveInit.part2 [0]              = 0x25;
-    static_assert_no_msg(sizeof(resolveInit.part2) == 1);
+    static_assert(sizeof(resolveInit.part2) == 1);
 
     resolveInit.mask                   = (CALL_STUB_CACHE_MASK << LOG2_PTRSIZE);
     resolveInit.part3 [0]              = 0x8b;
     resolveInit.part3 [1]              = 0x80;;
-    static_assert_no_msg(sizeof(resolveInit.part3) == 2);
+    static_assert(sizeof(resolveInit.part3) == 2);
 
     resolveInit._cacheAddress          = 0xcccccccc;
 #ifdef STUB_LOGGING
     resolveInit.cntr1 [0]              = 0xff;
     resolveInit.cntr1 [1]              = 0x05;
-    static_assert_no_msg(sizeof(resolveInit.cntr1) == 2);
+    static_assert(sizeof(resolveInit.cntr1) == 2);
 
     resolveInit.c_call                 = &g_poly_call_counter;
 #endif //STUB_LOGGING
     resolveInit.part4 [0]              = 0x3b;
     resolveInit.part4 [1]              = 0x10;
-    static_assert_no_msg(sizeof(resolveInit.part4) == 2);
+    static_assert(sizeof(resolveInit.part4) == 2);
 
     // resolveInit.mtOffset               = offsetof(ResolveCacheElem,pMT) & 0xFF;
-    static_assert_no_msg(offsetof(ResolveCacheElem,pMT) == 0);
+    static_assert(offsetof(ResolveCacheElem,pMT) == 0);
 
     resolveInit.part5 [0]              = 0x75;
-    static_assert_no_msg(sizeof(resolveInit.part5) == 1);
+    static_assert(sizeof(resolveInit.part5) == 1);
 
     resolveInit.toMiss1                = offsetof(ResolveStub,miss)-(offsetof(ResolveStub,toMiss1)+1);
 
     resolveInit.part6 [0]              = 0x81;
     resolveInit.part6 [1]              = 0x78;
-    static_assert_no_msg(sizeof(resolveInit.part6) == 2);
+    static_assert(sizeof(resolveInit.part6) == 2);
 
     resolveInit.tokenOffset            = offsetof(ResolveCacheElem,token) & 0xFF;
 
     resolveInit._token                 = 0xcccccccc;
 
     resolveInit.part7 [0]              = 0x75;
-    static_assert_no_msg(sizeof(resolveInit.part7) == 1);
+    static_assert(sizeof(resolveInit.part7) == 1);
 
     resolveInit.part8 [0]              = 0x8b;
     resolveInit.part8 [1]              = 0x40;
-    static_assert_no_msg(sizeof(resolveInit.part8) == 2);
+    static_assert(sizeof(resolveInit.part8) == 2);
 
     resolveInit.targetOffset           = offsetof(ResolveCacheElem,target) & 0xFF;
 
@@ -723,7 +723,7 @@ void ResolveHolder::InitializeStatic()
     resolveInit.part9 [3]              = 0x04;
     resolveInit.part9 [4]              = 0xff;
     resolveInit.part9 [5]              = 0xe0;
-    static_assert_no_msg(sizeof(resolveInit.part9) == 6);
+    static_assert(sizeof(resolveInit.part9) == 6);
 
     resolveInit.miss [0]               = 0x5a;
 //    resolveInit.miss [1]               = 0xb8;

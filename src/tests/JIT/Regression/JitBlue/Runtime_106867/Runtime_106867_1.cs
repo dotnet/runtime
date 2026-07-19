@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_106867_1;
+
 using Xunit;
 using System.Runtime.CompilerServices;
 
@@ -20,19 +23,16 @@ using System.Runtime.Intrinsics.Arm;
 
 public class Runtime_106866_2
 {
-    [Fact]
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Sve.IsSupported)
-        {
-            Vector<short> vr4 = default(Vector<short>);
-            vr4 = Sve.MultiplyAdd(vr4, vr4, vr4);
-            var vr5 = (short)0;
-            var vr6 = Vector128.CreateScalar(vr5).AsVector();
-            var vr7 = (short)0;
-            var vr8 = Sve.ConditionalExtractLastActiveElement(vr6, vr7, vr4);
-            Consume(vr8);
-        }
+        Vector<short> vr4 = default(Vector<short>);
+        vr4 = Sve.MultiplyAdd(vr4, vr4, vr4);
+        var vr5 = (short)0;
+        var vr6 = Vector128.CreateScalar(vr5).AsVector();
+        var vr7 = (short)0;
+        var vr8 = Sve.ConditionalExtractLastActiveElement(vr6, vr7, vr4);
+        Consume(vr8);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

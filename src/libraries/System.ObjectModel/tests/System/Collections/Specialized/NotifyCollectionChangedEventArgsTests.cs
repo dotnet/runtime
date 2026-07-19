@@ -189,7 +189,7 @@ namespace System.Collections.Specialized.Tests
         [InlineData(NotifyCollectionChangedAction.Replace, "oldItem", "oldItem")]
         [InlineData(NotifyCollectionChangedAction.Replace, null, "item")]
         [InlineData(NotifyCollectionChangedAction.Replace, "item", null)]
-        public void Ctor_NotifyCollectionChangedAction_Object_Object(NotifyCollectionChangedAction action, object newItem, object oldItem)
+        public void Ctor_NotifyCollectionChangedAction_Object_Object(NotifyCollectionChangedAction action, object? newItem, object? oldItem)
         {
             var e = new NotifyCollectionChangedEventArgs(action, newItem, oldItem);
             Assert.Equal(action, e.Action);
@@ -204,7 +204,7 @@ namespace System.Collections.Specialized.Tests
         [InlineData(NotifyCollectionChangedAction.Replace, "oldItem", "oldItem", 0)]
         [InlineData(NotifyCollectionChangedAction.Replace, null, "item", -10)]
         [InlineData(NotifyCollectionChangedAction.Replace, "item", null, -1)]
-        public void Ctor_NotifyCollectionChangedAction_Object_Object_Int(NotifyCollectionChangedAction action, object newItem, object oldItem, int index)
+        public void Ctor_NotifyCollectionChangedAction_Object_Object_Int(NotifyCollectionChangedAction action, object? newItem, object? oldItem, int index)
         {
             var e = new NotifyCollectionChangedEventArgs(action, newItem, oldItem, index);
             Assert.Equal(action, e.Action);
@@ -291,7 +291,7 @@ namespace System.Collections.Specialized.Tests
         [InlineData(NotifyCollectionChangedAction.Move, "item", 1, 1)]
         [InlineData(NotifyCollectionChangedAction.Move, "item", 1, -2)]
         [InlineData(NotifyCollectionChangedAction.Move, null, 1, 2)]
-        public void Ctor_NotifyCollectionChangedAction_Object_Int_Int(NotifyCollectionChangedAction action, object changedItem, int index, int oldIndex)
+        public void Ctor_NotifyCollectionChangedAction_Object_Int_Int(NotifyCollectionChangedAction action, object? changedItem, int index, int oldIndex)
         {
             var e = new NotifyCollectionChangedEventArgs(action, changedItem, index, oldIndex);
             Assert.Equal(action, e.Action);
@@ -306,7 +306,7 @@ namespace System.Collections.Specialized.Tests
         [InlineData(NotifyCollectionChangedAction.Move, new object[] { "item" }, 1, 1)]
         [InlineData(NotifyCollectionChangedAction.Move, new object[0], 1, -2)]
         [InlineData(NotifyCollectionChangedAction.Move, null, 1, 2)]
-        public void Ctor_NotifyCollectionChangedAction_IList_Int_Int(NotifyCollectionChangedAction action, IList changedItems, int index, int oldIndex)
+        public void Ctor_NotifyCollectionChangedAction_IList_Int_Int(NotifyCollectionChangedAction action, IList? changedItems, int index, int oldIndex)
         {
             var e = new NotifyCollectionChangedEventArgs(action, changedItems, index, oldIndex);
             Assert.Equal(action, e.Action);
@@ -386,7 +386,7 @@ namespace System.Collections.Specialized.Tests
         [InlineData("item", true)]
         [InlineData(1, false)]
         [InlineData(null, false)]
-        public void List_Contains_ReturnsExpected(object value, bool expected)
+        public void List_Contains_ReturnsExpected(object? value, bool expected)
         {
             var e = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, new object[] { "item" }, new object[0]);
             IList list = e.NewItems;
@@ -407,7 +407,7 @@ namespace System.Collections.Specialized.Tests
         [InlineData("item", 0)]
         [InlineData(1, -1)]
         [InlineData(null, -1)]
-        public void List_IndexOf_ReturnsExpected(object value, int expected)
+        public void List_IndexOf_ReturnsExpected(object? value, int expected)
         {
             var e = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, new object[] { "item" }, new object[0]);
             IList list = e.NewItems;

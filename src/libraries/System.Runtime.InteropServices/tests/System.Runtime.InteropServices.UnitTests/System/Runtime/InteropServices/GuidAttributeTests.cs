@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Guid")]
-        public void Ctor_Guid(string guid)
+        public void Ctor_Guid(string? guid)
         {
             var attribute = new GuidAttribute(guid);
             Assert.Equal(guid, attribute.Value);

@@ -288,6 +288,10 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_IsForceInlineKnown = true;
                 break;
 
+            case InlineObservation::CALLEE_IS_INTRINSIC_TYPE:
+                m_IsIntrinsicType = value;
+                break;
+
             case InlineObservation::CALLEE_IS_INSTANCE_CTOR:
                 m_IsInstanceCtor = value;
                 break;
@@ -503,6 +507,18 @@ bool DefaultPolicy::BudgetCheck() const
         {
             // We don't want to give up on various getters/setters if we're running out of budget
             JITDUMP("Allowing over-budget for small methods\n")
+            allowOverBudget = true;
+        }
+
+        if (!allowOverBudget && m_IsIntrinsicType &&
+            (strategy->GetOverBudgetIntrinsicInlineCount() < InlineStrategy::MAX_OVER_BUDGET_INTRINSIC_INLINES))
+        {
+            // Callees from [Intrinsic]-marked types (e.g. Span<T>, Vector<T>, hardware intrinsic
+            // ISA classes) need to be inlined for codegen quality even when we're out of budget.
+            // Cap the number of such admissions per root method to keep JIT throughput bounded.
+            JITDUMP("Allowing over-budget for intrinsic types (count: %u)\n",
+                    strategy->GetOverBudgetIntrinsicInlineCount());
+            strategy->NoteOverBudgetIntrinsicInline();
             allowOverBudget = true;
         }
 
@@ -1027,6 +1043,7 @@ void DefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_IsNoReturn)
     XATTR_B(m_IsNoReturnKnown)
     XATTR_B(m_InsideThrowBlock)
+    XATTR_B(m_IsIntrinsicType)
 }
 #endif
 
@@ -1036,18 +1053,48 @@ void DefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
 
 bool DefaultPolicy::PropagateNeverToRuntime() const
 {
-    //
-    // Do not propagate the "no return" observation. If we do this then future inlining
-    // attempts will fail immediately without marking the call node as "no return".
-    // This can have an adverse impact on caller's code quality as it may have to preserve
-    // registers across the call.
-    // TODO-Throughput: We should persist the "no return" information in the runtime
-    // so we don't need to re-analyze the inlinee all the time.
-    //
+    if (m_Observation == InlineObservation::CALLEE_DOES_NOT_RETURN)
+    {
+        // Do not propagate the "no return" observation. If we do this then future inlining
+        // attempts will fail immediately without marking the call node as "no return".
+        // This can have an adverse impact on caller's code quality as it may have to preserve
+        // registers across the call.
+        // TODO-Throughput: We should persist the "no return" information in the runtime
+        // so we don't need to re-analyze the inlinee all the time.
+        //
+        return false;
+    }
 
-    bool propagate = (m_Observation != InlineObservation::CALLEE_DOES_NOT_RETURN);
+    InlineTarget target = InlGetTarget(GetObservation());
+    InlineImpact impact = InlGetImpact(GetObservation());
 
-    return propagate;
+    if ((target == InlineTarget::CALLEE) && (impact == InlineImpact::FATAL))
+    {
+        // This callee will never inline.
+        //
+        return true;
+    }
+
+    if (m_InsideThrowBlock)
+    {
+        // We inline only trivial methods inside BBJ_THROW call-sites - no need to record that.
+        //
+        return false;
+    }
+
+    if (m_RootCompiler->fgPgoDynamic)
+    {
+        // If dynamic pgo is active, only propagate noinline back to metadata
+        // when there is a CALLEE FATAL observation. We want to make sure
+        // not to block future inlines based on performance or throughput considerations.
+        //
+        // Note fgPgoDynamic (and hence dynamicPgo) is true iff TieredPGO is enabled globally.
+        // In particular this value does not depend on the root method having PGO data.
+        //
+        return false;
+    }
+
+    return true;
 }
 
 #if defined(DEBUG)
@@ -1377,8 +1424,22 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             }
             else if (m_RootCompiler->fgHaveSufficientProfileWeights())
             {
-                JITDUMP("Root has sufficient profile\n");
-                maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILRoot());
+                // For now we want to inline somewhat less aggressively in Tier1+Instr and OSR. We can reconsider
+                // when we have inlinee instrumentation. Otherwise we may lose profile data for key inlinees.
+                //
+                const bool isTier1Instr = m_RootCompiler->opts.IsInstrumentedAndOptimized();
+                const bool isOSR        = m_RootCompiler->opts.IsOSR();
+
+                if (isTier1Instr || isOSR)
+                {
+                    JITDUMP("Root has sufficient profile. Leaving max IL size at %u for Tier1+Instr or OSR\n",
+                            maxCodeSize);
+                }
+                else
+                {
+                    maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILRoot());
+                    JITDUMP("Root has sufficient profile. Boosting max IL size to %u\n", maxCodeSize);
+                }
             }
             else
             {
@@ -1811,14 +1872,25 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         const double profileTrustCoef = (double)JitConfig.JitExtDefaultPolicyProfTrust() / 10.0;
         const double profileScale     = (double)JitConfig.JitExtDefaultPolicyProfScale() / 10.0;
 
+        double profileBoost;
         if (m_RootCompiler->fgHaveTrustedProfileWeights())
         {
-            multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
+            profileBoost = (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
         }
         else
         {
-            multiplier *= min(m_ProfileFrequency, 1.0) * profileScale;
+            profileBoost = min(m_ProfileFrequency, 1.0) * profileScale;
         }
+
+        if ((profileBoost < 1.0) && m_IsIntrinsicType)
+        {
+            // Don't apply the profile-frequency-based penalty for callees from [Intrinsic]-marked types
+            // (e.g. Span<T>, Vector<T>) - JIT relies on inlining these for codegen quality regardless
+            // of how cold the call site is.
+            profileBoost = 1.0;
+        }
+        multiplier *= profileBoost;
+
         JITDUMP("\nCallsite has profile data: %g.  Multiplier limited to %g.", m_ProfileFrequency, multiplier);
     }
 

@@ -11,6 +11,8 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests;
 
+#pragma warning disable xUnit2027 // Comparison of sets to linear containers have undefined results
+
 public abstract partial class JsonCreationHandlingTests : SerializerTests
 {
     [Fact]

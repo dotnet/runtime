@@ -100,8 +100,7 @@ namespace System.IO
         protected string GetRandomLinkPath([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) => Path.Combine(TestDirectoryActualCasing, GetRandomLinkName(memberName, lineNumber));
         protected string GetRandomDirPath([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)  => Path.Combine(TestDirectoryActualCasing, GetRandomDirName(memberName, lineNumber));
 
-        private string _testDirectoryActualCasing;
-        private string TestDirectoryActualCasing => _testDirectoryActualCasing ??= GetTestDirectoryActualCasing();
+        private string TestDirectoryActualCasing => field ??= GetTestDirectoryActualCasing();
 
         /// <summary>Gets a test file full path that is associated with the call site.</summary>
         /// <param name="index">An optional index value to use as a suffix on the file name.  Typically a loop index.</param>

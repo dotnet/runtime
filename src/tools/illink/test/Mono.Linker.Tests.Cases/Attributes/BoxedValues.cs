@@ -6,12 +6,12 @@ namespace Mono.Linker.Tests.Cases.Attributes
     public class BoxedValues
     {
         // mcs bug
-        //        [TestAttribute ((object)typeof (Enum_2))]
-        //		[Kept]
-        //		[KeptAttributeAttribute (typeof (TestAttribute))]
-        //		public void Test_1 ()
-        //        {
-        //        }
+        // [TestAttribute((object)typeof(Enum_2))]
+        // [Kept]
+        // [KeptAttributeAttribute(typeof(TestAttribute))]
+        // public void Test_1()
+        // {
+        // }
 
         [TestAttribute(TestProperty = Enum_2.B)]
         [Kept]

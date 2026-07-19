@@ -836,6 +836,12 @@ namespace SerializationTypes
         }
     }
 
+    public class TypeWithXmlElementMemberAndSibling
+    {
+        public XmlElement Description { get; set; }
+        public string Name { get; set; }
+    }
+
     public class BaseType
     {
         public virtual string Name1 { get; set; }
@@ -1255,6 +1261,31 @@ namespace SerializationTypes
         {
             return Id.GetHashCode() + Ts.GetHashCode();
         }
+    }
+
+    public class TypeWithObsoleteProperty
+    {
+        public string NormalProperty { get; set; }
+
+        [Obsolete("This property is obsolete but should still be serialized")]
+        public string ObsoleteProperty { get; set; }
+
+        [XmlIgnore]
+        public string IgnoredProperty { get; set; }
+    }
+
+    public class TypeWithObsoleteErrorProperty
+    {
+        public string NormalProperty { get; set; }
+
+        [Obsolete("This property is obsolete but should still be serialized")]
+        public string ObsoleteProperty { get; set; }
+
+        [Obsolete("This property is obsolete with error", true)]
+        public string ObsoletePropertyWithError { get; set; } = "error";
+
+        [XmlIgnore]
+        public string IgnoredProperty { get; set; }
     }
 
     public class BaseClassForInvalidDerivedClass
@@ -2353,6 +2384,90 @@ namespace SerializationTypes
 
             return obj;
         }
+    }
+
+    // XmlSerializer test types: derived class overriding virtual [XmlText] property from base.
+    public class CustomerWithGroupIdRef
+    {
+        [XmlElement("GROUP_IDREF")]
+        public GroupIdRef? GroupIdRef { get; set; }
+    }
+
+    public abstract class GroupIdRefBase<TConcrete> where TConcrete : GroupIdRefBase<TConcrete>
+    {
+        public GroupIdRefBase() { Value = null!; }
+
+        public GroupIdRefBase(string value, string? type)
+        {
+            Type = type;
+            Value = value;
+        }
+
+        [XmlAttribute("type")]
+        public virtual string? Type { get; set; }
+
+        [XmlText]
+        public virtual string Value { get; set; }
+    }
+
+    public class GroupIdRef : GroupIdRefBase<GroupIdRef>
+    {
+        public GroupIdRef() { Value = null!; }
+
+        public GroupIdRef(string value, string? type)
+        {
+            Type = type;
+            Value = value;
+        }
+
+        [XmlAttribute("type")]
+        public override string? Type { get; set; }
+
+        [XmlText]
+        public override string Value { get; set; }
+    }
+
+    // XmlSerializer test types: overriding a virtual [XmlAttribute] property in a derived class.
+    // The base maps 'Code' to an attribute named "aprop".
+    public class GroupWithAttributeBase
+    {
+        [XmlAttribute("aprop")]
+        public virtual string? Code { get; set; }
+    }
+
+    // Valid override: re-applies [XmlAttribute] with the same name. The derived setter records
+    // that it was invoked so deserialization can be shown to assign the overridden property.
+    public class GroupWithSameNameAttributeOverride : GroupWithAttributeBase
+    {
+        private string? _code;
+
+        [XmlIgnore]
+        public bool DerivedSetterInvoked { get; private set; }
+
+        [XmlAttribute("aprop")]
+        public override string? Code
+        {
+            get => _code;
+            set
+            {
+                _code = value;
+                DerivedSetterInvoked = true;
+            }
+        }
+    }
+
+    // Invalid override: the override maps the same property to a different attribute name.
+    public class GroupWithRenamedAttributeOverride : GroupWithAttributeBase
+    {
+        [XmlAttribute("bprop")]
+        public override string? Code { get; set; }
+    }
+
+    // Invalid override: the override omits [XmlAttribute]. XmlSerializer reads member attributes
+    // without inheritance, so the override maps as an element and conflicts with the base attribute.
+    public class GroupWithDroppedAttributeOverride : GroupWithAttributeBase
+    {
+        public override string? Code { get; set; }
     }
 }
 
@@ -4315,7 +4430,7 @@ public class MyArgumentException : Exception, ISerializable
         _paramName = paramName;
     }
 
-#if NET8_0_OR_GREATER
+#if NET
     [Obsolete("Exception..ctor(SerializationInfo, StreamingContext) is obsolete.", DiagnosticId = "SYSLIB0051")]
 #endif
     protected MyArgumentException(SerializationInfo info, StreamingContext context) : base(info, context) {
@@ -4334,7 +4449,7 @@ public class MyArgumentException : Exception, ISerializable
         }
     }
 
-#if NET8_0_OR_GREATER
+#if NET
     [Obsolete("Exception.GetObjectData is obsolete.", DiagnosticId = "SYSLIB0051")]
 #endif
     public override void GetObjectData(SerializationInfo info, StreamingContext context)

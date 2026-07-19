@@ -13,6 +13,10 @@ namespace System.Diagnostics.Metrics.Tests
 {
     public class MetricsTests
     {
+        // We increase the timeout for remote execution to allow for longer-running tests.
+        // Ensure RemoteExecutor.IsSupported, otherwise the execution can throw PlatformNotSupportedException.
+        private static readonly RemoteInvokeOptions? s_remoteExecutionOptions = RemoteExecutor.IsSupported ? new RemoteInvokeOptions { TimeOut = 600_000 } : null;
+
         [Fact]
         public void MeasurementConstructionTest()
         {
@@ -53,7 +57,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal("v1.0", meter.Version);
 
                 Assert.Throws<ArgumentNullException>(() => new Meter(name: null));
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -82,7 +86,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 ObservableGauge<double> observableGauge = meter.CreateObservableGauge<double>("ObservableGauge", () => 10, "Fahrenheit", "Fahrenheit ObservableGauge");
                 ValidateInstrumentInfo(observableGauge, "ObservableGauge", "Fahrenheit", "Fahrenheit ObservableGauge", false, true);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -99,7 +103,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Throws<ArgumentNullException>(() => meter.CreateObservableUpDownCounter<Decimal>(null, () => 0, "items", "Items ObservableUpDownCounter"));
                 Assert.Throws<ArgumentNullException>(() => meter.CreateObservableGauge<double>(null, () => 0, "seconds", "Seconds ObservableGauge"));
 
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -169,7 +173,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Throws<InvalidOperationException>(() => meter.CreateHistogram<ulong>("histogram1", "seconds", "Seconds histogram"));
                 Assert.Throws<InvalidOperationException>(() => meter.CreateObservableCounter<sbyte>("observableCounter3", () => 0, "seconds", "Seconds ObservableCounter"));
                 Assert.Throws<InvalidOperationException>(() => meter.CreateObservableGauge<ushort>("observableGauge7", () => 0, "seconds", "Seconds ObservableGauge"));
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -228,7 +232,7 @@ namespace System.Diagnostics.Metrics.Tests
                     // MeasurementsCompleted should be called 4 times for every instrument.
                     Assert.Equal(0, instrumentsEncountered);
                 }
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -280,7 +284,7 @@ namespace System.Diagnostics.Metrics.Tests
                     Assert.Equal(11, accumulated);
                 }
 
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -376,7 +380,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Histogram<decimal> histogram6 = meter.CreateHistogram<decimal>("decimalHistogram");
                 InstrumentMeasurementAggregationValidation(histogram6, (value, tags) => { Record(histogram6, value, tags, useSpan); } );
 
-            }, useSpan.ToString()).Dispose();
+            }, useSpan.ToString(), s_remoteExecutionOptions).Dispose();
 
             void AddToCounter<T>(Counter<T> counter, T delta, KeyValuePair<string, object?>[] tags, bool useSpan) where T : struct
             {
@@ -723,7 +727,7 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableGauge<decimal> observableGauge20 = meter.CreateObservableGauge<decimal>("decimalObservableGauge", () => decimalGaugeMeasurementList);
                 ObservableInstrumentMeasurementAggregationValidation(observableGauge20, decimalGaugeMeasurementList);
 
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -875,7 +879,7 @@ namespace System.Diagnostics.Metrics.Tests
                                                             PublishHistogramMeasurement(instrument as Histogram<decimal>, value, tags);
                                                             return (decimal)(value * 2);
                                                         });
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -963,7 +967,7 @@ namespace System.Diagnostics.Metrics.Tests
                 listener.RecordObservableInstruments();
                 Assert.Equal(13, count);
 
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1034,7 +1038,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 listener.RecordObservableInstruments();
                 Assert.Equal(7, count);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1102,7 +1106,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 listener.RecordObservableInstruments();
                 Assert.Equal(7, count);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1147,7 +1151,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 gauge.Record(1);
                 Assert.Equal(15, count);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1184,7 +1188,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(2, count);
 
                 Assert.Throws<InvalidOperationException>(() => listener.SetMeasurementEventCallback<ulong>(null));
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1225,7 +1229,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 listener.Dispose();
                 Assert.Equal(4, completedCount);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1268,7 +1272,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Task.WaitAll(taskList);
 
                 Assert.Equal(loopLength * 17, totalCount);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1337,7 +1341,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Task.WaitAll(jobs);
                 listener.Dispose();
                 Assert.Equal(0, instruments.Count);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1441,7 +1445,7 @@ namespace System.Diagnostics.Metrics.Tests
                                                      expectedTags[8], expectedTags[9], expectedTags[10], expectedTags[11], expectedTags[12] });
                 }
 
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1529,7 +1533,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal("10.0", meter10.Version);
                 Assert.Equal("Scope10", meter10.Scope);
                 Assert.Equal("TestMeterCreationWithOptions10", meter10.Name);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1662,7 +1666,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 Gauge<int> gauge12 = meter.CreateGauge<int>("name9", null, null, t1);
                 Assert.NotSame(gauge9, gauge12);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1728,7 +1732,7 @@ namespace System.Diagnostics.Metrics.Tests
                 {
                     Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
                 }
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1748,7 +1752,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                Assert.NotNull(histogramWithAdvice.Advice?.HistogramBucketBoundaries);
                Assert.Equal(explicitBucketBoundaries, histogramWithAdvice.Advice.HistogramBucketBoundaries);
-           }).Dispose();
+           }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1771,7 +1775,7 @@ namespace System.Diagnostics.Metrics.Tests
                 counter.Add(1, new TagList(Array.Empty<KeyValuePair<string, object>>()));
 
                 Assert.Equal(4, count);
-           }).Dispose();
+           }, s_remoteExecutionOptions).Dispose();
         }
 
         private void PublishCounterMeasurement<T>(Counter<T> counter, T value, KeyValuePair<string, object?>[] tags) where T : struct

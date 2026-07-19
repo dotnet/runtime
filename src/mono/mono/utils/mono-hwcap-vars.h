@@ -54,6 +54,7 @@ MONO_HWCAP_VAR(riscv_has_stdext_v)
 #elif defined (TARGET_S390X)
 
 MONO_HWCAP_VAR(s390x_has_fpe)
+MONO_HWCAP_VAR(s390x_has_ve1)
 MONO_HWCAP_VAR(s390x_has_vec)
 MONO_HWCAP_VAR(s390x_has_mlt)
 MONO_HWCAP_VAR(s390x_has_ia)

@@ -81,6 +81,7 @@ namespace System.Text.Json
         private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder;
         private ConverterList? _converters;
+        private TypeClassifierList? _typeClassifiers;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
         private JsonObjectCreationHandling _preferredObjectCreationHandling;
@@ -103,6 +104,7 @@ namespace System.Text.Json
         private char _indentCharacter = JsonConstants.DefaultIndentCharacter;
         private int _indentSize = JsonConstants.DefaultIndentSize;
         private bool _allowDuplicateProperties = true;
+        private bool _inferClosedTypePolymorphism;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -133,6 +135,7 @@ namespace System.Text.Json
             _readCommentHandling = options._readCommentHandling;
             _referenceHandler = options._referenceHandler;
             _converters = options._converters is { } converters ? new(this, converters) : null;
+            _typeClassifiers = options._typeClassifiers is { } TypeClassifiers ? new(this, TypeClassifiers) : null;
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
@@ -156,6 +159,7 @@ namespace System.Text.Json
             _indentCharacter = options._indentCharacter;
             _indentSize = options._indentSize;
             _allowDuplicateProperties = options._allowDuplicateProperties;
+            _inferClosedTypePolymorphism = options._inferClosedTypePolymorphism;
             _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
@@ -873,6 +877,30 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether polymorphic serialization metadata is inferred for
+        /// types that the compiler has marked as closed type hierarchies.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <remarks>
+        /// By default, it's set to <see langword="false"/>. When set to <see langword="true"/>, types that
+        /// declare a closed set of derived types (and that do not specify an explicit
+        /// <see cref="Serialization.JsonDerivedTypeAttribute"/> list) are treated as polymorphic, with one
+        /// derived type registered per member of the closed hierarchy. The simple name of each derived type,
+        /// equivalent to the result of <c>nameof</c>, is used as its type discriminator.
+        /// </remarks>
+        public bool InferClosedTypePolymorphism
+        {
+            get => _inferClosedTypePolymorphism;
+            set
+            {
+                VerifyMutable();
+                _inferClosedTypePolymorphism = value;
+            }
+        }
+
+        /// <summary>
         /// Returns true if options uses compatible built-in resolvers or a combination of compatible built-in resolvers.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -1100,6 +1128,21 @@ namespace System.Text.Json
             };
         }
 
+        // Per JSON Lines spec (https://jsonlines.org/) every value must occupy a single line.
+        // Indentation must be suppressed regardless of the user-configured WriteIndented setting,
+        // and the JsonWriterOptions.NewLine setting is irrelevant when Indented is false.
+        internal JsonWriterOptions GetWriterOptionsForJsonLines()
+        {
+            return new JsonWriterOptions
+            {
+                Encoder = Encoder,
+                MaxDepth = EffectiveMaxDepth,
+#if !DEBUG
+                SkipValidation = true
+#endif
+            };
+        }
+
         internal void VerifyMutable()
         {
             if (_isReadOnly)
@@ -1113,6 +1156,20 @@ namespace System.Text.Json
             private readonly JsonSerializerOptions _options;
 
             public ConverterList(JsonSerializerOptions options, IList<JsonConverter>? source = null)
+                : base(source)
+            {
+                _options = options;
+            }
+
+            public override bool IsReadOnly => _options.IsReadOnly;
+            protected override void OnCollectionModifying() => _options.VerifyMutable();
+        }
+
+        private sealed class TypeClassifierList : ConfigurationList<JsonTypeClassifierFactory>
+        {
+            private readonly JsonSerializerOptions _options;
+
+            public TypeClassifierList(JsonSerializerOptions options, IList<JsonTypeClassifierFactory>? source = null)
                 : base(source)
             {
                 _options = options;
@@ -1159,10 +1216,7 @@ namespace System.Text.Json
             {
                 // Collection modified by the user: replace the main
                 // resolver with the resolver chain as our source of truth.
-                if (_options is not null)
-                {
-                    _options._typeInfoResolver = this;
-                }
+                _options?._typeInfoResolver = this;
             }
         }
 

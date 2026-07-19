@@ -8,18 +8,16 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
+using OSStatus = Interop.AppleCrypto.OSStatus;
 
 namespace System.Net
 {
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
         // mapped from OSX error codes
-        private const int OSStatus_writErr = -20;
-        private const int OSStatus_readErr = -19;
-        private const int OSStatus_noErr = 0;
-        private const int OSStatus_errSSLWouldBlock = -9803;
         private const int InitialBufferSize = 2048;
         private readonly SafeSslHandle _sslContext;
+        private readonly object _lock = new object();
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
@@ -76,6 +74,8 @@ namespace System.Net
 
                 if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                 {
+                    ValidateAlpnProtocolListSize(sslAuthenticationOptions.ApplicationProtocols);
+
                     if (sslAuthenticationOptions.IsClient)
                     {
                         // On macOS coreTls supports only client side.
@@ -191,9 +191,10 @@ namespace System.Net
 
         private void SslSetConnection(SafeSslHandle sslContext)
         {
-            GCHandle handle = GCHandle.Alloc(this, GCHandleType.Weak);
+            var handle = new GCHandle<SafeDeleteSslContext>(this);
+            sslContext.SetConnectionGCHandle(handle);
 
-            Interop.AppleCrypto.SslSetConnection(sslContext, GCHandle.ToIntPtr(handle));
+            Interop.AppleCrypto.SslSetConnection(sslContext, GCHandle<SafeDeleteSslContext>.ToIntPtr(handle));
         }
 
         public override bool IsInvalid => _sslContext?.IsInvalid ?? true;
@@ -205,7 +206,7 @@ namespace System.Net
                 SafeSslHandle sslContext = _sslContext;
                 if (null != sslContext)
                 {
-                    lock (_sslContext)
+                    lock (_lock)
                     {
                         _inputBuffer.Dispose();
                         _outputBuffer.Dispose();
@@ -220,15 +221,14 @@ namespace System.Net
         [UnmanagedCallersOnly]
         private static unsafe int WriteToConnection(IntPtr connection, byte* data, void** dataLength)
         {
-            SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
-            Debug.Assert(context != null);
+            SafeDeleteSslContext context = GCHandle<SafeDeleteSslContext>.FromIntPtr(connection).Target;
 
             // We don't pool these buffers and we can't because there's a race between their us in the native
             // read/write callbacks and being disposed when the SafeHandle is disposed. This race is benign currently,
             // but if we were to pool the buffers we would have a potential use-after-free issue.
             try
             {
-                lock (context)
+                lock (context._lock)
                 {
                     ulong length = (ulong)*dataLength;
                     Debug.Assert(length <= int.MaxValue);
@@ -241,32 +241,31 @@ namespace System.Net
                     context._outputBuffer.Commit(toWrite);
                     // Since we can enqueue everything, no need to re-assign *dataLength.
 
-                    return OSStatus_noErr;
+                    return OSStatus.NoErr;
                 }
             }
             catch (Exception e)
             {
                 if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(context, $"WritingToConnection failed: {e.Message}");
-                return OSStatus_writErr;
+                return OSStatus.WritErr;
             }
         }
 
         [UnmanagedCallersOnly]
         private static unsafe int ReadFromConnection(IntPtr connection, byte* data, void** dataLength)
         {
-            SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
-            Debug.Assert(context != null);
+            SafeDeleteSslContext context = GCHandle<SafeDeleteSslContext>.FromIntPtr(connection).Target;
 
             try
             {
-                lock (context)
+                lock (context._lock)
                 {
                     ulong toRead = (ulong)*dataLength;
 
                     if (toRead == 0)
                     {
-                        return OSStatus_noErr;
+                        return OSStatus.NoErr;
                     }
 
                     uint transferred = 0;
@@ -274,7 +273,7 @@ namespace System.Net
                     if (context._inputBuffer.ActiveLength == 0)
                     {
                         *dataLength = (void*)0;
-                        return OSStatus_errSSLWouldBlock;
+                        return OSStatus.ErrSSLWouldBlock;
                     }
 
                     int limit = Math.Min((int)toRead, context._inputBuffer.ActiveLength);
@@ -284,20 +283,20 @@ namespace System.Net
                     transferred = (uint)limit;
 
                     *dataLength = (void*)transferred;
-                    return OSStatus_noErr;
+                    return OSStatus.NoErr;
                 }
             }
             catch (Exception e)
             {
                 if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(context, $"ReadFromConnectionfailed: {e.Message}");
-                return OSStatus_readErr;
+                return OSStatus.ReadErr;
             }
         }
 
         internal void Write(ReadOnlySpan<byte> buf)
         {
-            lock (_sslContext)
+            lock (_lock)
             {
                 _inputBuffer.EnsureAvailableSpace(buf.Length);
                 buf.CopyTo(_inputBuffer.AvailableSpan);
@@ -309,7 +308,7 @@ namespace System.Net
 
         internal void ReadPendingWrites(ref ProtocolToken token)
         {
-            lock (_sslContext)
+            lock (_lock)
             {
                 if (_outputBuffer.ActiveLength == 0)
                 {
@@ -331,7 +330,7 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
-            lock (_sslContext)
+            lock (_lock)
             {
                 int limit = Math.Min(count, _outputBuffer.ActiveLength);
 
@@ -370,7 +369,12 @@ namespace System.Net
         {
             Debug.Assert(sslContext != null);
 
-            IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates.Count + 1];
+            const int StackallocThreshold = 128;
+
+            int certCount = context!.IntermediateCertificates.Count + 1;
+            Span<IntPtr> ptrs = certCount <= StackallocThreshold ?
+                stackalloc IntPtr[certCount] :
+                new IntPtr[certCount];
 
             for (int i = 0; i < context.IntermediateCertificates.Count; i++)
             {
@@ -393,6 +397,19 @@ namespace System.Net
             ptrs[0] = context!.TargetCertificate.Handle;
 
             Interop.AppleCrypto.SslSetCertificate(sslContext, ptrs);
+        }
+
+        private static void ValidateAlpnProtocolListSize(List<SslApplicationProtocol> applicationProtocols)
+        {
+            int protocolListSize = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                protocolListSize += protocol.Protocol.Length + 1;
+                if (protocolListSize > ushort.MaxValue)
+                {
+                    throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
+                }
+            }
         }
     }
 }

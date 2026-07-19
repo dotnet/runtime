@@ -75,7 +75,7 @@ namespace Internal.NativeFormat
         Null                        = 0x00,
         TypeHandle                  = 0x01,
         InterfaceCall               = 0x02,
-        // unused                   = 0x03,
+        GvmDispatchCell             = 0x03,
         MethodDictionary            = 0x04,
         StaticData                  = 0x05,
         UnwrapNullableType          = 0x06,
@@ -98,9 +98,9 @@ namespace Internal.NativeFormat
         // unused                   = 0x17,
         // unused                   = 0x18,
         // unused                   = 0x19,
-        // unused                   = 0x20,
+        NonGenericInstanceConstrainedMethod = 0x20,
         NonGenericStaticConstrainedMethod = 0x21,
-        GenericStaticConstrainedMethod = 0x22,
+        GenericConstrainedMethod = 0x22,
 
         NotYetSupported             = 0xee,
     }
@@ -178,6 +178,8 @@ namespace Internal.NativeFormat
         HasInstantiation            = 0x1,
         IsUnboxingStub              = 0x2,
         HasFunctionPointer          = 0x4,
+        IsAsyncVariant              = 0x8,
+        IsReturnDroppingAsyncThunk  = 0x10,
     };
 
     [Flags]

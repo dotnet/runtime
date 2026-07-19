@@ -31,6 +31,8 @@ The LoongArch64 ABI documentation is [here](https://github.com/loongson/LoongArc
 
 The RISC-V ABIs Specification: [latest release](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/releases/latest), [latest draft](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/releases), [document source repo](https://github.com/riscv-non-isa/riscv-elf-psabi-doc).
 
+Web Assembly Basic C ABI: [Basic C ABI](https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md)
+
 # General Unwind/Frame Layout
 
 For all non-x86 platforms, all methods must have unwind information so the garbage collector (GC) can unwind them (unlike native code in which a leaf method may be omitted).
@@ -114,14 +116,15 @@ To return `Continuation` we use a volatile/calee-trash register that cannot be u
 | arm | r2  |
 | arm64  | x2  |
 | risc-v  | a2  |
+| loongarch64  | a2  |
 
 ### Passing `Continuation` argument
-The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present.
+The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present. For x86 the argument order is reversed.
 
 ```
 call(["this" pointer] [return buffer pointer] [generics context] [continuation] [userargs])   // not x86
 
-call(["this" pointer] [return buffer pointer] [userargs] [generics context] [continuation])   // x86
+call(["this" pointer] [return buffer pointer] [userargs] [continuation] [generics context])   // x86
 ```
 
 ## AMD64-only: by-value value types
@@ -142,7 +145,7 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 ## Hidden parameters
 
-*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R4` / (ARM NativeAOT ABI) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
+*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
 
 *Calli Pinvoke* - The VM wants the address of the PInvoke in (AMD64) `R10` / (ARM) `R12` / (ARM64) `R14` (In the JIT: `REG_PINVOKE_TARGET_PARAM`), and the signature (the pinvoke cookie) in (AMD64) `R11` / (ARM) `R4` / (ARM64) `R15` (in the JIT: `REG_PINVOKE_COOKIE_PARAM`).
 
@@ -382,7 +385,7 @@ When a funclet finishes execution, and the VM returns execution to the function 
 
 Any register value changes made in the funclet are lost. If a funclet wants to make a variable change known to the main function (or the funclet that contains the "try" region), that variable change needs to be made to the shared main function stack frame. This not a fundamental limitation. If necessary, the runtime can be updated to preserve non-volatile register changes made in funclets.
 
-Funclets are not required to preserve non-volatile registers.
+Funclets are not required to preserve non-volatile registers that are saved by the main method body.
 
 # EH Info, GC Info, and Hot & Cold Splitting
 
@@ -537,6 +540,26 @@ The extra state created by the JIT for synchronized methods (lock taken flag) mu
 
 EnC is supported for adding and editing generic methods and methods on generic types and generic methods on non-generic types.
 
+## Async methods
+
+The JIT saves the current `Thread`, `ExecutionContext` and `SynchronizationContext` in runtime async methods and these must be preserved during remap. The new GC encoder includes the state in the EnC frame header size, while for JIT32 the EE expects this state to exist when `CORINFO_ASYNC_SAVE_CONTEXTS` was reported to the JIT from `getMethodInfo`.
+
+# Portable entrypoints
+
+On platforms that allow dynamic code generation, the runtime abstracts away execution strategies for dynamically loaded methods by allocating [`Precode`](method-descriptor.md#precode)s. The `Precode` is a small code fragment that is used as a temporary method entrypoint until the actual method code is acquired. `Precode`s are also used as part of the execution for methods that do not have regular JITed or AOT-compiled code, for example stubs or interpreted methods. `Precode`s allow native code to use the same native code calling convention irrespective of the execution strategy used by the target method.
+
+On platforms that do not allow dynamic code generation (Wasm), the runtime abstracts away execution strategies by allocating portable entrypoints for dynamically loaded methods. The `PortableEntryPoint` is a data structure that allows efficient transition to the desired execution strategy for the target method. When the runtime is configured to use portable entrypoints, the managed calling convention is modified as follows:
+
+- The native code to call is obtained by dereferencing the entrypoint
+
+- The entrypoint address is passed in as an extra last hidden argument. The extra hidden argument must be present in signatures of all methods. It is unused by the code of JITed or AOT-compiled methods.
+
+Pseudo code for a call with portable entrypoints:
+
+> `(*(void**)pfn)(arg0, arg1, ..., argN, pfn)`
+
+Portable entrypoints are used by CoreCLR Wasm for both interpreted methods and ReadyToRun methods. For Wasm ReadyToRun, the first field of the `PortableEntryPoint` is the Wasm function table index used by `call_indirect`; it may name either the method's R2R body or an interpreter transition thunk. Portable entrypoints are unnecessary for Wasm with native AOT since native AOT does not support dynamic loading.
+
 # System V x86_64 support
 
 This section relates mostly to calling conventions on System V systems (such as Ubuntu Linux and Mac OS X).
@@ -662,3 +685,291 @@ MyStruct Test2()
 	return default;
 }
 ```
+
+# Interpreter ABI details
+
+The interpreter data stack is separately allocated from the normal "thread" stack, and it grows UP. The interpreter execution control stack is allocated on the "thread" stack, as a series of `InterpMethodContextFrame` values that are linked in a singly linked list onto an `InterpreterFrame` which is placed onto the Frame chain of the thread. `InterpMethodContextFrame` structures are always allocated in descending order so that a callee method's associated `InterpMethodContextFrame` is always located lower in memory compared to its caller or the containing `InterpreterFrame`.
+
+The base stack pointer within a method never changes, but when a function is called in the interpreter it will have a stack pointer which is associated with the set of arguments passed. In effect argument passing is done by giving a portion of the temporary args space of the caller function to the callee.
+
+All instructions and GC that address the stack pointer are relative to the current stack pointer, which does not move. This requires that implementations of the localloc instruction actually allocate the memory on the heap, and localloc'd memory is not actually tied to the data stack in any way.
+
+The stack pointer in all interpreter functions is always aligned on a `INTERP_STACK_ALIGNMENT` boundary. Currently this is a 16 byte alignment requirement.
+
+The stack elements are always aligned to at least `INTERP_STACK_SLOT_SIZE` and never more than `INTERP_STACK_ALIGNMENT` Given that today's implementation sets `INTERP_STACK_SLOT_SIZE` to 8 and `INTERP_STACK_ALIGNMENT` to 16, this implies all data on the stack is either aligned at an 8 or 16 byte alignment.
+
+Primitive types smaller than 4 bytes are always zero or sign extended to 4 bytes when on the stack.
+
+When a function is async it will have a continuation return. This return is not done using the data stack, but instead is done by setting the Continuation field in the `InterpreterFrame`. Thunks are responsible for setting/resetting this value as we enter/leave code compiled by the JIT.
+
+# Web Assembly ABI (R2R and JIT)
+
+For managed methods compiled to Web Assembly (hereafter "managed code") the CLR generally follows the [Wasm Basic C ABI](https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md).
+
+Managed code uses the same linear stack as C code. The stack grows down.
+
+## Incoming argument ABI
+
+The linear stack pointer `$sp` is the first argument to all methods. At a native->managed transition it is the value of the `$__stack_pointer` global. This global may be updated to the current `$sp` within managed code, and must be up to date with the current `$sp` at managed->native boundaries. Within the method the stack pointer always points at the bottom (lowest address) of the stack; generally this is a fixed offset from the value the stack pointer held on entry, except in methods that can do dynamic allocation.
+
+A frame pointer, if used, points at the bottom of the "fixed" portion of the stack to facilitate use of Wasm addressing modes, which only allow positive offsets.
+
+Arguments and return values are processed via the Type Lowering algorithm below.
+
+If a struct is returned via a hidden buffer, the address is supplied by the caller and passed just after the managed `this`, or after `$sp` argument when `this` is not present. In such cases the return value of the method is the address of the return value. But if the struct can be passed on the Wasm stack it is returned on the Wasm stack per the Type Lowering rules.
+
+(TBD: ABI for vector types)
+
+### Type Lowering
+
+Managed types are lowered to WebAssembly value types according to the following rules
+(implemented in `WasmLowering.LowerToAbiType` and `WasmLowering.LowerType`):
+
+| Managed type | Wasm value type |
+|---|---|
+| `bool`, `char`, `sbyte`, `byte`, `short`, `ushort`, `int`, `uint` | `i32` |
+| `long`, `ulong` | `i64` |
+| `float` | `f32` |
+| `double` | `f64` |
+| `nint`, `nuint`, pointer, byref, function pointer | `i32` (pointer-sized) |
+| Reference types (class, string, array, szarray, interface) | `i32` (pointer-sized) |
+| Value type (struct) — single primitive field, no padding | Unwrap recursively to the field's wasm type |
+| Value type (struct) — single field with padding, multiple fields, or SIMD type | Passed by reference (`i32` pointer) |
+| Empty struct (zero instance fields) | Not currently elided; since .NET empty structs have size 1, they are treated as non-unwrappable structs and passed by reference.|
+
+**Struct unwrapping** is recursive: a struct containing a single struct field, where the inner struct
+has the same size as the outer, is unwrapped until a primitive is reached or the rule no longer applies.
+For example, a struct `Wrapper { Inner value; }` where `Inner { int x; }` is unwrapped all the way
+to `i32`.
+
+A struct is **not** unwrapped when:
+- It has more than one instance field.
+- It has exactly one instance field but the field's size differs from the struct's size (i.e., the
+  struct has padding due to explicit layout or alignment attributes).
+
+Structs that cannot be unwrapped, including SIMD types for now, are passed by reference. The caller
+allocates space on the linear stack and passes a pointer. For return values, the caller provides a
+hidden return buffer pointer.
+
+### Prolog
+
+The prolog will decrement the stack pointer by the fixed frame size, home any arguments that are stored on the linear stack, and zero initialize slots on the linear stack as appropriate. It will establish a frame pointer if one is needed.
+
+So on exit from the prolog the stack pointer (`$sp`) will point to the bottom of the fixed part of the stack frame. The frame pointer (`$fp`) if used, will also point to the bottom of fixed part of the stack frame. `$sp` and `$fp` will only differ in methods that can allocate extra storage on the stack at runtime (typically from `localloc`). The stack is kept 16 byte aligned.
+
+### R2R stack frame layout
+
+R2R methods and funclets that can be interrupted by GC or EH have an unwindable frame. This includes methods and funclets that contain calls. The Wasm unwind blob for each R2R function or funclet contains two ULEB128 values:
+
+1. The fixed frame size in bytes.
+2. The virtual IP span for the function or funclet, encoded in units of 2.
+
+The runtime recovers the current R2R virtual IP from the current managed `$sp`. The low bit of virtual IP values is reserved to distinguish virtual IPs from interpreter addresses and portable entrypoints, so function-local virtual IPs are stored divided by 2 in the frame and multiplied by 2 by the runtime.
+
+For a main R2R method, the fixed frame begins at `$fp`. If the method does not use `localloc`, `$fp` and `$sp` are the same local after the prolog. If the method uses `localloc`, `$fp` remains at the bottom of the fixed frame and `$sp` can move below it. The first two pointer-sized slots are reserved for unwind lookup:
+
+| Offset from `$fp` | Contents |
+|---:|---|
+| `0` | R2R function table entry index for the main method body |
+| `TARGET_POINTER_SIZE` | Function-local virtual IP divided by 2 |
+| `2 * TARGET_POINTER_SIZE` and above | Other frame locals and spills |
+
+The main method prolog stores the function table entry index at `$fp[0]`. The JIT updates the virtual IP slot at block boundaries that can be observed by GC or EH. For the main method this update is a store to the special virtual-IP local, which is allocated at `$fp + TARGET_POINTER_SIZE`.
+
+Frames with `localloc` use the same fixed-frame unwind data. When a nonzero `localloc` moves `$sp` below `$fp`, the JIT reserves one aligned slot below the allocation and writes `0` at `$sp[0]` and the fixed frame pointer at `$sp + TARGET_POINTER_SIZE`.
+
+| Location | Contents |
+|---|---|
+| caller frame | caller's frame |
+| `$fp + 2 * TARGET_POINTER_SIZE` and above | other fixed frame locals and spills |
+| `$fp + TARGET_POINTER_SIZE` | function-local virtual IP divided by 2 |
+| `$fp` | R2R function table entry index |
+| below `$fp` | dynamic `localloc` allocation |
+| `$sp + TARGET_POINTER_SIZE` | saved `$fp` |
+| `$sp` | `0` marker |
+
+Funclets are separate Wasm functions. A funclet is called with the current managed `$sp` and the parent method's `$fp`; catch handlers also receive the exception object. The funclet's `$fp` local is the parent method frame pointer, so the funclet can address locals shared with the main method. If the funclet itself needs an unwindable frame, its prolog allocates a small frame below the incoming `$sp`:
+
+| Offset from funclet `$sp` after prolog | Contents |
+|---:|---|
+| `0` | R2R function table entry index for the funclet |
+| `TARGET_POINTER_SIZE` | Function-local virtual IP divided by 2 |
+
+The funclet updates its virtual IP slot by storing through its current `$sp`, not through the parent `$fp`. The stored virtual IP value is still relative to the controlling main method's virtual-IP base; when the frame's function table index names a funclet, the runtime uses the controlling main method's runtime-function entry as the virtual-IP base before adding the stored offset. A frame whose first word is `0` means the current `$sp` is not the R2R frame base, and the next word holds the saved `$fp`. A frame whose first word is `TERMINATE_R2R_STACK_WALK` terminates R2R stack walking.
+
+One step of R2R stack walking is:
+
+```c
+uint32_t NormalizeFrameBase(uint32_t sp)
+{
+    // The linear stack starts at 0x1000
+    if (sp <= 0x1000)
+        return 0;
+
+    // Current SP is not the R2R frame base; follow the saved FP.
+    if (read32(sp) == 0)
+        sp = read32(sp + TARGET_POINTER_SIZE);
+
+    // non-R2R frame
+    if (read32(sp) == TERMINATE_R2R_STACK_WALK)
+        return 0;
+
+    return sp;
+}
+
+bool WalkOneR2RFrame(uint32_t currentSp, out uint32_t nextSp, out uint32_t currentVirtualIP)
+{
+    uint32_t frameBase = NormalizeFrameBase(currentSp);
+    if (frameBase == 0)
+        return false;
+
+    uint32_t functionIndex = read32(frameBase);
+    uint32_t localVirtualIP = 2 * read32(frameBase + TARGET_POINTER_SIZE);
+
+    RuntimeFunction function = RuntimeFunctionFor(functionIndex);
+    RuntimeFunction baseFunction = function.IsFunclet ? ControllingMainFunction(function) : function;
+    currentVirtualIP = baseFunction.VirtualIPBase + localVirtualIP;
+
+    uint32_t frameSize = ReadFrameSizeFromWasmUnwindBlob(function);
+    nextSp = frameBase + frameSize;
+    return true;
+}
+```
+
+### Epilog
+
+Generally epilogs will be empty. There is no notion of callee-save registers in Wasm, and no other global state to update.
+
+## Outgoing call ABI
+
+Wasm ReadyToRun uses the Portable Entry Point feature to interoperate with interpreted code. When portable entrypoints are enabled, managed call signatures include an extra final `i32` argument containing the portable entrypoint address (`pep_ptr`). Thus a managed method like `int F(int x)` has the Wasm signature `(func (param i32 i32 i32) (result i32))`: `$sp`, `x`, and `pep_ptr`.
+
+The full managed parameter order is:
+
+```
+$sp, [this], [retbuf], [generic context], [async continuation], [user args...], pep_ptr
+```
+
+The hidden return buffer is present only when the lowered return type is a struct that would be passed by reference if it was an argument. The buffer pointer is passed after `this` if present, otherwise after `$sp`.
+
+The call sequence is:
+
+```
+local.get sp
+push arg 0
+...
+push arg N-1
+load PortableEntryPointPtr   ;; pushes address of portable entrypoint (pep_ptr)
+local.tee pep_ptr
+local.get pep_ptr
+i32.load offset=0            ;; load _pActualCode, a Wasm function table index
+call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) arg0... argN-1 int32 (pep_ptr))
+```
+
+The first field of `PortableEntryPoint` (`_pActualCode`, offset 0) is the function table index used for the indirect call. When an R2R method body is loaded, the runtime sets `_pActualCode` to that body's function table index. When the target must run in the interpreter, `MethodDesc::EnsurePortableEntryPointIsCallableFromR2R` installs an R2R-to-interpreter thunk in `_pActualCode`.
+
+Virtual, interface, and delegate calls differ only in how they obtain `pep_ptr`; once the portable entrypoint address is available, they use the same final argument and `call_indirect` sequence. Direct managed R2R-to-R2R calls still use the portable-entrypoint calling convention so that the same call site can target either native R2R code or an interpreter thunk.
+
+## GC References at Call Sites
+
+Wasm does not allow for outside access to the Wasm stack. So, before call sites that may trigger GC, all GC references live after the call (and all untracked GC references, which are effectively always live) must be saved to the linear stack. These GC references will be reported as pinned to the GC so that if they normally live in Wasm locals those locals do not need to be updated after the call. The live GC slots on the linear stack are identified by the virtual IP stored in the R2R frame and the GC info for the corresponding R2R method body or funclet.
+
+So for example if we have code like `x(a, y(b)); ... a; ... b;` where `a` and `b` are gc refs that initially are in Wasm locals, this fragment would compile into something like
+```
+;; sp for call to x
+local.get sp
+
+;; spill a to linear memory
+local.get sp
+local.get a
+i32.store offset=(a's offset in gc area of stack)
+
+;; arg a for call to x
+local.get a
+
+;; sp for call to y
+local.get sp
+
+;; spill b to linear memory
+local.get sp
+local.get b
+i32.store offset=(b's offset in gc area of stack)
+
+;; arg b for call to y
+local.get b
+
+;; update virtual IP for call to y with live gc refs
+local.get sp
+i32.const virtual-ip-for-call-to-y  (gc info : a and b slots live)
+i32.store offset=(virtual-ip offset)
+
+;; fetch pep_ptr for y and actual-code table index from pep_ptr, call y
+load PortableEntryPointPtr for y
+dup
+load _pActualCode (from pep_ptr)
+call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) int32 int32 (pep_ptr) : returns int32)
+
+;; update virtual IP for call to x with live gc refs [can be optimized out]
+local.get sp
+i32.const virtual-ip-for-call-to-x (gc info : a and b slots live)
+i32.store offset=(virtual-ip offset)
+
+;; fetch pep_ptr for x and actual-code table index from pep_ptr, call x
+load PortableEntryPointPtr for x
+dup
+load _pActualCode (from pep_ptr)
+call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) int32 int32 (pep_ptr) : returns int32)
+```
+Notes:
+* As an optimization, we can avoid updating the virtual IP when the GC/EH info it refers to is unchanged from the last update.
+* We may want to un-nest calls, relying on a Wasm local instead of the Wasm stack to convey nested call results to the parent call.
+* As an optimization, we will try and minimize storing gc refs to the linear stack (eg if the value already there hasn't changed from the last update).
+* As an optimization, we may try and have some gc refs primarily live on the linear stack, and not be held in Wasm locals.
+
+## Tail Calls
+
+For tail calls the only differences are the use of the `return_call_indirect` in the call, and passing the original `sp` value to the callee:
+```
+local.get sp
+i32.const <frameSize>
+i32.add
+
+push arg 0
+...
+push arg N-1
+load PortableEntryPointPtr
+dup
+load _pActualCode (from pep_ptr)
+return_call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) arg0... argN-1 int32 (pep_ptr))
+```
+and similarly for indirect managed calls.
+
+## PInvoke
+
+PInvoke will re-establish `$__stack_pointer` before calling the target.
+
+## Reverse PInvoke
+
+Reverse PInvoke prolog will load the global `$__stack_pointer` and use it as the managed `sp`.
+
+On return the global `$__stack_pointer` is reset to the value it had on stub entry.
+
+## Async
+
+TBD
+
+## Interpreter Stubs
+
+There are stubs involved in both R2R-to-interpreter and interpreter-to-R2R calls. For R2R, crossgen2 emits these stubs into the R2R image so the runtime can transition between execution modes without generating code dynamically.
+
+### Interpreted -> Managed
+
+The interpreter-to-R2R thunk has the fixed thunk signature `(portableEntryPoint, pArgs, pRet) -> void`. The thunk saves the current `$__stack_pointer`, allocates a small R2R frame, loads `$sp`, the lowered arguments from `pArgs`, and the portable entrypoint as the final `pep_ptr` argument, then loads `_pActualCode` from the portable entrypoint and invokes the target with `call_indirect`.
+
+On return it stores the Wasm return value, if any, into `pRet`, zero-pads struct return buffers as needed, and restores `$__stack_pointer` to the value it had on thunk entry.
+
+### Managed->Interpreted
+
+The R2R-to-interpreter thunk has the same Wasm signature as the managed target, including `$sp` first and `pep_ptr` last. The thunk allocates a transition block and argument area on the managed linear stack, stores all lowered arguments into that area, saves and updates `$__stack_pointer`, and calls `READYTORUN_HELPER_R2RToInterpreter`, implemented by `ExecuteInterpretedMethodWithArgs_PortableEntryPoint`.
+
+For non-struct returns, the thunk uses a local return buffer for the helper and then reloads the Wasm return value from that buffer. For struct returns, the caller-provided hidden return buffer is passed through to the interpreter helper.

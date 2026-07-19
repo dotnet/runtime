@@ -21,22 +21,7 @@
 
 #ifndef _MSC_VER
 #define __stdcall
-#ifdef __GNUC__
-#define __forceinline __attribute__((always_inline)) inline
-#else // __GNUC__
-#define __forceinline inline
-#endif // __GNUC__
-// [LOCALGC TODO] is there a better place for this?
-#define NOINLINE __attribute__((noinline))
-#else // !_MSC_VER
-#define NOINLINE __declspec(noinline)
 #endif // _MSC_VER
-
-#ifdef _MSC_VER
-#define __UNREACHABLE() __assume(0)
-#else
-#define __UNREACHABLE() __builtin_unreachable()
-#endif
 
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX ((size_t)-1)
@@ -88,13 +73,10 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define FALSE false
 
 #define CALLBACK __stdcall
-#define FORCEINLINE __forceinline
 
 #define INFINITE 0xFFFFFFFF
 
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-#define C_ASSERT(cond) static_assert( cond, #cond )
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 
@@ -103,12 +85,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define sprintf_s snprintf
 #define _snprintf_s(string, sizeInBytes, count, format, ...) \
   snprintf(string, sizeInBytes, format, ## __VA_ARGS__)
-#endif
-
-#ifdef UNICODE
-#define _tfopen _wfopen
-#else
-#define _tfopen fopen
 #endif
 
 #define WINAPI __stdcall
@@ -450,19 +426,12 @@ typedef DPTR(uint8_t)   PTR_uint8_t;
 #define DATA_ALIGNMENT sizeof(uintptr_t)
 #define RAW_KEYWORD(x) x
 
-#ifdef _MSC_VER
-#define DECLSPEC_ALIGN(x)   __declspec(align(x))
-#else
-#define DECLSPEC_ALIGN(x)   __attribute__((aligned(x)))
-#endif
-
 #ifndef _ASSERTE
 #define _ASSERTE(_expr) ASSERT(_expr)
 #endif
 #define CONSISTENCY_CHECK(_expr) ASSERT(_expr)
 #define COMPILER_ASSUME(cond) ASSERT(cond)
 #define EEPOLICY_HANDLE_FATAL_ERROR(error) ASSERT(!"EEPOLICY_HANDLE_FATAL_ERROR")
-#define UI64(_literal) _literal##ULL
 
 class ObjHeader;
 class MethodTable;

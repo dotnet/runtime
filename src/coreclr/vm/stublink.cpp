@@ -90,16 +90,6 @@ struct LabelRef : public CodeElement
     LabelRef            *m_nextLabelRef;
 };
 
-#ifdef TARGET_ARM
-void StubLinker::DescribeProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL fPushArgRegs)
-{
-    m_fProlog = TRUE;
-    m_cCalleeSavedRegs = cCalleeSavedRegs;
-    m_cbStackFrame = cbStackFrame;
-    m_fPushArgRegs = fPushArgRegs;
-}
-#endif // TARGET_ARM
-
 //************************************************************************
 // StubLinker
 //************************************************************************
@@ -122,12 +112,6 @@ StubLinker::StubLinker()
     m_pTargetMethod     = NULL;
     m_stackSize         = 0;
     m_fDataOnly         = FALSE;
-#ifdef TARGET_ARM
-    m_fProlog           = FALSE;
-    m_cCalleeSavedRegs  = 0;
-    m_cbStackFrame      = 0;
-    m_fPushArgRegs      = FALSE;
-#endif
 }
 
 
@@ -571,10 +555,10 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags, const char *stubType)
 
     _ASSERTE(!pHeap || pHeap->IsExecutable());
 
-    StubHolder<Stub> pStub = Stub::NewStub(
+    StubHolder<Stub> pStub{ Stub::NewStub(
                 pHeap,
                 size,
-                flags);
+                flags) };
     ASSERT(pStub != NULL);
 
     EmitStub(pStub, globalsize, size, pHeap);
@@ -583,7 +567,7 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags, const char *stubType)
     PerfMap::LogStubs(__FUNCTION__, stubType, pStub->GetEntryPoint(), pStub->GetNumCodeBytes(), PerfMapStubType::Individual);
 #endif
 
-    return pStub.Extract();
+    return pStub.Detach();
 }
 
 int StubLinker::CalculateSize(int* pGlobalSize)
@@ -819,7 +803,7 @@ void StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
 // is defined - it is not included in all places where stublink.h
 // is consumed.
 class Stub;
-static_assert_no_msg((sizeof(Stub) % CODE_SIZE_ALIGN) == 0);
+static_assert((sizeof(Stub) % CODE_SIZE_ALIGN) == 0);
 
 //-------------------------------------------------------------------
 // Inc the refcount.

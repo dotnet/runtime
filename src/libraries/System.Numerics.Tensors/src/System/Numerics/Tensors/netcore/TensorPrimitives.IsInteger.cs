@@ -1,9 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
@@ -67,17 +64,10 @@ namespace System.Numerics.Tensors
         {
             public static bool Invoke(T x) => T.IsInteger(x);
 
-#if NET10_0_OR_GREATER
             public static bool Vectorizable => true;
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsInteger(x);
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsInteger(x);
             public static Vector512<T> Invoke(Vector512<T> x) => Vector512.IsInteger(x);
-#else
-            public static bool Vectorizable => false;
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
-#endif
         }
     }
 }

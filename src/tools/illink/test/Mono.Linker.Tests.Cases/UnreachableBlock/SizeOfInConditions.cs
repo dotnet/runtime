@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 #if NET
     [SetupLinkerSubstitutionFile("SizeOfInConditions.netcore.xml")]
 #else
-	[SetupLinkerSubstitutionFile ("SizeOfInConditions.net_4_x.xml")]
+    [SetupLinkerSubstitutionFile("SizeOfInConditions.net_4_x.xml")]
 #endif
     [SetupCompileArgument("/unsafe")]
     [SetupLinkerArgument("--enable-opt", "ipconstprop")]

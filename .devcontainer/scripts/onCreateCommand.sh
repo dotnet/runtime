@@ -31,7 +31,7 @@ case "$opt" in
 
     android)
         # prebuild the repo for Mono, so it is ready for development
-        ./build.sh mono+libs -os android
+        ./build.sh mono+libs+clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages -os android
         # restore libs tests so that the project is ready to be loaded by OmniSharp
         ./build.sh libs.tests -restore
     ;;

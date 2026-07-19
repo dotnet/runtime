@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/gen/">
+    <Project Path="../../../eng/analyzers/PlatformDocAnalyzer/PlatformDocAnalyzer.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Microsoft.NETCore.Platforms.csproj" />
   </Folder>

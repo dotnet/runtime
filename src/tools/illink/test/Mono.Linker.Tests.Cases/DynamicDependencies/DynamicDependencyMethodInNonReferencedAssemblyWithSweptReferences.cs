@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
     [SetupCompileBefore("reference.dll", new[] { "Dependencies/AssemblyDependency.cs" }, addAsReference: false)]
     [SetupCompileBefore("library.dll", new[] { "Dependencies/AssemblyDependencyWithMultipleReferences.cs" }, new[] { "reference.dll", "unusedreference.dll" }, addAsReference: false)]
     // TODO: keep library even if type is not found in it (https://github.com/dotnet/linker/issues/1795)
-    // [KeptAssembly ("library")]
+    // [KeptAssembly("library")]
     public class DynamicDependencyMethodInNonReferencedAssemblyWithSweptReferences
     {
         public static void Main()

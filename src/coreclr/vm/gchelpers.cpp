@@ -29,6 +29,7 @@
 #include "gchelpers.inl"
 #include "eeprofinterfaces.inl"
 #include "frozenobjectheap.h"
+#include "cdacstress.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -55,7 +56,7 @@ EXTERN_C ee_alloc_context* GetThreadEEAllocContext()
 //  numElements     -  number of array elements
 //  pTransitionBlock-  transition frame to make stack crawlable
 // Returns a pointer to the object allocated or NULL on failure.
-EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, GC_ALLOC_FLAGS uFlags, uintptr_t numElements, TransitionBlock* pTransitionBlock)
+EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, GC_ALLOC_FLAGS uFlags, intptr_t numElements, TransitionBlock* pTransitionBlock)
 {
     OBJECTREF newobj = NULL;
 
@@ -66,6 +67,7 @@ EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, GC_ALLOC_FLAGS uFlags, uintptr_t n
 
     pFrame->Push(CURRENT_THREAD);
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -108,13 +110,14 @@ EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, GC_ALLOC_FLAGS uFlags, uintptr_t n
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pFrame->Pop(CURRENT_THREAD);
 
     return OBJECTREFToObject(newobj);
 }
 
-EXTERN_C Object* RhpGcAllocMaybeFrozen(MethodTable* pMT, uintptr_t numElements, TransitionBlock* pTransitionBlock)
+EXTERN_C Object* RhpGcAllocMaybeFrozen(MethodTable* pMT, intptr_t numElements, TransitionBlock* pTransitionBlock)
 {
     OBJECTREF newobj = NULL;
 
@@ -125,6 +128,7 @@ EXTERN_C Object* RhpGcAllocMaybeFrozen(MethodTable* pMT, uintptr_t numElements, 
 
     pFrame->Push(CURRENT_THREAD);
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -164,6 +168,7 @@ EXTERN_C Object* RhpGcAllocMaybeFrozen(MethodTable* pMT, uintptr_t numElements, 
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pFrame->Pop(CURRENT_THREAD);
 
@@ -179,6 +184,7 @@ EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool
 
     pFrame->Push(CURRENT_THREAD);
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -190,6 +196,7 @@ EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pFrame->Pop(CURRENT_THREAD);
 }
@@ -411,6 +418,8 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
         }
     }
 
+    CdacStress<cdac_on_alloc>::MaybeVerify();
+
     GCStress<gc_on_alloc>::MaybeTrigger(pAllocContext);
 
     // for SOH, if there is enough space in the current allocation context, then
@@ -477,6 +486,7 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
     if (GCHeapUtilities::UseThreadAllocationContexts())
     {
         ee_alloc_context *threadContext = GetThreadEEAllocContext();
+        CdacStress<cdac_on_alloc>::MaybeVerify();
         GCStress<gc_on_alloc>::MaybeTrigger(&threadContext->m_GCAllocContext);
         retVal = Alloc(threadContext, size, flags);
     }
@@ -484,6 +494,7 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
     {
         GlobalAllocLockHolder holder(&g_global_alloc_lock);
         ee_alloc_context *globalContext = &g_global_alloc_context;
+        CdacStress<cdac_on_alloc>::MaybeVerify();
         GCStress<gc_on_alloc>::MaybeTrigger(&globalContext->m_GCAllocContext);
         retVal = Alloc(globalContext, size, flags);
     }
@@ -687,7 +698,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
 
     // Initialize Object
-    orArray->m_NumComponents = cElements;
+    orArray->SetNumComponents(cElements);
 
     PublishObjectAndNotify(orArray, flags);
     return ObjectToOBJECTREF((Object*)orArray);
@@ -752,7 +763,7 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
     ArrayBase* orArray = static_cast<ArrayBase*>(
         foh->TryAllocateObject(pArrayMT, PtrAlign(totalSize), [](Object* obj, void* elemCntPtr){
             // Initialize newly allocated object before publish
-            static_cast<ArrayBase*>(obj)->m_NumComponents = *static_cast<DWORD*>(elemCntPtr);
+            static_cast<ArrayBase*>(obj)->SetNumComponents(*static_cast<DWORD*>(elemCntPtr));
         }, &cElements));
 
     if (orArray == nullptr)
@@ -935,7 +946,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     }
 
     // Initialize Object
-    orArray->m_NumComponents = cElements;
+    orArray->SetNumComponents(cElements);
     if (kind == ELEMENT_TYPE_ARRAY)
     {
         INT32 *pCountsPtr      = (INT32 *) orArray->GetBoundsPtr();
@@ -1568,21 +1579,6 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
 HCIMPLEND_RAW
 
 #endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS
-
-extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref)
-{
-    // Must use static contract here, because if an AV occurs, a normal EH
-    // unwind will not occur, and destructors will not run.
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    assert(!GCHeapUtilities::GetGCHeap()->IsHeapPointer((void*)dst));
-
-    // not a release store because NonHeap.
-    *dst = ref;
-}
-HCIMPLEND_RAW
 
 // This function sets the card table with the granularity of 1 byte, to avoid ghost updates
 //    that could occur if multiple threads were trying to set different bits in the same card.

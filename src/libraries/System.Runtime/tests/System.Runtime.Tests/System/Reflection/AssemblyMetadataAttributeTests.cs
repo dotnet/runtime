@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         [InlineData(null, null)]
         [InlineData("", "")]
         [InlineData("key", "value")]
-        public void Ctor_String_String(string key, string value)
+        public void Ctor_String_String(string? key, string? value)
         {
             var attribute = new AssemblyMetadataAttribute(key, value);
             Assert.Equal(key, attribute.Key);

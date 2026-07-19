@@ -7,12 +7,12 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.AppHost.DevServer;
 using Microsoft.WebAssembly.Diagnostics;
@@ -64,7 +64,6 @@ internal sealed class BrowserHost
         var runArgsJson = new RunArgumentsJson(applicationArguments: _args.AppArgs,
                                                runtimeArguments: _args.CommonConfig.RuntimeArguments,
                                                environmentVariables: envVars,
-                                               forwardConsoleToWS: _args.ForwardConsoleOutput ?? false,
                                                debugging: _args.CommonConfig.Debugging);
         runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
 
@@ -80,7 +79,7 @@ internal sealed class BrowserHost
                             ? aspnetUrls.Split(';', StringSplitOptions.RemoveEmptyEntries)
                             : new string[] { $"http://127.0.0.1:{_args.CommonConfig.HostProperties.WebServerPort}", "https://127.0.0.1:0" };
 
-        (ServerURLs serverURLs, IWebHost host) = await StartWebServerAsync(_args,
+        (ServerURLs serverURLs, IHost host) = await StartWebServerAsync(_args,
                                                                            urls,
                                                                            token);
 
@@ -100,37 +99,29 @@ internal sealed class BrowserHost
         await host.WaitForShutdownAsync(token);
     }
 
-    private async Task<(ServerURLs, IWebHost)> StartWebServerAsync(BrowserArguments args, string[] urls, CancellationToken token)
+    private async Task<(ServerURLs, IHost)> StartWebServerAsync(BrowserArguments args, string[] urls, CancellationToken token)
     {
-        Func<WebSocket, Task>? onConsoleConnected = null;
-        if (args.ForwardConsoleOutput ?? false)
-        {
-            WasmTestMessagesProcessor logProcessor = new(_logger);
-            onConsoleConnected = socket => RunConsoleMessagesPump(socket, logProcessor!, token);
-        }
-
         // If we are using new browser template, use dev server
         if (args.CommonConfig.UseStaticWebAssets)
         {
-            DevServerOptions devServerOptions = CreateDevServerOptions(args, urls, onConsoleConnected);
+            DevServerOptions devServerOptions = CreateDevServerOptions(args, urls);
             return await DevServer.DevServer.StartAsync(devServerOptions, _logger, token);
         }
 
         // Otherwise for old template, use web server
-        WebServerOptions webServerOptions = CreateWebServerOptions(urls, args.CommonConfig.AppPath, onConsoleConnected);
+        WebServerOptions webServerOptions = CreateWebServerOptions(args, urls);
         return await WebServer.StartAsync(webServerOptions, _logger, token);
     }
 
-    private static WebServerOptions CreateWebServerOptions(string[] urls, string appPath, Func<WebSocket, Task>? onConsoleConnected) => new
+    private static WebServerOptions CreateWebServerOptions(BrowserArguments args, string[] urls) => new
     (
-        OnConsoleConnected: onConsoleConnected,
-        ContentRootPath: Path.GetFullPath(appPath),
+        ContentRootPath: Path.GetFullPath(args.CommonConfig.AppPath),
         WebServerUseCors: true,
-        WebServerUseCrossOriginPolicy: true,
+        WebServerUseCrossOriginPolicy: args.CommonConfig.ApplyCopHeaders,
         Urls: urls
     );
 
-    private static DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls, Func<WebSocket, Task>? onConsoleConnected)
+    private static DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls)
     {
         const string staticWebAssetsV1Extension = ".StaticWebAssets.xml";
         const string staticWebAssetsV2Extension = ".staticwebassets.runtime.json";
@@ -147,17 +138,17 @@ internal sealed class BrowserHost
             var staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV2Extension);
             if (File.Exists(staticWebAssetsPath))
             {
-                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(args, urls, staticWebAssetsPath, endpointsManifest);
             }
             else
             {
                 staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV1Extension);
                 if (File.Exists(staticWebAssetsPath))
-                    devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
+                    devServerOptions = CreateDevServerOptions(args, urls, staticWebAssetsPath, endpointsManifest);
             }
 
             if (devServerOptions == null)
-                devServerOptions = CreateDevServerOptions(urls, mainAssemblyPath, endpointsManifest, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(args, urls, mainAssemblyPath, endpointsManifest);
         }
         else
         {
@@ -169,7 +160,7 @@ internal sealed class BrowserHost
             var endpointsManifest = FindFirstFileWithExtension(appPath, ".staticwebassets.endpoints.json");
 
             if (staticWebAssetsPath != null)
-                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(args, urls, staticWebAssetsPath, endpointsManifest);
 
             if (devServerOptions == null)
                 throw new CommandLineException($"Please, provide mainAssembly in hostProperties of runtimeconfig. Alternatively leave the static web assets manifest ('*{staticWebAssetsV2Extension}') in the build output directory '{appPath}' .");
@@ -178,64 +169,17 @@ internal sealed class BrowserHost
         return devServerOptions;
     }
 
-    private static DevServerOptions CreateDevServerOptions(string[] urls, string staticWebAssetsPath, string? endpointsManifest, Func<WebSocket, Task>? onConsoleConnected) => new
+    private static DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls, string staticWebAssetsPath, string? endpointsManifest) => new
     (
-        OnConsoleConnected: onConsoleConnected,
         StaticWebAssetsPath: staticWebAssetsPath,
         StaticWebAssetsEndpointsPath: endpointsManifest,
         WebServerUseCors: true,
-        WebServerUseCrossOriginPolicy: true,
+        WebServerUseCrossOriginPolicy: args.CommonConfig.ApplyCopHeaders,
         Urls: urls
     );
 
     private static string? FindFirstFileWithExtension(string directory, string extension)
         => Directory.EnumerateFiles(directory, "*" + extension).FirstOrDefault();
-
-    private async Task RunConsoleMessagesPump(WebSocket socket, WasmTestMessagesProcessor messagesProcessor, CancellationToken token)
-    {
-        byte[] buff = new byte[4000];
-        var mem = new MemoryStream();
-        try
-        {
-            while (!token.IsCancellationRequested)
-            {
-                if (socket.State != WebSocketState.Open)
-                {
-                    _logger.LogError($"Console websocket is no longer open");
-                    break;
-                }
-
-                WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token).ConfigureAwait(false);
-                if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    // tcs.SetResult(false);
-                    return;
-                }
-
-                mem.Write(buff, 0, result.Count);
-
-                if (result.EndOfMessage)
-                {
-                    string? line = Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
-                    line += Environment.NewLine;
-
-                    messagesProcessor.Invoke(line);
-                    mem.SetLength(0);
-                    mem.Seek(0, SeekOrigin.Begin);
-                }
-            }
-        }
-        catch (OperationCanceledException oce)
-        {
-            if (!token.IsCancellationRequested)
-                _logger.LogDebug($"RunConsoleMessagesPump cancelled: {oce}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Console pump failed: {ex}");
-            throw;
-        }
-    }
 
     private string[] BuildUrls(ServerURLs serverURLs, IEnumerable<string> passThroughArguments)
     {

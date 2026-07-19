@@ -32,7 +32,10 @@ namespace Wasm.Build.Tests
                 extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
             
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            // The replacement program does not use JS interop, so the JS interop assembly would be
+            // linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which calls
+            // getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             (string _, string buildOutput) = PublishProject(info, config, isNativeBuild: true);
             await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));
@@ -40,6 +43,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true)]
+        [TestCategory("native-mono")]
         public void AOTNotSupportedWithNoTrimming(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -58,6 +62,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("native-mono")]
         public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(Configuration config, bool aot)
         {
             string printFileTypeTarget = @"
@@ -90,6 +95,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("native-mono")]
         public void NativeBuildIsRequired(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -101,6 +107,19 @@ namespace Wasm.Build.Tests
 
             (string _, string output) = PublishProject(info, config, new PublishOptions(ExpectSuccess: false, AOT: aot));
             Assert.Contains("WasmBuildNative is required", output);
+        }
+
+        [Fact]
+        public async Task ZipArchiveInteropTest()
+        {
+            Configuration config = Configuration.Debug;
+            ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ZipArchiveInteropTest", extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
+            RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, TestScenario: "ZipArchiveInteropTest"));
+            Assert.Collection(
+                result.TestOutput,
+                m => Assert.Equal("Zip file created successfully.", m)
+            );
         }
     }
 }

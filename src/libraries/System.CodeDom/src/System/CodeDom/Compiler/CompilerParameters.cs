@@ -7,8 +7,6 @@ namespace System.CodeDom.Compiler
 {
     public partial class CompilerParameters
     {
-        private TempFileCollection _tempFiles;
-
         public CompilerParameters() : this(null, null)
         {
         }
@@ -60,8 +58,8 @@ namespace System.CodeDom.Compiler
 
         public TempFileCollection TempFiles
         {
-            get => _tempFiles ??= new TempFileCollection();
-            set => _tempFiles = value;
+            get => field ??= new TempFileCollection();
+            set => field = value;
         }
 
         public bool IncludeDebugInformation { get; set; }

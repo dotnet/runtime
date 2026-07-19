@@ -225,7 +225,7 @@ bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
     return false;
 }
 
-void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStart)
+void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStart, void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
     return NULL;
 }

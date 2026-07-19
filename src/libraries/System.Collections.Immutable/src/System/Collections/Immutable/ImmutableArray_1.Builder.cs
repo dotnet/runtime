@@ -540,6 +540,8 @@ namespace System.Collections.Immutable
             /// </param>
             public void RemoveAll(Predicate<T> match)
             {
+                Requires.NotNull(match, nameof(match));
+
                 List<int>? removeIndices = null;
                 for (int i = 0; i < _count; i++)
                 {
@@ -796,8 +798,8 @@ namespace System.Collections.Immutable
                     return -1;
                 }
 
-                Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
-                Requires.Range(count >= 0 && startIndex + count <= this.Count, nameof(count));
+                Requires.Range(startIndex >= 0 && startIndex <= this.Count, nameof(startIndex));
+                Requires.Range(count >= 0 && (uint)(startIndex + count) <= (uint)this.Count, nameof(count));
 
                 equalityComparer ??= EqualityComparer<T>.Default;
                 if (equalityComparer == EqualityComparer<T>.Default)

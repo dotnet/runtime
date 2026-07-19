@@ -107,7 +107,7 @@ characters.
 &#10003; **DO** name types and properties with nouns or noun phrases.
 
 &#10003; **DO** name methods and events with verbs or verb phrases. Always give
-events names that have a concept of before and after using the present particle
+events names that have a concept of before and after using the present participle
 and simple past tense. For example, an event that is raised before a `Form`
 closes should be named `Closing`. An event raised after a `Form` is closed
 should be named `Closed`.

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -20,7 +21,7 @@ namespace Internal.IL.Stubs
         /// </summary>
         public static MethodIL EmitComparerCreate(MethodDesc target)
         {
-            return EmitComparerAndEqualityComparerCreateCommon(target, "Comparer", "IComparable`1");
+            return EmitComparerAndEqualityComparerCreateCommon(target, "Comparer"u8, "IComparable`1"u8);
         }
 
         /// <summary>
@@ -28,7 +29,7 @@ namespace Internal.IL.Stubs
         /// </summary>
         public static MethodIL EmitEqualityComparerCreate(MethodDesc target)
         {
-            return EmitComparerAndEqualityComparerCreateCommon(target, "EqualityComparer", "IEquatable`1");
+            return EmitComparerAndEqualityComparerCreateCommon(target, "EqualityComparer"u8, "IEquatable`1"u8);
         }
 
         /// <summary>
@@ -36,7 +37,7 @@ namespace Internal.IL.Stubs
         /// </summary>
         public static TypeDesc GetComparerForType(TypeDesc comparand)
         {
-            return GetComparerForType(comparand, "Comparer", "IComparable`1");
+            return GetComparerForType(comparand, "Comparer"u8, "IComparable`1"u8);
         }
 
         /// <summary>
@@ -44,10 +45,10 @@ namespace Internal.IL.Stubs
         /// </summary>
         public static TypeDesc GetEqualityComparerForType(TypeDesc comparand)
         {
-            return GetComparerForType(comparand, "EqualityComparer", "IEquatable`1");
+            return GetComparerForType(comparand, "EqualityComparer"u8, "IEquatable`1"u8);
         }
 
-        private static MethodIL EmitComparerAndEqualityComparerCreateCommon(MethodDesc methodBeingGenerated, string flavor, string interfaceName)
+        private static MethodIL EmitComparerAndEqualityComparerCreateCommon(MethodDesc methodBeingGenerated, ReadOnlySpan<byte> flavor, ReadOnlySpan<byte> interfaceName)
         {
             // We expect the method to be fully instantiated
             Debug.Assert(!methodBeingGenerated.IsTypicalMethodDefinition);
@@ -76,7 +77,7 @@ namespace Internal.IL.Stubs
         /// Gets the comparer type that is suitable to compare instances of <paramref name="type"/>
         /// or null if such comparer cannot be determined at compile time.
         /// </summary>
-        private static TypeDesc GetComparerForType(TypeDesc type, string flavor, string interfaceName)
+        private static TypeDesc GetComparerForType(TypeDesc type, ReadOnlySpan<byte> flavor, ReadOnlySpan<byte> interfaceName)
         {
             TypeSystemContext context = type.Context;
 
@@ -89,19 +90,19 @@ namespace Internal.IL.Stubs
 
             if (type.IsNullable)
             {
-                return context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
+                return context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Nullable"u8.Append(flavor, "`1"u8))
                     .MakeInstantiatedType(type.Instantiation[0]);
             }
 
-            if (type.IsString && flavor == "EqualityComparer")
+            if (type.IsString && flavor.SequenceEqual("EqualityComparer"u8))
             {
-                return context.SystemModule.GetKnownType("System.Collections.Generic", "StringEqualityComparer");
+                return context.SystemModule.GetKnownType("System.Collections.Generic"u8, "StringEqualityComparer"u8);
             }
 
             if (type.IsEnum)
             {
                 // Enums have a specialized comparer that avoids boxing
-                return context.SystemModule.GetKnownType("System.Collections.Generic", $"Enum{flavor}`1")
+                return context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Enum"u8.Append(flavor, "`1"u8))
                     .MakeInstantiatedType(type);
             }
 
@@ -111,24 +112,25 @@ namespace Internal.IL.Stubs
                 return null;
             }
 
-            return context.SystemModule.GetKnownType("System.Collections.Generic", implementsInterfaceOfSelf.Value ? $"Generic{flavor}`1" : $"Object{flavor}`1")
+            return context.SystemModule.GetKnownType("System.Collections.Generic"u8,
+                implementsInterfaceOfSelf.Value ? "Generic"u8.Append(flavor, "`1"u8) : "Object"u8.Append(flavor, "`1"u8))
                 .MakeInstantiatedType(type);
         }
 
         public static TypeDesc[] GetPotentialComparersForType(TypeDesc type)
         {
-            return GetPotentialComparersForTypeCommon(type, "Comparer", "IComparable`1");
+            return GetPotentialComparersForTypeCommon(type, "Comparer"u8, "IComparable`1"u8);
         }
 
         public static TypeDesc[] GetPotentialEqualityComparersForType(TypeDesc type)
         {
-            return GetPotentialComparersForTypeCommon(type, "EqualityComparer", "IEquatable`1");
+            return GetPotentialComparersForTypeCommon(type, "EqualityComparer"u8, "IEquatable`1"u8);
         }
 
         /// <summary>
         /// Gets the set of template types needed to support loading comparers for the give canonical type at runtime.
         /// </summary>
-        private static TypeDesc[] GetPotentialComparersForTypeCommon(TypeDesc type, string flavor, string interfaceName)
+        private static TypeDesc[] GetPotentialComparersForTypeCommon(TypeDesc type, ReadOnlySpan<byte> flavor, ReadOnlySpan<byte> interfaceName)
         {
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
 
@@ -149,16 +151,16 @@ namespace Internal.IL.Stubs
 
                 ArrayBuilder<TypeDesc> universalComparers = default(ArrayBuilder<TypeDesc>);
 
-                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Nullable"u8.Append(flavor, "`1"u8))
                         .MakeInstantiatedType(type));
 
-                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Enum{flavor}`1")
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Enum"u8.Append(flavor, "`1"u8))
                     .MakeInstantiatedType(type));
 
-                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Generic{flavor}`1")
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Generic"u8.Append(flavor, "`1"u8))
                     .MakeInstantiatedType(type));
 
-                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Object{flavor}`1")
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Object"u8.Append(flavor, "`1"u8))
                     .MakeInstantiatedType(type));
 
                 return universalComparers.ToArray();
@@ -178,26 +180,26 @@ namespace Internal.IL.Stubs
 
                 return new TypeDesc[]
                 {
-                    context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
+                    context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Nullable"u8.Append(flavor, "`1"u8))
                         .MakeInstantiatedType(nullableType),
-                    context.SystemModule.GetKnownType("System.Collections.Generic", $"Object{flavor}`1")
+                    context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Object"u8.Append(flavor, "`1"u8))
                         .MakeInstantiatedType(type),
                 };
             }
 
             return new TypeDesc[]
             {
-                context.SystemModule.GetKnownType("System.Collections.Generic", $"Generic{flavor}`1")
+                context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Generic"u8.Append(flavor, "`1"u8))
                     .MakeInstantiatedType(type),
-                context.SystemModule.GetKnownType("System.Collections.Generic", $"Object{flavor}`1")
+                context.SystemModule.GetKnownType("System.Collections.Generic"u8, "Object"u8.Append(flavor, "`1"u8))
                     .MakeInstantiatedType(type),
             };
         }
 
         public static bool? ImplementsIEquatable(TypeDesc type)
-            => ImplementsInterfaceOfSelf(type, "IEquatable`1");
+            => ImplementsInterfaceOfSelf(type, "IEquatable`1"u8);
 
-        private static bool? ImplementsInterfaceOfSelf(TypeDesc type, string interfaceName)
+        private static bool? ImplementsInterfaceOfSelf(TypeDesc type, ReadOnlySpan<byte> interfaceName)
         {
             MetadataType interfaceType = null;
 
@@ -206,7 +208,7 @@ namespace Internal.IL.Stubs
                 Instantiation interfaceInstantiation = implementedInterface.Instantiation;
                 if (interfaceInstantiation.Length == 1)
                 {
-                    interfaceType ??= interfaceType = type.Context.SystemModule.GetKnownType("System", interfaceName);
+                    interfaceType ??= interfaceType = type.Context.SystemModule.GetKnownType("System"u8, interfaceName);
 
                     if (implementedInterface.GetTypeDefinition() == interfaceType)
                     {
@@ -241,7 +243,15 @@ namespace Internal.IL.Stubs
 
         public static bool CanCompareValueTypeBits(MetadataType type, MethodDesc objectEqualsMethod)
         {
+            return CanCompareValueTypeBitsUntilOffset(type, objectEqualsMethod, out int lastFieldOffset)
+                && lastFieldOffset == type.InstanceFieldSize.AsInt;
+        }
+
+        public static bool CanCompareValueTypeBitsUntilOffset(MetadataType type, MethodDesc objectEqualsMethod, out int lastFieldEndOffset)
+        {
             Debug.Assert(type.IsValueType);
+
+            lastFieldEndOffset = 0;
 
             if (type.ContainsGCPointers)
                 return false;
@@ -259,6 +269,8 @@ namespace Internal.IL.Stubs
             {
                 if (field.IsStatic)
                     continue;
+
+                lastFieldEndOffset = Math.Max(lastFieldEndOffset, field.Offset.AsInt + field.FieldType.GetElementSize().AsInt);
 
                 if (!overlappingFieldTracker.TrackField(field))
                 {
@@ -299,7 +311,7 @@ namespace Internal.IL.Stubs
             }
 
             // If there are gaps, we can't memcompare
-            if (result && overlappingFieldTracker.HasGaps)
+            if (result && overlappingFieldTracker.HasGapsBeforeOffset(lastFieldEndOffset))
                 result = false;
 
             return result;
@@ -341,18 +353,14 @@ namespace Internal.IL.Stubs
                 return true;
             }
 
-            public bool HasGaps
+            public bool HasGapsBeforeOffset(int offset)
             {
-                get
-                {
-                    for (int i = 0; i < _usedBytes.Length; i++)
-                        if (!_usedBytes[i])
-                            return true;
+                for (int i = 0; i < offset; i++)
+                    if (!_usedBytes[i])
+                        return true;
 
-                    return false;
-                }
+                return false;
             }
         }
-
     }
 }

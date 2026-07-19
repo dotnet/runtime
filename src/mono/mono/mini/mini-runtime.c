@@ -3114,6 +3114,14 @@ mono_jit_search_all_backends_for_jit_info (MonoMethod *method, MonoJitInfo **out
 	return code;
 }
 
+static gpointer
+get_method_code_start (MonoMethod *method)
+{
+	MonoJitInfo *ji = NULL;
+	gpointer code = mono_jit_search_all_backends_for_jit_info (method, &ji);
+	return ji ? mono_jit_info_get_code_start (ji) : code;
+}
+
 gpointer
 mono_jit_find_compiled_method_with_jit_info (MonoMethod *method, MonoJitInfo **ji)
 {
@@ -4496,7 +4504,7 @@ init_class (MonoClass *klass)
 	}
 #endif
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_S390X)
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
 		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") ||!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
@@ -4716,6 +4724,7 @@ mini_init (const char *filename)
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;
 #endif
 	callbacks.find_jit_info_in_aot = mono_aot_find_jit_info;
+	callbacks.get_method_code_start = get_method_code_start;
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 	callbacks.interp_jit_info_foreach = mini_interp_jit_info_foreach;
 	callbacks.interp_sufficient_stack = mini_interp_sufficient_stack;
@@ -4934,7 +4943,6 @@ register_icalls (void)
 	register_icall (mono_profiler_raise_exception_clause, mono_icall_sig_void_ptr_int_int_object, TRUE);
 
 	register_icall (mono_trace_enter_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
-	register_icall (mono_trace_samplepoint_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	register_icall (mono_trace_leave_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	register_icall (mono_trace_tail_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	g_assert (mono_get_lmf_addr == mono_tls_get_lmf_addr);
@@ -5081,9 +5089,9 @@ register_icalls (void)
 #endif
 	register_icall (mono_ckfinite, mono_icall_sig_double_double, FALSE);
 
-#ifdef COMPRESSED_INTERFACE_BITMAP
-	register_icall (mono_class_interface_match, mono_icall_sig_uint32_ptr_int32, TRUE);
-#endif
+	// opt is initialized because mono_metadata_init is ran before this
+	if (mono_opt_compressed_interface_bitmap)
+		register_icall (mono_class_interface_match_compressed, mono_icall_sig_uint32_ptr_int32, TRUE);
 
 	/* other jit icalls */
 	register_icall (ves_icall_mono_delegate_ctor, mono_icall_sig_void_object_object_ptr, FALSE);
@@ -5364,7 +5372,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			continue;
 		}
-		if (strcmp (method->name, "Finalize") == 0) {
+		if (strcmp (method->name, "GuardedFinalize") == 0) {
 			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 			mono_compile_method_checked (invoke, error);
 			mono_error_assert_ok (error);

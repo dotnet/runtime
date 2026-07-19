@@ -250,8 +250,6 @@ size_t GCHeap::GetLastGCDuration(int generation)
     return (size_t)(dd_gc_elapsed_time (hp->dynamic_data_of (generation)) / 1000);
 }
 
-uint64_t GetHighPrecisionTimeStamp();
-
 size_t GCHeap::GetNow()
 {
     return (size_t)(GetHighPrecisionTimeStamp() / 1000);
@@ -440,7 +438,6 @@ void GCHeap::DiagDescrGenerations (gen_walk_fn fn, void *context)
 
 segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
 {
-#ifdef FEATURE_BASICFREEZE
     heap_segment * seg = new (nothrow) heap_segment;
     if (!seg)
     {
@@ -474,15 +471,10 @@ segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
     }
 
     return reinterpret_cast< segment_handle >(seg);
-#else
-    assert(!"Should not call GCHeap::RegisterFrozenSegment without FEATURE_BASICFREEZE defined!");
-    return NULL;
-#endif // FEATURE_BASICFREEZE
 }
 
 void GCHeap::UnregisterFrozenSegment(segment_handle seg)
 {
-#ifdef FEATURE_BASICFREEZE
 #ifdef MULTIPLE_HEAPS
     gc_heap* heap = gc_heap::g_heaps[0];
 #else
@@ -490,14 +482,10 @@ void GCHeap::UnregisterFrozenSegment(segment_handle seg)
 #endif //MULTIPLE_HEAPS
 
     heap->remove_ro_segment(reinterpret_cast<heap_segment*>(seg));
-#else
-    assert(!"Should not call GCHeap::UnregisterFrozenSegment without FEATURE_BASICFREEZE defined!");
-#endif // FEATURE_BASICFREEZE
 }
 
 bool GCHeap::IsInFrozenSegment(Object *object)
 {
-#ifdef FEATURE_BASICFREEZE
     uint8_t* o = (uint8_t*)object;
     heap_segment * hs = gc_heap::find_segment (o, FALSE);
     //We create a frozen object for each frozen segment before the segment is inserted
@@ -506,21 +494,16 @@ bool GCHeap::IsInFrozenSegment(Object *object)
     //So we return true if hs is NULL. It might create a hole about detecting invalidate
     //object. But given all other checks present, the hole should be very small
     return !hs || heap_segment_read_only_p (hs);
-#else // FEATURE_BASICFREEZE
-    return false;
-#endif
 }
 
 void GCHeap::UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed)
 {
-#ifdef FEATURE_BASICFREEZE
 #ifdef MULTIPLE_HEAPS
     gc_heap* heap = gc_heap::g_heaps[0];
 #else
     gc_heap* heap = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
     heap->update_ro_segment (reinterpret_cast<heap_segment*>(seg), allocated, committed);
-#endif // FEATURE_BASICFREEZE
 }
 
 bool GCHeap::RuntimeStructuresValid()

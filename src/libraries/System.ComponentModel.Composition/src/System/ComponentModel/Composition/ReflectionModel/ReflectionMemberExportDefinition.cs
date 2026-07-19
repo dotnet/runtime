@@ -12,7 +12,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private readonly LazyMemberInfo _member;
         private readonly ExportDefinition _exportDefinition;
         private readonly ICompositionElement? _origin;
-        private IDictionary<string, object?>? _metadata;
 
         public ReflectionMemberExportDefinition(LazyMemberInfo member, ExportDefinition exportDefinition, ICompositionElement? origin)
         {
@@ -33,7 +32,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return _member; }
         }
 
-        public override IDictionary<string, object?> Metadata => _metadata ??= _exportDefinition.Metadata.AsReadOnly();
+        public override IDictionary<string, object?> Metadata => field ??= _exportDefinition.Metadata.AsReadOnly();
 
         string ICompositionElement.DisplayName
         {

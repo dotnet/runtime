@@ -69,7 +69,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null, "Block")]
         [InlineData("", "")]
         [InlineData("value", "value")]
-        public void BracingStyle_Set_GetReturnsExpected(string value, string expected)
+        public void BracingStyle_Set_GetReturnsExpected(string? value, string expected)
         {
             var options = new CodeGeneratorOptions { BracingStyle = value };
             Assert.Equal(expected, options.BracingStyle);
@@ -120,7 +120,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("value")]
-        public void IndentString__Set_GetReturnsExpected(string value)
+        public void IndentString__Set_GetReturnsExpected(string? value)
         {
             var options = new CodeGeneratorOptions { IndentString = value };
             Assert.Equal(value ?? "    ", options.IndentString);

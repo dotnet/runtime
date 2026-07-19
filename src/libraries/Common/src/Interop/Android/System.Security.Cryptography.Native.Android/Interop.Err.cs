@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography;
 
 internal static partial class Interop
@@ -34,7 +35,7 @@ internal static partial class Interop
             fixed (byte* buf = &buffer[0])
             {
                 ErrErrorStringN(error, buf, buffer.Length);
-                return Marshal.PtrToStringUTF8((IntPtr)buf)!;
+                return Utf8StringMarshaller.ConvertToManaged(buf)!;
             }
         }
 

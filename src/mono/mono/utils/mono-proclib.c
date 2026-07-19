@@ -30,7 +30,7 @@
 #endif
 
 #if defined(HOST_BROWSER)
-int mono_wasm_process_current_pid ();
+int SystemJS_GetCurrentProcessId ();
 #endif
 
 int
@@ -39,7 +39,7 @@ mono_process_current_pid (void)
 #ifdef HOST_WIN32
 	return (int) GetCurrentProcessId ();
 #elif defined(HOST_BROWSER)
-	return mono_wasm_process_current_pid ();
+	return SystemJS_GetCurrentProcessId ();
 #elif defined(HAVE_GETPID)
 	return (int) getpid ();
 #elif defined(HOST_WASI)

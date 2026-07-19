@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
-        [ConditionalTheory(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalTheory(typeof(TripleDESCngTests), nameof(SupportsPersistedSymmetricKeys))]
         // 3DES192-ECB-NoPadding 2 blocks.
         [InlineData(2 * BlockSizeBytes, CipherMode.ECB, PaddingMode.None)]
         // 3DES192-ECB-Zeros 2 blocks.
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(typeof(TripleDESCngTests), nameof(SupportsPersistedSymmetricKeys))]
         public static void GetKey_NonExportable()
         {
             SymmetricCngTestHelpers.GetKey_NonExportable(
@@ -70,7 +70,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(typeof(TripleDESCngTests), nameof(SupportsPersistedSymmetricKeys))]
         public static void SetKey_DetachesFromPersistedKey()
         {
             SymmetricCngTestHelpers.SetKey_DetachesFromPersistedKey(
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(typeof(TripleDESCngTests), nameof(SupportsPersistedSymmetricKeys))]
         public static void LoadWrongKeyType()
         {
             string keyName = Guid.NewGuid().ToString();
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys), nameof(IsAdministrator))]
+        [ConditionalFact(typeof(TripleDESCngTests), nameof(SupportsPersistedSymmetricKeys), nameof(IsAdministrator))]
         public static void VerifyMachineKey()
         {
             SymmetricCngTestHelpers.VerifyMachineKey(
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop("Creates/Deletes a persisted key, limit exposure to key leaking")]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(typeof(TripleDESCngTests), nameof(SupportsPersistedSymmetricKeys))]
         public static void VerifyUnsupportedFeedbackSizeForPersistedCfb()
         {
             SymmetricCngTestHelpers.VerifyCfbPersistedUnsupportedFeedbackSize(
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop("Creates/Deletes a persisted key, limit exposure to key leaking")]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(typeof(TripleDESCngTests), nameof(SupportsPersistedSymmetricKeys))]
         public static void VerifyRequiresTripleDESCngKey()
         {
             SymmetricCngTestHelpers.VerifyMismatchAlgorithmFails(

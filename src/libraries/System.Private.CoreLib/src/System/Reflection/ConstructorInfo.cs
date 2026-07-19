@@ -13,6 +13,9 @@ namespace System.Reflection
 
         public override MemberTypes MemberType => MemberTypes.Constructor;
 
+        // Constructors are never generic methods, so the generic method arguments are always empty.
+        public override Type[] GetGenericArguments() => [];
+
         [DebuggerHidden]
         [DebuggerStepThrough]
         public object Invoke(object?[]? parameters) => Invoke(BindingFlags.Default, binder: null, parameters: parameters, culture: null);

@@ -54,8 +54,8 @@ namespace ILLink.Shared.TypeSystemProxy
         internal bool HasParameterOfType(ParameterIndex parameterIndex, string fullTypeName)
             => (int)parameterIndex < GetParametersCount() && GetParameter(parameterIndex).IsTypeOf(fullTypeName);
         internal partial bool HasGenericParameters();
-        internal partial bool HasGenericParametersCount(int genericParameterCount);
         internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters();
+        internal partial bool HasGenericArgumentsCount(int genericArgumentCount);
         internal partial bool IsConstructor();
         internal partial bool IsStatic();
         internal partial bool HasImplicitThis();

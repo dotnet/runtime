@@ -64,10 +64,11 @@ namespace System.Text.Json.Serialization.Metadata
             CancellationToken cancellationToken,
             object? rootValueBoxed = null)
         {
+            PooledByteBufferWriter writer = new PooledByteBufferWriter(Options.DefaultBufferSize, utf8Json);
             // Value chosen as 90% of the default buffer used in PooledByteBufferWriter.
             // This is a tradeoff between likelihood of needing to grow the array vs. utilizing most of the buffer
-            int flushThreshold = (int)(Options.DefaultBufferSize * JsonSerializer.FlushThreshold);
-            return SerializeAsync(new PooledByteBufferWriter(Options.DefaultBufferSize, utf8Json), rootValue, flushThreshold, cancellationToken, rootValueBoxed);
+            int flushThreshold = (int)(writer.Capacity * JsonSerializer.FlushThreshold);
+            return SerializeAsync(writer, rootValue, flushThreshold, cancellationToken, rootValueBoxed);
         }
 
         internal Task SerializeAsync(PipeWriter utf8Json,
@@ -194,12 +195,12 @@ namespace System.Text.Json.Serialization.Metadata
                         }
                         finally
                         {
-                            // Await any pending resumable converter tasks (currently these can only be IAsyncEnumerator.MoveNextAsync() tasks).
+                            // Await any pending resumable converter tasks (currently these can only be IAsyncEnumerator.MoveNextAsync() or DisposeAsync() tasks).
                             // Note that pending tasks are always awaited, even if an exception has been thrown or the cancellation token has fired.
                             if (state.PendingTask is not null)
                             {
                                 // Exceptions should only be propagated by the resuming converter
-#if NET8_0_OR_GREATER
+#if NET
                                 await state.PendingTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 #else
                                 try
@@ -208,12 +209,6 @@ namespace System.Text.Json.Serialization.Metadata
                                 }
                                 catch { }
 #endif
-                            }
-
-                            // Dispose any pending async disposables (currently these can only be completed IAsyncEnumerators).
-                            if (state.CompletedAsyncDisposables?.Count > 0)
-                            {
-                                await state.DisposeCompletedAsyncDisposables().ConfigureAwait(false);
                             }
                         }
 

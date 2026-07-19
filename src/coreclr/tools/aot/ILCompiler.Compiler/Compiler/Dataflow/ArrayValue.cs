@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using ILCompiler.Dataflow;
 using ILLink.Shared.DataFlow;
@@ -19,7 +20,7 @@ namespace ILLink.Shared.TrimAnalysis
         public static MultiValue Create(MultiValue size, TypeDesc elementType)
         {
             MultiValue result = MultiValueLattice.Top;
-            foreach (var sizeValue in size.AsEnumerable ())
+            foreach (var sizeValue in size.AsEnumerable())
             {
                 result = MultiValueLattice.Meet(result, new MultiValue(new ArrayValue(sizeValue, elementType)));
             }
@@ -92,7 +93,7 @@ namespace ILLink.Shared.TrimAnalysis
                 // Since it's possible to store a reference to array as one of its own elements
                 // simple deep copy could lead to endless recursion.
                 // So instead we simply disallow arrays as element values completely - and treat that case as "too complex to analyze".
-                foreach (SingleValue v in kvp.Value.Value.AsEnumerable ())
+                foreach (SingleValue v in kvp.Value.Value.AsEnumerable())
                 {
                     System.Diagnostics.Debug.Assert(v is not ArrayValue);
                 }
@@ -108,35 +109,12 @@ namespace ILLink.Shared.TrimAnalysis
             StringBuilder result = new();
             result.Append("Array Size:");
             result.Append(this.ValueToString(Size));
-
             result.Append(", Values:(");
-            bool first = true;
-            foreach (var element in IndexValues)
-            {
-                if (!first)
-                {
-                    result.Append(',');
-                    first = false;
-                }
 
-                result.Append('(');
-                result.Append(element.Key);
-                result.Append(",(");
-                bool firstValue = true;
-                foreach (var v in element.Value.Value.AsEnumerable ())
-                {
-                    if (firstValue)
-                    {
-                        result.Append(',');
-                        firstValue = false;
-                    }
+            result.Append(string.Join(",", IndexValues.Select(element =>
+                $"({element.Key},({string.Join(",", element.Value.Value.AsEnumerable())}))")));
 
-                    result.Append(v.ToString());
-                }
-                result.Append("))");
-            }
             result.Append(')');
-
             return result.ToString();
         }
     }

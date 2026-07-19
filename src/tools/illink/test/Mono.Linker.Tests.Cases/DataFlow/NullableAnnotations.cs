@@ -67,6 +67,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             MakeGenericTypeWithKnowAndUnknownArray();
             RequiresOnNullableMakeGenericType.Test();
 
+            NewConstraintThroughNullableGetUnderlyingType<TestType>();
+            EnumConstraintThroughNullableGetUnderlyingType<DayOfWeek>();
+
             // Prevents optimizing away 'as Type' conversion.
             PreserveSystemType();
         }
@@ -110,7 +113,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             static Type FieldWithMethods;
             [Kept]
-            [UnexpectedWarning("IL2080", nameof(UnannotatedField), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
+            [UnexpectedWarning("IL2080", nameof(UnannotatedField), Tool.All, "https://github.com/dotnet/runtime/issues/93800")]
             static void Field()
             {
                 typeof(Nullable<>).MakeGenericType(UnannotatedField).GetMethods();
@@ -118,11 +121,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [Kept]
-            [UnexpectedWarning("IL2090", nameof(unannotated), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
+            [UnexpectedWarning("IL2090", nameof(unannotated), Tool.All, "https://github.com/dotnet/runtime/issues/93800")]
             static void Parameter(
                 Type unannotated,
                 [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated)
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated)
             {
                 typeof(Nullable<>).MakeGenericType(unannotated).GetMethods();
                 typeof(Nullable<>).MakeGenericType(annotated).GetMethods();
@@ -140,7 +143,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [Kept]
-            [UnexpectedWarning("IL2075", nameof(GetUnannotated), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
+            [UnexpectedWarning("IL2075", nameof(GetUnannotated), Tool.All, "https://github.com/dotnet/runtime/issues/93800")]
             static void ReturnValue()
             {
                 typeof(Nullable<>).MakeGenericType(GetUnannotated()).GetMethods();
@@ -403,6 +406,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static void PreserveSystemType()
         {
             typeof(Type).RequiresNonPublicConstructors();
+        }
+
+        [Kept]
+        static void NewConstraintThroughNullableGetUnderlyingType<
+            [KeptGenericParamAttributes(GenericParameterAttributes.DefaultConstructorConstraint)]
+        T
+        >() where T : new()
+        {
+            Nullable.GetUnderlyingType(typeof(T)).RequiresPublicParameterlessConstructor();
+        }
+
+        [Kept]
+        static void EnumConstraintThroughNullableGetUnderlyingType<T>() where T : Enum
+        {
+            Nullable.GetUnderlyingType(typeof(T)).RequiresPublicFields();
         }
     }
 }

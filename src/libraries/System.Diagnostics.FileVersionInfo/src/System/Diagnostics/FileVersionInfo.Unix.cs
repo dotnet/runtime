@@ -188,7 +188,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Parses the version into its constituent parts.</summary>
-        private static void ParseVersion(string? versionString, out int major, out int minor, out int build, out int priv)
+        private static unsafe void ParseVersion(string? versionString, out int major, out int minor, out int build, out int priv)
         {
             // Relatively-forgiving parsing of a version:
             // - If there are more than four parts (separated by periods), all results are deemed 0

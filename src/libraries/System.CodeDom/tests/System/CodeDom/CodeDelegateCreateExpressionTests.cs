@@ -57,7 +57,7 @@ namespace System.CodeDom.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("MethodName")]
-        public void MethodName_Set_Get_ReturnsExpected(string value)
+        public void MethodName_Set_Get_ReturnsExpected(string? value)
         {
             var delegateCreate = new CodeDelegateCreateExpression();
             delegateCreate.MethodName = value;

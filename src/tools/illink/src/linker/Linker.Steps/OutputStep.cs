@@ -100,6 +100,7 @@ namespace Mono.Linker.Steps
                     module.Attributes |= ModuleAttributes.ILOnly;
                     module.Attributes ^= ModuleAttributes.ILLibrary;
                     module.Architecture = TargetArchitecture.I386; // I386+ILOnly which ultimately translates to AnyCPU
+                    module.Characteristics |= ModuleCharacteristics.NoSEH;
                 }
             }
 

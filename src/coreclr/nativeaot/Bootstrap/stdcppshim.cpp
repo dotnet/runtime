@@ -7,6 +7,7 @@ namespace std
 {
     struct nothrow_t {};
     extern const nothrow_t nothrow = {};
+    using size_t = ::size_t;
 }
 
 void* operator new(size_t n, const std::nothrow_t&) noexcept
@@ -25,6 +26,16 @@ void operator delete(void *p) noexcept
 }
 
 void operator delete[](void *p) noexcept
+{
+    free(p);
+}
+
+void operator delete(void* p, std::size_t) noexcept
+{
+    free(p);
+}
+
+void operator delete[](void* p, std::size_t) noexcept
 {
     free(p);
 }

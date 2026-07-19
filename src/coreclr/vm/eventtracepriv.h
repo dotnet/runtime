@@ -334,7 +334,7 @@ public:
     void FireBulkTypeEvent();
 };
 
-
+#ifdef FEATURE_COMINTEROP
 // Does all logging for RCWs and CCWs in the process.  We walk RCWs by enumerating all syncblocks in
 // the process and seeing if they have associated interop information.  We enumerate all CCWs in the
 // process from the RefCount handles on the handle table.
@@ -398,6 +398,7 @@ private:
 
     CCWEnumerationEntry *m_enumResult;
 };
+#endif // FEATURE_COMINTEROP
 
 
 // Does bulk static variable ETW logging.

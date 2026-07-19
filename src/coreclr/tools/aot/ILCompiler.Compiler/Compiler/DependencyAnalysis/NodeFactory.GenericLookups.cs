@@ -27,6 +27,16 @@ namespace ILCompiler.DependencyAnalysis
                     return new TypeHandleGenericLookupResult(type);
                 });
 
+                _necessaryTypeSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new NecessaryTypeHandleGenericLookupResult(type);
+                });
+
+                _metadataTypeSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new MetadataTypeHandleGenericLookupResult(type);
+                });
+
                 _unwrapNullableSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
                     return new UnwrapNullableTypeHandleGenericLookupResult(type);
@@ -52,9 +62,9 @@ namespace ILCompiler.DependencyAnalysis
                     return new MethodEntryGenericLookupResult(key.Method, key.IsUnboxingStub);
                 });
 
-                _virtualDispatchCells = new NodeCache<MethodDesc, GenericLookupResult>(method =>
+                _dispatchCells = new NodeCache<MethodDesc, GenericLookupResult>(method =>
                 {
-                    return new VirtualDispatchCellGenericLookupResult(method);
+                    return new DispatchCellGenericLookupResult(method);
                 });
 
                 _typeThreadStaticBaseIndexSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
@@ -93,6 +103,20 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult Type(TypeDesc type)
             {
                 return _typeSymbols.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _necessaryTypeSymbols;
+
+            public GenericLookupResult NecessaryType(TypeDesc type)
+            {
+                return _necessaryTypeSymbols.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _metadataTypeSymbols;
+
+            public GenericLookupResult MetadataType(TypeDesc type)
+            {
+                return _metadataTypeSymbols.GetOrAdd(type);
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _unwrapNullableSymbols;
@@ -155,11 +179,11 @@ namespace ILCompiler.DependencyAnalysis
                 return _methodDictionaries.GetOrAdd(method);
             }
 
-            private NodeCache<MethodDesc, GenericLookupResult> _virtualDispatchCells;
+            private NodeCache<MethodDesc, GenericLookupResult> _dispatchCells;
 
-            public GenericLookupResult VirtualDispatchCell(MethodDesc method)
+            public GenericLookupResult DispatchCell(MethodDesc method)
             {
-                return _virtualDispatchCells.GetOrAdd(method);
+                return _dispatchCells.GetOrAdd(method);
             }
 
             private NodeCache<MethodKey, GenericLookupResult> _methodEntrypoints;

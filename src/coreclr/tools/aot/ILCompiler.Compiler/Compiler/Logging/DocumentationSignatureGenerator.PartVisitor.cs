@@ -149,15 +149,15 @@ namespace ILCompiler.Logging
             {
                 AppendName(sb, InstantiateContainingType(nestedType));
                 sb.Append('.');
-                sb.Append(nestedType.Name);
+                sb.Append(nestedType.GetName());
             }
 
             protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
             {
-                string @namespace = type.Namespace;
+                string @namespace = type.GetNamespace();
                 if (!string.IsNullOrEmpty(@namespace))
                     sb.Append(@namespace).Append('.');
-                sb.Append(type.Name);
+                sb.Append(type.GetName());
             }
 
             protected override void AppendNameForInstantiatedType(StringBuilder builder, DefType type)
@@ -172,12 +172,12 @@ namespace ILCompiler.Logging
                 }
                 else
                 {
-                    string @namespace = type.Namespace;
+                    string @namespace = type.GetNamespace();
                     if (!string.IsNullOrEmpty(@namespace))
                         builder.Append(@namespace).Append('.');
                 }
 
-                string unmangledName = type.Name;
+                string unmangledName = type.GetName();
                 int totalArity = type.Instantiation.Length;
                 int nestedArity = totalArity - containingArity;
                 string expectedSuffix = $"`{nestedArity}";

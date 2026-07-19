@@ -20,16 +20,16 @@ namespace System.IO.Compression
         private int _asyncOperations;
 
         // A specific constructor to allow decompression of Deflate64
-        internal DeflateManagedStream(Stream stream, ZipArchiveEntry.CompressionMethodValues method, long uncompressedSize = -1)
+        internal DeflateManagedStream(Stream stream, ZipCompressionMethod method, long uncompressedSize = -1)
         {
             ArgumentNullException.ThrowIfNull(stream);
 
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-            Debug.Assert(method == ZipArchiveEntry.CompressionMethodValues.Deflate64);
+            Debug.Assert(method == ZipCompressionMethod.Deflate64);
 
-            _inflater = new InflaterManaged(method == ZipArchiveEntry.CompressionMethodValues.Deflate64, uncompressedSize);
+            _inflater = new InflaterManaged(method == ZipCompressionMethod.Deflate64, uncompressedSize);
 
             _stream = stream;
             _buffer = new byte[DefaultBufferSize];

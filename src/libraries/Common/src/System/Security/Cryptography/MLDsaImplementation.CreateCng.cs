@@ -7,17 +7,19 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class MLDsaImplementation
     {
+#if !SYSTEM_SECURITY_CRYPTOGRAPHY
         [SupportedOSPlatform("windows")]
+#endif
         internal CngKey CreateEphemeralCng()
         {
             string bcryptBlobType =
                 _hasSeed ? Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB :
-                _hasSecretKey ? Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB :
+                _hasPrivateKey ? Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB :
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB;
 
             CngKeyBlobFormat cngBlobFormat =
-                _hasSecretKey ? CngKeyBlobFormat.PQDsaPrivateBlob :
                 _hasSeed ? CngKeyBlobFormat.PQDsaPrivateSeedBlob :
+                _hasPrivateKey ? CngKeyBlobFormat.PQDsaPrivateBlob :
                 CngKeyBlobFormat.PQDsaPublicBlob;
 
             CngKey key = Interop.BCrypt.BCryptExportKey(

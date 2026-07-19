@@ -939,7 +939,7 @@ IniKey1=IniValue2");
             Assert.True(token.HasChanged);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {
             WriteTestFiles();
@@ -966,23 +966,19 @@ IniKey1=IniValue2");
 
                 _ = Task.Run(ReloadLoop);
 
-                MyOptions options = null;
+                MyOptions options;
 
-                bool optionsInitialized = false;
-                while (!cts.IsCancellationRequested)
+                do
                 {
                     options = config.Get<MyOptions>();
-                    optionsInitialized = true;
                 }
+                while (!cts.IsCancellationRequested);
 
-                if (optionsInitialized)
-                {
-                    Assert.Equal("CmdValue1", options.CmdKey1);
-                    Assert.Equal("IniValue1", options.IniKey1);
-                    Assert.Equal("JsonValue1", options.JsonKey1);
-                    Assert.Equal("MemValue1", options.MemKey1);
-                    Assert.Equal("XmlValue1", options.XmlKey1);
-                }
+                Assert.Equal("CmdValue1", options.CmdKey1);
+                Assert.Equal("IniValue1", options.IniKey1);
+                Assert.Equal("JsonValue1", options.JsonKey1);
+                Assert.Equal("MemValue1", options.MemKey1);
+                Assert.Equal("XmlValue1", options.XmlKey1);
             }
         }
 
@@ -1020,6 +1016,32 @@ IniKey1=IniValue2");
             public string MemKey1 { get; set; }
 
             public string XmlKey1 { get; set; }
+        }
+
+        private async Task WatchOverConfigJsonFileAndUpdateIt(string filePath)
+        {
+            var builder = new ConfigurationBuilder().AddJsonFile(filePath, true, true).Build();
+            bool reloaded = false;
+            ChangeToken.OnChange(builder.GetReloadToken, () =>
+            {
+                reloaded = true;
+            });
+            File.WriteAllText(filePath, "{\"Prop2\":\"Value2\"}");
+            await WaitForChange(
+                () => reloaded,
+                "on file change event handler did not get executed");
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        public async Task OnChangeGetFiredForRelativeWindowsPath()
+        {
+            await WatchOverConfigJsonFileAndUpdateIt(".\\testFileToReload.json");
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
+        public async Task OnChangeGetFiredForRelativeLinuxPath()
+        {
+            await WatchOverConfigJsonFileAndUpdateIt("./testFileToReload.json");
         }
     }
 }

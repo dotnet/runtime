@@ -589,7 +589,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
             }
 
             // The suppression on the lambda is ignored
-            [UnexpectedWarning("IL2026", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/roslyn/issues/59746 https://github.com/dotnet/roslyn/issues/82956", CompilerGeneratedCode = true)]
+            [UnexpectedWarning("IL2026", Tool.All, "https://github.com/dotnet/roslyn/issues/59746 https://github.com/dotnet/roslyn/issues/82956", CompilerGeneratedCode = true)]
             [UnexpectedWarning("IL2121", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/82956", CompilerGeneratedCode = true)]
             static void TestLocalFunctionInLambda()
             {

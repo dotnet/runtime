@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
@@ -13,20 +15,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
     class TypeRefTypeSystemField : FieldDesc
     {
         TypeRefTypeSystemType _type;
-        string _name;
+        byte[] _name;
         TypeDesc _fieldType;
         EmbeddedSignatureData[] _embeddedSignatureData;
 
-        public TypeRefTypeSystemField(TypeRefTypeSystemType type, string name, TypeDesc fieldType, EmbeddedSignatureData[] embeddedSigData)
+        public TypeRefTypeSystemField(TypeRefTypeSystemType type, ReadOnlySpan<byte> name, TypeDesc fieldType, EmbeddedSignatureData[] embeddedSigData)
         {
             _type = type;
-            _name = name;
+            _name = name.ToArray();
             _fieldType = fieldType;
             _embeddedSignatureData = embeddedSigData;
         }
 
-        public override string Name => _name;
-        public override DefType OwningType => _type;
+        public override Utf8Span Name => _name;
+        public override MetadataType OwningType => _type;
 
         public override TypeDesc FieldType => _fieldType;
 

@@ -26,7 +26,9 @@ namespace System.Net.Http
         private Http3Connection _connection;
         private long _streamId = -1; // A stream does not have an ID until the first I/O against it. This gets set almost immediately following construction.
         private readonly QuicStream _stream;
+        private volatile bool _finishingBackgroundWrite;
         private ArrayBuffer _sendBuffer;
+        private volatile bool _finishingBackgroundRead;
         private ArrayBuffer _recvBuffer;
         private TaskCompletionSource<bool>? _expect100ContinueCompletionSource; // True indicates we should send content (e.g. received 100 Continue).
         private bool _disposed;
@@ -44,7 +46,7 @@ namespace System.Net.Http
         private string[] _headerValues = Array.Empty<string>();
 
         /// <summary>Any trailing headers.</summary>
-        private List<(HeaderDescriptor name, string value)>? _trailingHeaders;
+        private HttpResponseHeaders? _trailingHeaders;
 
         // When reading response content, keep track of the number of bytes left in the current data frame.
         private long _responseDataPayloadRemaining;
@@ -130,8 +132,18 @@ namespace System.Net.Http
         {
             _connection.RemoveStream(_stream);
 
-            _sendBuffer.Dispose();
-            _recvBuffer.Dispose();
+            // If the request sending was offloaded to be done concurrently and not awaited within SendAsync (by calling connection.LogException),
+            // the _sendBuffer disposal is the responsibility of that offloaded task to prevent returning the buffer to the pool while it still might be in use.
+            if (!_finishingBackgroundWrite)
+            {
+                _sendBuffer.Dispose();
+            }
+            // If the response receiving was offloaded to be done concurrently and not awaited within SendAsync (by calling connection.LogException),
+            // the _recvBuffer disposal is the responsibility of that offloaded task to prevent returning the buffer to the pool while it still might be in use.
+            if (!_finishingBackgroundRead)
+            {
+                _recvBuffer.Dispose();
+            }
         }
 
         public void GoAway()
@@ -196,6 +208,11 @@ namespace System.Net.Http
                     }
                     catch
                     {
+                        // This is a best effort attempt to transfer the responsibility of disposing _recvBuffer to ReadResponseAsync.
+                        // The task might be past checking the variable or already finished, in which case the buffer won't be returned to the pool.
+                        // Not returning the buffer to the pool is an acceptable trade-off for making sure that the buffer is not used after it's been returned.
+                        _finishingBackgroundRead = true;
+
                         // Exceptions will be bubbled up from sendRequestTask here,
                         // which means the result of readResponseTask won't be observed directly:
                         // Do a background await to log any exceptions.
@@ -205,6 +222,11 @@ namespace System.Net.Http
                 }
                 else
                 {
+                    // This is a best effort attempt to transfer the responsibility of disposing _sendBuffer to SendContentAsync.
+                    // The task might be past checking the variable or already finished, in which case the buffer won't be returned to the pool.
+                    // Not returning the buffer to the pool is an acceptable trade-off for making sure that the buffer is not used after it's been returned.
+                    _finishingBackgroundWrite = true;
+
                     // Duplex is being used, so we can't wait for content to finish sending.
                     // Do a background await to log any exceptions.
                     _connection.LogExceptions(sendRequestTask);
@@ -225,12 +247,6 @@ namespace System.Net.Http
                     catch (QuicException qex) when (qex.QuicError == QuicError.StreamAborted && qex.ApplicationErrorCode == (long)Http3ErrorCode.NoError)
                     {
                         // The server doesn't need the whole request to respond so it's aborting its reading side gracefully, see https://datatracker.ietf.org/doc/html/rfc9114#section-4.1-15.
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // If the request got cancelled before WritesClosed completed, avoid leaking an unobserved task exception.
-                        _connection.LogExceptions(writesClosed);
-                        throw;
                     }
                 }
 
@@ -387,32 +403,44 @@ namespace System.Net.Http
         /// </summary>
         private async Task ReadResponseAsync(CancellationToken cancellationToken)
         {
-            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
-
-            Debug.Assert(_response == null);
-            do
+            try
             {
-                _headerState = HeaderState.StatusHeader;
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
 
-                (Http3FrameType? frameType, long payloadLength) = await ReadFrameEnvelopeAsync(cancellationToken).ConfigureAwait(false);
-
-                if (frameType != Http3FrameType.Headers)
+                Debug.Assert(_response == null);
+                do
                 {
-                    if (NetEventSource.Log.IsEnabled())
+                    _headerState = HeaderState.StatusHeader;
+
+                    (Http3FrameType? frameType, long payloadLength) = await ReadFrameEnvelopeAsync(cancellationToken).ConfigureAwait(false);
+
+                    if (frameType != Http3FrameType.Headers)
                     {
-                        Trace($"Expected HEADERS as first response frame; received {frameType}.");
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            Trace($"Expected HEADERS as first response frame; received {frameType}.");
+                        }
+                        throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response);
                     }
-                    throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response);
+
+                    await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
+                    Debug.Assert(_response != null);
                 }
+                while ((int)_response.StatusCode < 200);
 
-                await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
-                Debug.Assert(_response != null);
+                _headerState = HeaderState.TrailingHeaders;
+
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop((int)_response.StatusCode);
             }
-            while ((int)_response.StatusCode < 200);
-
-            _headerState = HeaderState.TrailingHeaders;
-
-            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop((int)_response.StatusCode);
+            finally
+            {
+                // Note that we might still observe false here even if we're responsible for the _recvBuffer disposal.
+                // But in that case, we just don't return the rented buffer to the pool, which is lesser evil than writing to returned one.
+                if (_finishingBackgroundRead)
+                {
+                    _recvBuffer.Dispose();
+                }
+            }
         }
 
         private async Task SendContentAsync(HttpContent content, CancellationToken cancellationToken)
@@ -491,6 +519,12 @@ namespace System.Net.Http
             }
             finally
             {
+                // Note that we might still observe false here even if we're responsible for the _sendBuffer disposal.
+                // But in that case, we just don't return the rented buffer to the pool, which is lesser evil than writing to returned one.
+                if (_finishingBackgroundWrite)
+                {
+                    _sendBuffer.Dispose();
+                }
                 _requestSendCompleted = true;
                 RemoveFromConnectionIfDone();
             }
@@ -598,7 +632,7 @@ namespace System.Net.Http
 
         private async ValueTask ProcessTrailersAsync(long payloadLength, CancellationToken cancellationToken)
         {
-            _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
+            _trailingHeaders = new HttpResponseHeaders(containsTrailingHeaders: true);
             await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
             // In typical cases, there should be no more frames. Make sure to read the EOS.
@@ -617,13 +651,9 @@ namespace System.Net.Http
 
         private void CopyTrailersToResponseMessage(HttpResponseMessage responseMessage)
         {
-            if (_trailingHeaders?.Count > 0)
+            if (_trailingHeaders is not null)
             {
-                foreach ((HeaderDescriptor name, string value) in _trailingHeaders)
-                {
-                    responseMessage.TrailingHeaders.TryAddWithoutValidation(name, value);
-                }
-                _trailingHeaders.Clear();
+                responseMessage.StoreReceivedTrailingHeaders(_trailingHeaders);
             }
         }
 
@@ -928,16 +958,6 @@ namespace System.Net.Http
 
         private async ValueTask ReadHeadersAsync(long headersLength, CancellationToken cancellationToken)
         {
-            // TODO: this header budget is sent as SETTINGS_MAX_HEADER_LIST_SIZE, so it should not use frame payload but rather 32 bytes + uncompressed size per entry.
-            // https://tools.ietf.org/html/draft-ietf-quic-http-24#section-4.1.1
-            if (headersLength > _headerBudgetRemaining)
-            {
-                _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.ExcessiveLoad);
-                throw new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings.MaxResponseHeadersByteLength));
-            }
-
-            _headerBudgetRemaining -= (int)headersLength;
-
             while (headersLength != 0)
             {
                 if (_recvBuffer.ActiveLength == 0)
@@ -1012,6 +1032,13 @@ namespace System.Net.Http
         /// <remarks>One of <paramref name="staticValue"/> or <paramref name="literalValue"/> will be set.</remarks>
         private void OnHeader(int? staticIndex, HeaderDescriptor descriptor, string? staticValue, ReadOnlySpan<byte> literalValue)
         {
+            _headerBudgetRemaining -= descriptor.Name.Length + (staticValue?.Length ?? literalValue.Length);
+            if (_headerBudgetRemaining < 0)
+            {
+                _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.ExcessiveLoad);
+                throw new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings.MaxResponseHeadersByteLength));
+            }
+
             if (descriptor.Name[0] == ':')
             {
                 if (!descriptor.Equals(KnownHeaders.PseudoStatus))
@@ -1122,7 +1149,7 @@ namespace System.Net.Http
                         _response!.Headers.TryAddWithoutValidation(descriptor.HeaderType.HasFlag(HttpHeaderType.Request) ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         break;
                     case HeaderState.TrailingHeaders:
-                        _trailingHeaders!.Add((descriptor.HeaderType.HasFlag(HttpHeaderType.Request) ? descriptor.AsCustomHeader() : descriptor, headerValue));
+                        _trailingHeaders!.TryAddWithoutValidation(descriptor.HeaderType.HasFlag(HttpHeaderType.Request) ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         break;
                     default:
                         Debug.Fail($"Unexpected {nameof(Http3RequestStream)}.{nameof(_headerState)} '{_headerState}'.");
@@ -1490,7 +1517,7 @@ namespace System.Net.Http
 
                 if (stream is null)
                 {
-                    return ValueTask.FromException<int>(new ObjectDisposedException(nameof(Http3RequestStream)));
+                    return ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http3RequestStream))));
                 }
 
                 Debug.Assert(_response != null);
@@ -1543,7 +1570,7 @@ namespace System.Net.Http
 
                 if (stream is null)
                 {
-                    return ValueTask.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
+                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http3WriteStream))));
                 }
 
                 return stream.WriteRequestContentAsync(buffer, cancellationToken);
@@ -1555,7 +1582,7 @@ namespace System.Net.Http
 
                 if (stream is null)
                 {
-                    return Task.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
+                    return Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http3WriteStream))));
                 }
 
                 return stream.FlushSendBufferAsync(endStream: false, cancellationToken).AsTask();

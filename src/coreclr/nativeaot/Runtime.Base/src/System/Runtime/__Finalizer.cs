@@ -39,7 +39,7 @@ namespace System.Runtime
                 {
                     // RhpWaitForFinalizerRequest() returned false and indicated that memory is low. We help
                     // out by initiating a garbage collection and then go back to waiting for another request.
-                    InternalCalls.RhCollect(0, InternalGCCollectionMode.Blocking, lowMemoryP: true);
+                    InternalCalls.RhCollect(0, InternalGCCollectionMode.Blocking, lowMemoryP: Interop.BOOL.TRUE);
                 }
             }
         }

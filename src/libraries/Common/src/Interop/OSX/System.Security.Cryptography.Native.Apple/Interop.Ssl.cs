@@ -16,8 +16,6 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        private static readonly IdnMapping s_idnMapping = new IdnMapping();
-
         // Read data from connection (or an instance delegate captured context) and write it to data
         // dataLength comes in as the capacity of data, goes out as bytes written.
         // Note: the true type of dataLength is `size_t*`, but on macOS that's most equal to `void**`
@@ -138,6 +136,12 @@ internal static partial class Interop
         internal static partial PAL_TlsHandshakeState SslHandshake(SafeSslHandle sslHandle);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetError(
+            SafeSslHandle sslHandle,
+            TlsAlertMessage alertMessage,
+            out int pOSStatus);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SslSetAcceptClientCert(SafeSslHandle sslHandle);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetIoCallbacks")]
@@ -151,13 +155,6 @@ internal static partial class Interop
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslRead")]
         internal static unsafe partial PAL_TlsIo SslRead(SafeSslHandle sslHandle, byte* writeFrom, int count, out int bytesWritten);
-
-        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
-        private static partial int AppleCryptoNative_SslIsHostnameMatch(
-            SafeSslHandle handle,
-            SafeCreateHandle cfHostname,
-            SafeCFDateHandle cfValidTime,
-            out int pOSStatus);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslShutdown")]
         internal static partial int SslShutdown(SafeSslHandle sslHandle);
@@ -337,9 +334,28 @@ internal static partial class Interop
             throw new SslException();
         }
 
-        internal static void SslSetCertificate(SafeSslHandle sslHandle, IntPtr[] certChainPtrs)
+        internal static void SslSetError(SafeSslHandle sslHandle, TlsAlertMessage alertMessage)
         {
-            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certChainPtrs, (UIntPtr)certChainPtrs.Length))
+            int osStatus;
+            int result = AppleCryptoNative_SslSetError(sslHandle, alertMessage, out osStatus);
+
+            if (result == 1)
+            {
+                return;
+            }
+
+            if (result == 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            Debug.Fail($"AppleCryptoNative_SslSetError returned {result}");
+            throw new SslException();
+        }
+
+        internal static void SslSetCertificate(SafeSslHandle sslHandle, ReadOnlySpan<IntPtr> certChainPtrs)
+        {
+            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certChainPtrs))
             {
                 int osStatus = AppleCryptoNative_SslSetCertificate(sslHandle, cfCertRefs);
 
@@ -395,7 +411,7 @@ internal static partial class Interop
                 {
                     // we did not match common case. This is more expensive path allocating Core Foundation objects.
                     cfProtocolsArrayRef = new SafeCreateHandle[protocols.Count];
-                    IntPtr[] protocolsPtr = new System.IntPtr[protocols.Count];
+                    IntPtr[] protocolsPtr = new IntPtr[protocols.Count];
 
                     for (int i = 0; i < protocols.Count; i++)
                     {
@@ -462,40 +478,6 @@ internal static partial class Interop
                 protocol.Dispose();
             }
         }
-
-        public static bool SslCheckHostnameMatch(SafeSslHandle handle, string hostName, DateTime notBefore, out int osStatus)
-        {
-            int result;
-            // The IdnMapping converts Unicode input into the IDNA punycode sequence.
-            // It also does host case normalization.  The bypass logic would be something
-            // like "all characters being within [a-z0-9.-]+"
-            //
-            // The SSL Policy (SecPolicyCreateSSL) has been verified as not inherently supporting
-            // IDNA as of macOS 10.12.1 (Sierra).  If it supports low-level IDNA at a later date,
-            // this code could be removed.
-            //
-            // It was verified as supporting case invariant match as of 10.12.1 (Sierra).
-            string matchName = string.IsNullOrEmpty(hostName) ? string.Empty : s_idnMapping.GetAscii(hostName);
-
-            using (SafeCFDateHandle cfNotBefore = CoreFoundation.CFDateCreate(notBefore))
-            using (SafeCreateHandle cfHostname = CoreFoundation.CFStringCreateWithCString(matchName))
-            {
-                result = AppleCryptoNative_SslIsHostnameMatch(handle, cfHostname, cfNotBefore, out osStatus);
-            }
-
-            switch (result)
-            {
-                case 0:
-                    return false;
-                case 1:
-                    return true;
-                default:
-                    if (NetEventSource.Log.IsEnabled())
-                        NetEventSource.Error(null, $"AppleCryptoNative_SslIsHostnameMatch returned '{result}' for '{hostName}'");
-                    Debug.Fail($"AppleCryptoNative_SslIsHostnameMatch returned {result}");
-                    throw new SslException();
-            }
-        }
     }
 }
 
@@ -503,6 +485,13 @@ namespace System.Net
 {
     internal sealed class SafeSslHandle : SafeHandle
     {
+        // Backreference used by AppleCryptoNative_SslSetConnection so native
+        // Read/Write callbacks can resolve the owning SafeDeleteSslContext.
+        // Owned here so the lifetime is tied to ReleaseHandle, which only
+        // runs once all outstanding P/Invokes (and therefore any in-flight
+        // callbacks) have completed.
+        private GCHandle<SafeDeleteSslContext> _connectionGCHandle;
+
         public SafeSslHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
@@ -513,10 +502,18 @@ namespace System.Net
         {
         }
 
+        internal void SetConnectionGCHandle(GCHandle<SafeDeleteSslContext> handle)
+        {
+            Debug.Assert(!_connectionGCHandle.IsAllocated, "Connection GCHandle already set");
+            _connectionGCHandle = handle;
+        }
+
         protected override bool ReleaseHandle()
         {
             Interop.CoreFoundation.CFRelease(handle);
             SetHandle(IntPtr.Zero);
+            _connectionGCHandle.Dispose();
+
             return true;
         }
 

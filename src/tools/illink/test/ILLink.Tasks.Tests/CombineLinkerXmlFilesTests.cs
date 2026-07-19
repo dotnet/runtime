@@ -32,8 +32,8 @@ namespace ILLink.Tasks.Tests
                 "doc2.xml");
 
             var xmlFiles = new ITaskItem[] {
-                new TaskItem ("doc1.xml"),
-                new TaskItem ("doc2.xml"),
+                new TaskItem("doc1.xml"),
+                new TaskItem("doc2.xml"),
             };
 
             var combiner = new CombineLinkerXmlFiles()

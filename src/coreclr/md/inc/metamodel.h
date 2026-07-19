@@ -16,6 +16,7 @@
 #include <cor.h>
 #include <stgpool.h>
 #include <metamodelpub.h>
+#include "cdacdata.h"
 
 #include "../datablob.h"
 #include "../debug_metadata.h"
@@ -280,7 +281,7 @@ public:
 private:
     FORCEINLINE uint64_t BIT(ULONG ixBit)
     {   _ASSERTE(ixBit < (sizeof(int64_t)*CHAR_BIT));
-        return UI64(1) << ixBit; }
+        return 1ULL << ixBit; }
 
 };
 
@@ -403,6 +404,7 @@ class CMiniMdBase : public IMetaModelCommonRO
 {
 
     friend class VerifyLayoutsMD; // verifies class layout doesn't accidentally change
+    friend struct ::cdac_data<CMiniMdBase>;
 
 public:
     CMiniMdBase();
@@ -585,6 +587,13 @@ protected:
 private:
 
     BOOL UsesAllocatedMemory(CMiniColDef* pCols);
+};
+
+template<>
+struct cdac_data<CMiniMdBase>
+{
+    static constexpr size_t Schema = offsetof(CMiniMdBase, m_Schema);
+    static constexpr size_t TableCount = offsetof(CMiniMdBase, m_TblCount);
 };
 
 

@@ -985,6 +985,48 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	}
 }
 
+static void
+stackval_to_data_sign_ext (MonoType *type, stackval *val, void *data, gboolean pinvoke)
+{
+	switch (type->type) {
+		case MONO_TYPE_I1: {
+			mono_i *p = (mono_i*)data;
+			*p = (mono_i)((gint8)val->data.i);
+			break;
+		}
+		case MONO_TYPE_U1: {
+			mono_u *p = (mono_u*)data;
+			*p = (mono_u)((guint8)val->data.i);
+			break;
+		}
+		case MONO_TYPE_I2: {
+			mono_i *p = (mono_i*)data;
+			*p = (mono_i)((gint16)val->data.i);
+			break;
+		}
+		case MONO_TYPE_U2: {
+			mono_u *p = (mono_u*)data;
+			*p = (mono_u)((guint16)val->data.i);
+			break;
+		}
+#if SIZEOF_VOID_P == 8
+		case MONO_TYPE_I4: {
+			mono_i *p = (mono_i*)data;
+			*p = (mono_i)(val->data.i);
+			break;
+		}
+		case MONO_TYPE_U4: {
+			mono_u *p = (mono_u*)data;
+			*p = (mono_u)((guint32)val->data.i);
+			break;
+		}
+#endif
+		default:
+			stackval_to_data (type, val, data, pinvoke);
+			break;
+	}
+}
+
 typedef struct {
 	MonoException *ex;
 	MonoContext *ctx;
@@ -1651,7 +1693,7 @@ interp_frame_arg_to_data (MonoInterpFrameHandle frame, MonoMethodSignature *sig,
 
 	// If index == -1, we finished executing an InterpFrame and the result is at retval.
 	if (index == -1)
-		stackval_to_data (sig->ret, iframe->retval, data, sig->pinvoke && !sig->marshalling_disabled);
+		stackval_to_data_sign_ext (sig->ret, iframe->retval, data, sig->pinvoke && !sig->marshalling_disabled);
 	else if (sig->hasthis && index == 0)
 		*(gpointer*)data = iframe->stack->data.p;
 	else
@@ -2353,8 +2395,17 @@ interp_entry (InterpEntryData *data)
 
 	// The return value is at the bottom of the stack, after the locals space
 	type = rmethod->rtype;
-	if (type->type != MONO_TYPE_VOID)
-		stackval_to_data (type, frame.stack, data->res, FALSE);
+	if (type->type != MONO_TYPE_VOID) {
+		// interp entry is called either from a interp_in wrapper or a gsharedvt_in_sig wrapper
+		// interp_in wrappers always return intptr (they are more aggresively shared) while the
+		// gsharedvt_in_sig wrapper returns the actual type. This check follows the logic in
+		// interp_create_method_pointer_llvmonly and interp_create_method_pointer so we do the
+		// return sign extension only when called from the interp_in wrapper.
+		if (!mono_llvm_only || sig->param_count > MAX_INTERP_ENTRY_ARGS)
+			stackval_to_data_sign_ext (type, frame.stack, data->res, FALSE);
+		else
+			stackval_to_data (type, frame.stack, data->res, FALSE);
+	}
 }
 
 static void
@@ -3584,12 +3635,17 @@ interp_free_method (MonoMethod *method)
 
 	jit_mm_lock (jit_mm);
 
-#if HOST_BROWSER
 	InterpMethod *imethod = (InterpMethod*)mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method);
-	mono_jiterp_free_method_data (method, imethod);
+	if (imethod) {
+#if HOST_BROWSER
+		mono_jiterp_free_method_data (method, imethod);
 #endif
 
-	mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
+		mono_interp_clear_data_items_patch_sites (imethod->data_items, imethod->n_data_items);
+
+		mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
+	}
+
 	jit_mm_unlock (jit_mm);
 
 	if (dmethod->mp) {
@@ -3969,6 +4025,11 @@ mono_interp_profiler_raise_tail_call (InterpFrame *frame, MonoMethod *new_method
 		mono_interp_profiler_raise (frame, mono_profiler_raise_method_ ## name_lower); \
 	}
 
+#define INTERP_PROFILER_RAISE_SAMPLEPOINT() \
+	if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_samplepoint)) { \
+		frame->state.ip = ip; \
+		mono_interp_profiler_raise (frame, mono_profiler_raise_method_samplepoint); \
+	}
 
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
@@ -7696,7 +7757,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_PROF_SAMPLEPOINT) {
 			guint16 flag = ip [1];
 			ip += 2;
-			INTERP_PROFILER_RAISE(samplepoint, SAMPLEPOINT);
+			INTERP_PROFILER_RAISE_SAMPLEPOINT();
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_PROF_EXIT)
@@ -7915,11 +7976,13 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TAN) MATH_UNOP(tan); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TANH) MATH_UNOP(tanh); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ABS) MATH_UNOP(fabs); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_TRUNC) MATH_UNOP(trunc); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_ATAN2) MATH_BINOP(atan2); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_POW) MATH_BINOP(pow); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MIN) MATH_BINOP(min_d); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MAX) MATH_BINOP(max_d); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_COPYSIGN) MATH_BINOP(copysign); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_FMA)
 			LOCAL_VAR (ip [1], double) = fma (LOCAL_VAR (ip [2], double), LOCAL_VAR (ip [3], double), LOCAL_VAR (ip [4], double));
 			ip += 5;
@@ -7957,11 +8020,13 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TANF) MATH_UNOPF(tanf); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TANHF) MATH_UNOPF(tanhf); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ABSF) MATH_UNOPF(fabsf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_TRUNCF) MATH_UNOPF(truncf); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_ATAN2F) MATH_BINOPF(atan2f); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_POWF) MATH_BINOPF(powf); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MINF) MATH_BINOPF(min_f); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MAXF) MATH_BINOPF(max_f); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_COPYSIGNF) MATH_BINOPF(copysignf); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_FMAF)
 			LOCAL_VAR (ip [1], float) = fmaf (LOCAL_VAR (ip [2], float), LOCAL_VAR (ip [3], float), LOCAL_VAR (ip [4], float));
 			ip += 5;
@@ -9231,7 +9296,7 @@ EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_prof_samplepoint (InterpFrame *frame, guint16 *ip)
 {
 	guint16 flag = ip [1];
-	INTERP_PROFILER_RAISE(samplepoint, SAMPLEPOINT);
+	INTERP_PROFILER_RAISE_SAMPLEPOINT();
 }
 
 EMSCRIPTEN_KEEPALIVE void

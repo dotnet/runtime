@@ -34,6 +34,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int Offset => 0;
 
+        public bool IsEmpty => _methods.Count == 0;
+
         public void AddImport(Import import)
         {
             lock (_methods)
@@ -53,9 +55,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (_methods.Count == 0 || relocsOnly)
             {
                 return new ObjectData(
-                    data: Array.Empty<byte>(), 
-                    relocs: Array.Empty<Relocation>(), 
-                    alignment: 1, 
+                    data: Array.Empty<byte>(),
+                    relocs: Array.Empty<Relocation>(),
+                    alignment: 1,
                     definedSymbols: new ISymbolDefinitionNode[] { this });
             }
 

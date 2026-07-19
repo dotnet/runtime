@@ -23,8 +23,6 @@ struct _EventPipeSession {
 #else
 struct _EventPipeSession_Internal {
 #endif
-	// When the session is of IPC or FILE stream type, this becomes a reference to the streaming thread.
-	ep_rt_thread_handle_t streaming_thread;
 	// Event object used to signal Disable that the streaming thread is done.
 	ep_rt_wait_event_handle_t rt_thread_shutdown_event;
 	// The set of configurations for each provider in the session.
@@ -71,6 +69,9 @@ struct _EventPipeSession_Internal {
 	volatile uint32_t ref_count;
 	// The user_events_data file descriptor to register Tracepoints and write user_events to.
 	int user_events_data_fd;
+	// The IPC continuation stream from initializing the session through the diagnostic server
+	// Currently only initialized for user_events sessions.
+	IpcStream *stream;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_SESSION_GETTER_SETTER)
@@ -83,6 +84,7 @@ EP_DEFINE_GETTER(EventPipeSession *, session, uint32_t, index)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeSessionProviderList *, providers)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeBufferManager *, buffer_manager)
 EP_DEFINE_GETTER_REF(EventPipeSession *, session, volatile uint32_t *, rundown_enabled)
+EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeSessionType, session_type)
 EP_DEFINE_GETTER(EventPipeSession *, session, uint64_t, rundown_keyword)
 EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_time)
 EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_timestamp)
@@ -103,13 +105,17 @@ ep_session_alloc (
 	uint32_t providers_len,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data,
-	int user_events_data_fd);
+	int user_events_data_fd,
+	EventPipeBufferingMode buffering_mode);
 
 void
 ep_session_inc_ref (EventPipeSession *session);
 
 void
 ep_session_dec_ref (EventPipeSession *session);
+
+void
+ep_session_close (EventPipeSession *session);
 
 // _Requires_lock_held (ep)
 EventPipeSessionProvider *
@@ -127,11 +133,12 @@ ep_session_execute_rundown (
 	EventPipeSession *session,
 	dn_vector_ptr_t *execution_checkpoints);
 
-// Force all in-progress writes to either finish or cancel
-// This is required to ensure we can safely flush and delete the buffers
+// Wait for all in-progress threads that depend on this session's pointer slot
+// in _ep_sessions remaining valid throughout its operation.
+// This is required to ensure we can safely flush, close, and free the session.
 // _Requires_lock_held (ep)
 void
-ep_session_suspend_write_event (EventPipeSession *session);
+ep_session_wait_for_inflight_thread_ops (EventPipeSession *session);
 
 // Write a sequence point into the output stream synchronously.
 void
@@ -170,7 +177,7 @@ ep_session_write_all_buffers_to_file (
 // put the event in a buffer and return as quick as possible. If a session is
 // synchronous (callback to the profiler) then this method will block until the
 // profiler is done parsing and reacting to it.
-bool
+EventPipeWriteEventResult
 ep_session_write_event (
 	EventPipeSession *session,
 	ep_rt_thread_handle_t thread,
@@ -219,6 +226,9 @@ ep_session_has_started (EventPipeSession *session);
 
 bool
 ep_session_type_uses_buffer_manager (EventPipeSessionType session_type);
+
+bool
+ep_session_type_uses_streaming_thread (EventPipeSessionType session_type);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_SESSION_H__ */

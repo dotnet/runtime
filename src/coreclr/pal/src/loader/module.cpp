@@ -40,9 +40,17 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include <dlfcn.h>
 #include <stdlib.h>
 
+#if defined(TARGET_WASI)
+#include "pal/wasi/pal_wasi_missing.h"
+#endif
+
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>
+#elif defined(TARGET_WASI)
+// WASI has no dynamic linker and no <link.h>. PAL_CopyModuleData is stubbed
+// to return 0 in the TARGET_WASM branch below; <link.h>'s dl_phdr_info /
+// link_map are not referenced anywhere this file actually compiles on WASI.
 #else
 #include <link.h>
 #endif // __APPLE__
@@ -926,6 +934,16 @@ PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destina
     }
     return param.result;
 }
+#elif defined(TARGET_WASM)
+// WASM-TODO: get rid of whole module loading on wasm
+PALIMPORT
+int
+PALAPI
+PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd)
+{
+    _ASSERTE(!"PAL_CopyModuleData not implemented for wasm");
+    return 0;
+}
 #else
 static int CopyModuleDataCallback(struct dl_phdr_info *info, size_t size, void *data)
 {
@@ -1016,7 +1034,7 @@ BOOL LOADInitializeModules()
 
     exe_module.self = (HMODULE)&exe_module;
     exe_module.dl_handle = dlopen(nullptr, RTLD_LAZY);
-#if not defined(__wasm__) // wasm does not support shared libraries
+#ifndef TARGET_WASM // wasm does not support shared libraries
     if (exe_module.dl_handle == nullptr)
     {
         ERROR("Executable module will be broken : dlopen(nullptr) failed\n");
@@ -1121,13 +1139,6 @@ void LOADCallDllMain(DWORD dwReason, LPVOID lpReserved)
 {
     MODSTRUCT *module = nullptr;
     BOOL InLoadOrder = TRUE; /* true if in load order, false for reverse */
-    CPalThread *pThread;
-
-    pThread = InternalGetCurrentThread();
-    if (UserCreatedThread != pThread->GetThreadType())
-    {
-        return;
-    }
 
     /* Validate dwReason */
     switch(dwReason)

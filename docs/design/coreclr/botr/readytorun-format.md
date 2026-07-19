@@ -30,11 +30,11 @@ The COR header and ECMA 335 metadata pointed to by the COM descriptor data direc
 in the COFF header represent a full copy of the input IL and MSIL metadata it was generated from.
 
 **Composite R2R files** currently conform to Windows PE executable file format as the
-native envelope. Moving forward we plan to gradually add support for platform-native
-executable formats (ELF on Linux, MachO on OSX) as the native envelopes. There is a
+native envelope. Moving forward we [plan to gradually add support for platform-native
+executable formats](./readytorun-platform-native-envelope.md) (ELF on Linux, MachO on OSX) as the native envelopes. There is a
 global CLI / COR header in the file, but it only exists to facilitate pdb generation, and does
 not participate in any usages by the CoreCLR runtime. The ReadyToRun header structure is pointed to
-by the well-known export symbol `RTR_HEADER` and has the `READYTORUN_FLAG_COMPOSITE` flag set.
+by the well-known export symbol `RTR_HEADER` (customizable via the `--rtr-header-symbol-name` crossgen2 option — see below) and has the `READYTORUN_FLAG_COMPOSITE` flag set.
 
 Input MSIL metadata and IL streams can be either embedded in the composite R2R file or left
 as separate files on disk. In case of embedded MSIL, the "actual" metadata for the individual
@@ -71,8 +71,11 @@ The structures and accompanying constants are defined in the
 [readytorun.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h)
 header file.
 Basically the entire R2R executable image is addressed through the READYTORUN_HEADER singleton
-pointed to by the well-known export RTR_HEADER in the export section of the native executable
-envelope.
+pointed to by the well-known export `RTR_HEADER` in the export section of the native executable
+envelope. For composite images, this export symbol name can be customized using the
+`--rtr-header-symbol-name` option in `crossgen2`, which is useful for custom hosts that
+directly link against multiple R2R images (instead of loading them dynamically via `dlopen` or
+equivalent) and therefore need distinct symbol names to avoid collisions.
 
 For single-file R2R executables, there's just one header representing all image sections.
 For composite and single exe, the global `READYTORUN_HEADER` includes a section of the type
@@ -135,6 +138,7 @@ struct READYTORUN_CORE_HEADER
 | READYTORUN_FLAG_COMPONENT                  | 0x00000020 | This is a component assembly of a composite R2R image
 | READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE | 0x00000040 | This R2R module has multiple modules within its version bubble (For versions before version 6.3, all modules are assumed to possibly have this characteristic)
 | READYTORUN_FLAG_UNRELATED_R2R_CODE         | 0x00000080 | This R2R module has code in it that would not be naturally encoded into this module
+| READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE      | 0x00000100 | The owning composite executable is in the platform native format
 
 ## READYTORUN_SECTION
 
@@ -173,7 +177,7 @@ The following section types are defined and described later in this document:
 | ProfileDataInfo           |   111 | Image (added in V2.2)
 | ManifestMetadata          |   112 | Image (added in V2.3)
 | AttributePresence         |   113 | Assembly (added in V3.1)
-| InliningInfo2             |   114 | Image (added in V4.1)
+| InliningInfo2             |   114 | Image (non-composite, added in V4.1), Assembly (composite, added in V6.3)
 | ComponentAssemblies       |   115 | Image (added in V4.1)
 | OwnerCompositeExecutable  |   116 | Image (added in V4.1)
 | PgoInstrumentationData    |   117 | Image (added in V5.2)
@@ -238,51 +242,54 @@ signature that contains the information required to fill the corresponding slot.
 builds upon the encoding used for signatures in ECMA-335. The first element of the signature describes the
 fixup kind, the rest of the signature varies based on the fixup kind.
 
-| ReadyToRunFixupKind                      | Value | Description
-|:-----------------------------------------|------:|:-----------
-| READYTORUN_FIXUP_ThisObjDictionaryLookup |  0x07 | Generic lookup using `this`; followed by the type signature and by the method signature
-| READYTORUN_FIXUP_TypeDictionaryLookup    |  0x08 | Type-based generic lookup for methods on instantiated types; followed by the typespec signature
-| READYTORUN_FIXUP_MethodDictionaryLookup  |  0x09 | Generic method lookup; followed by the method spec signature
-| READYTORUN_FIXUP_TypeHandle              |  0x10 | Pointer uniquely identifying the type to the runtime, followed by typespec signature (see ECMA-335)
-| READYTORUN_FIXUP_MethodHandle            |  0x11 | Pointer uniquely identifying the method to the runtime, followed by method signature (see below)
-| READYTORUN_FIXUP_FieldHandle             |  0x12 | Pointer uniquely identifying the field to the runtime, followed by field signature (see below)
-| READYTORUN_FIXUP_MethodEntry             |  0x13 | Method entrypoint or call, followed by method signature
-| READYTORUN_FIXUP_MethodEntry_DefToken    |  0x14 | Method entrypoint or call, followed by methoddef token (shortcut)
-| READYTORUN_FIXUP_MethodEntry_RefToken    |  0x15 | Method entrypoint or call, followed by methodref token (shortcut)
-| READYTORUN_FIXUP_VirtualEntry            |  0x16 | Virtual method entrypoint or call, followed by method signature
-| READYTORUN_FIXUP_VirtualEntry_DefToken   |  0x17 | Virtual method entrypoint or call, followed by methoddef token (shortcut)
-| READYTORUN_FIXUP_VirtualEntry_RefToken   |  0x18 | Virtual method entrypoint or call, followed by methodref token (shortcut)
-| READYTORUN_FIXUP_VirtualEntry_Slot       |  0x19 | Virtual method entrypoint or call, followed by typespec signature and slot
-| READYTORUN_FIXUP_Helper                  |  0x1A | Helper call, followed by helper call id (see chapter 4 Helper calls)
-| READYTORUN_FIXUP_StringHandle            |  0x1B | String handle, followed by metadata string token
-| READYTORUN_FIXUP_NewObject               |  0x1C | New object helper, followed by typespec  signature
-| READYTORUN_FIXUP_NewArray                |  0x1D | New array helper, followed by typespec signature
-| READYTORUN_FIXUP_IsInstanceOf            |  0x1E | isinst helper, followed by typespec signature
-| READYTORUN_FIXUP_ChkCast                 |  0x1F | chkcast helper, followed by typespec signature
-| READYTORUN_FIXUP_FieldAddress            |  0x20 | Field address, followed by field signature
-| READYTORUN_FIXUP_CctorTrigger            |  0x21 | Static constructor trigger, followed by typespec signature
-| READYTORUN_FIXUP_StaticBaseNonGC         |  0x22 | Non-GC static base, followed by typespec signature
-| READYTORUN_FIXUP_StaticBaseGC            |  0x23 | GC static base, followed by typespec signature
-| READYTORUN_FIXUP_ThreadStaticBaseNonGC   |  0x24 | Non-GC thread-local static base, followed by typespec signature
-| READYTORUN_FIXUP_ThreadStaticBaseGC      |  0x25 | GC thread-local static base, followed by typespec signature
-| READYTORUN_FIXUP_FieldBaseOffset         |  0x26 | Starting offset of fields for given type, followed by typespec signature. Used to address base class fragility.
-| READYTORUN_FIXUP_FieldOffset             |  0x27 | Field offset, followed by field signature
-| READYTORUN_FIXUP_TypeDictionary          |  0x28 | Hidden dictionary argument for generic code, followed by typespec signature
-| READYTORUN_FIXUP_MethodDictionary        |  0x29 | Hidden dictionary argument for generic code, followed by method signature
-| READYTORUN_FIXUP_Check_TypeLayout        |  0x2A | Verification of type layout, followed by typespec and expected type layout descriptor
-| READYTORUN_FIXUP_Check_FieldOffset       |  0x2B | Verification of field offset, followed by field signature and expected field layout descriptor
-| READYTORUN_FIXUP_DelegateCtor            |  0x2C | Delegate constructor, followed by method signature
-| READYTORUN_FIXUP_DeclaringTypeHandle     |  0x2D | Dictionary lookup for method declaring type. Followed by the type signature.
-| READYTORUN_FIXUP_IndirectPInvokeTarget   |  0x2E | Target (indirect) of an inlined PInvoke. Followed by method signature.
-| READYTORUN_FIXUP_PInvokeTarget           |  0x2F | Target of an inlined PInvoke. Followed by method signature.
-| READYTORUN_FIXUP_Check_InstructionSetSupport | 0x30 | Specify the instruction sets that must be supported/unsupported to use the R2R code associated with the fixup.
-| READYTORUN_FIXUP_Verify_FieldOffset      | 0x31 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
-| READYTORUN_FIXUP_Verify_TypeLayout       | 0x32 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
-| READYTORUN_FIXUP_Check_VirtualFunctionOverride | 0x33 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
-| READYTORUN_FIXUP_Verify_VirtualFunctionOverride | 0x34 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
-| READYTORUN_FIXUP_Check_IL_Body           |  0x35 | Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. See[IL Body signatures](il-body-signatures) for details.
-| READYTORUN_FIXUP_Verify_IL_Body          |  0x36 | Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. See[IL Body signatures](il-body-signatures) for details.
-| READYTORUN_FIXUP_ModuleOverride          |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
+| ReadyToRunFixupKind                             | Value | Description
+|:------------------------------------------------|------:|:-----------
+| READYTORUN_FIXUP_ThisObjDictionaryLookup        |  0x07 | Generic lookup using `this`; followed by the type signature and by the method signature
+| READYTORUN_FIXUP_TypeDictionaryLookup           |  0x08 | Type-based generic lookup for methods on instantiated types; followed by the typespec signature
+| READYTORUN_FIXUP_MethodDictionaryLookup         |  0x09 | Generic method lookup; followed by the method spec signature
+| READYTORUN_FIXUP_TypeHandle                     |  0x10 | Pointer uniquely identifying the type to the runtime, followed by typespec signature (see ECMA-335)
+| READYTORUN_FIXUP_MethodHandle                   |  0x11 | Pointer uniquely identifying the method to the runtime, followed by method signature (see below)
+| READYTORUN_FIXUP_FieldHandle                    |  0x12 | Pointer uniquely identifying the field to the runtime, followed by field signature (see below)
+| READYTORUN_FIXUP_MethodEntry                    |  0x13 | Method entrypoint or call, followed by method signature
+| READYTORUN_FIXUP_MethodEntry_DefToken           |  0x14 | Method entrypoint or call, followed by methoddef token (shortcut)
+| READYTORUN_FIXUP_MethodEntry_RefToken           |  0x15 | Method entrypoint or call, followed by methodref token (shortcut)
+| READYTORUN_FIXUP_VirtualEntry                   |  0x16 | Virtual method entrypoint or call, followed by method signature
+| READYTORUN_FIXUP_VirtualEntry_DefToken          |  0x17 | Virtual method entrypoint or call, followed by methoddef token (shortcut)
+| READYTORUN_FIXUP_VirtualEntry_RefToken          |  0x18 | Virtual method entrypoint or call, followed by methodref token (shortcut)
+| READYTORUN_FIXUP_VirtualEntry_Slot              |  0x19 | Virtual method entrypoint or call, followed by typespec signature and slot
+| READYTORUN_FIXUP_Helper                         |  0x1A | Helper call, followed by helper call id (see chapter 4 Helper calls)
+| READYTORUN_FIXUP_StringHandle                   |  0x1B | String handle, followed by metadata string token
+| READYTORUN_FIXUP_NewObject                      |  0x1C | New object helper, followed by typespec  signature
+| READYTORUN_FIXUP_NewArray                       |  0x1D | New array helper, followed by typespec signature
+| READYTORUN_FIXUP_IsInstanceOf                   |  0x1E | isinst helper, followed by typespec signature
+| READYTORUN_FIXUP_ChkCast                        |  0x1F | chkcast helper, followed by typespec signature
+| READYTORUN_FIXUP_FieldAddress                   |  0x20 | Field address, followed by field signature
+| READYTORUN_FIXUP_CctorTrigger                   |  0x21 | Static constructor trigger, followed by typespec signature
+| READYTORUN_FIXUP_StaticBaseNonGC                |  0x22 | Non-GC static base, followed by typespec signature
+| READYTORUN_FIXUP_StaticBaseGC                   |  0x23 | GC static base, followed by typespec signature
+| READYTORUN_FIXUP_ThreadStaticBaseNonGC          |  0x24 | Non-GC thread-local static base, followed by typespec signature
+| READYTORUN_FIXUP_ThreadStaticBaseGC             |  0x25 | GC thread-local static base, followed by typespec signature
+| READYTORUN_FIXUP_FieldBaseOffset                |  0x26 | Starting offset of fields for given type, followed by typespec signature. Used to address base class fragility.
+| READYTORUN_FIXUP_FieldOffset                    |  0x27 | Field offset, followed by field signature
+| READYTORUN_FIXUP_TypeDictionary                 |  0x28 | Hidden dictionary argument for generic code, followed by typespec signature
+| READYTORUN_FIXUP_MethodDictionary               |  0x29 | Hidden dictionary argument for generic code, followed by method signature
+| READYTORUN_FIXUP_Check_TypeLayout               |  0x2A | Verification of type layout, followed by typespec and expected type layout descriptor
+| READYTORUN_FIXUP_Check_FieldOffset              |  0x2B | Verification of field offset, followed by field signature and expected field layout descriptor
+| READYTORUN_FIXUP_DelegateCtor                   |  0x2C | Delegate constructor, followed by method signature
+| READYTORUN_FIXUP_DeclaringTypeHandle            |  0x2D | Dictionary lookup for method declaring type. Followed by the type signature.
+| READYTORUN_FIXUP_IndirectPInvokeTarget          |  0x2E | Target (indirect) of an inlined PInvoke. Followed by method signature.
+| READYTORUN_FIXUP_PInvokeTarget                  |  0x2F | Target of an inlined PInvoke. Followed by method signature.
+| READYTORUN_FIXUP_Check_InstructionSetSupport    |  0x30 | Specify the instruction sets that must be supported/unsupported to use the R2R code associated with the fixup.
+| READYTORUN_FIXUP_Verify_FieldOffset             |  0x31 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
+| READYTORUN_FIXUP_Verify_TypeLayout              |  0x32 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
+| READYTORUN_FIXUP_Check_VirtualFunctionOverride  |  0x33 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
+| READYTORUN_FIXUP_Verify_VirtualFunctionOverride |  0x34 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
+| READYTORUN_FIXUP_Check_IL_Body                  |  0x35 | Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. See[IL Body signatures](il-body-signatures) for details.
+| READYTORUN_FIXUP_Verify_IL_Body                 |  0x36 | Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. See[IL Body signatures](il-body-signatures) for details.
+| READYTORUN_FIXUP_ContinuationLayout             |  0x37 | Layout of an async method continuation type, followed by typespec signature
+| READYTORUN_FIXUP_ResumptionStubEntryPoint       |  0x38 | Entry point of an async method resumption stub
+| READYTORUN_FIXUP_InjectStringThunks             |  0x39 | Inject pregenerated string-to-code thunk mappings. See [InjectStringThunks signatures](#injectstringthunks-signatures) for details.
+| READYTORUN_FIXUP_ModuleOverride                 |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
 
 #### Method Signatures
 
@@ -300,6 +307,7 @@ token, and additional data determined by the flags.
 | READYTORUN_METHOD_SIG_Constrained         |  0x20 | Constrained type for method resolution. Typespec appended as additional data.
 | READYTORUN_METHOD_SIG_OwnerType           |  0x40 | Method type. Typespec appended as additional data.
 | READYTORUN_METHOD_SIG_UpdateContext       |  0x80 | If set, update the module which is used to parse tokens before performing any token processing. A uint index into the modules table immediately follows the flags
+| READYTORUN_METHOD_SIG_AsyncVariant        | 0x100 | If set, the method signature refers to the runtime-async variant of the method.
 
 #### Field Signatures
 
@@ -325,6 +333,21 @@ ECMA 335 does not have a natural encoding for describing an overridden method. T
 #### IL Body signatures
 
 ECMA 335 does not define a format that can represent the exact implementation of a method by itself. This signature holds all of the IL of the method, the EH table, the locals table, and each token (other than type references) in those tables is replaced with an index into a local stream of signatures. Those signatures are simply verbatim copies of the needed metadata to describe MemberRefs, TypeSpecs, MethodSpecs, StandaloneSignatures and strings. All of that is bundled into a large byte array. In addition, a series of TypeSignatures follows which allow the type references to be resolved, as well as a methodreference to the uninstantiated method. Assuming all of this matches with the data that is present at runtime, the fixup is considered to be satisfied. See ReadyToRunStandaloneMetadata.cs for the exact details of the format.
+
+#### InjectStringThunks signatures
+
+The `READYTORUN_FIXUP_InjectStringThunks` fixup is placed in an eager import section and is processed at R2R module load time. There is at most one such fixup per compilation. It encodes a mapping from UTF-8 strings to pregenerated code thunks embedded in the R2R image.
+
+The signature following the fixup kind byte is a series of elements:
+
+| Field | Size | Description
+|:------|-----:|:-----------
+| LookupString | variable | A null-terminated UTF-8 string (the lookup key)
+| ThunkRVA | 4 bytes | An RVA into the module indicating the location of the thunk code. On WebAssembly platforms, this is an I32 function table index instead.
+
+The series terminates when the null-terminated string is the empty string (a single `0x00` byte). There is no trailing RVA after the terminal empty string.
+
+At runtime, the entries are merged into a global hash table. Strings already present in the table from previously loaded modules take precedence over new entries. The table can be queried via `LookupPregeneratedThunkByString`.
 
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
@@ -389,6 +412,36 @@ which encodes an extra 4-byte representing the end RVA of the unwind info blob.
 |      0 |    4 | Unwind info start RVA
 |      4 |    4 | Unwind info end RVA (1 plus RVA of last byte)
 |      8 |    4 | GC info start RVA
+
+### RUNTIME_FUNCTION (wasm, size = 8 bytes)
+
+On WebAssembly, the `RUNTIME_FUNCTION` uses a virtual IP as the `BeginAddress` rather than an RVA
+into the image. The high bit of the `BeginAddress` field indicates whether the entry represents a
+funclet (1) or a main method body (0). The remaining 31 bits encode the virtual IP of the start of
+the function or funclet.
+
+| Offset | Size | Value
+|-------:|-----:|:-----
+|      0 |    4 | Virtual IP (bits 30:0) &#124; IsFunclet flag (bit 31)
+|      4 |    4 | UnwindData RVA (GC info follows immediately after the unwind blob)
+
+The table is terminated by a sentinel entry with all bits set (`0xFFFFFFFF`), followed by a 4-byte
+value containing the minimum WebAssembly function table index for the image.
+
+### UnwindInfo (wasm)
+
+On WebAssembly, the unwind info blob associated with each `RUNTIME_FUNCTION` entry is encoded as
+two consecutive ULEB128 values:
+
+| Order | Encoding | Value
+|------:|:---------|:-----
+|     1 | ULEB128  | Frame size in bytes (the number of bytes to unwind from the stack)
+|     2 | ULEB128  | Virtual IP count divided by 2 (the number of virtual IPs logically present in the function, halved)
+
+The virtual IP count (after multiplying by 2) gives the span of virtual IPs covered by this
+function or funclet. All virtual IPs are forced to even numbers so that the runtime can force all virtual
+ips to have odd numbers and fit into the address space in a manner which cannot conflict with either interpreter
+IPs or PortableEntryPoint structures.
 
 ## ReadyToRunSectionType.MethodDefEntryPoints
 
@@ -582,6 +635,15 @@ The entry of the hashtable is a counted sequence of compressed unsigned integers
 
 Foreign RIDs are only present if a fragile inlining was allowed at compile time.
 
+**Note:** In single-file (non-composite) R2R files, this section is image-wide and is
+referenced directly by the main R2R header. In composite R2R files (v6.3+), this section
+is instead emitted per component assembly and is referenced by the
+`READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header of each component; inlinee/inliner RIDs
+without a module override flag refer to methods in the owning component assembly. The
+image-wide [`CrossModuleInlineInfo`](#readytorunsectiontypecrossmoduleinlineinfo-v63)
+section supersedes the image-wide use of `InliningInfo2` for cross-module inlines in
+composite images and may be emitted alongside the per-assembly `InliningInfo2` sections.
+
 **TODO:** It remains to be seen whether `DelayLoadMethodCallThunks` and / or
 `InliningInfo` also require changes specific to the composite R2R file format.
 
@@ -712,22 +774,82 @@ the first byte of the encoding specify the number of following bytes as follows:
 
 ## Sparse Array
 
-**TODO**: Document native format sparse array
+The NativeArray provides O(1) indexed access while maintaining compact storage through null element compression (empty blocks share storage) and variable-sized offset encoding (adapts to data size).
+
+The array is made up of three parts, the header, block index, and the blocks.
+
+The header is a variable encoded value where:
+- Bits 0-1: Entry index size
+  - 0 = uint8 offsets
+  - 1 = uint16 offsets
+  - 2 = uint32 offsets
+- Bits 2-31: Number of elements in the array
+
+The block index immediately follows the header in memory and consists of one offset entry per block (dynamic size encoded in the header), where each entry points to the location of a data block relative to the start of the block index section. The array uses a maximum block size of 16 elements, the block index effectively maps every group of 16 consecutive array indices to their corresponding data blocks.
+
+The following the block index are the actual data blocks. These are made up of two types of nodes. Tree nodes and Data nodes.
+
+Tree nodes are made up of a variable length encoded uint where:
+- Bit 0: If set, the node has a lower index child
+- Bit 1: If set, the node has a higher index child
+- Bits 2-31: Shifted relative offset of higher index child
+
+Data nodes contain the user defined data.
+
+Since each block has at most 16 elements, they have a depth of `4`.
+
+### Lookup Algorithm Steps
+
+**Step 1: Read the Header**
+- Decode the variable-length encoded header value from the array
+- Extract the entry index size from bits 0-1 (0=uint8, 1=uint16, 2=uint32 offsets)
+- Extract the total number of elements from bits 2-31 by right-shifting the header value by 2 bits
+- Use this information to determine how to interpret the block index entries and validate array bounds
+
+**Step 2: Calculate Block Offset**
+- Determine the block index `blockIndex` containing the target element by dividing the index by the block size (16).
+- Calculate the memory location containing the block offset `pBlockOffset = baseOffset + entrySize * blockIndex` where `baseOffset` is the address immediately following the header and `entrySize` is determined by the low bits of the header.
+- Read the block offset `blockOffset` from the block index table using the calculated `pBlockOffset` and entry size determined by the header.
+- Add the `baseOffset` to convert the relative `blockOffset` to an absolute position.
+
+**Step 3: Initialize Tree Navigation**
+- Using the `blockOffset` calculated above, begin traversal at the root of the block's binary tree structure
+
+**Step 4: Navigate Binary Tree**
+For each level of the tree (iterating through bit positions 8, 4, 2, 1):
+
+**Step 4a: Read Node Descriptor**
+- Decode the current node's control value, which contains navigation flags and child offset information
+- Extract flags indicating the presence of left and right child nodes
+- Extract the relative offset to the right child node (if present)
+
+**Step 4b: Determine Navigation Direction**
+- Test the current bit position against the target index
+- If the bit is set in the target index, attempt to navigate to the right child
+- If the bit is clear in the target index, attempt to navigate to the left child
+
+**Step 4c: Follow Navigation Path**
+- If the desired child exists (indicated by the appropriate flag), update the current position
+- For right child navigation, add the encoded offset to the current position
+- For left child navigation, move to the position immediately following the current node
+- Continue to the next bit level if navigation was successful
+
+**Step 5: Return Element Location**
+- Upon successful traversal, return the final offset position which points to the stored data.
+- If traversal is not successful (child node does not exist), the element can not be found in the array and return a failure status.
 
 ## Hashtable
 
 Conceptually, a native hash table is a header that describe the dimensions of the table, a table that maps hash values of the keys to buckets followed with a list of buckets that store the values. These three things are stored consecutively in the format.
 
-To make look up fast, the number of buckets is always a power of 2. The table is simply a sequence of `(1 + number of buckets)` cells, for the first `(number of buckets)` cells, its stores the offset of the bucket list from the beginning of the whole native hash table. The last cell stores the offset to the end of the buckets.
-
-Each bucket is a sequence of entries. An entry has a hash code and an offset to the object stored. The entries are sorted by hash code.
+To make look up fast, the number of buckets is always a power of 2. The table is simply a sequence of `(1 + number of buckets)` cells, for the first `(number of buckets)` cells, its stores the offset of the bucket list from the beginning of the whole native hash table. The last cell stores the offset to the end of the buckets. Entries are mapped to buckets using `x` lowest bits of the hash not in the lowest byte where `2^x = (number of buckets)`. For example, if `x=2` the following bits marked with `X` would be used in a 32-bit hash `b00000000_00000000_000000XX_00000000`.
 
 Physically, the header is a single byte. The most significant six bits is used to store the number of buckets in its base-2 logarithm. The remaining two bits are used for storing the entry size, as explained below:
 
 Because the offsets to the bucket lists are often small numbers, the table cells are variable sized.
 It could be either 1 byte, 2 bytes or 4 bytes. The three cases are described with two bits. `00` means it is one byte, `01` means it is two bytes and `10` means it is four bytes.
 
-The remaining data are the entries. The entries has only the least significant byte of the hash code, followed by the offset to the actual object stored in the hash table.
+The remaining data are the entries. The entries has only the least significant byte of the hash code, followed by the offset to the actual object stored in the hash table. The entries are sorted by hash code.
 
 To perform a lookup, one starts with reading the header, computing the hash code, using the number of buckets to determine the number of bits to mask away from the hash code, look it up in the table using the right pointer size, find the bucket list, find the next bucket list (or the end of the table) so that we know where to stop, search the entries in that list and then we will find the object if we have a hit, or we have a miss.
 
@@ -740,23 +862,23 @@ To see this in action, we can take a look at the following example, with these o
 | P      | 0x1231   |
 | Q      | 0x1232   |
 | R      | 0x1234   |
-| S      | 0x1238   |
+| S      | 0x1338   |
 
-Suppose we decided to have only two buckets, then only the least significant digit will be used to index the table, the whole hash table will look like this:
+Suppose we decided to have only two buckets, then only the 9th bit will be used to index the table, the whole hash table will look like this:
 
 | Part    | Offset | Content  | Meaning                                                                                                                                                                                   |
 |:--------|:-------|:--------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Header  | 0      | 0x04     | This is the header, the least significant bit is `00`, therefore the table cell is just one byte. The most significant six bit represents 1, which means the number of buckets is 2^1 = 2. |
-| Table   | 1      | 0x08     | This is the representation of the unsigned integer 4, which correspond to the offset of the bucket correspond to hash code `0`.                                                           |
-| Table   | 2      | 0x14     | This is the representation of the unsigned integer 10, which correspond to the offset of the bucket correspond to hash code `1`.                                                          |
-| Table   | 3      | 0x18     | This is the representation of the unsigned integer 12, which correspond to the offset of the end of the whole hash table.                                                                 |
-| Bucket1 | 4      | 0x32     | This is the least significant byte of the hash code of P                                                                                                                                  |
+| Table   | 1      | 0x04     | This is the representation of the unsigned integer 4, which correspond to the offset of the bucket correspond to hash code `0`.                                                           |
+| Table   | 2      | 0x0A     | This is the representation of the unsigned integer 10, which correspond to the offset of the bucket correspond to hash code `1`.                                                          |
+| Table   | 3      | 0x0C     | This is the representation of the unsigned integer 12, which correspond to the offset of the end of the whole hash table.                                                                 |
+| Bucket1 | 4      | 0x31     | This is the least significant byte of the hash code of P                                                                                                                                  |
 | Bucket1 | 5      | P        | This should be the offset to the object P                                                                                                                                                 |
-| Bucket1 | 6      | 0x34     | This is the least significant byte of the hash code of Q                                                                                                                                  |
+| Bucket1 | 6      | 0x32     | This is the least significant byte of the hash code of Q                                                                                                                                  |
 | Bucket1 | 7      | Q        | This should be the offset to the object Q                                                                                                                                                 |
-| Bucket1 | 8      | 0x38     | This is the least significant byte of the hash code of R                                                                                                                                  |
+| Bucket1 | 8      | 0x34     | This is the least significant byte of the hash code of R                                                                                                                                  |
 | Bucket1 | 9      | R        | This should be the offset to the object R                                                                                                                                                 |
-| Bucket2 | 10     | 0x31     | This is the least significant byte of the hash code of S                                                                                                                                  |
+| Bucket2 | 10     | 0x38     | This is the least significant byte of the hash code of S                                                                                                                                  |
 | Bucket2 | 11     | S        | This should be the offset to the object S                                                                                                                                                 |
 
 
@@ -797,11 +919,12 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_FailFast                  = 0x24,
     READYTORUN_HELPER_ThrowNullRef              = 0x25,
     READYTORUN_HELPER_ThrowDivZero              = 0x26,
+    READYTORUN_HELPER_ThrowExact                = 0x27,
 
     // Write barriers
     READYTORUN_HELPER_WriteBarrier              = 0x30,
     READYTORUN_HELPER_CheckedWriteBarrier       = 0x31,
-    READYTORUN_HELPER_ByRefWriteBarrier         = 0x32,
+    READYTORUN_HELPER_ByRefWriteBarrier         = 0x32, // Unused since READYTORUN_MAJOR_VERSION 19.0
 
     // Array helpers
     READYTORUN_HELPER_Stelem_Ref                = 0x38,
@@ -811,7 +934,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_MemCpy                    = 0x41,
 
     // Get string handle lazily
-    READYTORUN_HELPER_GetString                 = 0x50,
+    READYTORUN_HELPER_GetString                 = 0x50, // Unused since READYTORUN_MAJOR_VERSION 17.0
 
     // Used by /Tuning for Profile optimizations
     READYTORUN_HELPER_LogMethodEnter            = 0x51, // Unused since READYTORUN_MAJOR_VERSION 10.0
@@ -907,6 +1030,96 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_EndCatch                  = 0x110,
 };
 ```
+
+# Wasm Signature String Encoding
+
+Every managed method signature is encoded as a compact string that uniquely identifies its
+lowered Wasm calling convention. This encoding is used in R2R thunk lookup tables and is
+shared across three codebases:
+
+- **crossgen2** (`WasmLowering.GetSignature`): reference implementation, produces the string
+  during R2R compilation.
+- **WasmAppBuilder** (`SignatureMapper`): MSBuild task that generates interpreter-to-native
+  thunk tables from reflection metadata.
+- **CoreCLR runtime** (`helpers.cpp`, `GetSignatureKey`): runtime signature computation for
+  calli and portable entrypoint thunks.
+
+The string format is:
+
+```
+<return> [<this>] [<hidden-params>...] <explicit-params>... [p]
+```
+
+**Return type** (first character):
+
+| Encoding | Meaning |
+|---|---|
+| `v` | void return, or empty struct return (no return buffer) |
+| `i` | returns `i32` |
+| `l` | returns `i64` |
+| `f` | returns `f32` |
+| `d` | returns `f64` |
+| `S<N>` | struct return via hidden buffer, `N` is the struct size in bytes |
+
+**This pointer** (if the method has a `this` parameter):
+
+| Encoding | Meaning |
+|---|---|
+| `T` | `this` pointer (managed instance methods) |
+
+**Hidden parameters** (inserted between `this` and explicit parameters, in order):
+
+1. **Generic context** (`i`): present when the method requires an inst method desc or
+   method table argument.
+2. **Async continuation** (`i`): present for async calls.
+
+Note: the hidden return buffer pointer is **not** encoded in the signature string. Its
+presence is implied by the return type being `S<N>` — when the caller sees a struct return,
+it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
+
+**Explicit parameters** (one token per parameter, in declaration order):
+
+| Encoding | Meaning |
+|---|---|
+| `i` | `i32` parameter |
+| `l` | `i64` parameter |
+| `f` | `f32` parameter |
+| `d` | `f64` parameter |
+| `S<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes |
+| `e` | empty struct parameter — elided from Wasm args but present in the string |
+
+**Suffix**:
+
+| Encoding | Meaning |
+|---|---|
+| `p` | managed call with portable entrypoint (the `&pe` argument is implicit) |
+| *(absent)* | unmanaged callers only (reverse P/Invoke) |
+
+**Prefix** (applied by the caller, not part of the core encoding):
+
+When storing signature strings in thunk lookup tables, callers prepend a single-character
+prefix to distinguish thunk categories:
+
+| Prefix | Meaning |
+|---|---|
+| `M` | Calli thunk or interpreter-to-native thunk |
+| `I` | Portable entrypoint-to-interpreter thunk |
+
+**Examples**:
+
+| Method | Signature string (no prefix) |
+|---|---|
+| `static void F()` | `vp` |
+| `static int F(int x)` | `iip` |
+| `void F(int x)` (instance) | `vTip` |
+| `static MyStruct F()` where `MyStruct` is 16 bytes | `S16p` |
+| `static void F(MyStruct s)` where `MyStruct` is 8 bytes | `vS8p` |
+| `static int F(float x, double y)` | `ifdp` |
+| `[UnmanagedCallersOnly] static int F(int x)` | `ii` |
+
+**Slot sizing for structs**: When computing interpreter stack layout, struct parameters
+(`S<N>`) consume `max(N / 8, 1)` interpreter stack slots, while all other parameter types
+consume exactly 1 slot.
 
 # References
 

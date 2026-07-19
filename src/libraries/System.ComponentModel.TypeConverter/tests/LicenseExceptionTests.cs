@@ -13,7 +13,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void Ctor_Type(Type type)
+        public void Ctor_Type(Type? type)
         {
             var exception = new LicenseException(type);
             Assert.Null(exception.InnerException);

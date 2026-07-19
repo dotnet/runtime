@@ -11,13 +11,6 @@ namespace System.Numerics
         /// <param name="value">The quaternion to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
         [Intrinsic]
-        public static Vector4 AsVector4(this Quaternion value)
-        {
-#if MONO
-            return Unsafe.As<Quaternion, Vector4>(ref value);
-#else
-            return Unsafe.BitCast<Quaternion, Vector4>(value);
-#endif
-        }
+        public static Vector4 AsVector4(this Quaternion value) => Unsafe.BitCast<Quaternion, Vector4>(value);
     }
 }

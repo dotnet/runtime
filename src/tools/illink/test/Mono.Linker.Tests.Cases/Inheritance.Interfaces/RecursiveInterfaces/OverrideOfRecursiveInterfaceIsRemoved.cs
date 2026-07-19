@@ -11,7 +11,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
 {
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [Define("IL_ASSEMBLY_AVAILABLE")]
     [SetupCompileBefore("library.dll", new string[] { "Dependencies/OverrideOfRecursiveInterfaceIsRemoved.il" })]
     [Kept]
@@ -36,8 +36,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
         public static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			Program.MyTest();
-			_ = typeof(Program.IBaseUnused);
+            Program.MyTest();
+            _ = typeof(Program.IBaseUnused);
 #endif
         }
     }

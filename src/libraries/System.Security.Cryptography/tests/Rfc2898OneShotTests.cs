@@ -285,7 +285,7 @@ namespace System.Security.Cryptography
             Assert.Equal(expected, actual);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
         [MemberData(nameof(Pbkdf2_OpenSsl_Vectors))]
         public static void Pbkdf2_OpenSsl(string hashAlgorithm, string password, string salt, int iterations, string expectedHex)
         {

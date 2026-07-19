@@ -28,8 +28,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "Message for --RequiresWithMessageOnly--.")]
-        [ExpectedWarning("IL3002", "Message for --RequiresWithMessageOnly--.", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "Message for --RequiresWithMessageOnly--.", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "Message for --RequiresWithMessageOnly--.", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "Message for --RequiresWithMessageOnly--.", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         static void TestRequiresWithMessageOnlyOnMethod()
         {
             RequiresWithMessageOnly();
@@ -43,8 +43,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "Message for --RequiresWithMessageAndUrl--.", "https://helpurl")]
-        [ExpectedWarning("IL3002", "Message for --RequiresWithMessageAndUrl--.", "https://helpurl", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "Message for --RequiresWithMessageAndUrl--.", "https://helpurl", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "Message for --RequiresWithMessageAndUrl--.", "https://helpurl", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "Message for --RequiresWithMessageAndUrl--.", "https://helpurl", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         static void TestRequiresWithMessageAndUrlOnMethod()
         {
             RequiresWithMessageAndUrl();
@@ -58,8 +58,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "Message for --ConstructorRequires--.")]
-        [ExpectedWarning("IL3002", "Message for --ConstructorRequires--.", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "Message for --ConstructorRequires--.", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "Message for --ConstructorRequires--.", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "Message for --ConstructorRequires--.", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         static void TestRequiresOnConstructor()
         {
             new ConstructorRequires();
@@ -77,10 +77,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
         [ExpectedWarning("IL2026", "Message for --getter PropertyRequires--.")]
         [ExpectedWarning("IL2026", "Message for --setter PropertyRequires--.")]
-        [ExpectedWarning("IL3002", "Message for --getter PropertyRequires--.", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3002", "Message for --setter PropertyRequires--.", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "Message for --getter PropertyRequires--.", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "Message for --setter PropertyRequires--.", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "Message for --getter PropertyRequires--.", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3002", "Message for --setter PropertyRequires--.", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "Message for --getter PropertyRequires--.", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "Message for --setter PropertyRequires--.", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         static void TestRequiresOnPropertyGetterAndSetter()
         {
             _ = PropertyRequires;
@@ -108,8 +108,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "Adds a trailing period to this message.")]
-        [ExpectedWarning("IL3002", "Adds a trailing period to this message.", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "Adds a trailing period to this message.", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "Adds a trailing period to this message.", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "Adds a trailing period to this message.", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         static void TestThatTrailingPeriodIsAddedToMessage()
         {
             WarningMessageWithoutEndingPeriod();
@@ -124,8 +124,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
         [LogDoesNotContain("Does not add a period to this message..")]
         [ExpectedWarning("IL2026", "Does not add a period to this message.")]
-        [ExpectedWarning("IL3002", "Does not add a period to this message.", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "Does not add a period to this message.", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "Does not add a period to this message.", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "Does not add a period to this message.", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         static void TestThatTrailingPeriodIsNotDuplicatedInWarningMessage()
         {
             WarningMessageEndsWithPeriod();
@@ -191,8 +191,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--GenericTypeWithStaticMethodWhichRequires--")]
-            [ExpectedWarning("IL3002", "--GenericTypeWithStaticMethodWhichRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--GenericTypeWithStaticMethodWhichRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--GenericTypeWithStaticMethodWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--GenericTypeWithStaticMethodWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public static void GenericTypeWithStaticMethodViaLdftn()
             {
                 var _ = new Action(GenericWithStaticMethod<TestType>.GenericTypeWithStaticMethodWhichRequires);
@@ -218,8 +218,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [RequiresAssemblyFiles("--PropertyRequires--")]
             static int PropertyRequires { get; set; }
 
-            [ExpectedWarning("IL3002", "--PropertyRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3002", "--PropertyRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--PropertyRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3002", "--PropertyRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void TestProperty()
             {
                 var a = PropertyRequires;
@@ -229,11 +229,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [RequiresAssemblyFiles("--EventRequires--")]
             static event EventHandler EventRequires;
 
-            [ExpectedWarning("IL3002", "--EventRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3002", "--EventRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--EventRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3002", "--EventRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             [ExpectedWarning("IL2026", "--RequiresOnEventLambda--")]
-            [ExpectedWarning("IL3002", "--RequiresOnEventLambda--", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--RequiresOnEventLambda--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--RequiresOnEventLambda--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", "--RequiresOnEventLambda--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             static void TestEvent()
             {
                 EventRequires += (object sender, EventArgs e) => throw new NotImplementedException();
@@ -261,7 +261,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [RequiresDynamicCode("--Requires--")]
             static void Requires() { }
 
-            [ExpectedWarning("IL3050", "--Requires--", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3050", "--Requires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public static void Test()
             {
                 Requires();

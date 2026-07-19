@@ -34,6 +34,7 @@ if /i [%1] == [x86]         (set __BuildArch=x86&&shift&goto Arg_Loop)
 if /i [%1] == [x64]         (set __BuildArch=x64&&shift&goto Arg_Loop)
 if /i [%1] == [amd64]       (set __BuildArch=x64&&shift&goto Arg_Loop)
 if /i [%1] == [arm64]       (set __BuildArch=arm64&&shift&goto Arg_Loop)
+if /i [%1] == [wasm]        (set __BuildArch=wasm&&shift&goto Arg_Loop)
 
 if /i [%1] == [portable]    (set __PortableBuild=1&&shift&goto Arg_Loop)
 if /i [%1] == [targetrid]   (set __TargetRid=%2&&shift&&shift&goto Arg_Loop)
@@ -48,6 +49,8 @@ if /i [%1] == [msbuild] (set __Ninja=0)
 if /i [%1] == [runtimeflavor]  (set __RuntimeFlavor=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [runtimeconfiguration]  (set __RuntimeConfiguration=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [-fsanitize] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_ENABLE_SANITIZERS=%2"&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [-os] ( set __TargetOS=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [-cmakeargs] ( set __ExtraCmakeParams=%__ExtraCmakeParams% %2&&shift&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
@@ -90,21 +93,14 @@ if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
 :CreateIntermediates
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 
-if /i "%__BuildArch%" == "x64"     (set cm_BaseRid=win7)
-if /i "%__BuildArch%" == "x86"     (set cm_BaseRid=win7)
-if /i "%__BuildArch%" == "arm64"   (set cm_BaseRid=win10)
-:: Form the base RID to be used if we are doing a portable build
-if /i "%__PortableBuild%" == "1"   (set cm_BaseRid=win)
-set cm_BaseRid=%cm_BaseRid%-%__BuildArch%
-echo "Computed RID for native build is %cm_BaseRid%"
-
 :: When the host runs on an unknown rid, it falls back to the output rid
 :: Strip the architecture
 for /f "delims=-" %%i in ("%__TargetRid%") do set __HostFallbackOS=%%i
 :: The "win" host build is Windows 10 compatible
 if "%__HostFallbackOS%" == "win"       (set __HostFallbackOS=win10)
 
-set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_PKG_RID=%cm_BaseRid%" "-DCLI_CMAKE_FALLBACK_OS=%__HostFallbackOS%" "-DCLI_CMAKE_COMMIT_HASH=%__CommitSha%"
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_FALLBACK_OS=%__HostFallbackOS%" "-DCLI_CMAKE_COMMIT_HASH=%__CommitSha%"
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 :: Regenerate the native build files
@@ -121,16 +117,7 @@ if [%__ConfigureOnly%] == [1] goto :Exit
 echo Commencing build of corehost native components
 
 :: Build the project created by Cmake
-set __generatorArgs=
-if [%__Ninja%] == [1] (
-    set __generatorArgs=
-) else if [%__BuildArch%] == [wasm] (
-    set __generatorArgs=-j
-) else (
-    set __generatorArgs=
-)
-
-call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%
+call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE%
 IF ERRORLEVEL 1 (
     goto :Failure
 )

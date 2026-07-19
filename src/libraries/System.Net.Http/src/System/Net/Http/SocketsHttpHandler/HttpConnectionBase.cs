@@ -69,11 +69,12 @@ namespace System.Net.Http
                         this is Http2Connection ? "2" :
                         "3";
 
+                    Debug.Assert(_pool.TelemetryServerAddress is not null, "TelemetryServerAddress should not be null when System.Diagnostics.Metrics.Meter.IsSupported is true.");
                     _connectionMetrics = new ConnectionMetrics(
                         metrics,
                         protocol,
                         _pool.IsSecure ? "https" : "http",
-                        _pool.OriginAuthority.HostValue,
+                        _pool.TelemetryServerAddress,
                         _pool.OriginAuthority.Port,
                         remoteEndPoint?.Address?.ToString());
 

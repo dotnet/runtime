@@ -238,7 +238,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             Assert.True(result1.Succeeded);
         }
 
-#if NET8_0_OR_GREATER
+#if NET
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void TestNewDataAnnotationFailures()
         {
@@ -267,14 +267,14 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 "P5: The OptionsUsingNewAttributes.P5 field equals one of the values specified in DeniedValuesAttribute."
             }, result.Failures);
         }
-#endif // NET8_0_OR_GREATER
+#endif // NET
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void TestCustomGeneratedAttributes()
         {
             OptionsUsingGeneratedAttributes noFailures = new OptionsUsingGeneratedAttributes()
             {
-#if NET8_0_OR_GREATER
+#if NET
                 P0 = "123",
                 P11 = new DateTime(2023, 2, 1),
                 P12 = 6,
@@ -295,7 +295,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 P30 = new HashSet<string> { "1", "2", "3" },
                 P31 = new List<int> { 1, 2, 3, 4 },
                 P32 = new HashSet<int> { 1, 2, 3, 4 },
-#endif // NET8_0_OR_GREATER
+#endif // NET
                 P1 = 2,
                 P2 = "12345",
                 P3 = "12345",
@@ -318,7 +318,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
 
             OptionsUsingGeneratedAttributes failing = new OptionsUsingGeneratedAttributes()
             {
-#if NET8_0_OR_GREATER
+#if NET
                 P0 = "",
                 P11 = new DateTime(2023, 1, 1),
                 P12 = 5,
@@ -339,7 +339,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 P30 = new HashSet<string> { "1", "2" },
                 P31 = new List<int> { 1, 2, 3, 4, 5 },
                 P32 = new HashSet<int> { 1, 2, 3, 4, 5 },
-#endif // NET8_0_OR_GREATER
+#endif // NET
                 P1 = 4,
                 P2 = "1234",
                 P3 = "123456",
@@ -361,7 +361,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             Assert.True(generatorResult.Failed);
 
             Assert.Equal(new [] {
-#if NET8_0_OR_GREATER
+#if NET
                 "P0: The field OptionsUsingGeneratedAttributes.P0 must be a string or collection type with a minimum length of '1' and maximum length of '3'.",
                 string.Format(CultureInfo.CurrentCulture, "P11: The field OptionsUsingGeneratedAttributes.P11 must be between {0} and {1}.", new DateTime(2023, 1, 30), new DateTime(2023, 12, 30)),
                 "P12: The field OptionsUsingGeneratedAttributes.P12 must be between 5 exclusive and 10.",
@@ -382,7 +382,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 "P30: The field OptionsUsingGeneratedAttributes.P30 must be a string or array type with a minimum length of '3'.",
                 "P31: The field OptionsUsingGeneratedAttributes.P31 must be a string or array type with a maximum length of '4'.",
                 "P32: The field OptionsUsingGeneratedAttributes.P32 must be a string or array type with a maximum length of '4'.",
-#endif // NET8_0_OR_GREATER
+#endif // NET
                 "P1: The field OptionsUsingGeneratedAttributes.P1 must be between 1 and 3.",
                 "P2: The field OptionsUsingGeneratedAttributes.P2 must be a string or array type with a minimum length of '5'.",
                 "P3: The field OptionsUsingGeneratedAttributes.P3 must be a string or array type with a maximum length of '5'.",
@@ -424,7 +424,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
 
     public class OptionsUsingGeneratedAttributes
     {
-#if NET8_0_OR_GREATER
+#if NET
         [LengthAttribute(1, 3)]
         public string? P0 { get; set; }
 
@@ -487,7 +487,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
 
         [MaxLengthAttribute(4)]
         public ICollection<int> P32 { get; set; }
-#endif // NET8_0_OR_GREATER
+#endif // NET
 
         [RangeAttribute(1, 3)]
         public int P1 { get; set; }
@@ -598,7 +598,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
     public class MyListOptions<T> : List<T> { [Required] public T Prop { get; set; } = default; }
     [OptionsValidator] public partial class MyListOptionsOptionsValidator : IValidateOptions<MyListOptions<string>> { }
 
-#if NET8_0_OR_GREATER
+#if NET
     public class OptionsUsingNewAttributes
     {
         [Length(5, 10)]
@@ -621,7 +621,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
     public partial class NewAttributesValidator : IValidateOptions<OptionsUsingNewAttributes>
     {
     }
-#endif // NET8_0_OR_GREATER
+#endif // NET
 
 
     public class OptionsWithTimeSpanRangeAttribute

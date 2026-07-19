@@ -193,7 +193,7 @@ namespace System
 
         public static Span<byte> GetSpanBE()
         {
-            Span<byte> spanBE = new byte[Unsafe.SizeOf<TestStructExplicit>()];
+            Span<byte> spanBE = new byte[sizeof(TestStructExplicit)];
 
             WriteInt16BigEndian(spanBE, s_testExplicitStruct.S0);
             WriteInt32BigEndian(spanBE.Slice(2), s_testExplicitStruct.I0);
@@ -214,7 +214,7 @@ namespace System
 
         public static Span<byte> GetSpanLE()
         {
-            Span<byte> spanLE = new byte[Unsafe.SizeOf<TestStructExplicit>()];
+            Span<byte> spanLE = new byte[sizeof(TestStructExplicit)];
 
             WriteInt16LittleEndian(spanLE, s_testExplicitStruct.S0);
             WriteInt32LittleEndian(spanLE.Slice(2), s_testExplicitStruct.I0);
@@ -431,7 +431,7 @@ namespace System
             { new string[] { null, null, "9", null, "9", "9", null, "9"}, 3},
         };
 
-        public static TheoryData<string[], string[],  bool> SequenceEqualsNullData => new TheoryData<string[], string[], bool>()
+        public static TheoryData<string[], string[],  bool> SequenceEqualNullData => new TheoryData<string[], string[], bool>()
         {
             { new string[] { "1", null, "2" }, new string[] { "1", null, "2" } , true},
             { new string[] { "1", null, "2" }, new string[] { "1", "3", "2" } , false},

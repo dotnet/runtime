@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Pkcs
             lookup.Add(Oids.ECDsaWithSha256, new ECDsaCmsSignature(Oids.ECDsaWithSha256, HashAlgorithmName.SHA256));
             lookup.Add(Oids.ECDsaWithSha384, new ECDsaCmsSignature(Oids.ECDsaWithSha384, HashAlgorithmName.SHA384));
             lookup.Add(Oids.ECDsaWithSha512, new ECDsaCmsSignature(Oids.ECDsaWithSha512, HashAlgorithmName.SHA512));
-#if NET8_0_OR_GREATER
+#if NET
             lookup.Add(Oids.ECDsaWithSha3_256, new ECDsaCmsSignature(Oids.ECDsaWithSha3_256, HashAlgorithmName.SHA3_256));
             lookup.Add(Oids.ECDsaWithSha3_384, new ECDsaCmsSignature(Oids.ECDsaWithSha3_384, HashAlgorithmName.SHA3_384));
             lookup.Add(Oids.ECDsaWithSha3_512, new ECDsaCmsSignature(Oids.ECDsaWithSha3_512, HashAlgorithmName.SHA3_512));
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Pkcs
                             Oids.Sha256 => Oids.ECDsaWithSha256,
                             Oids.Sha384 => Oids.ECDsaWithSha384,
                             Oids.Sha512 => Oids.ECDsaWithSha512,
-#if NET8_0_OR_GREATER
+#if NET
                             Oids.Sha3_256 => Oids.ECDsaWithSha3_256,
                             Oids.Sha3_384 => Oids.ECDsaWithSha3_384,
                             Oids.Sha3_512 => Oids.ECDsaWithSha3_512,

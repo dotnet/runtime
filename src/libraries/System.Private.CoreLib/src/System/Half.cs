@@ -16,6 +16,7 @@ namespace System
     /// <summary>
     /// Represents a half-precision floating-point number.
     /// </summary>
+    [Intrinsic]
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Half
         : IComparable,
@@ -391,13 +392,7 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Half result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-
-            if (s == null)
-            {
-                result = Zero;
-                return false;
-            }
-            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         /// <summary>
@@ -411,7 +406,7 @@ namespace System
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Half result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         private static bool AreZero(Half left, Half right)
@@ -563,7 +558,10 @@ namespace System
         /// <summary>Explicitly converts a <see cref="decimal" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
-        public static explicit operator Half(decimal value) => (Half)(float)value;
+        // Round through double, not float: decimal -> double is correctly rounded and double (53-bit significand)
+        // -> Half is an innocuous double rounding (53 >= 2 * 11 + 2), so the result is correctly rounded. Going
+        // through float (24-bit significand) is not, because 24 only meets the 2 * 11 + 2 bound with no margin.
+        public static explicit operator Half(decimal value) => (Half)(double)value;
 
         /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -617,6 +615,7 @@ namespace System
         /// <summary>Explicitly converts a <see cref="float" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [Intrinsic]
         public static explicit operator Half(float value)
         {
             #region Explanation of this algorithm
@@ -738,7 +737,7 @@ namespace System
             const uint SingleBiasedExponentMask = float.BiasedExponentMask;
             // Exponent displacement #2
             const uint Exponent13 = 0x0680_0000u;
-            // Maximum value that is not Infinity in Half
+            // The maximum infinitely precise value that will round down to MaxValue
             const float MaxHalfValueBelowInfinity = 65520.0f;
             // Mask for exponent bits in Half
             const uint ExponentMask = BiasedExponentMask;
@@ -1015,12 +1014,13 @@ namespace System
                 exp -= 1;
             }
 
-            return CreateDouble(sign, (ushort)(exp + 0x3F0), (ulong)sig << 42);
+            return double.CreateDouble(sign, (ushort)(exp + 0x3F0), (ulong)sig << 42);
         }
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="float" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="float" /> value.</returns>
+        [Intrinsic]
         public static explicit operator float(Half value)
         {
             #region Explanation of this algorithm
@@ -1176,10 +1176,6 @@ namespace System
 
             return BitConverter.UInt64BitsToDouble(signInt | NaNBits | sigInt);
         }
-
-        private static float CreateSingle(bool sign, byte exp, uint sig) => BitConverter.UInt32BitsToSingle(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.BiasedExponentShift) + sig);
-
-        private static double CreateDouble(bool sign, ushort exp, ulong sig) => BitConverter.UInt64BitsToDouble(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.BiasedExponentShift) + sig);
 
         #endregion
 
@@ -1360,7 +1356,7 @@ namespace System
         int IFloatingPoint<Half>.GetSignificandByteCount() => sizeof(ushort);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
-        int IFloatingPoint<Half>.GetSignificandBitLength() => 11;
+        int IFloatingPoint<Half>.GetSignificandBitLength() => SignificandLength;
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
@@ -1536,7 +1532,7 @@ namespace System
                 }
 
                 Debug.Assert(IsSubnormal(x));
-                return MinExponent - (BitOperations.LeadingZeroCount(x.TrailingSignificand) - BiasedExponentLength);
+                return MinExponent - (ushort.LeadingZeroCount(x.TrailingSignificand) - BiasedExponentLength);
             }
 
             return x.Exponent;
@@ -2168,6 +2164,27 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Half result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s.AsSpan(), style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Half result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Half result, out int bytesConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(utf8Text, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed);
+        }
+
         //
         // IParsable
         //
@@ -2315,15 +2332,15 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
         public static Half Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.ParseFloat<byte, Half>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Half result)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
@@ -2339,7 +2356,7 @@ namespace System
         static int IBinaryFloatParseAndFormatInfo<Half>.NumberBufferLength => Number.HalfNumberBufferLength;
 
         static ulong IBinaryFloatParseAndFormatInfo<Half>.ZeroBits => 0;
-        static ulong IBinaryFloatParseAndFormatInfo<Half>.InfinityBits => 0x7C00;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.InfinityBits => PositiveInfinityBits;
 
         static ulong IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaMask => (1UL << SignificandLength) - 1;
         static ulong IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaMask => TrailingSignificandMask;
@@ -2351,15 +2368,15 @@ namespace System
         static int IBinaryFloatParseAndFormatInfo<Half>.MaxDecimalExponent => 5;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.ExponentBias => ExponentBias;
-        static ushort IBinaryFloatParseAndFormatInfo<Half>.ExponentBits => 5;
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.ExponentBits => BiasedExponentLength;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.OverflowDecimalExponent => (MaxExponent + (2 * SignificandLength)) / 3;
-        static int IBinaryFloatParseAndFormatInfo<Half>.InfinityExponent => 0x1F;
+        static int IBinaryFloatParseAndFormatInfo<Half>.InfinityExponent => MaxBiasedExponent;
 
         static ushort IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaBits => SignificandLength;
         static ushort IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaBits => TrailingSignificandLength;
 
-        static int IBinaryFloatParseAndFormatInfo<Half>.MinFastFloatDecimalExponent => -8;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinFastFloatDecimalExponent => -26;
         static int IBinaryFloatParseAndFormatInfo<Half>.MaxFastFloatDecimalExponent => 4;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.MinExponentRoundToEven => -21;

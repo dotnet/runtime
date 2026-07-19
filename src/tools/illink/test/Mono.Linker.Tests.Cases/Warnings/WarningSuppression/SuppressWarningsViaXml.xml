@@ -8,10 +8,6 @@
 					<argument>IL2026</argument>
 				</attribute>
 			</method>
-			<attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-				<argument>ILLink</argument>
-				<argument>IL2109</argument>
-			</attribute>
 		</type>
 	</assembly>
 </linker>

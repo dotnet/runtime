@@ -279,7 +279,7 @@ namespace System.Security.Cryptography.Cose
                                 }
                                 else if (state == CborReaderState.UnsignedInteger || state == CborReaderState.NegativeInteger)
                                 {
-                                    reader.ReadInt32();
+                                    reader.ReadInt32ForCrypto();
                                 }
                                 else if (state == CborReaderState.TextString)
                                 {

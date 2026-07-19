@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <CLRTestPriority>1</CLRTestPriority>
+    <!-- Saturating float->small casts on CoreCLR; Mono still truncates (https://github.com/dotnet/runtime/issues/100368) -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

@@ -3,6 +3,7 @@
 
 using Microsoft.VisualBasic.CompilerServices;
 using System;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace Microsoft.VisualBasic.Tests
@@ -10,7 +11,7 @@ namespace Microsoft.VisualBasic.Tests
     public class ErrObjectTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14854", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         [ActiveIssue("https://github.com/mono/mono/issues/14854", TestRuntimes.Mono)]
         public void Clear()
         {
@@ -27,7 +28,10 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(0, errObj.HelpContext);
             Assert.Equal("", errObj.HelpFile);
             Assert.Equal("", errObj.Source);
-            Assert.Equal(0, errObj.LastDllError);
+#if NET
+            Marshal.SetLastPInvokeError(42);
+            Assert.Equal(42, errObj.LastDllError);
+#endif
             Assert.Equal(0, errObj.Number);
             Assert.Equal("", errObj.Description);
             Assert.Null(errObj.GetException());
@@ -122,7 +126,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("#-3", -3, "")]
         [InlineData("MyFile1", 0, "MyFile1")]
         [InlineData("MyFile4#4", 4, "MyFile4")]
-        public void ParseHelpLink(string helpLink, int expectedHelpContext, string expectedHelpFile)
+        public void ParseHelpLink(string? helpLink, int expectedHelpContext, string expectedHelpFile)
         {
             ProjectData.ClearProjectError();
             ProjectData.SetProjectError(new ArgumentException() { HelpLink = helpLink });

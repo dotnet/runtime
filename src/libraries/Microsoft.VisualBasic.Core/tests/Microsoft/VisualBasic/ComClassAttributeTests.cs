@@ -21,7 +21,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("classID")]
-        public void Ctor_String(string classID)
+        public void Ctor_String(string? classID)
         {
             var attribute = new ComClassAttribute(classID);
             Assert.Equal(classID, attribute.ClassID);
@@ -34,7 +34,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(null, null)]
         [InlineData("", "")]
         [InlineData("classID", "interfaceID")]
-        public void Ctor_String_String(string classID, string interfaceID)
+        public void Ctor_String_String(string? classID, string? interfaceID)
         {
             var attribute = new ComClassAttribute(classID, interfaceID);
             Assert.Equal(classID, attribute.ClassID);
@@ -47,7 +47,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(null, null, null)]
         [InlineData("", "", "")]
         [InlineData("classID", "interfaceID", "eventID")]
-        public void Ctor_String_String_String(string classID, string interfaceID, string eventID)
+        public void Ctor_String_String_String(string? classID, string? interfaceID, string? eventID)
         {
             var attribute = new ComClassAttribute(classID, interfaceID, eventID);
             Assert.Equal(classID, attribute.ClassID);

@@ -1,8 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Schema;
 using System.Xml.Serialization;
 using Xunit;
 using Xunit.Abstractions;
@@ -48,7 +55,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
 
             Assert.Equal(5, exporter.Schemas.Count);
             Assert.Equal(36, exporter.Schemas.GlobalElements.Count);
-            Assert.Equal(18, exporter.Schemas.GlobalTypes.Count);
+            Assert.Equal(20, exporter.Schemas.GlobalTypes.Count);
 
             SchemaUtils.OrderedContains(@"<xs:schema xmlns:tns=""http://schemas.datacontract.org/2004/07/SerializableTypes.XsdDataContractExporterTests"" elementFormDefault=""qualified"" targetNamespace=""http://schemas.datacontract.org/2004/07/SerializableTypes.XsdDataContractExporterTests"" xmlns:xs=""http://www.w3.org/2001/XMLSchema"">", ref schemas);
             SchemaUtils.OrderedContains(@"<xs:complexType name=""DataContractTypes.Person1"">", ref schemas);
@@ -80,8 +87,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Inconsistent and unpredictable results.")]  // TODO - Why does 'TypeWithReadWriteCollectionAndNoCtorOnCollection' only cause an exception sometimes, but not all the time? What's special about wasm here?
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/82967", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/82967", TestPlatforms.Browser | TestPlatforms.Wasi)]
         [InlineData(typeof(NoDataContractWithoutParameterlessConstructor), typeof(InvalidDataContractException), @"Type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+NoDataContractWithoutParameterlessConstructor' cannot be serialized. Consider marking it with the DataContractAttribute attribute, and marking all of its members you want serialized with the DataMemberAttribute attribute. Alternatively, you can ensure that the type is public and has a parameterless constructor - all public members of the type will then be serialized, and no attributes will be required.")]
         [InlineData(typeof(DataContractWithInvalidMember), typeof(InvalidDataContractException), @"Type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+NoDataContractWithoutParameterlessConstructor' cannot be serialized. Consider marking it with the DataContractAttribute attribute, and marking all of its members you want serialized with the DataMemberAttribute attribute. Alternatively, you can ensure that the type is public and has a parameterless constructor - all public members of the type will then be serialized, and no attributes will be required.")]
         [InlineData(typeof(SerializableWithInvalidMember), typeof(InvalidDataContractException), @"Type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+NoDataContractWithoutParameterlessConstructor' cannot be serialized. Consider marking it with the DataContractAttribute attribute, and marking all of its members you want serialized with the DataMemberAttribute attribute. Alternatively, you can ensure that the type is public and has a parameterless constructor - all public members of the type will then be serialized, and no attributes will be required.")]
@@ -148,7 +154,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
 
             Assert.Equal(3, exporter.Schemas.Count);
             Assert.Equal(39, exporter.Schemas.GlobalElements.Count);
-            Assert.Equal(21, exporter.Schemas.GlobalTypes.Count);
+            Assert.Equal(23, exporter.Schemas.GlobalTypes.Count);
 
             SchemaUtils.OrderedContains(@"<xs:schema xmlns:tns=""http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Xml.XsdDataContractExporterTests"" xmlns:ser=""http://schemas.microsoft.com/2003/10/Serialization/"" elementFormDefault=""qualified"" targetNamespace=""http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Xml.XsdDataContractExporterTests"" xmlns:xs=""http://www.w3.org/2001/XMLSchema"">", ref schemas);
             SchemaUtils.OrderedContains(@"<xs:import namespace=""http://schemas.microsoft.com/2003/10/Serialization/"" />", ref schemas);
@@ -849,6 +855,22 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
         }
         #endregion
 
+        [Fact]
+        public void DateOnly_TimeOnly_PrimitiveSchemas_Exported()
+        {
+            var exporter = new XsdDataContractExporter();
+            exporter.Export(typeof(DateOnly));
+            exporter.Export(typeof(TimeOnly));
+
+            string schemas = SchemaUtils.DumpSchema(exporter.Schemas, skipSerializationNamespace: false);
+            Assert.Contains("<xs:simpleType name=\"dateOnly\">", schemas);
+            Assert.Contains("<xs:simpleType name=\"timeOnly\">", schemas);
+            // Ensure pattern facets for additional validation likely present
+            Assert.Contains("xs:restriction base=\"xs:date\"", schemas);
+            Assert.Contains("xs:restriction base=\"xs:time\"", schemas);
+            // The schema for the Microsoft serialization namespace should appear as its own schema document
+            Assert.Contains("http://schemas.microsoft.com/2003/10/Serialization/", schemas);
+        }
 #pragma warning restore CS0169, CS0414
     }
 }

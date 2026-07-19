@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void ConvertToInt64WithTruncationVector128Double()
+        [Fact]
+        public static void ConvertToInt64WithTruncationVector128Double()
         {
             var test = new SimdScalarUnaryOpConvertTest__ConvertToInt64WithTruncationVector128Double();
 
@@ -99,7 +101,7 @@ namespace JIT.HardwareIntrinsics.X86
                 var testStruct = new TestStruct();
 
                 for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetDouble(); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref testStruct._fld), ref Unsafe.As<Double, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref testStruct._fld), ref Unsafe.As<Double, byte>(ref _data[0]), (uint)sizeof(Vector128<Double>));
 
                 return testStruct;
             }
@@ -113,7 +115,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private static readonly int LargestVectorSize = 16;
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Double>>() / sizeof(Double);
+        private static readonly int Op1ElementCount = sizeof(Vector128<Double>) / sizeof(Double);
 
         private static Double[] _data = new Double[Op1ElementCount];
 
@@ -126,7 +128,7 @@ namespace JIT.HardwareIntrinsics.X86
         static SimdScalarUnaryOpConvertTest__ConvertToInt64WithTruncationVector128Double()
         {
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetDouble(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _clsVar), ref Unsafe.As<Double, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _clsVar), ref Unsafe.As<Double, byte>(ref _data[0]), (uint)sizeof(Vector128<Double>));
         }
 
         public SimdScalarUnaryOpConvertTest__ConvertToInt64WithTruncationVector128Double()
@@ -134,7 +136,7 @@ namespace JIT.HardwareIntrinsics.X86
             Succeeded = true;
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetDouble(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _fld), ref Unsafe.As<Double, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _fld), ref Unsafe.As<Double, byte>(ref _data[0]), (uint)sizeof(Vector128<Double>));
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetDouble(); }
             _dataTable = new SimdScalarUnaryOpTest__DataTable<Double>(_data, LargestVectorSize);
@@ -322,7 +324,7 @@ namespace JIT.HardwareIntrinsics.X86
         private void ValidateResult(void* firstOp, Int64 result, [CallerMemberName] string method = "")
         {
             Double[] inArray = new Double[Op1ElementCount];
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector128<Double>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)sizeof(Vector128<Double>));
             ValidateResult(inArray, result, method);
         }
 

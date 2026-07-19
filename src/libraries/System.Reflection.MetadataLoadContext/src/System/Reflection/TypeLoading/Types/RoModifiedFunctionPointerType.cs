@@ -40,8 +40,8 @@ namespace System.Reflection
         }
 
         public override Type GetFunctionPointerReturnType() => _returnType;
-        public override Type[] GetFunctionPointerParameterTypes() => Helpers.CloneArray(_parameterTypes);
-        public override Type[] GetFunctionPointerCallingConventions() => Helpers.CloneArray(_callingConventions);
+        public override Type[] GetFunctionPointerParameterTypes() => Helpers.CloneArray<Type>(_parameterTypes);
+        public override Type[] GetFunctionPointerCallingConventions() => Helpers.CloneArray<Type>(_callingConventions);
 
         private Type CDeclType => Loader.GetCoreType(CoreType.CallConvCdecl);
         private Type StdCallType => Loader.GetCoreType(CoreType.CallConvStdcall);

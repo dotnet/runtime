@@ -6,10 +6,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -21,8 +17,8 @@ namespace Microsoft.Interop
     internal sealed class ComMethodContext : IEquatable<ComMethodContext>
     {
         /// <summary>
-        /// A partially constructed <see cref="ComMethodContext"/> that does not have a <see cref="IncrementalMethodStubGenerationContext"/> generated for it yet.
-        /// <see cref="Builder"/> can be constructed without a reference to an ISymbol, whereas the <see cref="IncrementalMethodStubGenerationContext"/> requires an ISymbol
+        /// A partially constructed <see cref="ComMethodContext"/> that does not have a <see cref="SourceAvailableIncrementalMethodStubGenerationContext"/> generated for it yet.
+        /// <see cref="Builder"/> can be constructed without a reference to an ISymbol, whereas the <see cref="SourceAvailableIncrementalMethodStubGenerationContext"/> requires an ISymbol
         /// </summary>
         /// <param name="OriginalDeclaringInterface">
         /// The interface that originally declared the method in user code
@@ -48,7 +44,7 @@ namespace Microsoft.Interop
         /// <param name="builder">The partially constructed context</param>
         /// <param name="owningInterface">The final owning interface of this method context</param>
         /// <param name="generationContext">The generation context for this method</param>
-        public ComMethodContext(Builder builder, ComInterfaceContext owningInterface, IncrementalMethodStubGenerationContext generationContext)
+        public ComMethodContext(Builder builder, ComInterfaceContext owningInterface, IncrementalMethodStubGenerationContext? generationContext)
         {
             _state = new State(builder.OriginalDeclaringInterface, owningInterface, builder.MethodInfo, generationContext);
         }
@@ -65,6 +61,8 @@ namespace Microsoft.Interop
 
         public ComMethodInfo MethodInfo => _state.MethodInfo;
 
+        public bool IsExternallyDefined => _state.OriginalDeclaringInterface.IsExternallyDefined || _state.OwningInterface.IsExternallyDefined;
+
         public IncrementalMethodStubGenerationContext GenerationContext => _state.GenerationContext;
 
         public bool IsInheritedMethod => OriginalDeclaringInterface != OwningInterface;
@@ -77,12 +75,18 @@ namespace Microsoft.Interop
 
         private GeneratedMethodContextBase CreateManagedToUnmanagedStub()
         {
-            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional) || IsHiddenOnDerivedInterface)
+            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
+                || IsHiddenOnDerivedInterface
+                || IsExternallyDefined)
             {
                 return new SkippedStubContext(OriginalDeclaringInterface.Info.Type);
             }
-            var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(GenerationContext, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
-            return new GeneratedStubCodeContext(GenerationContext.TypeKeyOwner, GenerationContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
+            if (GenerationContext is not SourceAvailableIncrementalMethodStubGenerationContext sourceAvailableContext)
+            {
+                throw new InvalidOperationException("Cannot generate stubs for non-source available methods.");
+            }
+            var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(sourceAvailableContext, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
+            return new GeneratedStubCodeContext(sourceAvailableContext.TypeKeyOwner, sourceAvailableContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
         }
 
         private GeneratedMethodContextBase? _unmanagedToManagedStub;
@@ -91,63 +95,18 @@ namespace Microsoft.Interop
 
         private GeneratedMethodContextBase CreateUnmanagedToManagedStub()
         {
-            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional) || IsHiddenOnDerivedInterface)
+            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
+                || IsHiddenOnDerivedInterface
+                || IsExternallyDefined)
             {
                 return new SkippedStubContext(GenerationContext.OriginalDefiningType);
             }
-            var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(GenerationContext, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
-            return new GeneratedStubCodeContext(GenerationContext.OriginalDefiningType, GenerationContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
-        }
-
-        private MethodDeclarationSyntax? _unreachableExceptionStub;
-
-        public MethodDeclarationSyntax UnreachableExceptionStub => _unreachableExceptionStub ??= CreateUnreachableExceptionStub();
-
-        private MethodDeclarationSyntax CreateUnreachableExceptionStub()
-        {
-            // DeclarationCopiedFromBaseDeclaration(<Arguments>) => throw new UnreachableException();
-            return MethodInfo.Syntax
-                .WithReturnType(GenerationContext.SignatureContext.StubReturnType)
-                .WithModifiers(TokenList())
-                .WithAttributeLists(List<AttributeListSyntax>())
-                .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(
-                    ParseName(OriginalDeclaringInterface.Info.Type.FullTypeName)))
-                .WithParameterList(ParameterList(SeparatedList(GenerationContext.SignatureContext.StubParameters)))
-                .WithExpressionBody(ArrowExpressionClause(
-                    ThrowExpression(
-                        ObjectCreationExpression(
-                            TypeSyntaxes.UnreachableException)
-                            .WithArgumentList(ArgumentList()))));
-        }
-
-        private MethodDeclarationSyntax? _shadow;
-
-        public MethodDeclarationSyntax Shadow => _shadow ??= GenerateShadow();
-
-        private MethodDeclarationSyntax GenerateShadow()
-        {
-            // DeclarationCopiedFromBaseDeclaration(<Arguments>)
-            //    => ((<baseInterfaceType>)this).<MethodName>(<Arguments>);
-            return MethodDeclaration(GenerationContext.SignatureContext.StubReturnType, MethodInfo.MethodName)
-                .WithModifiers(TokenList(Token(SyntaxKind.NewKeyword)))
-                .WithAttributeLists(List(GenerationContext.SignatureContext.AdditionalAttributes.Concat(MethodInfo.Attributes.Select(a => a.GenerateAttributeList()))))
-                .WithParameterList(ParameterList(SeparatedList(GenerationContext.SignatureContext.StubParameters)))
-                .WithExpressionBody(
-                    ArrowExpressionClause(
-                        InvocationExpression(
-                            MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
-                                ParenthesizedExpression(
-                                    CastExpression(OriginalDeclaringInterface.Info.Type.Syntax, IdentifierName("this"))),
-                                IdentifierName(MethodInfo.MethodName)),
-                            ArgumentList(
-                                SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(GenerateArgument))))))
-                .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
-
-            static ArgumentSyntax GenerateArgument(TypePositionInfo info)
-                => info.IsByRef
-                ? Argument(IdentifierName(info.InstanceIdentifier)).WithRefKindKeyword(MarshallerHelpers.GetManagedArgumentRefKindKeyword(info))
-                : Argument(IdentifierName(info.InstanceIdentifier));
+            if (GenerationContext is not SourceAvailableIncrementalMethodStubGenerationContext sourceAvailableContext)
+            {
+                throw new InvalidOperationException("Cannot generate stubs for non-source available methods.");
+            }
+            var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(sourceAvailableContext, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
+            return new GeneratedStubCodeContext(sourceAvailableContext.OriginalDefiningType, sourceAvailableContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
         }
 
         /// <summary>
@@ -183,7 +142,7 @@ namespace Microsoft.Interop
                     return cachedValue;
                 }
 
-                int startingIndex = 3;
+                int startingIndex = IUnknownConstants.VTableSize;
                 List<Builder> methods = new();
                 // If we have a base interface, we should add the inherited methods to our list in vtable order
                 if (iface.Base is not null)

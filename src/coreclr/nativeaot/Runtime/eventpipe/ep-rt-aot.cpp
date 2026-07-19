@@ -26,6 +26,7 @@
 #include "threadstore.inl"
 #include "eventtrace_context.h"
 #include "eventtracebase.h"
+#include "thread.inl"
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
 // This is initialized at the beginning and EventPipe library requires the lock handle to be maintained by the runtime
@@ -122,9 +123,11 @@ ep_rt_aot_sample_profiler_write_sampling_event_for_threads (
 
         // Walk the stack and write it out as an event.
         if (ep_rt_aot_walk_managed_stack_for_thread (target_thread, current_stack_contents) && !ep_stack_contents_is_empty (current_stack_contents)) {
-            // Set the payload.
-            // TODO: We can actually detect whether we are in managed or external code but does it matter?!
-            uint32_t payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+            // Set the payload. If the thread is trapped for suspension, it was in cooperative mode
+            // (managed code). Otherwise, it was in preemptive mode (external code).
+            uint32_t payload_data = target_thread->IsSuspensionTrapped()
+                ? EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED
+                : EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
 
             // Write the sample.
             ep_write_sample_profile_event (
@@ -331,6 +334,12 @@ ep_rt_aot_atomic_dec_int64_t (volatile int64_t *value) {
     return (currentValue - 1);
 }
 
+int64_t
+ep_rt_aot_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value) {
+    STATIC_CONTRACT_NOTHROW;
+    return static_cast<int64_t>(PalInterlockedCompareExchange64 ((volatile int64_t *)target, (int64_t)value, (int64_t)expected));
+}
+
 size_t
 ep_rt_aot_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value) {
     STATIC_CONTRACT_NOTHROW;
@@ -513,10 +522,7 @@ int64_t
 ep_rt_aot_system_timestamp_get (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    FILETIME value;
-    PalGetSystemTimeAsFileTime (&value);
-    return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+    return minipal_get_system_time();
 }
 
 int32_t
@@ -881,7 +887,7 @@ ep_rt_thread_handle_t ep_rt_aot_setup_thread (void)
 
 ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle)
 {
-    return (ep_rt_thread_id_t)thread_handle->GetPalThreadIdForLogging();
+    return (ep_rt_thread_id_t)thread_handle->GetOSThreadId();
 }
 
 #ifdef EP_CHECKED_BUILD

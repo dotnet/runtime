@@ -1238,7 +1238,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
             if(m_dwCeeFileFlags & ICEE_CREATE_FILE_PE64)
             {
                 ULONGLONG *pdw = new ULONGLONG[N];
-                for(i=0; i<N; i++) pdw[i] = UI64(0xdeadbeefdeadbeef);
+                for(i=0; i<N; i++) pdw[i] = 0xdeadbeefdeadbeefULL;
                 EmitData(pdw,sizeof(ULONGLONG)*N);
                 m_VTFList.PUSH(new VTFEntry((USHORT)N,COR_VTABLE_64BIT|COR_VTABLE_FROM_UNMANAGED,sz));
                 delete [] pdw;
@@ -1720,7 +1720,8 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         pb = (BYTE*)(((size_t)pb + 3) & ~3);
         PSTORAGEHEADER pSHdr = (PSTORAGEHEADER)pb;
         PSTORAGESTREAM pStr = (PSTORAGESTREAM)(pSHdr+1);
-        for(short iStr = 1; iStr <= VAL16(pSHdr->iStreams); iStr++)
+        USHORT streamCount = VAL16(pSHdr->iStreams);
+        for(unsigned int iStr = 1; iStr <= streamCount; iStr++)
         {
             if((strcmp(pStr->rcName,"#-")==0)||(strcmp(pStr->rcName,"#~")==0))
             {

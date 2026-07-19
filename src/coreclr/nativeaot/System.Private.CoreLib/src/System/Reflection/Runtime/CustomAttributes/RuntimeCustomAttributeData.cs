@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Runtime.CustomAttributes
@@ -166,13 +167,13 @@ namespace System.Reflection.Runtime.CustomAttributes
             }
 
             // Handle the array case
-            if (value is IEnumerable enumerableValue && !(value is string))
+            if (value is Array arr)
             {
                 if (!argumentType.IsArray)
                     throw new BadImageFormatException();
                 Type reportedElementType = argumentType.GetElementType()!;
                 ArrayBuilder<CustomAttributeTypedArgument> elementTypedArguments = default;
-                foreach (object elementValue in enumerableValue)
+                foreach (object elementValue in arr)
                 {
                     CustomAttributeTypedArgument elementTypedArgument = WrapInCustomAttributeTypedArgument(elementValue, reportedElementType);
                     elementTypedArguments.Add(elementTypedArgument);
@@ -181,6 +182,7 @@ namespace System.Reflection.Runtime.CustomAttributes
             }
             else
             {
+                Debug.Assert(value is string or (not IEnumerable));
                 return new CustomAttributeTypedArgument(argumentType, value);
             }
         }

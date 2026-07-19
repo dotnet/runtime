@@ -28,12 +28,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestBranchMergeSwitch();
             TestBranchMergeTry();
             TestBranchMergeCatch();
+            TestIsPattern();
+            TestRecursivePattern();
 
             // The remaining tests illustrate current limitations of the analysis
             // that we might be able to lift in the future.
 
             // These are overly conservative (extraneous warnings)
-            // 	 https://github.com/dotnet/linker/issues/2550
+            // https://github.com/dotnet/linker/issues/2550
             TestBranchGoto();
             TestBranchIf();
             TestBranchIfElse();
@@ -52,6 +54,43 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             // These are probably just bugs
             TestBackwardEdgeWithLdElem();
+        }
+
+        [ExpectedWarning(
+                "IL2072",
+                nameof(GetWithPublicMethods),
+                nameof(DataFlowStringExtensions.RequiresPublicFields)
+        )]
+        public static void TestIsPattern()
+        {
+            if (GetWithPublicMethods() is string str)
+            {
+                str.RequiresPublicFields(); // warn
+            }
+
+            if (GetWithPublicMethods() is string str2)
+            {
+                str2.RequiresPublicMethods(); // no warn
+            }
+        }
+
+        [ExpectedWarning(
+                "IL2072",
+                nameof(PropertyWithPublicMethods) + "." + nameof(PropertyWithPublicMethods.PublicProperty),
+                nameof(DataFlowStringExtensions.RequiresPublicFields)
+        )]
+        public static void TestRecursivePattern()
+        {
+            var propertyWithPublicMethods = new PropertyWithPublicMethods();
+            if (propertyWithPublicMethods is { PublicProperty: string str })
+            {
+                str.RequiresPublicFields(); // warn
+            }
+
+            if (propertyWithPublicMethods is { PublicProperty: string str2 })
+            {
+                str2.RequiresPublicMethods(); // no warn
+            }
         }
 
         [ExpectedWarning("IL2072",
@@ -492,6 +531,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         public static string GetWithPublicConstructors()
         {
             return null;
+        }
+
+        public class PropertyWithPublicMethods
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            public string PublicProperty { get; set; }
         }
     }
 }

@@ -437,6 +437,6 @@ static inline void invalidate_edi (struct elf_dyn_info *edi)
 # define DWARF_VAL_LOC(c,v)     DWARF_NULL_LOC
 #endif
 
-#define UNW_ALIGN(x,a) (((x)+(a)-1UL)&~((a)-1UL))
+#define UNW_ALIGN(x,a) (((size_t)(x) + (size_t)(a) - 1) & ~((size_t)(a) - 1))
 
 #endif /* libunwind_i_h */

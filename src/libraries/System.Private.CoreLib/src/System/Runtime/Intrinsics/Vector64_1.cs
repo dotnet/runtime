@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -394,11 +394,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return vector ^ Vector64.Create(-0.0f).As<float, T>();
+                return vector ^ Vector64<float>.NegativeZero.As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return vector ^ Vector64.Create(-0.0).As<double, T>();
+                return vector ^ Vector64<double>.NegativeZero.As<double, T>();
             }
             else
             {
@@ -500,7 +500,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public override string ToString() => ToString("G", CultureInfo.InvariantCulture);
 
-        private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
+        private unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 

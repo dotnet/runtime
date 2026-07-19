@@ -874,21 +874,15 @@ namespace System.Security.Cryptography
 
         public override unsafe void ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source, out int bytesRead)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    ReadOnlyMemory<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(
-                        manager.Memory,
-                        out int localRead);
+            ReadOnlySpan<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(
+                source,
+                out int localRead);
 
-                    ImportRSAPublicKey(pkcs1.Span, out _);
-                    bytesRead = localRead;
-                }
-            }
+            ImportRSAPublicKey(pkcs1, out _);
+            bytesRead = localRead;
         }
 
-        public virtual unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
+        public virtual void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
             try
             {
@@ -899,18 +893,12 @@ namespace System.Security.Cryptography
                     out _,
                     out int localRead);
 
-                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-                {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, localRead))
-                    {
-                        AlgorithmIdentifierAsn ignored = default;
-                        RSAKeyFormatHelper.ReadRsaPublicKey(manager.Memory, ignored, out RSAParameters rsaParameters);
+                ValueAlgorithmIdentifierAsn ignored = default;
+                RSAKeyFormatHelper.ReadRsaPublicKey(source.Slice(0, localRead), ignored, out RSAParameters rsaParameters);
 
-                        ImportParameters(rsaParameters);
+                ImportParameters(rsaParameters);
 
-                        bytesRead = localRead;
-                    }
-                }
+                bytesRead = localRead;
             }
             catch (AsnContentException e)
             {
@@ -929,36 +917,15 @@ namespace System.Security.Cryptography
                     out _,
                     out int firstValueLength);
 
-                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-                {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, firstValueLength))
-                    {
-                        ReadOnlyMemory<byte> firstValue = manager.Memory;
-                        int localRead = firstValue.Length;
-
-                        AlgorithmIdentifierAsn ignored = default;
-                        RSAKeyFormatHelper.FromPkcs1PrivateKey(firstValue, ignored, out RSAParameters rsaParameters);
-
-                        fixed (byte* dPin = rsaParameters.D)
-                        fixed (byte* pPin = rsaParameters.P)
-                        fixed (byte* qPin = rsaParameters.Q)
-                        fixed (byte* dpPin = rsaParameters.DP)
-                        fixed (byte* dqPin = rsaParameters.DQ)
-                        fixed (byte* qInvPin = rsaParameters.InverseQ)
+                RSAKeyFormatHelper.FromPkcs1PrivateKey(
+                    source.Slice(0, firstValueLength),
+                    rsaParameters =>
                         {
-                            try
-                            {
-                                ImportParameters(rsaParameters);
-                            }
-                            finally
-                            {
-                                ClearPrivateParameters(rsaParameters);
-                            }
-                        }
+                            ImportParameters(rsaParameters);
+                            return true;
+                        });
 
-                        bytesRead = localRead;
-                    }
-                }
+                bytesRead = firstValueLength;
             }
             catch (AsnContentException e)
             {
@@ -968,18 +935,10 @@ namespace System.Security.Cryptography
 
         public override unsafe void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    ReadOnlyMemory<byte> pkcs1 = RSAKeyFormatHelper.ReadPkcs8(
-                        manager.Memory,
-                        out int localRead);
+            ReadOnlySpan<byte> pkcs1 = RSAKeyFormatHelper.ReadPkcs8(source, out int localRead);
 
-                    ImportRSAPrivateKey(pkcs1.Span, out _);
-                    bytesRead = localRead;
-                }
-            }
+            ImportRSAPrivateKey(pkcs1, out _);
+            bytesRead = localRead;
         }
 
         public override unsafe void ImportEncryptedPkcs8PrivateKey(

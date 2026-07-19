@@ -9,6 +9,8 @@
   </PropertyGroup>
   <PropertyGroup>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!-- Interpreter does not support Inlining -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttributeConflict.il" />

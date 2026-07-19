@@ -3,5 +3,6 @@
   <PropertyGroup>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser;wasi;ios;tvos;maccatalyst</UnsupportedOSPlatforms>
+    <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 </Project>

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace GitHub_27923;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -11,7 +14,7 @@ public class Writer
     public int Position { get; set; }
 
    [MethodImpl(MethodImplOptions.NoInlining)]
-   Writer()
+   public Writer()
    {
        Data = new int[] { 100, -1, -2, -3 };
        Position = 4;

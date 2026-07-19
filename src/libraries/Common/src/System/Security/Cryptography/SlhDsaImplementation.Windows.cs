@@ -32,7 +32,7 @@ namespace System.Security.Cryptography
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
-        protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination) =>
+        protected override void ExportSlhDsaPrivateKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
         internal static partial SlhDsaImplementation ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsaImplementation ImportSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsaImplementation ImportPrivateKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
     }
 }

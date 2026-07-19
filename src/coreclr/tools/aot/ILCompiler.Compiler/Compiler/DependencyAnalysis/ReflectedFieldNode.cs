@@ -71,28 +71,28 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else if (_field.IsThreadStatic)
                 {
-                    dependencies.Add(factory.TypeThreadStaticIndex((MetadataType)_field.OwningType), "Threadstatic base of a reflectable field");
+                    dependencies.Add(factory.TypeThreadStaticIndex(_field.OwningType), "Threadstatic base of a reflectable field");
                 }
                 else if (_field.HasGCStaticBase)
                 {
-                    dependencies.Add(factory.TypeGCStaticsSymbol((MetadataType)_field.OwningType), "GC static base of a reflectable field");
+                    dependencies.Add(factory.TypeGCStaticsSymbol(_field.OwningType), "GC static base of a reflectable field");
                 }
                 else
                 {
-                    dependencies.Add(factory.TypeNonGCStaticsSymbol((MetadataType)_field.OwningType), "NonGC static base of a reflectable field");
+                    dependencies.Add(factory.TypeNonGCStaticsSymbol(_field.OwningType), "NonGC static base of a reflectable field");
                     needsNonGcStaticBase = false;
                 }
 
                 if (needsNonGcStaticBase)
                 {
-                    dependencies.Add(factory.TypeNonGCStaticsSymbol((MetadataType)_field.OwningType), "CCtor context");
+                    dependencies.Add(factory.TypeNonGCStaticsSymbol(_field.OwningType), "CCtor context");
                 }
 
                 // For generic types, the reflection mapping table only keeps track of information about offsets
                 // from the static bases. To locate the static base, we need the GenericStaticBaseInfo hashtable.
                 if (_field.OwningType.HasInstantiation)
                 {
-                    dependencies.Add(factory.GenericStaticBaseInfo((MetadataType)_field.OwningType), "Field on a generic type");
+                    dependencies.Add(factory.GenericStaticBaseInfo(_field.OwningType), "Field on a generic type");
                 }
             }
 

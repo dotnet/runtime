@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(null, null)]
         [InlineData(typeof(int), "MethodName")]
-        public void Ctor_ClassType_MethodName(Type classType, string methodName)
+        public void Ctor_ClassType_MethodName(Type? classType, string? methodName)
         {
             var attribute = new ManagedToNativeComInteropStubAttribute(classType, methodName);
             Assert.Equal(classType, attribute.ClassType);

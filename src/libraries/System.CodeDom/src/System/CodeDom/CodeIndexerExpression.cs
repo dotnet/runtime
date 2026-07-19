@@ -5,8 +5,6 @@ namespace System.CodeDom
 {
     public class CodeIndexerExpression : CodeExpression
     {
-        private CodeExpressionCollection _indices;
-
         public CodeIndexerExpression() { }
 
         public CodeIndexerExpression(CodeExpression targetObject, params CodeExpression[] indices)
@@ -17,6 +15,6 @@ namespace System.CodeDom
 
         public CodeExpression TargetObject { get; set; }
 
-        public CodeExpressionCollection Indices => _indices ??= new CodeExpressionCollection();
+        public CodeExpressionCollection Indices => field ??= new CodeExpressionCollection();
     }
 }

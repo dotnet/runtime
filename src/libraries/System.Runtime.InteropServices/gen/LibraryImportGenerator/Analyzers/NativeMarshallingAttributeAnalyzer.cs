@@ -93,12 +93,12 @@ namespace Microsoft.Interop.Analyzers
                         DiagnosticReporter diagnosticFactory = DiagnosticReporter.CreateForLocation(marshallerEntryPointTypeArgument.Value.Syntax.GetLocation(), context.ReportDiagnostic);
                         diagnosticFactory.CreateAndReportDiagnostic(
                             MarshallerEntryPointTypeMustBeNonNullRule,
-                            GetSymbolType(context.ContainingSymbol!).ToDisplayString());
+                            GetSymbolType(context.ContainingSymbol).ToDisplayString());
                     }
                     if (marshallerEntryPointTypeArgument.Value is ITypeOfOperation typeOfOp)
                     {
                         AnalyzeManagedTypeMarshallingInfo(
-                            GetSymbolType(context.ContainingSymbol!),
+                            GetSymbolType(context.ContainingSymbol),
                             DiagnosticReporter.CreateForLocation(((TypeOfExpressionSyntax)typeOfOp.Syntax).Type.GetLocation(), context.ReportDiagnostic),
                             (INamedTypeSymbol?)typeOfOp.TypeOperand);
                     }

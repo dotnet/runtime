@@ -23,7 +23,10 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        public async void NativeLibraryWithVariadicFunctions(Configuration config, bool aot)
+        // The "warning ... native function ... varargs" check is emitted by Mono's PInvokeTableGenerator.
+        // CoreCLR's PInvokeTableGenerator does not emit that warning, so this test is Mono-only.
+        [TestCategory("mono")]
+        public async Task NativeLibraryWithVariadicFunctions(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "variadic");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "VariadicFunctions.cs"));
@@ -43,7 +46,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void DllImportWithFunctionPointersCompilesWithoutWarning(Configuration config, bool aot)
+        public async Task DllImportWithFunctionPointersCompilesWithoutWarning(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "fnptr");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DllImportNoWarning.cs"));
@@ -62,7 +65,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(Configuration config, bool aot)
+        public async Task DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "fnptr_variadic");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DllImportWarning.cs"));
@@ -81,7 +84,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void DllImportWithFunctionPointers_WarningsAsMessages(Configuration config, bool aot)
+        public async Task DllImportWithFunctionPointers_WarningsAsMessages(Configuration config, bool aot)
         {
             string extraProperties = "<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessage);WASM0001</MSBuildWarningsAsMessages>";
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "fnptr", extraProperties: extraProperties);
@@ -117,7 +120,8 @@ namespace Wasm.Build.Tests
                 "with.per.iod",
                 "with🚀unicode#"
             } })]
-        public async void CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(Configuration config, bool aot, string[] libraryNames)
+        [TestCategory("native-mono")]
+        public async Task CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(Configuration config, bool aot, string[] libraryNames)
         {
             var extraItems = @"<NativeFileReference Include=""*.c"" />";
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
@@ -175,6 +179,11 @@ namespace Wasm.Build.Tests
             string extraItems = $"<NativeFileReference Include=\"{objectFilename}\" />";
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, prefix, extraItems: extraItems, extraProperties: extraProperties);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir, objectFilename));
+
+            // The variadic-function test program does not use JS interop, so the JS interop
+            // assembly would be linked away by the trimmer (CoreCLR-Wasm) and the template
+            // main.js (which calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
             return info;
         }
     }

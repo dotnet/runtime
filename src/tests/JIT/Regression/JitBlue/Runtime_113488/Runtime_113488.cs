@@ -7,6 +7,9 @@
 // Reduced from 188.7 KiB to 0.8 KiB in 00:01:09
 // Debug: Outputs 0
 // Release: Outputs 1
+
+namespace Runtime_113488;
+
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;

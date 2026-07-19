@@ -16,9 +16,11 @@ FCIMPL2(OBJECTHANDLE, DependentHandle::InternalAlloc, Object *target, Object *de
 {
     FCALL_CONTRACT;
 
+#ifdef PROFILING_SUPPORTED
     // Use slow path if profiler is tracking GC
     if (CORProfilerTrackGC())
         return NULL;
+#endif // PROFILING_SUPPORTED
 
     return GetAppDomain()->GetHandleStore()->CreateDependentHandle(target, dependent);
 }
@@ -43,7 +45,6 @@ extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(
 FCIMPL1(Object*, DependentHandle::InternalGetTarget, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
-    FCUnique(0x54);
 
     _ASSERTE(handle != NULL);
 
@@ -110,9 +111,11 @@ FCIMPL1(FC_BOOL_RET, DependentHandle::InternalFree, OBJECTHANDLE handle)
 
     _ASSERTE(handle != NULL);
 
+#ifdef PROFILING_SUPPORTED
     // Use slow path if profiler is tracking GC
     if (CORProfilerTrackGC())
         FC_RETURN_BOOL(false);
+#endif // PROFILING_SUPPORTED
 
     DestroyDependentHandle(handle);
     FC_RETURN_BOOL(true);

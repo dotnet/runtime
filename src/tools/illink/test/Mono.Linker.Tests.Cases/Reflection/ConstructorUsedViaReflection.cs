@@ -281,7 +281,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
             [Kept]
             [ExpectedWarning("IL2070", nameof(Type.GetConstructor))]
             static void TestWithBindingFlagsAndTypes_NonEmptyTypes_DataFlow(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
                 Type type)
             {

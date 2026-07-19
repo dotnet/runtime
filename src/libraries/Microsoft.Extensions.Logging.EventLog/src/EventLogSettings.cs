@@ -10,8 +10,6 @@ namespace Microsoft.Extensions.Logging.EventLog
     /// </summary>
     public class EventLogSettings
     {
-        private IEventLog? _eventLog;
-
         /// <summary>
         /// Gets or sets the name of the event log. If <see langword="null" /> or not specified, "Application" is the default.
         /// </summary>
@@ -34,10 +32,10 @@ namespace Microsoft.Extensions.Logging.EventLog
 
         internal IEventLog EventLog
         {
-            get => _eventLog ??= CreateDefaultEventLog();
+            get => field ??= CreateDefaultEventLog();
 
             // For unit testing purposes only.
-            set => _eventLog = value;
+            set => field = value;
         }
 
         private WindowsEventLog CreateDefaultEventLog()

@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssertExtensions.cs" />
+    <Compile Include="CoreclrTestWrapperLib.cs" />
     <Compile Include="Generator.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="TestFramework.cs" />
@@ -16,10 +17,9 @@
     <Compile Include="CoreClrConfigurationDetection.cs" />
     <Compile Include="OutOfProcessTest.cs" />
     <Compile Include="PlatformDetection.cs" />
+    <Compile Include="Vectors.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs" Link="CoreclrTestWrapperLib.cs" />
-    <Compile Include="..\Coreclr.TestWrapper\MobileAppHandler.cs" Link="MobileAppHandler.cs" />
   </ItemGroup>
 
   <ItemGroup>

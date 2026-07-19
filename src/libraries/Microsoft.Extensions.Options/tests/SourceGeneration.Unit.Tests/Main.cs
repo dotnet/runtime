@@ -1108,7 +1108,7 @@ public class EmitterTests
 
     private static bool SupportRemoteExecutionAndNotInBrowser => RemoteExecutor.IsSupported && !PlatformDetection.IsBrowser;
 
-    [ConditionalFact(nameof(SupportRemoteExecutionAndNotInBrowser))]
+    [ConditionalFact(typeof(EmitterTests), nameof(SupportRemoteExecutionAndNotInBrowser))]
     public void ProduceDiagnosticFromOtherAssemblyTest()
     {
         string source = """
@@ -1174,7 +1174,7 @@ public class EmitterTests
         File.Delete(assemblyPath); // cleanup
     }
 
-    [ConditionalTheory(nameof(SupportRemoteExecutionAndNotInBrowser))]
+    [ConditionalTheory(typeof(EmitterTests), nameof(SupportRemoteExecutionAndNotInBrowser))]
     [InlineData(LanguageVersion.CSharp10)]
     [InlineData(LanguageVersion.CSharp11)]
     public async Task InternalsVisibleToAssembliesTest(LanguageVersion languageVersion)
@@ -1306,7 +1306,7 @@ public class EmitterTests
         }
     }
 
-    [ConditionalFact(nameof(SupportRemoteExecutionAndNotInBrowser))]
+    [ConditionalFact(typeof(EmitterTests), nameof(SupportRemoteExecutionAndNotInBrowser))]
     public async Task InaccessibleValidationAttributesTest()
     {
         string source = """
@@ -1811,7 +1811,7 @@ string lengthAttribute = "";
         string generatedSource = File.ReadAllText(languageVersion == LanguageVersion.CSharp10  ? @"Baselines/GeneratedAttributesTest.netcore.lang10.g.cs" : @"Baselines/GeneratedAttributesTest.netcore.lang11.g.cs");
 #else
         string generatedSource = File.ReadAllText(languageVersion == LanguageVersion.CSharp10  ? @"Baselines/GeneratedAttributesTest.netfx.lang10.g.cs" : @"Baselines/GeneratedAttributesTest.netfx.lang11.g.cs");
-#endif // NET8_0_OR_GREATER
+#endif // NET
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), emittedSource.Replace("\r\n", "\n"));
 
         CSharpCompilation compilation = CreateCompilationForOptionsSource(Path.GetRandomFileName(), source + emittedSource, refAssemblyPath: null, languageVersion);

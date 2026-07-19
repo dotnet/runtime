@@ -14,7 +14,7 @@ namespace System.ComponentModel.Tests
         [InlineData("machineName\\", false)]
         [InlineData("machineName", true)]
         [InlineData("  machineName  ", true)]
-        public void CheckMachineName_Invoke_ReturnsExpected(string value, bool expected)
+        public void CheckMachineName_Invoke_ReturnsExpected(string? value, bool expected)
         {
             Assert.Equal(expected, SyntaxCheck.CheckMachineName(value));
         }
@@ -28,7 +28,7 @@ namespace System.ComponentModel.Tests
         [InlineData("\\\\", true)]
         [InlineData("\\\\path", true)]
         [InlineData("  \\\\path", true)]
-        public void CheckPath_Invoke_ReturnsExpected(string value, bool expected)
+        public void CheckPath_Invoke_ReturnsExpected(string? value, bool expected)
         {
             Assert.Equal(expected, SyntaxCheck.CheckPath(value));
         }
@@ -38,7 +38,7 @@ namespace System.ComponentModel.Tests
         [InlineData("", false)]
         [InlineData(" ", false)]
         [InlineData("path", false)]
-        public void CheckRootedPath_Invoke_ReturnsExpected(string value, bool expected)
+        public void CheckRootedPath_Invoke_ReturnsExpected(string? value, bool expected)
         {
             Assert.Equal(expected, SyntaxCheck.CheckRootedPath(value));
         }

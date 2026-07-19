@@ -16,4 +16,7 @@
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="../common/eventpipe_common.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

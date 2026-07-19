@@ -819,7 +819,6 @@ namespace System.Runtime.InteropServices
         public override string ToString() { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("CurrencyWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class CurrencyWrapper
     {
         public CurrencyWrapper(decimal obj) { }
@@ -1068,6 +1067,7 @@ namespace System.Runtime.InteropServices
         public static int GetExceptionCode() { throw null; }
         public static System.Exception? GetExceptionForHR(int errorCode) { throw null; }
         public static System.Exception? GetExceptionForHR(int errorCode, System.IntPtr errorInfo) { throw null; }
+        public static System.Exception? GetExceptionForHR(int errorCode, in System.Guid iid, System.IntPtr pUnk) { throw null; }
         public static System.IntPtr GetExceptionPointers() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1208,6 +1208,7 @@ namespace System.Runtime.InteropServices
         public static void StructureToPtr<T>([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure, System.IntPtr ptr, bool fDeleteOld) { }
         public static void ThrowExceptionForHR(int errorCode) { }
         public static void ThrowExceptionForHR(int errorCode, System.IntPtr errorInfo) { }
+        public static void ThrowExceptionForHR(int errorCode, in System.Guid iid, System.IntPtr pUnk) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr UnsafeAddrOfPinnedArrayElement(System.Array arr, int index) { throw null; }
         public static System.IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index) { throw null; }
@@ -1572,6 +1573,9 @@ namespace System.Runtime.InteropServices
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        public static bool TryParsePartial([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result, out int charsConsumed) { throw null; }
+        public static bool TryParsePartial(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result, out int bytesConsumed) { throw null; }
+        public static bool TryParsePartial(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result, out int charsConsumed) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class OptionalAttribute : System.Attribute
@@ -1580,6 +1584,8 @@ namespace System.Runtime.InteropServices
     }
     public enum PosixSignal
     {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGKILL = -11,
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         SIGTSTP = -10,
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
@@ -1713,6 +1719,7 @@ namespace System.Runtime.InteropServices
     public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
     {
         public UnmanagedCallersOnlyAttribute() { }
+        public System.Type? AssociatedSourceType;
         public System.Type[]? CallConvs;
         public string? EntryPoint;
     }
@@ -2382,6 +2389,44 @@ namespace System.Runtime.InteropServices.ComTypes
         VAR_DISPATCH = 3,
     }
 }
+namespace System.Runtime.InteropServices.Java
+{
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public struct ComponentCrossReference
+    {
+        public nuint SourceGroupIndex;
+        public nuint DestinationGroupIndex;
+    }
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public static class JavaMarshal
+    {
+        public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferencesArgs*, void> markCrossReferences) => throw null;
+        public static unsafe GCHandle CreateReferenceTrackingHandle(object obj, void* context) => throw null;
+        public static unsafe void* GetContext(GCHandle obj) => throw null;
+        public static unsafe void FinishCrossReferenceProcessing(
+            MarkCrossReferencesArgs* crossReferences,
+            System.ReadOnlySpan<GCHandle> unreachableObjectHandles) => throw null;
+    }
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public unsafe struct StronglyConnectedComponent
+    {
+        public nuint Count;
+        public void** Contexts;
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public unsafe struct MarkCrossReferencesArgs
+    {
+        public nuint ComponentCount;
+        public StronglyConnectedComponent* Components;
+        public nuint CrossReferenceCount;
+        public ComponentCrossReference* CrossReferences;
+    }
+}
 namespace System.Runtime.InteropServices.ObjectiveC
 {
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
@@ -2407,6 +2452,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         public static GCHandle CreateReferenceTrackingHandle(
             object obj,
             out System.Span<System.IntPtr> taggedMemory) => throw null;
+        public static System.Span<System.IntPtr> GetOrCreateReferenceTrackingMemory(object obj) => throw null;
         public enum MessageSendFunction
         {
             MsgSend,
@@ -2497,7 +2543,7 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free() { throw null; }
         }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
     public sealed partial class MarshalUsingAttribute : System.Attribute
     {
         public MarshalUsingAttribute() { }

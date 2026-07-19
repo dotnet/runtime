@@ -196,11 +196,13 @@ namespace ILCompiler.DependencyAnalysis
 
                 // These are all simple: just get the thing from the dictionary and we're done
                 case ReadyToRunHelperId.TypeHandle:
+                case ReadyToRunHelperId.NecessaryTypeHandle:
+                case ReadyToRunHelperId.MetadataTypeHandle:
                 case ReadyToRunHelperId.MethodHandle:
                 case ReadyToRunHelperId.FieldHandle:
                 case ReadyToRunHelperId.MethodDictionary:
                 case ReadyToRunHelperId.MethodEntry:
-                case ReadyToRunHelperId.VirtualDispatchCell:
+                case ReadyToRunHelperId.DispatchCell:
                 case ReadyToRunHelperId.DefaultConstructor:
                 case ReadyToRunHelperId.ObjectAllocator:
                 case ReadyToRunHelperId.TypeHandleForCasting:

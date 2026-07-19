@@ -44,8 +44,12 @@
 #include "interoputil.h"
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_JAVAMARSHAL
+#include "interoplibinterface.h"
+#endif // FEATURE_JAVAMARSHAL
+
 // Prelink
-// Does advance loading of an N/Direct library
+// Does advance loading of an PInvoke library
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
 {
     QCALL_CONTRACT;
@@ -55,11 +59,11 @@ extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
 
     // If the code is already ready, we are done. Else, we need to execute the prestub
     // This is a perf thing since it's always safe to execute the prestub twice.
-    if (!pMD->IsPointingToPrestub())
+    if (!pMD->ShouldCallPrestub())
         return;
 
-    // Silently ignore if not N/Direct and not runtime generated.
-    if (!(pMD->IsNDirect()) && !(pMD->IsRuntimeSupplied()))
+    // Silently ignore if not PInvoke and not runtime generated.
+    if (!(pMD->IsPInvoke()) && !(pMD->IsRuntimeSupplied()))
         return;
 
     BEGIN_QCALL;
@@ -92,7 +96,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
     return ret;
 }
 
-extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, PCODE* pStructMarshalStub, SIZE_T* pSize)
+extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIsBlittable, DWORD* pNativeSize)
 {
     QCALL_CONTRACT;
 
@@ -100,39 +104,25 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
 
     BEGIN_QCALL;
 
-    TypeHandle th = TypeHandle::FromPtr(enregisteredTypeHandle);
+    TypeHandle th = t.AsTypeHandle();
 
-    if (th.IsBlittable())
+    if (th.IsEnum())
     {
-        *pStructMarshalStub = (PCODE)NULL;
-        *pSize = th.GetMethodTable()->GetNativeSize();
-        ret = TRUE;
+        // Enums don't have native layout info, but they marshal identically
+        // to their underlying primitive type.
+        th = CoreLibBinder::GetElementType(th.GetInternalCorElementType());
     }
-    else if (th.HasLayout())
+
+    if (th.HasLayout())
     {
-        MethodTable* pMT = th.GetMethodTable();
-        MethodDesc* structMarshalStub = NULL;
-
-        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
-        if (pEEMarshalingData != NULL)
-        {
-            GCX_COOP();
-            structMarshalStub = pEEMarshalingData->LookupStructILStubSpeculative(pMT);
-        }
-
-        if (structMarshalStub == NULL)
-        {
-            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
-        }
-
-        *pStructMarshalStub = structMarshalStub->GetSingleCallableAddrOfCode();
-        *pSize = 0;
+        *pIsBlittable = th.IsBlittable();
+        *pNativeSize = th.GetMethodTable()->GetNativeSize();
         ret = TRUE;
     }
     else
     {
-        *pStructMarshalStub = (PCODE)NULL;
-        *pSize = 0;
+        *pIsBlittable = FALSE;
+        *pNativeSize = 0;
     }
 
     END_QCALL;
@@ -351,8 +341,10 @@ FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
 
     assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_DEPENDENT);
 
+#if defined(PROFILING_SUPPORTED)
     if (CORProfilerTrackGC())
         return NULL;
+#endif // PROFILING_SUPPORTED
 
     return GetAppDomain()->GetHandleStore()->CreateHandleOfType(obj, static_cast<HandleType>(type));
 }
@@ -377,8 +369,10 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::GCHandleInternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
+#ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackGC())
         FC_RETURN_BOOL(false);
+#endif // PROFILING_SUPPORTED
 
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
     FC_RETURN_BOOL(true);
@@ -397,6 +391,46 @@ FCIMPL1(LPVOID, MarshalNative::GCHandleInternalGet, OBJECTHANDLE handle)
     return *((LPVOID*)&objRef);
 }
 FCIMPLEND
+
+#ifdef FEATURE_JAVAMARSHAL
+// Get the object referenced by a GC handle, also waiting for bridge procesing to finish.
+// Used by WeakReference
+FCIMPL2(FC_BOOL_RET, MarshalNative::GCHandleInternalTryGetBridgeWait, OBJECTHANDLE handle, Object **pObjResult)
+{
+    FCALL_CONTRACT;
+
+    if (Interop::IsGCBridgeActive())
+    {
+        FC_RETURN_BOOL(false);
+    }
+
+    *pObjResult = OBJECTREFToObject(ObjectFromHandle(handle));
+    FC_RETURN_BOOL(true);
+}
+FCIMPLEND
+
+// Unlike the fast call above, this can block
+extern "C" void QCALLTYPE GCHandle_InternalGetBridgeWait(OBJECTHANDLE handle, QCall::ObjectHandleOnStack result)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(handle != NULL);
+
+    BEGIN_QCALL;
+
+    {
+        GCX_COOP();
+
+        Interop::WaitForGCBridgeFinish();
+        // No GC can happen between the wait and obtaining of the reference, so the
+        // bridge processing status can't change, guaranteeing the nulling of weak refs
+        // took place in the bridge processing finish stage.
+        result.Set(ObjectFromHandle(handle));
+    }
+
+    END_QCALL;
+}
+#endif // FEATURE_JAVAMARSHAL
 
 // Update the object referenced by a GC handle.
 FCIMPL2(VOID, MarshalNative::GCHandleInternalSet, OBJECTHANDLE handle, Object *obj)

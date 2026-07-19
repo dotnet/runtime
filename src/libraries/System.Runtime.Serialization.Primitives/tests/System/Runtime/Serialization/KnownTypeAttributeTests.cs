@@ -11,7 +11,7 @@ namespace System.Runtime.Serialization.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("value")]
-        public void Ctor_String(string methodName)
+        public void Ctor_String(string? methodName)
         {
             var attribute = new KnownTypeAttribute(methodName);
             Assert.Equal(methodName, attribute.MethodName);
@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void Ctor_Type(Type type)
+        public void Ctor_Type(Type? type)
         {
             var attribute = new KnownTypeAttribute(type);
             Assert.Null(attribute.MethodName);

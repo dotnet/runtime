@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="CircularCctorTwoThreadsThreeCC.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

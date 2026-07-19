@@ -520,10 +520,7 @@ namespace System.Linq.Expressions
                             newArgs[j] = arguments[j];
                         }
                     }
-                    if (newArgs != null)
-                    {
-                        newArgs[i] = arg;
-                    }
+                    newArgs?[i] = arg;
                 }
                 if (newArgs != null)
                 {

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.Asn1;
@@ -24,7 +23,6 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract partial class MLKem : IDisposable
     {
         private static readonly string[] s_knownOids = [Oids.MlKem512, Oids.MlKem768, Oids.MlKem1024];
@@ -40,10 +38,10 @@ namespace System.Security.Cryptography
         public static bool IsSupported => MLKemImplementation.IsSupported;
 
         /// <summary>
-        ///   Gets the algorithm of the current instance.
+        ///   Gets the specific ML-KEM algorithm for this key.
         /// </summary>
         /// <value>
-        ///   A value representing the ML-KEM algorithm.
+        ///   The specific ML-KEM algorithm for this key.
         /// </value>
         public MLKemAlgorithm Algorithm { get; }
 
@@ -183,6 +181,14 @@ namespace System.Security.Cryptography
         /// <param name="sharedSecret">
         ///   The buffer to receive the shared secret.
         /// </param>
+        /// <remarks>
+        ///   Decapsulation can only decapsulate a shared secret created with the the decapsulation key's
+        ///   corresponding encapsulation key. If a different key is used, ML-KEM performs implicit rejection.
+        ///   Implicit rejection means an error will not be returned. Instead, the shared secret will be a
+        ///   deterministic but incorrect result.
+        ///   Detecting incorrect key use is a concern for consumers of the ML-KEM algorithm.
+        ///   For more information, see FIPS 203, Section 6.3.
+        /// </remarks>
         /// <exception cref="CryptographicException">
         ///   An error occurred during decapsulation.
         /// </exception>
@@ -219,6 +225,14 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   The shared secret.
         /// </returns>
+        /// <remarks>
+        ///   Decapsulation can only decapsulate a shared secret created with the the decapsulation key's
+        ///   corresponding encapsulation key. If a different key is used, ML-KEM performs implicit rejection.
+        ///   Implicit rejection means an error will not be returned. Instead, the shared secret will be a
+        ///   deterministic but incorrect result.
+        ///   Detecting incorrect key use is a concern for consumers of the ML-KEM algorithm.
+        ///   For more information, see FIPS 203, Section 6.3.
+        /// </remarks>
         /// <exception cref="CryptographicException">
         ///   An error occurred during decapsulation.
         /// </exception>
@@ -1175,7 +1189,7 @@ namespace System.Security.Cryptography
             Debug.Assert(read == source.Length);
             return kem;
 
-            static void SubjectPublicKeyReader(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn identifier, out MLKem kem)
+            static void SubjectPublicKeyReader(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn identifier, out MLKem kem)
             {
                 MLKemAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
 
@@ -1184,7 +1198,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Argument_KemInvalidEncapsulationKeyLength);
                 }
 
-                kem = MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, key.Span);
+                kem = MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, key);
             }
         }
 
@@ -1660,58 +1674,56 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static MLKemAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
+        private static MLKemAlgorithm GetAlgorithmIdentifier(ref readonly ValueAlgorithmIdentifierAsn identifier)
         {
             MLKemAlgorithm? algorithm = MLKemAlgorithm.FromOid(identifier.Algorithm);
             Debug.Assert(algorithm is not null, "Algorithm identifier should have been pre-validated by KeyFormatHelper.");
 
-            if (identifier.Parameters.HasValue)
+            if (identifier.HasParameters)
             {
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                identifier.Encode(writer);
-                throw Helpers.CreateAlgorithmUnknownException(writer);
+                throw Helpers.CreateAlgorithmUnknownException(in identifier);
             }
 
             return algorithm;
         }
 
         private static void MLKemKeyReader(
-            ReadOnlyMemory<byte> privateKeyContents,
-            in AlgorithmIdentifierAsn algorithmIdentifier,
+            ReadOnlySpan<byte> privateKeyContents,
+            in ValueAlgorithmIdentifierAsn algorithmIdentifier,
             out MLKem kem)
         {
             MLKemAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
-            MLKemPrivateKeyAsn kemKey = MLKemPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER);
+            ValueMLKemPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER, out ValueMLKemPrivateKeyAsn kemKey);
 
-            if (kemKey.Seed is ReadOnlyMemory<byte> seed)
+            if (kemKey.HasSeed)
             {
-                if (seed.Length != algorithm.PrivateSeedSizeInBytes)
+                if (kemKey.Seed.Length != algorithm.PrivateSeedSizeInBytes)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                kem = MLKemImplementation.ImportPrivateSeedImpl(algorithm, seed.Span);
+                kem = MLKemImplementation.ImportPrivateSeedImpl(algorithm, kemKey.Seed);
             }
-            else if (kemKey.ExpandedKey is ReadOnlyMemory<byte> expandedKey)
+            else if (kemKey.HasExpandedKey)
             {
-                if (expandedKey.Length != algorithm.DecapsulationKeySizeInBytes)
+                if (kemKey.ExpandedKey.Length != algorithm.DecapsulationKeySizeInBytes)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                kem = MLKemImplementation.ImportDecapsulationKeyImpl(algorithm, expandedKey.Span);
+                kem = MLKemImplementation.ImportDecapsulationKeyImpl(algorithm, kemKey.ExpandedKey);
             }
-            else if (kemKey.Both is MLKemPrivateKeyBothAsn both)
+            else if (kemKey.HasBoth)
             {
                 int decapsulationKeySize = algorithm.DecapsulationKeySizeInBytes;
 
-                if (both.Seed.Length != algorithm.PrivateSeedSizeInBytes ||
-                    both.ExpandedKey.Length != decapsulationKeySize)
+                if (kemKey.Both.Seed.Length != algorithm.PrivateSeedSizeInBytes ||
+                    kemKey.Both.ExpandedKey.Length != decapsulationKeySize)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                MLKem key = MLKemImplementation.ImportPrivateSeedImpl(algorithm, both.Seed.Span);
+                MLKem key = MLKemImplementation.ImportPrivateSeedImpl(algorithm, kemKey.Both.Seed);
                 byte[] rent = CryptoPool.Rent(decapsulationKeySize);
                 Span<byte> buffer = rent.AsSpan(0, decapsulationKeySize);
 
@@ -1719,7 +1731,7 @@ namespace System.Security.Cryptography
                 {
                     key.ExportDecapsulationKey(buffer);
 
-                    if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
+                    if (CryptographicOperations.FixedTimeEquals(buffer, kemKey.Both.ExpandedKey))
                     {
                         kem = key;
                     }
@@ -1792,6 +1804,7 @@ namespace System.Security.Cryptography
 
             while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
             {
+                size = buffer.Length;
                 CryptoPool.Return(buffer);
                 size = checked(size * 2);
                 buffer = CryptoPool.Rent(size);
@@ -1825,11 +1838,5 @@ namespace System.Security.Cryptography
             }
         }
 
-        private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
-
-        private delegate AsnWriter WriteEncryptedPkcs8Func<TChar>(
-            ReadOnlySpan<TChar> password,
-            AsnWriter writer,
-            PbeParameters pbeParameters);
     }
 }

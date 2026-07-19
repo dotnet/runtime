@@ -168,8 +168,6 @@ private:
     void Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK));
     void Leave();
 
-    void SpinEnter();
-
 #ifndef DACCESS_COMPILE
     DEBUG_NOINLINE static void AcquireLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;
@@ -344,18 +342,23 @@ public:
         CrstBase * m_pCrst;
 
     public:
-        inline CrstHolder(CrstBase * pCrst)
-            : m_pCrst(pCrst)
+        CrstHolder(CrstBase* pCrst)
+            : m_pCrst{ pCrst }
         {
             WRAPPER_NO_CONTRACT;
             AcquireLock(pCrst);
         }
 
-        inline ~CrstHolder()
+        ~CrstHolder()
         {
             WRAPPER_NO_CONTRACT;
             ReleaseLock(m_pCrst);
         }
+
+        CrstHolder(CrstHolder const&) = delete;
+        CrstHolder &operator=(CrstHolder const&) = delete;
+        CrstHolder(CrstHolder&& other) = delete;
+        CrstHolder& operator=(CrstHolder&& other) = delete;
     };
 
     // Note that the holders for CRSTs are used in extremely low stack conditions. Because of this, they
@@ -512,8 +515,4 @@ __inline BOOL IsOwnerOfCrst(LPVOID lock)
 #endif
 }
 
-#ifdef TEST_DATA_CONSISTENCY
-// used for test purposes. Determines if a crst is held.
-void DebugTryCrst(CrstBase * pLock);
-#endif
 #endif // __crst_h__

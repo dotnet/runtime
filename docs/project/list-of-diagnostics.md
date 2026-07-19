@@ -116,6 +116,10 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0059`__ | SystemEvents.EventsThreadShutdown callbacks are not run before the process exits. Use AppDomain.ProcessExit instead. |
 |  __`SYSLIB0060`__ | The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead. |
 |  __`SYSLIB0061`__ | The Queryable MinBy and MaxBy taking an IComparer\<TSource\> are obsolete. Use the new ones that take an IComparer\<TKey\>. |
+|  __`SYSLIB0062`__ | XSLT Script blocks are not supported. |
+|  __`SYSLIB0063`__ | This constructor has been deprecated and argument bool isConnected does not have any effect. Use NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle) instead. |
+|  __`SYSLIB0064`__ | RSACryptoServiceProvider.Encrypt and RSACryptoServiceProvider.Decrypt methods that take a Boolean are obsolete. Use the overload that accepts RSAEncryptionPadding instead. |
+|  __`SYSLIB0065`__ | Setting AsnEncodedData.RawData is obsolete. Use CopyFrom instead. |
 
 ## Analyzer Warnings
 
@@ -135,7 +139,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1008`__ | One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface |
 |  __`SYSLIB1009`__ | Logging methods must be static |
 |  __`SYSLIB1010`__ | Logging methods must be partial |
-|  __`SYSLIB1011`__ | Logging methods cannot be generic |
+|  __`SYSLIB1011`__ | Logging methods cannot use the `allows ref struct` constraint |
 |  __`SYSLIB1012`__ | Redundant qualifier in logging message |
 |  __`SYSLIB1013`__ | Don't include exception parameters as templates in the logging message |
 |  __`SYSLIB1014`__ | Logging template has no corresponding method argument |
@@ -152,8 +156,8 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1025`__ | Multiple logging methods cannot use the same event name within a class |
 |  __`SYSLIB1026`__ | C# language version not supported by the logging source generator. |
 |  __`SYSLIB1027`__ | Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field |
-|  __`SYSLIB1028`__ | _`SYSLIB1001`-`SYSLIB1029` reserved for logging._ |
-|  __`SYSLIB1029`__ | _`SYSLIB1001`-`SYSLIB1029` reserved for logging._ |
+|  __`SYSLIB1028`__ | Argument is using the unsupported params parameter modifier |
+|  __`SYSLIB1029`__ | Logging method parameter is a ref struct |
 |  __`SYSLIB1030`__ | JsonSourceGenerator did not generate serialization metadata for type |
 |  __`SYSLIB1031`__ | JsonSourceGenerator encountered a duplicate JsonTypeInfo property name |
 |  __`SYSLIB1032`__ | JsonSourceGenerator encountered a context class that is not partial |
@@ -268,10 +272,10 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1223`__ | Attributes deriving from JsonConverterAttribute are not supported by the source generator. |
 |  __`SYSLIB1224`__ | Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext. |
 |  __`SYSLIB1225`__ | Type includes ref like property, field or constructor parameter. |
-|  __`SYSLIB1226`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
-|  __`SYSLIB1227`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
-|  __`SYSLIB1228`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
-|  __`SYSLIB1229`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1226`__ | 'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations. |
+|  __`SYSLIB1227`__ | Union case types cannot be unambiguously classified by JSON value type. |
+|  __`SYSLIB1228`__ | Union type shape is not a valid C# union. |
+|  __`SYSLIB1229`__ | Open generic derived type could not be resolved for the polymorphic base type. |
 |  __`SYSLIB1230`__ | Deriving from a `GeneratedComInterface`-attributed interface defined in another assembly is not supported. |
 |  __`SYSLIB1231`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
 |  __`SYSLIB1232`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
@@ -282,6 +286,16 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1237`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
 |  __`SYSLIB1238`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
 |  __`SYSLIB1239`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
+|  __`SYSLIB1240`__ | Derived type is not a supported polymorphic derived type. |
+|  __`SYSLIB1241`__ | Inferred derived type is less accessible than the polymorphic base type. |
+|  __`SYSLIB1242`__ | Derived types produce a duplicate type discriminator. |
+|  __`SYSLIB1243`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1244`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1245`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1246`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1247`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1248`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1249`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
 
@@ -296,7 +310,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 APIs can be marked as `[Experimental]` if their shape or functionality is included in a release but not yet officially supported. Experimental APIs offer the opportunity to collect customer feedback on these APIs in a major release, usually refining the APIs and removing the `[Experimental]` attribute in the next release. The `[Experimental]` attribute differs from `[RequiresPreviewFeatures]`, wherein:
 
 * `[RequiresPreviewFeatures]` APIs require a corresponding preview feature in another product area such as the compiler or SDK
-    - Using these APIs requires enabling preview features for the the project and all its consumers
+    - Using these APIs requires enabling preview features for the project and all its consumers
 * `[Experimental]` APIs are self-contained within the libraries and do not require preview features in other parts of the product
     - These APIs can be used by suppressing specific diagnostics without enabling preview features for the project
 

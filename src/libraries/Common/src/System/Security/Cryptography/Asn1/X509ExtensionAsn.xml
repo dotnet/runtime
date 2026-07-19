@@ -2,7 +2,8 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="X509ExtensionAsn"
-  namespace="System.Security.Cryptography.Asn1">
+  namespace="System.Security.Cryptography.Asn1"
+  emitType="both">
 
   <!--
     https://tools.ietf.org/html/rfc5280#section-4.1

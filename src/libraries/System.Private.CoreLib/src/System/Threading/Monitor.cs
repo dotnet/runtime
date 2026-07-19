@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 namespace System.Threading
@@ -36,5 +39,136 @@ namespace System.Threading
 #endif
         public static bool Wait(object obj, TimeSpan timeout, bool exitContext)
             => Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
+
+#if !MONO
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void Enter(object obj)
+        {
+            ObjectHeader.AcquireThinLock(obj);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Enter(object obj, ref bool lockTaken)
+        {
+            // Aggressively inline lockTaken check as it is likely to be optimized away
+            if (lockTaken)
+                ThrowLockTakenException();
+
+            Enter(obj);
+            lockTaken = true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool TryEnter(object obj)
+        {
+            return ObjectHeader.TryAcquireThinLock(obj);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool TryEnter(object obj, int millisecondsTimeout)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
+            return ObjectHeader.TryAcquireThinLock(obj, millisecondsTimeout);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void TryEnter(object obj, ref bool lockTaken)
+        {
+            // Aggressively inline lockTaken check as it is likely to be optimized away
+            if (lockTaken)
+                ThrowLockTakenException();
+
+            lockTaken = TryEnter(obj);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
+        {
+            // Aggressively inline lockTaken check as it is likely to be optimized away
+            if (lockTaken)
+                ThrowLockTakenException();
+
+            lockTaken = TryEnter(obj, millisecondsTimeout);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool IsEntered(object obj)
+        {
+            return ObjectHeader.IsAcquired(obj);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void Exit(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+            ObjectHeader.Release(obj);
+        }
+
+        [DoesNotReturn]
+        private static void ThrowLockTakenException()
+        {
+            throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SynchronizedMethodEnter(object obj, ref bool lockTaken)
+        {
+            ObjectHeader.AcquireThinLock(obj);
+            lockTaken = true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SynchronizedMethodExit(object obj, ref bool lockTaken)
+        {
+            // Inlined Monitor.Exit
+            if (!lockTaken)
+                return;
+
+            ObjectHeader.Release(obj);
+        }
+
+        #region Object->Lock mapping
+        private static Lock GetLockObject(object obj)
+        {
+            return ObjectHeader.GetLockObject(obj);
+        }
+        #endregion
+
+        #region Public Wait/Pulse methods
+
+        [UnsupportedOSPlatform("browser")]
+        public static bool Wait(object obj, int millisecondsTimeout)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
+            return GetLockObject(obj).Wait(millisecondsTimeout, obj);
+        }
+
+        public static void Pulse(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+
+            GetLockObject(obj).Pulse();
+        }
+
+        public static void PulseAll(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+
+            GetLockObject(obj).PulseAll();
+        }
+
+        #endregion
+
+        #region Metrics
+
+        /// <summary>
+        /// Gets the number of times there was contention upon trying to take a <see cref="Monitor"/>'s lock so far.
+        /// </summary>
+        public static long LockContentionCount => Lock.ContentionCount;
+
+        #endregion
+#endif
     }
 }

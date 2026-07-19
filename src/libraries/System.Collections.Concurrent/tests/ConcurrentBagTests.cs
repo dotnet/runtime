@@ -11,6 +11,8 @@ namespace System.Collections.Concurrent.Tests
 {
     public class ConcurrentBagTests : ProducerConsumerCollectionTests
     {
+        protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
         protected override IProducerConsumerCollection<T> CreateProducerConsumerCollection<T>() => new ConcurrentBag<T>();
         protected override IProducerConsumerCollection<int> CreateProducerConsumerCollection(IEnumerable<int> collection) => new ConcurrentBag<int>(collection);
         protected override bool IsEmpty(IProducerConsumerCollection<int> pcc) => ((ConcurrentBag<int>)pcc).IsEmpty;
@@ -19,7 +21,7 @@ namespace System.Collections.Concurrent.Tests
 
         protected override string CopyToNoLengthParamName => "index";
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(1, 10)]
         [InlineData(3, 100)]
         [InlineData(8, 1000)]
@@ -45,7 +47,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(itemsPerThread * threadsCount, bag.Count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void AddOnOneThread_PeekOnAnother_EnsureWeCanTakeOnTheOriginal()
         {
             var bag = new ConcurrentBag<int>(Enumerable.Range(1, 5));
@@ -76,7 +78,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void AddManyItems_ThenTakeOnDifferentThread_ItemsOutputInExpectedOrder()
         {
             var bag = new ConcurrentBag<int>(Enumerable.Range(0, 100000));
@@ -91,7 +93,7 @@ namespace System.Collections.Concurrent.Tests
             }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).GetAwaiter().GetResult();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void SingleProducerAdding_MultiConsumerTaking_SemaphoreThrottling_AllTakesSucceed()
         {
             var bag = new ConcurrentBag<int>();
@@ -147,7 +149,7 @@ namespace System.Collections.Concurrent.Tests
             ce.Wait();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(10)]
@@ -210,7 +212,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<InvalidCastException>(() => c.CopyTo(new ArgumentNullException[Size], 0));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(10)]
@@ -260,7 +262,7 @@ namespace System.Collections.Concurrent.Tests
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false, 0)]
         [InlineData(false, 1)]
         [InlineData(false, 20)]
@@ -311,7 +313,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(1, 10)]
         [InlineData(3, 100)]
         [InlineData(8, 1000)]

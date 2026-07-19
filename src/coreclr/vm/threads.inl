@@ -45,7 +45,7 @@ inline Thread* GetThread()
     return pThread;
 }
 
-EXTERN_C inline AppDomain* STDCALL GetAppDomain()
+inline AppDomain* GetAppDomain()
 {
     return AppDomain::GetCurrentDomain();
 }
@@ -63,13 +63,6 @@ Frame* Thread::FindFrame(SIZE_T StackPointer)
     }
 
     return pFrame;
-}
-
-inline void Thread::SetThrowable(OBJECTREF pThrowable DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags))
-{
-    WRAPPER_NO_CONTRACT;
-
-    m_ExceptionState.SetThrowable(pThrowable DEBUG_ARG(stecFlags));
 }
 
 // get the current notification (if any) from this thread

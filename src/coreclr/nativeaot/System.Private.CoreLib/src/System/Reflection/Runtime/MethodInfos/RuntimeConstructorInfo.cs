@@ -32,12 +32,6 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override Type DeclaringType { get; }
 
-        public sealed override Type[] GetGenericArguments()
-        {
-            // Constructors cannot be generic. Desktop compat dictates that We throw NotSupported rather than returning a 0-length array.
-            throw new NotSupportedException();
-        }
-
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public sealed override MethodBody GetMethodBody()
         {

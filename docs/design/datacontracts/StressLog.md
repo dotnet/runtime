@@ -13,16 +13,13 @@ internal record struct StressLogData(
     int TotalChunks,
     ulong TickFrequency,
     ulong StartTimestamp,
+    ulong StartTime,
     TargetPointer Logs);
 
 internal record struct ThreadStressLogData(
-    TargetPointer NextPointer,
+    TargetPointer Address,
     ulong ThreadId,
-    bool WriteHasWrapped,
-    TargetPointer CurrentPointer,
-    TargetPointer ChunkListHead,
-    TargetPointer ChunkListTail,
-    TargetPointer CurrentWriteChunk);
+    bool WriteHasWrapped);
 
 internal record struct StressMsgData(
     uint Facility,
@@ -36,7 +33,7 @@ bool HasStressLog();
 StressLogData GetStressLogData();
 StressLogData GetStressLogData(TargetPointer stressLogPointer);
 IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs);
-IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog);
+IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress);
 bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 ```
 
@@ -52,7 +49,9 @@ Data descriptors used:
 | StressLog | TotalChunks | Total number of chunks across all thread-specific logs |
 | StressLog | TickFrequency | Number of ticks per second for stresslog timestamps |
 | StressLog | StartTimestamp | Timestamp when the stress log was started |
+| StressLog | StartTime | Wall-clock time when the stress log was started (FILETIME, 100ns units since Jan 1 1601) |
 | StressLog | ModuleOffset | Offset of the module in the stress log |
+| StressLog | Modules | Offset of the stress log's module table (if StressLogHasModuleTable is `1`) |
 | StressLog | Logs | Pointer to the thread-specific logs |
 | StressLogModuleDesc | BaseAddress | Base address of the module |
 | StressLogModuleDesc | Size | Size of the module |
@@ -63,7 +62,6 @@ Data descriptors used:
 | ThreadStressLog | ChunkListHead | Pointer to the head of the chunk list |
 | ThreadStressLog | ChunkListTail | Pointer to the tail of the chunk list |
 | ThreadStressLog | CurrentWriteChunk | Pointer to the chunk currently being written to |
-| StressLogChunk | Prev | Pointer to the previous chunk |
 | StressLogChunk | Next | Pointer to the next chunk |
 | StressLogChunk | Buf | The data stored in the chunk |
 | StressLogChunk | Sig1 | First byte of the chunk signature (to ensure validity) |
@@ -80,7 +78,6 @@ Global variables used:
 | StressLogChunkSize | uint | Size of a stress log chunk |
 | StressLogMaxMessageSize | ulong | Maximum size of a stress log message |
 | StressLogHasModuleTable | byte | Whether the stress log module table is present |
-| StressLogModuleTable | pointer | Pointer to the stress log's module table (if StressLogHasModuleTable is `1`) |
 
 ```csharp
 bool HasStressLog()
@@ -95,7 +92,7 @@ StressLogData GetStressLogData()
         return default;
     }
 
-    StressLog stressLog = new StressLog(Target, Target.ReadGlobalPointer(Constants.Globals.StressLog));
+    StressLog stressLog = new StressLog(Target, Target.ReadGlobalPointer("StressLog"));
     return new StressLogData(
         stressLog.LoggedFacilities,
         stressLog.Level,
@@ -104,6 +101,7 @@ StressLogData GetStressLogData()
         stressLog.TotalChunks,
         stressLog.TickFrequency,
         stressLog.StartTimestamp,
+        stressLog.StartTime,
         stressLog.Logs);
 }
 
@@ -118,6 +116,7 @@ StressLogData GetStressLogData(TargetPointer stressLogPointer)
         stressLog.TotalChunks,
         stressLog.TickFrequency,
         stressLog.StartTimestamp,
+        stressLog.StartTime,
         stressLog.Logs);
 }
 
@@ -151,20 +150,16 @@ IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs)
         }
 
         yield return new ThreadStressLogData(
-            threadStressLog.Next,
+            currentPointer,
             threadStressLog.ThreadId,
-            threadStressLog.WriteHasWrapped,
-            threadStressLog.CurrentPtr,
-            threadStressLog.ChunkListHead,
-            threadStressLog.ChunkListTail,
-            threadStressLog.CurrentWriteChunk);
+            threadStressLog.WriteHasWrapped);
 
         currentPointer = threadStressLog.Next;
     }
 }
 
 // Return messages going in reverse chronological order, newest first.
-IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog)
+IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress)
 {
     // 1. Get the current message pointer from the log and the info about the current chunk the runtime is writing into.
     //    Record our current read pointer as the current message pointer.
@@ -210,18 +205,28 @@ bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer)
 // This method is a helper for the various specific versions.
 protected TargetPointer GetFormatPointer(ulong formatOffset)
 {
-    if (Target.ReadGlobal<byte>(Constants.Globals.StressLogHasModuleTable) == 0)
+    if (Target.ReadGlobal<byte>("StressLogHasModuleTable") == 0)
     {
-        StressLog stressLog = new(Target, target.ReadGlobalPointer(Constants.Globals.StressLog));
+        StressLog stressLog = new(Target, target.ReadGlobalPointer("StressLog"));
         return new TargetPointer(stressLog.ModuleOffset + formatOffset);
     }
 
-    TargetPointer moduleTable = target.ReadGlobalPointer(Constants.Globals.StressLogModuleTable);
-    uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
-    uint maxModules = target.ReadGlobal<uint>(Constants.Globals.StressLogMaxModules);
-    for (uint i = 0; i < maxModules; ++i)
+    TargetPointer? moduleTable;
+    if (!target.TryReadGlobalPointer(Constants.Globals.StressLogModuleTable, out moduleTable))
     {
-        StressLogModuleDesc module = new(Target, moduleTable + i * moduleEntrySize);
+        if (!target.TryReadGlobalPointer(Constants.Globals.StressLog, out TargetPointer? pStressLog))
+        {
+            throw new InvalidOperationException("StressLogModuleTable is not set and StressLog is not available, but StressLogHasModuleTable is set to 1.");
+        }
+        Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(pStressLog.Value);
+        moduleTable = stressLog.Modules ?? throw new InvalidOperationException("StressLogModuleTable is not set and StressLog does not contain a ModuleTable offset, but StressLogHasModuleTable is set to 1.");
+    }
+    uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
+    TargetNUInt maxModules = new(target.ReadGlobalPointer("StressLogMaxModules").Value);
+    ulong cumulativeOffset = 0;
+    for (ulong i = 0; i < maxModules.Value; ++i)
+    {
+        StressLogModuleDesc module = new(Target, moduleTable.Value + i * moduleEntrySize);
         ulong relativeOffset = formatOffset - cumulativeOffset;
         if (relativeOffset < module.Size.Value)
         {
@@ -313,7 +318,7 @@ The format offset refers to the cummulative offset into a module referred to in 
 ```csharp
 StressMsgData GetStressMsgData(StressMsg msg)
 {
-    StressLog stressLog = new(Target, target.ReadGlobalPointer(Constants.Globals.StressLog));
+    StressLog stressLog = new(Target, target.ReadGlobalPointer("StressLog"));
     uint pointerSize = Target.GetTypeInfo(DataType.pointer).Size!.Value;
 
     ulong payload1 = target.Read<ulong>(msg.Header);

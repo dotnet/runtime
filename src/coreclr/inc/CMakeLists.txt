@@ -5,9 +5,9 @@ set( CORGUIDS_IDL_SOURCES
   clrinternal.idl
   xclrdata.idl
   corprof.idl
-  corpub.idl
   corsym.idl
   sospriv.idl
+  dacdbi.idl
 )
 
 if(CLR_CMAKE_HOST_WIN32)

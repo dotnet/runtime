@@ -11,10 +11,29 @@ set(SOURCES
     ../gceventstatus.cpp
     ../gcconfig.cpp
     ../gccommon.cpp
-    ../gceewks.cpp
+    ../gcee.cpp
     ../gchandletable.cpp
     ../gcscan.cpp
-    ../gcwks.cpp
+    ../gc.cpp
+    ../init.cpp
+    ../no_gc.cpp
+    ../finalization.cpp
+    ../dynamic_tuning.cpp
+    ../region_free_list.cpp
+    ../region_allocator.cpp
+    ../memory.cpp
+    ../sweep.cpp
+    ../collect.cpp
+    ../diagnostics.cpp
+    ../dynamic_heap_count.cpp
+    ../card_table.cpp
+    ../relocate_compact.cpp
+    ../mark_phase.cpp
+    ../background.cpp
+    ../interface.cpp
+    ../allocation.cpp
+    ../plan_phase.cpp
+    ../regions_segments.cpp
     ../gcload.cpp
     ../handletable.cpp
     ../handletablecache.cpp
@@ -38,6 +57,17 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
     ../vxsort/smallsort/avx2_load_mask_tables.cpp
 )
 endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
+
+if(CLR_CMAKE_TARGET_ARCH_ARM64 AND CLR_CMAKE_TARGET_WIN32)
+  set ( SOURCES
+    ${SOURCES}
+    ../vxsort/isa_detection.cpp
+    ../vxsort/do_vxsort_neon.cpp
+    ../vxsort/machine_traits.neon.cpp
+    ../vxsort/smallsort/bitonic_sort.NEON.uint32_t.generated.cpp
+    ../vxsort/smallsort/bitonic_sort.scalar.uint64_t.generated.cpp
+)
+endif(CLR_CMAKE_TARGET_ARCH_ARM64 AND CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_TARGET_WIN32)
   set (GC_LINK_LIBRARIES

@@ -48,7 +48,7 @@ namespace System.Numerics.Tensors
                     ThrowHelper.ThrowArgumentOutOfRangeException();
                 }
 
-                nint linearOffset = _tensor._shape.GetLinearOffset(index, _dimension);
+                nint linearOffset = _tensor._shape.GetLinearOffsetForDimension(index, _dimension);
                 return new TensorSpan<T>(ref Unsafe.Add(ref _tensor._reference, linearOffset), _sliceShape);
             }
         }
@@ -63,10 +63,7 @@ namespace System.Numerics.Tensors
         public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <summary>Enumerates the spans of a tensor dimension span.</summary>
-        public ref struct Enumerator
-#if NET9_0_OR_GREATER
-            : IEnumerator<TensorSpan<T>>
-#endif
+        public ref struct Enumerator : IEnumerator<TensorSpan<T>>
         {
             private readonly TensorDimensionSpan<T> _span;
             private nint _index;
@@ -99,7 +96,6 @@ namespace System.Numerics.Tensors
                 _index = -1;
             }
 
-#if NET9_0_OR_GREATER
             //
             // IDisposable
             //
@@ -111,7 +107,6 @@ namespace System.Numerics.Tensors
             //
 
             readonly object? IEnumerator.Current => throw new NotSupportedException();
-#endif
         }
     }
 }

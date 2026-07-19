@@ -7,8 +7,8 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
-    public sealed class DSASignVerify_Array : DSASignVerify
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
+    public abstract class DSASignVerify_Array : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
             dsa.SignData(data, hashAlgorithm);
@@ -54,8 +54,8 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
-    public sealed class DSASignVerify_Stream : DSASignVerify
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
+    public abstract class DSASignVerify_Stream : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
             dsa.SignData(new MemoryStream(data), hashAlgorithm);
@@ -76,8 +76,8 @@ namespace System.Security.Cryptography.Dsa.Tests
     }
 
 #if NET
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
-    public sealed class DSASignVerify_Span : DSASignVerify
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
+    public abstract class DSASignVerify_Span : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
             TryWithOutputArray(dest => dsa.TrySignData(data, dest, hashAlgorithm, out int bytesWritten) ? (true, bytesWritten) : (false, 0));
@@ -109,13 +109,15 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 #endif
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public abstract partial class DSASignVerify
     {
+        protected abstract DSAProvider DSAFactory { get; }
+
         public abstract byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm);
         public abstract bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm);
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void InvalidKeySize_DoesNotInvalidateKey()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -129,7 +131,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void UseAfterDispose_NewKey()
         {
             UseAfterDispose(false);
@@ -191,7 +193,7 @@ namespace System.Security.Cryptography.Dsa.Tests
                 () => VerifyData(dsa, data, sig, HashAlgorithmName.SHA1));
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void SignAndVerifyDataNew1024()
         {
             using (DSA dsa = DSAFactory.Create(1024))
@@ -255,15 +257,19 @@ namespace System.Security.Cryptography.Dsa.Tests
             SignAndVerify(DSATestData.HelloBytes, "SHA1", DSATestData.GetDSA1024Params(), 40);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact]
         public void SignAndVerifyDataExplicit2048()
         {
+            DSAFactory.SkipUnlessSupportsFips186_3();
+
             SignAndVerify(DSATestData.HelloBytes, "SHA256", DSATestData.GetDSA2048Params(), 64);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact]
         public void VerifyKnown_2048_SHA256()
         {
+            DSAFactory.SkipUnlessSupportsFips186_3();
+
             byte[] signature =
             {
                 0x92, 0x06, 0x0B, 0x57, 0xF1, 0x35, 0x20, 0x28,
@@ -285,9 +291,11 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact]
         public void VerifyKnown_2048_SHA384()
         {
+            DSAFactory.SkipUnlessSupportsFips186_3();
+
             byte[] signature =
             {
                 0x56, 0xBA, 0x70, 0x48, 0x18, 0xBA, 0xE3, 0x43,
@@ -309,9 +317,11 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact]
         public void VerifyKnown_2048_SHA512()
         {
+            DSAFactory.SkipUnlessSupportsFips186_3();
+
             byte[] signature =
             {
                 0x6F, 0x44, 0x68, 0x1F, 0x74, 0xF7, 0x90, 0x2F,
@@ -352,9 +362,11 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact]
         public void Sign2048WithSha1()
         {
+            DSAFactory.SkipUnlessSupportsFips186_3();
+
             byte[] data = { 1, 2, 3, 4 };
 
             using (DSA dsa = DSAFactory.Create())
@@ -367,9 +379,11 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact]
         public void Verify2048WithSha1()
         {
+            DSAFactory.SkipUnlessSupportsFips186_3();
+
             byte[] data = { 1, 2, 3, 4 };
 
             byte[] signature = (
@@ -421,14 +435,5 @@ namespace System.Security.Cryptography.Dsa.Tests
                 Assert.True(signatureMatched);
             }
         }
-
-        internal static bool SupportsFips186_3
-        {
-            get
-            {
-                return DSAFactory.SupportsFips186_3;
-            }
-        }
-        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
     }
 }

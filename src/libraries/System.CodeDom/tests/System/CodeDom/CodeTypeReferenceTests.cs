@@ -120,7 +120,7 @@ namespace System.CodeDom.Tests
         [InlineData("System.Void", CodeTypeReferenceOptions.GenericTypeParameter, "System.Void")]
         [InlineData(null, (CodeTypeReferenceOptions)0, "System.Void")]
         [InlineData("System.String", CodeTypeReferenceOptions.GenericTypeParameter + 1, "System.String")]
-        public void Ctor_String_CodeReferenceTypeOptions(string type, CodeTypeReferenceOptions options, string expectedBaseType)
+        public void Ctor_String_CodeReferenceTypeOptions(string? type, CodeTypeReferenceOptions options, string expectedBaseType)
         {
             var typeReference = new CodeTypeReference(type, options);
             Assert.Equal(expectedBaseType, typeReference.BaseType);
@@ -221,7 +221,7 @@ namespace System.CodeDom.Tests
         [InlineData(null, "System.Void")]
         [InlineData("", "System.Void")]
         [InlineData("System.Int32", "System.Int32")]
-        public void BaseType_Set_Get_ReturnsExpected(string value, string expected)
+        public void BaseType_Set_Get_ReturnsExpected(string? value, string expected)
         {
             var codeTypeReference = new CodeTypeReference();
             codeTypeReference.BaseType = value;

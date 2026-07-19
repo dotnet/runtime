@@ -3,7 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [SetupLinkerArgument("--used-attrs-only", "true")]
     [Define("IL_ASSEMBLY_AVAILABLE")]
     [SetupCompileBefore("library.dll", new[] { "Dependencies/AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" })]
@@ -14,9 +14,9 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
         static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			var tmp = new Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed.Dependencies.AssemblyWithUnusedAttributeOnReturnParameterDefinition ().Method (1);
-			var tmp2 = new Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed.Dependencies.AssemblyWithUnusedAttributeOnReturnParameterDefinition ().MethodWithoutParameters ();
-			var tmp3 = new Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed.Dependencies.AssemblyWithUnusedAttributeOnReturnParameterDefinition ().MethodWithoutParametersNonNestedAttribute ();
+            var tmp = new Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed.Dependencies.AssemblyWithUnusedAttributeOnReturnParameterDefinition().Method(1);
+            var tmp2 = new Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed.Dependencies.AssemblyWithUnusedAttributeOnReturnParameterDefinition().MethodWithoutParameters();
+            var tmp3 = new Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed.Dependencies.AssemblyWithUnusedAttributeOnReturnParameterDefinition().MethodWithoutParametersNonNestedAttribute();
 #endif
         }
     }

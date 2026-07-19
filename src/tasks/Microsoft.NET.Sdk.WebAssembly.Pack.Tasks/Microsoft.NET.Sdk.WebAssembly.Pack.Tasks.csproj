@@ -2,35 +2,34 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
-    <NoWarn>$(NoWarn),CA1050,CA1850,CA1845,CA1859;CA1866,NU5128</NoWarn>
+    <NoWarn>$(NoWarn),CA1050,CA1850,CA1845,CA1859,CA1866,CS8632,NU5128</NoWarn>
     <RootNamespace>Microsoft.NET.Sdk.WebAssembly</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS8632</NoWarn>
+    <Nullable>annotations</Nullable>
+    <!-- Emit into stable, version-independent folder names instead of the TFM so the package layout and its
+         consumers don't need updating whenever the .NET Core TFM bumps. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(OutputPath)net\</OutputPath>
+    <OutputPath Condition="'$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(OutputPath)netframework\</OutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(IntermediateOutputPath)net\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(IntermediateOutputPath)netframework\</IntermediateOutputPath>
   </PropertyGroup>
-
-  <ItemDefinitionGroup>
-    <PackageReference>
-      <PrivateAssets>All</PrivateAssets>
-      <Publish>true</Publish>
-    </PackageReference>
-  </ItemDefinitionGroup>
 
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\WasmAppBuilder\WebcilConverter.cs" />
     <Compile Include="..\WasmAppBuilder\LogAdapter.cs" />
-    
+
     <ProjectReference Include="..\Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <_PublishFramework Remove="@(_PublishFramework)" />
-      <_PublishFramework Include="$(TargetFrameworks)" />
-
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.dll" TargetPath="tools\%(_PublishFramework.Identity)" />
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.pdb" TargetPath="tools\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)net\*.dll" TargetPath="tools\net" />
+      <FilesToPackage Include="$(OutputPath)net\*.pdb" TargetPath="tools\net" />
+      <FilesToPackage Condition="'$(NetFrameworkToolCurrent)' != ''" Include="$(OutputPath)netframework\*.dll" TargetPath="tools\netframework" />
+      <FilesToPackage Condition="'$(NetFrameworkToolCurrent)' != ''" Include="$(OutputPath)netframework\*.pdb" TargetPath="tools\netframework" />
     </ItemGroup>
   </Target>
 </Project>

@@ -34,6 +34,10 @@ Abstract:
 #include <dirent.h>
 #include <dlfcn.h>
 
+#if defined(TARGET_WASI)
+#include "pal/wasi/pal_wasi_missing.h"
+#endif
+
 /* <stdarg.h> needs to be included after "palinternal.h" to avoid name
    collision for va_start and va_end */
 #include <stdarg.h>
@@ -96,7 +100,7 @@ static const char *dbg_channel_names[]=
 };
 
 // Verify the number of elements in dbg_channel_names
-static_assert_no_msg(ARRAY_SIZE(dbg_channel_names) == DCI_LAST);
+static_assert(ARRAY_SIZE(dbg_channel_names) == DCI_LAST);
 
 static const char *dbg_level_names[]=
 {

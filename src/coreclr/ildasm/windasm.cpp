@@ -38,8 +38,6 @@ extern BOOL                    g_fDumpSummary;
 extern BOOL                    g_fDecompile; // still in progress
 extern BOOL                    g_fShowRefs;
 
-extern BOOL                    g_fDumpToPerfWriter;
-
 extern BOOL                    g_fShowBytes;
 extern BOOL                    g_fShowSource;
 extern BOOL                    g_fInsertSourceLines;
@@ -229,10 +227,6 @@ int ProcessOneArg(_In_ __nullterminated char* szArg, _Out_ char** ppszObjFileNam
         else if (_stricmp(szOpt, "sum") == 0)
         {
             g_fDumpSummary = TRUE;
-        }
-        else if (_stricmp(szOpt, "per") == 0)
-        {
-            g_fDumpToPerfWriter = TRUE;
         }
         else if (_stricmp(szOpt, "for") == 0)
         {

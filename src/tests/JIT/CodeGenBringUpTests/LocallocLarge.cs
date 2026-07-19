@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 public class ThreadData
@@ -61,7 +62,7 @@ public class BringUpTest_LocallocLarge
         return ok;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         for (int j = 2; j < 1024 * 100; j += 331)

@@ -85,7 +85,7 @@
 // these actions:
 // * (a) Set the profiler's status to a non-active state like kProfStatusDetaching or
 //     kProfStatusNone
-// * (b) Call FlushProcessWriteBuffers()
+// * (b) Call minipal_memory_barrier_process_wide()
 // * (c) Grab thread store lock, iterate through all threads, and verify each per-thread
 //     evacuation counter is zero.
 //
@@ -110,6 +110,7 @@
 #include "proftoeeinterfaceimpl.inl"
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
+#include <minipal/memorybarrierprocesswide.h>
 
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
@@ -208,7 +209,7 @@ void CurrentProfilerStatus::Set(ProfilerStatus newProfStatus)
         //         can safely perform catchup at that time (see
         //         code:#ProfCatchUpSynchronization).
         //
-        ::FlushProcessWriteBuffers();
+        minipal_memory_barrier_process_wide();
     }
 #endif // !defined(DACCESS_COMPILE)
 }
@@ -249,7 +250,6 @@ void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SS
 
     StackSString supplementaryInformation;
     if (!supplementaryInformation.LoadResource(
-        CCompRC::Debugging,
         IDS_PROF_SUPPLEMENTARY_INFO
         ))
     {
@@ -301,7 +301,6 @@ void ProfilingAPIUtility::LogProfEventVA(
 
     StackSString messageFromResource;
     if (!messageFromResource.LoadResource(
-        CCompRC::Debugging,
         iStringResourceID
         ))
     {
@@ -462,7 +461,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
     DWORD dwEnableSlowELTHooks = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TestOnlyEnableSlowELTHooks);
     if (dwEnableSlowELTHooks != 0)
     {
-        (&g_profControlBlock)->fTestOnlyForceEnterLeave = TRUE;
+        (&g_profControlBlock)->fTestOnlyForceEnterLeave = true;
         SetJitHelperFunction(CORINFO_HELP_PROF_FCN_ENTER, (void *) ProfileEnterNaked);
         SetJitHelperFunction(CORINFO_HELP_PROF_FCN_LEAVE, (void *) ProfileLeaveNaked);
         SetJitHelperFunction(CORINFO_HELP_PROF_FCN_TAILCALL, (void *) ProfileTailcallNaked);
@@ -476,7 +475,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
     DWORD dwEnableObjectAllocated = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TestOnlyEnableObjectAllocatedHook);
     if (dwEnableObjectAllocated != 0)
     {
-        (&g_profControlBlock)->fTestOnlyForceObjectAllocated = TRUE;
+        (&g_profControlBlock)->fTestOnlyForceObjectAllocated = true;
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Enabled test-only object ObjectAllocated hooks.\n"));
     }
 #endif //PROF_TEST_ONLY_FORCE_ELT
@@ -488,7 +487,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
     DWORD dwTestOnlyEnableICorProfilerInfo = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TestOnlyEnableICorProfilerInfo);
     if (dwTestOnlyEnableICorProfilerInfo != 0)
     {
-        (&g_profControlBlock)->fTestOnlyEnableICorProfilerInfo = TRUE;
+        (&g_profControlBlock)->fTestOnlyEnableICorProfilerInfo = true;
     }
 #endif // _DEBUG
 
@@ -757,7 +756,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
 HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
 {
     HRESULT hr = S_OK;
-    CLRConfigStringHolder wszProfilerList(NULL);
+    CLRConfigStringHolder wszProfilerList;
 
 #if defined(TARGET_ARM64)
     CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM64, &wszProfilerList);
@@ -791,47 +790,69 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
     }
 
     SString profilerList{wszProfilerList};
+    SString::Iterator listEnd = profilerList.End();
 
     HRESULT storedHr = S_OK;
-    for (SString::Iterator sectionStart = profilerList.Begin(), sectionEnd = profilerList.Begin();
-        profilerList.Find(sectionEnd, W(';'));
-        sectionStart = ++sectionEnd)
+    for (SString::Iterator sectionStart = profilerList.Begin(); sectionStart != listEnd; )
     {
+        // The current section spans from sectionStart up to the next ';', or to the end
+        // of the list if no ';' remains.
+        SString::Iterator sectionEnd = sectionStart;
+        if (!profilerList.Find(sectionEnd, W(';')))
+        {
+            sectionEnd = listEnd;
+        }
+
+        // Skip empty sections produced by consecutive or trailing ';'.
+        if (sectionStart == sectionEnd)
+        {
+            sectionStart = sectionEnd + 1;
+            continue;
+        }
+
         SString::Iterator pathEnd = sectionStart;
         if (!profilerList.Find(pathEnd, W('=')) || pathEnd > sectionEnd)
         {
             ProfilingAPIUtility::LogProfError(IDS_E_PROF_BAD_PATH);
             storedHr = E_FAIL;
-            continue;
         }
-        SString::Iterator clsidStart = pathEnd + 1;
-
-        PathString path{profilerList, sectionStart, pathEnd};
-        StackSString clsidString{profilerList, clsidStart, sectionEnd};
-        CLSID clsid;
-        hr = ProfilingAPIUtility::ProfilerCLSIDFromString(clsidString.GetUnicode(), &clsid);
-        if (FAILED(hr))
+        else
         {
-            // ProfilerCLSIDFromString already logged an event if there was a failure
-            storedHr = hr;
-            continue;
+            SString::Iterator clsidStart = pathEnd + 1;
+
+            PathString path{profilerList, sectionStart, pathEnd};
+            StackSString clsidString{profilerList, clsidStart, sectionEnd};
+            CLSID clsid;
+            hr = ProfilingAPIUtility::ProfilerCLSIDFromString(clsidString.GetUnicode(), &clsid);
+            if (FAILED(hr))
+            {
+                // ProfilerCLSIDFromString already logged an event if there was a failure
+                storedHr = hr;
+            }
+            else
+            {
+                char clsidUtf8[MINIPAL_GUID_BUFFER_LEN];
+                minipal_guid_as_string(clsid, clsidUtf8, MINIPAL_GUID_BUFFER_LEN);
+                hr = LoadProfiler(
+                    kStartupLoad,
+                    &clsid,
+                    (LPCSTR)clsidUtf8,
+                    path.GetUnicode(),
+                    NULL,               // No client data for startup load
+                    0);                 // No client data for startup load
+                if (FAILED(hr))
+                {
+                    // LoadProfiler already logged if there was an error
+                    storedHr = hr;
+                }
+            }
         }
 
-        char clsidUtf8[MINIPAL_GUID_BUFFER_LEN];
-        minipal_guid_as_string(clsid, clsidUtf8, MINIPAL_GUID_BUFFER_LEN);
-        hr = LoadProfiler(
-            kStartupLoad,
-            &clsid,
-            (LPCSTR)clsidUtf8,
-            path.GetUnicode(),
-            NULL,               // No client data for startup load
-            0);                 // No client data for startup load
-        if (FAILED(hr))
+        if (sectionEnd == listEnd)
         {
-            // LoadProfiler already logged if there was an error
-            storedHr = hr;
-            continue;
+            break;
         }
+        sectionStart = sectionEnd + 1;
     }
 
     return storedHr;
@@ -1604,7 +1625,7 @@ void ProfilingAPIUtility::TerminateProfiling(ProfilerInfo *pProfilerInfo)
         // If we disabled concurrent GC and somehow failed later during the initialization
         if (g_profControlBlock.fConcurrentGCDisabledForAttach.Load() && g_profControlBlock.IsMainProfiler(pProfilerInfo->pProfInterface))
         {
-            g_profControlBlock.fConcurrentGCDisabledForAttach = FALSE;
+            g_profControlBlock.fConcurrentGCDisabledForAttach = false;
 
             // We know for sure GC has been fully initialized as we've turned off concurrent GC before
             _ASSERTE(IsGarbageCollectorFullyInitialized());

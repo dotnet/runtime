@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem
 {
     public static class TypeSystemHelpers
@@ -65,10 +67,6 @@ namespace Internal.TypeSystem
             return paramType.ParameterType;
         }
 
-        public static bool HasLayout(this MetadataType mdType)
-        {
-            return mdType.IsSequentialLayout || mdType.IsExplicitLayout;
-        }
 
         public static LayoutInt GetElementSize(this TypeDesc type)
         {
@@ -89,7 +87,7 @@ namespace Internal.TypeSystem
         {
             // TODO: Do we want check for specialname/rtspecialname? Maybe add another overload on GetMethod?
             var sig = new MethodSignature(0, 0, type.Context.GetWellKnownType(WellKnownType.Void), TypeDesc.EmptyTypes);
-            return type.GetMethod(".ctor", sig);
+            return type.GetMethod(".ctor"u8, sig);
         }
 
         public static bool HasExplicitOrImplicitDefaultConstructor(this TypeDesc type)
@@ -159,15 +157,6 @@ namespace Internal.TypeSystem
 
             Debug.Fail("method has no related type in the type hierarchy of type");
             return null;
-        }
-
-        /// <summary>
-        /// Retrieves the namespace qualified name of a <see cref="DefType"/>.
-        /// </summary>
-        public static string GetFullName(this DefType metadataType)
-        {
-            string ns = metadataType.Namespace;
-            return ns.Length > 0 ? string.Concat(ns, ".", metadataType.Name) : metadataType.Name;
         }
 
         /// <summary>
@@ -442,6 +431,66 @@ namespace Internal.TypeSystem
             }
 
             return false;
+        }
+
+        public static ReadOnlySpan<byte> Append(this Utf8Span s1, Utf8Span s2)
+        {
+            Span<byte> buffer = new byte[s1.Length + s2.Length];
+
+            s1.AsSpan().CopyTo(buffer);
+            s2.AsSpan().CopyTo(buffer.Slice(s1.Length));
+
+            return buffer;
+        }
+
+        public static ReadOnlySpan<byte> Append(this ReadOnlySpan<byte> s1, Utf8Span s2)
+        {
+            Span<byte> buffer = new byte[s1.Length + s2.Length];
+
+            s1.CopyTo(buffer);
+            s2.AsSpan().CopyTo(buffer.Slice(s1.Length));
+
+            return buffer;
+        }
+
+        public static ReadOnlySpan<T> Append<T>(this ReadOnlySpan<T> s1, ReadOnlySpan<T> s2, ReadOnlySpan<T> s3)
+        {
+            Span<T> buffer = new T[s1.Length + s2.Length + s3.Length];
+
+            s1.CopyTo(buffer);
+            s2.CopyTo(buffer.Slice(s1.Length));
+            s3.CopyTo(buffer.Slice(s1.Length + s2.Length));
+
+            return buffer;
+        }
+
+        public static ReadOnlySpan<byte> Append(this Utf8Span s1, Utf8Span s2, Utf8Span s3)
+        {
+            ReadOnlySpan<byte> s1Span = s1.AsSpan();
+            ReadOnlySpan<byte> s2Span = s2.AsSpan();
+            ReadOnlySpan<byte> s3Span = s3.AsSpan();
+            Span<byte> buffer = new byte[s1Span.Length + s2Span.Length + s3Span.Length];
+
+            s1Span.CopyTo(buffer);
+            s2Span.CopyTo(buffer.Slice(s1Span.Length));
+            s3Span.CopyTo(buffer.Slice(s1Span.Length + s2Span.Length));
+
+            return buffer;
+        }
+
+        public static ReadOnlySpan<byte> Append(this Utf8Span s1, Utf8Span s2, Utf8Span s3, uint i)
+        {
+            Span<byte> s4 = stackalloc byte[16];
+            System.Buffers.Text.Utf8Formatter.TryFormat(i, s4, out int s4length);
+
+            Span<byte> buffer = new byte[s1.Length + s2.Length + s3.Length + s4length];
+
+            s1.AsSpan().CopyTo(buffer);
+            s2.AsSpan().CopyTo(buffer.Slice(s1.Length));
+            s3.AsSpan().CopyTo(buffer.Slice(s1.Length + s2.Length));
+            s4.Slice(0, s4length).CopyTo(buffer.Slice(s1.Length + s2.Length + s3.Length));
+
+            return buffer;
         }
     }
 }

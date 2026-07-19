@@ -33,10 +33,6 @@
 #define STATUS_LONGJUMP        ((NTSTATUS)0x80000026L)
 #endif
 
-#ifndef LOCALE_NAME_MAX_LENGTH
-#define LOCALE_NAME_MAX_LENGTH 85
-#endif // !LOCALE_NAME_MAX_LENGTH
-
 #ifndef IMAGE_FILE_MACHINE_RISCV64
 #define IMAGE_FILE_MACHINE_RISCV64        0x5064  // RISCV64
 #endif // !IMAGE_FILE_MACHINE_RISCV64
@@ -337,7 +333,7 @@ RtlpGetFunctionEndAddress (
     else
     {
         // Get from the xdata record.
-        FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
+        FunctionLength = *(PTR_uint64_t)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
     return FunctionEntry->BeginAddress + 4 * FunctionLength;
@@ -367,6 +363,21 @@ RtlVirtualUnwind(
     OUT PVOID *HandlerData,
     OUT PULONG64 EstablisherFrame,
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
+    );
+
+EXTERN_C
+PEXCEPTION_ROUTINE
+NTAPI
+RtlVirtualUnwindWithSpForPacSign(
+    IN ULONG HandlerType,
+    IN ULONG64 ImageBase,
+    IN ULONG64 ControlPc,
+    IN PT_RUNTIME_FUNCTION FunctionEntry,
+    IN OUT PT_CONTEXT ContextRecord,
+    OUT PVOID *HandlerData,
+    OUT PULONG64 EstablisherFrame,
+    IN OUT PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL,
+    OUT PULONG64 SpForPacSign OPTIONAL
     );
 
 // Mirror the XSTATE_ARM64_SVE flags from winnt.h
@@ -411,7 +422,7 @@ RtlpGetFunctionEndAddress (
     if ((FunctionLength & 3) != 0) {
         FunctionLength = (FunctionLength >> 2) & 0x7ff;
     } else {
-        FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
+        FunctionLength = *(PTR_uint64_t)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
     return FunctionEntry->BeginAddress + 4 * FunctionLength;
@@ -467,10 +478,10 @@ RtlpGetFunctionEndAddress (
     if ((FunctionLength & 3) != 0) {
         FunctionLength = (FunctionLength >> 2) & 0x7ff;
     } else {
-        FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
+        FunctionLength = *(PTR_uint64_t)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
-    return FunctionEntry->BeginAddress + 4 * FunctionLength;
+    return FunctionEntry->BeginAddress + 2 * FunctionLength;
 }
 
 #define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)
@@ -522,18 +533,16 @@ RtlVirtualUnwind (
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
 
-FORCEINLINE
+UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData);
+
 ULONG
 RtlpGetFunctionEndAddress (
     _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     _In_ TADDR ImageBase
-    )
-{
-    _ASSERTE("The function RtlpGetFunctionEndAddress is not implemented on wasm");
-    return 0;
-}
+    );
 
-#define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)
+#define RUNTIME_FUNCTION__IsFunclet(FunctionEntry) ((FunctionEntry)->BeginAddress & 0x80000000)
+#define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress & 0x7FFFFFFF)
 #define RUNTIME_FUNCTION__SetBeginAddress(FunctionEntry,address)    ((FunctionEntry)->BeginAddress = (address))
 
 #define RUNTIME_FUNCTION__EndAddress(FunctionEntry, ImageBase)      (RtlpGetFunctionEndAddress(FunctionEntry, (ULONG64)(ImageBase)))

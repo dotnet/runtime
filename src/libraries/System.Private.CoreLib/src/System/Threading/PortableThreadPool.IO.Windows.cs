@@ -227,7 +227,7 @@ namespace System.Threading
 
                 _thread.IsThreadPoolThread = true;
                 _thread.IsBackground = true;
-                _thread.Name = ".NET ThreadPool IO";
+                _thread.Name = ".NET TP I/O";
 
                 // Thread pool threads must start in the default execution context without transferring the context, so
                 // using UnsafeStart() instead of Start()

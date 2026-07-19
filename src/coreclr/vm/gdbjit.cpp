@@ -2561,18 +2561,6 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
     }
 #endif
 
-    // remove '.ni.dll' or '.ni.exe' suffix from wszModuleFile
-    LPWSTR pNIExt = const_cast<LPWSTR>(u16_strstr(wszModuleFile, W(".ni.exe"))); // where '.ni.exe' start at
-    if (!pNIExt)
-    {
-      pNIExt = const_cast<LPWSTR>(u16_strstr(wszModuleFile, W(".ni.dll"))); // where '.ni.dll' start at
-    }
-
-    if (pNIExt)
-    {
-      u16_strcpy_s(pNIExt, u16_strlen(pNIExt) + 1, W(".dll"));
-    }
-
     if (isListedModule(wszModuleFile))
     {
         bool bEmitted = EmitDebugInfo(elfBuilder, methodDescPtr, pCode, codeSize);

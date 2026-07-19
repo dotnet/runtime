@@ -12,6 +12,7 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.XPath;
+using ILCompiler.Dataflow;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -167,7 +168,7 @@ namespace ILCompiler
                     string fullname = GetFullName(namespaceNav);
                     foreach (DefType type in assembly.GetAllTypes())
                     {
-                        if (type.Namespace != fullname)
+                        if (!type.Namespace.StringEquals(fullname))
                             continue;
 
                         ProcessType(type, nav);
@@ -194,6 +195,8 @@ namespace ILCompiler
                 if (type.HasInstantiation)
                 {
                     InstantiatedType instantiated = ReadyToRunLibraryRootProvider.InstantiateIfPossible(typeWithMethods);
+                    if (instantiated is null)
+                        return;
                     method = method.Context.GetMethodForInstantiatedType(method, instantiated);
                 }
 

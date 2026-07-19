@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -62,6 +63,15 @@ internal static partial class Interop
 
             return true;
         }
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCertVerifyCallback")]
+        internal static unsafe partial void SslCtxSetCertVerifyCallback(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, IntPtr, int> callback);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetSslPtr")]
+        internal static partial IntPtr X509StoreCtxGetSslPtr(IntPtr storeCtx);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxSetError")]
+        internal static partial void X509StoreCtxSetError(IntPtr storeCtx, int error);
     }
 }
 
@@ -165,16 +175,16 @@ namespace Microsoft.Win32.SafeHandles
             Interop.Ssl.SslCtxSetData(this, (IntPtr)_gch);
         }
 
-        internal bool TryAddSession(IntPtr namePtr, IntPtr session)
+        internal unsafe bool TryAddSession(byte* namePtr, IntPtr session)
         {
             Debug.Assert(_sslSessions != null && session != IntPtr.Zero);
 
-            if (_sslSessions == null || namePtr == IntPtr.Zero)
+            if (_sslSessions == null || namePtr == null)
             {
                 return false;
             }
 
-            string? targetName = Marshal.PtrToStringUTF8(namePtr);
+            string? targetName = Utf8StringMarshaller.ConvertToManaged(namePtr);
             Debug.Assert(targetName != null);
 
             if (!string.IsNullOrEmpty(targetName))
@@ -215,11 +225,11 @@ namespace Microsoft.Win32.SafeHandles
             return false;
         }
 
-        internal void RemoveSession(IntPtr namePtr, IntPtr session)
+        internal unsafe void RemoveSession(byte* namePtr, IntPtr session)
         {
             Debug.Assert(_sslSessions != null);
 
-            string? targetName = Marshal.PtrToStringUTF8(namePtr);
+            string? targetName = Utf8StringMarshaller.ConvertToManaged(namePtr);
             Debug.Assert(targetName != null);
 
             if (_sslSessions != null && targetName != null)
@@ -252,11 +262,6 @@ namespace Microsoft.Win32.SafeHandles
             {
                 return false;
             }
-
-            // even if we don't have matching session, we can get new one and we need
-            // way how to link SSL back to `this`.
-            Debug.Assert(Interop.Ssl.SslGetData(sslHandle) == IntPtr.Zero);
-            Interop.Ssl.SslSetData(sslHandle, (IntPtr)_gch);
 
             lock (_sslSessions)
             {

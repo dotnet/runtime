@@ -93,7 +93,7 @@ namespace System.Security.Cryptography
             return val;
         }
 
-        internal static void WriteCryptoBinary(string name, int value, StringBuilder builder)
+        internal static unsafe void WriteCryptoBinary(string name, int value, StringBuilder builder)
         {
             // .NET Framework compat
             if (value == 0)
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography
             WriteCryptoBinary(name, valBuf.Slice(start), builder);
         }
 
-        internal static void WriteCryptoBinary(string name, ReadOnlySpan<byte> value, StringBuilder builder)
+        internal static unsafe void WriteCryptoBinary(string name, ReadOnlySpan<byte> value, StringBuilder builder)
         {
             Debug.Assert(name.Length > 0);
             Debug.Assert(value.Length > 0);

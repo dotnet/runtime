@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
             signatureBuilder.Flags = MethodSignatureFlags.Static;
             signatureBuilder.ReturnType = constructorMethod.OwningType;
 
-            _allocationMethod = constructorMethod.OwningType.GetKnownMethod("Ctor", signatureBuilder.ToSignature());
+            _allocationMethod = constructorMethod.OwningType.GetKnownMethod("Ctor"u8, signatureBuilder.ToSignature());
             _constructorMethod = constructorMethod;
         }
 

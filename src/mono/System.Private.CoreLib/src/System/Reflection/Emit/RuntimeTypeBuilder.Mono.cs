@@ -1303,6 +1303,7 @@ namespace System.Reflection.Emit
                     LayoutKind.Auto => TypeAttributes.AutoLayout,
                     LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
                     LayoutKind.Sequential => TypeAttributes.SequentialLayout,
+                    LayoutKind.Extended => TypeAttributes.ExtendedLayout,
                     _ => throw new Exception(SR.Argument_InvalidKindOfTypeForCA), // we should ignore it since it can be any value anyway...
                 };
 

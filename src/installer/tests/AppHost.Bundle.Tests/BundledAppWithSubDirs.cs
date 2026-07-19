@@ -20,16 +20,20 @@ namespace AppHost.Bundle.Tests
             sharedTestState = fixture;
         }
 
-        private FluentAssertions.AndConstraint<CommandResultAssertions> RunTheApp(string path, bool selfContained, bool deleteExtracted = true)
+        private FluentAssertions.AndConstraint<CommandResultAssertions> RunTheApp(string path, bool selfContained, bool deleteApp = true)
         {
             CommandResult result = Command.Create(path)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet.BinPath)
+                .DotNetRoot(selfContained ? null : HostTestContext.BuiltDotNet.BinPath)
                 .MultilevelLookup(false)
                 .Execute();
-            if (deleteExtracted)
+            if (deleteApp)
             {
                 DeleteExtractionDirectory(result);
+
+                // Delete the bundled app itself. It would already be cleaned up after all tests in this class run, but
+                // we do this early for test environments that may not have enough space for all the bundled apps at once.
+                FileUtils.DeleteFileIfPossible(path);
             }
 
             return result.Should().Pass()
@@ -65,7 +69,7 @@ namespace AppHost.Bundle.Tests
 
             // Run the bundled app
             bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
-            RunTheApp(singleFile, selfContained: false, deleteExtracted: !shouldExtract)
+            RunTheApp(singleFile, selfContained: false, deleteApp: !shouldExtract)
                 .And.CreateExtraction(shouldExtract);
 
             if (shouldExtract)
@@ -87,7 +91,7 @@ namespace AppHost.Bundle.Tests
 
             // Run the bundled app
             bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
-            RunTheApp(singleFile, selfContained: true, deleteExtracted: !shouldExtract)
+            RunTheApp(singleFile, selfContained: true, deleteApp: !shouldExtract)
                 .And.CreateExtraction(shouldExtract);
 
             if (shouldExtract)
@@ -96,64 +100,12 @@ namespace AppHost.Bundle.Tests
                 RunTheApp(singleFile, selfContained: true)
                     .And.ReuseExtraction();
             }
-        }
-
-        [Theory]
-        [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleAllContent)]
-        public void SelfContained_Targeting50(BundleOptions options)
-        {
-            var singleFile = sharedTestState.SelfContainedApp.Bundle(options, new Version(5, 0));
-
-            // Run the bundled app
-            bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
-            RunTheApp(singleFile, selfContained: true, deleteExtracted: !shouldExtract)
-                .And.CreateExtraction(shouldExtract);
-
-            if (shouldExtract)
-            {
-                // Run the bundled app again (reuse extracted files)
-                RunTheApp(singleFile, selfContained: true)
-                    .And.ReuseExtraction();
-            }
-        }
-
-        [Theory]
-        [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleAllContent)]
-        public void FrameworkDependent_Targeting50(BundleOptions options)
-        {
-            var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options, new Version(5, 0));
-
-            // Run the bundled app
-            bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
-            RunTheApp(singleFile, selfContained: false, deleteExtracted: !shouldExtract)
-                .And.CreateExtraction(shouldExtract);
-
-            if (shouldExtract)
-            {
-                // Run the bundled app again (reuse extracted files)
-                RunTheApp(singleFile, selfContained: false)
-                    .And.ReuseExtraction();
-            }
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54234")]
-        // NOTE: when enabling this test take a look at commented code marked by "ACTIVE ISSUE:" in SharedTestState
-        public void SelfContained_R2R_Composite()
-        {
-            var singleFile = sharedTestState.SelfContainedCompositeApp.Bundle(BundleOptions.None);
-
-            // Run the app
-            RunTheApp(singleFile, selfContained: true);
         }
 
         public class SharedTestState : IDisposable
         {
             public SingleFileTestApp FrameworkDependentApp { get; }
             public SingleFileTestApp SelfContainedApp { get; }
-            public SingleFileTestApp SelfContainedCompositeApp { get; }
 
             public SharedTestState()
             {
@@ -162,18 +114,12 @@ namespace AppHost.Bundle.Tests
 
                 SelfContainedApp = SingleFileTestApp.CreateSelfContained("AppWithSubDirs");
                 AddLongNameContent(SelfContainedApp.NonBundledLocation);
-
-                // ACTIVE ISSUE: https://github.com/dotnet/runtime/issues/54234
-                //               This should be an app built with the equivalent of PublishReadyToRun=true and PublishReadyToRunComposite=true
-                SelfContainedCompositeApp = SingleFileTestApp.CreateSelfContained("AppWithSubDirs");
-                AddLongNameContent(SelfContainedCompositeApp.NonBundledLocation);
             }
 
             public void Dispose()
             {
                 FrameworkDependentApp.Dispose();
                 SelfContainedApp.Dispose();
-                SelfContainedCompositeApp.Dispose();
             }
 
             public static void AddLongNameContent(string directory)

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_105969;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
@@ -19,25 +22,22 @@ public class Runtime_105969
 {
     public static byte s_5;
 
-    [Fact]
+    [ConditionalFact(typeof(Avx512BW), nameof(Avx512BW.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx512BW.IsSupported)
-        {
-            var vr16 = Vector512.CreateScalar(s_5);
-            var vr17 = Vector512.Create<byte>(1);
-            var vr18 = (byte)0;
-            var vr19 = Vector512.CreateScalar(vr18);
-            var vr20 = Vector128.Create<byte>(0);
-            var vr21 = Avx512BW.BroadcastScalarToVector512(vr20);
-            var vr22 = Vector256.Create<byte>(1);
-            var vr23 = Avx512F.InsertVector256(vr21, vr22, 0);
-            var vr24 = Vector512.Create(249, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0);
-            var vr25 = Avx512BW.BlendVariable(vr19, vr23, vr24); 
-            var vr26 = Avx512BW.Min(vr17, vr25);
-            Vector512<byte> vr27 = Avx512BW.UnpackLow(vr16, vr26);
-            Vector512<byte> expected = Vector512.Create(0, (byte)1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-            Assert.Equal(expected, vr27);
-        }
+        var vr16 = Vector512.CreateScalar(s_5);
+        var vr17 = Vector512.Create<byte>(1);
+        var vr18 = (byte)0;
+        var vr19 = Vector512.CreateScalar(vr18);
+        var vr20 = Vector128.Create<byte>(0);
+        var vr21 = Avx512BW.BroadcastScalarToVector512(vr20);
+        var vr22 = Vector256.Create<byte>(1);
+        var vr23 = Avx512F.InsertVector256(vr21, vr22, 0);
+        var vr24 = Vector512.Create(249, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0);
+        var vr25 = Avx512BW.BlendVariable(vr19, vr23, vr24);
+        var vr26 = Avx512BW.Min(vr17, vr25);
+        Vector512<byte> vr27 = Avx512BW.UnpackLow(vr16, vr26);
+        Vector512<byte> expected = Vector512.Create(0, (byte)1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        Assert.Equal(expected, vr27);
     }
 }

@@ -8,6 +8,9 @@
 #ifdef _WIN32
     #define c_static_assert(e) static_assert((e),"")
     #include "../Common/pal_utilities.h"
+    #if _WIN64
+        #include <zlib_allocator.h>
+    #endif
 #else
     #include "pal_utilities.h"
 #endif
@@ -38,6 +41,11 @@ Initializes the PAL_ZStream by creating and setting its underlying z_stream.
 static int32_t Init(PAL_ZStream* stream)
 {
     z_stream* zStream = (z_stream*)calloc(1, sizeof(z_stream));
+
+#ifdef _WIN64
+    zStream->zalloc = z_custom_calloc;
+    zStream->zfree = z_custom_cfree;
+#endif
 
     stream->internalState = zStream;
 
@@ -197,6 +205,13 @@ uint32_t CompressionNative_Crc32(uint32_t crc, uint8_t* buffer, int32_t len)
     assert(buffer != NULL);
 
     unsigned long result = crc32(crc, buffer, len);
+    assert(result <= UINT32_MAX);
+    return (uint32_t)result;
+}
+
+uint32_t CompressionNative_CompressBound(uint32_t sourceLen)
+{
+    unsigned long result = compressBound(sourceLen);
     assert(result <= UINT32_MAX);
     return (uint32_t)result;
 }

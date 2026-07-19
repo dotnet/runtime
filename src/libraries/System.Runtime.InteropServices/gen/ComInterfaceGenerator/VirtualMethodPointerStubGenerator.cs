@@ -4,24 +4,24 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using static Microsoft.Interop.SyntaxFactoryExtensions;
-using Microsoft.CodeAnalysis;
-using System.Diagnostics;
 
 namespace Microsoft.Interop
 {
     internal static class VirtualMethodPointerStubGenerator
     {
-        private const string NativeThisParameterIdentifier = "__this";
-        private const string VirtualMethodTableIdentifier = "__vtable";
-        private const string VirtualMethodTarget = "__target";
+        internal const string NativeThisParameterIdentifier = "__this";
+        internal const string VirtualMethodTableIdentifier = "__vtable";
+        internal const string VirtualMethodTarget = "__target";
 
-        public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
-            IncrementalMethodStubGenerationContext methodStub,
+        public static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
+            SourceAvailableIncrementalMethodStubGenerationContext methodStub,
             Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), methodStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
@@ -85,12 +85,28 @@ namespace Microsoft.Interop
             // with no additional decorators.
             Debug.Assert(methodStub.TypeKeyOwner.Syntax is NameSyntax);
 
-            return (
-                PrintGeneratedSource(
+            MemberDeclarationSyntax stubDeclaration;
+            if (methodStub.MemberKind.IsPropertyOrIndexerAccessor())
+            {
+                // Emit a property or indexer declaration containing only the relevant accessor (get or set)
+                // with the stub body inline. The writer is responsible for merging the get and set halves
+                // of a single accessor pair into one declaration before output.
+                stubDeclaration = PrintPropertyOrIndexerAccessorStub(
+                    methodStub,
+                    code)
+                    .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier((NameSyntax)methodStub.TypeKeyOwner.Syntax));
+            }
+            else
+            {
+                stubDeclaration = PrintMethodStub(
                     methodStub.StubMethodSyntaxTemplate,
                     methodStub.SignatureContext,
                     code)
-                    .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier((NameSyntax)methodStub.TypeKeyOwner.Syntax)),
+                    .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier((NameSyntax)methodStub.TypeKeyOwner.Syntax));
+            }
+
+            return (
+                stubDeclaration,
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
@@ -112,7 +128,7 @@ namespace Microsoft.Interop
                 untypedFunctionPointerExpression));
         }
 
-        private static MethodDeclarationSyntax PrintGeneratedSource(
+        private static MethodDeclarationSyntax PrintMethodStub(
             ContainingSyntax stubMethodSyntax,
             SignatureContext stub,
             BlockSyntax stubCode)
@@ -125,10 +141,60 @@ namespace Microsoft.Interop
                 .WithBody(stubCode);
         }
 
+        private static BasePropertyDeclarationSyntax PrintPropertyOrIndexerAccessorStub(
+            SourceAvailableIncrementalMethodStubGenerationContext methodStub,
+            BlockSyntax stubCode)
+        {
+            Debug.Assert(methodStub.MemberKind.IsPropertyOrIndexerAccessor());
+            bool isSetter = methodStub.MemberKind.IsAccessorSetter();
+            bool isIndexer = methodStub.MemberKind.IsIndexerAccessor();
+
+            // For a getter, the stub return type is the value type and the parameter list contains the
+            // index parameters only (empty for an ordinary property).
+            // For a setter, the stub return type is void and the parameter list is "index parameters +
+            // value". In C# property/indexer syntax the value parameter is implicit (its type is taken
+            // from the declared type), so we drop it from the parameter list and treat its type as the
+            // value type for the declaration.
+            ImmutableArray<ParameterSyntax> stubParameters = methodStub.SignatureContext.StubParameters.ToImmutableArray();
+            TypeSyntax valueType;
+            ImmutableArray<ParameterSyntax> indexParameters;
+            if (isSetter)
+            {
+                // The value parameter is the LAST entry for both property setters (only entry) and
+                // indexer setters (after the index parameters).
+                valueType = stubParameters[stubParameters.Length - 1].Type!;
+                indexParameters = stubParameters.RemoveAt(stubParameters.Length - 1);
+            }
+            else
+            {
+                valueType = methodStub.SignatureContext.StubReturnType;
+                indexParameters = stubParameters;
+            }
+
+            SyntaxKind accessorKind = isSetter
+                ? SyntaxKind.SetAccessorDeclaration
+                : SyntaxKind.GetAccessorDeclaration;
+
+            AccessorDeclarationSyntax accessor = AccessorDeclaration(accessorKind)
+                .AddAttributeLists(methodStub.SignatureContext.AdditionalAttributes.ToArray())
+                .WithBody(stubCode);
+
+            if (isIndexer)
+            {
+                return IndexerDeclaration(valueType)
+                    .WithParameterList(BracketedParameterList(SeparatedList(indexParameters)))
+                    .WithAccessorList(AccessorList(SingletonList(accessor)));
+            }
+
+            return PropertyDeclaration(valueType, Identifier(methodStub.TemplateName))
+                .WithAccessorList(
+                    AccessorList(SingletonList(accessor)));
+        }
+
         private const string ManagedThisParameterIdentifier = "@this";
 
-        public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
-            IncrementalMethodStubGenerationContext methodStub,
+        public static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
+            SourceAvailableIncrementalMethodStubGenerationContext methodStub,
             Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), methodStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
@@ -141,10 +207,37 @@ namespace Microsoft.Interop
                 diagnostics,
                 generatorResolverCreator(methodStub.EnvironmentFlags, MarshalDirection.UnmanagedToManaged));
 
-            BlockSyntax code = stubGenerator.GenerateStubBody(
-                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(ManagedThisParameterIdentifier),
-                    IdentifierName(methodStub.StubMethodSyntaxTemplate.Identifier)));
+            BlockSyntax code;
+            if (methodStub.MemberKind.IsPropertyOrIndexerAccessor())
+            {
+                bool isSetter = methodStub.MemberKind.IsAccessorSetter();
+                if (methodStub.MemberKind.IsIndexerAccessor())
+                {
+                    // For an indexer accessor the managed-side access is element access on @this; the
+                    // helper assembles the bracketed index-argument list from the marshalled identifiers.
+                    code = stubGenerator.GenerateStubBodyForIndexer(
+                        IdentifierName(ManagedThisParameterIdentifier),
+                        isSetter);
+                }
+                else
+                {
+                    // For an ordinary property accessor the managed-side access is member access:
+                    //   @this.Foo
+                    ExpressionSyntax propertyAccess = MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(ManagedThisParameterIdentifier),
+                        IdentifierName(methodStub.TemplateName));
+                    code = stubGenerator.GenerateStubBodyForProperty(propertyAccess, isSetter);
+                }
+            }
+            else
+            {
+                Debug.Assert(methodStub.MemberKind is StubMemberKind.Method);
+                code = stubGenerator.GenerateStubBodyForMethod(
+                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(ManagedThisParameterIdentifier),
+                        IdentifierName(methodStub.StubMethodSyntaxTemplate.Identifier)));
+            }
 
             (ParameterListSyntax unmanagedParameterList, TypeSyntax returnType, _) = stubGenerator.GenerateAbiMethodSignatureData();
 
@@ -174,7 +267,7 @@ namespace Microsoft.Interop
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
-        private static ImmutableArray<TypePositionInfo> AddManagedToUnmanagedImplicitThis(IncrementalMethodStubGenerationContext methodStub)
+        private static ImmutableArray<TypePositionInfo> AddManagedToUnmanagedImplicitThis(SourceAvailableIncrementalMethodStubGenerationContext methodStub)
         {
             ImmutableArray<TypePositionInfo> originalElements = methodStub.SignatureContext.ElementTypeInformation;
 
@@ -229,32 +322,6 @@ namespace Microsoft.Interop
             }
 
             return elements.ToImmutable();
-        }
-
-        public static BlockSyntax GenerateVirtualMethodTableSlotAssignments(
-            IEnumerable<IncrementalMethodStubGenerationContext> vtableMethods,
-            string vtableIdentifier,
-            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
-        {
-            List<StatementSyntax> statements = new();
-            foreach (var method in vtableMethods)
-            {
-                FunctionPointerTypeSyntax functionPointerType = GenerateUnmanagedFunctionPointerTypeForMethod(method, generatorResolverCreator);
-
-                // <vtableParameter>[<index>] = (void*)(<functionPointerType>)&ABI_<methodIdentifier>;
-                statements.Add(
-                    ExpressionStatement(
-                        AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                            ElementAccessExpression(
-                                IdentifierName(vtableIdentifier))
-                            .AddArgumentListArguments(Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(method.VtableIndexData.Index)))),
-                            CastExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
-                                CastExpression(functionPointerType,
-                                    PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
-                                        IdentifierName($"ABI_{method.StubMethodSyntaxTemplate.Identifier}")))))));
-            }
-
-            return Block(statements);
         }
 
         public static FunctionPointerTypeSyntax GenerateUnmanagedFunctionPointerTypeForMethod(

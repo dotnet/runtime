@@ -26,8 +26,8 @@ namespace System.Net.Tests
 
         public void Dispose()
         {
-            Factory?.Dispose();
             Client?.Dispose();
+            Factory?.Dispose();
         }
 
         [Theory]
@@ -35,7 +35,7 @@ namespace System.Net.Tests
         [InlineData("Accept: Test, Test2,Test3 ,  Test4", new string[] { "Test", "Test2", "Test3 ", " Test4" })]
         [InlineData("Accept: ", new string[] { "" })]
         [InlineData("Unknown-Header: ", null)]
-        public async Task AcceptTypes_GetProperty_ReturnsExpected(string acceptString, string[] expected)
+        public async Task AcceptTypes_GetProperty_ReturnsExpected(string acceptString, string[]? expected)
         {
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { acceptString });
             Assert.Equal(request.AcceptTypes, request.AcceptTypes);
@@ -164,7 +164,7 @@ namespace System.Net.Tests
         [InlineData("Referer: ", "")]
         [InlineData("Referer: http://microsoft.com<>", null)]
         [InlineData("Unknown-Header: ", null)]
-        public async Task Referer_GetProperty_ReturnsExpected(string refererString, string expected)
+        public async Task Referer_GetProperty_ReturnsExpected(string refererString, string? expected)
         {
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { refererString });
             Assert.Equal(expected, request.UrlReferrer?.ToString());
@@ -175,7 +175,7 @@ namespace System.Net.Tests
         [InlineData("user-agent: Test", "Test")]
         [InlineData("User-Agent: ", "")]
         [InlineData("Unknown-Header: Test", null)]
-        public async Task UserAgent_GetProperty_ReturnsExpected(string userAgentString, string expected)
+        public async Task UserAgent_GetProperty_ReturnsExpected(string userAgentString, string? expected)
         {
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { userAgentString });
             Assert.Equal(expected, request.UserAgent);
@@ -229,11 +229,6 @@ namespace System.Net.Tests
         [InlineData("Unknown-Header: Test", false)]
         public async Task IsWebSocketRequest_GetProperty_ReturnsExpected(string webSocketString, bool expected)
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                return;
-            }
-
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { webSocketString });
             Assert.Equal(expected, request.IsWebSocketRequest);
         }
@@ -246,7 +241,7 @@ namespace System.Net.Tests
         [InlineData("Accept-Language:", new string[] { "" })]
         [InlineData("Accept-Language: ", new string[] { "" })]
         [InlineData("Unknown-Header: Test", null)]
-        public async Task UserLanguages_GetProperty_ReturnsExpected(string userLanguageString, string[] expected)
+        public async Task UserLanguages_GetProperty_ReturnsExpected(string userLanguageString, string[]? expected)
         {
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { userLanguageString });
             Assert.Equal(request.UserLanguages, request.UserLanguages);
@@ -276,7 +271,7 @@ namespace System.Net.Tests
         public async Task GetClientCertificateAsync_NoCertificate_ReturnsNull()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
-            Assert.Null(request.GetClientCertificateAsync().Result);
+            Assert.Null(await request.GetClientCertificateAsync());
         }
 
         [Fact]
@@ -607,7 +602,7 @@ namespace System.Net.Tests
 
         private async Task<HttpListenerRequest> GetRequest(string requestType, string query, string[] headers, string content = "Text\r\n", string httpVersion = "1.1")
         {
-            Client.Send(Factory.GetContent(httpVersion, requestType, query, content, headers, true));
+            await Client.SendAsync(Factory.GetContent(httpVersion, requestType, query, content, headers, true));
 
             HttpListener listener = Factory.GetListener();
             return (await listener.GetContextAsync()).Request;

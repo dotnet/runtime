@@ -15,6 +15,12 @@
 
   <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">
     <Compile Include="System\Net\Dns.cs" />
+    <Compile Include="System\Net\Dns.Resolve.cs" />
+    <Compile Include="System\Net\DnsRecords.cs" />
+    <Compile Include="System\Net\DnsResolver.cs" />
+    <Compile Include="System\Net\DnsResolverOptions.cs" />
+    <Compile Include="System\Net\DnsResponseCode.cs" />
+    <Compile Include="System\Net\DnsResult.cs" />
     <Compile Include="System\Net\IPHostEntry.cs" />
     <Compile Include="System\Net\NetEventSource.NameResolution.cs" Condition="'$(TargetPlatformIdentifier)' != 'wasi'" />
     <Compile Include="System\Net\NameResolutionMetrics.cs" />
@@ -24,6 +30,10 @@
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="Common\System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\LocalAppContextSwitches.Net.cs"
+             Link="Common\System\Net\LocalAppContextSwitches.Net.cs" />
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
              Link="Common\System\Net\IPAddressParserStatics.cs" />
@@ -33,6 +43,14 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Net\NameResolutionPal.Windows.cs" />
+    <Compile Include="System\Net\DnsResolverPal.Windows.cs" />
+    <!-- Dnsapi interop -->
+    <Compile Include="$(CommonPath)Interop\Windows\Dnsapi\Interop.DnsApi.cs"
+             Link="Common\Interop\Windows\Dnsapi\Interop.DnsApi.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Dnsapi\Interop.DnsTypes.cs"
+             Link="Common\Interop\Windows\Dnsapi\Interop.DnsTypes.cs" />
+    <Compile Include="$(CommonPath)System\NullableBool.cs"
+             Link="Common\System\NullableBool.cs" />
     <!-- Debug only -->
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
              Link="Common\System\Net\DebugSafeHandle.cs" />
@@ -70,6 +88,7 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
+    <Compile Include="System\Net\DnsResolverPal.Unsupported.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
@@ -109,6 +128,7 @@
              Link="Common\Interop\Unix\System.Native\Interop.ErrNo.cs"/>
 
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
+    <Compile Include="System\Net\DnsResolverPal.Unsupported.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
@@ -134,19 +154,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.DiagnosticSource" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Security.Principal.Windows" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Overlapped" />
-    <Reference Include="System.Threading.ThreadPool" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Primitives\src\Microsoft.Win32.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\src\System.Diagnostics.DiagnosticSource.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\src\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Claims\src\System.Security.Claims.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Overlapped\src\System.Threading.Overlapped.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\src\System.Threading.ThreadPool.csproj" />
   </ItemGroup>
 
 </Project>

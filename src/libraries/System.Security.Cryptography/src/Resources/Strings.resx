@@ -1,4 +1,4 @@
-﻿<root>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -60,6 +60,9 @@
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
   </data>
+  <data name="Arg_EmptyCollection" xml:space="preserve">
+    <value>Collection may not be empty.</value>
+  </data>
   <data name="Arg_EmptyOrNullArray" xml:space="preserve">
     <value>Array may not be empty or null.</value>
   </data>
@@ -98,6 +101,9 @@
   </data>
   <data name="Argument_EmptyString" xml:space="preserve">
     <value>The value cannot be an empty string.</value>
+  </data>
+  <data name="Argument_HashEmpty" xml:space="preserve">
+    <value>Hash cannot be empty.</value>
   </data>
   <data name="Argument_HashImprecise" xml:space="preserve">
     <value>Hash must be exactly {0} bytes.</value>
@@ -141,14 +147,14 @@
   <data name="Argument_KemInvalidSeedLength" xml:space="preserve">
     <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
+  <data name="Argument_MLDsaMuInvalidLength" xml:space="preserve">
+    <value>The specified mu value is not the correct length for the ML-DSA algorithm.</value>
+  </data>
+  <data name="Argument_PrivateKeyWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The private key is not the correct size for the indicated algorithm.</value>
+  </data>
   <data name="Argument_PublicKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The public key is not the correct size for the indicated algorithm.</value>
-  </data>
-  <data name="Argument_SecretKeyWrongSizeForAlgorithm" xml:space="preserve">
-    <value>The secret key is not the correct size for the indicated algorithm.</value>
-  </data>
-  <data name="Argument_PrivateKeyTooShortForAlgorithm" xml:space="preserve">
-    <value>The private key is too short for the indicated algorithm.</value>
   </data>
   <data name="Argument_PrivateSeedWrongSizeForAlgorithm" xml:space="preserve">
     <value>The private seed is not the correct size for the indicated algorithm.</value>
@@ -234,6 +240,12 @@
   <data name="Cryptography_AlgorithmTypesMustBeVisible" xml:space="preserve">
     <value>Algorithms added to CryptoConfig must be accessible from outside their assembly.</value>
   </data>
+  <data name="Cryptography_AndroidX509ChainContextInitializationFailed" xml:space="preserve">
+    <value>The Android X.509 certificate chain could not be initialized.</value>
+  </data>
+  <data name="Cryptography_ArgCompositeMLDsaRequiresCompositeMLDsaKey" xml:space="preserve">
+    <value>Keys used with the CompositeMLDsaCng algorithm must have an algorithm group of CompositeMLDsa.</value>
+  </data>
   <data name="Cryptography_ArgDSARequiresDSAKey" xml:space="preserve">
     <value>Keys used with the DSACng algorithm must have an algorithm group of DSA.</value>
   </data>
@@ -251,6 +263,9 @@
   </data>
   <data name="Cryptography_ArgMLKemRequiresMLKemKey" xml:space="preserve">
     <value>Keys used with the MLKemCng algorithm must have an algorithm group of MLKem.</value>
+  </data>
+  <data name="Cryptography_ArgX25519RequiresX25519Key" xml:space="preserve">
+    <value>Keys used with the X25519DiffieHellmanCng algorithm must have an algorithm group of ECDiffieHellman using curve25519.</value>
   </data>
   <data name="Cryptography_ArgRSARequiresRSAKey" xml:space="preserve">
     <value>Keys used with the RSACng algorithm must have an algorithm group of RSA.</value>
@@ -326,6 +341,9 @@
   </data>
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
+  </data>
+  <data name="Cryptography_CompositeSignDataError" xml:space="preserve">
+    <value>Composite signature generation failed due to an error in one or both of the components.</value>
   </data>
   <data name="Cryptography_ConcurrentUseNotSupported" xml:space="preserve">
     <value>Concurrent operations from multiple threads on this type are not supported.</value>
@@ -410,6 +428,9 @@
   </data>
   <data name="Cryptography_HashLengthMismatch" xml:space="preserve">
     <value>The specified hash is not a valid size for this hash algorithm.</value>
+  </data>
+  <data name="Cryptography_HashMLDsaAlgorithmMismatch" xml:space="preserve">
+    <value>HashML-DSA '{0}' cannot be used with hash algorithm '{1}'.</value>
   </data>
   <data name="Cryptography_HashNotYetFinalized" xml:space="preserve">
     <value>Hash must be finalized before the hash value is retrieved.</value>
@@ -534,6 +555,9 @@
   <data name="Cryptography_KemInvalidAlgorithmHandle" xml:space="preserve">
     <value>The specified EVP_PKEY handle is not a known ML-KEM algorithm.</value>
   </data>
+  <data name="Cryptography_X25519InvalidAlgorithmHandle" xml:space="preserve">
+    <value>The specified EVP_PKEY handle is not an X25519 Diffie-Hellman key.</value>
+  </data>
   <data name="Cryptography_KemNoDecapsulationKey" xml:space="preserve">
     <value>The current instance does not contain a decapsulation key.</value>
   </data>
@@ -549,6 +573,12 @@
   <data name="Cryptography_KeyTooSmall" xml:space="preserve">
     <value>The key is too small for the requested operation.</value>
   </data>
+  <data name="Cryptography_KeyWrap_DecryptFailed" xml:space="preserve">
+    <value>The ciphertext did not successfully decrypt with the instance key.</value>
+  </data>
+  <data name="Cryptography_KeyWrap_InvalidLength" xml:space="preserve">
+    <value>The ciphertext is not a valid length for the Key Wrap with Padding Unwrap algorithm.</value>
+  </data>
   <data name="Cryptography_KeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The specified key is not the correct size for the indicated algorithm.</value>
   </data>
@@ -560,9 +590,6 @@
   </data>
   <data name="Cryptography_MLDsaInvalidAlgorithmHandle" xml:space="preserve">
     <value>The specified EVP_PKEY handle is not a known ML-DSA algorithm.</value>
-  </data>
-  <data name="Cryptography_MLDsaNoSecretKey" xml:space="preserve">
-    <value>The current instance does not contain a secret key.</value>
   </data>
   <data name="Cryptography_MLDsaPkcs8KeyMismatch" xml:space="preserve">
     <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
@@ -581,6 +608,9 @@
   </data>
   <data name="Cryptography_NoPemOfLabel" xml:space="preserve">
     <value>The contents do not contain a PEM with a '{0}' label, or the content is malformed.</value>
+  </data>
+  <data name="Cryptography_NoPrivateKeyAvailable" xml:space="preserve">
+    <value>The current instance does not contain a private key.</value>
   </data>
   <data name="Cryptography_NotRetrievable" xml:space="preserve">
     <value>The key contents are not retrievable.</value>
@@ -902,9 +932,6 @@
   </data>
   <data name="CryptSetKeyParam_Failed" xml:space="preserve">
     <value>CryptSetKeyParam failed with error code {0}.</value>
-  </data>
-  <data name="CspParameter_invalid" xml:space="preserve">
-    <value>CSPParameters cannot be null</value>
   </data>
   <data name="HashNameMultipleSetNotSupported" xml:space="preserve">
     <value>Setting the hashname after it's already been set is not supported on this platform.</value>

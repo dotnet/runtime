@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("defaultAlias")]
-        public void Ctor_String(string defaultAlias)
+        public void Ctor_String(string? defaultAlias)
         {
             var attribute = new AssemblyDefaultAliasAttribute(defaultAlias);
             Assert.Equal(defaultAlias, attribute.DefaultAlias);

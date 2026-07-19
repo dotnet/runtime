@@ -162,7 +162,7 @@ NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
 
         mov         r2, #0              // numElements
 
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame)
         blx         C_FUNC(RhpGcAlloc)
 
         cbz         r0, LOCAL_LABEL(NewOutOfMemory)
@@ -369,7 +369,7 @@ NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
         mov         r2, r1          // numElements
         mov         r1, #0          // uFlags
 
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame)
         blx         C_FUNC(RhpGcAlloc)
 
         // Test for failure (NULL return).
@@ -414,7 +414,7 @@ NESTED_ENTRY RhpNewArrayFastAlign8, _TEXT, NoHandler
         mov         r2, r1                  // numElements
         mov         r1, #GC_ALLOC_ALIGN8    // uFlags
 
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame)
         blx         C_FUNC(RhpGcAlloc)
 
         // Test for failure (NULL return).

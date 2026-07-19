@@ -7,6 +7,9 @@
 // It causes assert when cse processes the child with the clean vn state.
 
 
+
+namespace DevDiv_278526;
+
 using System;
 using Xunit;
 
@@ -38,6 +41,7 @@ public class Program
         return true;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

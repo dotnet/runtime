@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Tests
             return new MLDsaCng(key);
         }
 
-        internal static MLDsaCng ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source, CngExportPolicies exportPolicies)
+        internal static MLDsaCng ImportPrivateKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source, CngExportPolicies exportPolicies)
         {
             CngKey key = PqcBlobHelpers.EncodeMLDsaBlob(
                 PqcBlobHelpers.GetMLDsaParameterSet(algorithm),

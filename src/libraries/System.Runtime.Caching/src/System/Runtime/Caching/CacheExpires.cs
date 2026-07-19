@@ -625,7 +625,7 @@ namespace System.Runtime.Caching
 
                 lock (this)
                 {
-                    Debug.Assert(_blockReduce == false, "_blockReduce == false");
+                    Debug.Assert(!_blockReduce, "_blockReduce == false");
 
                     if (_cEntriesInUse == 0 || GetExpiresCount(utcNow) == 0)
                         return 0;

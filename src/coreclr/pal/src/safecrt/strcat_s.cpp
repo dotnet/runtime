@@ -4,12 +4,9 @@
 /***
 *strcat_s.c - contains strcat_s()
 *
-
-*
 *Purpose:
 *   strcat_s() concatenates (appends) a copy of the source string to the
 *   end of the destination string.
-*
 *******************************************************************************/
 
 #define _SECURECRT_FILL_BUFFER 1
@@ -22,7 +19,6 @@
 
 #include "mbusafecrt_internal.h"
 
-#define _FUNC_PROLOGUE
 #define _FUNC_NAME strcat_s
 #define _CHAR char
 #define _DEST _Dst

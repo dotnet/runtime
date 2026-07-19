@@ -65,16 +65,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         class GenericTypeWithAttributedParameter<[AttributeWhichRequires] T>
         {
             public static void TestMethod() { }
         }
 
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         static void GenericMethodWithAttributedParameter<[AttributeWhichRequires] T>() { }
 
         static void TestRequiresOnAttributeOnGenericParameter()
@@ -84,11 +84,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         [AttributeWhichRequires]
         [AttributeWhichRequiresOnProperty(PropertyWhichRequires = true)]
         class TypeWithAttributeWhichRequires
@@ -96,31 +96,31 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         [AttributeWhichRequires]
         [AttributeWhichRequiresOnProperty(PropertyWhichRequires = true)]
         static void MethodWithAttributeWhichRequires() { }
 
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         [AttributeWhichRequires]
         [AttributeWhichRequiresOnProperty(PropertyWhichRequires = true)]
         static int _fieldWithAttributeWhichRequires;
 
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
-        [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         [AttributeWhichRequires]
         [AttributeWhichRequiresOnProperty(PropertyWhichRequires = true)]
         static bool PropertyWithAttributeWhichRequires { get; set; }
@@ -133,8 +133,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         static void MethodWhichRequiresWithAttributeWhichRequires() { }
 
         [ExpectedWarning("IL2026", "--MethodWhichRequiresWithAttributeWhichRequires--")]
-        [ExpectedWarning("IL3002", "--MethodWhichRequiresWithAttributeWhichRequires--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--MethodWhichRequiresWithAttributeWhichRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--MethodWhichRequiresWithAttributeWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--MethodWhichRequiresWithAttributeWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         static void TestMethodWhichRequiresWithAttributeWhichRequires()
         {
             MethodWhichRequiresWithAttributeWhichRequires();

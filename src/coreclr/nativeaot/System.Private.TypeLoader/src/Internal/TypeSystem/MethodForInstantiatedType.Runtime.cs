@@ -21,7 +21,7 @@ namespace Internal.TypeSystem
 #if DEBUG
         public override string ToString()
         {
-            return OwningType.ToString() + "." + Name;
+            return OwningType.ToString() + "." + GetName();
         }
 #endif
     }

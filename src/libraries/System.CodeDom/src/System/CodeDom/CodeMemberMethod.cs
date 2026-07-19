@@ -7,10 +7,7 @@ namespace System.CodeDom
     {
         private readonly CodeParameterDeclarationExpressionCollection _parameters = new CodeParameterDeclarationExpressionCollection();
         private readonly CodeStatementCollection _statements = new CodeStatementCollection();
-        private CodeTypeReference _returnType;
         private CodeTypeReferenceCollection _implementationTypes;
-        private CodeAttributeDeclarationCollection _returnAttributes;
-        private CodeTypeParameterCollection _typeParameters;
 
         private int _populated;
         private const int ParametersCollection = 0x1;
@@ -23,8 +20,8 @@ namespace System.CodeDom
 
         public CodeTypeReference ReturnType
         {
-            get => _returnType ??= new CodeTypeReference(typeof(void).FullName);
-            set => _returnType = value;
+            get => field ??= new CodeTypeReference(typeof(void).FullName);
+            set => field = value;
         }
 
         public CodeStatementCollection Statements
@@ -73,8 +70,8 @@ namespace System.CodeDom
             }
         }
 
-        public CodeAttributeDeclarationCollection ReturnTypeCustomAttributes => _returnAttributes ??= new CodeAttributeDeclarationCollection();
+        public CodeAttributeDeclarationCollection ReturnTypeCustomAttributes => field ??= new CodeAttributeDeclarationCollection();
 
-        public CodeTypeParameterCollection TypeParameters => _typeParameters ??= new CodeTypeParameterCollection();
+        public CodeTypeParameterCollection TypeParameters => field ??= new CodeTypeParameterCollection();
     }
 }

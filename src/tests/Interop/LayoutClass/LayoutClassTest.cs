@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace LayoutClass
 {
@@ -138,7 +139,6 @@ namespace LayoutClass
     }
 
     [SkipOnMono("needs triage")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public class LayoutClassTest
     {

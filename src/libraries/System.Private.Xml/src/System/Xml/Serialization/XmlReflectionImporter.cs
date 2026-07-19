@@ -406,7 +406,7 @@ namespace System.Xml.Serialization
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlInvalidDataTypeUsage, dataType, "XmlElementAttribute.DataType"));
                     }
-                    TypeDesc? td = TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
+                    TypeDesc? td = TypeScope.GetMatchingTypeDesc(dataType, XmlSchema.Namespace, modelTypeDesc.FullName);
                     if (td == null)
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlInvalidXsdDataType, dataType, "XmlElementAttribute.DataType", new XmlQualifiedName(dataType, XmlSchema.Namespace).ToString()));
@@ -860,19 +860,20 @@ namespace System.Xml.Serialization
                 {
                     MemberMapping? member = ImportFieldMapping(model, fieldModel, memberAttrs, mapping.Namespace, limiter);
                     if (member == null) continue;
-                    if (mapping.BaseMapping != null)
+                    bool memberDeclaredByBase = mapping.BaseMapping != null && mapping.BaseMapping.Declares(member, mapping.TypeName);
+                    if (memberDeclaredByBase)
                     {
                         // If the base mapping already declares this member, then we should remove that accessor and prefer the derived one.
-                        if (mapping.BaseMapping.Declares(member, mapping.TypeName))
-                        {
-                            RemoveUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
-                        }
+                        RemoveUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
                     }
                     isSequence |= member.IsSequence;
                     // add All member accessors to the scope accessors
                     AddUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
 
-                    if (member.Text != null)
+                    // Skip text/xmlns tracking for members that override a base mapping's member:
+                    // the base mapping already registered the accessor; re-registering it here
+                    // would falsely trigger the simpleContent extension check in SetContentModel.
+                    if (member.Text != null && !memberDeclaredByBase)
                     {
                         if (!member.Text.Mapping!.TypeDesc!.CanBeTextValue && member.Text.Mapping.IsList)
                             throw new InvalidOperationException(SR.Format(SR.XmlIllegalTypedTextAttribute, typeName, member.Text.Name, member.Text.Mapping.TypeDesc.FullName));
@@ -882,7 +883,7 @@ namespace System.Xml.Serialization
                         }
                         textAccessor = member.Text;
                     }
-                    if (member.Xmlns != null)
+                    if (member.Xmlns != null && !memberDeclaredByBase)
                     {
                         if (mapping.XmlnsMember != null)
                             throw new InvalidOperationException(SR.Format(SR.XmlMultipleXmlns, model.Type.FullName));
@@ -1166,7 +1167,8 @@ namespace System.Xml.Serialization
             PrimitiveMapping mapping = new PrimitiveMapping();
             if (dataType.Length > 0)
             {
-                mapping.TypeDesc = TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
+                TypeDesc modelTypeDesc = TypeScope.IsOptionalValue(model.Type) ? model.TypeDesc.BaseTypeDesc! : model.TypeDesc;
+                mapping.TypeDesc = TypeScope.GetMatchingTypeDesc(dataType, XmlSchema.Namespace, modelTypeDesc.FullName);
                 if (mapping.TypeDesc == null)
                 {
                     // try it as a non-Xsd type
@@ -2116,7 +2118,7 @@ namespace System.Xml.Serialization
                     XmlArrayItemAttribute? item = (XmlArrayItemAttribute?)arrayTypes[type.FullName, ns];
                     if (item != null)
                     {
-                        throw new InvalidOperationException(SR.Format(SR.XmlArrayItemAmbiguousTypes, accessorName, item.ElementName, items[i]!.ElementName, nameof(XmlElementAttribute), nameof(XmlChoiceIdentifierAttribute), accessorName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlArrayItemAmbiguousTypes, accessorName, item.ElementName, items[i]!.ElementName, nameof(XmlElementAttribute), nameof(XmlChoiceIdentifierAttribute)));
                     }
                     else
                     {
@@ -2387,7 +2389,6 @@ namespace System.Xml.Serialization
     {
         private readonly int _maxDepth;
         private int _depth;
-        private WorkItems? _deferredWorkItems;
 
         internal RecursionLimiter()
         {
@@ -2398,6 +2399,6 @@ namespace System.Xml.Serialization
         internal bool IsExceededLimit { get { return _depth > _maxDepth; } }
         internal int Depth { get { return _depth; } set { _depth = value; } }
 
-        internal WorkItems DeferredWorkItems => _deferredWorkItems ??= new WorkItems();
+        internal WorkItems DeferredWorkItems => field ??= new WorkItems();
     }
 }

@@ -35,6 +35,7 @@ namespace System.Net.Http
         private readonly HttpConnectionPoolManager _poolManager;
         private readonly HttpConnectionKind _kind;
         private readonly Uri? _proxyUri;
+        private readonly string? _telemetryServerAddress;
 
         /// <summary>The origin authority used to construct the <see cref="HttpConnectionPool"/>.</summary>
         private readonly HttpAuthority _originAuthority;
@@ -50,6 +51,9 @@ namespace System.Net.Http
         // There is no need to lock when updating these values - we're only interested in saving _a_ value, not necessarily the min/max/last.
         internal uint _lastSeenHttp2MaxHeaderListSize;
         internal uint _lastSeenHttp3MaxHeaderListSize;
+
+        // Same as the above, but for SETTINGS_MAX_CONCURRENT_STREAMS.
+        internal uint _lastSeenHttp2MaxConcurrentStreams = Http2Connection.InitialMaxConcurrentStreams;
 
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
@@ -72,12 +76,14 @@ namespace System.Net.Http
         /// <param name="port">The port with which this pool is associated.</param>
         /// <param name="sslHostName">The SSL host with which this pool is associated.</param>
         /// <param name="proxyUri">The proxy this pool targets (optional).</param>
-        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri)
+        /// <param name="telemetryServerAddress">The value of the 'server.address' tag to be emitted by Metrics and Distributed Tracing.</param>
+        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, string? telemetryServerAddress)
         {
             _poolManager = poolManager;
             _kind = kind;
             _proxyUri = proxyUri;
             _maxHttp11Connections = Settings._maxConnectionsPerServer;
+            _telemetryServerAddress = telemetryServerAddress;
 
             // The only case where 'host' will not be set is if this is a Proxy connection pool.
             Debug.Assert(host is not null || (kind == HttpConnectionKind.Proxy && proxyUri is not null));
@@ -85,7 +91,7 @@ namespace System.Net.Http
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
 
-            if (IsHttp3Supported())
+            if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3)
             {
                 _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30;
             }
@@ -124,7 +130,9 @@ namespace System.Net.Http
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
 
-                    _http2Enabled = false;
+                    // A CONNECT tunnel to the origin server behaves like a direct connection once established,
+                    // so cleartext HTTP/2 (h2c) can be used over it. HTTP/1.1 WebSockets keep working because
+                    // the WebSocket upgrade request uses HTTP/1.1 and never attempts HTTP/2.
                     _http3Enabled = false;
                     break;
 
@@ -227,7 +235,7 @@ namespace System.Net.Http
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
                 }
 
-                if (IsHttp3Supported() && _http3Enabled)
+                if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _http3Enabled)
                 {
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
                 }
@@ -244,7 +252,7 @@ namespace System.Net.Http
             {
                 _http2RequestQueue = new RequestQueue<Http2Connection?>();
             }
-            if (IsHttp3Supported() && _http3Enabled)
+            if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _http3Enabled)
             {
                 _http3RequestQueue = new RequestQueue<Http3Connection?>();
             }
@@ -279,6 +287,7 @@ namespace System.Net.Http
             return sslOptions;
         }
 
+        public string? TelemetryServerAddress => _telemetryServerAddress;
         public HttpAuthority OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
@@ -400,7 +409,7 @@ namespace System.Net.Http
                     HttpResponseMessage? response = null;
 
                     // Use HTTP/3 if possible.
-                    if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
+                    if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && // guard to enable trimming HTTP/3 support
                         _http3Enabled &&
                         (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
                         !request.IsExtendedConnectRequest)
@@ -436,7 +445,8 @@ namespace System.Net.Http
                         // Use HTTP/2 if possible.
                         if (_http2Enabled &&
                             (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
-                            (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure)) // prefer HTTP/1.1 if connection is not secured and downgrade is possible
+                            (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure) && // prefer HTTP/1.1 if connection is not secured and downgrade is possible
+                            !(_http2SessionAuthSeen && CanFallBackToHttp11(request))) // skip HTTP/2 for requests that can use HTTP/1.1 after session auth challenge
                         {
                             if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
                                 http2ConnectionWaiter != null)
@@ -530,14 +540,16 @@ namespace System.Net.Http
                     // Eat exception and try again on a lower protocol version.
                     request.Version = HttpVersion.Version11;
                 }
-                catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnStreamLimitReached)
+                catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnSessionAuthenticationChallenge)
                 {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        Trace($"Retrying request on another HTTP/2 connection after active streams limit is reached on existing one: {e}");
-                    }
+                    // Server sent a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
+                    // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
+                    // The pool flag was already set in Http2Connection.SendAsync so future requests that can use
+                    // HTTP/1.1 will go directly to HTTP/1.1. Retry this request on HTTP/1.1.
+                    Debug.Assert(CanFallBackToHttp11(request));
+                    Debug.Assert(_http2SessionAuthSeen);
 
-                    // Eat exception and try again.
+                    request.Version = HttpVersion.Version11;
                 }
                 finally
                 {
@@ -550,14 +562,14 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<(Stream, TransportContext?, Activity?, IPEndPoint?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<(Stream, TransportContext?, Activity?, IPEndPoint?)> ConnectAsync(HttpRequestMessage request, bool async, bool isForHttp2, CancellationToken cancellationToken)
         {
             Stream? stream = null;
             IPEndPoint? remoteEndPoint = null;
             Exception? exception = null;
             TransportContext? transportContext = null;
 
-            Activity? activity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(IsSecure, OriginAuthority);
+            Activity? activity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(IsSecure, _telemetryServerAddress, OriginAuthority.Port);
 
             try
             {
@@ -611,7 +623,7 @@ namespace System.Net.Http
                     SslStream? sslStream = stream as SslStream;
                     if (sslStream == null)
                     {
-                        sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
+                        sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request, isForHttp2), request, async, stream, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -703,9 +715,11 @@ namespace System.Net.Http
             }
         }
 
-        private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request)
+        private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request, bool isForHttp2)
         {
-            if (_http2Enabled)
+            // Even if a request could use HTTP/2, we may have chosen to establish an HTTP/1.1 connection
+            // for it instead (e.g. when _http2SessionAuthSeen is set for downgradeable requests).
+            if (_http2Enabled && isForHttp2)
             {
                 if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                 {
@@ -776,7 +790,7 @@ namespace System.Net.Http
 
             HttpResponseMessage tunnelResponse = await _poolManager.SendProxyConnectAsync(tunnelRequest, _proxyUri!, async, cancellationToken).ConfigureAwait(false);
 
-            if (tunnelResponse.StatusCode != HttpStatusCode.OK)
+            if (!tunnelResponse.IsSuccessStatusCode)
             {
                 tunnelResponse.Dispose();
                 throw new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode), statusCode: tunnelResponse.StatusCode);
@@ -862,6 +876,15 @@ namespace System.Net.Http
             throw ex;
         }
 
+        /// <summary>
+        /// Determines whether a request that was sent over HTTP/2 can fall back to HTTP/1.1.
+        /// This matches the version negotiation logic: a request can use HTTP/1.1 if its
+        /// <see cref="HttpRequestMessage.Version"/> is less than 2.0 or if its
+        /// <see cref="HttpRequestMessage.VersionPolicy"/> is <see cref="HttpVersionPolicy.RequestVersionOrLower"/>.
+        /// </summary>
+        internal static bool CanFallBackToHttp11(HttpRequestMessage request) =>
+            request.Version.Major < 2 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower;
+
         private bool CheckExpirationOnGet(HttpConnectionBase connection)
         {
             Debug.Assert(!HasSyncObjLock);
@@ -913,7 +936,7 @@ namespace System.Net.Http
                     _availableHttp2Connections.Clear();
                 }
 
-                if (IsHttp3Supported() && _availableHttp3Connections is not null)
+                if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _availableHttp3Connections is not null)
                 {
                     toDispose ??= new();
                     toDispose.AddRange(_availableHttp3Connections);
@@ -989,7 +1012,7 @@ namespace System.Net.Http
                     // Note: Http11 connections will decrement the _associatedHttp11ConnectionCount when disposed.
                     // Http2 connections will not, hence the difference in handing _associatedHttp2ConnectionCount.
                 }
-                if (IsHttp3Supported() && _availableHttp3Connections is not null)
+                if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _availableHttp3Connections is not null)
                 {
                     int removed = ScavengeHttp3ConnectionList(_availableHttp3Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
                     _associatedHttp3ConnectionCount -= removed;

@@ -19,6 +19,7 @@ internal static partial class Interop
             BCRYPT_PAD_PQDSA = 32,
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptVerifySignature(
             SafeBCryptKeyHandle hKey,
@@ -108,6 +109,38 @@ internal static partial class Interop
                     &paddingInfo,
                     pData,
                     data.Length,
+                    pSignature,
+                    signature.Length,
+                    BCryptSignVerifyFlags.BCRYPT_PAD_PQDSA);
+            }
+
+            return status == NTSTATUS.STATUS_SUCCESS;
+        }
+
+        internal static unsafe bool BCryptVerifySignaturePqcPreHash(
+            SafeBCryptKeyHandle key,
+            ReadOnlySpan<byte> hash,
+            string hashAlgorithmIdentifier,
+            ReadOnlySpan<byte> context,
+            ReadOnlySpan<byte> signature)
+        {
+            NTSTATUS status;
+
+            fixed (byte* pHash = &MemoryMarshal.GetReference(hash))
+            fixed (byte* pSignature = &MemoryMarshal.GetReference(signature))
+            fixed (byte* pContext = &MemoryMarshal.GetReference(context))
+            fixed (char* pHashAlgorithmIdentifier = hashAlgorithmIdentifier)
+            {
+                BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                paddingInfo.pbCtx = (IntPtr)pContext;
+                paddingInfo.cbCtx = context.Length;
+                paddingInfo.pszPreHashAlgId = (IntPtr)pHashAlgorithmIdentifier;
+
+                status = BCryptVerifySignature(
+                    key,
+                    &paddingInfo,
+                    pHash,
+                    hash.Length,
                     pSignature,
                     signature.Length,
                     BCryptSignVerifyFlags.BCRYPT_PAD_PQDSA);

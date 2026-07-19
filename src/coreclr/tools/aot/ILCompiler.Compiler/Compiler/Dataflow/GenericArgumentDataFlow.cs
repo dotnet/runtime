@@ -37,13 +37,20 @@ namespace ILCompiler.Dataflow
 
             TypeDesc instantiatedType = type.InstantiateSignature(typeContext, methodContext);
 
+#if ILTRIM
+            Logger logger = factory.Logger;
+            FlowAnnotations flowAnnotations = factory.FlowAnnotations;
+#else
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
+            Logger logger = mdManager.Logger;
+            FlowAnnotations flowAnnotations = mdManager.FlowAnnotations;
+#endif
 
             var diagnosticContext = new DiagnosticContext(
                 origin,
-                !mdManager.Logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
-                mdManager.Logger);
-            var reflectionMarker = new ReflectionMarker(mdManager.Logger, factory, mdManager.FlowAnnotations, typeHierarchyDataFlowOrigin: null, enabled: true);
+                !logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                logger);
+            var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlowOrigin: null, enabled: true);
 
             ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, instantiatedType);
 
@@ -93,7 +100,7 @@ namespace ILCompiler.Dataflow
                     var genericParameterValue = reflectionMarker.Annotations.GetGenericParameterValue(genericParameter);
                     Debug.Assert(genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None);
                     MultiValue genericArgumentValue = reflectionMarker.Annotations.GetTypeValueFromGenericArgument(genericArgument);
-                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, genericParameter.GetDisplayName());
+                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, genericParameter);
                     requireDynamicallyAccessedMembersAction.Invoke(genericArgumentValue, genericParameterValue);
                 }
 
@@ -116,6 +123,8 @@ namespace ILCompiler.Dataflow
             {
                 if (flowAnnotations.HasGenericParameterAnnotation(method))
                     return true;
+
+                // No need to check for new constraint, because we handle that as DAMT.PublicParameterlessConstructor.
 
                 foreach (TypeDesc typeParameter in method.Instantiation)
                 {
@@ -141,6 +150,8 @@ namespace ILCompiler.Dataflow
         {
             if (flowAnnotations.HasGenericParameterAnnotation(type))
                 return true;
+
+            // No need to check for new constraint, because we handle that as DAMT.PublicParameterlessConstructor.
 
             if (type.HasInstantiation)
             {

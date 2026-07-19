@@ -17,11 +17,12 @@ namespace Microsoft.WebAssembly.AppHost.DevServer;
 
 internal static class DevServer
 {
-    internal static async Task<(ServerURLs, IWebHost)> StartAsync(DevServerOptions options, ILogger logger, CancellationToken token)
+    internal static async Task<(ServerURLs, IHost)> StartAsync(DevServerOptions options, ILogger logger, CancellationToken token)
     {
         TaskCompletionSource<ServerURLs> realUrlsAvailableTcs = new();
 
-        IWebHostBuilder builder = new WebHostBuilder()
+        IHostBuilder builder = new HostBuilder().ConfigureWebHost(webHostBuilder =>
+            webHostBuilder
             .UseConfiguration(ConfigureHostConfiguration(options))
             .UseKestrel()
             .UseStaticWebAssets()
@@ -47,10 +48,10 @@ internal static class DevServer
                 services.AddSingleton(realUrlsAvailableTcs);
                 services.AddRouting();
             })
-            .UseUrls(options.Urls);
+            .UseUrls(options.Urls));
 
 
-        IWebHost? host = builder.Build();
+        IHost? host = builder.Build();
         await host.StartAsync(token);
 
         if (token.CanBeCanceled)

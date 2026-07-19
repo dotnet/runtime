@@ -41,7 +41,9 @@ class UserException4 : Exception {
 public class HandlerException {
 	private int ThreadId;
 
-	public HandlerException(int id){
+	public HandlerException() { }
+
+	private HandlerException(int id){
 		ThreadId = id;
 	}
 		

@@ -3,8 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
-using System.Text;
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
 
@@ -12,6 +10,7 @@ using NTSTATUS = Interop.BCrypt.NTSTATUS;
 using KeyBlobMagicNumber = Interop.BCrypt.KeyBlobMagicNumber;
 using KeyBlobType = Interop.BCrypt.KeyBlobType;
 using BCRYPT_MLKEM_KEY_BLOB = Interop.BCrypt.BCRYPT_MLKEM_KEY_BLOB;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -139,12 +138,10 @@ namespace System.Security.Cryptography
 
         private static SafeBCryptAlgorithmHandle? OpenAlgorithmHandle()
         {
-#if !NETFRAMEWORK
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!Helpers.IsOSPlatformWindows)
             {
                 return null;
             }
-#endif
 
             NTSTATUS status = Interop.BCrypt.BCryptOpenAlgorithmProvider(
                 out SafeBCryptAlgorithmHandle hAlgorithm,

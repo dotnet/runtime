@@ -29,7 +29,6 @@ namespace System.Security.Cryptography
         // Depending on the platform, _impl's legal key sizes may be more restrictive than Windows provider.
         //   DSAAndroid : (1024, 3072, 1024)
         //   DSAOpenSsl : (512, 3072, 64)
-        //   DSASecurityTransforms : (512, 1024, 64)
         //   Windows CSP : (512, 1024, 64)
         // Use the most restrictive legal key sizes
         private static readonly KeySizes[] s_legalKeySizes = OperatingSystem.IsAndroid()

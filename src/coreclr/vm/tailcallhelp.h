@@ -13,8 +13,8 @@ struct ArgBufferLayout;
 class TailCallHelp
 {
 public:
-    static FCDECL2(void*, AllocTailCallArgBufferWorker, INT32, void*);
-    static FCDECL2(void*, GetTailCallInfo, void**, void**);
+    FCDECL0(static void*, GetTailCallArgBuffer);
+    FCDECL2(static void*, GetTailCallInfo, void**, void**);
 
     static void CreateTailCallHelperStubs(
         MethodDesc* pCallerMD, MethodDesc* pCalleeMD,
@@ -46,5 +46,7 @@ private:
     static PCCOR_SIGNATURE AllocateSignature(LoaderAllocator* alloc, SigBuilder& sig, DWORD* sigLen);
     static void* AllocateBlob(LoaderAllocator* alloc, const void* blob, size_t blobLen);
 };
+
+extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size);
 
 #endif

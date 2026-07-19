@@ -223,7 +223,7 @@ namespace Internal.Cryptography
                 return Oids.Sha384;
             if (algName == HashAlgorithmName.SHA512)
                 return Oids.Sha512;
-#if NET8_0_OR_GREATER
+#if NET
             if (algName == HashAlgorithmName.SHA3_256)
                 return Oids.Sha3_256;
             if (algName == HashAlgorithmName.SHA3_384)
@@ -347,10 +347,19 @@ namespace Internal.Cryptography
                 Oids.ContentType => new Pkcs9ContentType(encodedAttribute),
                 Oids.MessageDigest => new Pkcs9MessageDigest(encodedAttribute),
 #if NET || NETSTANDARD2_1
-                Oids.LocalKeyId => new Pkcs9LocalKeyId() { RawData = encodedAttribute.ToArray() },
+                Oids.LocalKeyId => CreatePkcs9LocalKeyId(encodedAttribute),
 #endif
                 _ => new Pkcs9AttributeObject(oid, encodedAttribute),
             };
+
+#if NET || NETSTANDARD2_1
+            static Pkcs9LocalKeyId CreatePkcs9LocalKeyId(ReadOnlySpan<byte> data)
+            {
+                Pkcs9LocalKeyId kid = new();
+                kid.CopyFrom(new Pkcs9AttributeObject(Oids.LocalKeyIdOid.CopyOid(), data));
+                return kid;
+            }
+#endif
         }
 
         public static AttributeAsn[] NormalizeAttributeSet(AttributeAsn[] setItems) =>
@@ -377,8 +386,8 @@ namespace Internal.Cryptography
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(normalizedValue, AsnEncodingRules.DER);
-                AsnValueReader setReader = reader.ReadSetOf();
+                ValueAsnReader reader = new ValueAsnReader(normalizedValue, AsnEncodingRules.DER);
+                ValueAsnReader setReader = reader.ReadSetOf();
                 AttributeAsn[] decodedSet = new AttributeAsn[setItems.Length];
                 int i = 0;
                 while (setReader.HasData)

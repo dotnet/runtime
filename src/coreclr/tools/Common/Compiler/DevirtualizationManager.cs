@@ -66,6 +66,7 @@ namespace ILCompiler
         {
             devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
 
+            MethodDesc originalDeclMethod = declMethod;
             MethodDesc impl;
 
             if (declMethod.OwningType.IsInterface)
@@ -99,10 +100,22 @@ namespace ILCompiler
                     return null;
                 }
 
-                impl = implType.ResolveInterfaceMethodTargetWithVariance(declMethod);
+                // Strip the method instantation as interface slot resolution works on method definitions.
+                // Method instantiation will be applied again after resolution.
+                impl = implType.ResolveInterfaceMethodTargetWithVariance(declMethod.GetMethodDefinition());
+
                 if (impl != null)
                 {
                     impl = implType.FindVirtualFunctionTargetMethodOnObjectType(impl);
+
+                    // We need to bring the original instantiation back so that we can still try devirtualizing
+                    // when the method is a generic virtual method
+                    if (impl != null && originalDeclMethod.HasInstantiation)
+                    {
+                        // We may end up with a method that has substituted type parameters, so we need to instantiate
+                        // on the method definition
+                        impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
+                    }
                 }
                 else
                 {
@@ -137,19 +150,19 @@ namespace ILCompiler
                                 return null;
 
                             case DefaultInterfaceMethodResolution.DefaultImplementation:
-                                if (dimMethod.OwningType.HasInstantiation || (declMethod != defaultInterfaceDispatchDeclMethod))
+                                if (declMethod != defaultInterfaceDispatchDeclMethod)
                                 {
-                                    // If we devirtualized into a default interface method on a generic type, we should actually return an
-                                    // instantiating stub but this is not happening.
-                                    // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
-
-                                    // In addition, we fail here for variant default interface dispatch
+                                    // Fail for variant default interface dispatch
                                     devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DIM;
                                     return null;
                                 }
                                 else
                                 {
                                     impl = dimMethod;
+                                    if (originalDeclMethod.HasInstantiation)
+                                    {
+                                        impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
+                                    }
                                 }
                                 break;
                         }
@@ -178,9 +191,19 @@ namespace ILCompiler
                 }
 
                 impl = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+
+                // We need to bring the original instantiation back so that we can still try devirtualizing
+                // when the method is a generic virtual method
+                if (impl != null && originalDeclMethod.HasInstantiation)
+                {
+                    // We may end up with a method that has substituted type parameters, so we need to instantiate
+                    // on the method definition
+                    impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
+                }
+
                 if (impl != null && (impl != declMethod))
                 {
-                    MethodDesc slotDefiningMethodImpl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(impl);
+                    MethodDesc slotDefiningMethodImpl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(impl.GetMethodDefinition());
                     MethodDesc slotDefiningMethodDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(declMethod);
 
                     if (slotDefiningMethodImpl != slotDefiningMethodDecl)
@@ -211,6 +234,12 @@ namespace ILCompiler
         public virtual bool CanReferenceConstructedMethodTable(TypeDesc type) => true;
 
         /// <summary>
+        /// Gets a value indicating whether it might be possible to obtain a metadata type data structure for the given type
+        /// in this compilation (i.e. is it possible to reference a metadata MethodTable symbol for this).
+        /// </summary>
+        public virtual bool CanReferenceMetadataMethodTable(TypeDesc type) => true;
+
+        /// <summary>
         /// Gets a value indicating whether a (potentially canonically-equlivalent) constructed MethodTable could
         /// exist. This is similar to <see cref="CanReferenceConstructedMethodTable"/>, but will return true
         /// for List&lt;__Canon&gt; if a constructed MethodTable for List&lt;object&gt; exists.
@@ -218,6 +247,8 @@ namespace ILCompiler
         public virtual bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type) => true;
 
         public virtual TypeDesc[] GetImplementingClasses(TypeDesc type) => null;
+
+        public virtual bool CanHaveDynamicInterfaceImplementations(TypeDesc type) => true;
 #endif
     }
 }

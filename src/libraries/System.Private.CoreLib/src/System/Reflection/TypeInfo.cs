@@ -13,7 +13,7 @@ namespace System.Reflection
         TypeInfo IReflectableType.GetTypeInfo() => this;
         public virtual Type AsType() => this;
 
-        public virtual Type[] GenericTypeParameters => IsGenericTypeDefinition ? GetGenericArguments() : EmptyTypes;
+        public virtual Type[] GenericTypeParameters => IsGenericTypeDefinition ? GetGenericArguments() : [];
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public virtual EventInfo? GetDeclaredEvent(string name) => GetEvent(name, DeclaredOnlyLookup);

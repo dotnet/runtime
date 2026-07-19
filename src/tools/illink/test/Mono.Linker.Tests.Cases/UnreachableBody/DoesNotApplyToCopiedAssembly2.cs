@@ -3,7 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.UnreachableBody
 {
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [Define("OTHER_INCLUDED")]
     [SetupLinkerAction("copy", "other")]
     [SetupCompileBefore("other.dll", new[] { "Dependencies/OtherAssemblyNoInstanceCtor.il" })]
@@ -16,16 +16,16 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody
         public static void Main()
         {
 #if OTHER_INCLUDED
-			UsedToMarkMethod (null);
+            UsedToMarkMethod(null);
 #endif
         }
 
 #if OTHER_INCLUDED
-		[Kept]
-		static void UsedToMarkMethod (Mono.Linker.Tests.Cases.UnreachableBody.Dependencies.OtherAssemblyNoInstanceCtor.Foo f)
-		{
-			f.Method ();
-		}
+        [Kept]
+        static void UsedToMarkMethod(Mono.Linker.Tests.Cases.UnreachableBody.Dependencies.OtherAssemblyNoInstanceCtor.Foo f)
+        {
+            f.Method();
+        }
 #endif
     }
 }

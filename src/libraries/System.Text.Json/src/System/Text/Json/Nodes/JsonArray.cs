@@ -162,7 +162,7 @@ namespace System.Text.Json.Nodes
         {
             List<JsonNode?> list = new(items.Length);
 
-#if NET8_0_OR_GREATER
+#if NET
             list.AddRange(items);
 #else
             foreach (JsonNode? item in items)
@@ -238,7 +238,7 @@ namespace System.Text.Json.Nodes
             List[index] = value;
         }
 
-        internal override void GetPath(ref ValueStringBuilder path, JsonNode? child)
+        internal override unsafe void GetPath(ref ValueStringBuilder path, JsonNode? child)
         {
             Parent?.GetPath(ref path, this);
 

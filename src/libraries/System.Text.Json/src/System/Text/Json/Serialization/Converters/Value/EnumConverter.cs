@@ -233,7 +233,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        private bool TryParseEnumFromString(ref Utf8JsonReader reader, out T result)
+        private unsafe bool TryParseEnumFromString(ref Utf8JsonReader reader, out T result)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
 
@@ -247,7 +247,7 @@ namespace System.Text.Json.Serialization.Converters
 
             int charsWritten = reader.CopyString(charBuffer);
             charBuffer = charBuffer.Slice(0, charsWritten);
-#if NET9_0_OR_GREATER
+#if NET
             ReadOnlySpan<char> source = charBuffer.Trim();
             ConcurrentDictionary<string, ulong>.AlternateLookup<ReadOnlySpan<char>> lookup = _nameCacheForReading.GetAlternateLookup<ReadOnlySpan<char>>();
 #else
@@ -295,14 +295,14 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         private bool TryParseNamedEnum(
-#if NET9_0_OR_GREATER
+#if NET
             ReadOnlySpan<char> source,
 #else
             string source,
 #endif
             out T result)
         {
-#if NET9_0_OR_GREATER
+#if NET
             Dictionary<string, EnumFieldInfo>.AlternateLookup<ReadOnlySpan<char>> lookup = _enumFieldInfoIndex.GetAlternateLookup<ReadOnlySpan<char>>();
             ReadOnlySpan<char> rest = source;
 #else
@@ -327,7 +327,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 if (lookup.TryGetValue(
-#if NET9_0_OR_GREATER
+#if NET
                         next,
 #else
                         next.ToString(),
@@ -393,7 +393,7 @@ namespace System.Text.Json.Serialization.Converters
         /// <summary>
         /// Attempt to format the enum value as a comma-separated string of flag values, or returns false if not a valid flag combination.
         /// </summary>
-        private string FormatEnumAsString(ulong key, T value, JsonNamingPolicy? dictionaryKeyPolicy)
+        private unsafe string FormatEnumAsString(ulong key, T value, JsonNamingPolicy? dictionaryKeyPolicy)
         {
             Debug.Assert(IsDefinedValueOrCombinationOfValues(key), "must only be invoked against valid enum values.");
             Debug.Assert(
@@ -511,6 +511,23 @@ namespace System.Text.Json.Serialization.Converters
             return new() { Type = JsonSchemaType.Integer };
         }
 
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _)
+        {
+            EnumConverterOptions converterOptions = _converterOptions;
+            bool allowsString = (converterOptions & EnumConverterOptions.AllowStrings) != 0;
+            bool allowsNumber = (converterOptions & EnumConverterOptions.AllowNumbers) != 0;
+
+            Debug.Assert(allowsString || allowsNumber, "EnumConverter must allow strings, numbers, or both.");
+
+            return (allowsString, allowsNumber) switch
+            {
+                (true, true) => JsonValueType.String | JsonValueType.Number,
+                (true, false) => JsonValueType.String,
+                (false, true) => JsonValueType.Number,
+                _ => JsonValueType.Number, // Defensive: at least one must be true; default to numeric.
+            };
+        }
+
         private static EnumFieldInfo[] ResolveEnumFields(JsonNamingPolicy? namingPolicy)
         {
 #if NET
@@ -553,6 +570,13 @@ namespace System.Text.Json.Serialization.Converters
                 enumFields[i] = new EnumFieldInfo(key, kind, originalName, jsonName);
             }
 
+            if (s_isFlagsEnum)
+            {
+                // Perform topological sort for flags enums to ensure values that are supersets of other values come first.
+                // This is important for flags enums to ensure proper parsing and formatting.
+                enumFields = TopologicalSortEnumFields(enumFields);
+            }
+
             return enumFields;
         }
 
@@ -565,11 +589,13 @@ namespace System.Text.Json.Serialization.Converters
                 name = namingPolicy.ConvertName(name);
             }
 
-            if (string.IsNullOrEmpty(name) || char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]) ||
-                (s_isFlagsEnum && name.AsSpan().IndexOf(',') >= 0))
+            if (name is null ||
+                (name.Length > 0 && (char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]))) ||
+                (s_isFlagsEnum && (name.Length == 0 || name.Contains(','))))
             {
-                // Reject null or empty strings or strings with leading or trailing whitespace.
-                // In the case of flags additionally reject strings containing commas.
+                // Reject null strings or strings with leading or trailing whitespace.
+                // In the case of flags additionally reject empty strings or strings containing commas,
+                // both of which would introduce ambiguity in flag value parsing and formatting.
                 ThrowHelper.ThrowInvalidOperationException_UnsupportedEnumIdentifier(typeof(T), name);
             }
 
@@ -657,6 +683,52 @@ namespace System.Text.Json.Serialization.Converters
 
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Performs a topological sort on enum fields to ensure values that are supersets of other values come first.
+        /// </summary>
+        private static EnumFieldInfo[] TopologicalSortEnumFields(EnumFieldInfo[] enumFields)
+        {
+            if (enumFields.Length <= 1)
+            {
+                return enumFields;
+            }
+
+            var indices = new (int negativePopCount, int index)[enumFields.Length];
+            for (int i = 0; i < enumFields.Length; i++)
+            {
+                // We want values with more bits set to come first so negate the pop count.
+                // Keep the index as a second comparand so that sorting stability is preserved.
+                indices[i] = (-PopCount(enumFields[i].Key), i);
+            }
+
+            Array.Sort(indices);
+
+            var sortedFields = new EnumFieldInfo[enumFields.Length];
+            for (int i = 0; i < indices.Length; i++)
+            {
+                // extract the index from the sorted tuple
+                int index = indices[i].index;
+                sortedFields[i] = enumFields[index];
+            }
+
+            return sortedFields;
+        }
+
+        private static int PopCount(ulong value)
+        {
+#if NET
+            return (int)ulong.PopCount(value);
+#else
+            int count = 0;
+            while (value != 0)
+            {
+                value &= value - 1;
+                count++;
+            }
+            return count;
+#endif
         }
 
         private enum EnumFieldNameKind

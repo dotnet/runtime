@@ -52,10 +52,10 @@ DN_SIMDHASH_T_PTR
 DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator);
 #endif
 
-uint8_t
+dn_simdhash_add_result
 DN_SIMDHASH_TRY_ADD (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value);
 
-uint8_t
+dn_simdhash_add_result
 DN_SIMDHASH_TRY_ADD_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value);
 
 // result is an optional parameter that will be set to the value of the item if it was found.
