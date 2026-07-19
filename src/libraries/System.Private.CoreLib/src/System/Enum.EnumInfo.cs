@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System
 {
@@ -42,9 +43,9 @@ namespace System
             /// </summary>
             public Dictionary<string, TStorage> GetNamesToValuesIgnoreCase()
             {
-                return _namesToValuesIgnoreCase ??= CreateNamesToValuesIgnoreCase();
+                return _namesToValuesIgnoreCase ?? Initialize();
 
-                Dictionary<string, TStorage> CreateNamesToValuesIgnoreCase()
+                Dictionary<string, TStorage> Initialize()
                 {
                     string[] names = Names;
                     TStorage[] values = Values;
@@ -58,7 +59,11 @@ namespace System
                         lookup.TryAdd(names[i], values[i]);
                     }
 
-                    return lookup;
+                    // Publish atomically. If another thread raced and already published a lookup,
+                    // reuse theirs so every caller observes a single cached instance. The plain
+                    // read on the fast path above is safe: the reference is published with release
+                    // semantics and readers reach the contents through a data-dependent access.
+                    return Interlocked.CompareExchange(ref _namesToValuesIgnoreCase, lookup, null) ?? lookup;
                 }
             }
 
