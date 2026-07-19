@@ -81,9 +81,9 @@ if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_SUNOS)
     add_link_options(LINKER:-Bsymbolic)
 endif()
 
-if(NOT CLR_CMAKE_TARGET_BROWSER)
+if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     add_library(fxr_resolver INTERFACE)
-    target_sources(fxr_resolver INTERFACE fxr_resolver.cpp fxr_resolver.c)
+    target_sources(fxr_resolver INTERFACE fxr_resolver.c)
     target_include_directories(fxr_resolver INTERFACE fxr)
 
     add_compile_definitions(RAPIDJSON_HAS_CXX17)
@@ -93,6 +93,12 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
     endif()
 
     add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
+
+    # minipal_objects is embedded into static libraries we ship for external
+    # consumption (libnethost, libhostfxr), so LTCG must be disabled to ensure
+    # that non-MSVC toolchains can work with them.
+    set_target_properties(minipal_objects PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+
     add_subdirectory(hostcommon)
     add_subdirectory(hostmisc)
     add_subdirectory(nethost)
@@ -106,9 +112,12 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
     if(CLR_CMAKE_BUILD_HOST_TESTS)
         add_subdirectory(test)
     endif()
-else()
+elseif(CLR_CMAKE_TARGET_BROWSER)
     add_subdirectory(hostmisc)
     add_subdirectory(browserhost)
+else() # CLR_CMAKE_TARGET_WASI
+    # The wasi host is self-contained (shares the corerun pal header, no hostmisc dependency).
+    add_subdirectory(wasihost)
 endif()
 
 # If there's a dynamic ASAN runtime, then install it in the directories where we put our executables.

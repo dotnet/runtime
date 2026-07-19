@@ -52,7 +52,9 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #endif
+#if !defined(TARGET_WASI)
 #include <sys/wait.h>
+#endif
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <debugmacrosext.h>

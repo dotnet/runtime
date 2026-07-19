@@ -313,7 +313,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
 
 bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
 {
-    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH));
+    assert(binop->OperIs(GT_ADD));
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
@@ -321,8 +321,8 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     JITDUMP("[RangeCheck::IsBinOpMonotonicallyIncreasing] [%06d], [%06d]\n", Compiler::dspTreeID(op1),
             Compiler::dspTreeID(op2));
 
-    // Check if we have a var + const or var * const.
-    if (binop->OperIs(GT_ADD, GT_MUL) && op2->OperIs(GT_LCL_VAR))
+    // Canonicalize to (lclVar + {lclVar|const}).
+    if (op2->OperIs(GT_LCL_VAR))
     {
         std::swap(op1, op2);
     }
@@ -335,8 +335,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     switch (op2->OperGet())
     {
         case GT_LCL_VAR:
-            // When adding/multiplying/shifting two local variables, we also must ensure that any constant is
-            // non-negative.
+            // When adding two local variables, we also must ensure that any constant is non-negative.
             return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
 
         case GT_CNS_INT:
@@ -404,7 +403,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
         LclSsaVarDsc* ssaDef = GetSsaDefStore(expr->AsLclVarCommon());
         return (ssaDef != nullptr) && IsMonotonicallyIncreasing(ssaDef->GetDefNode()->Data(), rejectNegativeConst);
     }
-    else if (expr->OperIs(GT_ADD, GT_MUL, GT_LSH))
+    else if (expr->OperIs(GT_ADD))
     {
         return IsBinOpMonotonicallyIncreasing(expr->AsOp());
     }
@@ -530,6 +529,30 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_V
 
     ValueNumStore::SmallValueNumSet set;
     return GetRangeFromAssertionsWorker(comp, num, assertions, budget, &set);
+}
+
+//------------------------------------------------------------------------
+// GetRangeFromAssertions: Cheaper version of TryGetRange that is based purely on assertions
+//    and does not require a full range analysis based on SSA.
+//
+// Arguments:
+//    comp             - the compiler instance
+//    vn               - the value number to analyze range for
+//    assertions       - the assertions to use
+//    budget           - the remaining budget for recursive analysis
+//
+// Return Value:
+//    The computed range
+//
+Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum vn, ASSERT_VALARG_TP assertions, int budget)
+{
+    if (vn == ValueNumStore::NoVN)
+    {
+        return Limit(Limit::keUnknown);
+    }
+
+    ValueNumStore::SmallValueNumSet set;
+    return GetRangeFromAssertionsWorker(comp, vn, assertions, budget, &set);
 }
 
 //------------------------------------------------------------------------
@@ -893,17 +916,13 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
             }
 
 #if defined(FEATURE_HW_INTRINSICS)
+            case VNF_HWI_Vector_ExtractMostSignificantBits:
 #if defined(TARGET_XARCH)
-            case VNF_HWI_Vector256_ExtractMostSignificantBits:
-            case VNF_HWI_Vector512_ExtractMostSignificantBits:
             case VNF_HWI_X86Base_MoveMask:
             case VNF_HWI_AVX_MoveMask:
             case VNF_HWI_AVX2_MoveMask:
             case VNF_HWI_AVX512_MoveMask:
-#elif defined(TARGET_ARM64)
-            case VNF_HWI_Vector64_ExtractMostSignificantBits:
 #endif
-            case VNF_HWI_Vector128_ExtractMostSignificantBits:
             {
                 // We have 1 bit per element, remaining upper bits are 0
 
@@ -2274,6 +2293,11 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             range = Limit(Limit::keUnknown);
         }
     }
+    // If this value IS the caller-provided preferred bound, represent it as [bound, bound]
+    else if ((m_preferredBound != ValueNumStore::NoVN) && (vn == m_preferredBound))
+    {
+        range = Range(Limit(Limit::keBinOpArray, m_preferredBound, 0));
+    }
     // If local, find the definition from the def map and evaluate the range for rhs.
     else if (expr->IsLocal())
     {
@@ -2320,18 +2344,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     }
     else if (expr->OperIs(GT_ARR_LENGTH))
     {
-        ValueNum arrLenVN = m_compiler->optConservativeNormalVN(expr);
-        if ((arrLenVN != ValueNumStore::NoVN) && (arrLenVN == m_preferredBound))
-        {
-            // If the ARR_LENGTH VN matches the bounds check's length VN, represent it symbolically
-            // so the PHI merge can combine it with other symbolic ranges referencing the same bound.
-            range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keBinOpArray, arrLenVN, 0));
-        }
-        else
-        {
-            // Better than keUnknown
-            range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, CORINFO_Array_MaxLength));
-        }
+        range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, CORINFO_Array_MaxLength));
     }
     else
     {

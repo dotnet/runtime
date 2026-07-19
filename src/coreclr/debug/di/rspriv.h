@@ -6080,7 +6080,7 @@ public:
     // Converts the values in the floating point register area of the context to real number values.
     void Get32bitFPRegisters(CONTEXT * pContext);
 
-#elif defined(TARGET_AMD64) ||  defined(TARGET_ARM64) || defined(TARGET_ARM)
+#elif defined(TARGET_AMD64) ||  defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     // Converts the values in the floating point register area of the context to real number values.
     void Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int start, int nRegisters);
 
@@ -6386,12 +6386,6 @@ private:
 
     // cached flag used for refreshing a CordbStackWalk
     CorDebugSetContextFlag m_cachedSetContextFlag;
-
-    // We unwind one frame ahead of time to get the FramePointer on x86.
-    // These fields are used for the bookkeeping.
-    RSSmartPtr<CordbFrame> m_pCachedFrame;
-    HRESULT m_cachedHR;
-    bool m_fIsOneFrameAhead;
 };
 
 
@@ -6846,7 +6840,6 @@ public:
                      FramePointer         fp,
                      CordbNativeCode *    pNativeCode,
                      SIZE_T               ip,
-                     DebuggerREGDISPLAY * pDRD,
                      TADDR                addrAmbientESP,
                      CordbAppDomain *     pCurrentAppDomain,
                      CordbMiscFrame *     pMisc = NULL,
@@ -6995,6 +6988,19 @@ public:
                                             CordbType * pType,
                                             ICorDebugValue **ppValue);
 
+    // Build a value that lives in two registers, where either register may be an
+    // integer or a floating-point register (e.g. a 16-byte struct returned in
+    // XMM0+XMM1 on Unix x64, or a mixed int/fp multi-register return). lowReg/highReg
+    // hold the low/high 8 bytes of the value; when the corresponding *IsFloat flag is
+    // true the register is a 0-based fp register index, otherwise it is a
+    // CorDebugRegister.
+    HRESULT GetLocalTwoRegisterValue(DWORD lowReg,
+                                            bool lowIsFloat,
+                                            DWORD highReg,
+                                            bool highIsFloat,
+                                            CordbType * pType,
+                                            ICorDebugValue **ppValue);
+
 
     CORDB_ADDRESS GetLSStackAddress(ICorDebugInfo::RegNum regNum, signed offset);
 
@@ -7024,8 +7030,6 @@ public:
     //-----------------------------------------------------------
 
 public:
-    // the register set
-    DebuggerREGDISPLAY m_rd;
 
     // each CordbNativeFrame corresponds to exactly one CordbJITILFrame and one CordbNativeCode
     RSSmartPtr<CordbJITILFrame> m_JITILFrame;
@@ -7039,8 +7043,6 @@ private:
     // (most likely in a frameless method)
     TADDR    m_taAmbientESP;
 
-    // @dbgtodo  inspection - When we DACize the various Cordb*Value classes, we should consider getting rid of the
-    // DebuggerREGDISPLAY and just use the CONTEXT.  A lot of simplification can be done here.
     DT_CONTEXT  m_context;
 };
 
@@ -7063,11 +7065,10 @@ private:
 class CordbRegisterSet : public CordbBase, public ICorDebugRegisterSet, public ICorDebugRegisterSet2
 {
 public:
-    CordbRegisterSet(DebuggerREGDISPLAY * pRegDisplay,
-                     CordbThread *        pThread,
+    CordbRegisterSet(CordbThread *        pThread,
+                     DT_CONTEXT *         pContext,
                      bool fActive,
-                     bool fQuickUnwind,
-                     bool fTakeOwnershipOfDRD = false);
+                     bool fQuickUnwind);
 
 
     ~CordbRegisterSet();
@@ -7163,23 +7164,15 @@ public:
     }
 
 protected:
-    // Platform specific helper for GetThreadContext.
-    void InternalCopyRDToContext(DT_CONTEXT * pContext);
 
     // Adapters to impl v2.0 interfaces on top of v1.0 interfaces.
     HRESULT GetRegistersAvailableAdapter(ULONG32 regCount, BYTE pAvailable[]);
     HRESULT GetRegistersAdapter(ULONG32 maskCount, BYTE mask[], ULONG32 regCount, CORDB_REGISTER regBuffer[]);
 
-
-    // This CordbRegisterSet is responsible to free this memory if m_fTakeOwnershipOfDRD is true.  Otherwise,
-    // this memory is freed by the CordbNativeFrame or CordbThread which creates this CordbRegisterSet.
-    DebuggerREGDISPLAY  *m_rd;
+    DT_CONTEXT          m_context;
     CordbThread         *m_thread;
     bool                m_active; // true if we're the leafmost register set.
     bool                m_quickUnwind;
-
-    // true if the CordbRegisterSet owns the DebuggerREGDISPLAY pointer and needs to free the memory
-    bool                m_fTakeOwnershipOfDRD;
 } ;
 
 
@@ -7890,6 +7883,71 @@ protected:
     // The information for the second of two registers in which the value resides.
     const RegisterInfo               m_reg2Info;
 }; // class RegRegValueHome
+
+// class TwoRegisterValueHome
+// EnregisteredValueHome for a value that lives in two registers where at least one is a
+// floating-point register (e.g. a 16-byte struct returned in XMM0+XMM1 on Unix x64, or a
+// mixed int/fp multi-register return).
+// Floating-point register contents are not reachable through the integer register display, so
+// rather than referencing live registers this home captures a snapshot of the 16-byte value
+// (low 8 bytes followed by high 8 bytes) when it is created. The snapshot is used to populate
+// the value's local object copy and is cloned for field access. Writing back to a
+// multi-register return value is not supported.
+class TwoRegisterValueHome: public EnregisteredValueHome
+{
+public:
+    // initializing constructor
+    // Arguments:
+    //     input:  pFrame - frame to which the value belongs
+    //             pValue - pointer to the snapshot bytes (low 8 bytes followed by high 8 bytes)
+    //             size   - number of valid bytes pointed to by pValue
+    TwoRegisterValueHome(const CordbNativeFrame * pFrame, const BYTE * pValue, ULONG32 size):
+        EnregisteredValueHome(pFrame)
+    {
+        _ASSERTE(size <= sizeof(m_value));
+        memset(m_value, 0, sizeof(m_value));
+        if (pValue != NULL)
+        {
+            memcpy(m_value, pValue, (size < sizeof(m_value)) ? size : (ULONG32)sizeof(m_value));
+        }
+    };
+
+    // copy constructor
+    TwoRegisterValueHome(const TwoRegisterValueHome * pRemoteRegAddr):
+        EnregisteredValueHome(pRemoteRegAddr->m_pFrame)
+    {
+        memcpy(m_value, pRemoteRegAddr->m_value, sizeof(m_value));
+    };
+
+    // make a copy of this instance of TwoRegisterValueHome
+    virtual
+    TwoRegisterValueHome * Clone() const { return new TwoRegisterValueHome(*this); };
+
+    // writing back to a multi-register return value is not supported
+    virtual
+    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned)
+    {
+        ThrowHR(CORDBG_E_SET_VALUE_NOT_ALLOWED_ON_NONLEAF_FRAME);
+    };
+
+    // Gets the snapshot value and returns it to the caller
+    virtual
+    void GetEnregisteredValue(MemoryRange valueOutBuffer);
+
+    // initializing an instance of RemoteAddress is not supported for a local snapshot
+    virtual
+    void CopyToIPCEType(RemoteAddress * pRegAddr)
+    {
+        ThrowHR(E_NOTIMPL);
+    };
+
+    //-------------------------------------
+    // data members
+    //-------------------------------------
+private:
+    // Snapshot of the value: low 8 bytes followed by high 8 bytes.
+    BYTE m_value[2 * sizeof(double)];
+}; // class TwoRegisterValueHome
 
 // class RegAndMemBaseValueHome
 // derived from RegValueHome, this class is also a base class for RegMemValueHome
@@ -10612,7 +10670,7 @@ public:
 
 private:
     RefWalkHandle mRefHandle;
-    BOOL mEnumStacksFQ;
+    BOOL mEnumStacks;
     UINT32 mHandleMask;
 };
 

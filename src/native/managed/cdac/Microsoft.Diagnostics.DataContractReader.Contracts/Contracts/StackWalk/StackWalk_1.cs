@@ -35,8 +35,7 @@ internal partial class StackWalk_1 : IStackWalk
         TargetPointer FrameAddress,
         ThreadData ThreadData,
         bool IsResumableFrame = false,
-        bool IsActiveFrame = false,
-        uint LastFramelessStackParameterSize = 0) : IStackDataFrameHandle
+        bool IsActiveFrame = false) : IStackDataFrameHandle
     { }
 
     private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData)
@@ -63,7 +62,6 @@ internal partial class StackWalk_1 : IStackWalk
         // Used by UpdateState to detect exception frames (FRAME_ATTR_EXCEPTION) and
         // set IsInterrupted when transitioning to a managed frame.
         public FrameType? LastProcessedFrameType { get; set; }
-        public uint LastFramelessStackParameterSize { get; set; }
 
         public bool IsCurrentFrameResumable()
         {
@@ -115,7 +113,7 @@ internal partial class StackWalk_1 : IStackWalk
         {
             bool isResumable = IsCurrentFrameResumable();
             bool isActiveFrame = IsFirst && State == StackWalkState.Frameless;
-            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame, LastFramelessStackParameterSize);
+            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame);
         }
     }
 
@@ -246,7 +244,7 @@ internal partial class StackWalk_1 : IStackWalk
         }
     }
 
-    IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData)
+    IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData, bool resolveInteriorPointers)
     {
         // Initialize the walk data directly
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
@@ -273,7 +271,7 @@ internal partial class StackWalk_1 : IStackWalk
         if (walkData.State == StackWalkState.Frameless && CheckForSkippedFrames(walkData))
             walkData.State = StackWalkState.SkippedFrame;
 
-        GcScanContext scanContext = new(_target, resolveInteriorPointers: false);
+        GcScanContext scanContext = new(_target, resolveInteriorPointers);
 
         // Filter drives Next() directly, matching native Filter()+NextRaw() integration.
         // This prevents funclet-to-parent transitions from re-visiting already-walked frames.
@@ -341,9 +339,16 @@ internal partial class StackWalk_1 : IStackWalk
                     }
                 }
             }
+            catch (NotImplementedException ex)
+            {
+                // The calling convention or frame type is not yet supported (e.g., VarArgs,
+                // SystemV struct-in-registers). Skip this frame -- the DSO will have partial
+                // results but won't fail the entire stack walk.
+                Debug.WriteLine($"Skipping frame at IP=0x{gcFrame.Frame.Context.InstructionPointer:X}: {ex.Message}");
+            }
             catch (System.Exception ex)
             {
-                // Per-frame exceptions are intentionally swallowed to provide partial results
+                // Unexpected per-frame exceptions are swallowed to provide partial results
                 // rather than failing the entire stack walk. This matches the resilience model
                 // of the legacy DAC. Callers can detect incomplete results by comparing counts.
                 Debug.WriteLine($"Exception during WalkStackReferences at IP=0x{gcFrame.Frame.Context.InstructionPointer:X}: {ex.GetType().Name}: {ex.Message}");
@@ -361,6 +366,7 @@ internal partial class StackWalk_1 : IStackWalk
         return scanContext.StackRefs.Select(r => new StackReferenceData
         {
             HasRegisterInformation = r.HasRegisterInformation,
+            IsInteriorPointer = r.IsInteriorPointer,
             Register = r.Register,
             Offset = r.Offset,
             Address = r.Address,
@@ -813,11 +819,6 @@ internal partial class StackWalk_1 : IStackWalk
                 // Reset interrupted state after processing a managed frame.
                 // Native stackwalk.cpp: isInterrupted = false; hasFaulted = false;
                 handle.IsInterrupted = false;
-                TargetCodePointer preUnwindIp = new(handle.Context.InstructionPointer.Value);
-                if (_target.Contracts.ExecutionManager.GetCodeBlockHandle(preUnwindIp) is CodeBlockHandle cbh)
-                {
-                    handle.LastFramelessStackParameterSize = _target.Contracts.ExecutionManager.GetStackParameterSize(cbh);
-                }
 
                 // Check if the current frame is interpreter code -- if so, use
                 // interpreter virtual unwind instead of OS-level unwind.
@@ -947,6 +948,11 @@ internal partial class StackWalk_1 : IStackWalk
                 }
                 else
                 {
+                    if (handle.State == StackWalkState.Frame)
+                    {
+                        handle.State = validFrame ? StackWalkState.Frame : StackWalkState.Complete;
+                        return;
+                    }
                     handle.State = (validFrame || handle.State == StackWalkState.Frameless) ? StackWalkState.NativeMarker : StackWalkState.Complete;
                 }
                 return;
@@ -987,20 +993,7 @@ internal partial class StackWalk_1 : IStackWalk
     byte[] IStackWalk.GetRawContext(IStackDataFrameHandle stackDataFrameHandle, StackwalkFlag flags)
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
-        byte[] bytes = handle.Context.GetBytes();
-
-        if ((flags & StackwalkFlag.X86ESPIgnoresCalleePoppedArgs) != 0
-            && _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86
-            && handle.LastFramelessStackParameterSize > 0)
-        {
-            IPlatformAgnosticContext adjusted = IPlatformAgnosticContext.GetContextForPlatform(_target);
-            adjusted.FillFromBuffer(bytes);
-            adjusted.StackPointer = new TargetPointer(
-                unchecked(adjusted.StackPointer.Value - handle.LastFramelessStackParameterSize));
-            bytes = adjusted.GetBytes();
-        }
-
-        return bytes;
+        return handle.Context.GetBytes();
     }
 
     private IPlatformAgnosticContext RetrieveHijackedContext(IPlatformAgnosticContext ctx, bool isUnhandledException)

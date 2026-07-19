@@ -1718,8 +1718,6 @@ EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UIN
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 #else
 typedef TADDR HandlerFn;
-TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
-
 DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP);
 DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP);
 #endif // TARGET_WASM
@@ -1751,7 +1749,8 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
 
 #ifdef TARGET_WASM
-    TADDR wasmFramePointer = GetWasmFramePointerFromStackPointer(GetSP(pRD->pCurrentContext));
+    TADDR wasmFramePointer = GetFP(pRD->pCurrentContext);
+    _ASSERTE(wasmFramePointer != 0);
     TADDR handlerFnIndex = CastHandlerFn(pfnHandler);
     if (throwable != NULL)
     {

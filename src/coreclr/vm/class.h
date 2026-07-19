@@ -613,6 +613,7 @@ class EEClassOptionalFields
     // for MethodTableBuilder and NativeImageDumper, which need raw field-level access.
     friend class EEClass;
     friend class MethodTableBuilder;
+    friend struct ::cdac_data<EEClassOptionalFields>;
 
     //
     // GENERICS RELATED FIELDS.
@@ -1785,6 +1786,14 @@ template<> struct cdac_data<EEClass>
     static constexpr size_t NumThreadStaticFields = offsetof(EEClass, m_NumThreadStaticFields);
     static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
     static constexpr size_t BaseSizePadding = offsetof(EEClass, m_cbBaseSizePadding);
+    static constexpr size_t OptionalFields = offsetof(EEClass, m_rpOptionalFields);
+};
+
+template<> struct cdac_data<EEClassOptionalFields>
+{
+#if defined(UNIX_AMD64_ABI)
+    static constexpr size_t EightByteRegistersInfo = offsetof(EEClassOptionalFields, m_eightByteRegistersInfo);
+#endif // UNIX_AMD64_ABI
 };
 
 // --------------------------------------------------------------------------------------------

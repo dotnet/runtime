@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedDeserializationException,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>());
 
         public static IEnumerable<object[]> Get_PolymorphicClass_TestData_Deserialization()
             => PolymorphicClass.GetSerializeTestData().Where(entry => entry.ExpectedJson != null).Select(entry => new object[] { entry });
@@ -58,7 +58,7 @@ namespace System.Text.Json.Serialization.Tests
                     .Where(entry => entry.ExpectedRoundtripValue is not null)
                     .Select(entry => (entry.ExpectedJson, entry.ExpectedRoundtripValue));
 
-            await TestMultiContextDeserialization(inputs, equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            await TestMultiContextDeserialization(inputs, equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>());
         }
 
         [Theory]
@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization.Tests
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedDeserializationException,
                 options: s_optionsWithAllowOutOfOrderMetadata,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>());
 
         [Theory]
         [InlineData("""{"Number":42, "$type":"derivedClass1", "String": "str"}""", typeof(PolymorphicClass.DerivedClass1_TypeDiscriminator))]
@@ -149,7 +149,7 @@ namespace System.Text.Json.Serialization.Tests
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedSerializationException,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance,
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>(),
                 options: PolymorphicClass.CustomConfigWithBaseTypeFallback);
 
         public static IEnumerable<object[]> Get_PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Deserialization()
@@ -178,7 +178,7 @@ namespace System.Text.Json.Serialization.Tests
 
             await TestMultiContextDeserialization(
                 inputs,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance,
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>(),
                 options: PolymorphicClass.CustomConfigWithBaseTypeFallback);
         }
 
@@ -226,7 +226,7 @@ namespace System.Text.Json.Serialization.Tests
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedDeserializationException,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance,
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>(),
                 options: PolymorphicClass.CustomConfigWithNearestAncestorFallback);
 
         public static IEnumerable<object[]> Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Deserialization()
@@ -255,7 +255,7 @@ namespace System.Text.Json.Serialization.Tests
 
             await TestMultiContextDeserialization(
                 inputs,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance,
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>(),
                 options: PolymorphicClass.CustomConfigWithNearestAncestorFallback);
         }
 
@@ -302,22 +302,13 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PolymorphicClass_ClearPolymorphismOptions_DoesNotUsePolymorphism()
         {
-            var options = new JsonSerializerOptions
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(static jsonTypeInfo =>
             {
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                if (jsonTypeInfo.Type == typeof(PolymorphicClass))
                 {
-                    Modifiers =
-                    {
-                        static jsonTypeInfo =>
-                        {
-                            if (jsonTypeInfo.Type == typeof(PolymorphicClass))
-                            {
-                                jsonTypeInfo.PolymorphismOptions = null;
-                            }
-                        }
-                    }
+                    jsonTypeInfo.PolymorphismOptions = null;
                 }
-            };
+            });
 
             PolymorphicClass value = new PolymorphicClass.DerivedAbstractClass.DerivedClass { Number = 42, Boolean = true };
             string json = await Serializer.SerializeWrapper(value, options);
@@ -961,13 +952,13 @@ namespace System.Text.Json.Serialization.Tests
             await TestMultiContextDeserialization<PolymorphicClass_WithDerivedPolymorphicClass>(
                 json,
                 expectedValueUsingBaseContract,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass_WithDerivedPolymorphicClass>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass_WithDerivedPolymorphicClass>());
 
             var expectedValueUsingDerivedContract = new PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass.DerivedClass2();
             await TestMultiContextDeserialization<PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass>(
                 json,
                 expectedValueUsingDerivedContract,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass>());
         }
 
         [JsonDerivedType(typeof(DerivedClass), "derivedClass")]
@@ -1149,7 +1140,7 @@ namespace System.Text.Json.Serialization.Tests
             => TestMultiContextDeserialization<PolymorphicClassWithConstructor>(
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClassWithConstructor>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClassWithConstructor>());
 
         public static IEnumerable<object[]> Get_PolymorphicClassWithConstructor_TestData_Deserialization()
             => PolymorphicClassWithConstructor.GetSerializeTestData()
@@ -1171,7 +1162,7 @@ namespace System.Text.Json.Serialization.Tests
             IEnumerable<(string ExpectedJson, PolymorphicClassWithConstructor ExpectedRoundtripValue)> inputs =
                 PolymorphicClassWithConstructor.GetSerializeTestData().Select(entry => (entry.ExpectedJson, entry.ExpectedRoundtripValue));
 
-            await TestMultiContextDeserialization(inputs, equalityComparer: PolymorphicEqualityComparer<PolymorphicClassWithConstructor>.Instance);
+            await TestMultiContextDeserialization(inputs, equalityComparer: CreateJsonEqualityComparer<PolymorphicClassWithConstructor>());
         }
 
         [JsonPolymorphic]
@@ -1300,7 +1291,7 @@ namespace System.Text.Json.Serialization.Tests
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedDeserializationException,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicInterface>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicInterface>());
 
         public static IEnumerable<object[]> Get_PolymorphicInterface_TestData_Deserialization()
             => PolymorphicInterface.Helpers.GetSerializeTestData()
@@ -1326,7 +1317,7 @@ namespace System.Text.Json.Serialization.Tests
                 .Where(entry => entry.ExpectedRoundtripValue is not null)
                 .Select(entry => (entry.ExpectedJson, entry.ExpectedRoundtripValue));
 
-            await TestMultiContextDeserialization(inputs, equalityComparer: PolymorphicEqualityComparer<PolymorphicInterface>.Instance);
+            await TestMultiContextDeserialization(inputs, equalityComparer: CreateJsonEqualityComparer<PolymorphicInterface>());
         }
 
         [Theory]
@@ -1369,7 +1360,7 @@ namespace System.Text.Json.Serialization.Tests
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedDeserializationException,
                 options: PolymorphicInterface.Helpers.CustomConfigWithNearestAncestorFallback,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicInterface>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicInterface>());
 
         public static IEnumerable<object[]> Get_PolymorphicInterface_CustomConfigWithNearestAncestorFallback_TestData_Deserialization()
             => PolymorphicInterface.Helpers.GetSerializeTestData_CustomConfigWithNearestAncestorFallback()
@@ -1398,7 +1389,7 @@ namespace System.Text.Json.Serialization.Tests
             await TestMultiContextDeserialization(
                 inputs,
                 options: PolymorphicInterface.Helpers.CustomConfigWithNearestAncestorFallback,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicInterface>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicInterface>());
         }
 
         // --
@@ -1615,7 +1606,7 @@ namespace System.Text.Json.Serialization.Tests
             => TestMultiContextDeserialization(
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicList>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicList>());
 
         public static IEnumerable<object[]> Get_PolymorphicList_TestData_Deserialization()
             => PolymorphicList.GetSerializeTestData().Select(entry => new object[] { entry });
@@ -1635,7 +1626,7 @@ namespace System.Text.Json.Serialization.Tests
             IEnumerable<(string ExpectedJson, PolymorphicList ExpectedRoundtripValue)> inputs =
                 PolymorphicList.GetSerializeTestData().Select(entry => (entry.ExpectedJson, entry.ExpectedRoundtripValue));
 
-            await TestMultiContextDeserialization(inputs, equalityComparer: PolymorphicEqualityComparer<PolymorphicList>.Instance);
+            await TestMultiContextDeserialization(inputs, equalityComparer: CreateJsonEqualityComparer<PolymorphicList>());
         }
 
         [Fact]
@@ -1865,7 +1856,7 @@ namespace System.Text.Json.Serialization.Tests
             => TestMultiContextDeserialization(
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicDictionary>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicDictionary>());
 
         public static IEnumerable<object[]> Get_PolymorphicDictionary_TestData_Deserialization()
             => PolymorphicDictionary.GetSerializeTestData().Select(entry => new object[] { entry });
@@ -1885,7 +1876,7 @@ namespace System.Text.Json.Serialization.Tests
             IEnumerable<(string ExpectedJson, PolymorphicDictionary ExpectedRoundtripValue)> inputs =
                 PolymorphicDictionary.GetSerializeTestData().Select(entry => (entry.ExpectedJson, entry.ExpectedRoundtripValue));
 
-            await TestMultiContextDeserialization(inputs, equalityComparer: PolymorphicEqualityComparer<PolymorphicDictionary>.Instance);
+            await TestMultiContextDeserialization(inputs, equalityComparer: CreateJsonEqualityComparer<PolymorphicDictionary>());
         }
 
         [Fact]
@@ -2130,7 +2121,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = jsonTemplate("1"); // root values have reference id "1"
             PolymorphicClass actualValue = await Serializer.DeserializeWrapper<PolymorphicClass>(json, s_jsonSerializerOptionsPreserveRefs);
-            Assert.Equal(expectedValue, actualValue, PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            Assert.Equal(expectedValue, actualValue, CreateJsonEqualityComparer<PolymorphicClass>());
         }
 
         [Theory]
@@ -2163,7 +2154,7 @@ namespace System.Text.Json.Serialization.Tests
             var result = await Serializer.DeserializeWrapper<List<PolymorphicClass>>(json, s_jsonSerializerOptionsPreserveRefs);
 
             Assert.Equal(2, result.Count);
-            Assert.Equal(expectedValue, result[0], PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            Assert.Equal(expectedValue, result[0], CreateJsonEqualityComparer<PolymorphicClass>());
             Assert.Same(result[0], result[1]);
         }
 
@@ -2192,7 +2183,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = "[" + string.Join(", ", idValues.Concat(refValues)) + "]";
 
             PolymorphicClass[] result = await Serializer.DeserializeWrapper<PolymorphicClass[]>(json, s_jsonSerializerOptionsPreserveRefs);
-            Assert.Equal(expectedValues, result, PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            Assert.Equal(expectedValues, result, CreateJsonEqualityComparer<PolymorphicClass>());
         }
 
         public static IEnumerable<(PolymorphicClass Value, Func<string, string> JsonTemplate)> Get_ReferencePreservation_TestData()
@@ -2232,7 +2223,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = jsonTemplate("1"); // root values have reference id "1"
             PolymorphicClassWithCustomTypeDiscriminator actualValue = await Serializer.DeserializeWrapper<PolymorphicClassWithCustomTypeDiscriminator>(json, s_jsonSerializerOptionsPreserveRefs);
-            Assert.Equal(expectedValue, actualValue, PolymorphicEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>.Instance);
+            Assert.Equal(expectedValue, actualValue, CreateJsonEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>());
         }
 
         [Theory]
@@ -2265,7 +2256,7 @@ namespace System.Text.Json.Serialization.Tests
             var result = await Serializer.DeserializeWrapper<List<PolymorphicClassWithCustomTypeDiscriminator>>(json, s_jsonSerializerOptionsPreserveRefs);
 
             Assert.Equal(2, result.Count);
-            Assert.Equal(expectedValue, result[0], PolymorphicEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>.Instance);
+            Assert.Equal(expectedValue, result[0], CreateJsonEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>());
             Assert.Same(result[0], result[1]);
         }
 
@@ -2294,7 +2285,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = "[" + string.Join(", ", idValues.Concat(refValues)) + "]";
 
             PolymorphicClassWithCustomTypeDiscriminator[] result = await Serializer.DeserializeWrapper<PolymorphicClassWithCustomTypeDiscriminator[]>(json, s_jsonSerializerOptionsPreserveRefs);
-            Assert.Equal(expectedValues, result, PolymorphicEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>.Instance);
+            Assert.Equal(expectedValues, result, CreateJsonEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>());
         }
 
         [Theory]
@@ -2303,7 +2294,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = jsonTemplate("1"); // root values have reference id "1"
             PolymorphicClass actualValue = await Serializer.DeserializeWrapper<PolymorphicClass>(json, s_jsonSerializerOptionsPreserveRefsAndAllowReadAhead);
-            Assert.Equal(expectedValue, actualValue, PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            Assert.Equal(expectedValue, actualValue, CreateJsonEqualityComparer<PolymorphicClass>());
         }
 
         [Theory]
@@ -2320,7 +2311,7 @@ namespace System.Text.Json.Serialization.Tests
             var result = await Serializer.DeserializeWrapper<List<PolymorphicClass>>(json, s_jsonSerializerOptionsPreserveRefsAndAllowReadAhead);
 
             Assert.Equal(2, result.Count);
-            Assert.Equal(expectedValue, result[0], PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            Assert.Equal(expectedValue, result[0], CreateJsonEqualityComparer<PolymorphicClass>());
             Assert.Same(result[0], result[1]);
         }
 
@@ -2335,7 +2326,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = "[" + string.Join(", ", idValues.Concat(refValues)) + "]";
 
             PolymorphicClass[] result = await Serializer.DeserializeWrapper<PolymorphicClass[]>(json, s_jsonSerializerOptionsPreserveRefsAndAllowReadAhead);
-            Assert.Equal(expectedValues, result, PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            Assert.Equal(expectedValues, result, CreateJsonEqualityComparer<PolymorphicClass>());
         }
 
         [Theory]
@@ -2506,10 +2497,12 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1240 // Derived type is intentionally not assignable to the base type for these tests.
         [JsonDerivedType(typeof(Guid))]
         public class PolymorphicClassWithStructDerivedTypeAttribute
         {
         }
+#pragma warning restore SYSLIB1240
 
         [Fact]
         public async Task PolymorphicClassWithObjectDerivedTypeAttribute_ThrowsInvalidOperationException()
@@ -2518,10 +2511,12 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1240 // Derived type is intentionally not assignable to the base type for these tests.
         [JsonDerivedType(typeof(object), "object")]
         public class PolymorphicClassWithObjectDerivedTypeAttribute
         {
         }
+#pragma warning restore SYSLIB1240
 
         [Fact]
         public async Task PolymorphicClassWithNonAssignableDerivedTypeAttribute_ThrowsInvalidOperationException()
@@ -2530,10 +2525,12 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1240 // Derived type is intentionally not assignable to the base type for these tests.
         [JsonDerivedType(typeof(object))]
         public class PolymorphicClassWithNonAssignableDerivedTypeAttribute
         {
         }
+#pragma warning restore SYSLIB1240
 
 
         [Fact]
@@ -2640,7 +2637,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [JsonDerivedType(typeof(A), "duplicateId")]
+#pragma warning disable SYSLIB1242 // The duplicate discriminator is intentional for this test.
         [JsonDerivedType(typeof(B), "duplicateId")]
+#pragma warning restore SYSLIB1242
         public class PolymorphicClasWithDuplicateTypeDiscriminators
         {
             public class A : PolymorphicClasWithDuplicateTypeDiscriminators { }
@@ -2666,19 +2665,16 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task PolymorphicDerivedGenericClass_ThrowsInvalidOperationException()
         {
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                throw new SkipTestException("Source generator rejects this invalid polymorphic configuration at build time (SYSLIB diagnostic); the runtime InvalidOperationException is validated under reflection only.");
-            }
-
             PolymorphicDerivedGenericClass value = new PolymorphicDerivedGenericClass.DerivedClass<int>();
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1229
         [JsonDerivedType(typeof(DerivedClass<>))]
+#pragma warning restore SYSLIB1229
         public class PolymorphicDerivedGenericClass
         {
             public class DerivedClass<T> : PolymorphicDerivedGenericClass
@@ -2823,6 +2819,44 @@ namespace System.Text.Json.Serialization.Tests
         public class OpenGenericDerived_Wrapped<T> : OpenGenericBase_Wrapped<List<T>>;
 
         [Fact]
+        public async Task OpenGenericDerivedType_DeepJaggedTypeArgCompatibleSpecialization_Works()
+        {
+            OpenGenericDeepJaggedBase<List<int[][][]>> value =
+                new OpenGenericDeepJaggedDerived<int> { BaseMarker = "base", Marker = "deep" };
+
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual(
+                """{"$type":"derived","Marker":"deep","BaseMarker":"base"}""",
+                json);
+
+            OpenGenericDeepJaggedBase<List<int[][][]>> result =
+                await Serializer.DeserializeWrapper<OpenGenericDeepJaggedBase<List<int[][][]>>>(json);
+            OpenGenericDeepJaggedDerived<int> derived = Assert.IsType<OpenGenericDeepJaggedDerived<int>>(result);
+            Assert.Equal("base", derived.BaseMarker);
+            Assert.Equal("deep", derived.Marker);
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_DeepJaggedTypeArgIncompatibleSpecialization_ThrowsInvalidOperationException()
+        {
+            var value = new OpenGenericDeepJaggedBase<List<int[][]>>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+#pragma warning disable SYSLIB1229
+        [JsonDerivedType(typeof(OpenGenericDeepJaggedDerived<>), "derived")]
+#pragma warning restore SYSLIB1229
+        public class OpenGenericDeepJaggedBase<T>
+        {
+            public string? BaseMarker { get; set; }
+        }
+
+        public class OpenGenericDeepJaggedDerived<T> : OpenGenericDeepJaggedBase<List<T[][][]>>
+        {
+            public string? Marker { get; set; }
+        }
+
+        [Fact]
         public async Task OpenGenericDerivedType_Interface_Works()
         {
             IOpenGenericBase<int> value = new OpenGenericInterfaceImpl<int> { Value = 42 };
@@ -2857,38 +2891,32 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Value":"hello"}""", strJson);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task OpenGenericDerivedType_NonGenericBase_ThrowsInvalidOperationException()
         {
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                throw new SkipTestException("Source generator rejects this invalid polymorphic configuration at build time (SYSLIB diagnostic); the runtime InvalidOperationException is validated under reflection only.");
-            }
-
             var value = new NonGenericBaseWithOpenGenericDerived();
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1229
         [JsonDerivedType(typeof(NonGenericBaseWithOpenGenericDerived.OpenDerived<>), "derived")]
+#pragma warning restore SYSLIB1229
         public class NonGenericBaseWithOpenGenericDerived
         {
             public class OpenDerived<T> : NonGenericBaseWithOpenGenericDerived;
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task OpenGenericDerivedType_TypeArgsNotResolvable_ThrowsInvalidOperationException()
         {
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                throw new SkipTestException("Source generator rejects this invalid polymorphic configuration at build time (SYSLIB diagnostic); the runtime InvalidOperationException is validated under reflection only.");
-            }
-
             // Derived<T> : Base<int> - T cannot be determined from Base<int>
             var value = new OpenGenericBase_Unresolvable<int>();
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1229
         [JsonDerivedType(typeof(OpenGenericDerived_Unresolvable<>), "derived")]
+#pragma warning restore SYSLIB1229
         public class OpenGenericBase_Unresolvable<T>
         {
             public T? Value { get; set; }
@@ -2896,14 +2924,9 @@ namespace System.Text.Json.Serialization.Tests
 
         public class OpenGenericDerived_Unresolvable<T> : OpenGenericBase_Unresolvable<int>;
 
-        [ConditionalFact]
+        [Fact]
         public async Task OpenGenericDerivedType_GroundMismatchAgainstClosedBase_ThrowsInvalidOperationException()
         {
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                throw new SkipTestException("Source generator rejects this invalid polymorphic configuration at build time (SYSLIB diagnostic); the runtime InvalidOperationException is validated under reflection only.");
-            }
-
             // OpenGenericDerived_GroundMismatch<T> : OpenGenericBase_GroundMismatch<T, int>
             // registered on OpenGenericBase_GroundMismatch<int, string>.
             // Position 0 (T) unifies with int, but position 1 (concrete int in derived's base
@@ -2914,7 +2937,9 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1229
         [JsonDerivedType(typeof(OpenGenericDerived_GroundMismatch<>), "derived")]
+#pragma warning restore SYSLIB1229
         public class OpenGenericBase_GroundMismatch<T1, T2>;
 
         public class OpenGenericDerived_GroundMismatch<T> : OpenGenericBase_GroundMismatch<T, int>;
@@ -2947,7 +2972,14 @@ namespace System.Text.Json.Serialization.Tests
             public T? Extra { get; set; }
         }
 
-        [Fact]
+        // Validates the runtime programmatic API by adding polymorphism to OpenGenericBase_Programmatic<int>
+        // via a resolver modifier. The type is deliberately not registered with a JsonSerializerContext
+        // (no [JsonDerivedType]), so it relies on the reflection-based DefaultJsonTypeInfoResolver and only
+        // runs where runtime code generation is available; OpenGenericDerivedType_MixedWithRegularDerivedType_Works
+        // covers the attribute-based equivalent that also runs under source-gen.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [RequiresUnreferencedCode("Uses DefaultJsonTypeInfoResolver and reflection-based serialization.")]
+        [RequiresDynamicCode("Uses DefaultJsonTypeInfoResolver and reflection-based serialization.")]
         public async Task OpenGenericDerivedType_ProgrammaticApi_Works()
         {
             var options = new JsonSerializerOptions
@@ -3204,14 +3236,9 @@ namespace System.Text.Json.Serialization.Tests
             public (T1, T2) Pair { get; set; }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task OpenGenericDerivedType_AmbiguousInterfaceMatch_ThrowsInvalidOperationException()
         {
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                throw new SkipTestException("Source generator rejects this invalid polymorphic configuration at build time (SYSLIB diagnostic); the runtime InvalidOperationException is validated under reflection only.");
-            }
-
             // Impl<T> : IBase<T>, IBase<List<T>> registered on IBase<List<int>>.
             // Both ancestors unify (T=List<int> via the first interface, T=int via the second).
             // Result: ambiguous, throws.
@@ -3219,44 +3246,40 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1229
         [JsonDerivedType(typeof(OpenGenericImpl_Ambiguous<>), "impl")]
+#pragma warning restore SYSLIB1229
         public interface IOpenGenericBase_Ambiguous<T>;
 
         public class OpenGenericImpl_Ambiguous<T> : IOpenGenericBase_Ambiguous<T>, IOpenGenericBase_Ambiguous<List<T>>;
 
-        [ConditionalFact]
+        [Fact]
         public async Task OpenGenericDerivedType_UnboundParameter_ThrowsInvalidOperationException()
         {
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                throw new SkipTestException("Source generator rejects this invalid polymorphic configuration at build time (SYSLIB diagnostic); the runtime InvalidOperationException is validated under reflection only.");
-            }
-
             // Derived<T1, T2> : Base<T1> — T2 is unspeakable (not bound by the base type's args).
             var value = new OpenGenericBase_Unbound<int>();
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1229
         [JsonDerivedType(typeof(OpenGenericDerived_Unbound<,>), "derived")]
+#pragma warning restore SYSLIB1229
         public class OpenGenericBase_Unbound<T>;
 
         public class OpenGenericDerived_Unbound<T1, T2> : OpenGenericBase_Unbound<T1>;
 
-        [ConditionalFact]
+        [Fact]
         public async Task OpenGenericDerivedType_ConstraintViolation_ThrowsInvalidOperationException()
         {
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                throw new SkipTestException("Source generator rejects this invalid polymorphic configuration at build time (SYSLIB diagnostic); the runtime InvalidOperationException is validated under reflection only.");
-            }
-
             // Derived<T> : Base<T> where T : struct, registered on Base<string>.
             // Constraint fails → InvalidOperationException.
             var value = new OpenGenericBase_StructConstraint<string>();
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1229
         [JsonDerivedType(typeof(OpenGenericDerived_StructConstraint<>), "derived")]
+#pragma warning restore SYSLIB1229
         public class OpenGenericBase_StructConstraint<T>;
 
         public class OpenGenericDerived_StructConstraint<T> : OpenGenericBase_StructConstraint<T>
@@ -3414,6 +3437,274 @@ namespace System.Text.Json.Serialization.Tests
             public T? Item { get; set; }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task GenericSpecialization_ConcreteDerivedTypeForDifferentConstruction_ThrowsInvalidOperationException(bool useStringSpecialization)
+        {
+            if (useStringSpecialization)
+            {
+                GenericSpecializationAnimal<string> value = new GenericSpecializationDog { Value = "dog", Breed = "collie" };
+                await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+            }
+            else
+            {
+                GenericSpecializationAnimal<int> value = new GenericSpecializationCat { Value = 42, Lives = 9 };
+                await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+            }
+        }
+
+#pragma warning disable SYSLIB1240
+        [JsonDerivedType(typeof(GenericSpecializationCat), "cat")]
+        [JsonDerivedType(typeof(GenericSpecializationDog), "dog")]
+#pragma warning restore SYSLIB1240
+        public class GenericSpecializationAnimal<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public sealed class GenericSpecializationCat : GenericSpecializationAnimal<int>
+        {
+            public int Lives { get; set; }
+        }
+
+        public sealed class GenericSpecializationDog : GenericSpecializationAnimal<string>
+        {
+            public string? Breed { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_InterfaceConstraintCompatibleSpecialization_Works()
+        {
+            OpenGenericInterfaceConstraintBase<List<int>> value =
+                new OpenGenericInterfaceConstraintDerived<List<int>> { Marker = "valid", Value = [1, 2] };
+
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Marker":"valid","Value":[1,2]}""", json);
+
+            OpenGenericInterfaceConstraintBase<List<int>> result =
+                await Serializer.DeserializeWrapper<OpenGenericInterfaceConstraintBase<List<int>>>(json);
+            OpenGenericInterfaceConstraintDerived<List<int>> derived =
+                Assert.IsType<OpenGenericInterfaceConstraintDerived<List<int>>>(result);
+            Assert.Equal("valid", derived.Marker);
+            Assert.Equal([1, 2], derived.Value);
+        }
+
+        [Theory]
+        [InlineData(InvalidInterfaceConstraintSpecialization.ListOfString)]
+        [InlineData(InvalidInterfaceConstraintSpecialization.EnumerableOfString)]
+        [InlineData(InvalidInterfaceConstraintSpecialization.ValueType)]
+        public async Task OpenGenericDerivedType_InterfaceConstraintIncompatibleSpecialization_ThrowsInvalidOperationException(
+            InvalidInterfaceConstraintSpecialization specialization)
+        {
+            Func<Task> serialize = specialization switch
+            {
+                InvalidInterfaceConstraintSpecialization.ListOfString =>
+                    () => Serializer.SerializeWrapper(new OpenGenericInterfaceConstraintBase<List<string>>()),
+                InvalidInterfaceConstraintSpecialization.EnumerableOfString =>
+                    () => Serializer.SerializeWrapper(new OpenGenericInterfaceConstraintBase<IEnumerable<string>>()),
+                InvalidInterfaceConstraintSpecialization.ValueType =>
+                    () => Serializer.SerializeWrapper(new OpenGenericInterfaceConstraintBase<int>()),
+                _ => throw new ArgumentOutOfRangeException(nameof(specialization)),
+            };
+
+            await Assert.ThrowsAsync<InvalidOperationException>(serialize);
+        }
+
+        public enum InvalidInterfaceConstraintSpecialization
+        {
+            ListOfString,
+            EnumerableOfString,
+            ValueType,
+        }
+
+#pragma warning disable SYSLIB1229
+        [JsonDerivedType(typeof(OpenGenericInterfaceConstraintDerived<>), "derived")]
+#pragma warning restore SYSLIB1229
+        public class OpenGenericInterfaceConstraintBase<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericInterfaceConstraintDerived<T> : OpenGenericInterfaceConstraintBase<T>
+            where T : IEnumerable<int>
+        {
+            public string? Marker { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_MixedValidAndUnboundRegistrations_ThrowsInvalidOperationException()
+        {
+            OpenGenericMultiArityBase<int> value = new OpenGenericMultiArityDerived<int> { Value = 42 };
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(typeof(OpenGenericMultiArityDerived<>), "one")]
+#pragma warning disable SYSLIB1229
+        [JsonDerivedType(typeof(OpenGenericMultiArityDerived<,>), "two")]
+#pragma warning restore SYSLIB1229
+        public class OpenGenericMultiArityBase<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericMultiArityDerived<T> : OpenGenericMultiArityBase<T>;
+
+        public class OpenGenericMultiArityDerived<T1, T2> : OpenGenericMultiArityBase<T1>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_SameNameDifferentArities_ThrowsOnDiscriminatorCollision()
+        {
+            OpenGenericNameCollisionBase<int, int> value = new OpenGenericNameCollisionDerived<int>();
+            InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.SerializeWrapper(value));
+            Assert.Contains(nameof(OpenGenericNameCollisionDerived<int>), exception.Message);
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_SameNameDifferentArities_IncompatibleSpecialization_ThrowsInvalidOperationException()
+        {
+            var value = new OpenGenericNameCollisionBase<int, string>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+#pragma warning disable SYSLIB1229
+        [JsonDerivedType(
+            typeof(OpenGenericNameCollisionDerived<>),
+            nameof(OpenGenericNameCollisionDerived<int>))]
+#pragma warning restore SYSLIB1229
+#pragma warning disable SYSLIB1242 // The duplicate discriminator is intentional for this test.
+        [JsonDerivedType(
+            typeof(OpenGenericNameCollisionDerived<,>),
+            nameof(OpenGenericNameCollisionDerived<int, int>))]
+#pragma warning restore SYSLIB1242
+        public class OpenGenericNameCollisionBase<T1, T2>;
+
+        public class OpenGenericNameCollisionDerived<T> : OpenGenericNameCollisionBase<T, T>;
+
+        public class OpenGenericNameCollisionDerived<T1, T2> : OpenGenericNameCollisionBase<T1, T2>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_RepeatedTypeParameterCompatibleSpecialization_Works()
+        {
+            OpenGenericRepeatedBase<int, int> value =
+                new OpenGenericRepeatedDerived<int> { First = 1, Second = 2, Marker = "valid" };
+
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Marker":"valid","First":1,"Second":2}""", json);
+
+            OpenGenericRepeatedBase<int, int> result =
+                await Serializer.DeserializeWrapper<OpenGenericRepeatedBase<int, int>>(json);
+            OpenGenericRepeatedDerived<int> derived = Assert.IsType<OpenGenericRepeatedDerived<int>>(result);
+            Assert.Equal("valid", derived.Marker);
+            Assert.Equal(1, derived.First);
+            Assert.Equal(2, derived.Second);
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_RepeatedTypeParameterIncompatibleSpecialization_ThrowsInvalidOperationException()
+        {
+            var value = new OpenGenericRepeatedBase<int, string>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+#pragma warning disable SYSLIB1229
+        [JsonDerivedType(typeof(OpenGenericRepeatedDerived<>), "derived")]
+#pragma warning restore SYSLIB1229
+        public class OpenGenericRepeatedBase<T1, T2>
+        {
+            public T1? First { get; set; }
+            public T2? Second { get; set; }
+        }
+
+        public class OpenGenericRepeatedDerived<T> : OpenGenericRepeatedBase<T, T>
+        {
+            public string? Marker { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_FixedArgumentCompatibleSpecialization_Works()
+        {
+            OpenGenericFixedArgumentBase<string, int> value =
+                new OpenGenericFixedArgumentDerived<string> { First = "value", Second = 42, Marker = "valid" };
+
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Marker":"valid","First":"value","Second":42}""", json);
+
+            OpenGenericFixedArgumentBase<string, int> result =
+                await Serializer.DeserializeWrapper<OpenGenericFixedArgumentBase<string, int>>(json);
+            OpenGenericFixedArgumentDerived<string> derived =
+                Assert.IsType<OpenGenericFixedArgumentDerived<string>>(result);
+            Assert.Equal("valid", derived.Marker);
+            Assert.Equal("value", derived.First);
+            Assert.Equal(42, derived.Second);
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_FixedArgumentIncompatibleSpecialization_ThrowsInvalidOperationException()
+        {
+            var value = new OpenGenericFixedArgumentBase<string, string>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+#pragma warning disable SYSLIB1229
+        [JsonDerivedType(typeof(OpenGenericFixedArgumentDerived<>), "derived")]
+#pragma warning restore SYSLIB1229
+        public class OpenGenericFixedArgumentBase<T1, T2>
+        {
+            public T1? First { get; set; }
+            public T2? Second { get; set; }
+        }
+
+        public class OpenGenericFixedArgumentDerived<T> : OpenGenericFixedArgumentBase<T, int>
+        {
+            public string? Marker { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_NewConstraintCompatibleSpecialization_Works()
+        {
+            OpenGenericNewConstraintBase<NewConstraintArgument> value =
+                new OpenGenericNewConstraintDerived<NewConstraintArgument> { Marker = "valid" };
+
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Marker":"valid"}""", json);
+
+            OpenGenericNewConstraintBase<NewConstraintArgument> result =
+                await Serializer.DeserializeWrapper<OpenGenericNewConstraintBase<NewConstraintArgument>>(json);
+            Assert.IsType<OpenGenericNewConstraintDerived<NewConstraintArgument>>(result);
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_NewConstraintIncompatibleSpecialization_ThrowsInvalidOperationException()
+        {
+            var value = new OpenGenericNewConstraintBase<NoDefaultConstructorConstraintArgument>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+#pragma warning disable SYSLIB1229
+        [JsonDerivedType(typeof(OpenGenericNewConstraintDerived<>), "derived")]
+#pragma warning restore SYSLIB1229
+        public class OpenGenericNewConstraintBase<T>;
+
+        public class OpenGenericNewConstraintDerived<T> : OpenGenericNewConstraintBase<T>
+            where T : class, new()
+        {
+            public string? Marker { get; set; }
+        }
+
+        public class NewConstraintArgument;
+
+        public class NoDefaultConstructorConstraintArgument
+        {
+            public NoDefaultConstructorConstraintArgument(int value)
+            {
+                Value = value;
+            }
+
+            public int Value { get; }
+        }
+
         #endregion
 
         #region Generic Variance Tests
@@ -3471,22 +3762,13 @@ namespace System.Text.Json.Serialization.Tests
             // Same as above with explicit FallBackToBaseType. The resolver falls through to the
             // base contract (no discriminator emitted) because the runtime type is not registered.
             // This matches the previously-described "serializes as base contract" behavior.
-            var options = new JsonSerializerOptions
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                if (typeInfo.Type == typeof(IVarCovBase<VarAnimal>) && typeInfo.PolymorphismOptions is { } pOpts)
                 {
-                    Modifiers =
-                    {
-                        typeInfo =>
-                        {
-                            if (typeInfo.Type == typeof(IVarCovBase<VarAnimal>) && typeInfo.PolymorphismOptions is { } pOpts)
-                            {
-                                pOpts.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType;
-                            }
-                        }
-                    }
+                    pOpts.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType;
                 }
-            };
+            });
 
             IVarCovBase<VarAnimal> value = new VarCovImpl<VarDog> { Value = new VarDog { Name = "Rex", Breed = "Labrador" } };
             string json = await Serializer.SerializeWrapper(value, options);
@@ -3538,14 +3820,9 @@ namespace System.Text.Json.Serialization.Tests
         // behavior. The reflection side has always handled these cases correctly because
         // Type.GetGenericArguments() returns enclosing+leaf args together.
 
-        [ConditionalFact]
+        [Fact]
         public async Task NestedGeneric_EnclosingMismatch_ThrowsInvalidOperationException()
         {
-            if (Serializer.IsSourceGeneratedSerializer)
-            {
-                throw new SkipTestException("Source generator rejects this invalid polymorphic configuration at build time (SYSLIB diagnostic); the runtime InvalidOperationException is validated under reflection only.");
-            }
-
             // Pattern: NestedDerivedEnclosingMismatch<T> : NestedBase<NestedOuter<int>.NestedBox<T>>.
             // Target: NestedBase<NestedOuter<string>.NestedBox<int>>.
             // The enclosing argument differs (int vs string) so unification MUST fail. The
@@ -3557,7 +3834,9 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1229
         [JsonDerivedType(typeof(NestedDerivedEnclosingMismatch<>), "nested")]
+#pragma warning restore SYSLIB1229
         public class NestedBase<T> { public T? Item { get; set; } }
         public class NestedOuter<TOuter> { public class NestedBox<TInner> { public TInner? Inner { get; set; } } }
         public class NestedDerivedEnclosingMismatch<T> : NestedBase<NestedOuter<int>.NestedBox<T>>;
@@ -3798,51 +4077,14 @@ namespace System.Text.Json.Serialization.Tests
         #endregion
 
         #region Test Helpers
-        public class PolymorphicEqualityComparer<TBaseType> : IEqualityComparer<TBaseType>
-            where TBaseType : class
-        {
-            public static PolymorphicEqualityComparer<TBaseType> Instance { get; } = new();
-
-            public bool Equals(TBaseType? left, TBaseType? right)
-            {
-                if (left is null || right is null)
-                {
-                    return left is null == right is null;
-                }
-
-                Type runtimeType = left.GetType();
-                if (runtimeType != right.GetType())
-                {
-                    return false;
-                }
-
-                EqualityComparer<object> objComparer = EqualityComparer<object>.Default;
-
-                // Runtime type is enumerable; use enumerable sequence comparison
-                if (left is IEnumerable leftColl)
-                {
-                    IEnumerable rightColl = (IEnumerable)right;
-                    return leftColl.Cast<object>().SequenceEqual(rightColl.Cast<object>(), objComparer);
-                }
-
-                // Runtime is regular POCO; use property structural comparison
-                foreach (var propInfo in runtimeType.GetProperties())
-                {
-                    if (!objComparer.Equals(propInfo.GetValue(left), propInfo.GetValue(right)))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            public int GetHashCode(TBaseType _) => throw new NotImplementedException();
-        }
 
         public class CustomPolymorphismResolver : IJsonTypeInfoResolver
         {
+            #if BUILDING_SOURCE_GENERATOR_TESTS
+            private readonly IJsonTypeInfoResolver _inner = System.Text.Json.SourceGeneration.Tests.PolymorphicTests_Metadata.PolymorphicTestsContext_Metadata.Default;
+            #else
             private readonly DefaultJsonTypeInfoResolver _inner = new();
+            #endif
             private readonly List<JsonDerivedType> _jsonDerivedTypes = new();
 
             public CustomPolymorphismResolver(Type baseType)

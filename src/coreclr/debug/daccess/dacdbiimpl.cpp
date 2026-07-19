@@ -372,13 +372,6 @@ DacDbiInterfaceImpl::DacDbiInterfaceImpl(
     _ASSERTE(pMetaDataLookup != NULL);
     _ASSERTE(pAllocator != NULL);
     _ASSERTE(pTarget != NULL);
-
-#ifdef _DEBUG
-    // Enable verification asserts in ICorDebug scenarios.  ICorDebug never guesses at the DAC path, so any
-    // mismatch should be fatal, and so always of interest to the user.
-    // This overrides the assignment in the base class ctor (which runs first).
-    m_fEnableDllVerificationAsserts = true;
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -520,26 +513,6 @@ STDMETHODIMP_(ULONG)
 DacDbiInterfaceImpl::Release(THIS)
 {
     return ClrDataAccess::Release();
-}
-
-// Check whether the version of the DBI matches the version of the runtime.
-// See code:CordbProcess::CordbProcess#DBIVersionChecking for more information regarding version checking.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckDbiVersion(const DbiVersion * pVersion)
-{
-    DD_ENTER_MAY_THROW;
-
-    if (pVersion->m_dwFormat != kCurrentDbiVersionFormat)
-    {
-        return CORDBG_E_INCOMPATIBLE_PROTOCOL;
-    }
-
-    if ((pVersion->m_dwProtocolBreakingChangeCounter != kCurrentDacDbiProtocolBreakingChangeCounter) ||
-        (pVersion->m_dwReservedMustBeZero1 != 0))
-    {
-        return CORDBG_E_INCOMPATIBLE_PROTOCOL;
-    }
-
-    return S_OK;
 }
 
 // Flush the DAC cache. This should be called when target memory changes.
@@ -783,8 +756,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetCompilerFlags(VMPTR_Assembly v
 // sequence points and var info
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-// Initialize the native/IL sequence points and native var info for a function.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT NativeVarData * pNativeVarData, OUT SequencePoints * pSequencePoints)
+// Allocator to pass to the debug-info-stores...
+static BYTE* InfoStoreNew(void * pData, size_t cBytes)
+{
+    return new (nothrow) BYTE[cBytes];
+}
+
+// Get the native/IL sequence points and native var info for a function via callbacks.
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT ULONG32 * pFixedArgCount, FP_NATIVEVARINFO_CALLBACK fpVarInfoCallback, FP_SEQUENCEPOINT_CALLBACK fpSeqPointCallback, CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW;
 
@@ -798,11 +777,46 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeSequencePointsAndVar
 
         _ASSERTE(fCodeAvailable != 0);
 
-        // get information about the locations of arguments and local variables
-        GetNativeVarData(pMD, startAddress, GetArgCount(pMD), pNativeVarData);
+        // Return the fixed argument count
+        if (pFixedArgCount != NULL)
+        {
+            *pFixedArgCount = (ULONG32)GetArgCount(pMD);
+        }
 
-        // get the sequence points
-        GetSequencePoints(pMD, startAddress, pSequencePoints);
+        DebugInfoRequest request;
+        request.InitFromStartingAddr(pMD, CORDB_ADDRESS_TO_TADDR(startAddress));
+
+        // Retrieve sequence points and native variable info in a single request
+        NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
+        NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+        ULONG32 seqEntryCount = 0;
+        ULONG32 varEntryCount = 0;
+
+        BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
+                                                    InfoStoreNew, NULL,
+                                                    BoundsType::Uninstrumented,
+                                                    &seqEntryCount, &mapCopy,
+                                                    &varEntryCount, &nativeVars);
+        if (!success)
+            ThrowHR(E_FAIL);
+
+        // Invoke the native variable info callback for each entry
+        if (fpVarInfoCallback != NULL)
+        {
+            for (ULONG32 i = 0; i < varEntryCount; i++)
+            {
+                fpVarInfoCallback(&nativeVars[i], pUserData);
+            }
+        }
+
+        // Invoke the sequence point callback for each entry
+        if (fpSeqPointCallback != NULL)
+        {
+            for (ULONG32 i = 0; i < seqEntryCount; i++)
+            {
+                fpSeqPointCallback(&mapCopy[i], pUserData);
+            }
+        }
 
     }
     EX_CATCH_HRESULT(hr);
@@ -856,108 +870,6 @@ SIZE_T DacDbiInterfaceImpl::GetArgCount(MethodDesc * pMD)
     return NumArguments;
 } //GetArgCount
 
-// Allocator to pass to the debug-info-stores...
-BYTE* InfoStoreNew(void * pData, size_t cBytes)
-{
-    return new BYTE[cBytes];
-}
-
-//-----------------------------------------------------------------------------
-// Get locations and code offsets for local variables and arguments in a function
-// This information is used to find the location of a value at a given IP.
-// Arguments:
-//    input:
-//        pMethodDesc   pointer to the method desc for the function
-//        startAddr     starting address of the function--used to differentiate
-//                      EnC versions
-//        fixedArgCount number of fixed arguments to the function
-//    output:
-//        pVarInfo      data structure containing a list of variable and
-//                      argument locations by range of IP offsets
-// Note: this function may throw
-//-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::GetNativeVarData(MethodDesc *    pMethodDesc,
-                                           CORDB_ADDRESS   startAddr,
-                                           SIZE_T          fixedArgCount,
-                                           NativeVarData * pVarInfo)
-{
-    // make sure we haven't done this already
-    if (pVarInfo->IsInitialized())
-    {
-        return;
-    }
-
-    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
-
-    DebugInfoRequest request;
-    request.InitFromStartingAddr(pMethodDesc, CORDB_ADDRESS_TO_TADDR(startAddr));
-
-    ULONG32 entryCount;
-
-    BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
-                                                InfoStoreNew, NULL, // allocator
-                                                BoundsType::Instrumented,
-                                                NULL, NULL,
-                                                &entryCount, &nativeVars);
-
-    if (!success)
-        ThrowHR(E_FAIL);
-
-    // set key fields of pVarInfo
-    pVarInfo->InitVarDataList(nativeVars, (int)fixedArgCount, (int)entryCount);
-} // GetNativeVarData
-
-
-
-
-//-----------------------------------------------------------------------------
-// Get the native/IL sequence points for a function
-// Arguments:
-//    input:
-//        pMethodDesc   pointer to the method desc for the function
-//        startAddr     starting address of the function--used to differentiate
-//    output:
-//        pNativeMap    data structure containing a list of sequence points
-// Note: this function may throw
-//-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
-                                            CORDB_ADDRESS    startAddr,
-                                            SequencePoints * pSeqPoints)
-{
-
-    // make sure we haven't done this already
-    if (pSeqPoints->IsInitialized())
-    {
-        return;
-    }
-
-    // Use the DebugInfoStore to get IL->Native maps.
-    // It doesn't matter whether we're jitted, ngenned etc.
-    DebugInfoRequest request;
-    request.InitFromStartingAddr(pMethodDesc, CORDB_ADDRESS_TO_TADDR(startAddr));
-
-
-    // Bounds info.
-    NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
-
-    ULONG32 entryCount;
-    BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
-                                                      InfoStoreNew,
-                                                      NULL, // allocator
-                                                      BoundsType::Uninstrumented,
-                                                      &entryCount, &mapCopy,
-                                                      NULL, NULL);
-    if (!success)
-        ThrowHR(E_FAIL);
-
-    pSeqPoints->InitSequencePoints(entryCount);
-
-    // mapCopy and pSeqPoints have elements of different types. Thus, we
-    // need to copy the individual members from the elements of mapCopy to the
-    // elements of pSeqPoints. Once we're done, we can release mapCopy
-    pSeqPoints->CopyAndSortSequencePoints(mapCopy);
-
-} // GetSequencePoints
 
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Function Data
@@ -3262,23 +3174,14 @@ DacDbiInterfaceImpl::DelegateType DacDbiInterfaceImpl::GetDelegateType(VMPTR_Obj
 
     DelegateType delegateType = DelegateType::kUnknownDelegateType;
     PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
-    INT_PTR invocationCount = pDelObj->GetInvocationCount();
 
-    if (invocationCount == 0)
+    INT_PTR extraData = pDelObj->GetExtraData();
+    OBJECTREF helperObject = pDelObj->GetHelperObject();
+    if (((helperObject == NULL) || !helperObject->GetMethodTable()->IsArray()) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
-        // If this delegate points to a static function or this is a open virtual delegate, this should be non-null
-        // Special case: This might fail in a VSD delegate (instance open virtual)...
-        // TODO: There is the special signatures cases missing.
+        // If this delegate is open, this should be non-null
         TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
-        if (targetMethodPtr == (TADDR)NULL)
-        {
-            // Static extension methods, other closed static delegates, and instance delegates fall into this category.
-            delegateType = DelegateType::kClosedDelegate;
-        }
-        else
-        {
-            delegateType = DelegateType::kOpenDelegate;
-        }
+        delegateType = targetMethodPtr == (TADDR)NULL ? DelegateType::kClosedDelegate : DelegateType::kOpenDelegate;
     }
     return delegateType;
 }
@@ -5576,6 +5479,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread,
                                                     | DT_CONTEXT_INTEGER
     #endif
                         ;
+#ifdef FEATURE_INTERPRETER
+                        EECodeInfo codeInfo(GetIP(&tmpContext));
+                        if (codeInfo.IsInterpretedCode())
+                        {
+                            pContextBuffer->ContextFlags |= DT_CONTEXT_INTEGER;
+                        }
+#endif // FEATURE_INTERPRETER
                         return S_OK;
                     }
                     frame = frame->Next();
@@ -6767,11 +6677,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS obj, 
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, UINT32 handleWalkMask)
 {
     DD_ENTER_MAY_THROW;
 
-    DacRefWalker *walker = new (nothrow) DacRefWalker(this, walkStacks, walkFQ, handleWalkMask, TRUE);
+    DacRefWalker *walker = new (nothrow) DacRefWalker(this, walkStacks, handleWalkMask, TRUE);
 
     if (walker == NULL)
         return E_OUTOFMEMORY;
@@ -7251,7 +7161,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAssemblyFromModule(VMPTR_Modul
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ParseContinuation(
     CORDB_ADDRESS continuationAddress,
-    OUT PCODE* pDiagnosticIP,
+    OUT CORDB_ADDRESS* pDiagnosticIP,
     OUT CORDB_ADDRESS* pNextContinuation,
     OUT UINT32* pState)
 {
@@ -7275,6 +7185,10 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ParseContinuation(
     PTR_ResumeInfo pResumeInfo = nullptr;
     UINT32 state = 0;
     int numFound = 0;
+
+    *pDiagnosticIP = 0;
+    *pNextContinuation = 0;
+    *pState = 0;
 
     ApproxFieldDescIterator continuationFieldIter(pContinuationMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *continuationField = continuationFieldIter.Next(); continuationField != NULL && numFound < 3; continuationField = continuationFieldIter.Next())
@@ -7302,7 +7216,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ParseContinuation(
         return E_FAIL;
     }
 
-    *pDiagnosticIP = pResumeInfo->pDiagnosticIP;
+    *pDiagnosticIP = static_cast<CORDB_ADDRESS>(pResumeInfo->pDiagnosticIP);
     *pNextContinuation = static_cast<CORDB_ADDRESS>(dac_cast<TADDR>(OBJECTREFToObject(pNext)));
     *pState = state;
 
@@ -7413,9 +7327,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_Met
     return S_OK;
 }
 
-DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask, BOOL resolvePointers)
-    : mDac(dac), mWalkStacks(walkStacks), mWalkFQ(walkFQ), mHandleMask(handleMask), mStackWalker(NULL),
-      mResolvePointers(resolvePointers), mHandleWalker(NULL), mFQStart(PTR_NULL), mFQEnd(PTR_NULL), mFQCurr(PTR_NULL)
+DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers)
+    : mDac(dac), mWalkStacks(walkStacks), mHandleMask(handleMask), mStackWalker(NULL),
+      mResolvePointers(resolvePointers), mHandleWalker(NULL)
 {
 }
 
@@ -7507,21 +7421,6 @@ HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetch
 
             if (FAILED(hr))
                 return hr;
-        }
-    }
-
-    if (total < celt)
-    {
-        while (total < celt && mFQCurr < mFQEnd)
-        {
-            DacGcReference &ref = roots[total++];
-
-            ref.vmDomain = VMPTR_AppDomain::NullPtr();
-            ref.objHnd.SetDacTargetPtr(mFQCurr.GetAddr());
-            ref.dwType = (DWORD)CorReferenceFinalizer;
-            ref.i64ExtraData = 0;
-
-            mFQCurr++;
         }
     }
 

@@ -274,7 +274,7 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
     if (!WasmEnableThreads) return null as any;
 
     if (modulePThread.unusedWorkers.length == 0) {
-        mono_log_debug(() => `Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+        mono_log_debug(() => `Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${Object.keys(modulePThread.pthreads).length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
         const worker = allocateUnusedWorker();
         modulePThread.loadWasmModuleToWorker(worker);
         return worker;
@@ -293,7 +293,7 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
             return worker;
         }
     }
-    mono_log_debug(() => `Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+    mono_log_debug(() => `Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${Object.keys(modulePThread.pthreads).length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
     return modulePThread.unusedWorkers.pop()!;
 }
 
@@ -301,9 +301,8 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
 function allocateUnusedWorker (): PThreadWorker {
     if (!WasmEnableThreads) return null as any;
 
-    const asset = loaderHelpers.resolve_single_asset_path("js-module-threads");
-    const uri = asset.resolvedUrl;
-    mono_assert(uri !== undefined, "could not resolve the uri for the js-module-threads asset");
+    const uri = loaderHelpers.scriptUrl;
+    mono_assert(uri !== undefined, "loaderHelpers.scriptUrl must be defined");
     const workerNumber = loaderHelpers.workerNextNumber++;
     const worker = new Worker(uri, {
         name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
@@ -334,7 +333,7 @@ export function getUnusedWorkerPool (): PThreadWorker[] {
 }
 
 export function getRunningWorkers (): PThreadWorker[] {
-    return getModulePThread().runningWorkers;
+    return Object.values(getModulePThread().pthreads);
 }
 
 export function terminateAllThreads (): void {
