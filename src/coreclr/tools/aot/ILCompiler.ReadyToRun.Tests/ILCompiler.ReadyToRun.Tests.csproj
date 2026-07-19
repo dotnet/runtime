@@ -13,11 +13,6 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
     <RequireWasmReferences Condition="'$(RequireWasmReferences)' == ''">false</RequireWasmReferences>
-    <WasmRuntimePackRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.browser-wasm'))</WasmRuntimePackRoot>
-    <WasmRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
-    <WasmRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
-    <WasmRuntimePackDir Condition="!Exists('$(WasmRuntimePackDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/lib/$(NetCoreAppCurrent)')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
-    <WasmRuntimePackNativeDir Condition="!Exists('$(WasmRuntimePackNativeDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/native')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,57 +20,33 @@
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
   </ItemGroup>
 
+  <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time.
+       Exclude subdirectory sources from compilation since they are compiled in-memory by R2RTestCaseCompiler. -->
+  <ItemGroup>
+    <Compile Remove="TestCases/*/**/*.cs" />
+    <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="../ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
-    <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false">
-      <!-- crossgen2 is a CoreCLR artifact, so publish it in the CoreCLR configuration. This keeps it
-           alongside the other CoreCLR artifacts the test consumes (System.Private.CoreLib, the JITs)
-           even when this test project is built in a different configuration than CoreCLR was (e.g.
-           CoreCLR built Release via 'clr -rc release', but the test built/run as Debug). Mirrors the
-           CoreLib SetConfiguration pattern in eng/references.targets. -->
-      <SetConfiguration Condition="'$(Configuration)' == '$(CoreCLRConfiguration)'">CopyAllJitLibrariesToAotCompilerOutput=true</SetConfiguration>
-      <SetConfiguration Condition="'$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration);CopyAllJitLibrariesToAotCompilerOutput=true</SetConfiguration>
+    <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false" OutputItemType="Crossgen2InbuildOutputItems">
+      <SetConfiguration>Configuration=$(CoreCLRConfiguration);CopyAllJitLibrariesToAotCompilerOutput=true</SetConfiguration>
     </ProjectReference>
   </ItemGroup>
 
-  <!-- HACK: We run runtime.proj inline to build the wasm JIT and then Copy it directly into
-       crossgen2_inbuild's publish dir. This is hacky for two reasons:
-         1. crossgen2_inbuild's <Content> glob for clrjits is evaluated at project-load time,
-            before this target runs, so on a clean tree the glob misses the freshly installed
-            JITs and the direct Copy is the only thing that reliably gets the file there.
-         2. We reach into another project's publish dir instead of flowing outputs through the
-            ProjectReference protocol.
-       Ideally this would be replaced by a proper ProjectReference setup where the wasm JIT and
-       crossgen2's other dependencies flow into our own output dir via GetCopyToOutputDirectoryItems,
-       and R2RTest.Crossgen2Dir points at the test's bin dir instead of crossgen2_inbuild's publish dir.
-
-       In cross builds JITs land in $(CoreCLRArtifactsPath)$(BuildArchitecture)/; we mirror
-       eng/Subsets.props's cross-tool stanza so install/read paths agree.
-       Hooks into ResolveProjectReferences so it fires for `dotnet build` (and CI's `build.sh -test`,
-       which builds before testing). `dotnet build /t:test` alone won't trigger it. -->
-  <PropertyGroup>
-    <_BuildJitsCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">true</_BuildJitsCrossArch>
-    <_BuildJitsProperties>ClrAllJitsSubset=true;ClrWasmJitSubset=true;Configuration=$(CoreCLRConfiguration)</_BuildJitsProperties>
-    <_BuildJitsProperties Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(_BuildJitsProperties);Ninja=true</_BuildJitsProperties>
-    <_BuildJitsProperties Condition="'$(_BuildJitsCrossArch)' == 'true'">$(_BuildJitsProperties);HostArchitecture=$(BuildArchitecture);HostCrossOS=$(HostOS);CrossBuild=false;BuildSubdirectory=$(BuildArchitecture);CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1;PgoInstrument=false;NoPgoOptimize=true</_BuildJitsProperties>
-  </PropertyGroup>
-
+  <!-- The JITs must be built before crossgen2_inbuild so that they can be copied to the output directory -->
   <Target Name="BuildAllJitsForReadyToRunTests"
           BeforeTargets="ResolveProjectReferences"
           Condition="'$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_BuildJitsCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">true</_BuildJitsCrossArch>
+      <_BuildJitsProperties>ClrAllJitsSubset=true;ClrWasmJitSubset=true;Configuration=$(CoreCLRConfiguration)</_BuildJitsProperties>
+      <_BuildJitsProperties Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(_BuildJitsProperties);Ninja=true</_BuildJitsProperties>
+      <_BuildJitsProperties Condition="'$(_BuildJitsCrossArch)' == 'true'">$(_BuildJitsProperties);HostArchitecture=$(BuildArchitecture);HostCrossOS=$(HostOS);CrossBuild=false;BuildSubdirectory=$(BuildArchitecture);CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1;PgoInstrument=false;NoPgoOptimize=true</_BuildJitsProperties>
+    </PropertyGroup>
     <MSBuild Projects="$(CoreClrProjectRoot)runtime.proj"
              Targets="Build"
              Properties="$(_BuildJitsProperties)" />
-
-    <PropertyGroup>
-      <_WasmJitCrossHostArchSubdir Condition="'$(_BuildJitsCrossArch)' == 'true'">$(BuildArchitecture)/</_WasmJitCrossHostArchSubdir>
-      <_WasmJitFileName>$(HostLibPrefix)clrjit_universal_wasm_$(BuildArchitecture)$(HostLibSuffix)</_WasmJitFileName>
-      <_WasmJitSourcePath>$(CoreCLRArtifactsPath)$(_WasmJitCrossHostArchSubdir)$(_WasmJitFileName)</_WasmJitSourcePath>
-      <_Crossgen2InbuildPublishDir>$(CoreCLRArtifactsPath)$(BuildArchitecture)/crossgen2/</_Crossgen2InbuildPublishDir>
-    </PropertyGroup>
-    <Copy SourceFiles="$(_WasmJitSourcePath)"
-          DestinationFolder="$(_Crossgen2InbuildPublishDir)"
-          SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="ValidatePathsExist"
@@ -89,6 +60,7 @@
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)')"
            Text="Runtime pack path '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' does not exist." />
 
+    <!-- Wasm runtime pack is not strictly required for local builds, but is enforced in CI with RequireWasmReferences -->
     <Error Condition="'$(RequireWasmReferences)' == 'true' and (!Exists('$(WasmRuntimePackDir)') or !Exists('$(WasmRuntimePackNativeDir)System.Private.CoreLib.dll'))"
            Text="The browser-wasm runtime pack was not found under '$(WasmRuntimePackRoot)'. Build and download the wasm prerequisite artifact before building this test." />
     <Warning Condition="'$(RequireWasmReferences)' != 'true' and !Exists('$(WasmRuntimePackDir)')"
@@ -97,47 +69,46 @@
              Text="Browser-wasm System.Private.CoreLib.dll was not found under '$(WasmRuntimePackNativeDir)'. Browser-wasm ReadyToRun tests will fall back to host references, which may cause unexpected failures. Generate by building the clr.corelib+libs+libs.pretest subsets for browser-wasm." />
   </Target>
 
-  <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time.
-       Exclude subdirectory sources from compilation since they are compiled in-memory by R2RTestCaseCompiler. -->
-  <ItemGroup>
-    <Compile Remove="TestCases/*/**/*.cs" />
-    <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
+  <!-- RuntimeConfiguration values that depend on build output paths must be set in a target -->
+  <Target Name="SetRuntimeConfigurationOptions"
+          BeforeTargets="GenerateBuildRuntimeConfigurationFiles"
+          Condition="'$(DesignTimeBuild)' != 'true'">
 
-  <!-- Pass build-time paths to test runtime via RuntimeHostConfigurationOption -->
-  <ItemGroup>
-    <!-- Required Host-Targeting assets -->
-    <RuntimeHostConfigurationOption Include="R2RTest.Crossgen2Dir">
-      <Value>$(CoreCLRArtifactsPath)/$(BuildArchitecture)/crossgen2</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackDir">
-      <Value>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackNativeDir">
-      <Value>$(MicrosoftNetCoreAppRuntimePackNativeDir)</Value>
-    </RuntimeHostConfigurationOption>
+    <PropertyGroup>
+      <WasmRuntimePackRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.browser-wasm'))</WasmRuntimePackRoot>
+      <WasmRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
+      <WasmRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
+      <WasmRuntimePackDir Condition="!Exists('$(WasmRuntimePackDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/lib/$(NetCoreAppCurrent)')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
+      <WasmRuntimePackNativeDir Condition="!Exists('$(WasmRuntimePackNativeDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/native')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
+    </PropertyGroup>
 
-    <!-- browser-wasm runtime pack paths used for validating wasm R2R compilation.
-         When absent, the wasm R2R compilation falls back to host references.
-         This could cause unexpected failures if crossgen2 expects intrinsics in
-         the wasm System.Private.CoreLib.dll that are not present in the host reference pack.
-         Thus, the RequireWasmReferences option can be used to fail the test build if the wasm
-         runtime pack is not present.
-          -->
-    <RuntimeHostConfigurationOption Include="R2RTest.RequireWasmReferences">
-      <Value>$(RequireWasmReferences)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.WasmRuntimePackDir">
-      <Value>$(WasmRuntimePackDir)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.WasmRuntimePackNativeDir">
-      <Value>$(WasmRuntimePackNativeDir)</Value>
-    </RuntimeHostConfigurationOption>
+    <ItemGroup>
+      <RuntimeHostConfigurationOption Include="R2RTest.Crossgen2Dir">
+        <Value>@(Crossgen2InbuildOutputItems->WithMetadataValue('Filename', 'crossgen2')->WithMetadataValue('Extension', '$(ExeSuffix)')->'%(RootDir)%(Directory)')</Value>
+      </RuntimeHostConfigurationOption>
+      <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackDir">
+        <Value>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</Value>
+      </RuntimeHostConfigurationOption>
+      <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackNativeDir">
+        <Value>$(MicrosoftNetCoreAppRuntimePackNativeDir)</Value>
+      </RuntimeHostConfigurationOption>
 
-    <!-- Used for gating Debug-only JIT features from being tested. -->
-    <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRConfiguration">
-      <Value>$(CoreCLRConfiguration)</Value>
-    </RuntimeHostConfigurationOption>
-  </ItemGroup>
+      <RuntimeHostConfigurationOption Include="R2RTest.RequireWasmReferences">
+        <Value>$(RequireWasmReferences)</Value>
+      </RuntimeHostConfigurationOption>
+      <RuntimeHostConfigurationOption Include="R2RTest.WasmRuntimePackDir">
+        <Value>$(WasmRuntimePackDir)</Value>
+      </RuntimeHostConfigurationOption>
+      <RuntimeHostConfigurationOption Include="R2RTest.WasmRuntimePackNativeDir">
+        <Value>$(WasmRuntimePackNativeDir)</Value>
+      </RuntimeHostConfigurationOption>
+
+      <!-- Used for gating Debug-only JIT features from being tested. -->
+      <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRConfiguration">
+        <Value>$(CoreCLRConfiguration)</Value>
+      </RuntimeHostConfigurationOption>
+    </ItemGroup>
+
+  </Target>
 
 </Project>
