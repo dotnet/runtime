@@ -233,7 +233,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ConcurrentTagAddsPreserveAllValues()
         {
             const int Count = 1_000;
@@ -241,10 +241,10 @@ namespace System.Diagnostics.Tests
 
             Parallel.For(0, Count, i => activity.AddTag(i.ToString(), i));
 
-            KeyValuePair<string, object>[] tags = activity.TagObjects.ToArray();
+            KeyValuePair<string, object?>[] tags = activity.TagObjects.ToArray();
             Assert.Equal(Count, tags.Length);
             Assert.Equal(Count, tags.Select(tag => tag.Key).Distinct().Count());
-            foreach (KeyValuePair<string, object> tag in tags)
+            foreach (KeyValuePair<string, object?> tag in tags)
             {
                 Assert.Equal(int.Parse(tag.Key), tag.Value);
             }
