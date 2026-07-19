@@ -2233,6 +2233,24 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData("1E100", -0.37237612366127669, -0.92808190507465534, 0.40123196199081435)]
+        [InlineData("1E300", -0.985750425160377, -0.16821444437424507, 5.8600819259448981)]
+        [InlineData("9.999999999999999E384", 0.10945032811433361, 0.99399226640636632, 0.1101118507793177)] // max Decimal64
+        [InlineData("1.234567890123456E5", -0.99866344433892212, 0.051684861817756632, -19.322165315257272)] // negative exponent, |x| >= 1
+        public static void TrigLargeArgumentTest(string value, double expectedSin, double expectedCos, double expectedTan)
+        {
+            // Large arguments no longer convert to binary128 exactly, so the range reduction runs in the
+            // decimal domain. Verify (through binary64) that sin/cos/tan reduce mod 2*pi at any magnitude.
+            Decimal64 x = Decimal64.Parse(value, CultureInfo.InvariantCulture);
+            AssertClose(expectedSin, (double)Decimal64.Sin(x), value, "sin");
+            AssertClose(expectedCos, (double)Decimal64.Cos(x), value, "cos");
+            AssertClose(expectedTan, (double)Decimal64.Tan(x), value, "tan");
+
+            static void AssertClose(double expected, double actual, string value, string fn)
+                => Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"{fn}({value}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL)] // cos(+0) = 1
         [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL)] // cos(-0) = 1
         [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // cos(+Infinity) = NaN

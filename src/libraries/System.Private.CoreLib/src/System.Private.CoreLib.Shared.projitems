@@ -446,6 +446,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.DiyFp128.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.DiyFp128Cbrt.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.DiyFp128Conversions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.DiyFp128DecimalReduce.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.DiyFp128Exp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.DiyFp128Hyper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.DiyFp128InvHyper.cs" />

@@ -334,6 +334,16 @@ internal static partial class Number
             scale += 64;
         }
 
+        return DiyFp128FinishRadianReduce(g3, g2, g1, g0, scale, signX, out reduced);
+    }
+
+    // The shared tail of the Payne-Hanek reduction: given the top four fraction words g3:g2:g1:g0 of
+    // x*(2/pi) (with the variable octant already folded into g3 and any leading-digit compression
+    // captured in scale), extract the quadrant, build the signed reduced argument in [-pi/4, pi/4], and
+    // return the quadrant (0..3). The decimal-domain reducer feeds its own fraction words through this
+    // same tail so both paths produce an identical (quadrant, reduced) contract.
+    private static int DiyFp128FinishRadianReduce(ulong g3, ulong g2, ulong g1, ulong g0, int scale, int signX, out DiyFp128 reduced)
+    {
         // Sign-extend w and extract the quadrant.
         ulong quadrant = g3;
         g3 <<= 2;
@@ -483,8 +493,42 @@ internal static partial class Number
         }
     }
 
+    // Carries the reduction inputs for a radian trig call: the binary128 argument plus the original
+    // decimal (sign, coefficient, exponent). UseDecimal selects the decimal-domain reducer, which stays
+    // accurate once the decimal no longer converts to binary128 exactly (see DiyFp128DecimalReduceExact).
+    private readonly struct DiyFp128TrigReduceArg
+    {
+        public readonly DiyFp128 Value;
+        public readonly UInt128 Coefficient;
+        public readonly int Exponent;
+        public readonly uint Sign;
+        public readonly bool UseDecimal;
+
+        public DiyFp128TrigReduceArg(DiyFp128 value, UInt128 coefficient, int exponent, uint sign, bool useDecimal)
+        {
+            Value = value;
+            Coefficient = coefficient;
+            Exponent = exponent;
+            Sign = sign;
+            UseDecimal = useDecimal;
+        }
+
+        // An already-reduced binary128 argument (e.g. the pi-variants' fraction*pi) uses the binary reducer.
+        public static implicit operator DiyFp128TrigReduceArg(DiyFp128 value)
+            => new DiyFp128TrigReduceArg(value, default, 0, 0, useDecimal: false);
+    }
+
+    private static int DiyFp128RadianReduce(scoped in DiyFp128TrigReduceArg arg, int octant, out DiyFp128 reduced)
+    {
+        if (arg.UseDecimal)
+        {
+            return DiyFp128DecimalRadianReduce(arg.Sign, arg.Coefficient, arg.Exponent, octant, out reduced);
+        }
+        return DiyFp128RadianReduce(arg.Value, octant, out reduced);
+    }
+
     // UX_SINCOS: fills result[0] (sin/primary) and, for sincos, result[1] (cos).
-    private static void DiyFp128SinCos(scoped in DiyFp128 arg, int octant, int functionCode, Span<DiyFp128> result)
+    private static void DiyFp128SinCos(scoped in DiyFp128TrigReduceArg arg, int octant, int functionCode, Span<DiyFp128> result)
     {
         int quadrant = DiyFp128RadianReduce(arg, octant, out DiyFp128 reduced);
 
@@ -516,21 +560,21 @@ internal static partial class Number
         }
     }
 
-    private static DiyFp128 DiyFp128Sin(scoped in DiyFp128 arg)
+    private static DiyFp128 DiyFp128Sin(scoped in DiyFp128TrigReduceArg arg)
     {
         Span<DiyFp128> r = [default, default];
         DiyFp128SinCos(arg, 0, 1, r);
         return r[0];
     }
 
-    private static DiyFp128 DiyFp128Cos(scoped in DiyFp128 arg)
+    private static DiyFp128 DiyFp128Cos(scoped in DiyFp128TrigReduceArg arg)
     {
         Span<DiyFp128> r = [default, default];
         DiyFp128SinCos(arg, 2, 2, r);
         return r[0];
     }
 
-    private static void DiyFp128SinCosPair(scoped in DiyFp128 arg, out DiyFp128 sin, out DiyFp128 cos)
+    private static void DiyFp128SinCosPair(scoped in DiyFp128TrigReduceArg arg, out DiyFp128 sin, out DiyFp128 cos)
     {
         Span<DiyFp128> r = [default, default];
         DiyFp128SinCos(arg, 0, TrigSinCosFunc, r);
@@ -538,7 +582,7 @@ internal static partial class Number
         cos = r[1];
     }
 
-    private static DiyFp128 DiyFp128Tan(scoped in DiyFp128 arg)
+    private static DiyFp128 DiyFp128Tan(scoped in DiyFp128TrigReduceArg arg)
     {
         int quadrant = DiyFp128RadianReduce(arg, 0, out DiyFp128 reduced);
 

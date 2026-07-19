@@ -957,6 +957,20 @@ internal static partial class Number
         return DiyFp128ToDecimal<TDecimal, TValue>(magnitude);
     }
 
+    // Builds the radian range-reduction argument, choosing the decimal-domain reducer when the decimal
+    // is >= 1 and does not convert to binary128 exactly (where the binary reducer would work on a value
+    // whose low digits -- the ones that determine x mod 2*pi -- were lost to rounding).
+    private static DiyFp128TrigReduceArg MakeRadianReduceArg<TDecimal, TValue>(in DecodedDecimalIeee754<TValue> decoded)
+        where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        DiyFp128 value = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        UInt128 coefficient = UInt128.CreateTruncating(decoded.Significand);
+        uint sign = decoded.Signed ? UxSignBit : 0u;
+        bool useDecimal = (value._exponent >= 1) && !DiyFp128DecimalReduceExact(coefficient, decoded.UnbiasedExponent);
+        return new DiyFp128TrigReduceArg(value, coefficient, decoded.UnbiasedExponent, sign, useDecimal);
+    }
+
     /// <summary>Computes <c>sin(x)</c> (x in radians).</summary>
     internal static TValue SinDecimalIeee754<TDecimal, TValue>(TValue x)
         where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
@@ -987,7 +1001,7 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Sin(value));
         }
 
-        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128TrigReduceArg argument = MakeRadianReduceArg<TDecimal, TValue>(decoded);
         return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Sin(argument));
     }
 
@@ -1021,7 +1035,7 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Cos(value));
         }
 
-        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128TrigReduceArg argument = MakeRadianReduceArg<TDecimal, TValue>(decoded);
         return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Cos(argument));
     }
 
@@ -1055,7 +1069,7 @@ internal static partial class Number
             return ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(double.Tan(value));
         }
 
-        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128TrigReduceArg argument = MakeRadianReduceArg<TDecimal, TValue>(decoded);
         return DiyFp128ToDecimal<TDecimal, TValue>(DiyFp128Tan(argument));
     }
 
@@ -1094,7 +1108,7 @@ internal static partial class Number
                     ConvertFloatToDecimalIeee754<double, TDecimal, TValue>(cosValue));
         }
 
-        DiyFp128 argument = DecimalToDiyFp128<TDecimal, TValue>(decoded.Signed, decoded.UnbiasedExponent, decoded.Significand);
+        DiyFp128TrigReduceArg argument = MakeRadianReduceArg<TDecimal, TValue>(decoded);
         DiyFp128SinCosPair(argument, out DiyFp128 sin, out DiyFp128 cos);
         return (DiyFp128ToDecimal<TDecimal, TValue>(sin), DiyFp128ToDecimal<TDecimal, TValue>(cos));
     }
