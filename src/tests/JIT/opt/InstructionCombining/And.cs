@@ -254,8 +254,7 @@ namespace TestAnd
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int AndsLargeShift64Bit(ulong a, ulong b)
         {
-            //ARM64-FULL-LINE: lsr {{x[0-9]+}}, {{x[0-9]+}}, #38
-            //ARM64-FULL-LINE: tst {{x[0-9]+}}, {{x[0-9]+}}
+            //ARM64-FULL-LINE: tst {{x[0-9]+}}, {{x[0-9]+}}, LSR #38
             if ((a & (b>>230)) != 0) {
                 return 1;
             }

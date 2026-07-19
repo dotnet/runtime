@@ -103,6 +103,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_SSLSetALPNProtocols)
     DllImportEntry(AppleCryptoNative_SslGetAlpnSelected)
     DllImportEntry(AppleCryptoNative_SslHandshake)
+    DllImportEntry(AppleCryptoNative_SslSetError)
     DllImportEntry(AppleCryptoNative_SslShutdown)
     DllImportEntry(AppleCryptoNative_SslGetProtocolVersion)
     DllImportEntry(AppleCryptoNative_SslGetCipherSuite)

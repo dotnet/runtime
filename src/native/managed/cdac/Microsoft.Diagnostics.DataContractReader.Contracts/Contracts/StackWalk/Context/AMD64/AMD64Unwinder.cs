@@ -45,10 +45,10 @@ internal class AMD64Unwinder(Target target)
         Data.RuntimeFunction? primaryFunctionEntry;
         UnwindCode unwindOp;
 
-        if (_eman.GetCodeBlockHandle(context.InstructionPointer.Value) is not CodeBlockHandle cbh)
+        if (_eman.GetCodeBlockHandle(context.InstructionPointer) is not CodeBlockHandle cbh)
             return false;
 
-        TargetPointer controlPC = context.InstructionPointer;
+        TargetPointer controlPC = context.InstructionPointer.AsTargetPointer;
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
         TargetPointer unwindInfoAddr = _eman.GetUnwindInfo(cbh);

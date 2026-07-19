@@ -204,7 +204,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// will be normalized to upper case characters.
         /// </para>
         /// </remarks>
-        public unsafe void AddCountryOrRegion(string twoLetterCode)
+        public void AddCountryOrRegion(string twoLetterCode)
         {
             // ITU T-REC X.520 Annex A:
             // id-at-countryName
@@ -226,7 +226,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentException(SR.Argument_X500_InvalidCountryOrRegion, nameof(twoLetterCode));
             }
 
-            Span<char> fixupTwoLetterCode = stackalloc char[2];
+            Span<char> fixupTwoLetterCode = ['\0', '\0'];
             int written = twoLetterCodeSpan.ToUpperInvariant(fixupTwoLetterCode);
             Debug.Assert(written == 2);
 

@@ -22,6 +22,13 @@
 // So we can use the declaration of pthread_cond_timedwait_relative_np
 #undef _XOPEN_SOURCE
 #endif
+
+#if defined(TARGET_LINUX)
+#include <linux/futex.h>      /* Definition of FUTEX_* constants */
+#include <sys/syscall.h>      /* Definition of SYS_* constants */
+#include <unistd.h>           /* Declaration of syscall */
+#endif
+
 #include <pthread.h>
 
 #if defined(__clang__)
@@ -220,6 +227,79 @@ void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
     error = pthread_mutex_unlock(&monitor->Mutex);
     assert(error == 0);
 }
+
+#if defined(TARGET_LINUX)
+void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
+{
+    syscall(SYS_futex, address, FUTEX_WAIT_PRIVATE, comparand, NULL, NULL, 0);
+}
+
+int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_t comparand, int32_t timeoutMilliseconds)
+{
+    assert(timeoutMilliseconds >= 0);
+
+    struct timespec timeoutTimeSpec;
+    timeoutTimeSpec.tv_sec  = (uint32_t)timeoutMilliseconds / 1000;
+    timeoutTimeSpec.tv_nsec = ((uint32_t)timeoutMilliseconds % 1000) * 1000 * 1000;
+
+    // the timeoutTimeSpec is relative timeout with CLOCK_MONOTONIC clock by default.
+    long waitResult = syscall(SYS_futex, address, FUTEX_WAIT_PRIVATE, comparand, &timeoutTimeSpec, NULL, 0);
+
+    // possible results: woken, not blocking, interrupted, timeout
+    assert(waitResult == 0 || errno == EAGAIN || errno == EINTR || errno == ETIMEDOUT);
+
+    // normal/immediate/spurious wakes are not timeouts
+    // in release treat unexpected results as spurious wakes
+    return waitResult == 0 || errno != ETIMEDOUT;
+}
+
+void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
+{
+    syscall(SYS_futex, address, FUTEX_WAKE_PRIVATE, 1, NULL, NULL, 0);
+}
+#else // defined(TARGET_LINUX)
+
+// On illumos/Solaris libc's assert is not annotated noreturn, so marking these stubs noreturn would
+// trigger -Winvalid-noreturn there. Only apply the attribute on other platforms.
+#if defined(DEBUG) && !defined(TARGET_SUNOS)
+#define DEBUGNOTRETURN __attribute__((noreturn))
+#else
+#define DEBUGNOTRETURN
+#endif
+
+DEBUGNOTRETURN
+void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
+{
+    (void)address; // unused
+    (void)comparand; // unused
+    assert_msg(false, "Futex is not supported on this platform", 0);
+    // trivial implementation of Wait always wakes spuriously.
+}
+
+DEBUGNOTRETURN
+int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_t comparand, int32_t timeoutMilliseconds)
+{
+    (void)address; // unused
+    (void)comparand; // unused
+    (void)timeoutMilliseconds; // unused
+    assert_msg(false, "Futex is not supported on this platform", 0);
+#if !defined(DEBUG) || defined(TARGET_SUNOS)
+    // trivial implementation of Wait always wakes spuriously.
+    return 1;
+#endif
+}
+
+DEBUGNOTRETURN
+void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
+{
+    (void)address; // unused
+    assert_msg(false, "Futex is not supported on this platform", 0);
+    // trivial implementation of Wake does nothing.
+}
+
+#undef DEBUGNOTRETURN
+
+#endif  // defined(TARGET_LINUX)
 
 int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
 {

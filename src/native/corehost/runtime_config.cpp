@@ -73,7 +73,8 @@ void runtime_config_t::parse(const pal::string_t& path, const pal::string_t& dev
 bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
 {
     // Note: both runtime_config and dev_runtime_config call into the function.
-    // runtime_config will override whatever dev_runtime_config populated.
+    // dev_runtime_config is parsed first. The configProperties from the dev config take precedence
+    // over the configProperties from the runtime config.
     if (opts.IsNull())
     {
         return true;
@@ -93,6 +94,9 @@ bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
         m_properties.reserve(properties_obj.MemberCount());
         for (const auto& property : properties_obj)
         {
+            if (m_properties.count(property.name.GetString()) != 0)
+                continue;
+
             if (property.value.IsString())
             {
                 m_properties[property.name.GetString()] = property.value.GetString();
@@ -353,7 +357,7 @@ bool runtime_config_t::ensure_dev_config_parsed()
     // runtimeconfig.dev.json is never bundled into the single-file app.
     // So, only a file on disk is processed.
     json_parser_t json;
-    if (!json.parse_file(m_dev_path))
+    if (!json.parse_fully_trusted_file(m_dev_path))
     {
         return false;
     }
@@ -407,7 +411,7 @@ bool runtime_config_t::ensure_parsed()
     }
 
     json_parser_t json;
-    if (!json.parse_file(m_path))
+    if (!json.parse_fully_trusted_file(m_path))
     {
         trace::error(_X("Failed to parse file [%s]. %s"), m_path.c_str(), json.get_error_message().c_str());
         return false;

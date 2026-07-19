@@ -33,6 +33,7 @@ IF_DEF(RAW_ULEB128,   IS_NONE, NONE) // <ULEB128 immediate>
 IF_DEF(CODE_SIZE,     IS_NONE, NONE)
 IF_DEF(ULEB128,       IS_NONE, NONE) // <opcode> <ULEB128 immediate>
 IF_DEF(FUNCIDX,       IS_NONE, NONE) // <opcode> <ULEB128 immediate (function index reloc)>
+IF_DEF(GLOBALIDX,     IS_NONE, NONE) // <opcode> <ULEB128 immediate (global index reloc)>
 IF_DEF(SLEB128,       IS_NONE, NONE) // <opcode> <LEB128 immediate (signed)>
 IF_DEF(MEMADDR,       IS_NONE, NONE) // <opcode> <SLEB128 immediate (memory address reloc)>
 IF_DEF(FUNCPTR,       IS_NONE, NONE) // <opcode> <SLEB128 immediate (function pointer reloc)>
@@ -46,6 +47,9 @@ IF_DEF(CALL_INDIRECT, IS_NONE, NONE) // <opcode> <ULEB128 immediate> <ULEB128 im
 IF_DEF(MEMIDX_MEMIDX, IS_NONE, NONE) // <memory index> <memory index>
 IF_DEF(TRY_TABLE,     IS_NONE, NONE) // <opcode> <sig = 0x40> <len = 0x01>
 IF_DEF(CATCH_DECL,    IS_NONE, NONE) // <catch-type> <ULEB128 immediate (type reloc)> <ULEB128 immediate>
+IF_DEF(V128,          IS_NONE, NONE) // <opcode> <16 raw bytes>
+IF_DEF(LANE,          IS_NONE, NONE) // <opcode> <u8 lane index>
+IF_DEF(MEMARG_LANE,   IS_NONE, NONE) // <opcode> <memarg> <u8 lane index>
 
 #undef IF_DEF
 #endif // !DEFINE_ID_OPS

@@ -1,14 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class Bucket : IData<Bucket>
+[CdacType(nameof(DataType.Bucket))]
+internal sealed partial class Bucket : IData<Bucket>
 {
-    static Bucket IData<Bucket>.Create(Target target, TargetPointer address)
-        => new Bucket(target, address);
+    public TargetPointer[] Keys { get; private set; }
+    public TargetPointer[] Values { get; private set; }
 
-    public Bucket(Target target, TargetPointer address)
+    [MemberNotNull(nameof(Keys), nameof(Values))]
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Bucket);
         ulong keysStart = address + (ulong)type.Fields[nameof(Keys)].Offset;
@@ -23,7 +27,4 @@ internal sealed class Bucket : IData<Bucket>
             Values[i] = target.ReadPointer(valuesStart + (ulong)(i * target.PointerSize));
         }
     }
-
-    public TargetPointer[] Keys { get; }
-    public TargetPointer[] Values { get; }
 }

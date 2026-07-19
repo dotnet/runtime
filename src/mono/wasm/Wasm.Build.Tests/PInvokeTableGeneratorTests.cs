@@ -151,10 +151,6 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        // CoreCLR-Wasm does not yet link the user-generated reverse pinvoke table, so
-        // user UnmanagedCallersOnly methods cannot be resolved at runtime.
-        // TODO: enable on CoreCLR once user reverse-thunks are linked into dotnet.native.wasm.
-        [TestCategory("mono")]
         public async Task UnmanagedCallersOnly_Namespaced(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_namespace");
@@ -179,6 +175,57 @@ namespace Wasm.Build.Tests
                 Assert.Contains("A.Conflict.C_\U0001F412", result.TestOutput);
                 Assert.Contains("B.Conflict.C_\U0001F412", result.TestOutput);
             }
+        }
+
+        [Theory]
+        [BuildAndRun()]
+        public async Task UnmanagedCallersOnly_Nested(Configuration config, bool aot)
+        {
+            // Regression coverage for the wasm reverse-P/Invoke (native-to-interp) thunk key of a
+            // nested [UnmanagedCallersOnly] type. Reflection reports the enclosing namespace for a
+            // nested type while the runtime reads the (empty) metadata namespace; if PInvokeCollector
+            // emits the reflection namespace the key never matches, so the lookup returns null -
+            // CoreCLR asserts on the first cold ldftn and Mono traps as "null function". Executed on
+            // browser-wasm in CI for both the Mono and CoreCLR generators (the wasi leg is build-only).
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_nested");
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNested.cs"));
+
+            string output = PublishForVariadicFunctionTests(info, config, aot);
+            Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Namespaced.Outer.Nested.C", result.TestOutput);
+            Assert.Contains("Namespaced.Outer.Nested.Deeper.D", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun()]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/130739")]
+        public async Task UnmanagedCallersOnly_NestedConflict(Configuration config, bool aot)
+        {
+            // The reverse-P/Invoke thunk key drops the enclosing-type chain, keying only on the
+            // simple type name plus the (empty) nested namespace. Two nested types that share a
+            // simple name under different enclosing types therefore collide and currently fail the
+            // build. This encodes the desired behavior (both callbacks resolve and run) and is
+            // skipped until #130739 removes the limitation.
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_nested_conflict");
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNestedConflict.cs"));
+
+            PublishForVariadicFunctionTests(info, config, aot);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Conflicting.OuterA.Conflict.C", result.TestOutput);
+            Assert.Contains("Conflicting.OuterB.Conflict.C", result.TestOutput);
         }
 
         [Theory]
@@ -338,7 +385,7 @@ namespace Wasm.Build.Tests
             // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
             // Assert.Contains("Adding pinvoke signature FD for method 'Test.", output);
 
-            string pinvokeTableFileName = IsCoreClrRuntime ? "pinvoke-table.cpp" : "pinvoke-table.h";
+            string pinvokeTableFileName = IsCoreClrRuntime ? "callhelpers-pinvoke.cpp" : "pinvoke-table.h";
             string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
             // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
             //  for example if the module isn't found
@@ -371,7 +418,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native-mono")] // coreclr ActiveIssue: https://github.com/dotnet/runtime/issues/120897
+        [TestCategory("native-mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
@@ -390,10 +437,6 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        // CoreCLR-Wasm does not yet link the user-generated reverse pinvoke table, so
-        // user UnmanagedCallersOnly methods cannot be resolved at runtime.
-        // TODO: enable on CoreCLR once user reverse-thunks are linked into dotnet.native.wasm.
-        [TestCategory("mono")]
         public async Task UCOWithSpecialCharacters(Configuration config, bool aot)
         {
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";

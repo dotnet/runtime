@@ -3,21 +3,10 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class LoaderHeapBlock : IData<LoaderHeapBlock>
+[CdacType(nameof(DataType.LoaderHeapBlock))]
+internal sealed partial class LoaderHeapBlock : IData<LoaderHeapBlock>
 {
-    static LoaderHeapBlock IData<LoaderHeapBlock>.Create(Target target, TargetPointer address)
-        => new LoaderHeapBlock(target, address);
-
-    public LoaderHeapBlock(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.LoaderHeapBlock);
-
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        VirtualAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(VirtualAddress)].Offset);
-        VirtualSize = target.ReadNUInt(address + (ulong)type.Fields[nameof(VirtualSize)].Offset);
-    }
-
-    public TargetPointer Next { get; init; }
-    public TargetPointer VirtualAddress { get; init; }
-    public TargetNUInt VirtualSize { get; init; }
+    [Field] public TargetPointer Next { get; }
+    [Field] public TargetPointer VirtualAddress { get; }
+    [Field] public TargetNUInt VirtualSize { get; }
 }

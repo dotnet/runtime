@@ -3,17 +3,9 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class EEJitManager : IData<EEJitManager>
+[CdacType(nameof(DataType.EEJitManager))]
+internal sealed partial class EEJitManager : IData<EEJitManager>
 {
-    static EEJitManager IData<EEJitManager>.Create(Target target, TargetPointer address) => new EEJitManager(target, address);
-    public EEJitManager(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.EEJitManager);
-
-        StoreRichDebugInfo = target.ReadField<byte>(address, type, nameof(StoreRichDebugInfo)) != 0;
-        AllCodeHeaps = target.ReadPointerField(address, type, nameof(AllCodeHeaps));
-    }
-
-    public bool StoreRichDebugInfo { get; init; }
-    public TargetPointer AllCodeHeaps { get; init; }
+    [Field] public bool StoreRichDebugInfo { get; }
+    [Field] public TargetPointer AllCodeHeaps { get; }
 }

@@ -83,6 +83,9 @@
 #ifndef HWCAP2_SVESM4
 #define HWCAP2_SVESM4   (1 << 6)
 #endif
+#ifndef HWCAP2_CSSC
+#define HWCAP2_CSSC   (1UL << 34)
+#endif
 
 #endif
 
@@ -456,7 +459,7 @@ int minipal_getcpufeatures(void)
             __cpuidex(cpuidInfo, 0x80000021, 0x0);
             if ((cpuidInfo[CPUID_EAX] & (1 << 23)) != 0)
             {
-                result |= XArchIntrinsicConstants_AVX512Bmm;
+                result |= XArchIntrinsicConstants_Avx512Bmm;
             }
         }
 
@@ -566,6 +569,9 @@ int minipal_getcpufeatures(void)
     if (hwCap2 & HWCAP2_SVESM4)
         result |= ARM64IntrinsicConstants_SveSm4;
 
+    if (hwCap2 & HWCAP2_CSSC)
+        result |= ARM64IntrinsicConstants_Cssc;
+
 #else // !HAVE_AUXV_HWCAP_H
 
 #if HAVE_SYSCTLBYNAME
@@ -636,6 +642,9 @@ int minipal_getcpufeatures(void)
 
     if ((sysctlbyname("hw.optional.arm.FEAT_SVE_SM4", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_SveSm4;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_CSSC", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_Cssc;
 #endif // HAVE_SYSCTLBYNAME
 #endif // HAVE_AUXV_HWCAP_H
 #endif // HOST_UNIX
@@ -718,6 +727,8 @@ int minipal_getcpufeatures(void)
     {
         result |= ARM64IntrinsicConstants_SveSm4;
     }
+
+    // TODO: IsProcessorFeaturePresent doesn't support CSSC yet.
 #endif // HOST_WINDOWS
 
 #endif // HOST_ARM64
@@ -749,6 +760,11 @@ int minipal_getcpufeatures(void)
         if (pairs[0].value & RISCV_HWPROBE_EXT_ZBS)
         {
             result |= RiscV64IntrinsicConstants_Zbs;
+        }
+
+        if (pairs[0].value & RISCV_HWPROBE_EXT_ZICOND)
+        {
+            result |= RiscV64IntrinsicConstants_Zicond;
         }
     }
 
