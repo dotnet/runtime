@@ -179,12 +179,24 @@ namespace System.Text.Json.Serialization.Metadata
 
         public override Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo)
         {
-            return CreatePropertyGetter<object, TProperty>(propertyInfo);
+            MethodInfo getMethodInfo = propertyInfo.GetMethod!;
+#if NET
+            MethodInvoker invoker = MethodInvoker.Create(getMethodInfo);
+            return obj => (TProperty)invoker.Invoke(obj)!;
+#else
+            return obj => (TProperty)getMethodInfo.InvokeNoWrapExceptions(obj, null)!;
+#endif
         }
 
         public override Func<TDeclaringType, TProperty> CreatePropertyGetter<TDeclaringType, TProperty>(PropertyInfo propertyInfo)
         {
             MethodInfo getMethodInfo = propertyInfo.GetMethod!;
+
+            // We can directly wrap a delegate over the getter only if the declaring type is a reference type.
+            if (!typeof(TDeclaringType).IsValueType)
+            {
+                return getMethodInfo.CreateDelegate<Func<TDeclaringType, TProperty>>();
+            }
 
 #if NET
             MethodInvoker invoker = MethodInvoker.Create(getMethodInfo);
