@@ -27,11 +27,12 @@ Volatile<LONG> g_ShutdownCrstUsageCount = 0;
 //-----------------------------------------------------------------
 // Initialize critical section
 //-----------------------------------------------------------------
-VOID CrstBase::InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags)
+bool CrstBase::InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags)
 {
-    CONTRACTL {
-        THROWS;
-        WRAPPER(GC_TRIGGERS);
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
     } CONTRACTL_END;
 
     _ASSERTE((flags & CRST_INITIALIZED) == 0);
@@ -45,6 +46,7 @@ VOID CrstBase::InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags)
 #ifdef _DEBUG
     DebugInit(crstType, flags);
 #endif
+    return suc;
 }
 
 //-----------------------------------------------------------------

@@ -26,7 +26,7 @@ class CrstStatic
 #endif
 
 public:
-    bool InitNoThrow(CrstType eType, CrstFlags eFlags = CRST_DEFAULT)
+    bool Init(CrstType eType, CrstFlags eFlags = CRST_DEFAULT)
     {
         return m_cs.Initialize();
     }

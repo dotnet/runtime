@@ -8,16 +8,19 @@
 #include "holder.h"
 #include "Crst.h"
 
-void CrstStatic::Init(CrstType eType, CrstFlags eFlags)
+bool CrstStatic::Init(CrstType eType, CrstFlags eFlags)
 {
     UNREFERENCED_PARAMETER(eType);
     UNREFERENCED_PARAMETER(eFlags);
+
+    bool result = true;
 #ifndef DACCESS_COMPILE
 #if defined(_DEBUG)
     m_uiOwnerId.Clear();
 #endif // _DEBUG
-    minipal_mutex_init(&m_Lock);
+    result = minipal_mutex_init(&m_Lock);
 #endif // !DACCESS_COMPILE
+    return result;
 }
 
 void CrstStatic::Destroy()

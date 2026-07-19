@@ -37,8 +37,7 @@ enum CrstFlags
 class CrstStatic
 {
 public:
-    void Init(CrstType eType, CrstFlags eFlags = CRST_DEFAULT);
-    bool InitNoThrow(CrstType eType, CrstFlags eFlags = CRST_DEFAULT) { Init(eType, eFlags); return true; }
+    bool Init(CrstType eType, CrstFlags eFlags = CRST_DEFAULT);
     void Destroy();
     void Enter() { CrstStatic::Enter(this); }
     void Leave() { CrstStatic::Leave(this); }
