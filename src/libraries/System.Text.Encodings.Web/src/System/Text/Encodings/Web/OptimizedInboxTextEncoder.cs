@@ -324,7 +324,7 @@ namespace System.Text.Encodings.Web
 
                 dstIdx = dstIdxTemp;
                 srcIdx++;
-                goto ScalarProcessed;
+                continue;
 
             NotAscii:
 
