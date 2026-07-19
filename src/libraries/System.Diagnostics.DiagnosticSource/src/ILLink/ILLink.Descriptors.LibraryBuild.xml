@@ -4,5 +4,9 @@
       <!-- Used by System.Private.CoreLib via reflection to init the EventSource -->
       <method name="GetInstance" />
     </type>
+    <type fullname="System.Diagnostics.Activity">
+      <!-- Read by System.Private.CoreLib's EventSource write path via UnsafeAccessor to enrich events with the current trace id -->
+      <method name="TryGetCurrentTraceId" />
+    </type>
   </assembly>
 </linker>

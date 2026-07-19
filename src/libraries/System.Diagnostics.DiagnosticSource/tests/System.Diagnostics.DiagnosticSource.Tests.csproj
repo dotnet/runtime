@@ -61,6 +61,8 @@
     <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />
     <Compile Include="RuntimeMetricsTests.cs" />
     <Compile Include="TestNotSupported.cs" />
+    <Compile Include="AsyncProfilerTraceIdTests.cs" />
+    <Compile Include="AsyncProfilerTraceIdTests.Parsing.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

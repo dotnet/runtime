@@ -3933,6 +3933,24 @@ namespace System.Diagnostics.Tracing
 #endregion
     }
 
+    // Reads the current Activity's trace id for the EventSource write path without a hard reference to
+    // System.Diagnostics.DiagnosticSource (CoreLib cannot reference that assembly). The bind is resolved at
+    // runtime through UnsafeAccessor; an ILLink descriptor in DiagnosticSource preserves the target method.
+    internal static class EventTraceContext
+    {
+        // Copies the current W3C Activity's 16-byte trace id into the provided span.
+        // Returns false when there is no current W3C-format Activity.
+        public static bool TryGetCurrentTraceId(Span<byte> traceId)
+        {
+            return TryGetCurrentTraceId(null, traceId);
+
+            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "TryGetCurrentTraceId")]
+            static extern bool TryGetCurrentTraceId(
+                [UnsafeAccessorType("System.Diagnostics.Activity, System.Diagnostics.DiagnosticSource")] object? activityType,
+                Span<byte> traceId);
+        }
+    }
+
     // This type is logically just more static EventSource functionality but it needs to be a separate class
     // to ensure that the IL linker can remove unused methods in it. Methods defined within the EventSource type
     // are never removed because EventSource has the potential to reflect over its own members.

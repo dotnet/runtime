@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
@@ -34,6 +35,7 @@ namespace System.Runtime.CompilerServices
             public const EventKeywords ResumeStateMachineAsyncCallstack = (EventKeywords)0x8000;
             public const EventKeywords ResumeStateMachineAsyncMethod = (EventKeywords)0x10000;
             public const EventKeywords CompleteStateMachineAsyncMethod = (EventKeywords)0x20000;
+            public const EventKeywords TraceIdChanged = (EventKeywords)0x40000;
         }
 
         public const EventKeywords AsyncEventKeywords =
@@ -56,7 +58,6 @@ namespace System.Runtime.CompilerServices
             Keywords.ResumeStateMachineAsyncMethod |
             Keywords.CompleteStateMachineAsyncMethod;
 
-
         public const int FlushCommand = 1;
 
         //----------------------- Event IDs (must be unique) -----------------------
@@ -71,7 +72,10 @@ namespace System.Runtime.CompilerServices
             Version = 1,
             Opcode = EventOpcode.Info,
             Level = EventLevel.Informational,
-            Keywords = AsyncEventKeywords,
+            // This blob carries every buffered payload, including trace-id records under the decoupled
+            // transport, so its keyword must include TraceIdChanged; otherwise a trace-id-only session buffers
+            // records that are then dropped here because the carrier's keyword is inactive.
+            Keywords = AsyncEventKeywords | Keywords.TraceIdChanged,
             Message = "")]
         public void AsyncEvents(byte[] buffer)
         {
@@ -99,6 +103,27 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        // --------------------------------------------------------------------------------------------
+        // Synchronous trace-id timeline
+        //
+        // The synchronous change-points (Activity.Current transitions) are produced in
+        // System.Diagnostics.DiagnosticSource and reach CoreLib through UnsafeAccessor:
+        //   * AsyncProfilerTraceIdKeyword.Register - installs the CurrentChanged (un)subscribe callback.
+        //   * EmitCurrentTraceIdChanged - called from the CurrentChanged handler; routes the change-point to
+        //     the per-thread buffer, the same transport the async change-points use.
+        // --------------------------------------------------------------------------------------------
+
+        [NonEvent]
+        internal static void EmitCurrentTraceIdChanged(ReadOnlySpan<byte> traceId)
+        {
+            if (!AsyncProfilerTraceIdKeyword.Enabled)
+            {
+                return;
+            }
+
+            AsyncProfiler.EmitSyncTraceIdChanged(traceId);
+        }
+
         /// <summary>
         /// Get callbacks when the ETW sends us commands
         /// </summary>
@@ -118,10 +143,43 @@ namespace System.Runtime.CompilerServices
             // while the source is being disabled.
             if (keywords == 0 && IsEnabled())
             {
-                keywords = AsyncEventKeywords;
+                keywords = AsyncEventKeywords | Keywords.TraceIdChanged;
             }
 
             AsyncProfiler.Config.Update(m_level, keywords);
+
+            // Publish the trace-id keyword transition so DiagnosticSource can (un)subscribe
+            // Activity.CurrentChanged. Use IsEnabled (the aggregate across all sessions), not this one
+            // command's mask, so an unrelated enable/disable does not spuriously toggle the subscription.
+            AsyncProfilerTraceIdKeyword.Set(IsEnabled(EventLevel.Informational, Keywords.TraceIdChanged));
+        }
+    }
+
+    // Carries the trace-id keyword's on/off state and the DiagnosticSource-side CurrentChanged subscription
+    // toggle. Kept separate from AsyncProfilerEventSource so that registering the bridge on first use of
+    // Activity does not construct the event source; the source is built only when a session enables it.
+    internal static class AsyncProfilerTraceIdKeyword
+    {
+        private static int s_enabled;
+        private static Action<bool>? s_subscriber;
+
+        // True while any session has the trace-id keyword enabled. Read on the synchronous emit path as a
+        // cheap guard against a keyword-off race between a CurrentChanged transition and its emit.
+        internal static bool Enabled => Volatile.Read(ref s_enabled) != 0;
+
+        // Installs the CurrentChanged (un)subscribe callback on first use of Activity, then syncs it to the
+        // current state so a keyword enabled before Activity was first used still subscribes.
+        internal static void Register(Action<bool> callback)
+        {
+            Interlocked.Exchange(ref s_subscriber, callback);
+            callback(Volatile.Read(ref s_enabled) != 0);
+        }
+
+        // Drives the subscription from OnEventCommand so change-points flow only while the keyword is enabled.
+        internal static void Set(bool enabled)
+        {
+            Interlocked.Exchange(ref s_enabled, enabled ? 1 : 0);
+            Volatile.Read(ref s_subscriber)?.Invoke(enabled);
         }
     }
 }
