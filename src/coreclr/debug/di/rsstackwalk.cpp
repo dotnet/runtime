@@ -588,7 +588,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // Create the native frame.
         CordbNativeFrame* pNativeFrame = new CordbNativeFrame(m_pCordbThread,
-                                                              frameData.fp,
+                                                              FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(frameData.fp)),
                                                               pNativeCode,
                                                               (SIZE_T)pJITFuncData->nativeOffset,
                                                               (TADDR)frameData.v.taAmbientESP,
@@ -718,7 +718,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         _ASSERTE(pCurrentAppDomain != NULL);
 
         CordbRuntimeUnwindableFrame * pRuntimeFrame = new CordbRuntimeUnwindableFrame(m_pCordbThread,
-                                                                                      frameData.fp,
+                                                                                      FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(frameData.fp)),
                                                                                       pCurrentAppDomain,
                                                                                       &frameCtx);
 
@@ -784,7 +784,7 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
 
     while (true)
     {
-        PCODE diagnosticIP;
+        CORDB_ADDRESS diagnosticIP = 0;
         CORDB_ADDRESS nextContinuation;
         UINT32 state;
 
@@ -881,7 +881,7 @@ HRESULT CordbAsyncStackWalk::Next()
         if (m_continuationAddress == 0)
             ThrowHR(CORDBG_E_PAST_END_OF_STACK);
 
-        PCODE diagnosticIP;
+        CORDB_ADDRESS diagnosticIP = 0;
         CORDB_ADDRESS nextContinuation;
         UINT32 state;
         IfFailThrow(m_pProcess->GetDAC()->ParseContinuation(

@@ -47,18 +47,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <SuppressTrimAnalysisWarnings Condition="'$(SuppressTrimAnalysisWarnings)' == '' And '$(TrimmerDefaultAction)' != 'link'">true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
-  <!--
-    Targets supporting Razor MSBuild integration. Contain support for generating C# code using Razor
-    and including the generated code in the project lifecycle, including compiling, publishing and producing
-    nuget packages.
-  -->
-
   <PropertyGroup>
-    <!-- Paths to tools, tasks, and extensions are calculated relative to the WebAssemblySdkDirectoryRoot. This can be modified to test a local build. -->
-    <_WebAssemblySdkToolsDirectory Condition="'$(_WebAssemblySdkToolsDirectory)'==''">$(MSBuildThisFileDirectory)..\tools\</_WebAssemblySdkToolsDirectory>
-    <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' == 'Core'">net11.0</_WebAssemblySdkTasksTFM>
-    <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' != 'Core'">net472</_WebAssemblySdkTasksTFM>
-    <_WebAssemblySdkTasksAssembly Condition="'$(_WebAssemblySdkTasksAssembly)' == ''">$(_WebAssemblySdkToolsDirectory)\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
+    <!-- Directory containing the Pack.Tasks assembly. This can be overridden to test a local build. -->
+    <_WebAssemblySdkTasksDirectory Condition="'$(_WebAssemblySdkTasksDirectory)' == '' and '$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tools\net\</_WebAssemblySdkTasksDirectory>
+    <_WebAssemblySdkTasksDirectory Condition="'$(_WebAssemblySdkTasksDirectory)' == '' and '$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tools\netframework\</_WebAssemblySdkTasksDirectory>
+    <_WebAssemblySdkTasksAssembly Condition="'$(_WebAssemblySdkTasksAssembly)' == ''">$(_WebAssemblySdkTasksDirectory)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
 
     <!-- Compression -->
     <CompressionIncludePatterns>$(CompressionIncludePatterns);_framework\**</CompressionIncludePatterns>
@@ -209,6 +202,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == ''">0</_WasmWebcilVersion>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
+      <!-- With AOT, each AOT image hard-binds to every assembly it references when the image is
+           loaded. A BlazorWebAssemblyLazyLoad assembly is not present at runtime startup, so any
+           AOT image that references it would be marked unusable and its methods would fall back to
+           the interpreter (which can then hit unsupported constructs and abort). Enable lazy AOT
+           assembly loading so referenced lazy assemblies are only bound when they are loaded. -->
+      <_BlazorWebAssemblyRuntimeOptions Condition="'$(RunAOTCompilation)' == 'true' and @(BlazorWebAssemblyLazyLoad->Count()) != 0 and !$(_BlazorWebAssemblyRuntimeOptions.Contains('--aot-lazy-assembly-load'))">$([System.String]::Concat('$(_BlazorWebAssemblyRuntimeOptions)', ' --aot-lazy-assembly-load').Trim())</_BlazorWebAssemblyRuntimeOptions>
       <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == '' and '$(_TargetingNET100OrLater)' == 'true'">true</_WasmInlineBootConfig>
       <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == ''">false</_WasmInlineBootConfig>
       <!-- true = wasm assets will have hard fingerprint; false = wasm assets won't have even soft fingerprint -->
@@ -688,7 +687,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmBootJsonBuildPropertyStamp"
     DependsOnTargets="_ResolveBuildWasmBootJsonEndpoints">
     <PropertyGroup>
-      <_WasmBootJsonBuildStampContent>$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)</_WasmBootJsonBuildStampContent>
+      <_WasmBootJsonBuildStampContent>$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonBuildStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-build.stamp"
@@ -740,13 +739,13 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsPublish="false"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
+      UseMonoRuntime="$(UseMonoRuntime)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
       LogExitCode="$(WasmTestLogExitCode)"
       AsyncFlushOnExit="$(WasmTestAsyncFlushOnExit)"
-      ForwardConsole="$(WasmTestForwardConsole)"
       />
 
     <ItemGroup>
@@ -1180,7 +1179,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteWasmPublishBootJsonPropertyStamp"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
     <PropertyGroup>
-      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)</_WasmBootJsonPublishStampContent>
+      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(UseMonoRuntime)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)</_WasmBootJsonPublishStampContent>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
@@ -1227,13 +1226,13 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsPublish="true"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
+      UseMonoRuntime="$(UseMonoRuntime)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
       LogExitCode="$(WasmTestLogExitCode)"
       AsyncFlushOnExit="$(WasmTestAsyncFlushOnExit)"
-      ForwardConsole="$(WasmTestForwardConsole)"
       />
 
     <ItemGroup>

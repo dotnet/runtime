@@ -4439,10 +4439,7 @@ namespace System.Runtime.Intrinsics
             // not produce correct results for arbitrary inputs. It adjusts the bit count
             // assuming that sequences of 1 or 0 were in groups of 4 bits per byte.
 
-            unsafe
-            {
-                return bitCount >>> (2 + int.Log2(sizeof(T)));
-            }
+            return bitCount >>> (2 + int.Log2(sizeof(T)));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

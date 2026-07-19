@@ -956,8 +956,9 @@ namespace System.Net.Security
             token.ReleasePayload();
 
             ProtocolToken alertToken = default;
+            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
 
-            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, ref sslPolicyErrors, out X509ChainStatusFlags chainStatus))
             {
                 alertToken.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.CertValidationFailed, CreateCertificateValidationException(_sslAuthenticationOptions, sslPolicyErrors, chainStatus));
                 return alertToken;
@@ -1111,7 +1112,7 @@ namespace System.Net.Security
         --*/
 
         //This method validates a remote certificate.
-        internal bool VerifyRemoteCertificate(SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        internal bool VerifyRemoteCertificate(SslCertificateTrust? trust, ref ProtocolToken alertToken, ref SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
             // We need to note the number of certs in ExtraStore that were
             // provided (by the user), we will add more from the received peer
@@ -1126,7 +1127,7 @@ namespace System.Net.Security
             {
                 X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
 
-                return VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out sslPolicyErrors, out chainStatus);
+                return VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, ref sslPolicyErrors, out chainStatus);
             }
             finally
             {
@@ -1163,10 +1164,9 @@ namespace System.Net.Security
             X509Chain? chain,
             SslCertificateTrust? trust,
             ref ProtocolToken alertToken,
-            out SslPolicyErrors sslPolicyErrors,
+            ref SslPolicyErrors sslPolicyErrors,
             out X509ChainStatusFlags chainStatus)
         {
-            sslPolicyErrors = SslPolicyErrors.None;
             chainStatus = X509ChainStatusFlags.NoError;
 
             bool success = false;

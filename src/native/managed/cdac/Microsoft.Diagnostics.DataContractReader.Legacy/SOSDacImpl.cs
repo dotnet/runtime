@@ -717,7 +717,6 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetClrWatsonBuckets(ClrDataAddress thread, void* pGenericModeBlock)
     {
         int hr = HResults.S_OK;
-        Contracts.IThread threadContract = _target.Contracts.Thread;
         byte[] buckets = Array.Empty<byte>();
         try
         {
@@ -727,7 +726,7 @@ public sealed unsafe partial class SOSDacImpl
             if (thread == 0 || pGenericModeBlock == null)
                 throw new ArgumentException();
 
-            buckets = threadContract.GetWatsonBuckets(thread.ToTargetPointer(_target));
+            buckets = _target.Contracts.WindowsErrorReporting.GetWatsonBuckets(thread.ToTargetPointer(_target));
             if (buckets.Length != 0)
             {
                 var dest = new Span<byte>(pGenericModeBlock, buckets.Length);
@@ -1058,7 +1057,6 @@ public sealed unsafe partial class SOSDacImpl
 
             IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-            ISignature signatureContract = _target.Contracts.Signature;
 
             TargetPointer fieldDescTargetPtr = fieldDesc.ToTargetPointer(_target);
             CorElementType fieldDescType = rtsContract.GetFieldDescType(fieldDescTargetPtr);
@@ -1074,35 +1072,31 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
             MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
             FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
+
+            TypeHandle foundTypeHandle = rtsContract.GetFieldDescApproxTypeHandle(fieldDescTargetPtr);
             try
             {
-                // try to completely decode the signature
-                TypeHandle foundTypeHandle = signatureContract.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
-
                 // get the MT of the type
                 // This is an implementation detail of the DAC that we replicate here to get method tables for non-MT types
                 // that we can return to SOS for pretty-printing.
                 // In the future we may want to return a TypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
                 // DAC equivalent: src/coreclr/vm/typehandle.inl TypeHandle::GetMethodTable
-                if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
+                if (foundTypeHandle.IsNull)
+                    // if we can't find the MT (e.g in a minidump)
+                    data->MTOfType = 0;
+                else if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
                     data->MTOfType = rtsContract.GetPrimitiveType(CorElementType.U).Address.ToClrDataAddress(_target);
                 // array MTs
                 else if (rtsContract.IsArray(foundTypeHandle, out _))
                     data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
-                else
+                else if (rtsContract.HasTypeParam(foundTypeHandle))
                 {
-                    try
-                    {
-                        // value typedescs
-                        TypeHandle paramTypeHandle = rtsContract.GetTypeParam(foundTypeHandle);
-                        data->MTOfType = paramTypeHandle.Address.ToClrDataAddress(_target);
-                    }
-                    catch (ArgumentException)
-                    {
-                        // non-array MTs
-                        data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
-                    }
+                    // value typedescs
+                    TypeHandle paramTypeHandle = rtsContract.GetTypeParam(foundTypeHandle);
+                    data->MTOfType = paramTypeHandle.Address.ToClrDataAddress(_target);
                 }
+                else
+                    data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
             }
             catch (VirtualReadException)
             {
@@ -1146,7 +1140,9 @@ public sealed unsafe partial class SOSDacImpl
             data->bIsThreadLocal = rtsContract.IsFieldDescThreadStatic(fieldDescTargetPtr) ? 1 : 0;
             data->bIsContextLocal = 0;
             data->bIsStatic = rtsContract.IsFieldDescStatic(fieldDescTargetPtr) ? 1 : 0;
-            data->NextField = fieldDescTargetPtr + _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
+            data->NextField = rtsContract.TryGetFieldDescNext(fieldDescTargetPtr, out TargetPointer nextFieldDesc)
+                ? nextFieldDesc.ToClrDataAddress(_target)
+                : 0;
         }
         catch (System.Exception ex)
         {
@@ -1171,7 +1167,10 @@ public sealed unsafe partial class SOSDacImpl
                 Debug.Assert(data->bIsThreadLocal == dataLocal.bIsThreadLocal, $"cDAC: {data->bIsThreadLocal}, DAC: {dataLocal.bIsThreadLocal}");
                 Debug.Assert(data->bIsContextLocal == dataLocal.bIsContextLocal, $"cDAC: {data->bIsContextLocal}, DAC: {dataLocal.bIsContextLocal}");
                 Debug.Assert(data->bIsStatic == dataLocal.bIsStatic, $"cDAC: {data->bIsStatic}, DAC: {dataLocal.bIsStatic}");
-                Debug.Assert(data->NextField == dataLocal.NextField, $"cDAC: {data->NextField:x}, DAC: {dataLocal.NextField:x}");
+                // For the last field in a type, the legacy DAC returns a pointer one element past the end of
+                // the FieldDesc array (not a valid FieldDesc), whereas the cDAC's TryGetFieldDescNext reports
+                // no next field, which we surface as 0. Tolerate that intentional difference.
+                Debug.Assert(data->NextField == dataLocal.NextField || data->NextField == 0, $"cDAC: {data->NextField:x}, DAC: {dataLocal.NextField:x}");
             }
         }
 #endif
@@ -1637,7 +1636,7 @@ public sealed unsafe partial class SOSDacImpl
                     StrongReference = h.StrongReference ? 1 : 0,
                     RefCount = h.RefCount,
                     JupiterRefCount = 0,
-                    IsPegged = h.IsPegged ? 1 : 0,
+                    IsPegged = 0,
                 };
             }
 
@@ -4740,27 +4739,27 @@ public sealed unsafe partial class SOSDacImpl
             int iterationMax = 8192;
 
             Contracts.ILoader loader = _target.Contracts.Loader;
-            TargetPointer block = loader.GetFirstLoaderHeapBlock(loaderHeapAddr);
-            TargetPointer firstBlock = block;
+            using IEnumerator<Contracts.LoaderHeapBlock> blocks = loader.EnumerateLoaderHeapBlocks(loaderHeapAddr).GetEnumerator();
             int i = 0;
-            while (block != TargetPointer.Null && i++ < iterationMax)
+            try
             {
-                Contracts.LoaderHeapBlockData blockData;
-                try
+                while (i < iterationMax && blocks.MoveNext())
                 {
-                    blockData = loader.GetLoaderHeapBlockData(block);
-                }
-                catch (VirtualReadException)
-                {
-                    throw new NullReferenceException();
-                }
-                pCallback(blockData.Address.Value, (nuint)blockData.Size.Value, block == firstBlock ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+                    i++;
+                    Contracts.LoaderHeapBlock block = blocks.Current;
+                    pCallback(block.Address.Value, (nuint)block.Size.Value, i == 1 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 #if DEBUG
-                DebugTraverseLoaderHeapBlocks.Add((blockData.Address.Value, (nuint)blockData.Size.Value));
+                    DebugTraverseLoaderHeapBlocks.Add((block.Address.Value, (nuint)block.Size.Value));
 #endif
-                block = blockData.NextBlock;
-                if (block == firstBlock)
-                    throw new NullReferenceException();
+                }
+            }
+            catch (VirtualReadException)
+            {
+                throw new NullReferenceException();
+            }
+            catch (InvalidOperationException)
+            {
+                throw new NullReferenceException();
             }
             if (i >= iterationMax)
                 hr = HResults.S_FALSE;

@@ -644,7 +644,6 @@ internal struct GC_1 : IGC
         HandleData handleData = default;
         handleData.Handle = handleAddress;
         handleData.Type = GetInternalHandleType(type);
-        handleData.IsPegged = false;
         handleData.StrongReference = IsStrongReference(type);
         if (HasSecondary(type))
         {
