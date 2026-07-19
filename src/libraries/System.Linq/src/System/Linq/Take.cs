@@ -117,63 +117,67 @@ namespace System.Linq
                 // capacity. Capture it now because `startIndex` is repurposed below as the recomputed start index.
                 int capacity = startIndex;
 
-                TSource[] buffer;
-                int bufferCount; // number of valid elements currently retained
-                int head;        // logical index of the oldest retained element (only advances once the ring is full)
+                TSource[]? buffer = null;
+                int bufferCount = 0; // number of valid elements currently retained
+                int head = 0;        // logical index of the oldest retained element (only advances once the ring is full)
 
-                // TakeLast compat: enumerator should be disposed before yielding the first element.
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                // Own the rented buffer for the whole operation with a single finally. Buffering, the source
+                // enumerator's disposal, and yielding can each throw; this returns the buffer exactly once on every
+                // path (including abandoned enumeration) and never double-returns, because the buffer variable always
+                // identifies the single array currently rented from the pool.
+                try
                 {
-                    if (!e.MoveNext())
+                    // TakeLast compat: enumerator should be disposed before yielding the first element.
+                    using (IEnumerator<TSource> e = source.GetEnumerator())
                     {
-                        yield break;
-                    }
-
-                    buffer = ArrayPool<TSource>.Shared.Rent(Math.Min(startIndex, 4));
-                    buffer[0] = e.Current;
-                    bufferCount = 1;
-                    head = 0;
-                    count = 1;
-
-                    while (e.MoveNext())
-                    {
-                        if (count < startIndex)
+                        if (!e.MoveNext())
                         {
-                            // The retained window isn't full yet; append, growing the pooled buffer if needed.
-                            if (bufferCount == buffer.Length)
-                            {
-                                int newSize = (int)Math.Min((uint)capacity, 2 * (uint)buffer.Length);
-                                TSource[] newBuffer = ArrayPool<TSource>.Shared.Rent(newSize);
-                                Array.Copy(buffer, newBuffer, bufferCount);
-                                ReturnToPool(buffer);
-                                buffer = newBuffer;
-                            }
-
-                            buffer[bufferCount++] = e.Current;
-                            ++count;
+                            yield break;
                         }
-                        else
+
+                        buffer = ArrayPool<TSource>.Shared.Rent(Math.Min(startIndex, 4));
+                        buffer[0] = e.Current;
+                        bufferCount = 1;
+                        head = 0;
+                        count = 1;
+
+                        while (e.MoveNext())
                         {
-                            // The window is full; overwrite the oldest element (ring buffer of capacity `startIndex`).
-                            do
+                            if (count < startIndex)
                             {
-                                buffer[head] = e.Current;
-                                head = head + 1 == capacity ? 0 : head + 1;
-                                checked { ++count; }
-                            } while (e.MoveNext());
-                            break;
+                                // The retained window isn't full yet; append, growing the pooled buffer if needed.
+                                if (bufferCount == buffer.Length)
+                                {
+                                    int newSize = (int)Math.Min((uint)capacity, 2 * (uint)buffer.Length);
+                                    TSource[] newBuffer = ArrayPool<TSource>.Shared.Rent(newSize);
+                                    Array.Copy(buffer, newBuffer, bufferCount);
+                                    ReturnToPool(buffer);
+                                    buffer = newBuffer;
+                                }
+
+                                buffer[bufferCount++] = e.Current;
+                                ++count;
+                            }
+                            else
+                            {
+                                // The window is full; overwrite the oldest element (ring buffer of capacity `startIndex`).
+                                do
+                                {
+                                    buffer[head] = e.Current;
+                                    head = head + 1 == capacity ? 0 : head + 1;
+                                    checked { ++count; }
+                                } while (e.MoveNext());
+                                break;
+                            }
                         }
                     }
 
                     Debug.Assert(bufferCount == Math.Min(count, startIndex));
-                }
 
-                startIndex = CalculateStartIndex(isStartIndexFromEnd: true, startIndex, count);
-                endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, count);
-                Debug.Assert(endIndex - startIndex <= bufferCount);
+                    startIndex = CalculateStartIndex(isStartIndexFromEnd: true, startIndex, count);
+                    endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, count);
+                    Debug.Assert(endIndex - startIndex <= bufferCount);
 
-                try
-                {
                     // The retained window holds `bufferCount` elements in order starting at `head`. Its first
                     // element corresponds to the recomputed original index `startIndex`, so the elements to yield
                     // are simply the first (endIndex - startIndex) of the window.
@@ -186,7 +190,10 @@ namespace System.Linq
                 }
                 finally
                 {
-                    ReturnToPool(buffer);
+                    if (buffer is not null)
+                    {
+                        ReturnToPool(buffer);
+                    }
                 }
             }
             else
