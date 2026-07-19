@@ -770,7 +770,7 @@ namespace Microsoft.Extensions.Configuration
             MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
             PropertyInfo indexerProperty = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
 
-            object?[] indexerArguments = new object?[1];
+            object?[]? indexerArguments = null;
 
             foreach (IConfigurationSection child in config.GetChildren())
             {
@@ -795,6 +795,7 @@ namespace Microsoft.Extensions.Configuration
                         true);
                     if (valueBindingPoint.HasNewValue)
                     {
+                        indexerArguments ??= new object?[1];
                         indexerArguments[0] = key;
                         indexerProperty.SetValue(dictionary, valueBindingPoint.Value, indexerArguments);
                     }
@@ -821,7 +822,7 @@ namespace Microsoft.Extensions.Configuration
             // ICollection<T> is guaranteed to have exactly one parameter
             Type itemType = collectionType.GenericTypeArguments[0];
             MethodInfo? addMethod = collectionType.GetMethod("Add", DeclaredOnlyLookup);
-            object?[]? addArguments = addMethod is not null ? new object?[1] : null;
+            object?[]? addArguments = null;
 
             foreach (IConfigurationSection section in config.GetChildren())
             {
@@ -834,10 +835,11 @@ namespace Microsoft.Extensions.Configuration
                         config: section,
                         options: options,
                         true);
-                    if (itemBindingPoint.HasNewValue && addArguments is not null)
+                    if (itemBindingPoint.HasNewValue && addMethod is not null)
                     {
+                        addArguments ??= new object?[1];
                         addArguments[0] = itemBindingPoint.Value;
-                        addMethod!.Invoke(collection, addArguments);
+                        addMethod.Invoke(collection, addArguments);
                     }
                 }
                 catch (Exception ex)
