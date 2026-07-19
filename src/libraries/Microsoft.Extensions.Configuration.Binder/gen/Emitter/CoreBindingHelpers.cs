@@ -1039,6 +1039,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (member.CanGet)
                 {
+                    if (!canSet)
+                    {
+                        _writer.WriteLine($"{effectiveMemberType.TypeRef.FullyQualifiedName}? {tempIdentifier} = {memberAccessExpr};");
+                        EmitStartBlock($"if ({tempIdentifier} is not null)");
+                        EmitBindingLogic(
+                            effectiveMemberType,
+                            tempIdentifier,
+                            configArgExpr,
+                            InitializationKind.None,
+                            ValueDefaulting.None);
+                        EmitEndBlock();
+                        return;
+                    }
+
                     targetObjAccessExpr = memberAccessExpr;
                     initKind = InitializationKind.AssignmentWithNullCheck;
                 }
