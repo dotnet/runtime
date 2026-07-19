@@ -77,9 +77,13 @@ namespace System.Linq
             if (e.MoveNext())
             {
                 // Now that we know we have at least one item, allocate an initial storage array. This is not
-                // the array we'll yield.  It starts out small in order to avoid significantly overallocating
-                // when the source has many fewer elements than the chunk size.
-                int arraySize = Math.Min(size, 4);
+                // the array we'll yield. If the source's count is known up front, size the first chunk exactly
+                // (capped at the chunk size) so that filling it involves no growth/resizes. Otherwise start
+                // small to avoid significantly overallocating when the source has many fewer elements than the
+                // chunk size; the fill loop below still grows the array as needed.
+                int arraySize = source.TryGetNonEnumeratedCount(out int countHint) && countHint > 0 ?
+                    Math.Min(size, countHint) :
+                    Math.Min(size, 4);
                 int i;
                 do
                 {
