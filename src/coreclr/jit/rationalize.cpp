@@ -372,40 +372,55 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
         }
 #endif // TARGET_XARCH
 
-        case NI_Vector128_Shuffle:
-        case NI_Vector128_ShuffleNative:
-        case NI_Vector128_ShuffleNativeFallback:
-#if defined(TARGET_XARCH)
-        case NI_Vector256_Shuffle:
-        case NI_Vector256_ShuffleNative:
-        case NI_Vector256_ShuffleNativeFallback:
-        case NI_Vector512_Shuffle:
-        case NI_Vector512_ShuffleNative:
-        case NI_Vector512_ShuffleNativeFallback:
-#elif defined(TARGET_ARM64)
-        case NI_Vector64_Shuffle:
-        case NI_Vector64_ShuffleNative:
-        case NI_Vector64_ShuffleNativeFallback:
-#endif
+#if !defined(TARGET_WASM)
+        case NI_Vector_CreateGeometricSequence:
         {
             assert(operandCount == 2);
-#if defined(TARGET_XARCH)
-            assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
+
+            GenTree* op1 = operands[0];
+            GenTree* op2 = operands[1];
+
+            // This builds a constant multiplier vector and, when op1 is not constant, multiplies it by a broadcast of
+            // op1. The multiplier must be constant.
+            if (op2->OperIsConst())
+            {
+#if defined(TARGET_ARM64)
+                // If the base type is long, we need to bail on ARM64
+                // because it does not have a general SIMD 64-bit integer multiply.
+                // If op1 is constant, the result folds to a vector constant so we can proceed anyway.
+                // If there is only one element, we can still proceed as no vector multiply is needed.
+                bool canGenerate = !varTypeIsLong(simdBaseType) || op1->OperIsConst() || (simdSize == 8);
+#elif defined(TARGET_XARCH)
+                // AVX2 support is required for 256-bit integral vectors.
+                // While floating-point vectors and non-256-bit sizes do not need AVX2.
+                // Also, if op1 is constant, the result folds to a vector constant so we can proceed anyway.
+                bool canGenerate = op1->OperIsConst() || (simdSize != 32) || !varTypeIsIntegral(simdBaseType) ||
+                                   m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2);
 #else
-            assert((simdSize == 8) || (simdSize == 16));
-#endif
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                if (canGenerate)
+                {
+                    result =
+                        m_compiler->gtNewSimdCreateGeometricSequenceNode(retType, op1, op2, simdBaseType, simdSize);
+                }
+            }
+            break;
+        }
+#endif // !TARGET_WASM
+
+        case NI_Vector_Shuffle:
+        case NI_Vector_ShuffleNative:
+        case NI_Vector_ShuffleNativeFallback:
+        {
+            assert(operandCount == 2);
             assert(((*use)->gtFlags & GTF_REVERSE_OPS) == 0); // gtNewSimdShuffleNode with reverse ops is not supported
 
             GenTree* op1 = operands[0];
             GenTree* op2 = operands[1];
 
-            bool isShuffleNative = intrinsicId != NI_Vector128_Shuffle;
-#if defined(TARGET_XARCH)
-            isShuffleNative =
-                isShuffleNative && (intrinsicId != NI_Vector256_Shuffle) && (intrinsicId != NI_Vector512_Shuffle);
-#elif defined(TARGET_ARM64)
-            isShuffleNative = isShuffleNative && (intrinsicId != NI_Vector64_Shuffle);
-#endif
+            bool isShuffleNative = intrinsicId != NI_Vector_Shuffle;
 
             // Check if the required intrinsics to emit are available.
             if (!m_compiler->IsValidForShuffle(op2, simdSize, simdBaseType, nullptr, isShuffleNative))
@@ -418,11 +433,15 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
         }
 
 #if defined(TARGET_XARCH)
-        case NI_Vector128_ExtractMostSignificantBits:
+        case NI_Vector_ExtractMostSignificantBits:
         {
-            // We want to keep this as is, because we'll rewrite it in post-order
-            assert(varTypeIsShort(simdBaseType));
-            return;
+            if (simdSize == 16)
+            {
+                // We want to keep this as is, because we'll rewrite it in post-order
+                assert(varTypeIsShort(simdBaseType));
+                return;
+            }
+            FALLTHROUGH;
         }
 #endif // TARGET_XARCH
 
@@ -594,12 +613,7 @@ void Rationalizer::RewriteHWIntrinsic(GenTree** use, Compiler::GenTreeStack& par
         }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_ARM64)
-        case NI_Vector64_ExtractMostSignificantBits:
-#elif defined(TARGET_XARCH)
-        case NI_Vector256_ExtractMostSignificantBits:
-#endif
-        case NI_Vector128_ExtractMostSignificantBits:
+        case NI_Vector_ExtractMostSignificantBits:
         {
             RewriteHWIntrinsicExtractMsb(use, parents);
             break;
@@ -638,7 +652,8 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
         return;
     }
 
-    GenTree* op2 = node->Op(2);
+    GenTree*  op2 = node->Op(2);
+    GenTree*& op3 = node->Op(3);
 
     // We're in the post-order visit and are traversing in execution order, so
     // everything between op2 and node will have already been rewritten to LIR
@@ -648,7 +663,47 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
     // variant
     SideEffectSet scratchSideEffects;
 
-    if (scratchSideEffects.IsLirInvariantInRange(m_compiler, op2, node))
+    // If the mask was originally a vector, we don't want to create a mask solely for
+    // the purpose of embedding it. vpmov*2m is relatively costly compared to blendvp*.
+    if (op3->OperIsConvertVectorToMask())
+    {
+        // The non-mask blend instructions only come in byte (pblendvb) or floating
+        // (blendvp[sd]) forms. We can use the byte variant as long as we have a
+        // per-element mask, or we can simply use the equivalent-sized floating type.
+        GenTree* maskVector = op3->AsHWIntrinsic()->Op(1);
+
+        if (!maskVector->IsVectorPerElementMask(simdBaseType, simdSize))
+        {
+            switch (simdBaseType)
+            {
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    return;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    simdBaseType = TYP_FLOAT;
+                    break;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    simdBaseType = TYP_DOUBLE;
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+        }
+    }
+    else if (scratchSideEffects.IsLirInvariantInRange(m_compiler, op2, node))
     {
         unsigned  tgtMaskSize     = simdSize / genTypeSize(simdBaseType);
         var_types tgtSimdBaseType = TYP_UNDEF;
@@ -666,8 +721,6 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
             return;
         }
     }
-
-    GenTree*& op3 = node->Op(3);
 
     if (!ShouldRewriteToNonMaskHWIntrinsic(op3))
     {
@@ -694,6 +747,7 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
         intrinsic = NI_X86Base_BlendVariable;
     }
 
+    node->SetSimdBaseType(simdBaseType);
     node->ChangeHWIntrinsicId(intrinsic);
 }
 
@@ -1475,17 +1529,8 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
         op1 = tmp;
     }
 
-    if (simdSize == 8)
-    {
-        intrinsic = NI_Vector64_ToScalar;
-    }
-    else
-    {
-        intrinsic = NI_Vector128_ToScalar;
-    }
-
     node->gtType = genActualType(simdBaseType);
-    node->ChangeHWIntrinsicId(intrinsic);
+    node->ChangeHWIntrinsicId(NI_Vector_ToScalar);
     node->SetSimdSize(8);
     node->SetSimdBaseType(simdBaseType);
     node->Op(1) = op1;

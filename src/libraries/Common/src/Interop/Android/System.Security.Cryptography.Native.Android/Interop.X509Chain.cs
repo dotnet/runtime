@@ -13,10 +13,23 @@ internal static partial class Interop
     internal static partial class AndroidCrypto
     {
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainCreateContext")]
-        internal static partial SafeX509ChainContextHandle X509ChainCreateContext(
+        private static partial SafeX509ChainContextHandle X509ChainCreateContext(
             SafeX509Handle cert,
             IntPtr[] extraStore,
             int extraStoreLen);
+
+        internal static SafeX509ChainContextHandle X509ChainCreateContext(SafeX509Handle cert, IntPtr[] extraStore)
+        {
+            SafeX509ChainContextHandle chainContext = X509ChainCreateContext(cert, extraStore, extraStore.Length);
+
+            if (chainContext.IsInvalid)
+            {
+                chainContext.Dispose();
+                throw new CryptographicException(SR.Cryptography_AndroidX509ChainContextInitializationFailed);
+            }
+
+            return chainContext;
+        }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainDestroyContext")]
         internal static partial void X509ChainDestroyContext(IntPtr ctx);
@@ -42,15 +55,33 @@ internal static partial class Interop
             var certPtrs = new IntPtr[count];
 
             int res = Interop.AndroidCrypto.X509ChainGetCertificates(ctx, certPtrs, certPtrs.Length);
-            if (res == 0)
-                throw new CryptographicException();
-
-            Debug.Assert(res <= certPtrs.Length);
 
             var certs = new X509Certificate2[certPtrs.Length];
-            for (int i = 0; i < res; i++)
+            try
             {
-                certs[i] = new X509Certificate2(certPtrs[i]);
+                if (res == 0)
+                    throw new CryptographicException();
+
+                Debug.Assert(res <= certPtrs.Length);
+
+                for (int i = 0; i < res; i++)
+                {
+                    // X509Certificate2 duplicates these JNI global refs; the native-returned refs remain caller-owned.
+                    certs[i] = new X509Certificate2(certPtrs[i]);
+                }
+            }
+            finally
+            {
+                // X509Certificate2 above duplicates each global ref, so release the native-returned
+                // refs here. On failure the native side already released and cleared its entries, so
+                // the surviving non-null entries are the ones we still own.
+                for (int i = 0; i < certPtrs.Length; i++)
+                {
+                    if (certPtrs[i] != IntPtr.Zero)
+                    {
+                        Interop.JObjectLifetime.DeleteGlobalReference(certPtrs[i]);
+                    }
+                }
             }
 
             if (res == certPtrs.Length)
@@ -81,6 +112,8 @@ internal static partial class Interop
         internal static ValidationError[] X509ChainGetErrors(SafeX509ChainContextHandle ctx)
         {
             int count = Interop.AndroidCrypto.X509ChainGetErrorCount(ctx);
+            if (count < 0)
+                throw new CryptographicException();
             if (count == 0)
                 return Array.Empty<ValidationError>();
 

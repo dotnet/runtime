@@ -14,7 +14,7 @@ public class Writer
     public int Position { get; set; }
 
    [MethodImpl(MethodImplOptions.NoInlining)]
-   Writer()
+   public Writer()
    {
        Data = new int[] { 100, -1, -2, -3 };
        Position = 4;

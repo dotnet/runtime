@@ -593,12 +593,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             pwzAppPaths = pPropertyValues[i];
         }
         else
-        if (u16_strcmp(pPropertyNames[i], W("DEFAULT_STACK_SIZE")) == 0)
-        {
-            extern void ParseDefaultStackSize(LPCWSTR value);
-            ParseDefaultStackSize(pPropertyValues[i]);
-        }
-        else
         if (u16_strcmp(pPropertyNames[i], W("USE_ENTRYPOINT_FILTER")) == 0)
         {
             extern void ParseUseEntryPointFilter(LPCWSTR value);
@@ -620,6 +614,10 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             sPlatformResourceRoots,
             sAppPaths));
     }
+
+    // Initialize the InvariantCulture such that it can be safely used when creating
+    // stack traces under high memory pressure.
+    CoreLibBinder::GetClass(CLASS__CULTURE_INFO)->CheckRunClassInitThrowing();
 
 #if defined(TARGET_UNIX) && !defined(FEATURE_STATICALLY_LINKED)
     if (!g_coreclr_embedded)

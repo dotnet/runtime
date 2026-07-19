@@ -222,7 +222,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(psig));
         PRECONDITION(sigSize > 0);
@@ -258,10 +258,6 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
 
     // Reset the method desc into pristine state
 
-    // Note: Reset has THROWS contract since it may allocate jump stub. It will never throw here
-    // since it will always reuse the existing jump stub.
-    pNewMD->Reset();
-
     LOG((LF_BCL, LL_INFO1000, "Level3 - DynamicMethod obtained {0x%p} (used %d)\n", pNewMD, m_Used));
 
     // the store sig part of the method desc
@@ -271,6 +267,14 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     pNewMD->InitializeFlags(DynamicMethodDesc::FlagPublic
                     | DynamicMethodDesc::FlagStatic
                     | DynamicMethodDesc::FlagIsLCGMethod);
+
+
+    // Note: Reset has THROWS contract since it may allocate jump stub and on WASM parses the signature
+    // It will never throw here for jump stubs since it will always reuse the existing jump stub,
+    // and for signature parsing, the signature produced for LCG is guaranteed to only have loaded types
+    // so that can't fail either.
+    pNewMD->Reset(); // Run the Reset after setting the signature and flags, since Reset may need to examine
+                     // the signature to establish the correct entrypoint details.
 
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = name;
@@ -924,7 +928,8 @@ bool DynamicMethodDesc::TryDestroy()
 void LCGMethodResolver::Reset()
 {
     m_DynamicStringLiterals = NULL;
-    m_DynamicCodePointers   = NULL;
+    m_initialCodePointer    = {};
+    m_DynamicCodePointers   = &m_initialCodePointer;
     m_UsedIndCellList       = NULL;
     m_pJumpStubCache        = NULL;
     m_next                  = NULL;
@@ -1343,7 +1348,7 @@ STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
     // Get the global string literal interning map
     GlobalStringLiteralMap* pStringLiteralMap = SystemDomain::GetGlobalStringLiteralMap();
 
-    // Calculating the hash: EEUnicodeHashTableHelper::GetHash
+    // Calculating the hash.
     EEStringData StringData = EEStringData((*pProtectedStringRef)->GetStringLength(), (*pProtectedStringRef)->GetBuffer());
     DWORD dwHash = pStringLiteralMap->GetHash(&StringData);
 
@@ -1353,7 +1358,7 @@ STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
     StringLiteralEntryHolder pEntry(pStringLiteralMap->GetInternedString(pProtectedStringRef, dwHash, /* bAddIfNotFound */ TRUE));
 
     DynamicStringLiteral* pStringLiteral = (DynamicStringLiteral*)m_jitTempData.New(sizeof(DynamicStringLiteral));
-    pStringLiteral->m_pEntry = pEntry.Extract();
+    pStringLiteral->m_pEntry = pEntry.Detach();
 
     // Add to m_DynamicStringLiterals:
     //  we don't need to check for duplicate because the string literal entries in
@@ -1579,10 +1584,14 @@ void** LCGMethodResolver::AllocateRecordCodePointer()
     }
     CONTRACTL_END;
 
-    DynamicCodePointer* codePointer = (DynamicCodePointer*)m_jitTempData.New(sizeof(DynamicCodePointer));
-    *codePointer = {};
-    codePointer->m_pNext = m_DynamicCodePointers;
-    m_DynamicCodePointers = codePointer;
+    DynamicCodePointer* codePointer = &m_initialCodePointer;
+    if (codePointer->m_pEntry != NULL)
+    {
+        codePointer = (DynamicCodePointer*)m_jitTempData.New(sizeof(DynamicCodePointer));
+        *codePointer = {};
+        codePointer->m_pNext = m_DynamicCodePointers;
+        m_DynamicCodePointers = codePointer;
+    }
 
     return &codePointer->m_pEntry;
 }

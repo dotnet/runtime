@@ -112,7 +112,10 @@ namespace ILCompiler
                         int methodOnlyResult = comparer.Compare(x.Method, y.Method);
 
                         // Assert the two sorting techniques produce the same result unless there is a CustomSort applied
+                        // or MethodWithGCInfo ordering is keeping async resumption stubs next to their target methods.
                         Debug.Assert((nodeComparerResult == methodOnlyResult) ||
+                            x.Method is AsyncResumptionStub ||
+                            y.Method is AsyncResumptionStub ||
                             ((x is SortableDependencyNode sortableX && sortableX.CustomSort != Int32.MaxValue) ||
                              (y is SortableDependencyNode sortableY && sortableY.CustomSort != Int32.MaxValue)));
 #endif

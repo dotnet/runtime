@@ -22,7 +22,7 @@ namespace System.IO
 
         public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
 
-        public override void Write(ReadOnlySpan<byte> buffer)
+        public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
             int maxCharCount = _encoding.GetMaxCharCount(buffer.Length);
             char[]? pooledBuffer = null;

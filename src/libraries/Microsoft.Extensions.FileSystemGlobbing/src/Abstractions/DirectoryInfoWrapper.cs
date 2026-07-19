@@ -33,6 +33,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// <inheritdoc />
         public override IEnumerable<FileSystemInfoBase> EnumerateFileSystemInfos()
         {
+            // If the directory did not exist when the DirectoryInfo was created, but does now (or vice versa),
+            // we need to call Refresh(). Otherwise Exists would provide stale information.
+            _directoryInfo.Refresh();
+
             if (_directoryInfo.Exists)
             {
                 IEnumerable<FileSystemInfo> fileSystemInfos;

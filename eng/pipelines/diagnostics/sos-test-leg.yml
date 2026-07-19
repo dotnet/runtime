@@ -1,0 +1,82 @@
+# sos-test-leg.yml -- wraps the matrix + job + dep + artifact download +
+# standard postBuildSteps pattern used by the SOS-style test legs (cDAC,
+# cDAC_fallback, cDAC_verify, DAC) that run on windows_x64. Each of those legs
+# only differs in its `name` and `dacMode` value.
+#
+# AzDO tasks workaround:
+#   PublishTestResults v2.270.0 garbles parameterized xUnit test names
+#   containing dots. Unsetting AllowPtrToDetectTestRunRetryFiles restores
+#   v2.262.0 behavior. Tracked at microsoft/azure-pipelines-tasks#21871.
+
+parameters:
+- name: name
+  type: string
+- name: dacMode
+  type: string
+  default: ''
+
+jobs:
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
+    buildConfig: release
+    platforms:
+    - windows_x64
+    variables:
+      - name: AllowPtrToDetectTestRunRetryFiles
+        value: false
+    jobParameters:
+      name: ${{ parameters.name }}
+      dacMode: ${{ parameters.dacMode }}
+      testInterpreter: true
+      methodFilter: SOS*
+      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
+      timeoutInMinutes: 360
+      dependsOn:
+      - build_windows_x64_release_AllSubsets_CoreCLR
+      preBuildSteps:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+          artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
+          displayName: 'Runtime Build Artifacts'
+      # The cdac leg exercises the runtime-under-test's own cDAC through SOS's standard cDAC hosting.
+      # SOS resolves the cDAC from next to sos.dll, which is the copy restored from a referenced runtime
+      # package -- not the runtime being tested. Download the freshly built cDAC so the build can overlay
+      # it (see -cdacPath in runtime-diag-job.yml / eng/build.* in dotnet/diagnostics).
+      - ${{ if eq(parameters.dacMode, 'cdac') }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac
+            artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac$(archiveExtension)
+            unpackFolder: $(Build.SourcesDirectory)/artifacts/cdac
+            displayName: 'cDAC Build Artifacts'
+      postBuildSteps:
+      - task: PublishTestResults@2
+        inputs:
+          testResultsFormat: xUnit
+          testResultsFiles: '**/*.xml'
+          searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
+          testRunTitle: 'Tests $(_PhaseName)'
+          failTaskOnFailedTests: true
+          publishRunAttachments: true
+          mergeTestResults: true
+          buildConfiguration: $(_BuildConfig)
+        continueOnError: true
+        condition: always()
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: '$(Build.SourcesDirectory)/artifacts/tmp/$(_BuildConfig)/dumps'
+          artifactName: 'Dumps_${{ parameters.name }}_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+        displayName: 'Publish Crash Dumps'
+        continueOnError: true
+        condition: failed()
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: '$(Build.SourcesDirectory)/artifacts/TestResults'
+          artifactName: 'TestResults_${{ parameters.name }}_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+        displayName: 'Publish Test Results and SOS Logs'
+        continueOnError: true
+        condition: failed()

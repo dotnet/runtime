@@ -12,6 +12,7 @@ check_function_exists(fsync HAVE_FSYNC)
 
 check_symbol_exists(arc4random_buf "stdlib.h" HAVE_ARC4RANDOM_BUF)
 check_symbol_exists(getrandom "sys/random.h" HAVE_GETRANDOM)
+check_symbol_exists(getentropy "unistd.h" HAVE_GETENTROPY)
 check_symbol_exists(O_CLOEXEC fcntl.h HAVE_O_CLOEXEC)
 check_symbol_exists(CLOCK_MONOTONIC_COARSE time.h HAVE_CLOCK_MONOTONIC_COARSE)
 check_symbol_exists(clock_gettime_nsec_np time.h HAVE_CLOCK_GETTIME_NSEC_NP)

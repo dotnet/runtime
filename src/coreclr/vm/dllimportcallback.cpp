@@ -245,13 +245,17 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData* pUMEntryThunkData)
     // exceptions don't leak out into managed code.
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-    bool targetIsPrecode;
-    entryPoint = pUMEntryThunkData->RunTimeInit(&targetIsPrecode);
+    bool canSkipPreStub;
+    entryPoint = pUMEntryThunkData->RunTimeInit(&canSkipPreStub);
 
 #ifdef FEATURE_INTERPRETER
-    _ASSERTE(targetIsPrecode || pUMEntryThunkData->GetInterpreterTarget() != (PCODE)0);
+    if (!canSkipPreStub)
+    {
+        _ASSERTE(pUMEntryThunkData->GetInterpreterTarget() != (PCODE)0);
+        t_MostRecentUMEntryThunkData = pUMEntryThunkData;
+    }
 #else
-    _ASSERTE(targetIsPrecode);
+    _ASSERTE(canSkipPreStub);
 #endif
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;

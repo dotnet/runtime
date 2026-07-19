@@ -13,11 +13,7 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan PrivilegedProcessorTime
+        public partial TimeSpan PrivilegedProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.PrivilegedTime : TicksToTimeSpan(GetStat().stime);
         }
@@ -83,15 +79,7 @@ namespace System.Diagnostics
             return null;
         }
 
-        /// <summary>
-        /// Gets the amount of time the associated process has spent utilizing the CPU.
-        /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
-        /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan TotalProcessorTime
+        public partial TimeSpan TotalProcessorTime
         {
             get
             {
@@ -105,14 +93,7 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>
-        /// Gets the amount of time the associated process has spent running code
-        /// inside the application portion of the process (not the operating system core).
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan UserProcessorTime
+        public partial TimeSpan UserProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.UserTime : TicksToTimeSpan(GetStat().utime);
         }
@@ -231,7 +212,7 @@ namespace System.Diagnostics
         /// <summary>Gets the name that was used to start the process, or null if it could not be retrieved.</summary>
         /// <param name="procPid">The pid for the target process.</param>
         /// <param name="stat">The stat for the target process.</param>
-        internal static string GetUntruncatedProcessName(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat stat)
+        internal static unsafe string GetUntruncatedProcessName(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat stat)
         {
             string cmdLineFilePath = Interop.procfs.GetCmdLinePathForProcess(procPid);
 

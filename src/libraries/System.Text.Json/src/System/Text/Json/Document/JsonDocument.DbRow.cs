@@ -58,7 +58,7 @@ namespace System.Text.Json
                 Debug.Assert((byte)jsonTokenType < 1 << 4);
                 Debug.Assert(location >= 0);
                 Debug.Assert(sizeOrLength >= UnknownSize);
-                Debug.Assert(Unsafe.SizeOf<DbRow>() == Size);
+                Debug.Assert(sizeof(DbRow) == Size);
 
                 _location = location;
                 _sizeOrLengthUnion = sizeOrLength;

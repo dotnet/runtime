@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -793,7 +793,7 @@ namespace System.IO
         // contain the terminating carriage return and/or line feed. The returned
         // value is null if the end of the input stream has been reached.
         //
-        public override string? ReadLine()
+        public override unsafe string? ReadLine()
         {
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();

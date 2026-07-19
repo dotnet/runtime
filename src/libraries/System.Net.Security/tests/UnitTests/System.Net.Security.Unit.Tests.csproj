@@ -134,10 +134,20 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios'">
     <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.OSX.cs" />
+    <!-- reuse Unix SafeDeleteSslContext since it has no platform specific code -->
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteSslContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteSslContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
     <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.Android.cs" />
+    <!-- reuse Unix SafeDeleteSslContext since it has no platform specific code -->
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteSslContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteSslContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
@@ -176,8 +186,8 @@
              Link="ProductionCode\Common\System\Net\TlsAlertType.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
              Link="ProductionCode\Common\System\Net\TlsFrameHelper.cs" />
-    <Compile Include="$(CommonPath)\System\Net\ReadWriteAdapter.cs"
-             Link="Common\System\Net\ReadWriteAdapter.cs" />
+    <Compile Include="$(CommonPath)System\ReadWriteAdapter.cs"
+             Link="Common\System\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
              Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"

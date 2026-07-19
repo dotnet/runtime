@@ -26,12 +26,18 @@ namespace System.Net.Security
         }
 
         internal const bool StartMutualAuthAsAnonymous = true;
+        internal const bool CertValidationInCallback = false;
 
         // SecureTransport is okay with a 0 byte input, but it produces a 0 byte output.
         // Since ST is not producing the framed empty message just call this false and avoid the
         // special case of an empty array being passed to the `fixed` statement.
         internal const bool CanEncryptEmptyMessage = false;
-        internal const bool CanGenerateCustomAlerts = false;
+        internal const bool CanGenerateCustomAlerts = true;
+
+        internal static bool CanGenerateCustomAlertsForContext(SafeDeleteContext? securityContext)
+        {
+            return securityContext is SafeDeleteSslContext;
+        }
 
         public static void VerifyPackageInfo()
         {
@@ -204,27 +210,41 @@ namespace System.Net.Security
 
         public static SecurityStatusPal DecryptMessage(
             SafeDeleteContext securityContext,
-            Span<byte> buffer,
-            out int offset,
-            out int count)
+            Span<byte> encrypted,
+            Span<byte> destination,
+            out int bytesWritten,
+            out int leftoverOffset,
+            out int leftoverLength)
         {
+            bytesWritten = 0;
+            leftoverOffset = 0;
+            leftoverLength = 0;
+
             Debug.Assert(securityContext is SafeDeleteSslContext, "SafeDeleteSslContext expected");
             SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
-
-            offset = 0;
-            count = 0;
 
             try
             {
                 SafeSslHandle sslHandle = sslContext.SslContext;
 
-                sslContext.Write(buffer);
+                sslContext.Write(encrypted);
+
+                PAL_TlsIo status;
 
                 unsafe
                 {
-                    fixed (byte* ptr = buffer)
+                    // Opportunistically decrypt directly into the caller-provided destination span
+                    // when one was supplied (saves a memcpy through the SslStream-owned buffer).
+                    // If the first read does not fill the destination, all currently available
+                    // plaintext has been consumed and we report the resulting status as-is.
+                    if (!destination.IsEmpty)
                     {
-                        PAL_TlsIo status = Interop.AppleCrypto.SslRead(sslHandle, ptr, buffer.Length, out int written);
+                        int written;
+                        fixed (byte* destPtr = destination)
+                        {
+                            status = Interop.AppleCrypto.SslRead(sslHandle, destPtr, destination.Length, out written);
+                        }
+
                         if (status < 0)
                         {
                             return new SecurityStatusPal(
@@ -232,29 +252,43 @@ namespace System.Net.Security
                                 Interop.AppleCrypto.CreateExceptionForOSStatus((int)status));
                         }
 
-                        count = written;
-                        offset = 0;
-
-                        switch (status)
+                        bytesWritten = written;
+                        if (status != PAL_TlsIo.Success || written < destination.Length)
                         {
-                            case PAL_TlsIo.Success:
-                            case PAL_TlsIo.WouldBlock:
-                                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
-                            case PAL_TlsIo.ClosedGracefully:
-                                return new SecurityStatusPal(SecurityStatusPalErrorCode.ContextExpired);
-                            case PAL_TlsIo.Renegotiate:
-                                return new SecurityStatusPal(SecurityStatusPalErrorCode.Renegotiate);
-                            default:
-                                Debug.Fail($"Unknown status value: {status}");
-                                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+                            return MapTlsIoStatus(status);
                         }
                     }
+
+                    // Either destination was empty, or the first read filled it; capture any
+                    // remaining plaintext in-place inside the ciphertext span so SslStream can
+                    // pick it up via leftoverOffset/leftoverLength.
+                    fixed (byte* ptr = encrypted)
+                    {
+                        status = Interop.AppleCrypto.SslRead(sslHandle, ptr, encrypted.Length, out int leftover);
+                        if (status < 0)
+                        {
+                            return new SecurityStatusPal(
+                                SecurityStatusPalErrorCode.InternalError,
+                                Interop.AppleCrypto.CreateExceptionForOSStatus((int)status));
+                        }
+                        leftoverLength = leftover;
+                    }
                 }
+
+                return MapTlsIoStatus(status);
             }
             catch (Exception e)
             {
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, e);
             }
+
+            static SecurityStatusPal MapTlsIoStatus(PAL_TlsIo status) => status switch
+            {
+                PAL_TlsIo.Success or PAL_TlsIo.WouldBlock => new SecurityStatusPal(SecurityStatusPalErrorCode.OK),
+                PAL_TlsIo.ClosedGracefully => new SecurityStatusPal(SecurityStatusPalErrorCode.ContextExpired),
+                PAL_TlsIo.Renegotiate => new SecurityStatusPal(SecurityStatusPalErrorCode.Renegotiate),
+                _ => new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError),
+            };
         }
 
         public static ChannelBinding? QueryContextChannelBinding(
@@ -380,13 +414,7 @@ namespace System.Net.Security
                         return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
                     case PAL_TlsHandshakeState.ServerAuthCompleted:
                     case PAL_TlsHandshakeState.ClientAuthCompleted:
-                        // The standard flow would be to call the verification callback now, and
-                        // possibly abort.  But the library is set up to call this "success" and
-                        // do verification between "handshake complete" and "first send/receive".
-                        //
-                        // So, call SslHandshake again to indicate to Secure Transport that we've
-                        // accepted this handshake and it should go into the ready state.
-                        break;
+                        return new SecurityStatusPal(SecurityStatusPalErrorCode.CertValidationNeeded);
                     case PAL_TlsHandshakeState.ClientCertRequested:
                         return new SecurityStatusPal(SecurityStatusPalErrorCode.CredentialsNeeded);
                     case PAL_TlsHandshakeState.ClientHelloReceived:
@@ -405,11 +433,23 @@ namespace System.Net.Security
             TlsAlertType alertType,
             TlsAlertMessage alertMessage)
         {
-            // There doesn't seem to be an exposed API for writing an alert,
-            // the API seems to assume that all alerts are generated internally by
-            // SSLHandshake.
             Debug.Assert(CanGenerateCustomAlerts);
-            return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            Debug.Assert(alertType == TlsAlertType.Fatal, $"SecureTransport derives the alert level from the OSStatus and emits only fatal alerts; unexpected alertType: {alertType}");
+
+            if (securityContext is not SafeDeleteSslContext context)
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+            }
+
+            try
+            {
+                Interop.AppleCrypto.SslSetError(context.SslContext, alertMessage);
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            }
+            catch (Exception ex)
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
+            }
         }
 #pragma warning restore IDE0060
 

@@ -391,17 +391,8 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 
             if (call->TypeIs(TYP_VOID) && call->AsCall()->ShouldHaveRetBufArg())
             {
-                GenTree* retBuf;
-                if (call->AsCall()->ShouldHaveRetBufArg())
-                {
-                    assert(call->AsCall()->gtArgs.HasRetBuffer());
-                    retBuf = call->AsCall()->gtArgs.GetRetBufferArg()->GetNode();
-                }
-                else
-                {
-                    assert(!call->AsCall()->gtArgs.HasThisPointer());
-                    retBuf = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-                }
+                assert(call->AsCall()->gtArgs.HasRetBuffer());
+                GenTree* retBuf = call->AsCall()->gtArgs.GetRetBufferArg()->GetNode();
 
                 assert(retBuf->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
@@ -483,10 +474,6 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
     impAppendStmtCheck(stmt, chkLevel);
 
     impAppendStmt(stmt);
-
-#ifdef FEATURE_SIMD
-    impMarkContiguousSIMDFieldStores(stmt);
-#endif
 
     // Once we set the current offset as debug info in an appended tree, we are
     // ready to report the following offsets. Note that we need to compare
@@ -798,12 +785,6 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
         if (srcCall->ShouldHaveRetBufArg())
         {
             // Case of call returning a struct via hidden retbuf arg.
-            // Some calls have an "out buffer" that is not actually a ret buff
-            // in the ABI sense. We take the path here for those but it should
-            // not be marked as the ret buff arg since it always follow the
-            // normal ABI for parameters.
-            WellKnownArg wellKnownArgType =
-                srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
@@ -823,7 +804,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
                 return impStoreStruct(store, curLevel, pAfterStmt, di, block);
             }
 
-            NewCallArg newArg = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
+            NewCallArg newArg = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
 
             if (destAddr->OperIs(GT_LCL_ADDR))
             {
@@ -1173,7 +1154,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree*      val,
 //    Normalizing the type involves examining the struct type to determine if it should
 //    be modified to one that is handled specially by the JIT, possibly being a candidate
 //    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
-//    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
+//    call structMightRepresentSIMDType to determine if this api needs to be called.
 //
 var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseJitType)
 {
@@ -1182,28 +1163,20 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
     var_types structType = TYP_STRUCT;
 
 #ifdef FEATURE_SIMD
-    const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
-
-    // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
-    if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
+    if (structMightRepresentSIMDType(structHnd))
     {
-        unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
-
-        if (structSizeMightRepresentSIMDType(originalSize))
+        unsigned int sizeBytes;
+        var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
+        if (simdBaseType != TYP_UNDEF)
         {
-            unsigned int sizeBytes;
-            var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
-            if (simdBaseType != TYP_UNDEF)
+            assert((sizeBytes == info.compCompHnd->getClassSize(structHnd)) || (sizeBytes == SIZE_UNKNOWN));
+            structType = getSIMDTypeForSize(sizeBytes);
+            if (pSimdBaseJitType != nullptr)
             {
-                assert(sizeBytes == originalSize || sizeBytes == SIZE_UNKNOWN);
-                structType = getSIMDTypeForSize(sizeBytes);
-                if (pSimdBaseJitType != nullptr)
-                {
-                    *pSimdBaseJitType = simdBaseType;
-                }
-                // Also indicate that we use floating point registers.
-                compFloatingPointUsed = true;
+                *pSimdBaseJitType = simdBaseType;
             }
+            // Also indicate that we use floating point registers.
+            compFloatingPointUsed = true;
         }
     }
 #endif // FEATURE_SIMD
@@ -1384,11 +1357,11 @@ GenTree* Compiler::impLookupToTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleF
 
         if (handle != nullptr)
         {
-            addr->AsIntCon()->gtTargetHandle = handleToTrack;
+            addr->AsIntCon()->SetTargetHandle(handleToTrack);
         }
         else
         {
-            addr->gtGetOp1()->AsIntCon()->gtTargetHandle = handleToTrack;
+            addr->gtGetOp1()->AsIntCon()->SetTargetHandle(handleToTrack);
         }
 #endif
         return addr;
@@ -1428,7 +1401,7 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 
     if (tree->IsHelperCall())
     {
-        switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
+        switch (tree->AsCall()->GetHelperNum())
         {
             case CORINFO_HELP_ISINSTANCEOFINTERFACE:
             case CORINFO_HELP_ISINSTANCEOFARRAY:
@@ -2646,7 +2619,7 @@ bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
         // Disallow the tailcall for this kind.
         CORINFO_CLASS_HANDLE classHandle;
         CorInfoType          ciType = strip(info.compCompHnd->getArgType(&sig, args, &classHandle));
-        if ((ciType == CORINFO_TYPE_PTR) || (ciType == CORINFO_TYPE_BYREF) || (ciType == CORINFO_TYPE_REFANY))
+        if ((ciType == CORINFO_TYPE_PTR) || (ciType == CORINFO_TYPE_BYREF))
         {
             return false;
         }
@@ -2742,13 +2715,15 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     // NativeAOT generic virtual method
     if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
-        GenTree* runtimeMethodHandle =
-            impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
+        GenTree* dispatchCell = impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
         call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr,
-                                                        runtimeMethodHandle);
+                                                        dispatchCell);
     }
 
-#ifdef FEATURE_READYTORUN
+    // Wasm R2R cannot use the CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR fast path because it
+    // relies on DelayLoad_Helper_Obj dynamic-helper thunks, which are not implemented on wasm.
+    // Fall through to the runtime CORINFO_HELP_VIRTUAL_FUNC_PTR helper instead.
+#if defined(FEATURE_READYTORUN) && !defined(TARGET_WASM)
     else if (IsAot())
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
@@ -2765,7 +2740,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
             call = gtNewRuntimeLookupHelperCallNode(&pCallInfo->codePointerLookup.runtimeLookup, ctxTree, nullptr);
         }
     }
-#endif
+#endif // FEATURE_READYTORUN && !TARGET_WASM
 
     if (call == nullptr)
     {
@@ -2802,6 +2777,59 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 
     return call;
 }
+
+#if defined(FEATURE_HW_INTRINSICS)
+//----------------------------------------------------------------------------------------------
+// Compiler::impSimdCreateScalarHalf: Creates a new Vector128.CreateScalar node for a System.Half value
+//
+//  Arguments:
+//    op1 - The System.Half value
+//
+// Returns:
+//    The Vector128.CreateScalar node that contains op1
+//
+GenTree* Compiler::impSimdCreateScalarHalf(GenTree* op1)
+{
+    unsigned op1Tmp;
+
+    if (!op1->OperIs(GT_LCL_VAR))
+    {
+        op1Tmp = lvaGrabTemp(true DEBUGARG("System.Half tmp"));
+        impStoreToTemp(op1Tmp, op1, CHECK_SPILL_ALL);
+    }
+    else
+    {
+        op1Tmp = op1->AsLclVarCommon()->GetLclNum();
+    }
+
+    op1 = gtNewLclFldNode(op1Tmp, TYP_USHORT, 0);
+    return gtNewSimdCreateScalarNode(TYP_SIMD16, op1, TYP_USHORT, 16);
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::impSimdToScalarHalf: Creates a new Vector128.ToScalar node for a System.Half value
+//
+//  Arguments:
+//    op1        - The Vector128 from which to extract the System.Half value
+//    halfClsHnd - The class handle for System.Half
+//
+// Returns:
+//    The System.Half value extracted from op1
+//
+GenTree* Compiler::impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd)
+{
+    assert(isSystemHalfClass(halfClsHnd));
+
+    unsigned resTmp = lvaGrabTemp(true DEBUGARG("System.Half tmp"));
+    lvaSetStruct(resTmp, halfClsHnd, false);
+
+    op1 = gtNewSimdToScalarNode(TYP_INT, op1, TYP_USHORT, 16);
+    op1 = gtNewStoreLclFldNode(resTmp, TYP_USHORT, 0, op1);
+
+    impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+    return gtNewLclvNode(resTmp, TYP_STRUCT);
+}
+#endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // impInlineUnboxNullable: Generate code for unboxing Nullable<T> from an object (obj)
@@ -3531,7 +3559,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
         // Avoid sharing in some tier 0 cases to, potentially, avoid boxing in Enum.HasFlag.
         if (shareBoxedTemps && varTypeIsIntegral(exprToBox) && !lvaHaveManyLocals() &&
-            (info.compCompHnd->isEnum(pResolvedToken->hClass, nullptr) != TypeCompareState::Must))
+            (info.compCompHnd->isEnum(pResolvedToken->hClass, nullptr) == TypeCompareState::Must))
         {
             shareBoxedTemps = false;
         }
@@ -4366,7 +4394,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             }
             isHoistable = true;
             op1         = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
-            INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
+            INDEBUG(op1->AsIntCon()->SetTargetHandle(reinterpret_cast<size_t>(pResolvedToken->hField)));
 
             if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
             {
@@ -4565,7 +4593,8 @@ bool Compiler::impIsImplicitTailCallCandidate(
 #endif // !FEATURE_TAILCALL_OPT_SHARED_RETURN
 
     // must be call+ret or call+pop+ret
-    if (!impIsTailCallILPattern(false, opcode, codeAddrOfNextOpcode, codeEnd, isRecursive))
+    if (!impIsTailCallILPattern(false, opcode, codeAddrOfNextOpcode, codeEnd, isRecursive) &&
+        ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) == 0))
     {
         return false;
     }
@@ -5824,70 +5853,12 @@ const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr,
     {
         // ConfigureAwait on a ValueTask will start with stloc/ldloca.
         // The longest encoding should fit in the length we asked for above.
-        uint8_t     maybeStLoc = getU1LittleEndian(nextOpcode);
-        const BYTE* nextTmp    = nextOpcode + 1;
-        int         stlocNum   = -1;
-        switch (maybeStLoc)
+        unsigned stlocNum = BAD_VAR_NUM;
+        if (impMatchStlocLdloca(&nextOpcode, codeEndp, &stlocNum))
         {
-            case CEE_STLOC_0:
-                stlocNum = 0;
-                break;
-            case CEE_STLOC_1:
-                stlocNum = 1;
-                break;
-            case CEE_STLOC_2:
-                stlocNum = 2;
-                break;
-            case CEE_STLOC_3:
-                stlocNum = 3;
-                break;
-            case CEE_STLOC_S:
-                stlocNum = getU1LittleEndian(nextTmp);
-                nextTmp += 1;
-                break;
-            case CEE_PREFIX1:
-                uint16_t maybeStLocWide = (uint16_t)256 + getU1LittleEndian(nextTmp);
-                nextTmp += 1;
-                if (maybeStLocWide == CEE_STLOC)
-                {
-                    stlocNum = getU2LittleEndian(nextTmp);
-                    nextTmp += 2;
-                }
-                break;
-        }
-
-        // if it was a stloc, check for matching ldloca
-        if (stlocNum != -1)
-        {
-            uint8_t maybeLdLoca = getU1LittleEndian(nextTmp);
-            nextTmp += 1;
-            int ldlocaNum = -1;
-            switch (maybeLdLoca)
-            {
-                case CEE_LDLOCA_S:
-                    ldlocaNum = getU1LittleEndian(nextTmp);
-                    nextTmp += 1;
-                    break;
-                case CEE_PREFIX1:
-                    uint16_t maybeLdLocaWide = (uint16_t)256 + getU1LittleEndian(nextTmp);
-                    nextTmp += 1;
-                    if (maybeLdLocaWide == CEE_LDLOCA)
-                    {
-                        ldlocaNum = getU2LittleEndian(nextTmp);
-                        nextTmp += 2;
-                    }
-                    break;
-            }
-
-            // no ldloca or locals did not match, this can't be await pattern
-            if (stlocNum != ldlocaNum)
-                return nullptr;
-
             // locals match, but no space for ConfigureAwait call, this can't be await pattern
-            if (nextTmp + 2 * (1 + sizeof(mdToken)) >= codeEndp)
+            if (nextOpcode + 2 * (1 + sizeof(mdToken)) >= codeEndp)
                 return nullptr;
-
-            nextOpcode = nextTmp;
         }
 
         uint8_t nextOp     = getU1LittleEndian(nextOpcode);
@@ -5895,7 +5866,7 @@ const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr,
         if ((nextOp != CEE_LDC_I4_0 && nextOp != CEE_LDC_I4_1) ||
             (nextNextOp != CEE_CALL && nextNextOp != CEE_CALLVIRT))
         {
-            if (stlocNum != -1)
+            if (stlocNum != BAD_VAR_NUM)
             {
                 // we had stloc/ldloca, we must see ConfigAwait
                 return nullptr;
@@ -5911,7 +5882,7 @@ const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr,
         if (!eeIsIntrinsic(nextCallTok.hMethod) ||
             lookupNamedIntrinsic(nextCallTok.hMethod) != NI_System_Threading_Tasks_Task_ConfigureAwait)
         {
-            if (stlocNum != -1)
+            if (stlocNum != BAD_VAR_NUM)
             {
                 // we had stloc/ldloca, we must see ConfigAwait
                 return nullptr;
@@ -5946,6 +5917,243 @@ checkForAwait:
     }
 
     return nullptr;
+}
+
+//------------------------------------------------------------------------
+// impMatchStlocLdloca:
+//   Match stloc followed by ldloca, and return the local number if matched.
+//
+// Arguments:
+//   codeAddr - IL pointer to first opcode
+//   codeEndp - End of IL code stream
+//   lclNum   - [out] local variable number if matched
+//
+// Returns:
+//   True if the IL is a stloc followed by a ldloca; otherwise false.
+//
+bool Compiler::impMatchStlocLdloca(const BYTE** codeAddr, const BYTE* codeEndp, unsigned* lclNum)
+{
+    *lclNum          = BAD_VAR_NUM;
+    const BYTE* code = *codeAddr;
+    if (code >= codeEndp)
+    {
+        return false;
+    }
+
+    unsigned matchedLclNum = BAD_VAR_NUM;
+    BYTE     opcode        = *code;
+    code++;
+    if ((opcode >= CEE_STLOC_0) && (opcode <= CEE_STLOC_3))
+    {
+        matchedLclNum = opcode - CEE_STLOC_0;
+    }
+    else if (opcode == CEE_STLOC_S)
+    {
+        if (code >= codeEndp)
+        {
+            return false;
+        }
+
+        matchedLclNum = *code;
+        code++;
+    }
+    else if (opcode == CEE_PREFIX1)
+    {
+        if (code >= codeEndp)
+        {
+            return false;
+        }
+
+        uint16_t maybeStLocWide = (uint16_t)256 + *code;
+        code++;
+        if ((maybeStLocWide != CEE_STLOC) || (code + 1 >= codeEndp))
+        {
+            return false;
+        }
+
+        matchedLclNum = getU2LittleEndian(code);
+        code += 2;
+    }
+    else
+    {
+        return false;
+    }
+
+    if (code >= codeEndp)
+    {
+        return false;
+    }
+
+    opcode = *code;
+    code++;
+    if (opcode == CEE_LDLOCA_S)
+    {
+        if (code >= codeEndp)
+        {
+            return false;
+        }
+
+        if (*code != matchedLclNum)
+        {
+            return false;
+        }
+
+        code++;
+    }
+    else if (opcode == CEE_PREFIX1)
+    {
+        if (code >= codeEndp)
+        {
+            return false;
+        }
+
+        uint16_t maybeLdLocaWide = (uint16_t)256 + *code;
+        code++;
+        if ((maybeLdLocaWide != CEE_LDLOCA) || (code + 1 >= codeEndp))
+        {
+            return false;
+        }
+
+        if (getU2LittleEndian(code) != matchedLclNum)
+        {
+            return false;
+        }
+        code += 2;
+    }
+    else
+    {
+        return false;
+    }
+
+    *lclNum   = matchedLclNum;
+    *codeAddr = code;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// impMatchAsyncVersionTailCall:
+//   See if a call can be matched to be a tailcall in an async version.
+//
+// Arguments:
+//   codeAddr        - IL pointer to first opcode
+//   codeEndp        - End of IL code stream
+//   prefixFlags     - [out] flags indicating the presence of specific prefixes
+//   numBytesMatched - [out] number of bytes matched in the pattern
+//
+// Returns:
+//   True if the IL is a tailcall in an async version; otherwise false.
+//
+bool Compiler::impMatchAsyncVersionTailCall(const BYTE* codeAddr,
+                                            const BYTE* codeEndp,
+                                            int*        prefixFlags,
+                                            int*        numBytesMatched)
+{
+    const BYTE* nextOpcode = codeAddr;
+
+    // Look for call; ret
+    if ((nextOpcode < codeEndp) && (*nextOpcode == CEE_RET))
+    {
+        *numBytesMatched = 1;
+        return true;
+    }
+
+    // Look for call; newobj ValueTask; ret
+    if ((nextOpcode < codeEndp) && (*nextOpcode == CEE_NEWOBJ))
+    {
+        nextOpcode++;
+
+        // Quick check for ret before we resolve the token
+        if (nextOpcode + sizeof(mdToken) >= codeEndp || (*(nextOpcode + sizeof(mdToken)) != CEE_RET))
+        {
+            return false;
+        }
+
+        CORINFO_RESOLVED_TOKEN ctorTok;
+        impResolveToken(nextOpcode, &ctorTok, CORINFO_TOKENKIND_NewObj);
+
+        if (!eeIsIntrinsic(ctorTok.hMethod))
+        {
+            return false;
+        }
+
+        NamedIntrinsic ni = lookupNamedIntrinsic(ctorTok.hMethod);
+        if ((ni != NI_System_Threading_Tasks_ValueTask__ctor) && (ni != NI_System_Threading_Tasks_ValueTask_1__ctor))
+        {
+            return false;
+        }
+
+        CORINFO_SIG_INFO sig;
+        info.compCompHnd->getMethodSig(ctorTok.hMethod, &sig);
+
+        if (sig.numArgs != 1)
+        {
+            return false;
+        }
+
+        if (info.compRetType != TYP_VOID)
+        {
+            // Since we validated above that this instance is being returned
+            // this can only be ValueTask<T> at this point.
+            assert((sig.sigInst.classInstCount == 1) && (sig.sigInst.methInstCount == 0));
+            CORINFO_CLASS_HANDLE paramClass = info.compCompHnd->getArgClass(&sig, sig.args);
+            if (paramClass == sig.sigInst.classInst[0])
+            {
+                // This is "class ValueTask<T> { ValueTask(T value) }" overload
+                // which is not what we are looking for. That one gets folded
+                // by impFoldAwaitedTopOfStack.
+                return false;
+            }
+        }
+
+        nextOpcode += sizeof(mdToken);
+        nextOpcode++; // matched CEE_RET already
+
+        JITDUMP("Matched \"return new ValueTask(TaskReturn())\"\n");
+        *numBytesMatched = (int)(nextOpcode - codeAddr);
+        return true;
+    }
+
+    // Look for call; stloc X; ldloca X; call AsTask(); ret
+    unsigned vtLclNum;
+    if (impMatchStlocLdloca(&nextOpcode, codeEndp, &vtLclNum))
+    {
+        if ((nextOpcode >= codeEndp) || (*nextOpcode != CEE_CALL))
+        {
+            return false;
+        }
+
+        nextOpcode++;
+
+        // Quick check for ret before we resolve the token
+        if (nextOpcode + sizeof(mdToken) >= codeEndp || (*(nextOpcode + sizeof(mdToken)) != CEE_RET))
+        {
+            return false;
+        }
+
+        CORINFO_RESOLVED_TOKEN callTok;
+        impResolveToken(nextOpcode, &callTok, CORINFO_TOKENKIND_Method);
+
+        if (!eeIsIntrinsic(callTok.hMethod))
+        {
+            return false;
+        }
+
+        NamedIntrinsic ni = lookupNamedIntrinsic(callTok.hMethod);
+        if ((ni != NI_System_Threading_Tasks_ValueTask_AsTask) && (ni != NI_System_Threading_Tasks_ValueTask_1_AsTask))
+        {
+            return false;
+        }
+
+        nextOpcode += sizeof(mdToken);
+        nextOpcode++; // matched CEE_RET already
+
+        JITDUMP("Matched \"return ValueTaskReturn().AsTask()\"\n");
+        *prefixFlags |= PREFIX_IS_ADAPTED_FROM_VALUETASK;
+        *numBytesMatched = (int)(nextOpcode - codeAddr);
+        return true;
+    }
+
+    return false;
 }
 
 /*****************************************************************************
@@ -6107,7 +6315,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                                 // We may already have decided to put a patchpoint in succBlock. If not, add one.
                                 //
-                                if (succBlock->HasFlag(BBF_PATCHPOINT))
+                                if (succBlock->HasFlag(BBF_OSR_PATCHPOINT))
                                 {
                                     // In some cases the target may not be stack-empty at entry.
                                     // If so, we will bypass patchpoints for this backedge.
@@ -6125,7 +6333,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                 block->bbNum, succBlock->bbNum);
 
                                         assert(!succBlock->hasHndIndex());
-                                        succBlock->SetFlags(BBF_PATCHPOINT);
+                                        succBlock->SetFlags(BBF_OSR_PATCHPOINT);
                                     }
                                 }
                             }
@@ -6134,7 +6342,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     else
                     {
                         assert(!block->hasHndIndex());
-                        block->SetFlags(BBF_PATCHPOINT);
+                        block->SetFlags(BBF_OSR_PATCHPOINT);
                     }
 
                     setMethodHasPatchpoint();
@@ -6161,7 +6369,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         const bool tryRandomOSR = randomOSR > 0;
 
         if (compCanHavePatchpoints() && (tryOffsetOSR || tryRandomOSR) && (stackState.esStackDepth == 0) &&
-            !block->hasHndIndex() && !block->HasFlag(BBF_PATCHPOINT))
+            !block->hasHndIndex() && !block->HasFlag(BBF_OSR_PATCHPOINT))
         {
             // Block start can have a patchpoint. See if we should add one.
             //
@@ -6191,7 +6399,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             if (addPatchpoint)
             {
-                block->SetFlags(BBF_PATCHPOINT);
+                block->SetFlags(BBF_OSR_PATCHPOINT);
                 setMethodHasPatchpoint();
             }
 
@@ -6218,7 +6426,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     // that we need to do proper liveness analysis.
     //
     if (enablePartialCompilation && compCanHavePatchpoints() && !compTailPrefixSeen && !compIsAsync() &&
-        (stackState.esStackDepth == 0) && !block->HasFlag(BBF_PATCHPOINT) && !block->hasHndIndex())
+        (stackState.esStackDepth == 0) && !block->HasFlag(BBF_OSR_PATCHPOINT) && !block->hasHndIndex())
     {
         // Is this block a good place for partial compilation?
         //
@@ -6247,7 +6455,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             JITDUMP("\nBlock " FMT_BB " (%s) will be a partial compilation patchpoint -- not importing\n", block->bbNum,
                     reason);
             block->SetFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
-            setMethodHasPartialCompilationPatchpoint();
+            setMethodHasPatchpoint();
 
             // Block will no longer flow to any of its successors.
             //
@@ -6953,7 +7161,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
 
             case CEE_ARGLIST:
-
+            {
                 if (!info.compIsVarArgs)
                 {
                     BADCODE("arglist in non-vararg method");
@@ -6964,9 +7172,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // The ARGLIST cookie is a hidden 'last' parameter, we have already
                 // adjusted the arg count cos this is like fetching the last param.
                 assertImp(numArgs > 0);
-                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_BYREF);
+                clsHnd = impGetRuntimeArgumentHandle();
+
+                unsigned argListTmp = lvaGrabTemp(false DEBUGARG("arglist tmp"));
+                lvaSetStruct(argListTmp, clsHnd, false);
+
+                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_I_IMPL);
+                impAppendTree(gtNewStoreLclFldNode(argListTmp, TYP_I_IMPL, 0, op1), CHECK_SPILL_ALL, impCurStmtDI);
+
+                op1      = gtNewLclVarNode(argListTmp, TYP_STRUCT);
+                tiRetVal = makeTypeInfo(clsHnd);
                 impPushOnStack(op1, tiRetVal);
                 break;
+            }
 
             case CEE_ENDFINALLY:
 
@@ -7074,7 +7292,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("Stack must be empty after CEE_JMPs");
                 }
 
-                _impResolveToken(CORINFO_TOKENKIND_Method);
+                if (compIsAsyncVersion())
+                {
+                    _impResolveToken(CORINFO_TOKENKIND_Await);
+
+                    // Target may not have async variant. These cases would
+                    // fail in non-async case too since they are generic.
+                    if (resolvedToken.hMethod == NO_METHOD_HANDLE)
+                    {
+                        BADCODE("Incompatible target for CEE_JMP in async version");
+                    }
+                }
+                else
+                {
+                    _impResolveToken(CORINFO_TOKENKIND_Method);
+                }
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -7268,7 +7500,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // The array helper takes a native int for array length.
                 // So if we have an int, explicitly extend it to be a native int.
                 index = impImplicitIorI4Cast(index, TYP_I_IMPL);
-                op1   = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
+
+                GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
+                INDEBUG(call->gtRawILOffset = opcodeOffs);
+                impConvertToUserCallAndMarkForInlining(call);
+                op1 = call;
+
                 goto SPILL_APPEND;
             }
 
@@ -7701,7 +7938,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (block->KindIs(BBJ_COND))
                     {
-                        bool const      isCondTrue   = effectiveOp1->AsIntCon()->gtIconVal != 0;
+                        bool const      isCondTrue   = effectiveOp1->AsIntCon()->IconValue() != 0;
                         FlowEdge* const removedEdge  = isCondTrue ? block->GetFalseEdge() : block->GetTrueEdge();
                         FlowEdge* const retainedEdge = isCondTrue ? block->GetTrueEdge() : block->GetFalseEdge();
 
@@ -7960,7 +8197,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled() && op1->OperIs(GT_CNS_INT))
                 {
                     // Find the jump target
-                    size_t     switchVal = (size_t)op1->AsIntCon()->gtIconVal;
+                    size_t     switchVal = (size_t)op1->AsIntCon()->IconValue();
                     unsigned   jumpCnt   = block->GetSwitchTargets()->GetCaseCount();
                     FlowEdge** jumpTab   = block->GetSwitchTargets()->GetCases();
                     bool       foundVal  = false;
@@ -8184,7 +8421,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (op2->OperIs(GT_CNS_INT))
                     {
-                        ssize_t ival = op2->AsIntCon()->gtIconVal;
+                        ssize_t ival = op2->AsIntCon()->IconValue();
                         ssize_t mask, umask;
 
                         switch (lclTyp)
@@ -8727,6 +8964,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         BADCODE("tailcall. has to be followed by call, callvirt or calli");
                     }
+
+                    if (compIsAsyncVersion())
+                    {
+                        // In async versions we just ignore tail.
+                        prefixFlags &= ~PREFIX_TAILCALL_EXPLICIT;
+                    }
                 }
                 assert(sz == 0);
                 goto PREFIX;
@@ -8977,22 +9220,42 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     int         configVal          = -1; // -1 not configured, 0/1 configured to false/true
                     const BYTE* codeAddrAfterMatch = nullptr;
                     IL_OFFSET   awaitOffset        = BAD_IL_OFFSET;
-#ifdef DEBUG
-                    if (compIsAsync() && JitConfig.JitOptimizeAwait())
-#else
-                    if (compIsAsync())
-#endif
-                    {
-                        codeAddrAfterMatch = impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal, &awaitOffset);
-                        if (codeAddrAfterMatch != nullptr)
-                        {
-                            JITDUMP("Recognized await%s\n", configVal == 0 ? " (with ConfigureAwait(false))" : "");
 
-                            isAwait = true;
-                            prefixFlags |= PREFIX_IS_TASK_AWAIT;
-                            if (configVal != 0)
+                    if (compIsAsyncVersion())
+                    {
+                        int numBytesMatched;
+                        if (((info.compFlags & CORINFO_FLG_SYNCH) == 0) &&
+                            impMatchAsyncVersionTailCall(codeAddr + sz, codeEndp, &prefixFlags, &numBytesMatched))
+                        {
+                            JITDUMP("\nRecognized tail-call in async version\n");
+                            isAwait     = true;
+                            awaitOffset = (IL_OFFSET)(codeAddr - 1 - info.compCode);
+                            prefixFlags |= PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT;
+                            // Consume number of bytes matched. Note `codeAddr` points at the unconsumed token;
+                            // the main loop will still do `codeAddr += sz` (token size) after this case.
+                            codeAddrAfterMatch = codeAddr + numBytesMatched;
+                        }
+                    }
+                    else
+                    {
+#ifdef DEBUG
+                        if (compIsAsync() && JitConfig.JitOptimizeAwait())
+#else
+                        if (compIsAsync())
+#endif
+                        {
+                            codeAddrAfterMatch = impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal, &awaitOffset);
+                            if (codeAddrAfterMatch != nullptr)
                             {
-                                prefixFlags |= PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
+                                JITDUMP("\nRecognized await%s\n",
+                                        configVal == 0 ? " (with ConfigureAwait(false))" : "");
+
+                                isAwait = true;
+                                prefixFlags |= PREFIX_IS_TASK_AWAIT;
+                                if (configVal != 0)
+                                {
+                                    prefixFlags |= PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
+                                }
                             }
                         }
                     }
@@ -9000,17 +9263,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (isAwait)
                     {
                         _impResolveToken(CORINFO_TOKENKIND_Await);
-                        if (resolvedToken.hMethod == nullptr)
+                        if ((resolvedToken.hMethod == NO_METHOD_HANDLE) || !impCheckOptimizeAwait(awaitOffset))
                         {
                             // This can happen in cases when the Task-returning method is not a runtime Async
                             // function. For example "T M1<T>(T arg) => arg" when called with a Task argument.
                             // It can also happen generally if the VM does not think using the async entry point
                             // is worth it. Treat these as a regular call that is Awaited.
                             _impResolveToken(CORINFO_TOKENKIND_Method);
-                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
+                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT |
+                                             PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT);
                             isAwait = false;
 
-                            JITDUMP("No async variant provided by VM, treating as regular call that is awaited\n");
+                            JITDUMP("\nNo async variant provided by VM, treating as regular call that is awaited\n");
                         }
                     }
                     else
@@ -9027,28 +9291,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     eeGetCallInfo(&resolvedToken,
                                   (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr, flags,
                                   &callInfo);
-
-                    if (isAwait && (callInfo.kind == CORINFO_CALL))
-                    {
-                        assert(callInfo.sig.isAsyncCall());
-                        bool isSyncCallThunk;
-                        info.compCompHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
-                        if (!isSyncCallThunk)
-                        {
-                            // The async variant that we got is a thunk. Switch
-                            // back to the non-async task-returning call. There
-                            // is no reason to go through the thunk.
-                            _impResolveToken(CORINFO_TOKENKIND_Method);
-                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
-                            isAwait = false;
-
-                            JITDUMP(
-                                "Async variant provided by VM is a thunk, switching direct call to synchronous task-returning method\n");
-                            eeGetCallInfo(&resolvedToken,
-                                          (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                                          flags, &callInfo);
-                        }
-                    }
 
                     if (isAwait)
                     {
@@ -9108,43 +9350,57 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     bool hasTailPrefix = (prefixFlags & PREFIX_TAILCALL_EXPLICIT);
                     if (newBBcreatedForTailcallStress && !hasTailPrefix)
                     {
-                        // Do a more detailed evaluation of legality
-                        const bool passedConstraintCheck =
-                            checkTailCallConstraint(opcode, &resolvedToken,
-                                                    constraintCall ? &constrainedResolvedToken : nullptr);
-
-                        // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
-                        // patchpoints.
-                        //
-                        const bool mayHavePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                                        (JitConfig.TC_OnStackReplacement() > 0) &&
-                                                        compCanHavePatchpoints();
-                        if (passedConstraintCheck && (mayHavePatchpoints || compHasBackwardJump))
+                        // Don't stress-tailcall named intrinsics: many of them are imported as
+                        // non-CALL IR nodes (e.g. GC.KeepAlive -> GT_KEEPALIVE), which would
+                        // leave a BBJ_RETURN block that doesn't end in a CALL/RETURN and
+                        // confuse later phases (see
+                        // https://github.com/dotnet/runtime/issues/122479). Suppress both the
+                        // explicit and the implicit tailcall promotion in that case.
+                        if ((callInfo.methodFlags & CORINFO_FLG_INTRINSIC) != 0)
                         {
-                            // Now check with the runtime
-                            CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
-                            bool                  isVirtual         = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) ||
-                                             (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
-                            CORINFO_METHOD_HANDLE exactCalleeHnd = isVirtual ? nullptr : declaredCalleeHnd;
-                            if (info.compCompHnd->canTailCall(info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd,
-                                                              hasTailPrefix)) // Is it legal to do tailcall?
-                            {
-                                // Stress the tailcall.
-                                JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
-                                prefixFlags |= PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS;
-                            }
-                            else
-                            {
-                                // Runtime disallows this tail call
-                                JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
-                                passedStressModeValidation = false;
-                            }
+                            JITDUMP(" (Tailcall stress: skipping intrinsic)");
+                            passedStressModeValidation = false;
                         }
                         else
                         {
-                            // Constraints disallow this tail call
-                            JITDUMP(" (Tailcall stress: constraint check failed)");
-                            passedStressModeValidation = false;
+                            // Do a more detailed evaluation of legality
+                            const bool passedConstraintCheck =
+                                checkTailCallConstraint(opcode, &resolvedToken,
+                                                        constraintCall ? &constrainedResolvedToken : nullptr);
+
+                            // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
+                            // patchpoints.
+                            //
+                            const bool mayHavePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
+                                                            (JitConfig.TC_OnStackReplacement() > 0) &&
+                                                            compCanHavePatchpoints();
+                            if (passedConstraintCheck && (mayHavePatchpoints || compHasBackwardJump))
+                            {
+                                // Now check with the runtime
+                                CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
+                                bool                  isVirtual         = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) ||
+                                                 (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
+                                CORINFO_METHOD_HANDLE exactCalleeHnd = isVirtual ? nullptr : declaredCalleeHnd;
+                                if (info.compCompHnd->canTailCall(info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd,
+                                                                  hasTailPrefix)) // Is it legal to do tailcall?
+                                {
+                                    // Stress the tailcall.
+                                    JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
+                                    prefixFlags |= PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS;
+                                }
+                                else
+                                {
+                                    // Runtime disallows this tail call
+                                    JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
+                                    passedStressModeValidation = false;
+                                }
+                            }
+                            else
+                            {
+                                // Constraints disallow this tail call
+                                JITDUMP(" (Tailcall stress: constraint check failed)");
+                                passedStressModeValidation = false;
+                            }
                         }
                     }
                 }
@@ -9208,9 +9464,32 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     return;
                 }
 
-                if (explicitTailCall || newBBcreatedForTailcallStress) // If newBBcreatedForTailcallStress is true, we
-                                                                       // have created a new BB after the "call"
-                // instruction in fgMakeBasicBlocks(). So we need to jump to RET regardless.
+                // For tail awaits we also import the ret right after.
+                // Also, we may have covariant cases like Task<int> return from a Task method,
+                // and in those cases we end up with an extra IL stack entry here.
+                if ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0)
+                {
+                    if ((info.compRetType == TYP_VOID) && (stackState.esStackDepth > 0))
+                    {
+                        JITDUMP("\nHave extra IL stack entry after tail await\n");
+                        GenTree* val = impPopStack().val;
+                        if (varTypeIsStruct(val))
+                        {
+                            val = impNormStructVal(val, CHECK_SPILL_ALL);
+                        }
+
+                        impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
+                    }
+
+                    prefixFlags &= ~PREFIX_TAILCALL;
+                    goto RET;
+                }
+
+                // For explicit tailcalls import the ret as part of it.
+                // If newBBcreatedForTailcallStress is true we have created a
+                // new BB after the "call" instruction in fgMakeBasicBlocks().
+                // So we need to jump to RET regardless.
+                if (explicitTailCall || newBBcreatedForTailcallStress)
                 {
                     assert(!compIsForInlining());
                     goto RET;
@@ -10938,6 +11217,28 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val;
                 assertImp((genActualType(op1) == TYP_I_IMPL) || op1->TypeIs(TYP_BYREF));
 
+#if defined(FEATURE_SIMD)
+                if (varTypeIsSIMD(lclTyp))
+                {
+                    // We want to handle the general pattern of *(VectorN<T>*)(&lcl)
+                    // so we can recognize it as a form of bitcasting and mark the
+                    // underlying value to prevent its promotion. This is generally
+                    // some form of `ldarga, conv.u, ldobj` in IL
+
+                    GenTree* addr = op1->gtEffectiveVal();
+
+                    if (addr->IsLclVarAddr())
+                    {
+                        LclVarDsc* lclVar = lvaGetDesc(addr->AsLclFld());
+
+                        if ((lclVar->lvType == TYP_STRUCT) && (lclVar->lvExactSize() == genTypeSize(lclTyp)))
+                        {
+                            lclVar->lvIsBitcastToSimd = true;
+                        }
+                    }
+                }
+#endif // FEATURE_SIMD
+
                 op1 = gtNewLoadValueNode(lclTyp, layout, op1, impPrefixFlagsToIndirFlags(prefixFlags));
                 impPushOnStack(op1, tiRetVal);
                 break;
@@ -11003,6 +11304,37 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
     return;
 #undef _impResolveToken
+}
+
+//------------------------------------------------------------------------
+// impCheckOptimizeAwait:
+//   Check if an await at a specified offset should be optimized.
+//
+// Arguments:
+//   awaitOffset - The offset of the await
+//
+// Returns:
+//     True if we should use the async variant.
+//
+bool Compiler::impCheckOptimizeAwait(IL_OFFSET awaitOffset)
+{
+#ifdef DEBUG
+    static ConfigMethodRange s_jitOptimizeAwaitRange;
+    s_jitOptimizeAwaitRange.EnsureInit(JitConfig.JitOptimizeAwaitRange());
+
+    unsigned hash = impInlineRoot()->info.compMethodHash();
+    hash          = ((hash << 5) + hash) ^ (compIsForInlining() ? compInlineContext->GetOrdinal() : 0);
+    hash          = ((hash << 5) + hash) ^ awaitOffset;
+
+    if ((JitConfig.JitAwaitHashBreak() != -1) && (hash == (unsigned)JitConfig.JitAwaitHashBreak()))
+    {
+        assert(!"JitAwaitHashBreak reached");
+    }
+
+    return s_jitOptimizeAwaitRange.Contains(hash);
+#else
+    return true;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -11153,7 +11485,7 @@ GenTree* Compiler::impStoreMultiRegValueToVar(GenTree*                    op,
 //
 // Arguments:
 //     prefixFlags -- active IL prefixes
-//     opcode -- [in, out] IL opcode
+//     opcode      -- [in, out] IL opcode
 //
 // Returns:
 //     True if import was successful (may fail for some inlinees)
@@ -11180,6 +11512,15 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
     GenTree* op2 = nullptr;
     GenTree* op1 = nullptr;
+
+    if (((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) == 0) && compIsAsyncVersion())
+    {
+        JITDUMP("\nWrapping return value in await\n");
+        if (!impWrapTopOfStackInAwait())
+        {
+            return false;
+        }
+    }
 
     if (info.compRetType != TYP_VOID)
     {
@@ -11525,6 +11866,313 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     impNoteLastILoffs();
 #endif
     return true;
+}
+
+//------------------------------------------------------------------------
+// impWrapTopOfStackInAwait:
+//   Wrap the value on the top of the stack in
+//   AsyncHelpers.TransparentAwait.
+//
+// Returns:
+//   True if successful. False if the EE could not create the call (only during
+//   inlining), in which case inlining should be aborted.
+//
+// Remarks:
+//   Async versions of non-async task-returning methods are compiled with the
+//   exact same IL as the original method. This means the return value is
+//   mistyped; the original IL returns a Task or ValueTask, but the runtime
+//   async version expects to return the unwrapped result. This function
+//   accomplishes the unwrapping by inserting an async call to
+//   AsyncHelpers.TransparentAwait around the value on the top of the
+//   stack.
+//
+bool Compiler::impWrapTopOfStackInAwait()
+{
+    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+    {
+        assert(!compIsForInlining());
+
+        if (lvaMonAcquired == BAD_VAR_NUM)
+        {
+            lvaMonAcquired = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
+            lvaGetDesc(lvaMonAcquired)->lvType = TYP_I_IMPL;
+        }
+
+        GenTree* varAddrNode = gtNewLclVarAddrNode(lvaMonAcquired);
+        GenTree* lockObject =
+            info.compIsStatic ? fgGetCritSectOfStaticMethod() : gtNewLclvNode(info.compThisArg, TYP_REF);
+        GenTree* exitMon = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, lockObject, varAddrNode);
+        impAppendTree(exitMon, CHECK_SPILL_ALL, impCurStmtDI);
+    }
+
+    if (impFoldAwaitedTopOfStack())
+    {
+        return true;
+    }
+
+    CORINFO_LOOKUP         instArgLookup;
+    CORINFO_CONTEXT_HANDLE contextHandle;
+    CORINFO_METHOD_HANDLE  awaitMethod =
+        info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, &contextHandle, &instArgLookup);
+
+    CORINFO_SIG_INFO awaitSig;
+    info.compCompHnd->getMethodSig(awaitMethod, &awaitSig);
+
+    assert(awaitSig.isAsyncCall());
+
+    var_types callRetType = JITtype2varType(awaitSig.retType);
+
+    GenTreeCall* awaitCall = gtNewUserCallNode(awaitMethod, callRetType);
+
+    CORINFO_CLASS_HANDLE taskTypeHnd;
+    CorInfoType          taskType = strip(info.compCompHnd->getArgType(&awaitSig, awaitSig.args, &taskTypeHnd));
+
+    GenTree*   awaitable   = impPopStack().val;
+    var_types  taskJitType = JITtype2varType(taskType);
+    NewCallArg taskArg;
+    if (taskJitType == TYP_STRUCT)
+    {
+        awaitable = impNormStructVal(awaitable, CHECK_SPILL_ALL);
+        taskArg   = NewCallArg::Struct(awaitable, TYP_STRUCT, typGetObjLayout(taskTypeHnd));
+    }
+    else
+    {
+        taskArg = NewCallArg::Primitive(awaitable, taskJitType);
+    }
+
+    awaitCall->gtArgs.PushFront(this, taskArg);
+
+    NewCallArg asyncContArg = NewCallArg::Primitive(gtNewNull()).WellKnown(WellKnownArg::AsyncContinuation);
+
+    NewCallArg instArg;
+    if (awaitSig.hasTypeArg())
+    {
+        GenTree* instArgTree = impLookupToTree(&instArgLookup, GTF_ICON_METHOD_HDL, awaitMethod);
+        if (instArgTree == nullptr)
+        {
+            // Can fail if runtime lookup cannot be represented properly during inlining
+            return false;
+        }
+
+        instArg = NewCallArg::Primitive(instArgTree).WellKnown(WellKnownArg::InstParam);
+    }
+
+    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
+    {
+        awaitCall->gtArgs.PushFront(this, asyncContArg);
+
+        if (awaitSig.hasTypeArg())
+        {
+            awaitCall->gtArgs.PushFront(this, instArg);
+        }
+    }
+    else
+    {
+        awaitCall->gtArgs.PushBack(this, asyncContArg);
+
+        if (awaitSig.hasTypeArg())
+        {
+            awaitCall->gtArgs.PushBack(this, instArg);
+        }
+    }
+
+    CORINFO_CALL_INFO callInfo = {};
+    callInfo.hMethod           = awaitMethod;
+    callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(awaitMethod);
+    impMarkInlineCandidate(awaitCall, contextHandle, &callInfo, compInlineContext);
+
+    GenTree* toPush = awaitCall;
+    if (varTypeIsStruct(callRetType))
+    {
+        toPush = impFixupCallStructReturn(awaitCall, awaitSig.retTypeClass);
+    }
+
+    AsyncCallInfo* asyncInfo = new (this, CMK_Async) AsyncCallInfo;
+
+    if (impInlineRoot()->compIsAsyncVersion())
+    {
+        asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
+
+#if FEATURE_TAILCALL_OPT
+        // We intentionally do not consult with the EE and canTailCall because
+        // this is us introducing a call as an implementation detail and not a
+        // user-introduced call.
+        if (asyncInfo->IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled())
+        {
+            awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
+        }
+#endif
+    }
+    else
+    {
+        // We are inlining into an async method. This means we have a proper
+        // async await, and we require proper handling.
+        assert(compIsForInlining() && impInlineInfo->iciCall->IsAsync());
+        GenTreeCall* inlCall = impInlineInfo->iciCall;
+
+        JITDUMP("Inheriting continuation handling %d from caller [%06u]\n",
+                (unsigned)inlCall->GetAsyncInfo().ContinuationContextHandling, dspTreeID(inlCall));
+        asyncInfo->ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+        impInheritAsyncContextsFromInliner(awaitCall);
+    }
+
+    awaitCall->SetIsAsync(asyncInfo);
+
+    if (awaitCall->IsInlineCandidate())
+    {
+        // The struct return fixup does not create a new node for inline
+        // candidates, so 'toPush' is still the call itself.
+        assert(toPush == awaitCall);
+
+        // Make the call its own statement and hand back a GT_RET_EXPR (or
+        // nothing for void) as the placeholder for the inliner.
+        impAppendTree(awaitCall, CHECK_SPILL_ALL, impCurStmtDI, /* checkConsumedDebugInfo */ false);
+
+        if (callRetType == TYP_VOID)
+        {
+            assert(info.compRetType == TYP_VOID);
+            return true;
+        }
+
+        GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(awaitCall, genActualType(awaitCall->TypeGet()));
+        awaitCall->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+        toPush                                             = retExpr;
+    }
+
+    if (info.compRetType == TYP_VOID)
+    {
+        impAppendTree(toPush, CHECK_SPILL_ALL, impCurStmtDI);
+    }
+    else
+    {
+        impPushOnStack(toPush, makeTypeInfo(awaitSig.retType, awaitSig.retTypeClass));
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
+// impFoldAwaitedTopOfStack:
+//   Fold a few patterns where introducing a call to
+//   AsyncHelpers.TransparentAwait is unnecessary.
+//
+// Returns:
+//   True if the top of stack was folded and the importer stack was updated
+//   appropriately.
+//
+// Remarks:
+//   In async versions this folds these cases:
+//
+//   - return new ValueTask() (like ValueTask.CompletedTask)
+//   - return default (ValueTask.CompletedTask)
+//   - return new ValueTask<T>(value) (like ValueTask.FromResult)
+//
+//   We cannot represent these values as async variants, so we cannot fold them
+//   in the simple intrinsic path where other cases like Task.FromResult and
+//   ValueTask.FromResult are folded.
+//
+bool Compiler::impFoldAwaitedTopOfStack()
+{
+    if (!opts.Tier0OptimizationEnabled())
+    {
+        return false;
+    }
+
+    GenTree* value = impStackTop().val;
+    if (!value->OperIsScalarLocal())
+    {
+        return false;
+    }
+
+    GenTreeLclVarCommon* valueLcl = value->AsLclVarCommon();
+
+    Statement* lastStmt = impLastStmt;
+    if (lastStmt == nullptr)
+    {
+        return false;
+    }
+
+    GenTree* lastTree = lastStmt->GetRootNode();
+    // Look for a valueTask = 0 init, for "new ValueTask()" and "default" cases.
+    if (lastTree->OperIs(GT_STORE_LCL_VAR))
+    {
+        GenTreeLclVarCommon* storeLcl = lastTree->AsLclVarCommon();
+        if (storeLcl->GetLclNum() != valueLcl->GetLclNum())
+        {
+            return false;
+        }
+
+        if (!storeLcl->Data()->IsIntegralConst(0))
+        {
+            return false;
+        }
+
+        impPopStack();
+        if (info.compRetType == TYP_VOID)
+        {
+            lastTree->gtBashToNOP();
+        }
+        else if (info.compRetType != TYP_STRUCT)
+        {
+            impPushOnStack(gtNewZeroConNode(info.compRetType), typeInfo(info.compRetType));
+            lastTree->gtBashToNOP();
+        }
+        else
+        {
+            unsigned returnLcl = lvaGrabTemp(true DEBUGARG("Return temp"));
+            lvaSetStruct(returnLcl, info.compMethodInfo->args.retTypeClass, false);
+            // Reuse the ValueTask zeroing
+            lastTree->AsLclVar()->SetLclNum(returnLcl);
+            impPushOnStack(gtNewLclVarNode(returnLcl),
+                           makeTypeInfo(info.compMethodInfo->args.retType, info.compMethodInfo->args.retTypeClass));
+        }
+
+        JITDUMP("Optimized \"return new ValueTask()\" to return default\n");
+        return true;
+    }
+    else if (lastTree->IsCall() &&
+             lastTree->AsCall()->IsSpecialIntrinsic(this, NI_System_Threading_Tasks_ValueTask_1__ctor))
+    {
+        CallArg* thisArg = lastTree->AsCall()->gtArgs.GetThisArg();
+        if (!thisArg->GetNode()->OperIs(GT_LCL_ADDR) ||
+            (thisArg->GetNode()->AsLclVarCommon()->GetLclNum() != valueLcl->GetLclNum()))
+        {
+            return false;
+        }
+
+        CORINFO_SIG_INFO sig;
+        info.compCompHnd->getMethodSig(lastTree->AsCall()->gtCallMethHnd, &sig);
+
+        if (sig.numArgs != 1)
+        {
+            return false;
+        }
+
+        assert((sig.sigInst.classInstCount == 1) && (sig.sigInst.methInstCount == 0));
+        CORINFO_CLASS_HANDLE paramClass = info.compCompHnd->getArgClass(&sig, sig.args);
+        if (paramClass != sig.sigInst.classInst[0])
+        {
+            return false;
+        }
+
+        CallArg* valueArg = lastTree->AsCall()->gtArgs.GetUserArgByIndex(1);
+        GenTree* value    = valueArg->GetNode();
+
+        if (varTypeIsSmall(valueArg->GetSignatureType()) && fgCastNeeded(value, valueArg->GetSignatureType()))
+        {
+            value = gtNewCastNode(TYP_INT, value, false, valueArg->GetSignatureType());
+        }
+
+        StackEntry se = impPopStack();
+        impPushOnStack(value, se.seTypeInfo);
+        JITDUMP("Optimized \"return new ValueTask(value)\" to return value directly:\n");
+        DISPTREE(value);
+
+        // Finally remove the old constructor call, which is unneeded.
+        lastTree->gtBashToNOP();
+        return true;
+    }
+
+    return false;
 }
 
 #ifdef DEBUG
@@ -12879,11 +13527,7 @@ bool Compiler::impIsInvariant(const GenTree* tree)
 //
 bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
-    const GenTree* op = tree;
-    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
-    {
-        op = op->AsFieldAddr()->GetFldObj();
-    }
+    const GenTree* op = gtPeelFieldAddrs(tree);
 
     if (op->OperIs(GT_LCL_ADDR))
     {
@@ -13298,7 +13942,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     if (impIsInvariant(curArgVal))
     {
         argInfo->argIsInvariant = true;
-        if (argInfo->argIsThis && curArgVal->OperIs(GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
+        if (argInfo->argIsThis && curArgVal->OperIs(GT_CNS_INT) && (curArgVal->AsIntCon()->IconValue() == 0))
         {
             // Abort inlining at this call site
             inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);
@@ -13421,24 +14065,23 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     /* init the argument struct */
     memset(inlArgInfo, 0, (MAX_INL_ARGS + 1) * sizeof(inlArgInfo[0]));
 
-    unsigned ilArgCnt = 0;
+    pInlineInfo->argCnt = pInlineInfo->inlineCandidateInfo->methInfo.args.totalILArgs();
+    unsigned ilArgCnt   = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
         InlArgInfo* argInfo;
-        switch (arg.GetWellKnownArg())
+        if (arg.IsUserArg())
         {
-            case WellKnownArg::RetBuffer:
-            case WellKnownArg::AsyncContinuation:
-            case WellKnownArg::AsyncExecutionContext:
-            case WellKnownArg::AsyncSynchronizationContext:
-                // These do not appear in the table of inline arg info; do not include them
-                continue;
-            case WellKnownArg::InstParam:
-                pInlineInfo->inlInstParamArgInfo = argInfo = new (this, CMK_Inlining) InlArgInfo{};
-                break;
-            default:
-                argInfo = &inlArgInfo[ilArgCnt++];
-                break;
+            assert(ilArgCnt < pInlineInfo->argCnt);
+            argInfo = &inlArgInfo[ilArgCnt++];
+        }
+        else if (arg.GetWellKnownArg() == WellKnownArg::InstParam)
+        {
+            pInlineInfo->inlInstParamArgInfo = argInfo = new (this, CMK_Inlining) InlArgInfo{};
+        }
+        else
+        {
+            continue;
         }
 
         arg.SetEarlyNode(gtFoldExpr(arg.GetEarlyNode()));
@@ -13449,6 +14092,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             return;
         }
     }
+
+    assert(ilArgCnt == pInlineInfo->argCnt);
 
 #ifdef FEATURE_SIMD
     bool foundSIMDType = pInlineInfo->hasSIMDTypeArgLocalOrReturn;

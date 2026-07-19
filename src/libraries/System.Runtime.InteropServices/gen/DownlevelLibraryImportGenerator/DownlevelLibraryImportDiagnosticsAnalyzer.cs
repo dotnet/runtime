@@ -41,7 +41,7 @@ namespace Microsoft.Interop.Analyzers
 
         public override void Initialize(AnalysisContext context)
         {
-            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
             context.EnableConcurrentExecution();
             context.RegisterCompilationStartAction(context =>
             {
@@ -96,6 +96,12 @@ namespace Microsoft.Interop.Analyzers
         {
             IMethodSymbol method = (IMethodSymbol)context.Symbol;
 
+            // With Analyze | ReportDiagnostics, the callback fires for both the partial definition
+            // and the partial implementation as separate symbols. Skip the implementation part to
+            // avoid reporting duplicate diagnostics — we only want to report from the definition.
+            if (method.PartialDefinitionPart is not null)
+                return false;
+
             // Only analyze methods with LibraryImportAttribute
             AttributeData? libraryImportAttr = null;
             foreach (AttributeData attr in method.GetAttributes())
@@ -110,12 +116,20 @@ namespace Microsoft.Interop.Analyzers
             if (libraryImportAttr is null)
                 return false;
 
-            // Find the method syntax
+            bool isGeneratedByOurGenerator = IsGeneratedByOurGenerator(method);
+
+            // Find the method syntax - prefer the partial declaration (no body) over the generated implementation.
+            // With Analyze | ReportDiagnostics, both parts of a partial method appear in DeclaringSyntaxReferences.
+            // If we encounter the generated implementation (which has a body and is marked with [GeneratedCode]
+            // from our generator), skip it to find the user's partial declaration.
             foreach (SyntaxReference syntaxRef in method.DeclaringSyntaxReferences)
             {
                 if (syntaxRef.GetSyntax(context.CancellationToken) is MethodDeclarationSyntax methodSyntax)
                 {
-                    AnalyzeMethodSyntax(context, methodSyntax, method, libraryImportAttr, env);
+                    if (methodSyntax.Body is not null && isGeneratedByOurGenerator)
+                        continue;
+
+                    AnalyzeMethodSyntax(context, methodSyntax, method, libraryImportAttr, env, isGeneratedByOurGenerator);
                     break;
                 }
             }
@@ -123,27 +137,58 @@ namespace Microsoft.Interop.Analyzers
             return true;
         }
 
+        private static bool IsGeneratedByOurGenerator(IMethodSymbol method)
+        {
+            foreach (AttributeData attr in method.GetAttributes())
+            {
+                // The generator marks its output with [GeneratedCode("Microsoft.Interop.LibraryImportGenerator...", "...")]
+                if (attr.AttributeClass is { Name: "GeneratedCodeAttribute", ContainingNamespace.Name: "Compiler", ContainingNamespace.ContainingNamespace.Name: "CodeDom", ContainingNamespace.ContainingNamespace.ContainingNamespace.Name: "System" }
+                    && attr.ConstructorArguments.Length >= 1
+                    && attr.ConstructorArguments[0].Value is string toolName
+                    && toolName.StartsWith("Microsoft.Interop.LibraryImportGenerator", StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private static void AnalyzeMethodSyntax(
             SymbolAnalysisContext context,
             MethodDeclarationSyntax methodSyntax,
             IMethodSymbol method,
             AttributeData libraryImportAttr,
-            StubEnvironment env)
+            StubEnvironment env,
+            bool skipInvalidMethodCheck)
         {
-            // Check for invalid method signature
-            DiagnosticInfo? invalidMethodDiagnostic = GetDiagnosticIfInvalidMethodForGeneration(methodSyntax, method);
-            if (invalidMethodDiagnostic is not null)
+            // When our generator has already produced an implementation, skip the signature validity check:
+            // the method must already have been valid for the generator to run. We still run the rest of
+            // the analysis (CalculateDiagnostics) to catch other issues.
+            if (!skipInvalidMethodCheck)
             {
-                context.ReportDiagnostic(invalidMethodDiagnostic.ToDiagnostic());
-                return; // Don't continue analysis if the method is invalid
+                DiagnosticInfo? invalidMethodDiagnostic = GetDiagnosticIfInvalidMethodForGeneration(methodSyntax, method);
+                if (invalidMethodDiagnostic is not null)
+                {
+                    context.ReportDiagnostic(invalidMethodDiagnostic.ToDiagnostic());
+                    return; // Don't continue analysis if the method is invalid
+                }
             }
 
             // Calculate stub information and collect diagnostics
             var diagnostics = CalculateDiagnostics(methodSyntax, method, libraryImportAttr, env, context.CancellationToken);
 
+            SyntaxTree userSyntaxTree = methodSyntax.SyntaxTree;
             foreach (DiagnosticInfo diagnostic in diagnostics)
             {
-                context.ReportDiagnostic(diagnostic.ToDiagnostic());
+                // Only report diagnostics located in the user's (non-generated) source.
+                // With Analyze | ReportDiagnostics, some diagnostics may have locations in
+                // generated source; we must filter those out to avoid duplicates.
+                if (diagnostic.Location is null
+                    || !diagnostic.Location.IsInSource
+                    || diagnostic.Location.SourceTree == userSyntaxTree)
+                {
+                    context.ReportDiagnostic(diagnostic.ToDiagnostic());
+                }
             }
         }
 

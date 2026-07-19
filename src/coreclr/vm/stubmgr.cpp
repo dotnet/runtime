@@ -463,7 +463,7 @@ BOOL StubManager::CheckIsStub_Worker(PCODE stubStartAddress)
     EX_TRY
 #endif
     {
-		SUPPORTS_DAC;
+        SUPPORTS_DAC;
 
 #ifndef DACCESS_COMPILE
         // Use CheckIsStub_Internal may AV. That's ok.
@@ -1208,17 +1208,20 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
 
     // If we got here, then we're here b/c we're at the start of a delegate stub
     // need to figure out the kind of delegates we are dealing with.
-    BYTE *pbDelInvocationList = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfInvocationList());
+    BYTE *pbDelInvocationList = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfHelperObject());
 
     LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: invocationList: %p\n", pbDelInvocationList));
 
-    if (pbDelInvocationList == NULL)
+    if (pbDelInvocationList == NULL || !(*(MethodTable**)pbDelInvocationList)->IsArray())
     {
         // A null invocationList can be one of the following:
-        //  - Instance closed, Instance open non-virt, Instance open virtual, Static closed, Static opened, Unmanaged FtnPtr
-        //  - Instance open virtual is complex and we need to figure out what to do (TODO).
-        // For the others the logic is the following:
-        // if _methodPtrAux is 0 the target is in _methodPtr, otherwise the taret is _methodPtrAux
+        // - Instance closed
+        // - Instance open non-virt
+        // - Instance open virtual
+        // - Static closed
+        // - Static open
+        // - Unmanaged FtnPtr
+        // if _methodPtrAux is 0 the target is in _methodPtr, otherwise the target is _methodPtrAux
 
         ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtrAux());
         if (*ppbDest == NULL)
@@ -1235,51 +1238,18 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
 
         LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: ppbDest: %p *ppbDest:%p\n", ppbDest, *ppbDest));
 
-        BOOL res = StubManager::TraceStub((PCODE) (*ppbDest), trace);
+        BOOL res = StubManager::TraceStub((PCODE) *ppbDest, trace);
 
-        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: res: %s, result type: %d\n", (res ? "true" : "false"), trace->GetTraceType()));
-
-        return res;
-    }
-
-    // invocationList is not null, so it can be one of the following:
-    // Multicast, Static closed (special sig), Secure
-
-    // rule out the static with special sig
-    BYTE *pbCount = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfInvocationCount());
-    if (pbCount == NULL)
-    {
-        // it's a static closed, the target lives in _methodAuxPtr
-        ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtrAux());
-
-        if (*ppbDest == NULL)
-        {
-            // it's not looking good, bail out
-            LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: can't trace into it\n"));
-            return FALSE;
-        }
-
-        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: ppbDest: %p *ppbDest:%p\n", ppbDest, *ppbDest));
-
-        BOOL res = StubManager::TraceStub((PCODE) (*ppbDest), trace);
-
-        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: res: %d, result type: %d\n", (res ? "true" : "false"), trace->GetTraceType()));
+        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: res: %s, result type: %d\n", res ? "true" : "false", trace->GetTraceType()));
 
         return res;
-    }
-
-    MethodTable *pType = *(MethodTable**)pbDelInvocationList;
-    if (pType->IsDelegate())
-    {
-        // this is a secure delegate. The target is hidden inside this field, so recurse.
-        return TraceDelegateObject(pbDelInvocationList, trace);
     }
 
     // Otherwise, we're going for the first invoke of the multi case.
     // In order to go to the correct spot, we have just have to fish out
     // slot 0 of the invocation list, and figure out where that's going to,
     // then put a breakpoint there.
-    pbDel = *(BYTE**)(((ArrayBase *)pbDelInvocationList)->GetDataPtr());
+    pbDel = *(BYTE**)((ArrayBase *)pbDelInvocationList)->GetDataPtr();
     return TraceDelegateObject(pbDel, trace);
 }
 
@@ -1434,57 +1404,6 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
 
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-// -------------------------------------------------------
-// JumpStub stubs
-//
-// Stub manager for jump stubs created by ExecutionManager::jumpStub()
-// These are currently used only on the 64-bit targets IA64 and AMD64
-//
-// -------------------------------------------------------
-
-SPTR_IMPL(JumpStubStubManager, JumpStubStubManager, g_pManager);
-
-#ifndef DACCESS_COMPILE
-/* static */
-void JumpStubStubManager::Init()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    g_pManager = new JumpStubStubManager();
-    StubManager::AddStubManager(g_pManager);
-}
-#endif // #ifndef DACCESS_COMPILE
-
-BOOL JumpStubStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    // Forwarded to from RangeSectionStubManager
-    return FALSE;
-}
-
-BOOL JumpStubStubManager::DoTraceStub(PCODE stubStartAddress,
-                                     TraceDestination *trace)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PCODE jumpTarget = decodeBackToBackJump(stubStartAddress);
-    trace->InitForStub(jumpTarget);
-
-    LOG_TRACE_DESTINATION(trace, stubStartAddress, "JumpStubStubManager::DoTraceStub");
-
-    return TRUE;
-}
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
-
 //
 // Stub manager for code sections. It forwards the query to the more appropriate
 // stub manager, or handles the query itself.
@@ -1517,8 +1436,10 @@ BOOL RangeSectionStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     switch (GetStubKind(stubStartAddress))
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
-    case STUB_CODE_BLOCK_STUBLINK:
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+#endif // FEATURE_TIERED_COMPILATION
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
     case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
@@ -1549,11 +1470,19 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
     {
 #ifdef FEATURE_DYNAMIC_CODE_COMPILED
     case STUB_CODE_BLOCK_JUMPSTUB:
-        return JumpStubStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
+    {
+        PCODE jumpTarget = decodeBackToBackJump(stubStartAddress);
+        trace->InitForStub(jumpTarget);
+        return TRUE;
+    }
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
-
-    case STUB_CODE_BLOCK_STUBLINK:
-        return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+    {
+        trace->InitForStub(CallCountingManager::GetTargetForMethod(stubStartAddress));
+        return TRUE;
+    }
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
@@ -1587,12 +1516,12 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
         return W("JumpStub");
-
-    case STUB_CODE_BLOCK_STUBLINK:
-        return W("StubLinkStub");
-
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return W("MethodCallThunk");
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return W("CallCountingStub");
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
@@ -1712,7 +1641,7 @@ static PCODE GetCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCallInfo)
     CONTRACTL_END;
 
     // calculate the target interface pointer
-    SafeComHolder<IUnknown> pUnk;
+    ComHolderAnyMode<IUnknown> pUnk;
 
     OBJECTREF oref = ObjectToOBJECTREF(pThis);
     GCPROTECT_BEGIN(oref);
@@ -1736,7 +1665,7 @@ static PCODE GetLateBoundCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCal
     CONTRACTL_END;
 
     // calculate the target interface pointer
-    SafeComHolder<IUnknown> pUnk;
+    ComHolderAnyMode<IUnknown> pUnk;
 
     OBJECTREF oref = ObjectToOBJECTREF(pThis);
     GCPROTECT_BEGIN(oref);
@@ -1749,7 +1678,7 @@ static PCODE GetLateBoundCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCal
     // Make sure that our underlying RCW really has some IDispatch support.
     // We don't use this pointer as we don't want the "default" IDispatch interface.
     // We want the IDispatch pointer that corresponds to the actual interface we're calling on, which may not be the default IDispatch.
-    SafeComHolder<IDispatch> pDisp;
+    ComHolderAnyMode<IDispatch> pDisp;
     _ASSERTE(SUCCEEDED(((IUnknown *)pUnk)->QueryInterface(IID_IDispatch, (void**)&pDisp)));
 #endif
 
@@ -2281,8 +2210,17 @@ BOOL AsyncThunkStubManager::TraceManager(Thread *thread,
     MethodDesc* pMD = NonVirtualEntry2MethodDesc(stubIP);
     if (pMD->IsAsyncThunkMethod())
     {
-        MethodDesc* pOtherMD = pMD->GetAsyncOtherVariant();
-        _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk has no non-thunk variant to step through to");
+        MethodDesc* pOtherMD = pMD->GetOrdinaryVariant();
+        _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk does not have non-async variant");
+
+        // An ordinary variant may be a thunk in a rare case when we start from ReturnDroppingThunk.
+        // In such case the regular async variant must not be a thunk.
+        if (pOtherMD->IsAsyncThunkMethod())
+        {
+            pOtherMD = pMD->GetAsyncVariant();
+            _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk has no non-thunk variant to step through to");
+            _ASSERTE(!pOtherMD->IsAsyncThunkMethod());
+        }
 
         LOG((LF_CORDB, LL_INFO1000, "ATSM::TraceManager: Step through async thunk to target - %p\n", pOtherMD));
         PCODE target = GetStubTarget(pOtherMD);
@@ -2321,17 +2259,6 @@ StubLinkStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     EMEM_OUT(("MEM: %p StubLinkStubManager\n", dac_cast<TADDR>(this)));
     GetRangeList()->EnumMemoryRegions(flags);
 }
-
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-void
-JumpStubStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-    WRAPPER_NO_CONTRACT;
-    DAC_ENUM_VTHIS();
-    EMEM_OUT(("MEM: %p JumpStubStubManager\n", dac_cast<TADDR>(this)));
-}
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 void
 RangeSectionStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)

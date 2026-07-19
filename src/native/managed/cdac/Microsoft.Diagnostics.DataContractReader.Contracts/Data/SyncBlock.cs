@@ -3,32 +3,33 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class SyncBlock : IData<SyncBlock>
+[CdacType(nameof(DataType.SyncBlock))]
+internal sealed partial class SyncBlock : IData<SyncBlock>
 {
-    static SyncBlock IData<SyncBlock>.Create(Target target, TargetPointer address)
-        => new SyncBlock(target, address);
+    [Field] public uint ThinLock { get; }
+    [Field] public TargetPointer LinkNext { get; }
+    [Field] public uint HashCode { get; }
 
-    public SyncBlock(Target target, TargetPointer address)
+    public InteropSyncBlockInfo? InteropInfo { get; private set; }
+    public ObjectHandle? Lock { get; private set; }
+    public TargetPointer? EnCInfo { get; private set; }
+
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.SyncBlock);
-
-        Address = address;
-        TargetPointer interopInfoPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(InteropInfo)].Offset);
+        TargetPointer interopInfoPointer = target.ReadPointerField(address, type, nameof(InteropInfo));
         if (interopInfoPointer != TargetPointer.Null)
             InteropInfo = target.ProcessedData.GetOrAdd<InteropSyncBlockInfo>(interopInfoPointer);
-        TargetPointer lockPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(Lock)].Offset);
-        if (lockPointer != TargetPointer.Null)
-            Lock = target.ProcessedData.GetOrAdd<ObjectHandle>(lockPointer);
 
-        ThinLock = target.Read<uint>(address + (ulong)type.Fields[nameof(ThinLock)].Offset);
-        LinkNext = target.ReadPointer(address + (ulong)type.Fields[nameof(LinkNext)].Offset);
-        HashCode = target.Read<uint>(address + (ulong)type.Fields[nameof(HashCode)].Offset);
+        ObjectHandle lockHandle = target.ReadDataField<ObjectHandle>(address, type, nameof(Lock));
+        if (lockHandle.Handle != TargetPointer.Null)
+            Lock = lockHandle;
+
+        if (type.Fields.ContainsKey(nameof(EnCInfo)))
+        {
+            TargetPointer encInfoPointer = target.ReadPointerField(address, type, nameof(EnCInfo));
+            if (encInfoPointer != TargetPointer.Null)
+                EnCInfo = encInfoPointer;
+        }
     }
-
-    public TargetPointer Address { get; init; }
-    public InteropSyncBlockInfo? InteropInfo { get; init; }
-    public ObjectHandle? Lock { get; init; }
-    public uint ThinLock { get; init; }
-    public TargetPointer LinkNext { get; init; }
-    public uint HashCode { get; init; }
 }

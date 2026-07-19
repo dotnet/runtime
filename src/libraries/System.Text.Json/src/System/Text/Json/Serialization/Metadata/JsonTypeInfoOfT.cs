@@ -116,6 +116,117 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
+        /// Gets or sets the strongly-typed delegate that deconstructs a union instance
+        /// into its case type and case value.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Setting this property also updates the weakly-typed
+        /// <see cref="JsonTypeInfo.UnionDeconstructor"/> on the base type. Refer to that
+        /// property's remarks for the full <c>(CaseType, CaseValue)</c> contract — including
+        /// the role of a <see langword="null"/> <c>CaseType</c> as the discriminator for the
+        /// canonical null-union state.
+        /// </para>
+        /// <para>
+        /// For value-type unions, using this strongly-typed overload avoids boxing the union instance.
+        /// </para>
+        /// </remarks>
+        public new Func<T, (Type? CaseType, object? CaseValue)>? UnionDeconstructor
+        {
+            get => _typedUnionDeconstructor;
+            set
+            {
+                VerifyMutable();
+                SetUnionDeconstructor(value);
+            }
+        }
+
+        private protected override void SetUnionDeconstructor(Delegate? deconstructor)
+        {
+            Debug.Assert(deconstructor is null or Func<object, (Type?, object?)> or Func<T, (Type?, object?)>);
+
+            if (deconstructor is null)
+            {
+                _unionDeconstructor = null;
+                _typedUnionDeconstructor = null;
+            }
+            else if (deconstructor is Func<T, (Type?, object?)> typedDelegate)
+            {
+                _typedUnionDeconstructor = typedDelegate;
+                _unionDeconstructor = deconstructor is Func<object, (Type?, object?)> untypedDelegate
+                    ? untypedDelegate
+                    : obj => typedDelegate((T)obj);
+            }
+            else
+            {
+                Debug.Assert(deconstructor is Func<object, (Type?, object?)>);
+                var untypedDelegate = (Func<object, (Type?, object?)>)deconstructor;
+                _unionDeconstructor = untypedDelegate;
+                _typedUnionDeconstructor = val => untypedDelegate(val!);
+            }
+        }
+
+        private Func<T, (Type?, object?)>? _typedUnionDeconstructor;
+
+        /// <summary>
+        /// Gets or sets the strongly-typed delegate that constructs a union instance
+        /// from a case type and case value.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Setting this property also updates the weakly-typed
+        /// <see cref="JsonTypeInfo.UnionConstructor"/> on the base type.
+        /// </para>
+        /// <para>
+        /// The delegate takes a <see cref="Type"/> parameter for disambiguation when
+        /// overlapping case types exist (e.g., <c>Labrador : Dog</c>).
+        /// For value-type unions, using this strongly-typed overload avoids boxing the result.
+        /// </para>
+        /// <para>
+        /// The delegate is invoked with a <see langword="null"/> case value when the
+        /// converter encounters a JSON <see cref="JsonTokenType.Null"/> token, in which
+        /// case the case-type argument is unspecified and should be ignored. See
+        /// <see cref="JsonTypeInfo.UnionConstructor"/> for the full null-handling contract.
+        /// </para>
+        /// </remarks>
+        public new Func<Type, object?, T>? UnionConstructor
+        {
+            get => _typedUnionConstructor;
+            set
+            {
+                VerifyMutable();
+                SetUnionConstructor(value);
+            }
+        }
+
+        private protected override void SetUnionConstructor(Delegate? constructor)
+        {
+            Debug.Assert(constructor is null or Func<Type, object?, object> or Func<Type, object?, T>);
+
+            if (constructor is null)
+            {
+                _unionConstructor = null;
+                _typedUnionConstructor = null;
+            }
+            else if (constructor is Func<Type, object?, T> typedDelegate)
+            {
+                _typedUnionConstructor = typedDelegate;
+                _unionConstructor = constructor is Func<Type, object?, object> untypedDelegate
+                    ? untypedDelegate
+                    : (type, val) => typedDelegate(type, val)!;
+            }
+            else
+            {
+                Debug.Assert(constructor is Func<Type, object?, object>);
+                var untypedDelegate = (Func<Type, object?, object>)constructor;
+                _unionConstructor = untypedDelegate;
+                _typedUnionConstructor = (type, val) => (T)untypedDelegate(type, val);
+            }
+        }
+
+        private Func<Type, object?, T>? _typedUnionConstructor;
+
+        /// <summary>
         /// Serializes an instance of <typeparamref name="T"/> using
         /// <see cref="JsonSourceGenerationOptionsAttribute"/> values specified at design time.
         /// </summary>

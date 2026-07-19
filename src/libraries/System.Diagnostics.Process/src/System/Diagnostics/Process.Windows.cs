@@ -192,11 +192,7 @@ namespace System.Diagnostics
             get { return GetProcessTimes().ExitTime; }
         }
 
-        /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan PrivilegedProcessorTime
+        public partial TimeSpan PrivilegedProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.PrivilegedTime : GetProcessTimes().PrivilegedProcessorTime;
         }
@@ -207,27 +203,12 @@ namespace System.Diagnostics
             get { return GetProcessTimes().StartTime; }
         }
 
-        /// <summary>
-        /// Gets the amount of time the associated process has spent utilizing the CPU.
-        /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
-        /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan TotalProcessorTime
+        public partial TimeSpan TotalProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.TotalTime : GetProcessTimes().TotalProcessorTime;
         }
 
-        /// <summary>
-        /// Gets the amount of time the associated process has spent running code
-        /// inside the application portion of the process (not the operating system core).
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan UserProcessorTime
+        public partial TimeSpan UserProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.UserTime : GetProcessTimes().UserProcessorTime;
         }
@@ -508,10 +489,14 @@ namespace System.Diagnostics
 
         private static ConsoleEncoding GetStandardOutputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
 
-        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
-        {
-            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle);
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles)
+            => SetProcessHandle(SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles), startInfo);
 
+        private bool StartCoreWithCallback(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, Func<WindowsProcessStartArguments, nint> callback)
+            => SetProcessHandle(SafeProcessHandle.StartWithCallback(startInfo, stdinHandle!, stdoutHandle!, stderrHandle!, callback), startInfo);
+
+        private bool SetProcessHandle(SafeProcessHandle startedProcess, ProcessStartInfo startInfo)
+        {
             if (startedProcess.IsInvalid)
             {
                 Debug.Assert(startInfo.UseShellExecute);

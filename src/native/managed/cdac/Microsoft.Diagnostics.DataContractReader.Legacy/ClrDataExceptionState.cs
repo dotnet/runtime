@@ -112,7 +112,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
     }
 
     int IXCLRDataExceptionState.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
-        => _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
 
     int IXCLRDataExceptionState.GetBaseType(/*CLRDataBaseExceptionType*/ uint* type) => HResults.E_NOTIMPL;
 
@@ -213,9 +213,9 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
     }
 
     int IXCLRDataExceptionState.IsSameState(EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord)
-        => _legacyImpl is not null ? _legacyImpl.IsSameState(exRecord, contextSize, cxRecord) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameState(exRecord, contextSize, cxRecord) : HResults.E_NOTIMPL;
     int IXCLRDataExceptionState.IsSameState2(uint flags, EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord)
-        => _legacyImpl is not null ? _legacyImpl.IsSameState2(flags, exRecord, contextSize, cxRecord) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameState2(flags, exRecord, contextSize, cxRecord) : HResults.E_NOTIMPL;
     int IXCLRDataExceptionState.GetTask(DacComNullableByRef<IXCLRDataTask> task)
     {
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;

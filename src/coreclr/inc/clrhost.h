@@ -89,8 +89,19 @@ DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable);
 typedef Holder<CRITSEC_COOKIE, ClrEnterCriticalSection, ClrLeaveCriticalSection, 0> CRITSEC_Holder;
 
 // Use this holder to manage CRITSEC_COOKIE allocation to ensure it will be released if anything goes wrong
-FORCEINLINE void VoidClrDeleteCriticalSection(CRITSEC_COOKIE cs) { if (cs != NULL) ClrDeleteCriticalSection(cs); }
-typedef Wrapper<CRITSEC_COOKIE, DoNothing<CRITSEC_COOKIE>, VoidClrDeleteCriticalSection, 0> CRITSEC_AllocationHolder;
+struct CRITSECCookieAllocationTraits final
+{
+    using Type = CRITSEC_COOKIE;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type cs)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (cs != NULL)
+            ClrDeleteCriticalSection(cs);
+    }
+};
+
+using CRITSEC_AllocationHolder = LifetimeHolder<CRITSECCookieAllocationTraits>;
 
 #ifndef DACCESS_COMPILE
 // Suspend/resume APIs that fail-fast on errors

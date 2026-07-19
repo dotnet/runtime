@@ -20,7 +20,7 @@ namespace System.Runtime
 
     public static partial class RuntimeImports
     {
-        private const string RuntimeLibrary = "*";
+        internal const string RuntimeLibrary = "*";
 
         //
         // calls for GCHandle.
@@ -79,10 +79,6 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
         private static extern unsafe Array RhNewArray(MethodTable* pEEType, nint length);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhNewString")]
-        internal static extern unsafe string RhNewString(MethodTable* pEEType, nint length);
 
         [DllImport(RuntimeLibrary)]
         internal static extern unsafe void RhAllocateNewArray(MethodTable* pArrayEEType, uint numElements, uint flags, void* pResult);
