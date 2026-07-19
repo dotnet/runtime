@@ -979,28 +979,56 @@ namespace SerializationTypes
     }
 
     [DataContract]
-    public class MyType_InvalidEventMethods_OnSerializing
+    public class MyType_InvalidEventMethods_Type_OnSerializing
+    {
+        [OnSerializing()]
+        private void OnSerializingMethod(string x) { }
+    }
+
+    [DataContract]
+    public class MyType_InvalidEventMethods_Type_OnSerialized
+    {
+        [OnSerialized()]
+        private void OnSerializedMethod(string x) { }
+    }
+
+    [DataContract]
+    public class MyType_InvalidEventMethods_Type_OnDeserializing
+    {
+        [OnDeserializing()]
+        private void OnDeserializingMethod(string x) { }
+    }
+
+    [DataContract]
+    public class MyType_InvalidEventMethods_Type_OnDeserialized
+    {
+        [OnDeserialized()]
+        private void OnDeserializedMethod(string x) { }
+    }
+
+    [DataContract]
+    public class MyType_InvalidEventMethods_Length_OnSerializing
     {
         [OnSerializing()]
         private void OnSerializingMethod(int a, double b) { }
     }
 
     [DataContract]
-    public class MyType_InvalidEventMethods_OnSerialized
+    public class MyType_InvalidEventMethods_Length_OnSerialized
     {
         [OnSerialized()]
         private void OnSerializedMethod(int a, double b) { }
     }
 
     [DataContract]
-    public class MyType_InvalidEventMethods_OnDeserializing
+    public class MyType_InvalidEventMethods_Length_OnDeserializing
     {
         [OnDeserializing()]
         private void OnDeserializingMethod(int a, double b) { }
     }
 
     [DataContract]
-    public class MyType_InvalidEventMethods_OnDeserialized
+    public class MyType_InvalidEventMethods_Length_OnDeserialized
     {
         [OnDeserialized()]
         private void OnDeserializedMethod(int a, double b) { }

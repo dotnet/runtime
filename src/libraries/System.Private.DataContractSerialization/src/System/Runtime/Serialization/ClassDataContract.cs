@@ -1129,8 +1129,7 @@ namespace System.Runtime.Serialization.DataContracts
                     {
                         if (method.ReturnType != Globals.TypeOfVoid)
                             DataContract.ThrowInvalidDataContractException(SR.Format(SR.CallbackMustReturnVoid, DataContract.GetClrTypeFullName(method.DeclaringType), method), method.DeclaringType);
-                        // if (parameters == null || parameters.Length switch { // Should we disallow 'parameters' being null?
-                        if (parameters is not null && parameters.Length switch {
+                        if (parameters is not null && parameters.Length switch { // If 'parameters' is null, then assume there are no parameters.
                                 0 => false,
                                 1 => parameters[0].ParameterType != Globals.TypeOfStreamingContext,
                                 _ => true
