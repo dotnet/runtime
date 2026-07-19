@@ -151,13 +151,18 @@ export function complete_task (holder_gc_handle: GCHandle, error?: any, data?: a
         set_arg_type(arg1, MarshalerType.Object);
         set_gc_handle(arg1, holder_gc_handle);
         const arg2 = get_arg(args, 3);
-        if (error) {
-            marshal_exception_to_cs(arg2, error);
-        } else {
+        if (!error) {
             set_arg_type(arg2, MarshalerType.None);
             const arg3 = get_arg(args, 4);
             mono_assert(res_converter, "res_converter missing");
-            res_converter(arg3, data);
+            try {
+                res_converter(arg3, data);
+            } catch (ex) {
+                error = ex;
+            }
+        }
+        if (error) {
+            marshal_exception_to_cs(arg2, error);
         }
         invoke_async_jsexport(runtimeHelpers.ioThreadTID, managedExports.CompleteTask, args, size);
     } finally {

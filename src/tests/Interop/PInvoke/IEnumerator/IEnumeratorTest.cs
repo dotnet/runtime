@@ -45,6 +45,7 @@ namespace PInvokeTests
     [SkipOnMono("PInvoke IEnumerator/IEnumerable marshalling not supported on Mono")]
     public static class IEnumeratorTests
     {
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: COM", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
         public static void TestNativeToManaged()
@@ -53,6 +54,7 @@ namespace PInvokeTests
             AssertExtensions.CollectionEqual(Enumerable.Range(1, 10), IEnumeratorNative.GetIntegerEnumeration(1, 10).OfType<int>());
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: COM", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
         public static void TestManagedToNative()
@@ -61,6 +63,7 @@ namespace PInvokeTests
             IEnumeratorNative.VerifyIntegerEnumeration(Enumerable.Range(1, 10), 1, 10);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: COM", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void TestNativeRoundTrip()
         {
@@ -68,6 +71,7 @@ namespace PInvokeTests
             Assert.Equal(nativeEnumerator, IEnumeratorNative.PassThroughEnumerator(nativeEnumerator));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: COM", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void TestManagedRoundTrip()
         {
@@ -75,6 +79,7 @@ namespace PInvokeTests
             Assert.Equal(managedEnumerator, IEnumeratorNative.PassThroughEnumerator(managedEnumerator));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: COM", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         [Xunit.SkipOnCoreClrAttribute("Depends on COM behavior that is not correct in interpreter", RuntimeTestModes.InterpreterActive)]
         public static void TestSupportForICustomAdapter()

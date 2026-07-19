@@ -79,7 +79,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(numBytes, await connection.ReadBlockAsync(postData, 0, numBytes));
 
                     await connection.WriteStringAsync(responseText).ConfigureAwait(false);
-                    connection.Socket.Shutdown(SocketShutdown.Send);
+                    await connection.Socket.ShutdownAsync(SocketShutdown.Send);
                 });
 
                 (await postAsync.ConfigureAwait(false)).Dispose();
@@ -89,6 +89,7 @@ namespace System.Net.Http.Functional.Tests
 
     [Collection(nameof(HttpClientMiniStress))]
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Security is not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "System.Net.Security is not supported on Wasi")]
     public abstract class HttpClientMiniStress : HttpClientHandlerTestBase
     {
         public HttpClientMiniStress(ITestOutputHelper output) : base(output) { }

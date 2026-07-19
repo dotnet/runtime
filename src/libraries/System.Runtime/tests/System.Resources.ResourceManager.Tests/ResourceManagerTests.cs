@@ -331,7 +331,7 @@ namespace System.Resources.Tests
             yield return new object[] { "Icon", new Icon("icon.ico") };
         }
 
-        [ConditionalTheory(nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
+        [ConditionalTheory(typeof(ResourceManagerTests), nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux | TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetObject_Images(string key, object expectedValue)
@@ -341,7 +341,7 @@ namespace System.Resources.Tests
             Assert.Equal(GetImageData(expectedValue), GetImageData(manager.GetObject(key, new CultureInfo("en-US"))));
         }
 
-        [ConditionalTheory(nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
+        [ConditionalTheory(typeof(ResourceManagerTests), nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux | TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetObject_Images_ResourceSet(string key, object expectedValue)
@@ -394,7 +394,7 @@ namespace System.Resources.Tests
 
         public static bool IsDrawingSupportedAndAllowsCustomResourceTypes => PlatformDetection.IsDrawingSupported && AllowsCustomResourceTypes && PlatformDetection.IsBinaryFormatterSupported;
 
-        [ConditionalTheory(nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
+        [ConditionalTheory(typeof(ResourceManagerTests), nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux | TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetResourceSet_Images(string key, object expectedValue)

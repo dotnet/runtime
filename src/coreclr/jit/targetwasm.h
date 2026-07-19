@@ -13,6 +13,8 @@
 #error NYI: WASM64
 #endif
 
+#define WASM_THREAD_SUPPORT      0       // Codegen does not support WasmThreads yet
+
 #define CPU_LOAD_STORE_ARCH      1
 #define CPU_HAS_FP_SUPPORT       1
 #define CPU_HAS_BYTE_REGS        0
@@ -21,13 +23,14 @@
 #define FEATURE_FIXED_OUT_ARGS   0       // Preallocate the outgoing arg area in the prolog
 #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
 #define FEATURE_MULTIREG_STRUCT_PROMOTE 1  // True when we want to promote fields of a multireg struct into registers
-#define FEATURE_FASTTAILCALL     0       // Tail calls made as epilog+jmp
+#define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp. On wasm the "jmp" is the native return_call / return_call_indirect opcode.
 #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
 #define FEATURE_IMPLICIT_BYREFS       1  // Support for struct parameters passed via pointers to shadow copies
 #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
 #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register
 #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register
-#define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (long/double).
+#define FEATURE_HAS_ZERO_REG          0  // Target does not have a hardware "zero register" usable as a containable source
+#define MAX_PASS_SINGLEREG_BYTES      16 // Maximum size of a struct passed in a single register (long/double/SIMD).
 #define MAX_PASS_MULTIREG_BYTES       0  // Maximum size of a struct that could be passed in more than one register
 #define MAX_RET_MULTIREG_BYTES        0  // Maximum size of a struct that could be returned in more than one register (Max is an HFA or 2 doubles)
 #define MAX_ARG_REG_COUNT             1  // Maximum registers used to pass a single argument in multiple registers.
@@ -46,8 +49,9 @@
 
 // TODO-WASM-CQ: measure if "CSE_CONSTS" is beneficial.
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
-#define EMIT_TRACK_STACK_DEPTH   1       // TODO-WASM: set to 0.
-#define EMIT_GENERATE_GCINFO     0       // Codegen and emit not responsible for GC liveness tracking and GCInfo generation
+#define LOWER_DECOMPOSE_LONGS    0       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
+#define EMIT_TRACK_STACK_DEPTH   0       // No need to track arg pushes/pops
+#define EMIT_GENERATE_GCINFO     1       // Codegen and emit generate GC info; on WASM this enables stack slot GC info encoding without fixed-register GC tracking
 
 // Since we don't have a fixed register set on WASM, we set most of the following register defines to 'none'-like values.
 #define REG_FP_FIRST             REG_NA
@@ -58,8 +62,8 @@
 #define HAS_FIXED_REGISTER_SET   0       // WASM has an unlimited number of locals/registers.
 #define REGNUM_BITS              1       // number of bits in a REG_*
 #define REGSIZE_BYTES            TARGET_POINTER_SIZE // number of bytes in one general purpose register
-#define FP_REGSIZE_BYTES         8      // number of bytes in one FP/SIMD register
-#define FPSAVE_REGSIZE_BYTES     8       // number of bytes in one FP/SIMD register that are saved/restored, for callee-saved registers
+#define FP_REGSIZE_BYTES         16      // number of bytes in one FP/SIMD register
+#define FPSAVE_REGSIZE_BYTES     16      // number of bytes in one FP/SIMD register that are saved/restored, for callee-saved registers
 
 #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
@@ -143,12 +147,6 @@
 #define REG_WRITE_BARRIER_SRC          REG_NA
 #define RBM_WRITE_BARRIER_SRC          RBM_NONE
 
-#define REG_WRITE_BARRIER_DST_BYREF    REG_NA
-#define RBM_WRITE_BARRIER_DST_BYREF    RBM_NONE
-
-#define REG_WRITE_BARRIER_SRC_BYREF    REG_NA
-#define RBM_WRITE_BARRIER_SRC_BYREF    RBM_NONE
-
 #define RBM_CALLEE_TRASH_NOGC          RBM_NONE
 
 // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
@@ -156,12 +154,6 @@
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
-
-// Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   RBM_NONE
-
-// Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_NONE
 
 // GenericPInvokeCalliHelper VASigCookie Parameter
 #define REG_PINVOKE_COOKIE_PARAM          REG_NA
@@ -257,39 +249,11 @@
 // on the stack guard page, and must be touched before any further "SUB SP".
 #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 0
 
+#ifdef FEATURE_SIMD
+#define ALIGN_SIMD_TYPES                  0  // Wasm doesn't need special alignment for SIMD locals
+#define FEATURE_PARTIAL_SIMD_CALLEE_SAVE  0  // No callee-save registers on Wasm
+#endif
+
 // clang-format on
 
 #include "registeropswasm.h"
-
-// TODO-WASM: implement the following functions in terms of a "locals registry" that would hold information
-// about the registers.
-
-inline bool genIsValidIntReg(regNumber reg)
-{
-    NYI_WASM("genIsValidIntReg");
-    return false;
-}
-
-inline bool genIsValidIntOrFakeReg(regNumber reg)
-{
-    NYI_WASM("genIsValidIntOrFakeReg");
-    return false;
-}
-
-inline bool genIsValidFloatReg(regNumber reg)
-{
-    NYI_WASM("genIsValidFloatReg");
-    return false;
-}
-
-inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
-{
-    NYI_WASM("isValidIntArgReg");
-    return false;
-}
-
-inline bool isValidFloatArgReg(regNumber reg)
-{
-    NYI_WASM("isValidFloatArgReg");
-    return false;
-}

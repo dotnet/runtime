@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 namespace overflow02_div;
 
@@ -95,6 +96,7 @@ public class OVFTest
         }
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsNotWindows))]
     [Fact]
     public static void TestEntryPoint()
     {

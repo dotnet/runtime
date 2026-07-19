@@ -14,13 +14,17 @@ namespace System.Numerics
         // Mutable for unit testing...
         internal static int MultiplyKaratsubaThreshold = 32;
         internal static int MultiplyToom3Threshold = 256;
+        internal static int SquareKaratsubaThreshold = 48;
+        internal static int SquareToom3Threshold = 384;
 #else
         internal const int MultiplyKaratsubaThreshold = 32;
         internal const int MultiplyToom3Threshold = 256;
+        internal const int SquareKaratsubaThreshold = 48;
+        internal const int SquareToom3Threshold = 384;
 #endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Square(ReadOnlySpan<uint> value, Span<uint> bits)
+        public static void Square(ReadOnlySpan<nuint> value, Span<nuint> bits)
         {
             Debug.Assert(bits.Length == value.Length + value.Length);
             Debug.Assert(!bits.ContainsAnyExcept(0u));
@@ -34,11 +38,11 @@ namespace System.Numerics
             // NOTE: useful thresholds needs some "empirical" testing,
             // which are smaller in DEBUG mode for testing purpose.
 
-            if (value.Length < MultiplyKaratsubaThreshold)
+            if (value.Length < SquareKaratsubaThreshold)
             {
                 Naive(value, bits);
             }
-            else if (value.Length < MultiplyToom3Threshold)
+            else if (value.Length < SquareToom3Threshold)
             {
                 Karatsuba(value, bits);
             }
@@ -47,11 +51,11 @@ namespace System.Numerics
                 Toom3(value, bits);
             }
 
-            static void Toom3(ReadOnlySpan<uint> value, Span<uint> bits)
+            static void Toom3(ReadOnlySpan<nuint> value, Span<nuint> bits)
             {
                 Debug.Assert(value.Length >= 3);
                 Debug.Assert(bits.Length >= value.Length + value.Length);
-                Debug.Assert(bits.Trim(0u).IsEmpty);
+                Debug.Assert(bits.Trim((nuint)0).IsEmpty);
 
                 // Based on the Toom-Cook multiplication we split left/right
                 // into some smaller values, doing recursive multiplication.
@@ -66,8 +70,8 @@ namespace System.Numerics
                 // StackAllocThreshold, so ArrayPool is always used.
 
                 int pAndQAllLength = pLength * 3;
-                uint[] pAndQAllFromPool = ArrayPool<uint>.Shared.Rent(pAndQAllLength);
-                Span<uint> pAndQAll = pAndQAllFromPool.AsSpan(0, pAndQAllLength);
+                nuint[] pAndQAllFromPool = ArrayPool<nuint>.Shared.Rent(pAndQAllLength);
+                Span<nuint> pAndQAll = pAndQAllFromPool.AsSpan(0, pAndQAllLength);
                 pAndQAll.Clear();
 
                 Toom3Data p = Toom3Data.Build(value, n, pAndQAll.Slice(0, 3 * pLength));
@@ -75,20 +79,20 @@ namespace System.Numerics
                 // Replace r_n in Wikipedia with z_n
                 int rLength = pLength + pLength + 1;
                 int rAndZAllLength = rLength * 3;
-                uint[] rAndZAllFromPool = ArrayPool<uint>.Shared.Rent(rAndZAllLength);
-                Span<uint> rAndZAll = rAndZAllFromPool.AsSpan(0, rAndZAllLength);
+                nuint[] rAndZAllFromPool = ArrayPool<nuint>.Shared.Rent(rAndZAllLength);
+                Span<nuint> rAndZAll = rAndZAllFromPool.AsSpan(0, rAndZAllLength);
                 rAndZAll.Clear();
 
                 p.Square(n, bits, rAndZAll);
 
-                ArrayPool<uint>.Shared.Return(pAndQAllFromPool);
-                ArrayPool<uint>.Shared.Return(rAndZAllFromPool);
+                ArrayPool<nuint>.Shared.Return(pAndQAllFromPool);
+                ArrayPool<nuint>.Shared.Return(rAndZAllFromPool);
             }
 
-            static void Karatsuba(ReadOnlySpan<uint> value, Span<uint> bits)
+            static void Karatsuba(ReadOnlySpan<nuint> value, Span<nuint> bits)
             {
                 Debug.Assert(bits.Length == value.Length + value.Length);
-                Debug.Assert(bits.Trim(0u).IsEmpty);
+                Debug.Assert(bits.Trim((nuint)0).IsEmpty);
 
                 // The special form of the Toom-Cook multiplication, where we
                 // split both operands into two operands, is also known
@@ -102,12 +106,12 @@ namespace System.Numerics
                 int n2 = n << 1;
 
                 // ... split value like a = (a_1 << n) + a_0
-                ReadOnlySpan<uint> valueLow = value.Slice(0, n);
-                ReadOnlySpan<uint> valueHigh = value.Slice(n);
+                ReadOnlySpan<nuint> valueLow = value.Slice(0, n);
+                ReadOnlySpan<nuint> valueHigh = value.Slice(n);
 
                 // ... prepare our result array (to reuse its memory)
-                Span<uint> bitsLow = bits.Slice(0, n2);
-                Span<uint> bitsHigh = bits.Slice(n2);
+                Span<nuint> bitsLow = bits.Slice(0, n2);
+                Span<nuint> bitsHigh = bits.Slice(n2);
 
                 // ... compute z_0 = a_0 * a_0 (squaring again!)
                 Square(valueLow, bitsLow);
@@ -116,18 +120,10 @@ namespace System.Numerics
                 Square(valueHigh, bitsHigh);
 
                 int foldLength = valueHigh.Length + 1;
-                uint[]? foldFromPool = null;
-                Span<uint> fold = ((uint)foldLength <= StackAllocThreshold
-                    ? stackalloc uint[StackAllocThreshold]
-                    : foldFromPool = ArrayPool<uint>.Shared.Rent(foldLength)).Slice(0, foldLength);
-                fold.Clear();
+                Span<nuint> fold = BigInteger.RentedBuffer.Create(foldLength, out BigInteger.RentedBuffer foldBuffer);
 
                 int coreLength = foldLength + foldLength;
-                uint[]? coreFromPool = null;
-                Span<uint> core = ((uint)coreLength <= StackAllocThreshold
-                    ? stackalloc uint[StackAllocThreshold]
-                    : coreFromPool = ArrayPool<uint>.Shared.Rent(coreLength)).Slice(0, coreLength);
-                core.Clear();
+                Span<nuint> core = BigInteger.RentedBuffer.Create(coreLength, out BigInteger.RentedBuffer coreBuffer);
 
                 // ... compute z_a = a_1 + a_0 (call it fold...)
                 Add(valueHigh, valueLow, fold);
@@ -135,26 +131,20 @@ namespace System.Numerics
                 // ... compute z_1 = z_a * z_a - z_0 - z_2
                 Square(fold, core);
 
-                if (foldFromPool != null)
-                    ArrayPool<uint>.Shared.Return(foldFromPool);
+                foldBuffer.Dispose();
 
                 SubtractCore(bitsHigh, bitsLow, core);
 
                 // ... and finally merge the result! :-)
                 AddSelf(bits.Slice(n), core);
 
-                if (coreFromPool != null)
-                    ArrayPool<uint>.Shared.Return(coreFromPool);
+                coreBuffer.Dispose();
             }
 
-            static void Naive(ReadOnlySpan<uint> value, Span<uint> bits)
+            static void Naive(ReadOnlySpan<nuint> value, Span<nuint> bits)
             {
                 Debug.Assert(bits.Length == value.Length + value.Length);
-                Debug.Assert(bits.Trim(0u).IsEmpty);
-
-                // Switching to managed references helps eliminating
-                // index bounds check...
-                ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
+                Debug.Assert(bits.Trim((nuint)0).IsEmpty);
 
                 // Squares the bits using the "grammar-school" method.
                 // Envisioning the "rhombus" of a pen-and-paper calculation
@@ -163,55 +153,68 @@ namespace System.Numerics
                 // Thus, we directly get z_i+j += 2 * a_j * a_i + c.
 
                 // ATTENTION: an ordinary multiplication is safe, because
-                // z_i+j + a_j * a_i + c <= 2(2^32 - 1) + (2^32 - 1)^2 =
-                // = 2^64 - 1 (which perfectly matches with ulong!). But
-                // here we would need an UInt65... Hence, we split these
-                // operation and do some extra shifts.
-                for (int i = 0; i < value.Length; i++)
+                // z_i+j + a_j * a_i + c <= 2(2^n - 1) + (2^n - 1)^2 =
+                // = 2^(2n) - 1, where n = BitsPerLimb. But here we would need
+                // one extra bit... Hence, we split these operation and do some
+                // extra shifts.
+                if (nint.Size == 8)
                 {
-                    ulong carry = 0UL;
-                    uint v = value[i];
-                    for (int j = 0; j < i; j++)
+                    for (int i = 0; i < value.Length; i++)
                     {
-                        ulong digit1 = Unsafe.Add(ref resultPtr, i + j) + carry;
-                        ulong digit2 = (ulong)value[j] * v;
-                        Unsafe.Add(ref resultPtr, i + j) = unchecked((uint)(digit1 + (digit2 << 1)));
-                        carry = (digit2 + (digit1 >> 1)) >> 31;
+                        UInt128 carry = 0;
+                        nuint v = value[i];
+                        for (int j = 0; j < i; j++)
+                        {
+                            UInt128 digit1 = (UInt128)(ulong)bits[i + j] + carry;
+                            UInt128 digit2 = (UInt128)(ulong)value[j] * (ulong)v;
+                            bits[i + j] = (nuint)(ulong)(digit1 + (digit2 << 1));
+                            // We need digit1 + 2*digit2, but that could overflow UInt128.
+                            // Instead, compute (digit2 + digit1/2) >> 63 which gives the
+                            // same carry without needing an extra bit of precision.
+                            carry = (digit2 + (digit1 >> 1)) >> 63;
+                        }
+
+                        UInt128 digits = (UInt128)(ulong)v * (ulong)v + carry;
+                        bits[i + i] = (nuint)(ulong)digits;
+                        bits[i + i + 1] = (nuint)(ulong)(digits >> 64);
                     }
-                    ulong digits = (ulong)v * v + carry;
-                    Unsafe.Add(ref resultPtr, i + i) = unchecked((uint)digits);
-                    Unsafe.Add(ref resultPtr, i + i + 1) = (uint)(digits >> 32);
+                }
+                else
+                {
+                    for (int i = 0; i < value.Length; i++)
+                    {
+                        ulong carry = 0;
+                        nuint v = value[i];
+                        for (int j = 0; j < i; j++)
+                        {
+                            ulong digit1 = bits[i + j] + carry;
+                            ulong digit2 = (ulong)value[j] * v;
+                            bits[i + j] = (uint)(digit1 + (digit2 << 1));
+                            carry = (digit2 + (digit1 >> 1)) >> 31;
+                        }
+
+                        ulong digits = (ulong)v * v + carry;
+                        bits[i + i] = (uint)digits;
+                        bits[i + i + 1] = (uint)(digits >> 32);
+                    }
                 }
             }
         }
 
-        public static void Multiply(ReadOnlySpan<uint> left, uint right, Span<uint> bits)
+        public static void Multiply(ReadOnlySpan<nuint> left, nuint right, Span<nuint> bits)
         {
             Debug.Assert(bits.Length == left.Length + 1);
 
-            // Executes the multiplication for one big and one 32-bit integer.
-            // Since every step holds the already slightly familiar equation
-            // a_i * b + c <= 2^32 - 1 + (2^32 - 1)^2 < 2^64 - 1,
-            // we are safe regarding to overflows.
-
-            int i = 0;
-            ulong carry = 0UL;
-
-            for (; i < left.Length; i++)
-            {
-                ulong digits = (ulong)left[i] * right + carry;
-                bits[i] = unchecked((uint)digits);
-                carry = digits >> 32;
-            }
-            bits[i] = (uint)carry;
+            nuint carry = Mul1(bits, left, right);
+            bits[left.Length] = carry;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
+        public static void Multiply(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
         {
             if (left.Length < right.Length)
             {
-                ReadOnlySpan<uint> tmp = right;
+                ReadOnlySpan<nuint> tmp = right;
                 right = left;
                 left = tmp;
             }
@@ -219,7 +222,7 @@ namespace System.Numerics
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(right.Length >= 0);
             Debug.Assert(right.IsEmpty || bits.Length >= left.Length + right.Length);
-            Debug.Assert(bits.Trim(0u).IsEmpty);
+            Debug.Assert(bits.Trim((nuint)0).IsEmpty);
             Debug.Assert(MultiplyKaratsubaThreshold >= 2);
             Debug.Assert(MultiplyToom3Threshold >= 9);
             Debug.Assert(MultiplyKaratsubaThreshold <= MultiplyToom3Threshold);
@@ -234,20 +237,28 @@ namespace System.Numerics
             // which are smaller in DEBUG mode for testing purpose.
 
             if (right.Length < MultiplyKaratsubaThreshold)
+            {
                 Naive(left, right, bits);
+            }
             else if ((left.Length + 1) >> 1 is int n && right.Length <= n)
+            {
                 RightSmall(left, right, bits, n);
+            }
             else if (right.Length < MultiplyToom3Threshold)
+            {
                 Karatsuba(left, right, bits, n);
+            }
             else
+            {
                 Toom3(left, right, bits);
+            }
 
-            static void Toom3(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
+            static void Toom3(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
             {
                 Debug.Assert(left.Length >= 3);
                 Debug.Assert(left.Length >= right.Length);
                 Debug.Assert(bits.Length >= left.Length + right.Length);
-                Debug.Assert(bits.Trim(0u).IsEmpty);
+                Debug.Assert(bits.Trim((nuint)0).IsEmpty);
 
                 // Based on the Toom-Cook multiplication we split left/right
                 // into some smaller values, doing recursive multiplication.
@@ -268,8 +279,8 @@ namespace System.Numerics
 
                 // The threshold for Toom-3 is expected to be greater than
                 // StackAllocThreshold, so ArrayPool is always used.
-                uint[] pAndQAllFromPool = ArrayPool<uint>.Shared.Rent(pAndQAllLength);
-                Span<uint> pAndQAll = pAndQAllFromPool.AsSpan(0, pAndQAllLength);
+                nuint[] pAndQAllFromPool = ArrayPool<nuint>.Shared.Rent(pAndQAllLength);
+                Span<nuint> pAndQAll = pAndQAllFromPool.AsSpan(0, pAndQAllLength);
                 pAndQAll.Clear();
 
                 Toom3Data p = Toom3Data.Build(left, n, pAndQAll.Slice(0, 3 * pLength));
@@ -278,17 +289,17 @@ namespace System.Numerics
                 // Replace r_n in Wikipedia with z_n
                 int rLength = pLength + pLength + 1;
                 int rAndZAllLength = rLength * 3;
-                uint[] rAndZAllFromPool = ArrayPool<uint>.Shared.Rent(rAndZAllLength);
-                Span<uint> rAndZAll = rAndZAllFromPool.AsSpan(0, rAndZAllLength);
+                nuint[] rAndZAllFromPool = ArrayPool<nuint>.Shared.Rent(rAndZAllLength);
+                Span<nuint> rAndZAll = rAndZAllFromPool.AsSpan(0, rAndZAllLength);
                 rAndZAll.Clear();
 
                 p.MultiplyOther(q, n, bits, rAndZAll);
 
-                ArrayPool<uint>.Shared.Return(pAndQAllFromPool);
-                ArrayPool<uint>.Shared.Return(rAndZAllFromPool);
+                ArrayPool<nuint>.Shared.Return(pAndQAllFromPool);
+                ArrayPool<nuint>.Shared.Return(rAndZAllFromPool);
             }
 
-            static void Toom25(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits, int n)
+            static void Toom25(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits, int n)
             {
                 // Toom 2.5
 
@@ -296,17 +307,17 @@ namespace System.Numerics
                 Debug.Assert(right.Length > n);
                 Debug.Assert(right.Length <= 2 * n);
                 Debug.Assert(bits.Length >= left.Length + right.Length);
-                Debug.Assert(bits.Trim(0u).IsEmpty);
+                Debug.Assert(bits.Trim((nuint)0).IsEmpty);
 
-                ReadOnlySpan<uint> left0 = left.Slice(0, n).TrimEnd(0u);
-                ReadOnlySpan<uint> left1 = left.Slice(n, n).TrimEnd(0u);
-                ReadOnlySpan<uint> left2 = left.Slice(n + n);
+                ReadOnlySpan<nuint> left0 = left.Slice(0, n).TrimEnd((nuint)0);
+                ReadOnlySpan<nuint> left1 = left.Slice(n, n).TrimEnd((nuint)0);
+                ReadOnlySpan<nuint> left2 = left.Slice(n + n);
 
-                ReadOnlySpan<uint> right0 = right.Slice(0, n).TrimEnd(0u);
-                ReadOnlySpan<uint> right1 = right.Slice(n);
+                ReadOnlySpan<nuint> right0 = right.Slice(0, n).TrimEnd((nuint)0);
+                ReadOnlySpan<nuint> right1 = right.Slice(n);
 
-                Span<uint> z0 = bits.Slice(0, left0.Length + right0.Length);
-                Span<uint> z3 = bits.Slice(n * 3);
+                Span<nuint> z0 = bits.Slice(0, left0.Length + right0.Length);
+                Span<nuint> z3 = bits.Slice(n * 3);
                 Multiply(left0, right0, z0);
                 Multiply(left2, right1, z3);
 
@@ -315,47 +326,51 @@ namespace System.Numerics
 
                 // The threshold for Toom-3 is expected to be greater than
                 // StackAllocThreshold, so ArrayPool is always used.
-                uint[] pAndQAllFromPool = ArrayPool<uint>.Shared.Rent(pAndQAllLength);
-                Span<uint> pAndQAll = pAndQAllFromPool.AsSpan(0, pAndQAllLength);
+                nuint[] pAndQAllFromPool = ArrayPool<nuint>.Shared.Rent(pAndQAllLength);
+                Span<nuint> pAndQAll = pAndQAllFromPool.AsSpan(0, pAndQAllLength);
                 pAndQAll.Clear();
 
-                Span<uint> p1 = pAndQAll.Slice(0, pLength);
-                Span<uint> pm1 = pAndQAll.Slice(pLength, pLength);
-                Span<uint> q1 = pAndQAll.Slice(pLength * 2, pLength);
-                Span<uint> qm1 = pAndQAll.Slice(pLength * 3, pLength);
+                Span<nuint> p1 = pAndQAll.Slice(0, pLength);
+                Span<nuint> pm1 = pAndQAll.Slice(pLength, pLength);
+                Span<nuint> q1 = pAndQAll.Slice(pLength * 2, pLength);
+                Span<nuint> qm1 = pAndQAll.Slice(pLength * 3, pLength);
 
                 int pm1Sign = 1;
                 int qm1Sign = 1;
 
                 if (left0.Length < left2.Length)
+                {
                     Add(left2, left0, pm1);
+                }
                 else
+                {
                     Add(left0, left2, pm1);
+                }
 
                 pm1.CopyTo(p1);
                 AddSelf(p1, left1);
                 SubtractSelf(pm1, ref pm1Sign, left1);
-                p1 = p1.TrimEnd(0u);
-                pm1 = pm1.TrimEnd(0u);
+                p1 = p1.TrimEnd((nuint)0);
+                pm1 = pm1.TrimEnd((nuint)0);
 
                 right0.CopyTo(q1);
                 right0.CopyTo(qm1);
                 AddSelf(q1, right1);
                 SubtractSelf(qm1, ref qm1Sign, right1);
-                q1 = q1.TrimEnd(0u);
-                qm1 = qm1.TrimEnd(0u);
+                q1 = q1.TrimEnd((nuint)0);
+                qm1 = qm1.TrimEnd((nuint)0);
 
                 int cLength = pLength * 2 + 1;
                 int cAllLength = cLength * 3;
-                uint[] cAllFromPool = ArrayPool<uint>.Shared.Rent(cAllLength);
-                Span<uint> cAll = cAllFromPool.AsSpan(0, cAllLength);
+                nuint[] cAllFromPool = ArrayPool<nuint>.Shared.Rent(cAllLength);
+                Span<nuint> cAll = cAllFromPool.AsSpan(0, cAllLength);
                 cAll.Clear();
 
-                Span<uint> z1 = cAll.Slice(0, cLength);
-                Span<uint> c1 = z1.Slice(0, p1.Length + q1.Length);
+                Span<nuint> z1 = cAll.Slice(0, cLength);
+                Span<nuint> c1 = z1.Slice(0, p1.Length + q1.Length);
 
-                Span<uint> z2 = cAll.Slice(cLength, cLength);
-                Span<uint> cm1 = cAll.Slice(cLength * 2, pm1.Length + qm1.Length);
+                Span<nuint> z2 = cAll.Slice(cLength, cLength);
+                Span<nuint> cm1 = cAll.Slice(cLength * 2, pm1.Length + qm1.Length);
 
                 Multiply(p1, q1, c1);
                 Multiply(pm1, qm1, cm1);
@@ -367,21 +382,21 @@ namespace System.Numerics
                 AddSelf(z2, ref z2Sign, cm1, -cm1Sign);
                 Debug.Assert(z2Sign >= 0);
                 RightShiftOne(z2);
-                SubtractSelf(z2, z3.TrimEnd(0u));
+                SubtractSelf(z2, z3.TrimEnd((nuint)0));
 
                 AddSelf(z1, cm1);
                 RightShiftOne(z1);
-                AddSelf(z1, z0.TrimEnd(0u));
+                AddSelf(z1, z0.TrimEnd((nuint)0));
 
-                ArrayPool<uint>.Shared.Return(pAndQAllFromPool);
+                ArrayPool<nuint>.Shared.Return(pAndQAllFromPool);
 
-                AddSelf(bits.Slice(n), z1.TrimEnd(0u));
-                AddSelf(bits.Slice(n * 2), z2.TrimEnd(0u));
+                AddSelf(bits.Slice(n), z1.TrimEnd((nuint)0));
+                AddSelf(bits.Slice(n * 2), z2.TrimEnd((nuint)0));
 
-                ArrayPool<uint>.Shared.Return(cAllFromPool);
+                ArrayPool<nuint>.Shared.Return(cAllFromPool);
             }
 
-            static void Karatsuba(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits, int n)
+            static void Karatsuba(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits, int n)
             {
                 //                                            upper           lower
                 // A=   |               |               | a1 = a[n..2n] | a0 = a[0..n] |
@@ -405,23 +420,23 @@ namespace System.Numerics
 
                 Debug.Assert(left.Length >= right.Length);
                 Debug.Assert(bits.Length >= left.Length + right.Length);
-                Debug.Assert(bits.Trim(0u).IsEmpty);
+                Debug.Assert(bits.Trim((nuint)0).IsEmpty);
 
                 // ... we need to determine our new length (just the half)
                 Debug.Assert(2 * n - left.Length is 0 or 1);
                 Debug.Assert(right.Length > n);
 
                 // ... split left like a = (a_1 << n) + a_0
-                ReadOnlySpan<uint> leftLow = left.Slice(0, n);
-                ReadOnlySpan<uint> leftHigh = left.Slice(n);
+                ReadOnlySpan<nuint> leftLow = left.Slice(0, n);
+                ReadOnlySpan<nuint> leftHigh = left.Slice(n);
 
                 // ... split right like b = (b_1 << n) + b_0
-                ReadOnlySpan<uint> rightLow = right.Slice(0, n);
-                ReadOnlySpan<uint> rightHigh = right.Slice(n);
+                ReadOnlySpan<nuint> rightLow = right.Slice(0, n);
+                ReadOnlySpan<nuint> rightHigh = right.Slice(n);
 
                 // ... prepare our result array (to reuse its memory)
-                Span<uint> bitsLow = bits.Slice(0, n + n);
-                Span<uint> bitsHigh = bits.Slice(n + n);
+                Span<nuint> bitsLow = bits.Slice(0, n + n);
+                Span<nuint> bitsHigh = bits.Slice(n + n);
 
                 Debug.Assert(leftLow.Length >= leftHigh.Length);
                 Debug.Assert(rightLow.Length >= rightHigh.Length);
@@ -434,17 +449,9 @@ namespace System.Numerics
                 Multiply(leftHigh, rightHigh, bitsHigh);
 
                 int foldLength = n + 1;
-                uint[]? leftFoldFromPool = null;
-                Span<uint> leftFold = ((uint)foldLength <= StackAllocThreshold
-                    ? stackalloc uint[StackAllocThreshold]
-                    : leftFoldFromPool = ArrayPool<uint>.Shared.Rent(foldLength)).Slice(0, foldLength);
-                leftFold.Clear();
+                Span<nuint> leftFold = BigInteger.RentedBuffer.Create(foldLength, out BigInteger.RentedBuffer leftFoldBuffer);
 
-                uint[]? rightFoldFromPool = null;
-                Span<uint> rightFold = ((uint)foldLength <= StackAllocThreshold
-                    ? stackalloc uint[StackAllocThreshold]
-                    : rightFoldFromPool = ArrayPool<uint>.Shared.Rent(foldLength)).Slice(0, foldLength);
-                rightFold.Clear();
+                Span<nuint> rightFold = BigInteger.RentedBuffer.Create(foldLength, out BigInteger.RentedBuffer rightFoldBuffer);
 
                 // ... compute z_a = a_1 + a_0 (call it fold...)
                 Add(leftLow, leftHigh, leftFold);
@@ -453,20 +460,14 @@ namespace System.Numerics
                 Add(rightLow, rightHigh, rightFold);
 
                 int coreLength = foldLength + foldLength;
-                uint[]? coreFromPool = null;
-                Span<uint> core = ((uint)coreLength <= StackAllocThreshold
-                    ? stackalloc uint[StackAllocThreshold]
-                    : coreFromPool = ArrayPool<uint>.Shared.Rent(coreLength)).Slice(0, coreLength);
-                core.Clear();
+                Span<nuint> core = BigInteger.RentedBuffer.Create(coreLength, out BigInteger.RentedBuffer coreBuffer);
 
                 // ... compute z_ab = z_a * z_b
                 Multiply(leftFold, rightFold, core);
 
-                if (leftFoldFromPool != null)
-                    ArrayPool<uint>.Shared.Return(leftFoldFromPool);
+                leftFoldBuffer.Dispose();
 
-                if (rightFoldFromPool != null)
-                    ArrayPool<uint>.Shared.Return(rightFoldFromPool);
+                rightFoldBuffer.Dispose();
 
                 // ... compute z_1 = z_a * z_b - z_0 - z_2 = a_0 * b_1 + a_1 * b_0
                 SubtractCore(bitsLow, bitsHigh, core);
@@ -474,39 +475,35 @@ namespace System.Numerics
                 Debug.Assert(ActualLength(core) <= left.Length + 1);
 
                 // ... and finally merge the result! :-)
-                AddSelf(bits.Slice(n), core.TrimEnd(0u));
+                AddSelf(bits.Slice(n), core.TrimEnd((nuint)0));
 
-                if (coreFromPool != null)
-                    ArrayPool<uint>.Shared.Return(coreFromPool);
+                coreBuffer.Dispose();
             }
 
-            static void RightSmall(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits, int n)
+            static void RightSmall(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits, int n)
             {
                 Debug.Assert(left.Length >= right.Length);
                 Debug.Assert(2 * n - left.Length is 0 or 1);
                 Debug.Assert(right.Length <= n);
                 Debug.Assert(bits.Length >= left.Length + right.Length);
-                Debug.Assert(bits.Trim(0u).IsEmpty);
+                Debug.Assert(bits.Trim((nuint)0).IsEmpty);
 
                 // ... split left like a = (a_1 << n) + a_0
-                ReadOnlySpan<uint> leftLow = left.Slice(0, n);
-                ReadOnlySpan<uint> leftHigh = left.Slice(n);
+                ReadOnlySpan<nuint> leftLow = left.Slice(0, n);
+                ReadOnlySpan<nuint> leftHigh = left.Slice(n);
                 Debug.Assert(leftLow.Length >= leftHigh.Length);
 
                 // ... prepare our result array (to reuse its memory)
-                Span<uint> bitsLow = bits.Slice(0, n + right.Length);
-                Span<uint> bitsHigh = bits.Slice(n);
+                Span<nuint> bitsLow = bits.Slice(0, n + right.Length);
+                Span<nuint> bitsHigh = bits.Slice(n);
 
                 // ... compute low
                 Multiply(leftLow, right, bitsLow);
 
                 int carryLength = right.Length;
-                uint[]? carryFromPool = null;
-                Span<uint> carry = ((uint)carryLength <= StackAllocThreshold
-                    ? stackalloc uint[StackAllocThreshold]
-                    : carryFromPool = ArrayPool<uint>.Shared.Rent(carryLength)).Slice(0, carryLength);
+                Span<nuint> carry = BigInteger.RentedBuffer.Create(carryLength, out BigInteger.RentedBuffer carryBuffer);
 
-                Span<uint> carryOrig = bitsHigh.Slice(0, right.Length);
+                Span<nuint> carryOrig = bitsHigh.Slice(0, right.Length);
                 carryOrig.CopyTo(carry);
                 carryOrig.Clear();
 
@@ -515,60 +512,47 @@ namespace System.Numerics
 
                 AddSelf(bitsHigh, carry);
 
-                if (carryFromPool != null)
-                    ArrayPool<uint>.Shared.Return(carryFromPool);
+                carryBuffer.Dispose();
             }
 
-            static void Naive(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
+            static void Naive(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
             {
                 Debug.Assert(right.Length < MultiplyKaratsubaThreshold);
-
-                // Switching to managed references helps eliminating
-                // index bounds check...
-                ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
 
                 // Multiplies the bits using the "grammar-school" method.
                 // Envisioning the "rhombus" of a pen-and-paper calculation
                 // should help getting the idea of these two loops...
                 // The inner multiplication operations are safe, because
-                // z_i+j + a_j * b_i + c <= 2(2^32 - 1) + (2^32 - 1)^2 =
-                // = 2^64 - 1 (which perfectly matches with ulong!).
+                // z_i+j + a_j * b_i + c <= 2(2^n - 1) + (2^n - 1)^2 =
+                // = 2^(2n) - 1, where n = BitsPerLimb.
 
                 for (int i = 0; i < right.Length; i++)
                 {
-                    uint rv = right[i];
-                    ulong carry = 0UL;
-                    for (int j = 0; j < left.Length; j++)
-                    {
-                        ref uint elementPtr = ref Unsafe.Add(ref resultPtr, i + j);
-                        ulong digits = elementPtr + carry + (ulong)left[j] * rv;
-                        elementPtr = unchecked((uint)digits);
-                        carry = digits >> 32;
-                    }
-                    Unsafe.Add(ref resultPtr, i + left.Length) = (uint)carry;
+                    nuint carry = MulAdd1(bits.Slice(i), left, right[i]);
+                    bits[i + left.Length] = carry;
                 }
             }
         }
 
         [StructLayout(LayoutKind.Auto)]
         private readonly ref struct Toom3Data(
-            ReadOnlySpan<uint> c0,
-            ReadOnlySpan<uint> cInf,
-            ReadOnlySpan<uint> c1,
-            ReadOnlySpan<uint> cm1,
+            ReadOnlySpan<nuint> c0,
+            ReadOnlySpan<nuint> cInf,
+            ReadOnlySpan<nuint> c1,
+            ReadOnlySpan<nuint> cm1,
             int cm1Sign,
-            ReadOnlySpan<uint> cm2,
+            ReadOnlySpan<nuint> cm2,
             int cm2Sign)
         {
-            private readonly ReadOnlySpan<uint> c0 = c0;
-            private readonly ReadOnlySpan<uint> c1 = c1;
-            private readonly ReadOnlySpan<uint> cInf = cInf;
-            private readonly ReadOnlySpan<uint> cm1 = cm1;
-            private readonly ReadOnlySpan<uint> cm2 = cm2;
+            private readonly ReadOnlySpan<nuint> c0 = c0;
+            private readonly ReadOnlySpan<nuint> c1 = c1;
+            private readonly ReadOnlySpan<nuint> cInf = cInf;
+            private readonly ReadOnlySpan<nuint> cm1 = cm1;
+            private readonly ReadOnlySpan<nuint> cm2 = cm2;
             private readonly int cm1Sign = cm1Sign;
             private readonly int cm2Sign = cm2Sign;
 
-            public static Toom3Data Build(ReadOnlySpan<uint> value, int n, Span<uint> buffer)
+            public static Toom3Data Build(ReadOnlySpan<nuint> value, int n, Span<nuint> buffer)
             {
                 Debug.Assert(!buffer.ContainsAnyExcept(0u));
                 Debug.Assert(buffer.Length == 3 * (n + 1));
@@ -577,9 +561,9 @@ namespace System.Numerics
 
                 int pLength = n + 1;
 
-                ReadOnlySpan<uint> v0, v1, v2;
+                ReadOnlySpan<nuint> v0, v1, v2;
 
-                v0 = value.Slice(0, n).TrimEnd(0u);
+                v0 = value.Slice(0, n).TrimEnd((nuint)0);
                 if (value.Length <= n + n)
                 {
                     v1 = value.Slice(n);
@@ -587,12 +571,12 @@ namespace System.Numerics
                 }
                 else
                 {
-                    v1 = value.Slice(n, n).TrimEnd(0u);
+                    v1 = value.Slice(n, n).TrimEnd((nuint)0);
                     v2 = value.Slice(n + n);
                 }
 
-                Span<uint> p1 = buffer.Slice(0, pLength);
-                Span<uint> pm1 = buffer.Slice(pLength, pLength);
+                Span<nuint> p1 = buffer.Slice(0, pLength);
+                Span<nuint> pm1 = buffer.Slice(pLength, pLength);
 
                 // Calculate p(1) = p_0 + m_1, p(-1) = p_0 - m_1
                 int pm1Sign = 1;
@@ -605,12 +589,12 @@ namespace System.Numerics
 
                     SubtractSelf(pm1, ref pm1Sign, v1);
 
-                    pm1 = pm1Sign != 0 ? pm1.TrimEnd(0u) : default;
+                    pm1 = pm1Sign != 0 ? pm1.TrimEnd((nuint)0) : default;
                 }
 
                 // Calculate p(-2) = (p(-1) + m_2)*2 - m_0
                 int pm2Sign = pm1Sign;
-                Span<uint> pm2 = buffer.Slice(pLength + pLength, pLength);
+                Span<nuint> pm2 = buffer.Slice(pLength + pLength, pLength);
                 {
                     Debug.Assert(!pm2.ContainsAnyExcept(0u));
                     Debug.Assert(pm1.IsEmpty || pm1[^1] != 0);
@@ -624,61 +608,61 @@ namespace System.Numerics
 
                     // Calculate p(-2) = (p(-1) + m_2)*2
                     {
-                        Debug.Assert(pm2[^1] < 0x8000_0000);
+                        Debug.Assert(pm2[^1] < ((nuint)1 << (BitsPerLimb - 1)));
                         LeftShiftOne(pm2);
                     }
 
-                    Debug.Assert(pm2[^1] != uint.MaxValue);
+                    Debug.Assert(pm2[^1] != nuint.MaxValue);
 
                     // Calculate p(-2) = (p(-1) + m_2)*2 - m_0
                     SubtractSelf(pm2, ref pm2Sign, v0);
 
-                    pm2 = pm2.TrimEnd(0u);
+                    pm2 = pm2.TrimEnd((nuint)0);
                 }
 
                 return new Toom3Data(
                     c0: v0,
-                    c1: p1.TrimEnd(0u),
+                    c1: p1.TrimEnd((nuint)0),
                     cInf: v2,
-                    cm1: pm1.TrimEnd(0u),
+                    cm1: pm1.TrimEnd((nuint)0),
                     cm2: pm2,
                     cm1Sign: pm1Sign,
                     cm2Sign: pm2Sign
                 );
             }
 
-            public void MultiplyOther(in Toom3Data right, int n, Span<uint> bits, Span<uint> buffer)
+            public void MultiplyOther(in Toom3Data right, int n, Span<nuint> bits, Span<nuint> buffer)
             {
                 Debug.Assert(!buffer.ContainsAnyExcept(0u));
                 Debug.Assert(cInf.Length >= right.cInf.Length);
 
                 int rLength = n + n + 3;
 
-                ReadOnlySpan<uint> p0 = c0;
-                ReadOnlySpan<uint> q0 = right.c0;
+                ReadOnlySpan<nuint> p0 = c0;
+                ReadOnlySpan<nuint> q0 = right.c0;
 
-                ReadOnlySpan<uint> p1 = c1;
-                ReadOnlySpan<uint> q1 = right.c1;
+                ReadOnlySpan<nuint> p1 = c1;
+                ReadOnlySpan<nuint> q1 = right.c1;
 
-                ReadOnlySpan<uint> pm1 = cm1;
-                ReadOnlySpan<uint> qm1 = right.cm1;
+                ReadOnlySpan<nuint> pm1 = cm1;
+                ReadOnlySpan<nuint> qm1 = right.cm1;
 
-                ReadOnlySpan<uint> pm2 = cm2;
-                ReadOnlySpan<uint> qm2 = right.cm2;
+                ReadOnlySpan<nuint> pm2 = cm2;
+                ReadOnlySpan<nuint> qm2 = right.cm2;
 
-                ReadOnlySpan<uint> pInf = cInf;
-                ReadOnlySpan<uint> qInf = right.cInf;
+                ReadOnlySpan<nuint> pInf = cInf;
+                ReadOnlySpan<nuint> qInf = right.cInf;
 
 
-                Span<uint> r0 = bits.Slice(0, p0.Length + q0.Length);
-                Span<uint> rInf =
+                Span<nuint> r0 = bits.Slice(0, p0.Length + q0.Length);
+                Span<nuint> rInf =
                     !qInf.IsEmpty
-                    ? bits.Slice(4 * n, pInf.Length + qInf.Length)
-                    : default;
+                        ? bits.Slice(4 * n, pInf.Length + qInf.Length)
+                        : default;
 
-                Span<uint> r1 = buffer.Slice(0, p1.Length + q1.Length);
-                Span<uint> rm1 = buffer.Slice(rLength, pm1.Length + qm1.Length);
-                Span<uint> rm2 = buffer.Slice(rLength * 2, pm2.Length + qm2.Length);
+                Span<nuint> r1 = buffer.Slice(0, p1.Length + q1.Length);
+                Span<nuint> rm1 = buffer.Slice(rLength, pm1.Length + qm1.Length);
+                Span<nuint> rm2 = buffer.Slice(rLength * 2, pm2.Length + qm2.Length);
 
                 Multiply(p0, q0, r0);
                 Multiply(p1, q1, r1);
@@ -688,8 +672,8 @@ namespace System.Numerics
 
                 Toom3CalcResult(
                     n,
-                    r0: r0.TrimEnd(0u),
-                    rInf: rInf.TrimEnd(0u),
+                    r0: r0.TrimEnd((nuint)0),
+                    rInf: rInf.TrimEnd((nuint)0),
                     z1: buffer.Slice(0, rLength),
                     r1Length: ActualLength(r1),
                     z2: buffer.Slice(rLength, rLength),
@@ -700,25 +684,26 @@ namespace System.Numerics
                     bits
                 );
             }
-            public void Square(int n, Span<uint> bits, Span<uint> buffer)
+
+            public void Square(int n, Span<nuint> bits, Span<nuint> buffer)
             {
                 Debug.Assert(!buffer.ContainsAnyExcept(0u));
                 Debug.Assert(!cInf.IsEmpty);
 
                 int rLength = n + n + 3;
 
-                ReadOnlySpan<uint> p0 = c0;
-                ReadOnlySpan<uint> p1 = c1;
-                ReadOnlySpan<uint> pm1 = cm1;
-                ReadOnlySpan<uint> pm2 = cm2;
-                ReadOnlySpan<uint> pInf = cInf;
+                ReadOnlySpan<nuint> p0 = c0;
+                ReadOnlySpan<nuint> p1 = c1;
+                ReadOnlySpan<nuint> pm1 = cm1;
+                ReadOnlySpan<nuint> pm2 = cm2;
+                ReadOnlySpan<nuint> pInf = cInf;
 
-                Span<uint> r0 = bits.Slice(0, p0.Length << 1);
-                Span<uint> rInf = bits.Slice(4 * n, pInf.Length << 1);
+                Span<nuint> r0 = bits.Slice(0, p0.Length << 1);
+                Span<nuint> rInf = bits.Slice(4 * n, pInf.Length << 1);
 
-                Span<uint> r1 = buffer.Slice(0, p1.Length << 1);
-                Span<uint> rm1 = buffer.Slice(rLength, pm1.Length << 1);
-                Span<uint> rm2 = buffer.Slice(rLength * 2, pm2.Length << 1);
+                Span<nuint> r1 = buffer.Slice(0, p1.Length << 1);
+                Span<nuint> rm1 = buffer.Slice(rLength, pm1.Length << 1);
+                Span<nuint> rm2 = buffer.Slice(rLength * 2, pm2.Length << 1);
 
                 BigIntegerCalculator.Square(p0, r0);
                 BigIntegerCalculator.Square(p1, r1);
@@ -728,8 +713,8 @@ namespace System.Numerics
 
                 Toom3CalcResult(
                     n,
-                    r0: r0.TrimEnd(0u),
-                    rInf: rInf.TrimEnd(0u),
+                    r0: r0.TrimEnd((nuint)0),
+                    rInf: rInf.TrimEnd((nuint)0),
                     z1: buffer.Slice(0, rLength),
                     r1Length: ActualLength(r1),
                     z2: buffer.Slice(rLength, rLength),
@@ -743,16 +728,16 @@ namespace System.Numerics
 
             private static void Toom3CalcResult(
                 int n,
-                ReadOnlySpan<uint> r0,
-                ReadOnlySpan<uint> rInf,
-                Span<uint> z1,
+                ReadOnlySpan<nuint> r0,
+                ReadOnlySpan<nuint> rInf,
+                Span<nuint> z1,
                 int r1Length,
-                Span<uint> z2,
+                Span<nuint> z2,
                 int z2Sign,
                 int rm1Length,
-                Span<uint> z3,
+                Span<nuint> z3,
                 int z3Sign,
-                Span<uint> bits)
+                Span<nuint> bits)
             {
                 int z1Sign = Math.Sign(r1Length);
 
@@ -762,7 +747,7 @@ namespace System.Numerics
                     SubtractSelf(z3, ref z3Sign, z1.Slice(0, r1Length));
 
                     // Calc (r(-2) - r(1))/3
-                    DivideThreeSelf(z3.TrimEnd(0u));
+                    DivideThreeSelf(z3.TrimEnd((nuint)0));
                 }
 
                 // Calc z_1 = (r(1) - r(-1))/2
@@ -795,34 +780,48 @@ namespace System.Numerics
 
                 // Calc z_2 = z_2 + z_1 - r(Inf)
                 {
-                    AddSelf(z2, ref z2Sign, z1.TrimEnd(0u));
+                    AddSelf(z2, ref z2Sign, z1.TrimEnd((nuint)0));
                     SubtractSelf(z2, ref z2Sign, rInf);
                 }
 
                 // Calc z_1 = z_1 - z_3
-                SubtractSelf(z1, ref z1Sign, z3.TrimEnd(0u));
+                SubtractSelf(z1, ref z1Sign, z3.TrimEnd((nuint)0));
 
                 Debug.Assert(z1Sign >= 0);
                 Debug.Assert(z2Sign >= 0);
                 Debug.Assert(z3Sign >= 0);
 
-                AddSelf(bits.Slice(n), z1.TrimEnd(0u));
-                AddSelf(bits.Slice(2 * n), z2.TrimEnd(0u));
+                AddSelf(bits.Slice(n), z1.TrimEnd((nuint)0));
+                AddSelf(bits.Slice(2 * n), z2.TrimEnd((nuint)0));
 
                 if (bits.Length >= 3 * n)
-                    AddSelf(bits.Slice(3 * n), z3.TrimEnd(0u));
+                {
+                    AddSelf(bits.Slice(3 * n), z3.TrimEnd((nuint)0));
+                }
             }
         }
 
-        private static void DivideThreeSelf(Span<uint> bits)
+        private static void DivideThreeSelf(Span<nuint> bits)
         {
-            const uint oneThird = (uint)((1ul << 32) / 3);
-            const uint twoThirds = (uint)((2ul << 32) / 3);
+            nuint oneThird, twoThirds;
+            if (nint.Size == 8)
+            {
+                ulong oneThird64 = 0x5555_5555_5555_5555;
+                ulong twoThirds64 = 0xAAAA_AAAA_AAAA_AAAA;
+                oneThird = (nuint)oneThird64;
+                twoThirds = (nuint)twoThirds64;
+            }
+            else
+            {
+                oneThird = 0x5555_5555;
+                twoThirds = 0xAAAA_AAAA;
+            }
 
-            uint carry = 0;
+            nuint carry = 0;
             for (int i = bits.Length - 1; i >= 0; i--)
             {
-                (uint quo, uint rem) = Math.DivRem(bits[i], 3);
+                nuint quo = bits[i] / 3;
+                nuint rem = bits[i] - quo * 3;
 
                 Debug.Assert(carry < 3);
 
@@ -845,9 +844,13 @@ namespace System.Numerics
                 else
                 {
                     if (--rem < 3)
+                    {
                         ++quo;
+                    }
                     else
+                    {
                         rem = 2;
+                    }
 
                     bits[i] = twoThirds + quo;
                     carry = rem;
@@ -856,7 +859,8 @@ namespace System.Numerics
 
             Debug.Assert(carry == 0);
         }
-        private static void SubtractCore(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> core)
+
+        private static void SubtractCore(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> core)
         {
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(core.Length >= left.Length);
@@ -869,53 +873,89 @@ namespace System.Numerics
             // one "run", if we do this computation within a single one...
 
             int i = 0;
-            long carry = 0L;
 
-            // Switching to managed references helps eliminating
-            // index bounds check...
-            ref uint leftPtr = ref MemoryMarshal.GetReference(left);
-            ref uint corePtr = ref MemoryMarshal.GetReference(core);
-
-            for (; i < right.Length; i++)
+            if (right.Length != 0)
             {
-                long digit = (Unsafe.Add(ref corePtr, i) + carry) - Unsafe.Add(ref leftPtr, i) - right[i];
-                Unsafe.Add(ref corePtr, i) = unchecked((uint)digit);
-                carry = digit >> 32;
+                _ = left[right.Length - 1];
+                _ = core[left.Length - 1];
             }
 
-            for (; i < left.Length; i++)
+            if (nint.Size == 8)
             {
-                long digit = (Unsafe.Add(ref corePtr, i) + carry) - left[i];
-                Unsafe.Add(ref corePtr, i) = unchecked((uint)digit);
-                carry = digit >> 32;
-            }
+                Int128 carry = 0;
 
-            for (; carry != 0 && i < core.Length; i++)
+                for (; i < right.Length; i++)
+                {
+                    Int128 digit = (Int128)(ulong)core[i] + carry - (ulong)left[i] - (ulong)right[i];
+                    core[i] = (nuint)(ulong)digit;
+                    carry = digit >> 64;
+                }
+
+                for (; i < left.Length; i++)
+                {
+                    Int128 digit = (Int128)(ulong)core[i] + carry - (ulong)left[i];
+                    core[i] = (nuint)(ulong)digit;
+                    carry = digit >> 64;
+                }
+
+                for (; carry != 0 && i < core.Length; i++)
+                {
+                    Int128 digit = (Int128)(ulong)core[i] + carry;
+                    core[i] = (nuint)(ulong)digit;
+                    carry = digit >> 64;
+                }
+            }
+            else
             {
-                long digit = core[i] + carry;
-                core[i] = (uint)digit;
-                carry = digit >> 32;
+                long carry = 0L;
+
+                for (; i < right.Length; i++)
+                {
+                    long digit = ((uint)core[i] + carry) - (uint)left[i] - (uint)right[i];
+                    core[i] = (uint)digit;
+                    carry = digit >> 32;
+                }
+
+                for (; i < left.Length; i++)
+                {
+                    long digit = ((uint)core[i] + carry) - (uint)left[i];
+                    core[i] = (uint)digit;
+                    carry = digit >> 32;
+                }
+
+                for (; carry != 0 && i < core.Length; i++)
+                {
+                    long digit = (uint)core[i] + carry;
+                    core[i] = (uint)digit;
+                    carry = digit >> 32;
+                }
             }
         }
 
 
-        private static void AddSelf(Span<uint> left, ref int leftSign, ReadOnlySpan<uint> right, int rightSign)
+        private static void AddSelf(Span<nuint> left, ref int leftSign, ReadOnlySpan<nuint> right, int rightSign)
         {
             Debug.Assert(left.Length >= right.Length);
 
             if (rightSign == 0)
+            {
                 return;
+            }
             else if (rightSign > 0)
+            {
                 AddSelf(left, ref leftSign, right);
+            }
             else
+            {
                 SubtractSelf(left, ref leftSign, right);
+            }
         }
 
-        private static void AddSelf(Span<uint> left, ref int leftSign, ReadOnlySpan<uint> right)
+        private static void AddSelf(Span<nuint> left, ref int leftSign, ReadOnlySpan<nuint> right)
         {
             Debug.Assert(left.Length >= right.Length);
 
-            right = right.TrimEnd(0u);
+            right = right.TrimEnd((nuint)0);
 
             if (leftSign == 0)
             {
@@ -944,17 +984,24 @@ namespace System.Numerics
                 }
                 else
                 {
+                    // right > left: compute right - left directly
                     left = left.Slice(0, right.Length);
-                    SubtractSelf(left, right);
-                    NumericsHelpers.DangerousMakeTwosComplement(left);
+                    nuint borrow = 0;
+                    for (int j = 0; j < left.Length; j++)
+                    {
+                        left[j] = SubWithBorrow(right[j], left[j], borrow, out borrow);
+                    }
+
+                    Debug.Assert(borrow == 0);
                 }
             }
         }
-        private static void SubtractSelf(Span<uint> left, ref int leftSign, ReadOnlySpan<uint> right)
+
+        private static void SubtractSelf(Span<nuint> left, ref int leftSign, ReadOnlySpan<nuint> right)
         {
             Debug.Assert(left.Length >= right.Length);
 
-            right = right.TrimEnd(0u);
+            right = right.TrimEnd((nuint)0);
 
             if (leftSign == 0)
             {
@@ -981,32 +1028,40 @@ namespace System.Numerics
                 }
                 else
                 {
+                    // right > left: compute right - left directly
                     left = left.Slice(0, right.Length);
-                    SubtractSelf(left, right);
-                    NumericsHelpers.DangerousMakeTwosComplement(left);
+                    nuint borrow = 0;
+                    for (int j = 0; j < left.Length; j++)
+                    {
+                        left[j] = SubWithBorrow(right[j], left[j], borrow, out borrow);
+                    }
+
+                    Debug.Assert(borrow == 0);
                 }
             }
         }
 
-        private static void LeftShiftOne(Span<uint> bits)
+        private static void LeftShiftOne(Span<nuint> bits)
         {
-            uint carry = 0;
+            nuint carry = 0;
             for (int i = 0; i < bits.Length; i++)
             {
-                uint value = carry | bits[i] << 1;
-                carry = bits[i] >> 31;
+                nuint value = carry | bits[i] << 1;
+                carry = bits[i] >> (BitsPerLimb - 1);
                 bits[i] = value;
             }
         }
-        private static void RightShiftOne(Span<uint> bits)
+
+        private static void RightShiftOne(Span<nuint> bits)
         {
-            uint carry = 0;
+            nuint carry = 0;
             for (int i = bits.Length - 1; i >= 0; i--)
             {
-                uint value = carry | bits[i] >> 1;
-                carry = bits[i] << 31;
+                nuint value = carry | bits[i] >> 1;
+                carry = bits[i] << (BitsPerLimb - 1);
                 bits[i] = value;
             }
         }
+
     }
 }

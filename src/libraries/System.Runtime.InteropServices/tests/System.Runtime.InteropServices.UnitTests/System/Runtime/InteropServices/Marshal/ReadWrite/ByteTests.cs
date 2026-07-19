@@ -131,11 +131,13 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [SkipOnMono("Marshal.ReadByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadByte_ZeroPointer_ThrowsException()
         {
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadByte(IntPtr.Zero));
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadByte(IntPtr.Zero, 2));
+            AssertExtensions.Throws<AccessViolationException>(() => Marshal.ReadByte(IntPtr.Zero));
+            if (PlatformDetection.SupportsDirtyAccessViolations)
+            {
+                AssertExtensions.Throws<AccessViolationException>(() => Marshal.ReadByte(IntPtr.Zero, 2));
+            }
         }
 
         [Fact]
@@ -157,15 +159,15 @@ namespace System.Runtime.InteropServices.Tests
 
             AssertExtensions.Throws<ArgumentException>(null, () => Marshal.ReadByte(collectibleObject, 0));
         }
-
         [Fact]
-        [SkipOnMono("Marshal.ReadByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteByte_ZeroPointer_ThrowsException()
         {
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteByte(IntPtr.Zero, 0));
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteByte(IntPtr.Zero, 2, 0));
+            AssertExtensions.Throws<AccessViolationException>(() => Marshal.WriteByte(IntPtr.Zero, 0));
+            if (PlatformDetection.SupportsDirtyAccessViolations)
+            {
+                AssertExtensions.Throws<AccessViolationException>(() => Marshal.WriteByte(IntPtr.Zero, 2, 0));
+            }
         }
-
         [Fact]
         [SkipOnMono("Marshal.WriteByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteByte_NullObject_ThrowsAccessViolationException()

@@ -311,7 +311,7 @@ The baseline is given in the "regular" format.
   "version": 0,
   "types": [
     {
-      "name": "GCHandle",
+      "name": "ObjectHandle",
       "size": 8,
       "fields": [
         { "name": "Value", "type": "pointer", "offset": 0 }
@@ -335,7 +335,6 @@ The baseline is given in the "regular" format.
     }
   ],
   "globals": [
-    { "name": "FEATURE_EH_FUNCLETS", "type": "uint8", "value": "0" }, // baseline defaults value to 0
     { "name": "FEATURE_COMINTEROP", "type": "uint8", "value": "1"},
     { "name": "s_pThreadStore", "type": "pointer" } // no baseline value
   ]
@@ -370,7 +369,7 @@ If the indirect values table has the values `0x0100ffe0` in offset 0, then a pos
 
 | Type        | Size          | Field Name  | Field Type | Field Offset |
 | ----------- | ------------- | ----------- | ---------- | ------------ |
-| GCHandle    | 8             | Value       | pointer    | 0            |
+| ObjectHandle| 8             | Value       | pointer    | 0            |
 | Thread      | indeterminate | ThreadState | uint32     | 0            |
 |             |               | ThreadId    | uint32     | 32           |
 |             |               | Next        | pointer    | 128          |
@@ -383,12 +382,10 @@ And the globals will be:
 | Name                | Type    | Value      |
 | ------------------- | ------- | ---------- |
 | FEATURE_COMINTEROP  | uint8   | 0          |
-| FEATURE_EH_FUNCLETS | uint8   | 0          |
 | s_pThreadStore      | pointer | 0x0100ffe0 |
 | RuntimeID           | string  |"windows-x64"|
 
-The `FEATURE_EH_FUNCLETS` global's value comes from the baseline - not the in-memory data
-descriptor.  By contrast, `FEATURE_COMINTEROP` comes from the in-memory data descriptor - with the
-value embedded directly in the json since it is known at build time and does not vary.  Finally the
+The `FEATURE_COMINTEROP` comes from the in-memory data descriptor - with the
+value embedded directly in the json since it is known at build time and does not vary.  The
 value of the pointer `s_pThreadStore` comes from the auxiliary vector's offset 0 since it is an
 execution-time value that is only known to the running process.

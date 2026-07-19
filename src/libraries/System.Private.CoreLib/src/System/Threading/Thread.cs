@@ -73,10 +73,10 @@ namespace System.Threading
 
                 try
                 {
-#if TARGET_OSX || NATIVEAOT
+#if TARGET_APPLE || NATIVEAOT
                     // On other platforms, when the underlying native thread is created,
                     // the thread name is set to the name of the managed thread by another thread.
-                    // However, on OS X and NativeAOT (across all OSes), only the thread itself can set its name.
+                    // However, on Apple platforms and NativeAOT (across all OSes), only the thread itself can set its name.
                     // Therefore, by this point the native thread is still unnamed as it has not started yet.
                     Thread thread = Thread.CurrentThread;
                     if (!string.IsNullOrEmpty(thread.Name))
@@ -169,23 +169,6 @@ namespace System.Threading
             Initialize();
         }
 
-#if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => true;
-#else
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => false;
-#endif
-
-        internal static void ThrowIfNoThreadStart()
-        {
-            if (IsThreadStartSupported)
-                return;
-            throw new PlatformNotSupportedException();
-        }
-
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
         /// <param name="parameter">An object that contains data to be used by the method the thread executes.</param>
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
@@ -212,10 +195,7 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
-            ThrowIfNoThreadStart();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             StartHelper? startHelper = _startHelper;
 
@@ -258,7 +238,7 @@ namespace System.Threading
 
         private void Start(bool captureContext)
         {
-            ThrowIfNoThreadStart();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)
@@ -271,6 +251,18 @@ namespace System.Threading
 
             StartCore();
         }
+
+#if !MONO
+        public bool Join(int millisecondsTimeout)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, Timeout.Infinite);
+            if ((ThreadState & ThreadState.Unstarted) != 0)
+            {
+                throw new ThreadStateException(SR.ThreadState_NotStarted);
+            }
+            return JoinInternal(millisecondsTimeout);
+        }
+#endif
 
         private void RequireCurrentThread()
         {
@@ -437,7 +429,7 @@ namespace System.Threading
         internal void ResetThreadPoolThread()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!RuntimeFeature.IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
 
             if (_mayNeedResetForThreadPool)
             {
@@ -449,7 +441,7 @@ namespace System.Threading
         private void ResetThreadPoolThreadSlow()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!RuntimeFeature.IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
             Debug.Assert(_mayNeedResetForThreadPool);
 
             _mayNeedResetForThreadPool = false;
@@ -787,6 +779,10 @@ namespace System.Threading
                 ThrowOnBlockingWaitOnJSInteropThread = flag;
                 WarnOnBlockingWaitOnJSInteropThread = wflag;
             }
+        }
+#else
+        internal static unsafe void AssureBlockingPossible()
+        {
         }
 #endif
 

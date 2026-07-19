@@ -50,6 +50,7 @@
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=tcp</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=udp</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=allow-ip-name-lookup</_XHarnessArgs>
+    <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=hostcall-fuel=4294967295</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--env --engine-arg=DOTNET_WASI_PRINT_EXIT_CODE=1</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
@@ -87,6 +88,13 @@
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' != 'true'">
     <WasmBuildOnlyAfterPublish>true</WasmBuildOnlyAfterPublish>
 
+    <!-- Test projects are libraries (OutputType=Library), for which WasmGenerateAppBundle defaults to false.
+         Unlike browser (where the WebAssembly SDK bundles via static web assets), wasi has no such SDK, so the
+         in-tree WasiAppBuilder must run to populate the AppBundle. Force it on for local wasi test builds.
+         Set unconditionally: WasmApp.Common.targets is imported earlier and already defaulted this to 'false',
+         so a '== ''' guard would not take effect. A '/p:' override remains a global property and still wins. -->
+    <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
+
     <!-- wasm's publish targets will trigger publish, so we shouldn't do that -->
     <PublishTestAsSelfContainedDependsOn />
     <WasmNestedPublishAppDependsOn>PrepareForWasiBuildApp;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
@@ -95,7 +103,6 @@
   <Target Name="PrepareForWasiBuildApp">
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
-      <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
@@ -147,13 +154,9 @@
                       '$(Scenario)' != 'BuildWasmApps'"
                       Text="Only supported scenarios are WasmTestOnWasmtime and BuildWasmApps at the moment. It was $(Scenario)." />
 
-    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-      <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="export PREPEND_PATH=$(WasmtimeDir)" />
-      <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="export RuntimeIdentifier=wasi-wasm" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-      <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="set PREPEND_PATH=$(WasmtimeDir)" />
-      <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="set RuntimeIdentifier=wasi-wasm" />
+    <ItemGroup >
+      <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="$(EnvVarCommand) PREPEND_PATH=$(WasmtimeDir)" />
+      <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="$(EnvVarCommand) RuntimeIdentifier=wasi-wasm" />
     </ItemGroup>
   </Target>
 </Project>

@@ -261,10 +261,42 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 .Be(expectedPermissions);
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void ExecutableImage_ExistingNonExecutableFile()
+        {
+            using TestArtifact artifact = CreateTestDirectory();
+            string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
+            string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
+            string appBinaryFilePath = "Test/App/Binary/Path.dll";
+
+            // A non-executable file already exists at the destination (-rw-r--r--).
+            File.WriteAllText(destinationFilePath, "pre-existing content");
+            File.SetUnixFileMode(destinationFilePath,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+
+            // -rwxr-xr-x
+            const UnixFileMode expectedPermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
+                UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
+
+            HostWriter.CreateAppHost(
+                sourceAppHostMock,
+                destinationFilePath,
+                appBinaryFilePath,
+                windowsGraphicalUserInterface: true);
+
+            // assert that the generated app has executable permissions
+            // despite the non-executable permissions on the pre-existing destination file.
+            File.GetUnixFileMode(destinationFilePath)
+                .Should()
+                .Be(expectedPermissions);
+        }
+
         [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData("")]
         [InlineData("dir with spaces")]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public void CodeSignMachOAppHost(string subdir)
         {
             using (TestArtifact artifact = CreateTestDirectory())
@@ -287,9 +319,9 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData("")]
         [InlineData("dir with spaces")]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public void SigningExistingAppHostCreatesNewInode(string subdir)
         {
             using (TestArtifact artifact = CreateTestDirectory())

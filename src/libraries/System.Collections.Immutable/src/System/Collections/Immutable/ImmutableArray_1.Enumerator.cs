@@ -106,15 +106,14 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    // this.index >= 0 && this.index < this.array.Length
-                    // unsigned compare performs the range check above in one compare
-                    if (unchecked((uint)_index) < (uint)_array.Length)
+                    // unsigned compare performs the range check in one compare
+                    if (unchecked((uint)_index) >= (uint)_array.Length)
                     {
-                        return _array[_index];
+                        // Before first or after last MoveNext.
+                        ThrowHelper.ThrowInvalidOperationException();
                     }
 
-                    // Before first or after last MoveNext.
-                    throw new InvalidOperationException();
+                    return _array[_index];
                 }
             }
 

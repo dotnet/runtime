@@ -158,6 +158,14 @@ PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes128Ccm(void);
 
 /*
 Function:
+EvpAes128WrapPad
+
+Direct shim to EVP_aes_128_wrap_pad.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes128WrapPad(void);
+
+/*
+Function:
 EvpAes192Ecb
 
 Direct shim to EVP_aes_192_ecb.
@@ -206,6 +214,14 @@ PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes192Ccm(void);
 
 /*
 Function:
+EvpAes192WrapPad
+
+Direct shim to EVP_aes_192_wrap_pad.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes192WrapPad(void);
+
+/*
+Function:
 EvpAes256Ecb
 
 Direct shim to EVP_aes_256_ecb.
@@ -251,6 +267,14 @@ EvpAes256Ccm
 Direct shim to EVP_aes_256_ccm.
 */
 PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes256Ccm(void);
+
+/*
+Function:
+EvpAes256WrapPad
+
+Direct shim to EVP_aes_256_wrap_pad.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes256WrapPad(void);
 
 /*
 Function:

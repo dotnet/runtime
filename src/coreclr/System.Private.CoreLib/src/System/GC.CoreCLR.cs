@@ -9,6 +9,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -310,6 +311,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
         private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
 
+        [UnmanagedCallersOnly]
         private static unsafe uint RunFinalizers()
         {
             Thread currentThread = Thread.CurrentThread;
@@ -334,6 +336,7 @@ namespace System
                 currentThread.ResetFinalizerThread();
                 count++;
             }
+
             return count;
         }
 
@@ -726,9 +729,9 @@ namespace System
                     switch (status)
                     {
                         case EnableNoGCRegionCallbackStatus.NotStarted:
-                            throw new InvalidOperationException(SR.Format(SR.InvalidOperationException_NoGCRegionNotInProgress));
+                            throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionNotInProgress);
                         case EnableNoGCRegionCallbackStatus.InsufficientBudget:
-                            throw new InvalidOperationException(SR.Format(SR.InvalidOperationException_NoGCRegionAllocationExceeded));
+                            throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionAllocationExceeded);
                         case EnableNoGCRegionCallbackStatus.AlreadyRegistered:
                             throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionCallbackAlreadyRegistered);
                     }

@@ -159,7 +159,7 @@ namespace System.Formats.Tar.Tests
 
             if (corrupted)
             {
-                Assert.Contains("parse", exception.Message);
+                Assert.Contains("corrupted", exception.Message);
             }
             else
             {

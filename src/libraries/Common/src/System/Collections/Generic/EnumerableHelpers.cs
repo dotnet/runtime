@@ -16,7 +16,7 @@ namespace System.Collections.Generic
 
         /// <summary>Gets an enumerator singleton for an empty collection.</summary>
         internal static IEnumerator<T> GetEmptyEnumerator<T>() =>
-            ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator();
+            ((IEnumerable<T>)[]).GetEnumerator();
 
         /// <summary>Converts an enumerable to an array using the same logic as List{T}.</summary>
         /// <param name="source">The enumerable to convert.</param>
@@ -89,7 +89,7 @@ namespace System.Collections.Generic
             }
 
             length = 0;
-            return Array.Empty<T>();
+            return [];
         }
     }
 }

@@ -6,9 +6,13 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 using Xunit;
+using TestLibrary;
 
 public class RootClass
 {
+    [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("System.IO.FileNotFoundException: Could not load file or assembly '/.../Library/Developer/CoreSimulator/Devices/941235AB-7563-4D79-AC28-946B7AD2304A/data/Containers/Bundle/Application/40176A30-D8F5-4497-958A-6514E5C684FC/readytorun_multifolder.app/testdir-multifolder/../FolderA/FolderA/FolderA.dll' or one of its dependencies.", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static int TestEntryPoint()
     {

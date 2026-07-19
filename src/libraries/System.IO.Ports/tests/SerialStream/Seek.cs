@@ -17,7 +17,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Seek), nameof(HasOneSerialPort))]
         public void Seek_Open_Close()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -32,7 +32,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Seek), nameof(HasOneSerialPort))]
         public void Seek_Open_BaseStreamClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -47,7 +47,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Seek), nameof(HasOneSerialPort))]
         public void Seek_AfterOpen()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -60,7 +60,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Seek), nameof(HasOneSerialPort))]
         public void Seek_BadOffset()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -73,7 +73,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Seek), nameof(HasOneSerialPort))]
         public void Seek_BadOrigin()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -86,7 +86,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Seek), nameof(HasOneSerialPort))]
         public void Seek_BadOffset_BadOrigin()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

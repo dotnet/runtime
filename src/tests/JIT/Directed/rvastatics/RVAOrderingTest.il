@@ -5,6 +5,8 @@
 .assembly extern xunit.core {}
 .assembly extern System.Runtime.Extensions { }
 .assembly extern System.Console { }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly RVAOrderingTest { }
 
 
@@ -18,6 +20,11 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtimelab/issues/155: RVA ordering preservation')
+        type([TestLibrary]TestLibrary.Utilities)
+        string[1] ('IsNativeAot')
+    }
     .entrypoint
     // Code size       106 (0x6a)
     .maxstack  2
@@ -48,7 +55,7 @@
     ldsflda    int8 RVAOrderingTest::s_Another1
     ldind.i1
     add
-    
+
     IL_001e:  stloc.0
     IL_001f:  ldc.i4.0
     IL_0020:  conv.u
@@ -88,7 +95,7 @@
     IL_0069:  ret
   } // end of method RVAOrderingTest::Main
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           AddFields(int32* pBegin,
                     int32* pEnd) cil managed
   {
@@ -128,7 +135,7 @@
     IL_0021:  ret
   } // end of method RVAOrderingTest::AddFields
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -147,16 +154,16 @@
   .field public static int32 s_3 at D_00014018
   .field public static int32 s_4 at D_00014020
   .field public static int32 s_5 at D_00014028
-  
+
 } // end of class RVAOrderingTest
 
 
-.data D_00014000 = bytearray (00 00 00 00 00 00 00 00) 
+.data D_00014000 = bytearray (00 00 00 00 00 00 00 00)
 
-.data D_00014008 = bytearray (01 00 00 10 00 00 00 00) 
-.data D_00014010 = bytearray (10 00 00 10 00 00 00 00) 
-.data D_00014018 = bytearray (20 00 00 10 00 00 00 00) 
-.data D_00014020 = bytearray (40 00 00 10 00 00 00 00) 
-.data D_00014028 = bytearray (80 00 00 10 00 00 00 00) 
+.data D_00014008 = bytearray (01 00 00 10 00 00 00 00)
+.data D_00014010 = bytearray (10 00 00 10 00 00 00 00)
+.data D_00014018 = bytearray (20 00 00 10 00 00 00 00)
+.data D_00014020 = bytearray (40 00 00 10 00 00 00 00)
+.data D_00014028 = bytearray (80 00 00 10 00 00 00 00)
 
-.data D_00014030 = bytearray (00 00 00 00 00 00 00 00) 
+.data D_00014030 = bytearray (00 00 00 00 00 00 00 00)

@@ -93,7 +93,7 @@ mono_array_new_specific_internal (MonoVTable *vtable, uintptr_t n, gboolean pinn
 static GENERATE_GET_CLASS_WITH_CACHE (pointer, "System.Reflection", "Pointer")
 static GENERATE_GET_CLASS_WITH_CACHE (unhandled_exception_event_args, "System", "UnhandledExceptionEventArgs")
 static GENERATE_GET_CLASS_WITH_CACHE (first_chance_exception_event_args, "System.Runtime.ExceptionServices", "FirstChanceExceptionEventArgs")
-static GENERATE_GET_CLASS_WITH_CACHE (sta_thread_attribute, "System", "STAThreadAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (sta_thread_attribute, "System", "STAThreadAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (activation_services, "System.Runtime.Remoting.Activation", "ActivationServices")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (execution_context, "System.Threading", "ExecutionContext")
 
@@ -4664,6 +4664,7 @@ prepare_thread_to_exec_main (MonoMethod *method)
 	MONO_REQ_GC_UNSAFE_MODE;
 	MonoInternalThread* thread = mono_thread_internal_current ();
 	MonoCustomAttrInfo* cinfo;
+	MonoClass *sta_thread_attribute_class = mono_class_try_get_sta_thread_attribute_class ();
 	gboolean has_stathread_attribute;
 
 	if (!mono_runtime_get_entry_assembly ())
@@ -4673,7 +4674,7 @@ prepare_thread_to_exec_main (MonoMethod *method)
 	cinfo = mono_custom_attrs_from_method_checked (method, cattr_error);
 	mono_error_cleanup (cattr_error); /* FIXME warn here? */
 	if (cinfo) {
-		has_stathread_attribute = mono_custom_attrs_has_attr (cinfo, mono_class_get_sta_thread_attribute_class ());
+		has_stathread_attribute = sta_thread_attribute_class && mono_custom_attrs_has_attr (cinfo, sta_thread_attribute_class);
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	} else {
@@ -8134,8 +8135,22 @@ mono_runtime_run_startup_hooks (void)
 	if (!method)
 		return;
 
+	gchar *startup_hooks_env = g_getenv ("DOTNET_STARTUP_HOOKS");
+	MonoString *startup_hooks_arg;
+	if (startup_hooks_env) {
+		startup_hooks_arg = mono_string_new_checked (startup_hooks_env, error);
+		g_free (startup_hooks_env);
+		if (!is_ok (error)) {
+			g_warning ("Failed to process $DOTNET_STARTUP_HOOKS environment variable");
+			mono_error_cleanup (error);
+			return;
+		}
+	} else {
+		startup_hooks_arg = mono_string_empty_internal (mono_domain_get ());
+	}
+
 	gpointer args [1];
-	args[0] = mono_string_empty_internal (mono_domain_get ());
+	args[0] = startup_hooks_arg;
 
 	mono_runtime_invoke_checked (method, NULL, args, error);
 	// runtime hooks design doc says not to catch exceptions from the hooks

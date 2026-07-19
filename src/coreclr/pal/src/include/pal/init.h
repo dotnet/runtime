@@ -52,6 +52,9 @@ Returns TRUE if the PAL is in an initialized state
 Warning : this will only report the PAL's state at the moment it is called.
 If it is necessary to ensure the PAL remains initialized (or not) while doing
 some work, the Initialization lock (PALInitLock()) should be held.
+
+Note: init_count is Volatile<int> which means that the read here has a read barrier
+so readers can be assured that the initialized PAL structures are fully initialized when this returns true.
 --*/
 #define PALIsInitialized() (0 < init_count)
 

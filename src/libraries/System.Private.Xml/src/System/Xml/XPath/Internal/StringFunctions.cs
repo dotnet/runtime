@@ -131,7 +131,7 @@ namespace MS.Internal.Xml.XPath
             Debug.Assert(_argList.Count > 1);
             string s1 = _argList[0].Evaluate(nodeIterator).ToString()!;
             string s2 = _argList[1].Evaluate(nodeIterator).ToString()!;
-            return s1.Length >= s2.Length && string.CompareOrdinal(s1, 0, s2, 0, s2.Length) == 0;
+            return s1.StartsWith(s2, StringComparison.Ordinal);
         }
 
         private bool Contains(XPathNodeIterator nodeIterator)

@@ -44,9 +44,6 @@ namespace System.Threading
     /// ## Design goals
     ///
     /// Behave similarly to wait operations on Windows
-    ///   - The design is similar to the one used by CoreCLR's PAL, but much simpler due to there being no need for supporting
-    ///     process/thread waits, or cross-process multi-waits (which CoreCLR also does not support but there are many design
-    ///     elements specific to it)
     ///   - Waiting
     ///     - A waiter keeps an array of objects on which it is waiting (see <see cref="ThreadWaitInfo._waitedObjects"/>).
     ///     - The waiter registers a <see cref="ThreadWaitInfo.WaitedListNode"/> with each <see cref="WaitableObject"/>
@@ -192,7 +189,7 @@ namespace System.Threading
             // by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
             // possibilities for exceptions have been exhausted.
             ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
-            bool acquiredLock = waitableObject.Wait(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false) == 0;
+            bool acquiredLock = waitableObject.Wait(waitInfo, timeoutMilliseconds: 0, interruptible: false) == 0;
             Debug.Assert(acquiredLock);
             return safeWaitHandle;
         }
@@ -245,7 +242,7 @@ namespace System.Threading
                 // by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
                 // possibilities for exceptions have been exhausted.
                 ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
-                int status = waitableObject.Wait_Locked(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false, ref lockHolder);
+                int status = waitableObject.Wait_Locked(waitInfo, timeoutMilliseconds: 0, interruptible: false, ref lockHolder);
                 Debug.Assert(status == 0);
                 return safeWaitHandle;
             }
@@ -364,13 +361,12 @@ namespace System.Threading
         public static int Wait(
             IWaitableObject waitableObject,
             int timeoutMilliseconds,
-            bool interruptible = true,
-            bool prioritize = false)
+            bool interruptible = true)
         {
             Debug.Assert(waitableObject != null);
             Debug.Assert(timeoutMilliseconds >= -1);
 
-            return waitableObject.Wait(Thread.CurrentThread.WaitInfo, timeoutMilliseconds, interruptible, prioritize);
+            return waitableObject.Wait(Thread.CurrentThread.WaitInfo, timeoutMilliseconds, interruptible);
         }
 
         public static int Wait(
@@ -388,7 +384,7 @@ namespace System.Threading
             if (waitHandles.Length == 1 && HandleManager.FromHandle(waitHandles[0]) is NamedMutex namedMutex)
             {
                 // Named mutexes don't participate in the wait subsystem fully.
-                return namedMutex.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize: false);
+                return namedMutex.Wait(waitInfo, timeoutMilliseconds, interruptible: true);
             }
 #endif
 
@@ -442,7 +438,7 @@ namespace System.Threading
                 WaitableObject waitableObject = waitableObjects[0]!;
                 waitableObjects[0] = null;
                 return
-                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize: false);
+                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true);
             }
 
             return
@@ -452,8 +448,7 @@ namespace System.Threading
                     waitForAll,
                     waitInfo,
                     timeoutMilliseconds,
-                    interruptible: true,
-                    prioritize: false);
+                    interruptible: true);
         }
 
         public static int SignalAndWait(
@@ -474,8 +469,7 @@ namespace System.Threading
             IWaitableObject waitableObjectToSignal,
             IWaitableObject waitableObjectToWaitOn,
             int timeoutMilliseconds,
-            bool interruptible = true,
-            bool prioritize = false)
+            bool interruptible = true)
         {
             Debug.Assert(waitableObjectToSignal != null);
             Debug.Assert(waitableObjectToWaitOn != null);
@@ -501,7 +495,7 @@ namespace System.Threading
                     s_lock.VerifyIsNotLocked();
                     throw new InvalidOperationException(SR.Threading_WaitHandleTooManyPosts, ex);
                 }
-                return waitableObjectToWaitOn.Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, prioritize, ref lockHolder);
+                return waitableObjectToWaitOn.Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, ref lockHolder);
             }
             finally
             {

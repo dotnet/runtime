@@ -6,12 +6,13 @@
 #include <unixasmmacros.inc>
 
 //
-// See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves RAX/RDX and accepts the register
-// bitmask in RCX
+// See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves volatile argument registers
+// and accepts the register bitmask
 //
 // On entry:
 //  - BITMASK: bitmask describing pushes, may be volatile register or constant value
 //  - RAX: managed function return value, may be an object or byref
+//  - RSI, RDI, RCX, RDX, R8, R9: may contain objects or byrefs at the hijack point
 //  - preserved regs: need to stay preserved, may contain objects or byrefs
 //
 // INVARIANTS
@@ -19,28 +20,39 @@
 // - All preserved registers remain unchanged from their values in managed code.
 //
 .macro PUSH_PROBE_FRAME threadReg, trashReg, BITMASK
+    push_register    r9                          // save R9, it might contain an objectref
+    push_register    r8                          // save R8, it might contain an objectref
     push_register    rdx                         // save RDX, it might contain an objectref
+    push_register    rcx                         // save RCX, it might contain an objectref (async continuation)
     push_register    rax                         // save RAX, it might contain an objectref
-    lea             \trashReg, [rsp + 0x18]
+    lea             \trashReg, [rsp + 0x30]
     push_register   \trashReg                    // save caller`s RSP
     push_nonvol_reg r15                          // save preserved registers
     push_nonvol_reg r14                          //   ..
     push_nonvol_reg r13                          //   ..
     push_nonvol_reg r12                          //   ..
+    push_register   rdi                          // save RDI, volatile on Unix, might contain an objectref
+    push_register   rsi                          // save RSI, volatile on Unix, might contain an objectref
     push_nonvol_reg rbx                          //   ..
     push_register   \BITMASK                     // save the register bitmask passed in by caller
     push_register   \threadReg                   // Thread * (unused by stackwalker)
     push_nonvol_reg rbp                          // save caller`s RBP
-    mov             \trashReg, [rsp + 11*8]      // Find the return address
+    mov             \trashReg, [rsp + 16*8]      // Find the return address
     push_register   \trashReg                    // save m_RIP
     lea             \trashReg, [rsp + 0]         // trashReg == address of frame
 
-    // allocate space for xmm0, xmm1 and alignment
-    alloc_stack     0x28
+    // allocate space for xmm0..xmm7 (FP argument registers)
+    alloc_stack     0x80 + 0
 
-    // save xmm0 and xmm1 in case they are used as return values
-    movdqa          [rsp + 0x10], xmm0
-    movdqa          [rsp + 0]   , xmm1
+    // save FP argument registers in case they contain live values at the hijack point
+    movdqa          [rsp + 0x70], xmm0
+    movdqa          [rsp + 0x60], xmm1
+    movdqa          [rsp + 0x50], xmm2
+    movdqa          [rsp + 0x40], xmm3
+    movdqa          [rsp + 0x30], xmm4
+    movdqa          [rsp + 0x20], xmm5
+    movdqa          [rsp + 0x10], xmm6
+    movdqa          [rsp + 0x00], xmm7
 
     // link the frame into the Thread
     mov             [\threadReg + OFFSETOF__Thread__m_pDeferredTransitionFrame], \trashReg
@@ -51,20 +63,31 @@
 // registers and return value to their values from before the probe was called (while also updating any
 // object refs or byrefs).
 .macro POP_PROBE_FRAME
-    movdqa      xmm1, [rsp + 0]
-    movdqa      xmm0, [rsp + 0x10]
-    add         rsp, 0x28 + 8  // skip xmm0, xmm1 and discard RIP
-    pop         rbp
-    pop         rax     // discard Thread*
-    pop         rax     // discard BITMASK
-    pop         rbx
-    pop         r12
-    pop         r13
-    pop         r14
-    pop         r15
-    pop         rax     // discard caller RSP
-    pop         rax
-    pop         rdx
+    movdqa      xmm7, [rsp + 0x00]
+    movdqa      xmm6, [rsp + 0x10]
+    movdqa      xmm5, [rsp + 0x20]
+    movdqa      xmm4, [rsp + 0x30]
+    movdqa      xmm3, [rsp + 0x40]
+    movdqa      xmm2, [rsp + 0x50]
+    movdqa      xmm1, [rsp + 0x60]
+    movdqa      xmm0, [rsp + 0x70]
+    free_stack  0x80 + 8               // skip xmm0..xmm7 and discard RIP
+    pop_nonvol_reg rbp
+    pop_register rax                   // discard Thread*
+    pop_register rax                   // discard BITMASK
+    pop_nonvol_reg rbx
+    pop_register rsi
+    pop_register rdi
+    pop_nonvol_reg r12
+    pop_nonvol_reg r13
+    pop_nonvol_reg r14
+    pop_nonvol_reg r15
+    pop_register rax                   // discard caller RSP
+    pop_register rax
+    pop_register rcx
+    pop_register rdx
+    pop_register r8
+    pop_register r9
 .endm
 
 //
@@ -76,28 +99,69 @@
 //
 // Register state on exit:
 //  R11: thread pointer
-//  RAX, RDX preserved, other volatile regs trashed
+//  RAX, RCX, RDX, RSI, RDI, R8, R9, xmm0-xmm7 preserved, R10 trashed
 //
 .macro FixupHijackedCallstack
-        // preserve RAX, RDX as they may contain return values
-        push rax
-        push rdx
+        // preserve volatile argument registers across INLINE_GETTHREAD
+        push_register rax
+        push_register rdx
+
+        // preserve RCX as it may contain async continuation return value
+        push_register rcx
+
+        // preserve RSI, RDI, R8 and R9 as they may contain GC refs
+        push_register rsi
+        push_register rdi
+        push_register r8
+        push_register r9
+
+        // allocate space for xmm0..xmm7 + alignment (0x80 for xmm regs + 0x8 for 16-byte alignment)
+        alloc_stack 0x88
+
+        // save FP argument registers that would be clobbered by INLINE_GETTHREAD call
+        movdqa      [rsp + 0x70], xmm0
+        movdqa      [rsp + 0x60], xmm1
+        movdqa      [rsp + 0x50], xmm2
+        movdqa      [rsp + 0x40], xmm3
+        movdqa      [rsp + 0x30], xmm4
+        movdqa      [rsp + 0x20], xmm5
+        movdqa      [rsp + 0x10], xmm6
+        movdqa      [rsp + 0x00], xmm7
 
         // rax = GetThread(), makes nested calls
         INLINE_GETTHREAD
         mov r11, rax
 
-        pop rdx
-        pop rax
+        // restore FP argument registers
+        movdqa      xmm7, [rsp + 0x00]
+        movdqa      xmm6, [rsp + 0x10]
+        movdqa      xmm5, [rsp + 0x20]
+        movdqa      xmm4, [rsp + 0x30]
+        movdqa      xmm3, [rsp + 0x40]
+        movdqa      xmm2, [rsp + 0x50]
+        movdqa      xmm1, [rsp + 0x60]
+        movdqa      xmm0, [rsp + 0x70]
+
+        free_stack 0x88
+
+        pop_register r9
+        pop_register r8
+        pop_register rdi
+        pop_register rsi
+
+        pop_register rcx
+
+        pop_register rdx
+        pop_register rax
 
         // Fix the stack by pushing the original return address
-        mov         rcx, [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        push        rcx
+        mov         r10, [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        push        r10
 
         // Clear hijack state
-        xor         ecx, ecx
-        mov         [r11 + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], rcx
-        mov         [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress], rcx
+        xor         r10, r10
+        mov         [r11 + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r10
+        mov         [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress], r10
 .endm
 
 //
@@ -112,12 +176,12 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
         ret
 
 LOCAL_LABEL(WaitForGC):
-        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RAX + PTFF_SAVE_RDX + PTFF_THREAD_HIJACK
+        mov         r10d, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RSI + PTFF_SAVE_RDI + PTFF_SAVE_RAX + PTFF_SAVE_RCX + PTFF_SAVE_RDX + PTFF_SAVE_R8 + PTFF_SAVE_R9 + PTFF_THREAD_HIJACK
         jmp         C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack, _TEXT
 
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
-        PUSH_PROBE_FRAME r11, rax, rcx
+        PUSH_PROBE_FRAME r11, rax, r10
         END_PROLOGUE
 
         mov         rbx, r11

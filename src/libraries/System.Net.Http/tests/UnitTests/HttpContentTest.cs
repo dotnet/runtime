@@ -32,6 +32,28 @@ namespace System.Net.Http.Tests
             Assert.Null(bufferedStream.GetSingleBuffer());
         }
 
+        [Fact]
+        public async Task SerializeToStreamAsync_UserDisposesBufferedStream_Throws()
+        {
+            var content = new DisposeBufferedStreamContent();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => content.LoadIntoBufferAsync());
+        }
+
+        private sealed class DisposeBufferedStreamContent : HttpContent
+        {
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            {
+                stream.Dispose();
+                return Task.CompletedTask;
+            }
+
+            protected internal override bool TryComputeLength(out long length)
+            {
+                length = 0;
+                return false;
+            }
+        }
+
         [Theory]
         [InlineData(1, 100, 99, 1)]
         [InlineData(1, 100, 50, 99)]

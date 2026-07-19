@@ -53,7 +53,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
         assert(size->isContained());
         srcCount = 0;
 
-        size_t sizeVal = size->AsIntCon()->gtIconVal;
+        size_t sizeVal = size->AsIntCon()->IconValue();
         if (sizeVal == 0)
         {
             internalIntCount = 0;
@@ -68,10 +68,10 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             {
                 internalIntCount = 0;
             }
-            else if (!compiler->info.compInitMem)
+            else if (!m_compiler->info.compInitMem)
             {
                 // No need to initialize allocated stack space.
-                if (sizeVal < compiler->eeGetPageSize())
+                if (sizeVal < m_compiler->eeGetPageSize())
                 {
                     internalIntCount = 0;
                 }
@@ -98,7 +98,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     // a temporary register for doing the probe. Note also that if the outgoing argument space is
     // large enough that it can't be directly encoded in SUB/ADD instructions, we also need a temp
     // register to load the large sized constant into a register.
-    if (compiler->lvaOutgoingArgSpaceSize > 0)
+    if (m_compiler->lvaOutgoingArgSpaceSize > 0)
     {
         internalIntCount = 1;
     }
@@ -249,7 +249,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_STORE_LCL_VAR:
             if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
             {
-                dstCount = compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
+                dstCount = m_compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
             }
             FALLTHROUGH;
 
@@ -270,11 +270,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_INTRINSIC:
         {
-            // TODO-ARM: Implement other type of intrinsics (round, sqrt and etc.)
-            // Both operand and its result must be of the same floating point type.
             GenTree* op1 = tree->gtGetOp1();
-            assert(varTypeIsFloating(op1));
-            assert(op1->TypeGet() == tree->TypeGet());
             BuildUse(op1);
             srcCount = 1;
 
@@ -282,6 +278,19 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 case NI_System_Math_Abs:
                 case NI_System_Math_Sqrt:
+                    // Both operand and result must be of the same floating-point type.
+                    assert(varTypeIsFloating(op1));
+                    assert(op1->TypeGet() == tree->TypeGet());
+                    assert(dstCount == 1);
+                    BuildDef(tree);
+                    break;
+                case NI_PRIMITIVE_SaturateToInt8:
+                case NI_PRIMITIVE_SaturateToInt16:
+                case NI_PRIMITIVE_SaturateToUInt8:
+                case NI_PRIMITIVE_SaturateToUInt16:
+                    // Integer-domain saturation via SSAT/USAT: operand and result are TYP_INT.
+                    assert(op1->TypeGet() == TYP_INT);
+                    assert(tree->TypeGet() == TYP_INT);
                     assert(dstCount == 1);
                     BuildDef(tree);
                     break;
@@ -372,7 +381,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 1;
             assert(dstCount == 0);
             BuildUse(tree->gtGetOp1());
-            killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             BuildKills(tree, killMask);
             break;
 
@@ -494,13 +503,6 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(tree->AsBoundsChk()->GetArrayLength());
             break;
 
-        case GT_ARR_ELEM:
-            // These must have been lowered
-            noway_assert(!"We should never see a GT_ARR_ELEM in lowering");
-            srcCount = 0;
-            assert(dstCount == 0);
-            break;
-
         case GT_LEA:
         {
             GenTreeAddrMode* lea    = tree->AsAddrMode();
@@ -597,7 +599,7 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             GenTree* src = tree->gtGetOp2();
 
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
+            if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;
@@ -692,12 +694,18 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RECORD_ASYNC_RESUME:
         case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
-        case GT_PINVOKE_PROLOG:
         case GT_JCC:
         case GT_SETCC:
         case GT_MEMORYBARRIER:
         case GT_RETURN_SUSPEND:
             srcCount = BuildSimple(tree);
+            break;
+
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // NYI on ARM32
+            srcCount = 0;
+            NYI_ARM("GT_PATCHPOINT");
             break;
 
         case GT_JTRUE:
@@ -728,7 +736,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsValue() || (dstCount != 0));
-    assert(dstCount == tree->GetRegisterDstCount(compiler));
+    assert(dstCount == tree->GetRegisterDstCount(m_compiler));
     return srcCount;
 }
 

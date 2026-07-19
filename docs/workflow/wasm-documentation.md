@@ -49,6 +49,10 @@ This document serves as a guide for contributors to the WebAssembly implementati
 
 For debugging instructions including VS Code and Chrome DevTools setup, see the [WebAssembly Debugging Reference](debugging/mono/wasm-debugging.md).
 
+### Running coreclr callhelpers generator
+
+After building the runtime, use the `generate-coreclr-helpers` script for your platform (`.cmd` or `.sh`) in `src/tasks/WasmAppBuilder` to [re]generate the call helpers in `src/coreclr/vm/wasm`.
+
 ## Features and Configuration
 
 ### Runtime Features
@@ -93,7 +97,7 @@ See the [Building for WebAssembly](#building-for-webassembly) section above for 
 
 ### How do I test Wasm changes end to end?
 
-Use Wasm.Build.Tests or Wasi.Build.Tests. See the [Wasm.Build.Tests README](../../src/mono/wasm/Wasm.Build.Tests/README.md) for detailed instructions.
+Use Wasm.Build.Tests for browser scenarios. For WASI scenarios, validate against a sample app under `src/mono/sample/wasi`.
 
 ### How do I enable multi-threading?
 

@@ -14,4 +14,7 @@
     <ProjectReference Include="../common/eventpipe_common.csproj" />
     <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

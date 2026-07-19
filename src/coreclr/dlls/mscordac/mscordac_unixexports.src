@@ -35,9 +35,6 @@ nativeStringResourceTable_mscorrc
 #PAL_GetTransportPipeName
 #PAL_InitializeDLL
 #PAL_TerminateEx
-#PAL_OpenProcessMemory
-#PAL_CloseProcessMemory
-#PAL_ReadProcessMemory
 #PAL_ProbeMemory
 #PAL__wcstoui64
 #PAL_wcstoul
@@ -63,11 +60,8 @@ nativeStringResourceTable_mscorrc
 #CreateFileMappingW
 #CreateFileA
 #CreateFileW
-#CreateMutexW
-#CreateMutexExW
 #CreateEventW
 #CreateEventExW
-#CreateProcessW
 #CreateSemaphoreExW
 #CreateThread
 #CloseHandle
@@ -98,14 +92,12 @@ nativeStringResourceTable_mscorrc
 #MapViewOfFile
 #MapViewOfFileEx
 #MultiByteToWideChar
-#OpenProcess
 #OutputDebugStringW
 #OpenEventW
 #OutputDebugStringA
 #RaiseException
 #RaiseFailFastException
 #ReadFile
-#ReleaseMutex
 #ReleaseSemaphore
 #ResetEvent
 #ResumeThread

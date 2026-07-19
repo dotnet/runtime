@@ -98,18 +98,6 @@ LOCAL_LABEL(EphemeralCheckEnabled):
 
 WRITE_BARRIER_END JIT_UpdateWriteBarrierState
 
-// ----------------------------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
-LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
-    // Setup args for JIT_WriteBarrier. a0 = dst ; a1 = val
-    addi  t3, a0, 0                 // t3 = dst
-    addi  t4, a1, 0                 // t4 = val
-
-    // Branch to the write barrier
-    ld  t1, JIT_WriteBarrier_Loc
-    jr  t1
-LEAF_END JIT_WriteBarrier_Callable, _TEXT
-
 
 .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
 // ------------------------------------------------------------------
@@ -117,24 +105,6 @@ LEAF_END JIT_WriteBarrier_Callable, _TEXT
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
     ret
 LEAF_END JIT_PatchedCodeStart, _TEXT
-
-// void JIT_ByRefWriteBarrier
-//
-// On entry:
-//   t5 : the source address (points to object reference to write)
-//   t3: the destination address (object reference written here)
-//
-// On exit:
-//   t5  : incremented by 8
-//   t4  : trashed
-//
-
-// void JIT_ByRefWriteBarrier
-WRITE_BARRIER_ENTRY JIT_ByRefWriteBarrier
-    ld  t4, 0(t5)
-    addi  t5, t5, 8
-    tail  C_FUNC(JIT_CheckedWriteBarrier)
-WRITE_BARRIER_END JIT_ByRefWriteBarrier
 
 //-----------------------------------------------------------------------------
 // Simple WriteBarriers
@@ -148,7 +118,7 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //   t1  : trashed
 //   t0  : trashed
 //   t6  : trashed
-//   t3  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//   t3  : preserved (the destination address is not modified)
 //
 
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
@@ -161,7 +131,6 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     beq  t6, zero, C_FUNC(JIT_WriteBarrier)
 
     sd  t4, 0(t3)
-    addi  t3, t3, 8
     ret
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
@@ -175,7 +144,7 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //   t1  : trashed
 //   t6  : trashed
 //   t4  : trashed
-//   t3  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//   t3  : preserved (the destination address is not modified)
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
     // TODO: sync_release (runtime detection required)
@@ -270,7 +239,6 @@ LOCAL_LABEL(SkipEphemeralCheck):
     sb  t0, 0(t4)
 #endif
 LOCAL_LABEL(Exit):
-    addi  t3, t3, 8
     ret
 WRITE_BARRIER_END JIT_WriteBarrier
 
@@ -347,7 +315,7 @@ C_FUNC(ThePreStubPatchLabel):
     ret
 LEAF_END ThePreStubPatch, _TEXT
 
-NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
+NESTED_ENTRY TheUMEntryPrestub, _TEXT, NoHandler
     // Save arguments and return address
     PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 0xa0
     //PROLOG_SAVE_REG  gp, 16
@@ -409,6 +377,7 @@ NESTED_END TheUMEntryPrestub, _TEXT
 
 GenerateRedirectedStubWithFrame RedirectForThreadAbort, ThrowControlForThread
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
 //
@@ -496,6 +465,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
     EPILOG_BRANCH_REG  t4
 NESTED_END ResolveWorkerAsmStub, _TEXT
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_HIJACK
 // ------------------------------------------------------------------
@@ -515,10 +485,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // save any integral return value(s)
     sd  a0, 120(sp)
     sd  a1, 128(sp)
+    // save async continuation return value
+    sd  a2, 136(sp)
 
     // save any FP/HFA return value(s)
-    fsd  f0, 136(sp)
-    fsd  f1, 144(sp)
+    fsd  f0, 144(sp)
+    fsd  f1, 152(sp)
 
     addi  a0, sp, 0
     call  C_FUNC(OnHijackWorker)
@@ -528,10 +500,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore any integral return value(s)
     ld  a0, 120(sp)
     ld  a1, 128(sp)
+    // restore async continuation return value
+    ld  a2, 136(sp)
 
     // restore any FP/HFA return value(s)
-    fld  f0, 136(sp)
-    fld  f1, 144(sp)
+    fld  f0, 144(sp)
+    fld  f1, 152(sp)
 
     EPILOG_RESTORE_REG_PAIR   s1, s2, 16
     EPILOG_RESTORE_REG_PAIR   s3, s4, 32
@@ -638,31 +612,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
     EPILOG_RETURN
 NESTED_END CallEHFilterFunclet, _TEXT
-
-#ifdef FEATURE_COMINTEROP
-// Function used by COM interop to get floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-// On entry//
-//   a0          : size of the FP result (4 or 8 bytes)
-//   a1          : pointer to 64-bit buffer to receive result
-//
-// On exit:
-//   buffer pointed to by a1 on entry contains the float or double argument as appropriate
-//
-LEAF_ENTRY getFPReturn, _TEXT
-    fsd  f0, 0(a1)
-LEAF_END getFPReturn, _TEXT
-
-// ------------------------------------------------------------------
-// Function used by COM interop to set floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-LEAF_ENTRY setFPReturn, _TEXT
-    fmv.d.x f0, a1
-LEAF_END setFPReturn, _TEXT
-
-#endif // FEATURE_COMINTEROP
 
 // ------------------------------------------------------------------
 // void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
@@ -878,6 +827,50 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     EPILOG_BRANCH_REG t2
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS a1
+    // a0 already contains exception object
+    // a1 contains pointer to TransitionBlock
+    call  C_FUNC(IL_Throw_Impl)
+    // Should never return
+    ebreak
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS a1
+    // a0 already contains exception object
+    // a1 contains pointer to TransitionBlock
+    call  C_FUNC(IL_ThrowExact_Impl)
+    // Should never return
+    ebreak
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS a0
+    // a0 contains pointer to TransitionBlock
+    call  C_FUNC(IL_Rethrow_Impl)
+    // Should never return
+    ebreak
+NESTED_END IL_Rethrow, _TEXT
+
 #ifdef FEATURE_INTERPRETER
 
 // Align interpreter stack by adjusting it by 8 bytes
@@ -1066,21 +1059,31 @@ Load_Ref A7, a7
 // a1 - interpreter stack args location
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
+    sd a4, 16(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 16(fp)
+    sd a2, 0(a4)
     EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 16
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
+    sd a4, 16(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
@@ -1088,20 +1091,134 @@ NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 16(fp)
+    sd a2, 0(a4)
     EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 16
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetBuff, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
+    sd a4, 24(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    // Sign extend 8-bit to 64-bit
+    sext.b a0, a0
+    sd a0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    // Sign extend 16-bit to 64-bit
+    sext.h a0, a0
+    sd a0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI2, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    // Zero extend 8-bit to 64-bit
+    zext.b a0, a0
+    sd a0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    // Zero extend 16-bit to 64-bit
+    zext.h a0, a0
+    sd a0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetU2, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
     ld a2, 16(fp)
     sd a0, 0(a2)
     EPILOG_STACK_RESTORE
@@ -1109,15 +1226,23 @@ NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetI8, _TEXT
 
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
+    sd a4, 24(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
     ld a2, 16(fp)
     fsd fa0, 0(a2)
     EPILOG_STACK_RESTORE
@@ -1129,15 +1254,43 @@ NESTED_END CallJittedMethodRetDouble, _TEXT
 // a1 - interpreter stack args location
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
-NESTED_ENTRY CallJittedMethodRet2I8, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
+    sd a4, 24(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    fsw fa0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetFloat, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRet2I8, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
     ld a2, 16(fp)
     sd a0, 0(a2)
     sd a1, 8(a2)
@@ -1150,15 +1303,19 @@ NESTED_END CallJittedMethodRet2I8, _TEXT
 // a1 - interpreter stack args location
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet2Double, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
+    sd a4, 24(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
     ld a2, 16(fp)
     fsd fa0, 0(a2)
     fsd fa1, 8(a2)
@@ -1171,15 +1328,44 @@ NESTED_END CallJittedMethodRet2Double, _TEXT
 // a1 - interpreter stack args location
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
-NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRet2Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
+    sd a4, 24(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    fsw fa0, 0(a2)
+    fsw fa1, 4(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet2Float, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
     ld a2, 16(fp)
     fsd fa0, 0(a2)
     sd a0, 8(a2)
@@ -1192,15 +1378,19 @@ NESTED_END CallJittedMethodRetFloatInt, _TEXT
 // a1 - interpreter stack args location
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetIntFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, 32
     sd a2, 16(fp)
+    sd a4, 24(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
     ld a2, 16(fp)
     sd a0, 0(a2)
     fsd fa0, 8(a2)
@@ -1211,10 +1401,10 @@ NESTED_END CallJittedMethodRetIntFloat, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
-    PROLOG_WITH_TRANSITION_BLOCK
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 
     // IR bytecode address
-    mv t6, METHODDESC_REGISTER
+    mv s1, METHODDESC_REGISTER
 
     INLINE_GETTHREAD t5 // thrashes a0
     beqz t5, LOCAL_LABEL(NoManagedThreadOrCallStub)
@@ -1225,8 +1415,8 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     bnez t4, LOCAL_LABEL(HaveInterpThreadContext)
 
 LOCAL_LABEL(NoManagedThreadOrCallStub):
-    addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6
+    addi a0, sp, __PWTB_TransitionBlock
+    mv a1, s1
     call C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub)
     mv t4, a0
 
@@ -1235,26 +1425,28 @@ LOCAL_LABEL(HaveInterpThreadContext):
     RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
     RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
 
-    ld t3, 0(t6) // InterpMethod*
+    ld t3, 0(s1) // InterpMethod*
     ld t3, OFFSETOF__InterpMethod__pCallStub(t3)
     beqz t3, LOCAL_LABEL(NoManagedThreadOrCallStub)
     addi t2, t3, OFFSETOF__CallStubHeader__Routines
     ld t3, OFFSETOF__InterpThreadContext__pStackPointer(t4)
-    // t6 contains IR bytecode address
+    // s1 contains IR bytecode address
     // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    // Fill in the ContinuationContext register
+    ld a2, (__PWTB_ArgumentRegisters+16)(sp)
 
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
 NESTED_END InterpreterStub, _TEXT
 
 NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
@@ -1262,10 +1454,10 @@ NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
 NESTED_END InterpreterStubRetVoid, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     ld a0, 0(a0)
@@ -1274,10 +1466,10 @@ NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
 NESTED_END InterpreterStubRetI8, _TEXT
 
 NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     fld fa0, 0(a0)
@@ -1286,21 +1478,21 @@ NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
 NESTED_END InterpreterStubRetDouble, _TEXT
 
 NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     mv   a2, a0        // save caller's return buffer in a2
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv   a1, t6        // the IR bytecode pointer (x19)
+    mv   a1, s1        // the IR bytecode pointer
     call C_FUNC(ExecuteInterpretedMethod)
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
     EPILOG_RETURN
 NESTED_END InterpreterStubRetBuff, _TEXT
 
 NESTED_ENTRY InterpreterStubRet2I8, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     ld a1, 8(a0)
@@ -1310,10 +1502,10 @@ NESTED_ENTRY InterpreterStubRet2I8, _TEXT, NoHandler
 NESTED_END InterpreterStubRet2I8, _TEXT
 
 NESTED_ENTRY InterpreterStubRet2Double, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     fld fa0, 0(a0)
@@ -1323,10 +1515,10 @@ NESTED_ENTRY InterpreterStubRet2Double, _TEXT, NoHandler
 NESTED_END InterpreterStubRet2Double, _TEXT
 
 NESTED_ENTRY InterpreterStubRetFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     flw fa0, 0(a0)
@@ -1335,10 +1527,10 @@ NESTED_ENTRY InterpreterStubRetFloat, _TEXT, NoHandler
 NESTED_END InterpreterStubRetFloat, _TEXT
 
 NESTED_ENTRY InterpreterStubRet2Float, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     flw fa0, 0(a0)
@@ -1348,10 +1540,10 @@ NESTED_ENTRY InterpreterStubRet2Float, _TEXT, NoHandler
 NESTED_END InterpreterStubRet2Float, _TEXT
 
 NESTED_ENTRY InterpreterStubRetFloatInt, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     fld fa0, 0(a0)
@@ -1361,10 +1553,10 @@ NESTED_ENTRY InterpreterStubRetFloatInt, _TEXT, NoHandler
 NESTED_END InterpreterStubRetFloatInt, _TEXT
 
 NESTED_ENTRY InterpreterStubRetIntFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
+    mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     ld a1, 0(a0)
@@ -2383,5 +2575,57 @@ LEAF_ENTRY Store_FA7
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
 LEAF_END Store_FA7
+
+// ------------------------------------------------------------------
+// Create a real TransitionBlock and call CallInterpreterFuncletWorker
+// to execute an interpreter funclet (catch/finally/filter handler).
+//
+// extern "C" DWORD_PTR CallInterpreterFunclet(
+//     OBJECTREF throwable,        // a0
+//     void* pHandler,             // a1
+//     REGDISPLAY *pRD,            // a2
+//     ExInfo *pExInfo,            // a3
+//     bool isFilter               // a4
+// );
+// ------------------------------------------------------------------
+NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
+
+    // Pass TransitionBlock* as last (6th) argument
+    // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+    // Original args: a0=throwable, a1=pHandler, a2=pRD, a3=pExInfo, a4=isFilter
+    // a0-a4 remain unchanged
+
+    addi    a5, sp, __PWTB_TransitionBlock     // TransitionBlock* as 6th param (a5)
+
+    call    C_FUNC(CallInterpreterFuncletWorker)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END CallInterpreterFunclet, _TEXT
+
+// ------------------------------------------------------------------
+// Resume an interpreter continuation after an async await.
+// The worker function will restore callee-saved registers from the
+// TransitionBlock.
+//
+// FCDECL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage);
+//
+// ------------------------------------------------------------------
+NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
+
+    // Worker signature: AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, TransitionBlock*)
+    // a0, a1 remain unchanged
+
+    addi    a2, sp, __PWTB_TransitionBlock     // TransitionBlock* as 3rd param (a2)
+
+    call    C_FUNC(AsyncHelpers_ResumeInterpreterContinuationWorker)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END AsyncHelpers_ResumeInterpreterContinuation, _TEXT
 
 #endif // FEATURE_INTERPRETER

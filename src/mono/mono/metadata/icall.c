@@ -948,7 +948,7 @@ ves_icall_System_Array_SetGenericValue_icall (MonoObjectHandleOnStack *arr_handl
 }
 
 void
-ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *source, size_t byte_count)
+ves_icall_System_SpanHelpers_memmove (void *destination, void *source, size_t byte_count)
 {
 	mono_gc_memmove_atomic (destination, source, byte_count);
 }
@@ -966,9 +966,9 @@ ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *destination, guint8 *s
 }
 
 void
-ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8 *p, size_t byte_length)
+ves_icall_System_SpanHelpers_memset (void *p, gint32 value, size_t byte_length)
 {
-	memset (p, 0, byte_length);
+	memset (p, value, byte_length);
 }
 
 gpointer
@@ -6248,6 +6248,13 @@ gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
 	return mono_method_get_unmanaged_wrapper_ftnptr_internal (method, FALSE, error);
+}
+
+gpointer
+ves_icall_RuntimeMethodHandle_GetNativeCode (MonoMethod *method, MonoError *error)
+{
+	MonoRuntimeCallbacks *callbacks = mono_get_runtime_callbacks ();
+	return callbacks->get_method_code_start ? callbacks->get_method_code_start (method) : NULL;
 }
 
 void*

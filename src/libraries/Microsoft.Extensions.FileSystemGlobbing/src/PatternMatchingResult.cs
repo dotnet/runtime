@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
     public class PatternMatchingResult
     {
         /// <summary>
-        /// Initializes the result with a collection of <see cref="FilePatternMatch" />
+        /// Initializes a new instance of the <see cref="PatternMatchingResult" /> class with a collection of <see cref="FilePatternMatch" />.
         /// </summary>
         /// <param name="files">A collection of <see cref="FilePatternMatch" /></param>
         public PatternMatchingResult(IEnumerable<FilePatternMatch> files)
@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         }
 
         /// <summary>
-        /// Initializes the result with a collection of <see cref="FilePatternMatch" />
+        /// Initializes a new instance of the <see cref="PatternMatchingResult" /> class with a collection of <see cref="FilePatternMatch" />.
         /// </summary>
         /// <param name="files">A collection of <see cref="FilePatternMatch" /></param>
         /// <param name="hasMatches">A value that determines if <see cref="PatternMatchingResult"/> has any matches.</param>

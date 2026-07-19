@@ -65,7 +65,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(0, true)] // 0 == no buffering
         [InlineData(4096, true)] // 4096 == default buffer size
         [InlineData(0, false)]
@@ -99,7 +99,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(FileShare.None, FileOptions.Asynchronous)] // FileShare.None: exclusive access
         [InlineData(FileShare.ReadWrite, FileOptions.Asynchronous)] // FileShare.ReadWrite: others can write to the file, the length can't be cached
         [InlineData(FileShare.None, FileOptions.None)]
@@ -131,7 +131,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, false)]

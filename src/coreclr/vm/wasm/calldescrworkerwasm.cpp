@@ -5,7 +5,7 @@
 #include <interpexec.h>
 
 // Forward declaration
-void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff);
+void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp);
 
 extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
 {
@@ -26,5 +26,28 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
         targetIp = pMethod->GetInterpreterCode();
     }
 
-    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, (int8_t*)pCallDescrData->pSrc, pCallDescrData->nArgsSize, (int8_t*)pCallDescrData->returnValue);
+    size_t argsSize = pCallDescrData->nArgsSize;
+    void* retBuff;
+    int8_t* args = (int8_t*)pCallDescrData->pSrc;
+    if (pCallDescrData->hasRetBuff)
+    {
+        retBuff = pCallDescrData->pRetBuffArg;
+    }
+    else
+    {
+        retBuff = &pCallDescrData->returnValue;
+    }
+
+    if (targetIp == NULL)
+    {
+        // The target method has no interpreter code because it was compiled to native (R2R) code.
+        // Invoke it as a compiled managed method through the interpreter->R2R thunk, mirroring the
+        // fallback already present in ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex and
+        // the CALL_INTERP_METHOD path in InterpExecMethod. Without this, the NULL bytecode pointer
+        // would be handed to the interpreter and dispatched as INTOP_INVALID.
+        InvokeManagedMethod(pMethod, args, (int8_t*)retBuff, (PCODE)NULL, nullptr);
+        return;
+    }
+
+    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argsSize, retBuff, (PCODE)&CallDescrWorkerInternal);
 }

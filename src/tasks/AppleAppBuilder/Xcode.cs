@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -235,7 +236,7 @@ internal sealed class Xcode
         else
         {
             // arch is passed later when invoking xcodebuild
-            cmakeArgs.Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2");
+            cmakeArgs.Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0");
         }
 
         Utils.RunProcess(Logger, "cmake", cmakeArgs.ToString(), workingDir: cmakeDirectoryPath);
@@ -276,8 +277,8 @@ internal sealed class Xcode
         {
             predefinedExcludes.Add(".dll");
             predefinedExcludes.Add(".pdb");
-            predefinedExcludes.Add(".json");
-            predefinedExcludes.Add(".txt");
+            predefinedExcludes.Add(".deps.json");
+            predefinedExcludes.Add(".runtimeconfig.json");
             predefinedExcludes.Add(".bin");
             predefinedExcludes.Add(".dSYM");
         }
@@ -303,8 +304,7 @@ internal sealed class Xcode
         }
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
-            .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase) &&
-            !(!hybridGlobalization && Path.GetFileName(f) == "icudt.dat"))))
+            .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase))))
             .ToArray();
 
         if (string.IsNullOrEmpty(nativeMainSource))
@@ -618,13 +618,20 @@ internal sealed class Xcode
             {
                 File.WriteAllText(Path.Combine(binDir, "coreclrhost.h"),
                     Utils.GetEmbeddedResource("coreclrhost.h"));
+                File.WriteAllText(Path.Combine(binDir, "host_runtime_contract.h"),
+                    Utils.GetEmbeddedResource("host_runtime_contract.h"));
+
+                var (appContextKeys, appContextValues, propertyCount) = RenderCoreClrRuntimeConfigProperties(workspace);
 
                 // NOTE: Library mode is not supported yet
                 File.WriteAllText(Path.Combine(binDir, "runtime.m"),
                     Utils.GetEmbeddedResource("runtime-coreclr.m")
                         .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
                         .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib))
-                        .Replace("%EnvVariables%", envVariables));
+                        .Replace("%EnvVariables%", envVariables)
+                        .Replace("%AppContextPropertyCount%", propertyCount.ToString())
+                        .Replace("%AppContextKeys%", appContextKeys)
+                        .Replace("%AppContextValues%", appContextValues));
             }
         }
 
@@ -688,7 +695,7 @@ internal sealed class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.0");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.2");
                     break;
             }
         }
@@ -713,7 +720,7 @@ internal sealed class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.0");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.2");
                     break;
             }
         }
@@ -753,5 +760,66 @@ internal sealed class Xcode
     public static string GetAppPath(string appDirectory, string xcodePrjPath)
     {
         return Path.Combine(appDirectory, Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
+    }
+
+    private (string appContextKeys, string appContextValues, int propertyCount) RenderCoreClrRuntimeConfigProperties(string workspace)
+    {
+        Dictionary<string, string> configProperties = ParseRuntimeConfigProperties(workspace);
+
+        // Hardcoded properties count: RUNTIME_IDENTIFIER, APP_CONTEXT_BASE_DIRECTORY, TRUSTED_PLATFORM_ASSEMBLIES, HOST_RUNTIME_CONTRACT = 4
+        const int hardcodedProperties = 4;
+
+        var appContextKeys = new StringBuilder();
+        var appContextValues = new StringBuilder();
+
+        int i = 0;
+        foreach ((string key, string value) in configProperties)
+        {
+            appContextKeys.AppendLine($"    appctx_keys[{i + hardcodedProperties}] = \"{key}\";");
+            appContextValues.AppendLine($"    appctx_values[{i + hardcodedProperties}] = \"{value}\";");
+            i++;
+        }
+
+        int propertyCount = hardcodedProperties + configProperties.Count;
+
+        return (appContextKeys.ToString().TrimEnd(), appContextValues.ToString().TrimEnd(), propertyCount);
+    }
+
+    private Dictionary<string, string> ParseRuntimeConfigProperties(string workspace)
+    {
+        var configProperties = new Dictionary<string, string>();
+        string runtimeConfigPath = Path.Combine(workspace, "runtimeconfig.bin");
+
+        if (!File.Exists(runtimeConfigPath))
+        {
+            return configProperties;
+        }
+
+        try
+        {
+            byte[] fileBytes = File.ReadAllBytes(runtimeConfigPath);
+            unsafe
+            {
+                fixed (byte* ptr = fileBytes)
+                {
+                    var blobReader = new BlobReader(ptr, fileBytes.Length);
+
+                    int count = blobReader.ReadCompressedInteger();
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        string key = blobReader.ReadSerializedString() ?? string.Empty;
+                        string value = blobReader.ReadSerializedString() ?? string.Empty;
+                        configProperties[key] = value;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogMessage(MessageImportance.High, $"Error while parsing runtime config at {runtimeConfigPath}: {ex.Message}");
+        }
+
+        return configProperties;
     }
 }

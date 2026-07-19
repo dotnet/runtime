@@ -3,6 +3,7 @@
 using System;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 struct Gen 
 {
@@ -56,8 +57,7 @@ public class Test_thread08
 	
 	}
 	
-	[Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
 	public static int TestEntryPoint()
 	{
 		Gen.ThreadPoolTest<object>();

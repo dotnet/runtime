@@ -426,14 +426,41 @@
   <data name="InstanceEventDeclaredInInterfaceTitle" xml:space="preserve">
     <value>Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</value>
   </data>
-  <data name="InstancePropertyDeclaredInInterfaceDescription" xml:space="preserve">
-    <value>Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</value>
+  <data name="InvalidPropertyDeclarationOnGeneratedComInterfaceDescription" xml:space="preserve">
+    <value>Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</value>
   </data>
-  <data name="InstancePropertyDeclaredInInterfaceMessage" xml:space="preserve">
-    <value>The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</value>
+  <data name="InvalidPropertyDeclarationOnGeneratedComInterfaceMessage" xml:space="preserve">
+    <value>The property '{0}' on interface '{1}' uses '{2}', which is not supported on a source-generated COM interface property</value>
   </data>
-  <data name="InstancePropertyDeclaredInInterfaceTitle" xml:space="preserve">
-    <value>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</value>
+  <data name="InvalidPropertyDeclarationOnGeneratedComInterfaceTitle" xml:space="preserve">
+    <value>Property uses an unsupported modifier or accessor for a source-generated COM interface</value>
+  </data>
+  <data name="PropertyAccessorsMustBeAllOrNothingDescription" xml:space="preserve">
+    <value>On a source-generated COM interface, a property is either fully abstract (no accessor bodies, treated as a COM property occupying vtable slots) or fully default-implemented (every accessor has a body, treated as managed-only code that bypasses COM marshalling). Mixing the two shapes within a single property is not supported.</value>
+  </data>
+  <data name="PropertyAccessorsMustBeAllOrNothingMessage" xml:space="preserve">
+    <value>The property '{0}' on interface '{1}' mixes abstract and default-implemented accessors. Either all accessors must have bodies or none must have bodies.</value>
+  </data>
+  <data name="PropertyAccessorsMustBeAllOrNothingTitle" xml:space="preserve">
+    <value>Property accessors on a source-generated COM interface must either all have bodies or none have bodies</value>
+  </data>
+  <data name="MarshalAttributeOnDefaultImplementedComInterfaceMemberDescription" xml:space="preserve">
+    <value>Marshalling attributes such as 'MarshalUsing' and 'MarshalAs' on a default-implemented (body-bearing) member of a source-generated COM interface have no effect. Default implementations are pure managed code that bypasses the COM marshalling pipeline and does not get a generated stub.</value>
+  </data>
+  <data name="MarshalAttributeOnDefaultImplementedComInterfaceMemberMessage" xml:space="preserve">
+    <value>The marshalling attribute on the default-implemented member '{0}' on interface '{1}' will be ignored because default implementations do not generate COM marshalling code</value>
+  </data>
+  <data name="MarshalAttributeOnDefaultImplementedComInterfaceMemberTitle" xml:space="preserve">
+    <value>Marshalling attribute on a default-implemented member of a source-generated COM interface has no effect</value>
+  </data>
+  <data name="MarshalUsingOnPropertyAccessorMustSpecifyTypeDescription" xml:space="preserve">
+    <value>When 'MarshalUsing' is applied to a source-generated COM interface property accessor (via '[return: MarshalUsing(...)]' on a getter or '[param: MarshalUsing(...)]' on a setter), it must supply a marshaller type via the constructor argument. Count-only or depth-only forms ('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)', or 'MarshalUsing(ElementIndirectionDepth = ...)' on an accessor) would silently override or partially conflict with a property-level 'MarshalUsing'. Combine the marshaller type and count information on a single 'MarshalUsing' attribute on the accessor. 'ConstantElementCount' and 'ElementIndirectionDepth' may also be supplied via a property-level 'MarshalUsing'; 'CountElementName' is not supported on property or indexer accessors because peer-parameter lookups are not available in that context.</value>
+  </data>
+  <data name="MarshalUsingOnPropertyAccessorMustSpecifyTypeMessage" xml:space="preserve">
+    <value>The 'MarshalUsing' attribute on an accessor of property '{0}' on interface '{1}' must specify a marshaller type. Combine the marshaller type and count on a single 'MarshalUsing' on the accessor, or specify 'ConstantElementCount' or 'ElementIndirectionDepth' on the property declaration.</value>
+  </data>
+  <data name="MarshalUsingOnPropertyAccessorMustSpecifyTypeTitle" xml:space="preserve">
+    <value>'MarshalUsing' applied to a source-generated COM interface property accessor must specify a marshaller type</value>
   </data>
   <data name="InterfaceTypeNotSupportedMessage" xml:space="preserve">
     <value>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</value>
@@ -868,9 +895,6 @@
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</value>
     <comment>{1} is a message containing additional details about what is not valid</comment>
   </data>
-  <data name="InOutAttributes" xml:space="preserve">
-    <value>[In] and [Out] attributes</value>
-  </data>
   <data name="OutAttributeNotSupportedOnByValueParameters" xml:space="preserve">
     <value>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</value>
   </data>
@@ -924,5 +948,9 @@
   </data>
   <data name="GenericDelegatesNotSupported" xml:space="preserve">
     <value>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</value>
+  </data>
+  <data name="IidParameterIndexUnsupportedConfigurationName" xml:space="preserve">
+    <value>{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</value>
+    <comment>Configuration name reported via the 'configuration not supported' diagnostic when 'MarshalAs.IidParameterIndex' is used on an unsupported parameter shape. {0} is the dotted attribute member name, e.g. 'MarshalAsAttribute.IidParameterIndex'.</comment>
   </data>
 </root>

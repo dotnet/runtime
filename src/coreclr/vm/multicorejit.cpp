@@ -209,14 +209,16 @@ HRESULT WriteString(const void * pString, unsigned len, FILE * fp)
     {
         len = RoundUp(len) - len;
 
-        if (len != 0)
+        if (len == 0)
         {
-            uint32_t temp = 0;
-            cbWritten = fwrite(&temp, 1, len, fp);
-
-            if (cbWritten == (size_t)len)
-                return S_OK;
+            return S_OK;
         }
+
+        uint32_t temp = 0;
+        cbWritten = fwrite(&temp, 1, len, fp);
+
+        if (cbWritten == (size_t)len)
+            return S_OK;
     }
 
     return E_FAIL;
@@ -400,7 +402,7 @@ HRESULT MulticoreJitRecorder::WriteOutput(FILE * fp)
         MethodDesc * pMethod = m_JitInfoArray[i].GetMethodDescAndClean();
         if (pMethod->IsAsyncVariantMethod())
         {
-            // TODO: (async) consider adding support for async variants in the future
+            // TODO: (async) Multicore JIT https://github.com/dotnet/runtime/issues/115097
             skipped++;
             continue;
         }

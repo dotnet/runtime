@@ -23,9 +23,36 @@ Data descriptors used:
 | --- | --- | --- |
 | `Module` | `Base` | Pointer to start of PE file in memory |
 | `Module` | `DynamicMetadata` | Pointer to saved metadata for reflection emit modules |
+| `Module` | `MetadataGeneration` | Counter incremented each time a module's metadata changes |
 | `Module` | `FieldDefToDescMap` | Mapping table |
 | `DynamicMetadata` | `Size` | Size of the dynamic metadata blob (as a 32bit uint) |
 | `DynamicMetadata` | `Data` | Start of dynamic metadata data array |
+| `PEAssembly` | `MDImport` | An `MDInternalRW` when module has writable metadata |
+| `MDInternalRW` | `Stgdb` | Pointer to the read-write storage database |
+| `CLiteWeightStgdbRW` | `MiniMd` | Address of the embedded `CMiniMdRW` model |
+| `CLiteWeightStgdbRW` | `MetadataAddress` | Pointer to the metadata image |
+| `CMiniMdRW` | `Schema` | Address of the embedded `CMiniMdSchema` |
+| `CMiniMdRW` | `TableCount` | Number of valid tables |
+| `CMiniMdRW` | `All4ByteColumns` | Whether all variable-width columns are 4 bytes wide |
+| `CMiniMdRW` | `Tables` | Address of the first table's record storage pool |
+| `CMiniMdRW` | `StringHeap` | Address of the string heap's storage pool |
+| `CMiniMdRW` | `BlobHeap` | Address of the blob heap's storage pool |
+| `CMiniMdRW` | `UserStringHeap` | Address of the user-string heap's storage pool |
+| `CMiniMdRW` | `GuidHeap` | Address of the GUID heap's storage pool |
+| `CMiniMdSchema` | `Heaps` | Heap-size flags byte |
+| `CMiniMdSchema` | `Sorted` | Sorted-table bit mask |
+| `CMiniMdSchema` | `RecordCounts` | Address of the inline per-table row count array |
+| `StgPool` | `SegData` | Pointer to the head segment's data |
+| `StgPool` | `NextSegment` | Pointer to the next pool segment |
+| `StgPool` | `DataSize` | Live byte count of the head segment |
+| `StgPoolSeg` | `SegData` | Pointer to this extension segment's data |
+| `StgPoolSeg` | `NextSegment` | Pointer to the next pool segment, or null |
+| `StgPoolSeg` | `DataSize` | Live byte count of this extension segment |
+
+Contracts used:
+| Contract Name |
+| --- |
+| `Loader` |
 
 
 ```csharp
@@ -75,152 +102,55 @@ MetadataReader? GetMetadata(ModuleHandle handle)
         }
         case AvailableMetadataType.ReadWrite:
         {
-            var targetEcmaMetadata = GetReadWriteMetadata(handle);
-
-            // From the multiple different target spans, we need to build a single
-            // contiguous ECMA-335 metadata blob.
-            BlobBuilder builder = new BlobBuilder();
-            builder.WriteUInt32(0x424A5342);
-
-            // major version
-            builder.WriteUInt16(1);
-
-            // minor version
-            builder.WriteUInt16(1);
-
-            // reserved
-            builder.WriteUInt32(0);
-
-            string version = targetEcmaMetadata.Schema.MetadataVersion;
-            builder.WriteInt32(AlignUp(version.Length, 4));
-            Write4ByteAlignedString(builder, version);
-
-            // reserved
-            builder.WriteUInt16(0);
-
-            // number of streams
-            ushort numStreams = 5; // #Strings, #US, #Blob, #GUID, #~ (metadata)
-            if (targetEcmaMetadata.Schema.VariableSizedColumnsAreAll4BytesLong)
-            {
-                // We direct MetadataReader to use 4-byte encoding for all variable-sized columns
-                // by providing the marker stream for a "minimal delta" image.
-                numStreams++;
-            }
-            builder.WriteUInt16(numStreams);
-
-            // Write Stream headers
-            if (targetEcmaMetadata.Schema.VariableSizedColumnsAreAll4BytesLong)
-            {
-                // Write the #JTD stream to indicate that all variable-sized columns are 4 bytes long.
-                WriteStreamHeader(builder, "#JTD", 0).WriteInt32(builder.Count);
-            }
-
-            BlobWriter stringsOffset = WriteStreamHeader(builder, "#Strings", (int)AlignUp(targetEcmaMetadata.StringHeap.Size, 4ul));
-            BlobWriter blobOffset = WriteStreamHeader(builder, "#Blob", (int)targetEcmaMetadata.BlobHeap.Size);
-            BlobWriter guidOffset = WriteStreamHeader(builder, "#GUID", (int)targetEcmaMetadata.GuidHeap.Size);
-            BlobWriter userStringOffset = WriteStreamHeader(builder, "#US", (int)targetEcmaMetadata.UserStringHeap.Size);
-
-            // We'll use the "uncompressed" tables stream name as the runtime may have created the *Ptr tables
-            // that are only present in the uncompressed tables stream.
-            BlobWriter tablesOffset = WriteStreamHeader(builder, "#-", 0);
-
-            // Write the heap-style Streams
-
-            stringsOffset.WriteInt32(builder.Count);
-            WriteTargetSpan(builder, targetEcmaMetadata.StringHeap);
-            for (ulong i = targetEcmaMetadata.StringHeap.Size; i < AlignUp(targetEcmaMetadata.StringHeap.Size, 4ul); i++)
-            {
-                builder.WriteByte(0);
-            }
-
-            blobOffset.WriteInt32(builder.Count);
-            WriteTargetSpan(builder, targetEcmaMetadata.BlobHeap);
-
-            guidOffset.WriteInt32(builder.Count);
-            WriteTargetSpan(builder, targetEcmaMetadata.GuidHeap);
-
-            userStringOffset.WriteInt32(builder.Count);
-            WriteTargetSpan(builder, targetEcmaMetadata.UserStringHeap);
-
-            // Write tables stream
-            tablesOffset.WriteInt32(builder.Count);
-
-            // Write tables stream header
-            builder.WriteInt32(0); // reserved
-            builder.WriteByte(2); // major version
-            builder.WriteByte(0); // minor version
-            uint heapSizes =
-                (targetEcmaMetadata.Schema.LargeStringHeap ? 1u << 0 : 0) |
-                (targetEcmaMetadata.Schema.LargeBlobHeap ? 1u << 1 : 0) |
-                (targetEcmaMetadata.Schema.LargeGuidHeap ? 1u << 2 : 0);
-
-            builder.WriteByte((byte)heapSizes);
-            builder.WriteByte(1); // reserved
-
-            ulong validTables = 0;
-            for (int i = 0; i < targetEcmaMetadata.Schema.RowCount.Length; i++)
-            {
-                if (targetEcmaMetadata.Schema.RowCount[i] != 0)
-                {
-                    validTables |= 1ul << i;
-                }
-            }
-
-            ulong sortedTables = 0;
-            for (int i = 0; i < targetEcmaMetadata.Schema.IsSorted.Length; i++)
-            {
-                if (targetEcmaMetadata.Schema.IsSorted[i])
-                {
-                    sortedTables |= 1ul << i;
-                }
-            }
-
-            builder.WriteUInt64(validTables);
-            builder.WriteUInt64(sortedTables);
-
-            foreach (int rowCount in targetEcmaMetadata.Schema.RowCount)
-            {
-                if (rowCount > 0)
-                {
-                    builder.WriteInt32(rowCount);
-                }
-            }
-
-            // Write the tables
-            foreach (TargetSpan span in targetEcmaMetadata.Tables)
-            {
-                WriteTargetSpan(builder, span);
-            }
-
-            MemoryStream metadataStream = new MemoryStream();
-            builder.WriteContentTo(metadataStream);
-            return MetadataReaderProvider.FromMetadataStream(metadataStream).GetMetadataReader();
-
-            void WriteTargetSpan(BlobBuilder builder, TargetSpan span)
-            {
-                Blob blob = builder.ReserveBytes(checked((int)span.Size));
-                _target.ReadBuffer(span.Address, blob.GetBytes().AsSpan());
-            }
-
-            static BlobWriter WriteStreamHeader(BlobBuilder builder, string name, int size)
-            {
-                BlobWriter offset = new(builder.ReserveBytes(4));
-                builder.WriteInt32(size);
-                Write4ByteAlignedString(builder, name);
-                return offset;
-            }
-
-            static void Write4ByteAlignedString(BlobBuilder builder, string value)
-            {
-                int bufferStart = builder.Count;
-                builder.WriteUTF8(value);
-                builder.WriteByte(0);
-                int stringEnd = builder.Count;
-                for (int i = stringEnd; i < bufferStart + AlignUp(value.Length, 4); i++)
-                {
-                    builder.WriteByte(0);
-                }
-            }
+            // Get the module's PEAssembly from the Loader contract.
+            // Read PEAssembly::MDImport as an MDInternalRW.
+            // Read MDInternalRW::Stgdb as a CLiteWeightStgdbRW.
+            // Read the embedded CLiteWeightStgdbRW::MiniMd as a CMiniMdRW.
+            // Read CMiniMdRW::Schema as a CMiniMdSchema.
+            //
+            // Validate that CMiniMdRW::TableCount does not exceed the ECMA-335 table count.
+            // For each table, read its row count from CMiniMdSchema::RecordCounts.
+            // For each table, test its bit in CMiniMdSchema::Sorted to determine whether it is sorted.
+            // Decode CMiniMdSchema::Heaps to determine whether the string, GUID, and blob heaps use large indexes.
+            // Record CMiniMdRW::All4ByteColumns so the reconstructed image can preserve fixed-width variable columns.
+            //
+            // To read a storage pool:
+            // Read the pool head using the StgPool descriptor.
+            // Record the head segment's SegData and DataSize.
+            // Follow NextSegment until it is null, reading each remaining node as a StgPoolSeg.
+            // Record each non-empty segment's SegData and DataSize.
+            // Allocate one byte array large enough for all recorded segments.
+            // Read each segment into the array in chain order to produce one contiguous blob.
+            //
+            // Read CMiniMdRW::StringHeap as a storage pool.
+            // Read CMiniMdRW::BlobHeap as a storage pool.
+            // Read CMiniMdRW::UserStringHeap as a storage pool.
+            // Read CMiniMdRW::GuidHeap as a storage pool.
+            // For each table, read CMiniMdRW::Tables[i] as a storage pool containing that table's records.
+            // Read the metadata version string from CLiteWeightStgdbRW::MetadataAddress.
+            // Combine the schema, heaps, and table record blobs into a TargetEcmaMetadata value.
+            //
+            // Create a builder for a new contiguous ECMA-335 metadata image.
+            // Write the metadata root header and version string.
+            // Add stream headers for #Strings, #Blob, #GUID, #US, and the uncompressed tables stream #-.
+            // If all variable-width columns are 4 bytes, also add the #JTD marker
+            // stream. The official ECMA-335 metadata format doesn't encode columns this
+            // way but System.Reflection.Metadata does support this encoding variation
+            // when it observes the #JTD marker stream.
+            // See [MetadataReader](https://github.com/dotnet/runtime/blob/1b945942604aa94b4717243b6d301a17b7ae41f1/src/libraries/System.Reflection.Metadata/src/System/Reflection/Metadata/MetadataReader.cs#L166)
+            // Append the string, blob, GUID, and user-string heap data and fill in their stream offsets.
+            //
+            // Begin the #- tables stream.
+            // Write the tables stream header and the heap-size flags from the reconstructed schema.
+            // Build the valid-table mask from tables with non-zero row counts.
+            // Build the sorted-table mask from the schema's per-table sorted flags.
+            // Write the valid and sorted masks.
+            // Write the row count for each valid table.
+            // Append each table's contiguous record blob in table-number order.
+            // Fill in the final tables stream offset and size.
+            //
+            // Create a MetadataReaderProvider over the reconstructed image.
+            // Return its MetadataReader.
         }
     }
 }
@@ -229,68 +159,6 @@ MetadataReader? GetMetadata(ModuleHandle handle)
 ### Helper Methods
 
 ``` csharp
-using System;
-using System.Numerics;
-
-struct EcmaMetadataSchema
-{
-    public EcmaMetadataSchema(string metadataVersion, bool largeStringHeap, bool largeBlobHeap, bool largeGuidHeap, int[] rowCount, bool[] isSorted, bool variableSizedColumnsAre4BytesLong)
-    {
-        MetadataVersion = metadataVersion;
-        LargeStringHeap = largeStringHeap;
-        LargeBlobHeap = largeBlobHeap;
-        LargeGuidHeap = largeGuidHeap;
-
-        _rowCount = rowCount;
-        _isSorted = isSorted;
-
-        VariableSizedColumnsAreAll4BytesLong = variableSizedColumnsAre4BytesLong;
-    }
-
-    public readonly string MetadataVersion;
-
-    public readonly bool LargeStringHeap;
-    public readonly bool LargeBlobHeap;
-    public readonly bool LargeGuidHeap;
-
-    // Table data, these structures hold MetadataTable.Count entries
-    private readonly int[] _rowCount;
-    public readonly ReadOnlySpan<int> RowCount => _rowCount;
-
-    private readonly bool[] _isSorted;
-    public readonly ReadOnlySpan<bool> IsSorted => _isSorted;
-
-    // In certain scenarios the size of the tables is forced to be the maximum size
-    // Otherwise the size of columns should be computed based on RowSize/the various heap flags
-    public readonly bool VariableSizedColumnsAreAll4BytesLong;
-}
-
-class TargetEcmaMetadata
-{
-    public TargetEcmaMetadata(EcmaMetadataSchema schema,
-                        TargetSpan[] tables,
-                        TargetSpan stringHeap,
-                        TargetSpan userStringHeap,
-                        TargetSpan blobHeap,
-                        TargetSpan guidHeap)
-    {
-        Schema = schema;
-        _tables = tables;
-        StringHeap = stringHeap;
-        UserStringHeap = userStringHeap;
-        BlobHeap = blobHeap;
-        GuidHeap = guidHeap;
-    }
-
-    public EcmaMetadataSchema Schema { get; init; }
-
-    private TargetSpan[] _tables;
-    public ReadOnlySpan<TargetSpan> Tables => _tables;
-    public TargetSpan StringHeap { get; init; }
-    public TargetSpan UserStringHeap { get; init; }
-    public TargetSpan BlobHeap { get; init; }
-    public TargetSpan GuidHeap { get; init; }
-}
 
 [Flags]
 enum AvailableMetadataType
@@ -303,38 +171,32 @@ enum AvailableMetadataType
 
 AvailableMetadataType GetAvailableMetadataType(ModuleHandle handle)
 {
-    Data.Module module = new Data.Module(Target, handle.Address);
-
     AvailableMetadataType flags = AvailableMetadataType.None;
 
     TargetPointer dynamicMetadata = Target.ReadPointer(handle.Address + /* Module::DynamicMetadata offset */);
+    uint metadataGeneration = Target.Read<uint>(handle.Address + /* Module::MetadataGeneration offset */);
 
     if (dynamicMetadata != TargetPointer.Null)
+    {
         flags |= AvailableMetadataType.ReadWriteSavedCopy;
+    }
+    else if (metadataGeneration != 0)
+    {
+        flags |= AvailableMetadataType.ReadWrite;
+    }
     else
+    {
         flags |= AvailableMetadataType.ReadOnly;
+    }
 
     return flags;
 }
 
 TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle)
 {
-    Data.Module module = new Data.Module(Target, handle.Address);
     TargetPointer dynamicMetadata = Target.ReadPointer(handle.Address + /* Module::DynamicMetadata offset */);
-
     ulong size = Target.Read<uint>(handle.Address + /* DynamicMetadata::Size offset */);
     TargetPointer result = handle.Address + /* DynamicMetadata::Data offset */;
     return new(result, size);
-}
-
-TargetEcmaMetadata GetReadWriteMetadata(ModuleHandle handle)
-{
-    // [cdac] TODO.
-}
-
-T AlignUp<T>(T input, T alignment)
-    where T : IBinaryInteger<T>
-{
-    return input + (alignment - T.One) & ~(alignment - T.One);
 }
 ```

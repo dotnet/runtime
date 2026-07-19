@@ -37,18 +37,22 @@
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.netstandard.cs"
              Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.netstandard.cs" />
 
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ReferenceEqualityComparer.cs"
+             Link="Common\src\CoreLib\System\Collections\Generic\ReferenceEqualityComparer.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
+    <Compile Include="$(CommonPath)Polyfills\ConcurrentDictionaryPolyfills.cs" Link="Common\Polyfills\ConcurrentDictionaryPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\RuntimeHelpersPolyfills.cs" Link="Common\Polyfills\RuntimeHelpersPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
   </ItemGroup>
 

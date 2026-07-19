@@ -15,6 +15,7 @@ using System.IO;
 using System.Text;
 using System.Xml;
 using System.Xml.Resolvers;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -390,7 +391,101 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void GetDigestedOutput_Null()
         {
-            Assert.Throws< NullReferenceException>(() => new XmlDsigExcC14NTransform().GetDigestedOutput(null));
+            Assert.Throws<NullReferenceException>(() => new XmlDsigC14NTransform().GetDigestedOutput(null));
         }
+
+#if NET
+        [Theory]
+        [InlineData(64, false)]   // at the default limit - should pass
+        [InlineData(65, true)]    // one over the default limit - should fail
+        [InlineData(1000, true)]  // way over - should fail
+        public void GetOutput_DepthLimit(int depth, bool shouldThrow)
+        {
+            XmlDocument doc = CreateDeepXmlDocument(depth);
+            XmlDsigC14NTransform transform = new XmlDsigC14NTransform();
+            transform.LoadInput(doc);
+
+            if (shouldThrow)
+            {
+                CryptographicException ex = Assert.Throws<CryptographicException>(() => transform.GetOutput());
+                Assert.Equal("The XML element has exceeded the maximum nesting depth allowed for decryption.", ex.Message);
+            }
+            else
+            {
+                Stream s = (Stream)transform.GetOutput();
+                Assert.NotNull(s);
+            }
+        }
+
+        [Theory]
+        [InlineData(64, false)]   // at the default limit - should pass
+        [InlineData(65, true)]    // one over the default limit - should fail
+        [InlineData(1000, true)]  // way over - should fail
+        public void GetDigestedOutput_DepthLimit(int depth, bool shouldThrow)
+        {
+            XmlDocument doc = CreateDeepXmlDocument(depth);
+            XmlDsigC14NTransform transform = new XmlDsigC14NTransform();
+            transform.LoadInput(doc);
+            using SHA256 hash = SHA256.Create();
+
+            if (shouldThrow)
+            {
+                CryptographicException ex = Assert.Throws<CryptographicException>(() => transform.GetDigestedOutput(hash));
+                Assert.Equal("The XML element has exceeded the maximum nesting depth allowed for decryption.", ex.Message);
+            }
+            else
+            {
+                byte[] result = transform.GetDigestedOutput(hash);
+                Assert.NotNull(result);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void GetOutput_CustomDepthLimit_BoundaryAccuracy()
+        {
+            // Verify the limit is exact: depth 100 passes with limit 100, depth 101 fails.
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetData("System.Security.Cryptography.Xml.DangerousMaxRecursionDepth", 100);
+
+                XmlDocument passDoc = CreateDeepXmlDocument(100);
+                XmlDsigC14NTransform passTransform = new XmlDsigC14NTransform();
+                passTransform.LoadInput(passDoc);
+                Stream s = (Stream)passTransform.GetOutput(); // Should not throw
+                Assert.NotNull(s);
+
+                XmlDocument failDoc = CreateDeepXmlDocument(101);
+                XmlDsigC14NTransform failTransform = new XmlDsigC14NTransform();
+                failTransform.LoadInput(failDoc);
+                CryptographicException ex = Assert.Throws<CryptographicException>(() => failTransform.GetOutput());
+                Assert.Equal("The XML element has exceeded the maximum nesting depth allowed for decryption.", ex.Message);
+            }).Dispose();
+        }
+
+        private static XmlDocument CreateDeepXmlDocument(int depth)
+        {
+            MemoryStream ms = new();
+            using (XmlWriter xw = XmlWriter.Create(ms))
+            {
+                xw.WriteStartDocument();
+                xw.WriteStartElement("Root");
+                for (int i = 0; i < depth; i++)
+                {
+                    xw.WriteStartElement("a");
+                }
+                for (int i = 0; i < depth; i++)
+                {
+                    xw.WriteEndElement();
+                }
+                xw.WriteEndElement();
+                xw.WriteEndDocument();
+            }
+            ms.Position = 0;
+            XmlDocument doc = new XmlDocument();
+            doc.PreserveWhitespace = true;
+            doc.Load(ms);
+            return doc;
+        }
+#endif
     }
 }

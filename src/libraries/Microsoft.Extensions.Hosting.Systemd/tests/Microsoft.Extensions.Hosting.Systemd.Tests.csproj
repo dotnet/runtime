@@ -3,10 +3,11 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.Extensions.Hosting.Systemd.csproj "/>
+    <ProjectReference Include="..\src\Microsoft.Extensions.Hosting.Systemd.csproj" />
   </ItemGroup>
 
 </Project>

@@ -39,8 +39,7 @@ CObjectType CorUnix::otManualResetEvent(
                 NULL,   // No process local data cleanup routine
                 CObjectType::WaitableObject,
                 CObjectType::ObjectCanBeUnsignaled,
-                CObjectType::ThreadReleaseHasNoSideEffects,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseHasNoSideEffects
                 );
 
 CObjectType CorUnix::otAutoResetEvent(
@@ -53,8 +52,7 @@ CObjectType CorUnix::otAutoResetEvent(
                 NULL,   // No process local data cleanup routine
                 CObjectType::WaitableObject,
                 CObjectType::ObjectCanBeUnsignaled,
-                CObjectType::ThreadReleaseAltersSignalCount,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseAltersSignalCount
                 );
 
 PalObjectTypeId rgEventIds[] = {otiManualResetEvent, otiAutoResetEvent};

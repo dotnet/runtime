@@ -3,6 +3,7 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -10,7 +11,7 @@ namespace System
 {
     internal unsafe partial class Number
     {
-        private static ReadOnlySpan<double> Pow10DoubleTable =>
+        internal static ReadOnlySpan<double> Pow10DoubleTable =>
         [
             1e0,    // 10^0
             1e1,    // 10^1
@@ -696,7 +697,7 @@ namespace System
             0x8e679c2f5e44ff8f, 0x570f09eaa7ea7648
         ];
 
-        private static void AccumulateDecimalDigitsIntoBigInteger(scoped ref NumberBuffer number, uint firstIndex, uint lastIndex, out BigInteger result)
+        internal static void AccumulateDecimalDigitsIntoBigInteger(scoped ref NumberBuffer number, uint firstIndex, uint lastIndex, out BigInteger result)
         {
             BigInteger.SetZero(out result);
 
@@ -890,7 +891,7 @@ namespace System
         }
 
         // get 32-bit integer from at most 9 digits
-        private static uint DigitsToUInt32(byte* p, int count)
+        internal static uint DigitsToUInt32(byte* p, int count)
         {
             Debug.Assert((1 <= count) && (count <= 9));
 
@@ -914,7 +915,7 @@ namespace System
         }
 
         // get 64-bit integer from at most 19 digits
-        private static ulong DigitsToUInt64(byte* p, int count)
+        internal static ulong DigitsToUInt64(byte* p, int count)
         {
             Debug.Assert((1 <= count) && (count <= 19));
 

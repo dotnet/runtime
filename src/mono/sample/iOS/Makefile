@@ -11,6 +11,7 @@ APP_SANDBOX?=false
 STRIP_DEBUG_SYMBOLS?=false # only used when measuring SOD via build-appbundle make target
 USE_MONO_RUNTIME?=true
 AOT?=true
+R2R?=false
 
 #If DIAGNOSTIC_PORTS is enabled, @(RuntimeComponents) must also include 'diagnostics_tracing'.
 #If @(RuntimeComponents) includes 'diagnostics_tracing', DIAGNOSTIC_PORTS is optional.
@@ -44,6 +45,7 @@ build-appbundle: clean appbuilder
 	/p:DeployAndRun=false \
 	/p:RunAOTCompilation=$(AOT) \
 	/p:UseMonoRuntime=$(USE_MONO_RUNTIME) \
+	/p:PublishReadyToRun=$(R2R) \
 	/bl
 
 run: clean appbuilder

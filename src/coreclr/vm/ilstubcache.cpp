@@ -124,6 +124,7 @@ namespace
             case DynamicMethodDesc::StubPInvokeVarArg:      return "IL_STUB_PInvoke";
             case DynamicMethodDesc::StubReversePInvoke:     return "IL_STUB_ReversePInvoke";
             case DynamicMethodDesc::StubCLRToCOMInterop:    return "IL_STUB_CLRtoCOM";
+            case DynamicMethodDesc::StubCLRToCOMEvent:      return "IL_STUB_CLRtoCOM_Event";
             case DynamicMethodDesc::StubCOMToCLRInterop:    return "IL_STUB_COMtoCLR";
             case DynamicMethodDesc::StubStructMarshalInterop: return "IL_STUB_StructMarshal";
             case DynamicMethodDesc::StubArrayOp:            return "IL_STUB_Array";
@@ -131,7 +132,6 @@ namespace
             case DynamicMethodDesc::StubDelegateInvokeMethod:  return "IL_STUB_Delegate_Invoke";
             case DynamicMethodDesc::StubUnboxingIL:         return "IL_STUB_UnboxingStub";
             case DynamicMethodDesc::StubInstantiating:      return "IL_STUB_InstantiatingStub";
-            case DynamicMethodDesc::StubWrapperDelegate:    return "IL_STUB_WrapperDelegate_Invoke";
             case DynamicMethodDesc::StubTailCallStoreArgs:  return "IL_STUB_StoreTailCallArgs";
             case DynamicMethodDesc::StubTailCallCallTarget: return "IL_STUB_CallTailCallTarget";
             case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_VirtualStaticMethodDispatch";
@@ -175,13 +175,12 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     // the no metadata part of the method desc
     pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB";
     pMD->InitializeFlags(DynamicMethodDesc::FlagPublic | DynamicMethodDesc::FlagIsILStub);
-    pMD->SetTemporaryEntryPoint(pamTracker);
 
     if (isAsync)
     {
         pMD->SetHasAsyncMethodData();
-        // Async stubs are standalone methods that do not form async/task-returning variant pairs.
-        pMD->GetAddrOfAsyncMethodData()->kind = AsyncMethodKind::AsyncExplicitImpl;
+        // Async stubs are standalone AsyncCall methods that do not form variant pairs.
+        pMD->GetAddrOfAsyncMethodData()->flags = AsyncMethodFlags::AsyncCall;
     }
 
     //
@@ -213,6 +212,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->SetFlags(DynamicMethodDesc::FlagStatic);
         pMD->SetStatic();
     }
+    pMD->SetTemporaryEntryPoint(pamTracker);
 
     pMD->m_pResolver = (ILStubResolver*)pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(sizeof(ILStubResolver))));
 #ifdef _DEBUG
@@ -234,11 +234,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     if (SF_IsDelegateInvokeMethod(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubDelegateInvokeMethod);
-    }
-    else
-    if (SF_IsWrapperDelegateStub(dwStubFlags))
-    {
-        pMD->SetILStubType(DynamicMethodDesc::StubWrapperDelegate);
     }
     else
     if (SF_IsUnboxingILStub(dwStubFlags))
@@ -274,6 +269,10 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         {
             pMD->SetILStubType(DynamicMethodDesc::StubCOMToCLRInterop);
         }
+        else if (SF_IsCOMEventCallStub(dwStubFlags))
+        {
+            pMD->SetILStubType(DynamicMethodDesc::StubCLRToCOMEvent);
+        }
         else
         {
             pMD->SetILStubType(DynamicMethodDesc::StubCLRToCOMInterop);
@@ -283,9 +282,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 #endif
     if (SF_IsStructMarshalStub(dwStubFlags))
     {
-        // Struct marshal stub MethodDescs might be directly called from `call` IL instructions
-        // so we want to keep their compile time data alive as long as the LoaderAllocator in case they're used again.
-        pMD->GetILStubResolver()->SetLoaderHeap(pCreationHeap);
         pMD->SetILStubType(DynamicMethodDesc::StubStructMarshalInterop);
     }
     else
@@ -352,6 +348,93 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     pMD->m_pszDebugMethodSignature = FormatSig(pMD, pCreationHeap, pamTracker);
     pMD->m_pDebugMethodTable = pMT;
 #endif // _DEBUG
+
+    RETURN pMD;
+}
+
+// Creates a DynamicMethodDesc that wraps pre-compiled R2R stub code.
+// Unlike regular IL stubs, this does not create a resolver or precode - it points
+// directly to the R2R native code.
+MethodDesc* ILStubCache::CreateR2RBackedILStub(
+    LoaderAllocator* pAllocator,
+    MethodTable* pMT,
+    PCODE r2rEntryPoint,
+    DWORD stubType, // DynamicMethodDesc::ILStubType
+    PCCOR_SIGNATURE pSig,
+    DWORD cbSig,
+    AllocMemTracker* pamTracker)
+{
+    CONTRACT(MethodDesc*)
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pAllocator));
+        PRECONDITION(CheckPointer(pMT));
+        PRECONDITION(r2rEntryPoint != (PCODE)NULL);
+        PRECONDITION(stubType != DynamicMethodDesc::StubNotSet);
+        PRECONDITION(CheckPointer(pamTracker));
+        POSTCONDITION(CheckPointer(RETVAL));
+    }
+    CONTRACT_END;
+
+    DynamicMethodDesc::ILStubType ilStubType = (DynamicMethodDesc::ILStubType)stubType;
+
+    LoaderHeap* pCreationHeap = pAllocator->GetHighFrequencyHeap();
+
+    MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(
+        pCreationHeap,
+        1,                      // count
+        mcDynamic,              // classification
+        TRUE,                   // fNonVtableSlot - Dynamic methods don't have vtable slots
+        TRUE,                   // fNativeCodeSlot - we will set the native code pointer directly to the R2R entry point
+        FALSE,                  // HasAsyncMethodData
+        pMT,
+        pamTracker);
+
+    DynamicMethodDesc* pMD = (DynamicMethodDesc*)pChunk->GetFirstMethodDesc();
+
+    pMD->SetMemberDef(0);
+    pMD->SetSlot(MethodTable::NO_SLOT);
+
+    // Determine static vs instance from the signature calling convention
+    SigPointer sigPtr(pSig, cbSig);
+    uint32_t callConvInfo;
+    IfFailThrow(sigPtr.GetCallingConvInfo(&callConvInfo));
+
+    if (callConvInfo & CORINFO_CALLCONV_HASTHIS)
+    {
+        pMD->InitializeFlags(DynamicMethodDesc::FlagPublic |
+                            DynamicMethodDesc::FlagIsILStub);
+    }
+    else
+    {
+        pMD->SetStatic();
+        pMD->InitializeFlags(DynamicMethodDesc::FlagPublic |
+                            DynamicMethodDesc::FlagStatic |
+                            DynamicMethodDesc::FlagIsILStub);
+    }
+
+    pMD->SetILStubType(ilStubType);
+
+    // No resolver needed - code already exists in R2R image
+    pMD->m_pResolver = nullptr;
+
+    pMD->m_pszMethodName = GetStubMethodName(ilStubType);
+
+    pMD->SetStoredMethodSig((PCCOR_SIGNATURE)pSig, cbSig);
+
+    // Set the native code directly - no precode needed since code already exists
+    pMD->SetNativeCodeInterlocked(r2rEntryPoint);
+
+    pChunk->DetermineAndSetIsEligibleForTieredCompilation();
+
+#ifdef _DEBUG
+    pMD->m_pszDebugMethodName = pMD->m_pszMethodName;
+    pMD->m_pszDebugClassName = "ILStubClass";
+    pMD->m_pszDebugMethodSignature = FormatSig(pMD, pCreationHeap, pamTracker);
+    pMD->m_pDebugMethodTable = pMT;
+#endif // _DEBUG
+
+    LOG((LF_STUBS, LL_INFO1000, "ILSTUBCACHE: ILStubCache::CreateR2RBackedILStub StubMD: %p\n", pMD));
 
     RETURN pMD;
 }

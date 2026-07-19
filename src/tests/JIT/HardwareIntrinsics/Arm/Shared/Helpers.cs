@@ -7,6 +7,7 @@
 //   "%DevEnvDir%\TextTransform.exe" .\Helpers.tt
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -52,6 +53,48 @@ namespace JIT.HardwareIntrinsics.Arm
                     result[i] = T.One;
                     return result;
                 }
+            }
+
+            return result;
+        }
+
+        public static float[] CreateMaskForFirstActiveElement(float[] mask, float[] srcMask)
+        {
+            int count = srcMask.Length;
+            var maskBits = new int[count];
+            var srcMaskBits = new int[count];
+            for (int i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.SingleToInt32Bits(mask[i]);
+                srcMaskBits[i] = BitConverter.SingleToInt32Bits(srcMask[i]);
+            }
+
+            var resultBits = CreateMaskForFirstActiveElement(maskBits, srcMaskBits);
+            var result = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
+            }
+
+            return result;
+        }
+
+        public static double[] CreateMaskForFirstActiveElement(double[] mask, double[] srcMask)
+        {
+            int count = srcMask.Length;
+            var maskBits = new long[count];
+            var srcMaskBits = new long[count];
+            for (int i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.DoubleToInt64Bits(mask[i]);
+                srcMaskBits[i] = BitConverter.DoubleToInt64Bits(srcMask[i]);
+            }
+
+            var resultBits = CreateMaskForFirstActiveElement(maskBits, srcMaskBits);
+            var result = new double[count];
+            for (int i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
             }
 
             return result;
@@ -108,6 +151,54 @@ namespace JIT.HardwareIntrinsics.Arm
             return T.CreateChecked(bitSize - (highest + 1));
         }
 
+        public static U CountMatchingElements<T, U>(T[] mask, T[] left, T[] right, int i)
+            where U : unmanaged, INumber<U>
+            where T : unmanaged, INumber<T>
+        {
+            int result = 0;
+
+            if (mask[i] != T.Zero)
+            {
+                for (int j = 0; j <= i; j++)
+                {
+                    if (mask[j] != T.Zero && left[i] == right[j])
+                    {
+                        result++;
+                    }
+                }
+            }
+
+            return U.CreateChecked(result);
+        }
+
+        public static unsafe byte CountMatchingElementsIn128BitSegments<T>(T[] left, T[] right, int i)
+            where T : unmanaged, INumber<T>
+        {
+            int result = 0;
+            int elementSize = sizeof(T);
+            int segmentStartByte = ((i * elementSize) / 16) * 16;
+            int segmentEndByte = segmentStartByte + 16;
+            int rightLengthBytes = right.Length * elementSize;
+
+            if (segmentEndByte > rightLengthBytes)
+            {
+                segmentEndByte = rightLengthBytes;
+            }
+
+            int segmentStart = segmentStartByte / elementSize;
+            int segmentEnd = segmentEndByte / elementSize;
+
+            for (int j = segmentStart; j < segmentEnd; j++)
+            {
+                if (left[i] == right[j])
+                {
+                    result++;
+                }
+            }
+
+            return byte.CreateChecked(result);
+        }
+
         public static unsafe int HighestSetBit<T>(T value)
             where T : unmanaged, INumber<T>, IBitwiseOperators<T, T, T>
         {
@@ -152,7 +243,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             T result = T.Zero;
             T one = T.One;
-            int bitSize = Unsafe.SizeOf<T>() * 8;
+            int bitSize = sizeof(T) * 8;
 
             for (int i = 0; i < bitSize; i++)
             {
@@ -182,7 +273,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             T result = T.Zero;
             T one = T.One;
-            int bitSize = Unsafe.SizeOf<T>() * 8;
+            int bitSize = sizeof(T) * 8;
 
             for (int i = 0; i < bitSize; i++)
             {
@@ -960,7 +1051,7 @@ namespace JIT.HardwareIntrinsics.Arm
             where T : unmanaged, INumber<T>, IShiftOperators<T, int, T>
         {
             T roundConst = T.Zero;
-            int shift = 8 * Unsafe.SizeOf<U>();
+            int shift = 8 * sizeof(U);
             if (round)
             {
                 roundConst = T.One << (shift - 1);
@@ -1817,23 +1908,35 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte ExtractNarrowingSaturateUnsignedUpper(byte[] op1, short[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
+        public static sbyte SaturatingExtractNarrowingLower(short[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : (sbyte)0;
+
+        public static sbyte SaturatingExtractNarrowingUpper(sbyte[] even, short[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static byte SaturatingExtractNarrowingLower(ushort[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : (byte)0;
+
+        public static byte SaturatingExtractNarrowingUpper(byte[] even, ushort[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static byte SaturatingExtractUnsignedNarrowingLower(short[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturateUnsigned(op[i / 2]) : (byte)0;
+
+        public static byte SaturatingExtractUnsignedNarrowingUpper(byte[] even, short[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturateUnsigned(op[(i - 1) / 2]) : even[i];
+
         private static (short val, bool ovf) MultiplyDoublingOvf(sbyte op1, sbyte op2, bool rounding, short op3, bool subOp)
         {
             short product = (short)((short)op1 * (short)op2);
 
             bool dblOvf;
-            (product, dblOvf) = AddOvf(product, product);
+            dblOvf = TryAddSigned(product, product, out product);
 
             bool addOvf;
             short accum;
 
             if (subOp)
             {
-                (accum, addOvf) = SubtractOvf(op3, product);
+                addOvf = TrySubSigned(op3, product, out accum);
             }
             else
             {
-                (accum, addOvf) = AddOvf(op3, product);
+                addOvf = TryAddSigned(op3, product, out accum);
             }
 
             short roundConst = 0;
@@ -1846,7 +1949,7 @@ namespace JIT.HardwareIntrinsics.Arm
             bool rndOvf;
             short result;
 
-            (result, rndOvf) = AddOvf(accum, roundConst);
+            rndOvf = TryAddSigned(accum, roundConst, out result);
 
             return (result, addOvf ^ rndOvf ^ dblOvf);
         }
@@ -2178,23 +2281,35 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort ExtractNarrowingSaturateUnsignedUpper(ushort[] op1, int[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
+        public static short SaturatingExtractNarrowingLower(int[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : (short)0;
+
+        public static short SaturatingExtractNarrowingUpper(short[] even, int[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static ushort SaturatingExtractNarrowingLower(uint[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : (ushort)0;
+
+        public static ushort SaturatingExtractNarrowingUpper(ushort[] even, uint[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static ushort SaturatingExtractUnsignedNarrowingLower(int[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturateUnsigned(op[i / 2]) : (ushort)0;
+
+        public static ushort SaturatingExtractUnsignedNarrowingUpper(ushort[] even, int[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturateUnsigned(op[(i - 1) / 2]) : even[i];
+
         private static (int val, bool ovf) MultiplyDoublingOvf(short op1, short op2, bool rounding, int op3, bool subOp)
         {
             int product = (int)((int)op1 * (int)op2);
 
             bool dblOvf;
-            (product, dblOvf) = AddOvf(product, product);
+            dblOvf = TryAddSigned(product, product, out product);
 
             bool addOvf;
             int accum;
 
             if (subOp)
             {
-                (accum, addOvf) = SubtractOvf(op3, product);
+                addOvf = TrySubSigned(op3, product, out accum);
             }
             else
             {
-                (accum, addOvf) = AddOvf(op3, product);
+                addOvf = TryAddSigned(op3, product, out accum);
             }
 
             int roundConst = 0;
@@ -2207,7 +2322,7 @@ namespace JIT.HardwareIntrinsics.Arm
             bool rndOvf;
             int result;
 
-            (result, rndOvf) = AddOvf(accum, roundConst);
+            rndOvf = TryAddSigned(accum, roundConst, out result);
 
             return (result, addOvf ^ rndOvf ^ dblOvf);
         }
@@ -2562,23 +2677,35 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint ExtractNarrowingSaturateUnsignedUpper(uint[] op1, long[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
+        public static int SaturatingExtractNarrowingLower(long[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : 0;
+
+        public static int SaturatingExtractNarrowingUpper(int[] even, long[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static uint SaturatingExtractNarrowingLower(ulong[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : 0u;
+
+        public static uint SaturatingExtractNarrowingUpper(uint[] even, ulong[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static uint SaturatingExtractUnsignedNarrowingLower(long[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturateUnsigned(op[i / 2]) : 0u;
+
+        public static uint SaturatingExtractUnsignedNarrowingUpper(uint[] even, long[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturateUnsigned(op[(i - 1) / 2]) : even[i];
+
         private static (long val, bool ovf) MultiplyDoublingOvf(int op1, int op2, bool rounding, long op3, bool subOp)
         {
             long product = (long)((long)op1 * (long)op2);
 
             bool dblOvf;
-            (product, dblOvf) = AddOvf(product, product);
+            dblOvf = TryAddSigned(product, product, out product);
 
             bool addOvf;
             long accum;
 
             if (subOp)
             {
-                (accum, addOvf) = SubtractOvf(op3, product);
+                addOvf = TrySubSigned(op3, product, out accum);
             }
             else
             {
-                (accum, addOvf) = AddOvf(op3, product);
+                addOvf = TryAddSigned(op3, product, out accum);
             }
 
             long roundConst = 0;
@@ -2591,7 +2718,7 @@ namespace JIT.HardwareIntrinsics.Arm
             bool rndOvf;
             long result;
 
-            (result, rndOvf) = AddOvf(accum, roundConst);
+            rndOvf = TryAddSigned(accum, roundConst, out result);
 
             return (result, addOvf ^ rndOvf ^ dblOvf);
         }
@@ -2962,11 +3089,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            sbyte result;
-
-            bool addOvf;
-
-            (result, addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddSigned(op1, rndCns, out sbyte result);
 
             if (addOvf)
             {
@@ -3070,7 +3193,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            (byte result, bool addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddUnsigned(op1, rndCns, out byte result);
 
             bool shiftOvf;
 
@@ -3095,122 +3218,121 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static sbyte UnsignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false) => (sbyte)UnsignedShift((byte)op1, op2, rounding, saturating);
 
-        private static (sbyte val, bool ovf) AddOvf(sbyte op1, sbyte op2)
+        private static bool TryAddSigned<T>(T left, T right, out T result)
+            where T : IBinaryInteger<T>, ISignedNumber<T>
         {
-            sbyte result = (sbyte)(op1 + op2);
-
-            bool ovf = false;
-
-            if ((op1 > 0) && (op2 > 0))
-            {
-                ovf = (result < 0);
-            }
-            else if ((op1 < 0) && (op2 < 0))
-            {
-                ovf = (result > 0);
-            }
-
-            return (result, ovf);
+            result = unchecked(left + right);
+            return ((result ^ left) & ~(left ^ right)) < T.Zero;
         }
 
-        private static (sbyte val, bool ovf) AddOvf(sbyte op1, byte op2)
+        private static bool TryAddUnsigned<T>(T left, T right, out T result)
+            where T : IBinaryInteger<T>, IUnsignedNumber<T>
         {
-            sbyte result = (sbyte)(op1 + (sbyte)op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
+            result = left + right;
+            return result < left;
         }
 
-        private static (byte val, bool ovf) AddOvf(byte op1, sbyte op2)
+        private static bool TryAddSignedUnsigned<TSigned, TUnsigned>(
+            TSigned left, TUnsigned right, out TSigned result)
+            where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
+            where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
         {
-            byte result = (byte)(op1 + (byte)op2);
+            Debug.Assert(sizeof(TUnsigned) == sizeof(TSigned), "Unsigned/signed types must be same width");
 
-            bool ovf;
+            var signedMaxAsUnsigned = TUnsigned.AllBitsSet >> 1;
+            var leftUnsigned = TUnsigned.CreateTruncating(left);
 
-            if (op2 < 0)
+            // How much remains before hitting MaxValue
+            TUnsigned threshold;
+            if (TSigned.IsNegative(left))
             {
-                ovf = (result > op1);
+                threshold = signedMaxAsUnsigned + TUnsigned.CreateTruncating(unchecked(-left));
             }
             else
             {
-                ovf = (result < op1);
+                threshold = signedMaxAsUnsigned - leftUnsigned;
             }
 
-            return (result, ovf);
-        }
-
-        private static (byte val, bool ovf) AddOvf(byte op1, byte op2)
-        {
-            byte result = (byte)(op1 + op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (sbyte val, bool ovf) SubtractOvf(sbyte op1, sbyte op2)
-        {
-            sbyte result = (sbyte)(op1 - op2);
-
-            bool ovf;
-
-            if (op2 < 0)
+            if (right > threshold)
             {
-                ovf = (result < op1);
+                // Overflow - return a negative value
+                result = TSigned.CreateTruncating(signedMaxAsUnsigned + TUnsigned.One);
+                return true;
+            }
+
+            result = TSigned.CreateTruncating(leftUnsigned + right);
+            return false;
+        }
+
+        private static bool TryAddUnsignedSigned<TUnsigned, TSigned>(
+            TUnsigned left, TSigned right, out TUnsigned result)
+            where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
+            where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
+        {
+            Debug.Assert(sizeof(TUnsigned) == sizeof(TSigned), "Unsigned/signed types must be same width");
+
+            if (TSigned.IsNegative(right))
+            {
+                // Avoid overflow in magnitude by using truncation
+                var magnitude = TUnsigned.CreateTruncating(unchecked(-right));
+                return TrySubUnsigned(left, magnitude, out result);
             }
             else
             {
-                ovf = (result > op1);
+                return TryAddUnsigned(left, TUnsigned.CreateChecked(right), out result);
             }
-
-            return (result, ovf);
         }
 
-        private static (byte val, bool ovf) SubtractOvf(byte op1, byte op2)
+        private static bool TrySubSigned<T>(T left, T right, out T result)
+            where T : IBinaryInteger<T>, ISignedNumber<T>
         {
-            byte result = (byte)(op1 - op2);
+            result = unchecked(left - right);
+            return ((left ^ right) & (left ^ result)) < T.Zero;
+        }
 
-            bool ovf = (op1 < op2);
-
-            return (result, ovf);
+        private static bool TrySubUnsigned<T>(T left, T right, out T result)
+            where T : IBinaryInteger<T>, IUnsignedNumber<T>
+        {
+            result = unchecked(left - right);
+            return left < right;
         }
 
         public static sbyte AbsSaturate(sbyte op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
         public static sbyte AddSaturate(sbyte op1, sbyte op2)
         {
-            int result = op1 + op2;
-            if (result > sbyte.MaxValue)
+            if (TryAddSigned(op1, op2, out sbyte result))
             {
-                return sbyte.MaxValue;
+                result = (result < 0) ? sbyte.MaxValue : sbyte.MinValue;
             }
-            else if (result < sbyte.MinValue)
-            {
-                return sbyte.MinValue;
-            }
-            else
-            {
-                return (sbyte)result;
-            }
+            return result;
         }
 
         public static sbyte AddSaturate(sbyte op1, byte op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? sbyte.MaxValue : result;
+            if (TryAddSignedUnsigned(op1, op2, out sbyte result))
+            {
+                result = (result < 0) ? sbyte.MaxValue : sbyte.MinValue;
+            }
+            return result;
         }
 
         public static byte AddSaturate(byte op1, sbyte op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result < op1 ? byte.MaxValue : byte.MinValue) : result;
+            if (TryAddUnsignedSigned(op1, op2, out byte result))
+            {
+                result = (op2 < 0) ? (byte)0 : byte.MaxValue;
+            }
+            return result;
         }
 
         public static byte AddSaturate(byte op1, byte op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? byte.MaxValue : result;
+            if (TryAddUnsigned(op1, op2, out byte result))
+            {
+                result = byte.MaxValue;
+            }
+            return result;
         }
 
         public static sbyte[] AddSaturateRotateComplex(sbyte[] op1, sbyte[] op2, byte rot)
@@ -3238,12 +3360,12 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double AddSequentialAcross(double[] op1, double[] op2, double[] mask = null)
         {
             // If mask isn't provided, default to all true
-            mask = mask ?? Enumerable.Repeat<double>(1.0, op1.Length).ToArray();
+            mask = mask ?? Enumerable.Repeat<double>(BitConverter.Int64BitsToDouble(1), op1.Length).ToArray();
             double result = op1[0];
 
             for (int i = 0; i < op1.Length; i++)
             {
-                if (mask[i] != 0.0)
+                if (BitConverter.DoubleToInt64Bits(mask[i]) != 0)
                 {
                     result += op2[i];
                 }
@@ -3255,12 +3377,12 @@ namespace JIT.HardwareIntrinsics.Arm
         public static float AddSequentialAcross(float[] op1, float[] op2, float[] mask = null)
         {
             // If mask isn't provided, default to all true
-            mask = mask ?? Enumerable.Repeat<float>((float)1.0, op1.Length).ToArray();
+            mask = mask ?? Enumerable.Repeat<float>(BitConverter.Int32BitsToSingle(1), op1.Length).ToArray();
             float result = op1[0];
 
             for (int i = 0; i < op1.Length; i++)
             {
-                if (mask[i] != 0.0)
+                if (BitConverter.SingleToInt32Bits(mask[i]) != 0)
                 {
                     result += op2[i];
                 }
@@ -3273,14 +3395,20 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte SubtractSaturate(sbyte op1, sbyte op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? (result > 0 ? sbyte.MinValue : sbyte.MaxValue) : result;
+            if (TrySubSigned(op1, op2, out sbyte result))
+            {
+                result = (result < 0) ? sbyte.MaxValue : sbyte.MinValue;
+            }
+            return result;
         }
 
         public static byte SubtractSaturate(byte op1, byte op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? byte.MinValue : result;
+            if (TrySubUnsigned(op1, op2, out byte result))
+            {
+                result = byte.MinValue;
+            }
+            return result;
         }
 
         public static short ShiftArithmetic(short op1, short op2) => SignedShift(op1, op2);
@@ -3309,11 +3437,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            short result;
-
-            bool addOvf;
-
-            (result, addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddSigned(op1, rndCns, out short result);
 
             if (addOvf)
             {
@@ -3405,7 +3529,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            (ushort result, bool addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddUnsigned(op1, rndCns, out ushort result);
 
             bool shiftOvf;
 
@@ -3430,111 +3554,42 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static short UnsignedShift(short op1, short op2, bool rounding = false, bool saturating = false) => (short)UnsignedShift((ushort)op1, op2, rounding, saturating);
 
-        private static (short val, bool ovf) AddOvf(short op1, short op2)
-        {
-            short result = (short)(op1 + op2);
-
-            bool ovf = false;
-
-            if ((op1 > 0) && (op2 > 0))
-            {
-                ovf = (result < 0);
-            }
-            else if ((op1 < 0) && (op2 < 0))
-            {
-                ovf = (result > 0);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (short val, bool ovf) AddOvf(short op1, ushort op2)
-        {
-            short result = (short)(op1 + (short)op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (ushort val, bool ovf) AddOvf(ushort op1, short op2)
-        {
-            ushort result = (ushort)(op1 + (ushort)op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result > op1);
-            }
-            else
-            {
-                ovf = (result < op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (ushort val, bool ovf) AddOvf(ushort op1, ushort op2)
-        {
-            ushort result = (ushort)(op1 + op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (short val, bool ovf) SubtractOvf(short op1, short op2)
-        {
-            short result = (short)(op1 - op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result < op1);
-            }
-            else
-            {
-                ovf = (result > op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (ushort val, bool ovf) SubtractOvf(ushort op1, ushort op2)
-        {
-            ushort result = (ushort)(op1 - op2);
-
-            bool ovf = (op1 < op2);
-
-            return (result, ovf);
-        }
-
         public static short AbsSaturate(short op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
         public static short AddSaturate(short op1, short op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result > 0 ? short.MinValue : short.MaxValue) : result;
+            if (TryAddSigned(op1, op2, out short result))
+            {
+                result = (result < 0) ? short.MaxValue : short.MinValue;
+            }
+            return result;
         }
 
         public static short AddSaturate(short op1, ushort op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? short.MaxValue : result;
+            if (TryAddSignedUnsigned(op1, op2, out short result))
+            {
+                result = (result < 0) ? short.MaxValue : short.MinValue;
+            }
+            return result;
         }
 
         public static ushort AddSaturate(ushort op1, short op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result < op1 ? ushort.MaxValue : ushort.MinValue) : result;
+            if (TryAddUnsignedSigned(op1, op2, out ushort result))
+            {
+                result = (op2 < 0) ? (ushort)0 : ushort.MaxValue;
+            }
+            return result;
         }
 
         public static ushort AddSaturate(ushort op1, ushort op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? ushort.MaxValue : result;
+            if (TryAddUnsigned(op1, op2, out ushort result))
+            {
+                result = ushort.MaxValue;
+            }
+            return result;
         }
 
         public static short[] AddSaturateRotateComplex(short[] op1, short[] op2, byte rot)
@@ -3563,14 +3618,20 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short SubtractSaturate(short op1, short op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? (result > 0 ? short.MinValue : short.MaxValue) : result;
+            if (TrySubSigned(op1, op2, out short result))
+            {
+                result = (result < 0) ? short.MaxValue : short.MinValue;
+            }
+            return result;
         }
 
         public static ushort SubtractSaturate(ushort op1, ushort op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? ushort.MinValue : result;
+            if (TrySubUnsigned(op1, op2, out ushort result))
+            {
+                result = ushort.MinValue;
+            }
+            return result;
         }
 
         public static int ShiftArithmetic(int op1, int op2) => SignedShift(op1, op2);
@@ -3599,11 +3660,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            int result;
-
-            bool addOvf;
-
-            (result, addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddSigned(op1, rndCns, out int result);
 
             if (addOvf)
             {
@@ -3695,7 +3752,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            (uint result, bool addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddUnsigned(op1, rndCns, out uint result);
 
             bool shiftOvf;
 
@@ -3720,111 +3777,42 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static int UnsignedShift(int op1, int op2, bool rounding = false, bool saturating = false) => (int)UnsignedShift((uint)op1, op2, rounding, saturating);
 
-        private static (int val, bool ovf) AddOvf(int op1, int op2)
-        {
-            int result = (int)(op1 + op2);
-
-            bool ovf = false;
-
-            if ((op1 > 0) && (op2 > 0))
-            {
-                ovf = (result < 0);
-            }
-            else if ((op1 < 0) && (op2 < 0))
-            {
-                ovf = (result > 0);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (int val, bool ovf) AddOvf(int op1, uint op2)
-        {
-            int result = (int)(op1 + (int)op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (uint val, bool ovf) AddOvf(uint op1, int op2)
-        {
-            uint result = (uint)(op1 + (uint)op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result > op1);
-            }
-            else
-            {
-                ovf = (result < op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (uint val, bool ovf) AddOvf(uint op1, uint op2)
-        {
-            uint result = (uint)(op1 + op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (int val, bool ovf) SubtractOvf(int op1, int op2)
-        {
-            int result = (int)(op1 - op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result < op1);
-            }
-            else
-            {
-                ovf = (result > op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (uint val, bool ovf) SubtractOvf(uint op1, uint op2)
-        {
-            uint result = (uint)(op1 - op2);
-
-            bool ovf = (op1 < op2);
-
-            return (result, ovf);
-        }
-
         public static int AbsSaturate(int op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
         public static int AddSaturate(int op1, int op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result > 0 ? int.MinValue : int.MaxValue) : result;
+            if (TryAddSigned(op1, op2, out int result))
+            {
+                result = (result < 0) ? int.MaxValue : int.MinValue;
+            }
+            return result;
         }
 
         public static int AddSaturate(int op1, uint op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? int.MaxValue : result;
+            if (TryAddSignedUnsigned(op1, op2, out int result))
+            {
+                result = (result < 0) ? int.MaxValue : int.MinValue;
+            }
+            return result;
         }
 
         public static uint AddSaturate(uint op1, int op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result < op1 ? uint.MaxValue : uint.MinValue) : result;
+            if (TryAddUnsignedSigned(op1, op2, out uint result))
+            {
+                result = (op2 < 0) ? (uint)0 : uint.MaxValue;
+            }
+            return result;
         }
 
         public static uint AddSaturate(uint op1, uint op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? uint.MaxValue : result;
+            if (TryAddUnsigned(op1, op2, out uint result))
+            {
+                result = uint.MaxValue;
+            }
+            return result;
         }
 
         public static int[] AddSaturateRotateComplex(int[] op1, int[] op2, byte rot)
@@ -3853,14 +3841,20 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int SubtractSaturate(int op1, int op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? (result > 0 ? int.MinValue : int.MaxValue) : result;
+            if (TrySubSigned(op1, op2, out int result))
+            {
+                result = (result < 0) ? int.MaxValue : int.MinValue;
+            }
+            return result;
         }
 
         public static uint SubtractSaturate(uint op1, uint op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? uint.MinValue : result;
+            if (TrySubUnsigned(op1, op2, out uint result))
+            {
+                result = uint.MinValue;
+            }
+            return result;
         }
 
         public static long ShiftArithmetic(long op1, long op2) => SignedShift(op1, op2);
@@ -3889,11 +3883,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            long result;
-
-            bool addOvf;
-
-            (result, addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddSigned(op1, rndCns, out long result);
 
             if (addOvf)
             {
@@ -3985,7 +3975,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            (ulong result, bool addOvf) = AddOvf(op1, rndCns);
+            bool addOvf = TryAddUnsigned(op1, rndCns, out ulong result);
 
             bool shiftOvf;
 
@@ -4010,111 +4000,43 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static long UnsignedShift(long op1, long op2, bool rounding = false, bool saturating = false) => (long)UnsignedShift((ulong)op1, op2, rounding, saturating);
 
-        private static (long val, bool ovf) AddOvf(long op1, long op2)
-        {
-            long result = (long)(op1 + op2);
-
-            bool ovf = false;
-
-            if ((op1 > 0) && (op2 > 0))
-            {
-                ovf = (result < 0);
-            }
-            else if ((op1 < 0) && (op2 < 0))
-            {
-                ovf = (result > 0);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (long val, bool ovf) AddOvf(long op1, ulong op2)
-        {
-            long result = (long)(op1 + (long)op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (ulong val, bool ovf) AddOvf(ulong op1, long op2)
-        {
-            ulong result = (ulong)(op1 + (ulong)op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result > op1);
-            }
-            else
-            {
-                ovf = (result < op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (ulong val, bool ovf) AddOvf(ulong op1, ulong op2)
-        {
-            ulong result = (ulong)(op1 + op2);
-
-            bool ovf = (result < op1);
-
-            return (result, ovf);
-        }
-
-        private static (long val, bool ovf) SubtractOvf(long op1, long op2)
-        {
-            long result = (long)(op1 - op2);
-
-            bool ovf;
-
-            if (op2 < 0)
-            {
-                ovf = (result < op1);
-            }
-            else
-            {
-                ovf = (result > op1);
-            }
-
-            return (result, ovf);
-        }
-
-        private static (ulong val, bool ovf) SubtractOvf(ulong op1, ulong op2)
-        {
-            ulong result = (ulong)(op1 - op2);
-
-            bool ovf = (op1 < op2);
-
-            return (result, ovf);
-        }
-
         public static long AbsSaturate(long op1) => op1 < 0 ? NegateSaturate(op1) : op1;
 
         public static long AddSaturate(long op1, long op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result > 0 ? long.MinValue : long.MaxValue) : result;
+            if (TryAddSigned(op1, op2, out long result))
+            {
+                result = (result < 0) ? long.MaxValue : long.MinValue;
+            }
+            return result;
         }
 
         public static long AddSaturate(long op1, ulong op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? long.MaxValue : result;
+            if (TryAddSignedUnsigned(op1, op2, out long result))
+            {
+                result = (result < 0) ? long.MaxValue : long.MinValue;
+            }
+            return result;
         }
 
         public static ulong AddSaturate(ulong op1, long op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result < op1 ? ulong.MaxValue : ulong.MinValue) : result;
+            if (TryAddUnsignedSigned(op1, op2, out ulong result))
+            {
+                result = (op2 < 0) ? (ulong)0 : ulong.MaxValue;
+            }
+            return result;
         }
+
 
         public static ulong AddSaturate(ulong op1, ulong op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? ulong.MaxValue : result;
+            if (TryAddUnsigned(op1, op2, out ulong result))
+            {
+                result = ulong.MaxValue;
+            }
+            return result;
         }
 
         public static long[] AddSaturateRotateComplex(long[] op1, long[] op2, byte rot)
@@ -4143,16 +4065,21 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long SubtractSaturate(long op1, long op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? (result > 0 ? long.MinValue : long.MaxValue) : result;
+            if (TrySubSigned(op1, op2, out long result))
+            {
+                result = (result < 0) ? long.MaxValue : long.MinValue;
+            }
+            return result;
         }
 
         public static ulong SubtractSaturate(ulong op1, ulong op2)
         {
-            var (result, ovf) = SubtractOvf(op1, op2);
-            return ovf ? ulong.MinValue : result;
+            if (TrySubUnsigned(op1, op2, out ulong result))
+            {
+                result = ulong.MinValue;
+            }
+            return result;
         }
-
 
         private static (sbyte val, bool ovf) ShiftOvf(sbyte value, int shift)
         {
@@ -6408,6 +6335,46 @@ namespace JIT.HardwareIntrinsics.Arm
             return (ulong)((op1 <= op2) ? 1 : 0);
         }
 
+        public static int WhileGreaterThanMask(int op1, int op2)
+        {
+            return (op1 > op2) ? 1 : 0;
+        }
+
+        public static uint WhileGreaterThanMask(uint op1, uint op2)
+        {
+            return (uint)((op1 > op2) ? 1 : 0);
+        }
+
+        public static long WhileGreaterThanMask(long op1, long op2)
+        {
+            return (op1 > op2) ? 1 : 0;
+        }
+
+        public static ulong WhileGreaterThanMask(ulong op1, ulong op2)
+        {
+            return (ulong)((op1 > op2) ? 1 : 0);
+        }
+
+        public static int WhileGreaterThanOrEqualMask(int op1, int op2)
+        {
+            return (op1 >= op2) ? 1 : 0;
+        }
+
+        public static uint WhileGreaterThanOrEqualMask(uint op1, uint op2)
+        {
+            return (uint)((op1 >= op2) ? 1 : 0);
+        }
+
+        public static long WhileGreaterThanOrEqualMask(long op1, long op2)
+        {
+            return (op1 >= op2) ? 1 : 0;
+        }
+
+        public static ulong WhileGreaterThanOrEqualMask(ulong op1, ulong op2)
+        {
+            return (ulong)((op1 >= op2) ? 1 : 0);
+        }
+
         public static ulong MaskBothSet(byte[] op1, byte[] op2)
         {
             ulong acc = 0;
@@ -6493,7 +6460,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i] == 1) && (op2[i] == 1) ? 1 : 0);
+                acc += (ulong)((BitConverter.SingleToInt32Bits(op1[i]) == 1 && BitConverter.SingleToInt32Bits(op2[i]) == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -6503,7 +6470,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i] == 1) && (op2[i] == 1) ? 1 : 0);
+                acc += (ulong)((BitConverter.DoubleToInt64Bits(op1[i]) == 1 && BitConverter.DoubleToInt64Bits(op2[i]) == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -6550,12 +6517,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float getMaskSingle()
         {
-            return (float)(TestLibrary.Generator.GetUInt32() % 2);
+            return BitConverter.UInt32BitsToSingle((TestLibrary.Generator.GetUInt32() % 2));
         }
 
         public static double getMaskDouble()
         {
-            return (double)(TestLibrary.Generator.GetUInt64() % 2);
+            return BitConverter.UInt64BitsToDouble((TestLibrary.Generator.GetUInt64() % 2));
         }
 
         public static int MaskNumberOfElementsVector(int elems, SveMaskPattern pattern)
@@ -6611,22 +6578,22 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int NumberOfElementsInVectorInt8(SveMaskPattern pattern)
         {
-            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern);
+            return MaskNumberOfElementsVector(sizeof(Vector<byte>) / sizeof(byte), pattern);
         }
 
         public static int NumberOfElementsInVectorInt16(SveMaskPattern pattern)
         {
-            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern);
+            return MaskNumberOfElementsVector(sizeof(Vector<short>) / sizeof(short), pattern);
         }
 
         public static int NumberOfElementsInVectorInt32(SveMaskPattern pattern)
         {
-            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern);
+            return MaskNumberOfElementsVector(sizeof(Vector<int>) / sizeof(int), pattern);
         }
 
         public static int NumberOfElementsInVectorInt64(SveMaskPattern pattern)
         {
-            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern);
+            return MaskNumberOfElementsVector(sizeof(Vector<long>) / sizeof(long), pattern);
         }
 
         public static int NumberOfActiveElementsInMask(sbyte[] mask)
@@ -7037,6 +7004,46 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static float[] CreateBreakAfterMask(float[] mask, float[] op)
+        {
+            var count = mask.Length;
+            var maskBits = new int[count];
+            var opBits = new int[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.SingleToInt32Bits(mask[i]);
+                opBits[i] = BitConverter.SingleToInt32Bits(op[i]);
+            }
+
+            var resultBits = CreateBreakAfterMask(maskBits, opBits);
+            var result = new float[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
+            }
+            return result;
+        }
+
+        public static double[] CreateBreakAfterMask(double[] mask, double[] op)
+        {
+            var count = mask.Length;
+            var maskBits = new long[count];
+            var opBits = new long[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.DoubleToInt64Bits(mask[i]);
+                opBits[i] = BitConverter.DoubleToInt64Bits(op[i]);
+            }
+
+            var resultBits = CreateBreakAfterMask(maskBits, opBits);
+            var result = new double[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
+            }
+            return result;
+        }
+
         public static T[] CreateBreakAfterPropagateMask<T>(T[] mask, T[] op1, T[] op2) where T : IBinaryInteger<T>
         {
             var count = mask.Length;
@@ -7060,6 +7067,50 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     result[i] = T.Zero;
                 }
+            }
+            return result;
+        }
+
+        public static float[] CreateBreakAfterPropagateMask(float[] mask, float[] op1, float[] op2)
+        {
+            var count = mask.Length;
+            var maskBits = new int[count];
+            var op1Bits = new int[count];
+            var op2Bits = new int[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.SingleToInt32Bits(mask[i]);
+                op1Bits[i] = BitConverter.SingleToInt32Bits(op1[i]);
+                op2Bits[i] = BitConverter.SingleToInt32Bits(op2[i]);
+            }
+
+            var resultBits = CreateBreakAfterPropagateMask(maskBits, op1Bits, op2Bits);
+            var result = new float[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
+            }
+            return result;
+        }
+
+        public static double[] CreateBreakAfterPropagateMask(double[] mask, double[] op1, double[] op2)
+        {
+            var count = mask.Length;
+            var maskBits = new long[count];
+            var op1Bits = new long[count];
+            var op2Bits = new long[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.DoubleToInt64Bits(mask[i]);
+                op1Bits[i] = BitConverter.DoubleToInt64Bits(op1[i]);
+                op2Bits[i] = BitConverter.DoubleToInt64Bits(op2[i]);
+            }
+
+            var resultBits = CreateBreakAfterPropagateMask(maskBits, op1Bits, op2Bits);
+            var result = new double[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
             }
             return result;
         }
@@ -7092,6 +7143,46 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static float[] CreateBreakBeforeMask(float[] mask, float[] op)
+        {
+            var count = mask.Length;
+            var maskBits = new int[count];
+            var opBits = new int[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.SingleToInt32Bits(mask[i]);
+                opBits[i] = BitConverter.SingleToInt32Bits(op[i]);
+            }
+
+            var resultBits = CreateBreakBeforeMask(maskBits, opBits);
+            var result = new float[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
+            }
+            return result;
+        }
+
+        public static double[] CreateBreakBeforeMask(double[] mask, double[] op)
+        {
+            var count = mask.Length;
+            var maskBits = new long[count];
+            var opBits = new long[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.DoubleToInt64Bits(mask[i]);
+                opBits[i] = BitConverter.DoubleToInt64Bits(op[i]);
+            }
+
+            var resultBits = CreateBreakBeforeMask(maskBits, opBits);
+            var result = new double[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
+            }
+            return result;
+        }
+
         public static T[] CreateBreakBeforePropagateMask<T>(T[] mask, T[] op1, T[] op2) where T : IBinaryInteger<T>
         {
             var count = mask.Length;
@@ -7115,6 +7206,50 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     result[i] = T.Zero;
                 }
+            }
+            return result;
+        }
+
+        public static float[] CreateBreakBeforePropagateMask(float[] mask, float[] op1, float[] op2)
+        {
+            var count = mask.Length;
+            var maskBits = new int[count];
+            var op1Bits = new int[count];
+            var op2Bits = new int[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.SingleToInt32Bits(mask[i]);
+                op1Bits[i] = BitConverter.SingleToInt32Bits(op1[i]);
+                op2Bits[i] = BitConverter.SingleToInt32Bits(op2[i]);
+            }
+
+            var resultBits = CreateBreakBeforePropagateMask(maskBits, op1Bits, op2Bits);
+            var result = new float[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
+            }
+            return result;
+        }
+
+        public static double[] CreateBreakBeforePropagateMask(double[] mask, double[] op1, double[] op2)
+        {
+            var count = mask.Length;
+            var maskBits = new long[count];
+            var op1Bits = new long[count];
+            var op2Bits = new long[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.DoubleToInt64Bits(mask[i]);
+                op1Bits[i] = BitConverter.DoubleToInt64Bits(op1[i]);
+                op2Bits[i] = BitConverter.DoubleToInt64Bits(op2[i]);
+            }
+
+            var resultBits = CreateBreakBeforePropagateMask(maskBits, op1Bits, op2Bits);
+            var result = new double[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
             }
             return result;
         }
@@ -7544,7 +7679,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return false;
             }
 
-            var elemSize = Unsafe.SizeOf<ExtendedElementT>();
+            var elemSize = sizeof(ExtendedElementT);
             var hasFaulted = false;
             var expectedFaultResult =
                 InitVector<TFault>(i =>
@@ -7593,6 +7728,46 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = ConvertVectorToMask(op2);
             }
 
+            return result;
+        }
+
+        public static float[] CreateBreakPropagateMask(float[] op1, float[] op2)
+        {
+            var count = op1.Length;
+            var op1Bits = new int[count];
+            var op2Bits = new int[count];
+            for (var i = 0; i < count; i++)
+            {
+                op1Bits[i] = BitConverter.SingleToInt32Bits(op1[i]);
+                op2Bits[i] = BitConverter.SingleToInt32Bits(op2[i]);
+            }
+
+            var resultBits = CreateBreakPropagateMask(op1Bits, op2Bits);
+            var result = new float[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
+            }
+            return result;
+        }
+
+        public static double[] CreateBreakPropagateMask(double[] op1, double[] op2)
+        {
+            var count = op1.Length;
+            var op1Bits = new long[count];
+            var op2Bits = new long[count];
+            for (var i = 0; i < count; i++)
+            {
+                op1Bits[i] = BitConverter.DoubleToInt64Bits(op1[i]);
+                op2Bits[i] = BitConverter.DoubleToInt64Bits(op2[i]);
+            }
+
+            var resultBits = CreateBreakPropagateMask(op1Bits, op2Bits);
+            var result = new double[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
+            }
             return result;
         }
 
@@ -7745,6 +7920,44 @@ namespace JIT.HardwareIntrinsics.Arm
             }
             return even;
         }
+
+        public static T[] Match<T>(T[] mask, T[] left, T[] right, bool isNoMatch = false)
+            where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] result = new T[left.Length];
+            for (int i = 0; i < left.Length; i++)
+            {
+                if (mask[i] != T.Zero)
+                {
+                    bool found = false;
+                    for (int j = 0; j < right.Length; j++)
+                    {
+                        if (left[i] == right[j])
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (isNoMatch)
+                    {
+                        result[i] = found ? T.Zero : T.One;
+                    }
+                    else
+                    {
+                        result[i] = found ? T.One : T.Zero;
+                    }
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        public static T[] NoMatch<T>(T[] mask, T[] left, T[] right)
+            where T : unmanaged, IBinaryInteger<T>
+            => Match(mask, left, right, isNoMatch: true);
 
         public static T[] SubtractBorrowWideningEven<T>(T[] op1, T[] op2, T[] op3)
             where T : unmanaged, IBinaryInteger<T>
@@ -7929,25 +8142,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte SveShiftArithmeticSaturate(sbyte op1, sbyte op2) => ArithmeticShift<sbyte, sbyte>(op1, (int)ShiftSat(-op2, 8), saturate: true);
 
-        public static sbyte SveShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+        public static sbyte SveShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => ArithmeticShift<sbyte, sbyte>(op1, (int)ShiftSat(-op2, 8), rounding: true, saturate: true);
 
         public static short SveShiftArithmeticRounded(short op1, short op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
         public static short SveShiftArithmeticSaturate(short op1, short op2) => ArithmeticShift<short, short>(op1, (int)ShiftSat(-op2, 16), saturate: true);
 
-        public static short SveShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+        public static short SveShiftArithmeticRoundedSaturate(short op1, short op2) => ArithmeticShift<short, short>(op1, (int)ShiftSat(-op2, 16), rounding: true, saturate: true);
 
         public static int SveShiftArithmeticRounded(int op1, int op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
         public static int SveShiftArithmeticSaturate(int op1, int op2) => ArithmeticShift<int, int>(op1, (int)ShiftSat(-op2, 32), saturate: true);
 
-        public static int SveShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+        public static int SveShiftArithmeticRoundedSaturate(int op1, int op2) => ArithmeticShift<int, int>(op1, (int)ShiftSat(-op2, 32), rounding: true, saturate: true);
 
         public static long SveShiftArithmeticRounded(long op1, long op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
         public static long SveShiftArithmeticSaturate(long op1, long op2) => ArithmeticShift<long, long>(op1, (int)ShiftSat(-op2, 64), saturate: true);
 
-        public static long SveShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+        public static long SveShiftArithmeticRoundedSaturate(long op1, long op2) => ArithmeticShift<long, long>(op1, (int)ShiftSat(-op2, 64), rounding: true, saturate: true);
 
         public static byte SveShiftLeftLogicalSaturate(byte op1, sbyte op2) => UnsignedShift(op1, op2, saturating: true, shiftSat: true);
 
@@ -8015,14 +8228,13 @@ namespace JIT.HardwareIntrinsics.Arm
             where U : IBinaryInteger<U>, IMinMaxValue<U>
         {
             BigInteger v = BigInteger.CreateChecked(value);
-            BigInteger shifted = new BigInteger();
+            BigInteger shifted;
             if (count > 0)
             {
                 if (rounding)
                 {
-                    long bias = 1L << (count - 1);
-                    shifted = v >= 0 ? (v + bias) >> count
-                                        : (v - bias) >> count;
+                    BigInteger bias = BigInteger.One << (count - 1);
+                    shifted = (v + bias) >> count;
                 }
                 else
                 {
@@ -8310,5 +8522,122 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return sum;
         }
+
+        private static ulong RotateLeft1(ulong op) => (op << 1) | (op >> 63);
+
+        public static ulong BitwiseRotateLeftBy1AndXor(ulong op1, ulong op2)
+            => op1 ^ RotateLeft1(op2);
+
+        public static long BitwiseRotateLeftBy1AndXor(long op1, long op2)
+            => op1 ^ unchecked((long)RotateLeft1((ulong)op2));
+
+        // SM4 encoding functions
+        public static class Sm4
+        {
+            // SM4 substitution box used by the non-linear Tau transform.
+            private static readonly byte[] SBox =
+            {
+                0xd6,0x90,0xe9,0xfe,0xcc,0xe1,0x3d,0xb7,0x16,0xb6,0x14,0xc2,0x28,0xfb,0x2c,0x05,
+                0x2b,0x67,0x9a,0x76,0x2a,0xbe,0x04,0xc3,0xaa,0x44,0x13,0x26,0x49,0x86,0x06,0x99,
+                0x9c,0x42,0x50,0xf4,0x91,0xef,0x98,0x7a,0x33,0x54,0x0b,0x43,0xed,0xcf,0xac,0x62,
+                0xe4,0xb3,0x1c,0xa9,0xc9,0x08,0xe8,0x95,0x80,0xdf,0x94,0xfa,0x75,0x8f,0x3f,0xa6,
+                0x47,0x07,0xa7,0xfc,0xf3,0x73,0x17,0xba,0x83,0x59,0x3c,0x19,0xe6,0x85,0x4f,0xa8,
+                0x68,0x6b,0x81,0xb2,0x71,0x64,0xda,0x8b,0xf8,0xeb,0x0f,0x4b,0x70,0x56,0x9d,0x35,
+                0x1e,0x24,0x0e,0x5e,0x63,0x58,0xd1,0xa2,0x25,0x22,0x7c,0x3b,0x01,0x21,0x78,0x87,
+                0xd4,0x00,0x46,0x57,0x9f,0xd3,0x27,0x52,0x4c,0x36,0x02,0xe7,0xa0,0xc4,0xc8,0x9e,
+                0xea,0xbf,0x8a,0xd2,0x40,0xc7,0x38,0xb5,0xa3,0xf7,0xf2,0xce,0xf9,0x61,0x15,0xa1,
+                0xe0,0xae,0x5d,0xa4,0x9b,0x34,0x1a,0x55,0xad,0x93,0x32,0x30,0xf5,0x8c,0xb1,0xe3,
+                0x1d,0xf6,0xe2,0x2e,0x82,0x66,0xca,0x60,0xc0,0x29,0x23,0xab,0x0d,0x53,0x4e,0x6f,
+                0xd5,0xdb,0x37,0x45,0xde,0xfd,0x8e,0x2f,0x03,0xff,0x6a,0x72,0x6d,0x6c,0x5b,0x51,
+                0x8d,0x1b,0xaf,0x92,0xbb,0xdd,0xbc,0x7f,0x11,0xd9,0x5c,0x41,0x1f,0x10,0x5a,0xd8,
+                0x0a,0xc1,0x31,0x88,0xa5,0xcd,0x7b,0xbd,0x2d,0x74,0xd0,0x12,0xb8,0xe5,0xb4,0xb0,
+                0x89,0x69,0x97,0x4a,0x0c,0x96,0x77,0x7e,0x65,0xb9,0xf1,0x09,0xc5,0x6e,0xc6,0x84,
+                0x18,0xf0,0x7d,0xec,0x3a,0xdc,0x4d,0x20,0x79,0xee,0x5f,0x3e,0xd7,0xcb,0x39,0x48
+            };
+
+            private static uint Tau(uint x)
+            {
+                // Apply the SM4 S-box independently to each byte of the 32-bit word.
+                return (uint)(SBox[x & 0xff]
+                    | (SBox[(x >> 8) & 0xff] << 8)
+                    | (SBox[(x >> 16) & 0xff] << 16)
+                    | (SBox[(x >> 24) & 0xff] << 24));
+            }
+
+            public static uint Encode(int index, uint[] data, uint[] roundKeys)
+            {
+                uint[] result = new uint[data.Length];
+
+                // SM4E processes four 32-bit words at a time and applies four rounds.
+                for (int s = 0; s < data.Length; s += 4)
+                {
+                    uint x0 = data[s + 0];
+                    uint x1 = data[s + 1];
+                    uint x2 = data[s + 2];
+                    uint x3 = data[s + 3];
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        uint t = x1 ^ x2 ^ x3 ^ roundKeys[s + i];
+                        t = Tau(t);
+                        // Encryption linear transform: L(B) = B ^ rotl(B,2) ^ rotl(B,10) ^ rotl(B,18) ^ rotl(B,24).
+                        t ^= BitOperations.RotateLeft(t, 2)
+                           ^ BitOperations.RotateLeft(t, 10)
+                           ^ BitOperations.RotateLeft(t, 18)
+                           ^ BitOperations.RotateLeft(t, 24);
+                        t ^= x0;
+
+                        x0 = x1;
+                        x1 = x2;
+                        x2 = x3;
+                        x3 = t;
+                    }
+
+                    result[s + 0] = x0;
+                    result[s + 1] = x1;
+                    result[s + 2] = x2;
+                    result[s + 3] = x3;
+                }
+
+                return result[index];
+            }
+
+            public static uint KeyUpdate(int index, uint[] key, uint[] constants)
+            {
+                uint[] result = new uint[key.Length];
+
+                // SM4EKEY uses the same four-word recurrence with the key-schedule linear transform.
+                for (int s = 0; s < key.Length; s += 4)
+                {
+                    uint k0 = key[s + 0];
+                    uint k1 = key[s + 1];
+                    uint k2 = key[s + 2];
+                    uint k3 = key[s + 3];
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        uint t = k1 ^ k2 ^ k3 ^ constants[s + i];
+                        t = Tau(t);
+                        // Key-schedule linear transform: L'(B) = B ^ rotl(B,13) ^ rotl(B,23).
+                        t ^= BitOperations.RotateLeft(t, 13)
+                           ^ BitOperations.RotateLeft(t, 23);
+                        t ^= k0;
+
+                        k0 = k1;
+                        k1 = k2;
+                        k2 = k3;
+                        k3 = t;
+                    }
+
+                    result[s + 0] = k0;
+                    result[s + 1] = k1;
+                    result[s + 2] = k2;
+                    result[s + 3] = k3;
+                }
+
+                return result[index];
+            }
+        }
+
     }
 }

@@ -63,7 +63,8 @@ enum SPMI_TARGET_ARCHITECTURE
     SPMI_TARGET_ARCHITECTURE_ARM64,
     SPMI_TARGET_ARCHITECTURE_ARM,
     SPMI_TARGET_ARCHITECTURE_LOONGARCH64,
-    SPMI_TARGET_ARCHITECTURE_RISCV64
+    SPMI_TARGET_ARCHITECTURE_RISCV64,
+    SPMI_TARGET_ARCHITECTURE_WASM32,
 };
 
 SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
@@ -72,7 +73,8 @@ void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture);
 inline bool IsSpmiTarget32Bit()
 {
     return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_X86) ||
-           (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM);
+           (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM) ||
+           (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_WASM32);
 }
 
 inline bool IsSpmiTarget64Bit()
@@ -91,6 +93,7 @@ inline size_t SpmiTargetPointerSize()
 void PutArm64Rel28(UINT32* pCode, INT32 imm28);
 void PutArm64Rel21(UINT32* pCode, INT32 imm21);
 void PutArm64Rel12(UINT32* pCode, INT32 imm12);
+void PutArm64Rel12Ldr(UINT32* pCode, INT32 imm12);
 
 void PutThumb2Mov32(UINT16* p, UINT32 imm32);
 void PutThumb2BlRel24(UINT16* p, INT32 imm24);
@@ -105,8 +108,8 @@ bool Is32BitThumb2Instruction(UINT16* p);
 UINT32 ExtractArm32MovImm(UINT32 instr);
 void PutArm32MovtConstant(UINT32* p, unsigned con);
 
-INT64 GetRiscV64AuipcItype(UINT32 * pCode);
-void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset);
+INT64 GetRiscV64AuipcCombo(UINT32 * pCode, bool isStype);
+void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype);
 
 template <typename T, int size>
 inline constexpr unsigned ArrLen(T (&)[size])

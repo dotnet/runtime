@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 namespace SIMD
 {
@@ -64,8 +65,8 @@ namespace SIMD
             Console.WriteLine("In benchmark mode, a larger set is computed but nothing is dumped.");
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
         public static int TestEntryPoint()
         {
             Bench(0, -1);

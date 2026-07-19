@@ -24,10 +24,10 @@ namespace System.IO.Compression.Tests
         public override bool CanSeek => false; // Force non-seekable
         public override bool CanWrite => _baseStream.CanWrite;
         public override long Length => _baseStream.Length;
-        public override long Position 
-        { 
-            get => _baseStream.Position; 
-            set => throw new NotSupportedException("Seeking is not supported"); 
+        public override long Position
+        {
+            get => _baseStream.Position;
+            set => throw new NotSupportedException("Seeking is not supported");
         }
 
         public override void Flush() => _baseStream.Flush();
@@ -39,7 +39,9 @@ namespace System.IO.Compression.Tests
         protected override void Dispose(bool disposing)
         {
             if (disposing)
+            {
                 _baseStream.Dispose();
+            }
             base.Dispose(disposing);
         }
     }
@@ -312,14 +314,14 @@ namespace System.IO.Compression.Tests
             Stream s = await OpenEntryStream(async, e);
             Assert.Throws<NotSupportedException>(() => s.Flush()); //"Should not be able to flush on read stream"
             Assert.Throws<NotSupportedException>(() => s.WriteByte(25)); //"should not be able to write to read stream"
-            
+
             // Seeking behavior depends on whether the entry is compressed and the underlying stream is seekable
             if (!s.CanSeek)
             {
                 Assert.Throws<NotSupportedException>(() => s.Position = 4); //"should not be able to seek on non-seekable read stream"
                 Assert.Throws<NotSupportedException>(() => s.Seek(0, SeekOrigin.Begin)); //"should not be able to seek on non-seekable read stream"
             }
-            
+
             Assert.Throws<NotSupportedException>(() => s.SetLength(0)); //"should not be able to resize read stream"
 
             await DisposeZipArchive(async, archive);
@@ -591,14 +593,13 @@ namespace System.IO.Compression.Tests
 
                 Assert.True(s.CanRead, "Can read to read archive");
                 Assert.False(s.CanWrite, "Can't write to read archive");
-                
+
                 // Check the entry's compression method to determine seekability
                 // SubReadStream should be seekable when the underlying stream is seekable and the entry is stored (uncompressed)
                 // If the entry is compressed (Deflate, Deflate64, etc.), it will be wrapped in a compression stream which is not seekable
-                ushort compressionMethod = (ushort)compressionMethodField.GetValue(e);
-                const ushort StoredCompressionMethod = 0x0; // CompressionMethodValues.Stored
-                
-                if (compressionMethod == StoredCompressionMethod)
+                ZipCompressionMethod compressionMethod = (ZipCompressionMethod)compressionMethodField.GetValue(e);
+
+                if (compressionMethod == ZipCompressionMethod.Stored)
                 {
                     // Entry is stored (uncompressed), should be seekable
                     Assert.True(s.CanSeek, $"SubReadStream should be seekable for stored (uncompressed) entry '{e.FullName}' with compression method {compressionMethod} when underlying stream is seekable");
@@ -608,7 +609,7 @@ namespace System.IO.Compression.Tests
                     // Entry is compressed (Deflate, Deflate64, etc.), wrapped in compression stream, should not be seekable
                     Assert.False(s.CanSeek, $"Entry '{e.FullName}' with compression method {compressionMethod} should not be seekable because compressed entries are wrapped in non-seekable compression streams");
                 }
-                
+
                 Assert.Equal(await LengthOfUnseekableStream(s), e.Length); //"Length is not correct on stream"
 
                 await DisposeStream(async, s);
@@ -640,7 +641,10 @@ namespace System.IO.Compression.Tests
                 {
                     foreach (ZipArchiveEntry e in archive.Entries)
                     {
-                        if (e.Length == 0) continue; // Skip empty entries for this test
+                        if (e.Length == 0)
+                        {
+                            continue; // Skip empty entries for this test
+                        }
 
                         Stream s = await OpenEntryStream(async, e);
 
@@ -673,7 +677,7 @@ namespace System.IO.Compression.Tests
                         // Test that seeking before beginning throws, but beyond end is allowed
                         Assert.Throws<ArgumentOutOfRangeException>(() => s.Position = -1);
                         Assert.Throws<IOException>(() => s.Seek(-1, SeekOrigin.Begin));
-                        
+
                         // Seeking beyond end should be allowed (no exception)
                         s.Position = e.Length + 1;
                         Assert.Equal(e.Length + 1, s.Position);
@@ -694,7 +698,7 @@ namespace System.IO.Compression.Tests
             using (var ms = new MemoryStream())
             {
                 var testData = "This is test data for reading content twice with seeking operations."u8.ToArray();
-                
+
                 // Create a ZIP with stored entries
                 using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, true))
                 {
@@ -710,7 +714,10 @@ namespace System.IO.Compression.Tests
                 {
                     foreach (ZipArchiveEntry e in archive.Entries)
                     {
-                        if (e.Length == 0) continue; // Skip empty entries for this test
+                        if (e.Length == 0)
+                        {
+                            continue; // Skip empty entries for this test
+                        }
 
                         Stream s = await OpenEntryStream(async, e);
 
@@ -819,6 +826,306 @@ namespace System.IO.Compression.Tests
                 NumberOfDisposeCalls++;
                 base.Dispose(disposing);
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_Deflate_ReturnsDeflate(bool async)
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var entry = archive.CreateEntry("test.txt", CompressionLevel.Optimal);
+                using (var stream = entry.Open())
+                {
+                    stream.Write("test data"u8);
+                }
+            }
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.Deflate, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_Stored_ReturnsStored(bool async)
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var entry = archive.CreateEntry("test.txt", CompressionLevel.NoCompression);
+                using (var stream = entry.Open())
+                {
+                    stream.Write("test data"u8);
+                }
+            }
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.Stored, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_EmptyFile_ReturnsStored(bool async)
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var entry = archive.CreateEntry("empty.txt");
+            }
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.Stored, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_Deflate64_ReturnsDeflate64(bool async)
+        {
+            MemoryStream ms = await StreamHelpers.CreateTempCopyStream(compat("deflate64.zip"));
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.Deflate64, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ReadAfterSeekingPastEnd_ReturnsZeroBytes(bool async)
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var entry = archive.CreateEntry("test.txt", CompressionLevel.NoCompression);
+                using var stream = entry.Open();
+                stream.Write("Hello, World!"u8);
+            }
+
+            ms.Position = 0;
+            using var readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            Stream readStream = await OpenEntryStream(async, readArchive.Entries[0]);
+
+            readStream.Seek(1, SeekOrigin.End);
+            Assert.Equal(14, readStream.Position);
+
+            byte[] buffer = new byte[1024];
+            int bytesRead = async
+                ? await readStream.ReadAsync(buffer)
+                : readStream.Read(buffer, 0, buffer.Length);
+
+            Assert.Equal(0, bytesRead);
+            Assert.Equal(14, readStream.Position);
+
+            await DisposeStream(async, readStream);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static async Task StrongEncryptionDetectedAsUnknown(bool async)
+        {
+            var ms = new MemoryStream();
+            ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry newEntry = createArchive.CreateEntry("test.txt");
+            using (Stream entryStream = async ? await newEntry.OpenAsync() : newEntry.Open())
+            {
+                byte[] data = "hello"u8.ToArray();
+                if (async)
+                {
+                    await entryStream.WriteAsync(data);
+                }
+                else
+                {
+                    entryStream.Write(data, 0, data.Length);
+                }
+            }
+            await DisposeZipArchive(async, createArchive);
+
+            byte[] zipBytes = ms.ToArray();
+
+            // Set bit 0 (encrypted) and bit 6 (strong encryption) in both LH and CD general purpose bit flags
+            const ushort strongEncryptionFlags = 0x01 | 0x40;
+
+            // Local file header: signature at 0, version at 4, bit flags at offset 6
+            int lhBitFlagOffset = 6;
+            BinaryPrimitives.WriteUInt16LittleEndian(zipBytes.AsSpan(lhBitFlagOffset), strongEncryptionFlags);
+
+            // Find central directory (from EOCD at end of file)
+            // EOCD signature is 0x06054b50, CD offset is at EOCD + 16
+            int eocdOffset = zipBytes.Length - 22; // minimal EOCD is 22 bytes with no comment
+            int cdOffset = BinaryPrimitives.ReadInt32LittleEndian(zipBytes.AsSpan(eocdOffset + 16));
+            // CD header: signature at 0, version-made-by at 4 (2 bytes), version-needed at 6 (2 bytes), bit flags at offset 8
+            int cdBitFlagOffset = cdOffset + 8;
+            BinaryPrimitives.WriteUInt16LittleEndian(zipBytes.AsSpan(cdBitFlagOffset), strongEncryptionFlags);
+
+            using var archiveStream = new MemoryStream(zipBytes);
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
+            ZipArchiveEntry entry = archive.Entries[0];
+
+            Assert.True(entry.IsEncrypted);
+            Assert.Equal(ZipEncryptionMethod.Unknown, entry.EncryptionMethod);
+
+            Assert.Throws<NotSupportedException>(() => entry.Open("password".AsSpan()));
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task DecryptEntries_SamePassword_7Zip(bool async)
+        {
+            string password = "S3cur3P@ssw0rd";
+            using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtected_7ZIP_SamePassword.zip"));
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
+
+            Assert.Equal(2, archive.Entries.Count);
+
+            foreach (ZipArchiveEntry entry in archive.Entries)
+            {
+                Assert.True(entry.IsEncrypted);
+
+                using Stream entryStream = await OpenEntryStream(async, entry, password);
+                using StreamReader reader = new(entryStream);
+                string content = reader.ReadToEnd().TrimEnd();
+
+                if (entry.Name == "hello.txt")
+                {
+                    Assert.Equal("Hello", content);
+                }
+                else if (entry.Name == "goodbye.txt")
+                {
+                    Assert.Equal("Goodbye", content);
+                }
+                else
+                {
+                    Assert.Fail($"Unexpected entry: {entry.Name}");
+                }
+            }
+            await DisposeZipArchive(async, archive);
+        }
+
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+
+        public async Task DecryptEntries_MixedEncryptions(bool async)
+        {
+            string password = "S3cur3P@ssw0rd";
+            using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtected_MixedEncryptions.zip"));
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
+
+            Assert.Equal(2, archive.Entries.Count);
+
+            ZipArchiveEntry helloEntry = archive.GetEntry("hello.txt");
+            Assert.NotNull(helloEntry);
+            Assert.True(helloEntry.IsEncrypted);
+            Assert.Equal(ZipEncryptionMethod.ZipCrypto, helloEntry.EncryptionMethod);
+
+            using (Stream helloStream = await OpenEntryStream(async, helloEntry, password))
+            using (StreamReader helloReader = new(helloStream))
+            {
+                Assert.Equal("Hello", helloReader.ReadToEnd().TrimEnd());
+            }
+
+            ZipArchiveEntry goodbyeEntry = archive.GetEntry("goodbye.txt");
+            Assert.NotNull(goodbyeEntry);
+            Assert.True(goodbyeEntry.IsEncrypted);
+            Assert.Equal(ZipEncryptionMethod.Aes256, goodbyeEntry.EncryptionMethod);
+
+            using (Stream goodbyeStream = await OpenEntryStream(async, goodbyeEntry, password))
+            using (StreamReader goodbyeReader = new(goodbyeStream))
+            {
+                Assert.Equal("Goodbye", goodbyeReader.ReadToEnd().TrimEnd());
+            }
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task DecryptEntries_DifferentPasswords(bool async)
+        {
+            using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtected_DifferentPasswords.zip"));
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
+
+            Assert.Equal(2, archive.Entries.Count);
+
+            ZipArchiveEntry helloEntry = archive.GetEntry("hello.txt");
+            Assert.NotNull(helloEntry);
+            Assert.True(helloEntry.IsEncrypted);
+            Assert.Equal(ZipEncryptionMethod.Aes256, helloEntry.EncryptionMethod);
+
+            using (Stream helloStream = await OpenEntryStream(async, helloEntry, "S3cur3P@ssw0rd2"))
+            using (StreamReader helloReader = new(helloStream))
+            {
+                Assert.Equal("Hello", helloReader.ReadToEnd().TrimEnd());
+            }
+
+            ZipArchiveEntry goodbyeEntry = archive.GetEntry("goodbye.txt");
+            Assert.NotNull(goodbyeEntry);
+            Assert.True(goodbyeEntry.IsEncrypted);
+            Assert.Equal(ZipEncryptionMethod.Aes256, goodbyeEntry.EncryptionMethod);
+
+            using (Stream goodbyeStream = await OpenEntryStream(async, goodbyeEntry, "S3cur3P@ssw0rd1"))
+            using (StreamReader goodbyeReader = new(goodbyeStream))
+            {
+                Assert.Equal("Goodbye", goodbyeReader.ReadToEnd().TrimEnd());
+            }
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task PasswordProtectedZip64_UpdateMode_Throws(bool async)
+        {
+            using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtectedZIP64.zip"));
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Update);
+
+            ZipArchiveEntry entry = archive.Entries[0];
+
+            // The entry reports an uncompressed size larger than Update mode can buffer in memory,
+            // so opening it for update must throw.
+            await Assert.ThrowsAsync<InvalidDataException>(async () => await OpenEntryStream(async, entry, "S3cur3P@ssw0rd"));
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Fact]
+        public static async Task ReadArchiveCommentAsync_DoesNotCallSyncRead()
+        {
+            const string ExpectedComment = "this is the archive-level comment";
+
+            byte[] zipBytes;
+            using (MemoryStream buildStream = new MemoryStream())
+            {
+                using (ZipArchive archive = new ZipArchive(buildStream, ZipArchiveMode.Create, leaveOpen: true))
+                {
+                    archive.CreateEntry("file.txt");
+                    archive.Comment = ExpectedComment;
+                }
+                zipBytes = buildStream.ToArray();
+            }
+
+            await using MemoryStream ms = new MemoryStream(zipBytes);
+            await using NoSyncCallsStream noSync = new NoSyncCallsStream(ms);
+
+            ZipArchive readArchive = await ZipArchive.CreateAsync(noSync, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: null);
+            Assert.Equal(ExpectedComment, readArchive.Comment);
+            await readArchive.DisposeAsync();
         }
     }
 }

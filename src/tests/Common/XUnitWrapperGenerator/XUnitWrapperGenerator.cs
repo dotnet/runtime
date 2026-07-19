@@ -214,7 +214,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             .Where(data =>
             {
                 var (test, options) = data;
-                var filter = new XUnitWrapperLibrary.TestFilter(options.GlobalOptions.TestFilter(), null);
+                var filter = new XUnitWrapperLibrary.TestFilter(options.GlobalOptions.TestFilter());
                 return filter.ShouldRunTest($"{test.ContainingType}.{test.Method}", test.DisplayNameForFiltering, Array.Empty<string>());
             })
             .Select((data, ct) => data.Left)
@@ -251,13 +251,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
     private static void AddRunnerSource(SourceProductionContext context, ImmutableArray<ITestInfo> methods, AnalyzerConfigOptionsProvider configOptions, ImmutableDictionary<string, string> aliasMap, CompData compData)
     {
-        bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
+        bool buildAsMergedRunner = configOptions.GlobalOptions.IsMergedTestRunnerAssembly() && !configOptions.GlobalOptions.BuildAsStandalone();
         configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
         string assemblyName = compData.AssemblyName;
+        string? targetOSLower = targetOS?.ToLowerInvariant();
 
-        if (isMergedTestRunnerAssembly)
+        if (buildAsMergedRunner)
         {
-            if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
+            if ((targetOSLower is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android")
+                    || ((targetOSLower is "browser") && configOptions.GlobalOptions.RuntimeFlavor().ToLowerInvariant() == "mono"))
             {
                 context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName, targetOS));
             }
@@ -309,10 +311,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("void Initialize()");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("System.Collections.Generic.Dictionary<string, string> testExclusionTable ="
-                               + " XUnitWrapperLibrary.TestFilter.LoadTestExclusionTable();");
-            builder.AppendLine();
-
             builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
             using (builder.NewBracesScope())
             {
@@ -326,7 +324,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             }
             builder.AppendLine();
 
-            builder.AppendLine("filter = new (args, testExclusionTable);");
+            builder.AppendLine("filter = new(args);");
             builder.AppendLine("summary = new();");
             builder.AppendLine("stopwatch = System.Diagnostics.Stopwatch.StartNew();");
             builder.AppendLine("outputRecorder = new(System.Console.Out);");
@@ -465,13 +463,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("System.Collections.Generic.Dictionary<string, string> testExclusionTable ="
-                               + " XUnitWrapperLibrary.TestFilter.LoadTestExclusionTable();");
-
             builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests,"
                                + $@" ""{assemblyName}"","
-                               + $@" args.Length != 0 ? args[0] : null,"
-                               + $@" testExclusionTable);");
+                               + $@" args.Length != 0 ? args[0] : null);");
         }
 
         builder.AppendLine("catch (System.Exception ex)");
@@ -663,6 +657,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
     private static IEnumerable<ITestInfo> GetTestMethodInfosForMethod(IMethodSymbol method, AnalyzerConfigOptionsProvider options, ImmutableDictionary<string, string> aliasMap)
     {
+        try
+        {
         bool factAttribute = false;
         bool theoryAttribute = false;
         List<AttributeData> theoryDataAttributes = new();
@@ -769,7 +765,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         break;
                     }
                 case "Xunit.OuterLoopAttribute":
-                    if (options.GlobalOptions.Priority() == 0)
+                    if (options.GlobalOptions.CLRTestPriorityToBuild() == 0)
                     {
                         if (filterAttribute.AttributeConstructor!.Parameters.Length < 2)
                         {
@@ -782,40 +778,48 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     }
                     break;
                 case "Xunit.ActiveIssueAttribute":
-                    if (filterAttribute.AttributeConstructor!.Parameters.Length == 3)
                     {
-                        ITypeSymbol conditionType = (ITypeSymbol)filterAttribute.ConstructorArguments[1].Value!;
-                        testInfos = DecorateWithUserDefinedCondition(
-                            testInfos,
-                            conditionType,
-                            filterAttribute.ConstructorArguments[2].Values,
-                            aliasMap[conditionType.ContainingAssembly.MetadataName],
-                            true /* negate the condition, as this attribute indicates that a test will NOT be run */);
-                        break;
-                    }
-                    else if (filterAttribute.AttributeConstructor.Parameters.Length == 4)
-                    {
-                        testInfos = FilterForSkippedRuntime(
-                            FilterForSkippedTargetFrameworkMonikers(
-                                DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options),
-                                (int)filterAttribute.ConstructorArguments[2].Value!),
-                            (int)filterAttribute.ConstructorArguments[3].Value!, options);
-                    }
-                    else
-                    {
-                        switch (filterAttribute.AttributeConstructor.Parameters[1].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+                        // Extract the skip reason with issue URL (only for actual ActiveIssue, not OuterLoop fallthrough).
+                        string? skipReason = filterAttribute.AttributeClass!.ToDisplayString() == "Xunit.ActiveIssueAttribute"
+                            ? $"ActiveIssue: {filterAttribute.ConstructorArguments[0].Value}"
+                            : null;
+
+                        if (filterAttribute.AttributeConstructor!.Parameters.Length == 3)
                         {
-                            case "global::Xunit.TestPlatforms":
-                                testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
-                                break;
-                            case "global::Xunit.TestRuntimes":
-                                testInfos = FilterForSkippedRuntime(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
-                                break;
-                            case "global::Xunit.TargetFrameworkMonikers":
-                                testInfos = FilterForSkippedTargetFrameworkMonikers(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!);
-                                break;
-                            default:
-                                break;
+                            ITypeSymbol conditionType = (ITypeSymbol)filterAttribute.ConstructorArguments[1].Value!;
+                            testInfos = DecorateWithUserDefinedCondition(
+                                testInfos,
+                                conditionType,
+                                filterAttribute.ConstructorArguments[2].Values,
+                                aliasMap[conditionType.ContainingAssembly.MetadataName],
+                                true /* negate the condition, as this attribute indicates that a test will NOT be run */,
+                                skipReason);
+                            break;
+                        }
+                        else if (filterAttribute.AttributeConstructor.Parameters.Length == 4)
+                        {
+                            testInfos = FilterForSkippedRuntime(
+                                FilterForSkippedTargetFrameworkMonikers(
+                                    DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options, skipReason),
+                                    (int)filterAttribute.ConstructorArguments[2].Value!, skipReason),
+                                (int)filterAttribute.ConstructorArguments[3].Value!, options, skipReason);
+                        }
+                        else
+                        {
+                            switch (filterAttribute.AttributeConstructor.Parameters[1].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+                            {
+                                case "global::Xunit.TestPlatforms":
+                                    testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options, skipReason);
+                                    break;
+                                case "global::Xunit.TestRuntimes":
+                                    testInfos = FilterForSkippedRuntime(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options, skipReason);
+                                    break;
+                                case "global::Xunit.TargetFrameworkMonikers":
+                                    testInfos = FilterForSkippedTargetFrameworkMonikers(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, skipReason);
+                                    break;
+                                default:
+                                    break;
+                            }
                         }
                     }
                     break;
@@ -875,29 +879,36 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         }
                     }
 
-                    if (skippedTestModes == Xunit.RuntimeTestModes.Any)
+                    if (skippedTestModes == 0
+                        && skippedConfigurations == 0
+                        && skippedTestPlatforms == 0)
                     {
                         testInfos = FilterForSkippedRuntime(testInfos, (int)Xunit.TestRuntimes.CoreCLR, options);
                     }
-                    testInfos = DecorateWithSkipOnPlatform(testInfos, (int)skippedTestPlatforms, options);
-                    testInfos = DecorateWithSkipOnCoreClrConfiguration(testInfos, skippedTestModes, skippedConfigurations);
+                    testInfos = DecorateWithSkipOnCoreClrConfiguration(testInfos, skippedTestModes, skippedConfigurations, skippedTestPlatforms, options);
 
                     break;
             }
         }
 
         return testInfos;
+        }
+        catch(Exception ex) when (LaunchDebugger(ex))
+        {
+            throw;
+        }
+
+        bool LaunchDebugger(Exception ex)
+        {
+            System.Diagnostics.Debugger.Launch();
+            return false;
+        }
     }
 
-    private static ImmutableArray<ITestInfo> DecorateWithSkipOnCoreClrConfiguration(ImmutableArray<ITestInfo> testInfos, Xunit.RuntimeTestModes skippedTestModes, Xunit.RuntimeConfiguration skippedConfigurations)
+    private static ImmutableArray<ITestInfo> DecorateWithSkipOnCoreClrConfiguration(ImmutableArray<ITestInfo> testInfos, Xunit.RuntimeTestModes skippedTestModes, Xunit.RuntimeConfiguration skippedConfigurations, Xunit.TestPlatforms skippedTestPlatforms, AnalyzerConfigOptionsProvider options)
     {
         const string ConditionClass = "TestLibrary.CoreClrConfigurationDetection";
         List<string> conditions = new();
-        if (skippedConfigurations.HasFlag(Xunit.RuntimeConfiguration.Debug | Xunit.RuntimeConfiguration.Checked | Xunit.RuntimeConfiguration.Release))
-        {
-            // If all configurations are skipped, just skip the test as a whole
-            return ImmutableArray<ITestInfo>.Empty;
-        }
 
         if (skippedConfigurations.HasFlag(Xunit.RuntimeConfiguration.Debug))
         {
@@ -961,15 +972,22 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             conditions.Add($"!{ConditionClass}.IsGCStressC");
         }
 
-        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(t => new ConditionalTest(t, string.Join(" && ", conditions))));
+        options.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
+        Xunit.TestPlatforms targetPlatform = GetPlatformForTargetOS(targetOS);
+
+        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(t => new ConditionalTest(t, string.Join(" && ", conditions), targetPlatform & ~skippedTestPlatforms)));
     }
 
-    private static ImmutableArray<ITestInfo> FilterForSkippedTargetFrameworkMonikers(ImmutableArray<ITestInfo> testInfos, int v)
+    private static ImmutableArray<ITestInfo> FilterForSkippedTargetFrameworkMonikers(ImmutableArray<ITestInfo> testInfos, int v, string? skipReason = null)
     {
         var tfm = (Xunit.TargetFrameworkMonikers)v;
 
         if (tfm.HasFlag(Xunit.TargetFrameworkMonikers.Netcoreapp))
         {
+            if (skipReason != null)
+            {
+                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new AlwaysSkippedTest(t, skipReason)));
+            }
             return ImmutableArray<ITestInfo>.Empty;
         }
         else
@@ -1036,22 +1054,30 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return testCasesBuilder.ToImmutable();
     }
 
-    private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int skippedRuntimeValue, AnalyzerConfigOptionsProvider options)
+    private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int skippedRuntimeValue, AnalyzerConfigOptionsProvider options, string? skipReason = null)
     {
         Xunit.TestRuntimes skippedRuntimes = (Xunit.TestRuntimes)skippedRuntimeValue;
         string runtimeFlavor = options.GlobalOptions.RuntimeFlavor().ToLowerInvariant();
         if (runtimeFlavor == "mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
         {
+            if (skipReason != null)
+            {
+                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new AlwaysSkippedTest(t, skipReason)));
+            }
             return ImmutableArray<ITestInfo>.Empty;
         }
         else if (runtimeFlavor == "coreclr" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR))
         {
+            if (skipReason != null)
+            {
+                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new AlwaysSkippedTest(t, skipReason)));
+            }
             return ImmutableArray<ITestInfo>.Empty;
         }
         return testInfos;
     }
 
-    private static ImmutableArray<ITestInfo> DecorateWithSkipOnPlatform(ImmutableArray<ITestInfo> testInfos, int v, AnalyzerConfigOptionsProvider options)
+    private static ImmutableArray<ITestInfo> DecorateWithSkipOnPlatform(ImmutableArray<ITestInfo> testInfos, int v, AnalyzerConfigOptionsProvider options, string? skipReason = null)
     {
         Xunit.TestPlatforms platformsToSkip = (Xunit.TestPlatforms)v;
         options.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
@@ -1064,6 +1090,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         else if (platformsToSkip.HasFlag(targetPlatform))
         {
+            if (skipReason != null)
+            {
+                // When tracking skip reasons (e.g. ActiveIssue), emit a runtime skip instead
+                // of eliminating the test at compile time.
+                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new AlwaysSkippedTest(t, skipReason)));
+            }
             // If the target platform is skipped, then we don't have any tests to emit.
             return ImmutableArray<ITestInfo>.Empty;
         }
@@ -1072,35 +1104,36 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             // If our target platform encompases one or more of the skipped platforms,
             // emit a runtime platform check here.
             Xunit.TestPlatforms platformsToEnableTest = targetPlatform & ~platformsToSkip;
-            return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new ConditionalTest(t, platformsToEnableTest)));
+            return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new ConditionalTest(t, platformsToEnableTest, skipReason)));
         }
         else
         {
             // The target platform is not mentioned in the attribute, just run it as-is.
             return testInfos;
         }
+    }
 
-        static Xunit.TestPlatforms GetPlatformForTargetOS(string? targetOS)
+    private static Xunit.TestPlatforms GetPlatformForTargetOS(string? targetOS)
+    {
+        return targetOS?.ToLowerInvariant() switch
         {
-            return targetOS?.ToLowerInvariant() switch
-            {
-                "windows" => Xunit.TestPlatforms.Windows,
-                "linux" => Xunit.TestPlatforms.Linux,
-                "osx" => Xunit.TestPlatforms.OSX,
-                "illumos" => Xunit.TestPlatforms.illumos,
-                "solaris" => Xunit.TestPlatforms.Solaris,
-                "android" => Xunit.TestPlatforms.Android,
-                "ios" => Xunit.TestPlatforms.iOS,
-                "tvos" => Xunit.TestPlatforms.tvOS,
-                "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
-                "browser" => Xunit.TestPlatforms.Browser,
-                "wasi" => Xunit.TestPlatforms.Wasi,
-                "freebsd" => Xunit.TestPlatforms.FreeBSD,
-                "netbsd" => Xunit.TestPlatforms.NetBSD,
-                null or "" or "anyos" => Xunit.TestPlatforms.Any,
-                _ => 0
-            };
-        }
+            "windows" => Xunit.TestPlatforms.Windows,
+            "linux" => Xunit.TestPlatforms.Linux,
+            "osx" => Xunit.TestPlatforms.OSX,
+            "illumos" => Xunit.TestPlatforms.illumos,
+            "solaris" => Xunit.TestPlatforms.Solaris,
+            "android" => Xunit.TestPlatforms.Android,
+            "ios" => Xunit.TestPlatforms.iOS,
+            "tvos" => Xunit.TestPlatforms.tvOS,
+            "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
+            "browser" => Xunit.TestPlatforms.Browser,
+            "wasi" => Xunit.TestPlatforms.Wasi,
+            "freebsd" => Xunit.TestPlatforms.FreeBSD,
+            "openbsd" => Xunit.TestPlatforms.OpenBSD,
+            "netbsd" => Xunit.TestPlatforms.NetBSD,
+            null or "" or "anyos" => Xunit.TestPlatforms.Any,
+            _ => 0
+        };
     }
 
     private static ImmutableArray<ITestInfo> DecorateWithUserDefinedCondition(
@@ -1108,12 +1141,13 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         ITypeSymbol conditionType,
         ImmutableArray<TypedConstant> values,
         string externAlias,
-        bool negate)
+        bool negate,
+        string? skipReason = null)
     {
         string condition = string.Join("&&", values.Select(v => $"{externAlias}::{conditionType.ToDisplayString(FullyQualifiedWithoutGlobalNamespace)}.{v.Value}"));
         if (negate)
             condition = $"!({condition})";
-        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(m => new ConditionalTest(m, condition)));
+        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(m => new ConditionalTest(m, condition, skipReason)));
     }
 
     public static readonly SymbolDisplayFormat FullyQualifiedWithoutGlobalNamespace = SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted);

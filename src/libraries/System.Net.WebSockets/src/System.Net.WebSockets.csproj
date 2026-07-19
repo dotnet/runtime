@@ -52,6 +52,8 @@
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.Associate.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.Associate.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs"
+             Link="Common\System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs" />
   </ItemGroup>
 
   <!-- Windows specific files -->
@@ -71,6 +73,8 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\src\System.Collections.Specialized.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
+    <!-- Bypass System.IO.Compression's reference assembly in order to allow ZLibNative to access the ZLibException type. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression\src\System.IO.Compression.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\src\System.Net.Primitives.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
