@@ -235,5 +235,4 @@ public class Bench
 
 - [Microbenchmark Design Guidelines](https://github.com/dotnet/performance/blob/main/docs/microbenchmark-design-guidelines.md) - Essential reading for writing effective benchmarks
 - [BenchmarkDotNet CLI Arguments](https://github.com/dotnet/BenchmarkDotNet/blob/master/docs/articles/guides/console-args.md)
-- [dotnet/performance benchmark suite](https://github.com/dotnet/performance)
 - [EgorBot Manual](https://github.com/EgorBo/EgorBot?tab=readme-ov-file#github-usage)
