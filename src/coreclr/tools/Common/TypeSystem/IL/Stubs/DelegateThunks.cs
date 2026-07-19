@@ -310,71 +310,71 @@ namespace Internal.IL.Stubs
             ILEmitter emitter = new ILEmitter();
             ILCodeStream codeStream = emitter.NewCodeStream();
 
-            ILLocalVariable startLocal = emitter.NewLocal(_delegateInfo.Type.MakeByRefType());
-            ILLocalVariable endLocal = emitter.NewLocal(_delegateInfo.Type.MakeByRefType());
+            TypeDesc wrapper = ((MetadataType)SystemDelegateType).GetKnownNestedType("Wrapper"u8);
+            ByRefType wrapperRef = wrapper.MakeByRefType();
+            ILLocalVariable currentRef = emitter.NewLocal(wrapperRef);
+            ILLocalVariable endRef = emitter.NewLocal(wrapperRef);
 
-            ILLocalVariable returnValueLocal = 0;
-            if (!Signature.ReturnType.IsVoid)
-            {
-                returnValueLocal = emitter.NewLocal(Signature.ReturnType);
-            }
+            bool returns = !Signature.ReturnType.IsVoid;
+            ILLocalVariable returnLocal = returns ? emitter.NewLocal(Signature.ReturnType) : 0;
 
             // Load start and end refs
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(HelperObjectField));
 
-            // Get start ref
+            // We need GADR to get the start
             TypeDesc signatureVariable = Context.GetSignatureVariable(0, method: true);
             MethodSignature signature = new(MethodSignatureFlags.Static, 1, signatureVariable.MakeByRefType(), [signatureVariable.MakeArrayType()]);
-            TypeDesc wrapper = ((MetadataType)SystemDelegateType).GetKnownNestedType("Wrapper"u8);
-            MethodDesc gadr = Context.GetCoreLibEntryPoint("System.Runtime.InteropServices"u8, "MemoryMarshal"u8, "GetArrayDataReference"u8, signature).MakeInstantiatedMethod(wrapper);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(gadr));
-            codeStream.EmitStLoc(startLocal);
+            MethodDesc gadr = Context.GetCoreLibEntryPoint("System.Runtime.InteropServices"u8, "MemoryMarshal"u8, "GetArrayDataReference"u8, signature);
+
+            // Get start ref
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(gadr.MakeInstantiatedMethod(wrapper)));
+            codeStream.EmitStLoc(currentRef);
 
             // Get end ref from adding count
-            codeStream.EmitLdLoc(startLocal);
+            codeStream.EmitLdLoc(currentRef);
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
             codeStream.EmitLdc(wrapper.GetElementSize().AsInt);
             codeStream.Emit(ILOpcode.mul);
             codeStream.Emit(ILOpcode.add);
-            codeStream.EmitStLoc(endLocal);
+            codeStream.EmitStLoc(endRef);
 
-            ILCodeLabel startOfLoopLabel = emitter.NewCodeLabel();
+            ILCodeLabel nextDelegate = emitter.NewCodeLabel();
             // Label_nextDelegate:
-            codeStream.EmitLabel(startOfLoopLabel);
+            codeStream.EmitLabel(nextDelegate);
 
             // Load the delegate
-            codeStream.EmitLdLoc(startLocal);
-            codeStream.Emit(ILOpcode.ldind_ref);
+            codeStream.EmitLdLoc(currentRef);
+            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(wrapper.GetKnownField("Value"u8)));
 
             // Load the arguments
-            for (int i = 0; i < Signature.Length; i++)
+            for (int param = 0; param < Signature.Length; param++)
             {
-                codeStream.EmitLdArg(i + 1);
+                codeStream.EmitLdArg(param + 1);
             }
 
             // Call the delegate
             codeStream.Emit(ILOpcode.call, emitter.NewToken(_delegateInfo.InvokeMethod.InstantiateAsOpen()));
 
             // Save return value.
-            if (returnValueLocal != 0)
-                codeStream.EmitStLoc(returnValueLocal);
+            if (returnLocal != 0)
+                codeStream.EmitStLoc(returnLocal);
 
             // Increment the ref
-            codeStream.EmitLdLoc(startLocal);
+            codeStream.EmitLdLoc(currentRef);
             codeStream.EmitLdc(wrapper.GetElementSize().AsInt);
             codeStream.Emit(ILOpcode.add);
-            codeStream.EmitStLoc(startLocal);
+            codeStream.EmitStLoc(currentRef);
 
             // Compare start ref with end. If less than branch to nextDelegate
-            codeStream.EmitLdLoc(startLocal);
-            codeStream.EmitLdLoc(endLocal);
-            codeStream.Emit(ILOpcode.blt_un, startOfLoopLabel);
+            codeStream.EmitLdLoc(currentRef);
+            codeStream.EmitLdLoc(endRef);
+            codeStream.Emit(ILOpcode.blt_un, nextDelegate);
 
             // Load the return value, return value from the last delegate call is returned
-            if (returnValueLocal != 0)
-                codeStream.EmitLdLoc(returnValueLocal);
+            if (returns)
+                codeStream.EmitLdLoc(returnLocal);
 
             // Return
             codeStream.Emit(ILOpcode.ret);

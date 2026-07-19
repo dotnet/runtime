@@ -2034,27 +2034,26 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
 
         MetaSig sig(pMD);
 
-        BOOL fReturnVal = !sig.IsReturnTypeVoid();
-
         SigTypeContext emptyContext;
         ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
         ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
-
-        LocalDesc refLocalDesc(TypeHandle(pDelegateMT).MakeByRef());
-        DWORD dwCurrentRef = pCode->NewLocal(refLocalDesc);
-        DWORD dwEndRef = pCode->NewLocal(refLocalDesc);
-
-        DWORD dwReturnValNum = fReturnVal ? pCode->NewLocal(sig.GetRetTypeHandleNT()) : -1;
+        
+        TypeHandle wrapper(CoreLibBinder::GetClass(CLASS__DELEGATEWRAPPER));
+        LocalDesc wrapperRef(wrapper.MakeByRef());
+        DWORD dwCurrentRef = pCode->NewLocal(wrapperRef);
+        DWORD dwEndRef = pCode->NewLocal(wrapperRef);
+        
+        BOOL fReturns = !sig.IsReturnTypeVoid();
+        DWORD dwReturnNum = fReturns ? pCode->NewLocal(sig.GetRetTypeHandleNT()) : -1;
 
         // Load start and end refs
         pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_LIST)));
-
-        // Get start ref
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__HELPER_OBJECT)));
+        
+        // We need GADR to get the start
         MethodDesc* gadr = CoreLibBinder::GetMethod(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE);
-        TypeHandle th(CoreLibBinder::GetClass(CLASS__OBJECT));
-        gadr = MethodDesc::FindOrCreateAssociatedMethodDesc(gadr, gadr->GetMethodTable(), FALSE, Instantiation(&th, 1), TRUE);
+        gadr = MethodDesc::FindOrCreateAssociatedMethodDesc(gadr, gadr->GetMethodTable(), FALSE, Instantiation(&wrapper, 1), TRUE);
 
         // Create signature for the MethodSpec. See ECMA-335 - II.23.2.15
         SigBuilder sigBuilder;
@@ -2065,15 +2064,16 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         uint32_t sigLen;
         PCCOR_SIGNATURE gadrSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature((DWORD*)&sigLen);
         mdToken methodSpecSigToken = pCode->GetSigToken(gadrSig, sigLen);
-
+        
+        // Get start ref
         pCode->EmitCALL(pCode->GetToken(gadr, mdTokenNil, methodSpecSigToken), 1, 1);
         pCode->EmitSTLOC(dwCurrentRef);
 
         // Get end ref from adding count
         pCode->EmitLDLOC(dwCurrentRef);
         pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
-        pCode->EmitLDC(th.GetSize());
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__EXTRA_DATA)));
+        pCode->EmitLDC(wrapper.GetSize());
         pCode->EmitMUL();
         pCode->EmitADD();
         pCode->EmitSTLOC(dwEndRef);
@@ -2085,41 +2085,41 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
 #ifdef DEBUGGING_SUPPORTED
         // Call MulticastDebuggerTraceHelper only if we have a controller subscribing to the event
         pCode->EmitLDC((DWORD_PTR)&g_multicastDelegateTraceActiveCount);
-        pCode->EmitCONV_I();
-        pCode->EmitLDIND_I4();
+        pCode->EmitCONV_U();
+        pCode->EmitLDIND_U4();
         // g_multicastDelegateTraceActiveCount == 0
         pCode->EmitLDC(0);
 
-        ILCodeLabel *realLoopStart = pCode->NewCodeLabel();
-        pCode->EmitBEQ(realLoopStart);
+        ILCodeLabel *nextCall = pCode->NewCodeLabel();
+        pCode->EmitBEQ(nextCall);
 
         // Call debugger tracing
         pCode->EmitLoadThis();
         pCode->EmitLDLOC(dwCurrentRef);
         pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
 
-        // Label_realLoopStart:
-        pCode->EmitLabel(realLoopStart);
+        // Label_nextCall:
+        pCode->EmitLabel(nextCall);
 #endif // DEBUGGING_SUPPORTED
 
         // Load the delegate
         pCode->EmitLDLOC(dwCurrentRef);
-        pCode->EmitLDIND_REF();
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATEWRAPPER__VALUE)));
 
         // Load the arguments
-        for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
-            pCode->EmitLDARG(paramCount);
+        for (UINT param = 0; param < sig.NumFixedArgs(); param++)
+            pCode->EmitLDARG(param);
 
         // Call the delegate
-        pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
+        pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturns);
 
         // Save return value.
-        if (fReturnVal)
-            pCode->EmitSTLOC(dwReturnValNum);
+        if (fReturns)
+            pCode->EmitSTLOC(dwReturnNum);
 
         // Increment the ref
         pCode->EmitLDLOC(dwCurrentRef);
-        pCode->EmitLDC(th.GetSize());
+        pCode->EmitLDC(wrapper.GetSize());
         pCode->EmitADD();
         pCode->EmitSTLOC(dwCurrentRef);
 
@@ -2129,8 +2129,8 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         pCode->EmitBLT(nextDelegate);
 
         // Load the return value, return value from the last delegate call is returned
-        if (fReturnVal)
-            pCode->EmitLDLOC(dwReturnValNum);
+        if (fReturns)
+            pCode->EmitLDLOC(dwReturnNum);
 
         // Return
         pCode->EmitRET();
