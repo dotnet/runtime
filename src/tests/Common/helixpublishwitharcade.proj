@@ -66,6 +66,33 @@
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' == 'true' " />
   <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' != 'true' " />
 
+  <!-- WASI: ensure wasmtime is provisioned into $(WasmtimeDir) before the
+       correlation payload gets copied for the Helix send job. -->
+  <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'" />
+
+  <PropertyGroup Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
+    <!-- Helix writes a .payload marker into the correlation-payload source
+         directory; $(WasmtimeDir) isn't writable, so stage a copy first
+         (matches sendtohelix-wasi.targets). -->
+    <WasmtimeDirForHelixPayload>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'helix-staging', 'wasmtime'))</WasmtimeDirForHelixPayload>
+  </PropertyGroup>
+
+  <!-- Stage $(WasmtimeDir) -> $(WasmtimeDirForHelixPayload) before the
+       correlation payload is assembled for the Helix send. -->
+  <Target Name="StageWasmtimeForHelixPayload"
+          Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'"
+          BeforeTargets="CoreTest"
+          DependsOnTargets="ProvisionWasmtime"
+          Inputs="$(WasmtimeDir)\.stamp-wasmtime-version.txt"
+          Outputs="$(WasmtimeDirForHelixPayload)\.stamp-wasmtime-version.txt">
+    <ItemGroup>
+      <_WasmtimeFilesToStage Include="$(WasmtimeDir)**\*" />
+    </ItemGroup>
+    <MakeDir Directories="$(WasmtimeDirForHelixPayload)" />
+    <Copy SourceFiles="@(_WasmtimeFilesToStage)"
+          DestinationFiles="@(_WasmtimeFilesToStage->'$(WasmtimeDirForHelixPayload)%(RecursiveDir)%(FileName)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
     <CoreRootDirectory>$([MSBuild]::NormalizeDirectory($(CoreRootDirectory)))</CoreRootDirectory>
@@ -77,7 +104,12 @@
     <TargetsBrowserOnMono Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'mono'">true</TargetsBrowserOnMono>
     <TargetsBrowserOnCoreCLR>false</TargetsBrowserOnCoreCLR>
     <TargetsBrowserOnCoreCLR Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</TargetsBrowserOnCoreCLR>
-    <TargetsMobile Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">false</TargetsMobile>
+    <TargetsWasiOnCoreCLR>false</TargetsWasiOnCoreCLR>
+    <TargetsWasiOnCoreCLR Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</TargetsWasiOnCoreCLR>
+    <!-- Both wasm+CoreCLR flavours follow the desktop test path; the
+         mobile/xharness AppBundle path used by Mono wasm/wasi tests
+         doesn't apply (see mergedrunner.targets). -->
+    <TargetsMobile Condition="'$(TargetsBrowserOnCoreCLR)' == 'true' or '$(TargetsWasiOnCoreCLR)' == 'true'">false</TargetsMobile>
     <MobileAppBundleDirName Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">AppBundle</MobileAppBundleDirName>
     <MobileAppBundleDirName Condition="'$(TargetsBrowserOnMono)' == 'true'">wwwroot</MobileAppBundleDirName>
   </PropertyGroup>
@@ -326,11 +358,25 @@
       </_MergedPayloadFiles>
     </ItemGroup>
 
+    <!-- Tests opt into keeping their managed pdbs in the Helix payload with PreservePdbInHelixPayload=true, which drops a
+         <AssemblyName>.PreservePdb marker beside the pdbs in the per-test output directory. The merged wrapper directory that
+         seeds _MergedPayloadFiles is a flattened copy of every test's assemblies and pdbs but omits those marker files, so
+         probe the original per-test output tree ($(TestBinDir)) for the markers and collect the names of the pdbs that sit
+         next to them. A pdb with one of these names is kept below; because each pdb name only exists in its own merge group's
+         flattened payload, this preserves exactly the opted-in pdbs and lands them next to their dll. -->
+    <ItemGroup Condition="'@(_MergedPayloadFiles)' != ''">
+      <_PreservePdbMarkers Include="$(TestBinDir)**\*.PreservePdb" />
+      <_PreservePdbMarkerDirectories Include="@(_PreservePdbMarkers->'%(RootDir)%(Directory)')" KeepDuplicates="false" />
+      <_PreservePdbSourceFiles Include="%(_PreservePdbMarkerDirectories.Identity)**\*.pdb" Condition="'@(_PreservePdbMarkerDirectories)' != ''" />
+    </ItemGroup>
+    <PropertyGroup Condition="'@(_MergedPayloadFiles)' != ''">
+      <_PreservePdbFileNames>;@(_PreservePdbSourceFiles->'%(Filename).pdb');</_PreservePdbFileNames>
+    </PropertyGroup>
+
     <ItemGroup Condition="'@(_MergedPayloadFiles)' != ''" >
-      <!-- Remove the managed pdbs from our payloads.
-           This is for performance reasons to reduce our helix payload size
-           Note: for Native AOT the pdb is the native PDB. !analyze wouldn't work without it at all so we keep it -->
-      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition="('%(Extension)' != '.pdb' or '$(_NativeAotTest)' == 'true') and '%(Extension)' != '.OutOfProcessTest'" />
+      <!-- Remove the managed pdbs from our payloads to reduce our helix payload size. 
+       In Native AOT the pdb is needed for crashdumps and also preserve test that opted into PreservePdbInHelixPayload. -->
+      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition="('%(Extension)' != '.pdb' or '$(_NativeAotTest)' == 'true' or $(_PreservePdbFileNames.Contains(';%(Filename).pdb;'))) and '%(Extension)' != '.OutOfProcessTest'" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -652,6 +698,7 @@
     <HelixPreCommand Include="export RunInterpreter=1" Condition=" '$(RunInterpreter)' == 'true' " />
     <HelixPreCommand Include="export RunTieringTest=1" Condition=" '$(TieringTest)' == 'true' " />
     <HelixPreCommand Include="export RunWithNodeJS=1" Condition=" '$(TargetsBrowserOnCoreCLR)' == 'true' " />
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/wasmtime:$PATH" Condition=" '$(TargetsWasiOnCoreCLR)' == 'true' " />
     <HelixPreCommand Include="export HotColdSplitting=1" Condition=" '$(HotColdSplitting)' == 'true' " />
     <HelixPreCommand Include="export LargeVersionBubble=1" Condition=" '$(LargeVersionBubble)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/runincontext.sh" Condition=" '$(RunInUnloadableContext)' == 'true' " />
@@ -712,6 +759,12 @@
 
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
+
+    <!-- WASI: stage the wasmtime host binary as a separate correlation
+         payload so the WASI PATH prepend in the pre-command finds it.
+         Uses the staged copy (see WasmtimeDirForHelixPayload) rather
+         than $(WasmtimeDir) directly, matching sendtohelix-wasi.targets. -->
+    <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(TargetsWasiOnCoreCLR)' == 'true'" />
 
     <!-- Browser-Wasm and iOS platforms follow a very different workflow, which is currently out of scope of the Log Checker. It's not useful on any platform that uses xharness. -->
     <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(IsXunitLogCheckerSupported)' == 'true' and '$(TargetsBrowserOnMono)' != 'true' and '$(TargetsAppleMobile)' != 'true'" />

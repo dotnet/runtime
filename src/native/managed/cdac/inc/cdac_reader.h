@@ -14,6 +14,7 @@ extern "C"
 //   read_from_target: a callback that reads memory from the target process
 //   write_to_target: a callback that writes memory to the target process
 //   read_thread_context: a callback that reads the context of a thread in the target process
+//   write_thread_context: optional callback that sets the context of a thread in the target process (may be NULL)
 //   alloc_virtual: optional callback that allocates memory in the target process (may be NULL)
 //   read_context: a context pointer that will be passed to callbacks
 //   handle: returned opaque the handle to the reader. This should be passed to other functions in this API.
@@ -22,6 +23,7 @@ int cdac_reader_init(
     int(*read_from_target)(uint64_t, uint8_t*, uint32_t, void*),
     int(*write_to_target)(uint64_t, const uint8_t*, uint32_t, void*),
     int(*read_thread_context)(uint32_t, uint32_t, uint32_t, uint8_t*, void*),
+    int(*write_thread_context)(uint32_t, uint32_t, const uint8_t*, void*),
     int(*alloc_virtual)(uint32_t, uint64_t*, void*),
     void* read_context,
     /*out*/ intptr_t* handle);

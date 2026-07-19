@@ -670,7 +670,16 @@ internal static partial class Interop
             outputBuffer = Array.Empty<byte>();
             if (ret != 1)
             {
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, GetSslError(ret, errorCode));
+                Exception? ex = GetSslError(ret, errorCode);
+
+                SecurityStatusPalErrorCode palErrorCode = (ex?.HResult & 0X7FFFFF) switch
+                {
+                    279 /*SSL_R_EXTENSION_NOT_RECEIVED*/ or
+                    339 /*SSL_R_NO_RENEGOTIATION*/ => SecurityStatusPalErrorCode.NoRenegotiation,
+                    _ => SecurityStatusPalErrorCode.InternalError
+                };
+
+                return new SecurityStatusPal(palErrorCode, ex);
             }
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
@@ -1012,7 +1021,8 @@ internal static partial class Interop
                 try
                 {
                     ProtocolToken alertToken = default;
-                    if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, options.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+                    SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
+                    if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, options.CertificateContext?.Trust, ref alertToken, ref sslPolicyErrors, out X509ChainStatusFlags chainStatus))
                     {
                         Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK);
                         return 1;

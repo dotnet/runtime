@@ -32,7 +32,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(HeaderEncodingTestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/98957", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         public async Task HPack_HeaderEncoding(string headerName, string expectedValue, byte[] expectedEncoding)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(

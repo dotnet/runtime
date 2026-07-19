@@ -15,19 +15,19 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public IEnumerableCallSite(ResultCache cache, Type itemType, ServiceCallSite[] serviceCallSites, object? serviceKey = null) : base(cache, serviceKey)
         {
-            Debug.Assert(!ServiceProvider.VerifyAotCompatibility || !itemType.IsValueType, "If VerifyAotCompatibility=true, an IEnumerableCallSite should not be created with a ValueType.");
+            Debug.Assert(ServiceProvider.IsDynamicCodeSupported || !itemType.IsValueType, "When dynamic code isn't supported, an IEnumerableCallSite should not be created with a ValueType.");
 
             ItemType = itemType;
             ServiceCallSites = serviceCallSites;
         }
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "When ServiceProvider.VerifyAotCompatibility is true, which it is by default when PublishAot=true, " +
+            Justification = "When dynamic code isn't supported (ServiceProvider.IsDynamicCodeSupported is false), which is the case by default when PublishAot=true, " +
             "CallSiteFactory ensures ItemType is not a ValueType.")]
         public override Type ServiceType => typeof(IEnumerable<>).MakeGenericType(ItemType);
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "When ServiceProvider.VerifyAotCompatibility is true, which it is by default when PublishAot=true, " +
+            Justification = "When dynamic code isn't supported (ServiceProvider.IsDynamicCodeSupported is false), which is the case by default when PublishAot=true, " +
             "CallSiteFactory ensures ItemType is not a ValueType.")]
         public override Type ImplementationType => ItemType.MakeArrayType();
 

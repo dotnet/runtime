@@ -374,6 +374,14 @@ namespace System.Net.Security
                             throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastFrame.AlertDescription.ToString()), token.GetException());
                         }
 
+                        if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CertValidationFailed && token.GetException() is Exception certException)
+                        {
+                            // The cert-validation path carries the user-visible exception directly;
+                            // throw it without wrapping to preserve parity with the SendAuthResetSignal
+                            // path used after handshake completion on all platforms.
+                            ExceptionDispatchInfo.Throw(certException);
+                        }
+
                         throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
                     }
                     else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
@@ -520,18 +528,23 @@ namespace System.Net.Security
         // Calls crypto on received data. No IO inside.
         private ProtocolToken ProcessTlsFrame(int frameSize)
         {
+            Debug.Assert(frameSize > 0);
+
             int chunkSize = frameSize;
 
             ReadOnlySpan<byte> availableData = _buffer.EncryptedReadOnlySpan;
 
             // Often more TLS messages fit into same packet. Get as many complete frames as we can.
-            while (_buffer.EncryptedLength - chunkSize > TlsFrameHelper.HeaderSize)
+            while (availableData.Length - chunkSize > TlsFrameHelper.HeaderSize)
             {
                 TlsFrameHeader nextHeader = default;
 
+                // we should always have at least TlsFrameHelper.HeaderSize bytes left, so
+                // if TryGetFrameHeader fails, it means the frame is malformed and we should not continue processing.
                 if (!TlsFrameHelper.TryGetFrameHeader(availableData.Slice(chunkSize), ref nextHeader))
                 {
-                    break;
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "invalid TLS frame size");
+                    throw new AuthenticationException(SR.net_frame_read_size);
                 }
 
                 frameSize = nextHeader.Length;
@@ -544,6 +557,7 @@ namespace System.Net.Security
                     break;
                 }
 
+                Debug.Assert(frameSize > 0);
                 chunkSize += frameSize;
             }
 
@@ -609,10 +623,11 @@ namespace System.Net.Security
             }
 #endif
 
+            sslPolicyErrors = SslPolicyErrors.None;
 #pragma warning disable CS0162 // unreachable code on some platforms
             if (!SslStreamPal.CertValidationInCallback)
             {
-                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, ref sslPolicyErrors, out chainStatus))
                 {
                     _handshakeCompleted = false;
                     return false;
@@ -626,7 +641,7 @@ namespace System.Net.Security
                 // 2. The peer didn't provide a certificate at all.
                 // In both cases, run VerifyRemoteCertificate to invoke the user's callback
                 // and perform full validation.
-                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, ref sslPolicyErrors, out chainStatus))
                 {
                     _handshakeCompleted = false;
                     return false;
@@ -634,7 +649,6 @@ namespace System.Net.Security
             }
             else
             {
-                sslPolicyErrors = SslPolicyErrors.None;
                 chainStatus = X509ChainStatusFlags.NoError;
             }
 #pragma warning restore CS0162 // unreachable code on some platforms
@@ -791,6 +805,7 @@ namespace System.Net.Security
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken, int estimatedSize)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -839,6 +854,7 @@ namespace System.Net.Security
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -1071,11 +1087,6 @@ namespace System.Net.Security
             }
 
             if (!TlsFrameHelper.TryGetFrameHeader(buffer, ref _lastFrame.Header))
-            {
-                throw new IOException(SR.net_ssl_io_frame);
-            }
-
-            if (_lastFrame.Header.Length < 0)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "invalid TLS frame size");
                 throw new AuthenticationException(SR.net_frame_read_size);

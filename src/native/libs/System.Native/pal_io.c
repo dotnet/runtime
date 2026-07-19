@@ -198,6 +198,7 @@ c_static_assert(PAL_IN_DONT_FOLLOW == IN_DONT_FOLLOW);
 #if HAVE_IN_EXCL_UNLINK
 c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 #endif // HAVE_IN_EXCL_UNLINK
+c_static_assert(PAL_IN_MOVE_SELF == IN_MOVE_SELF);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
 
@@ -343,6 +344,13 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
         errno = EINVAL;
         return -1;
     }
+
+    // Prevent terminal devices from becoming the controlling terminal of this process.
+    // WASM (browser/WASI) has no controlling terminals, and WASMFS's doOpen rejects any
+    // flag outside its known set (O_NOCTTY is not among them), so skip it there.
+#ifndef TARGET_WASM
+    flags |= O_NOCTTY;
+#endif
 
     int result;
     while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
@@ -1861,8 +1869,8 @@ int32_t SystemNative_ReadThreadInfo(int32_t pid, int32_t tid, ThreadInfo* thread
 
     lwpsinfo_t pr;
     int result = Common_Read(fd, &pr, sizeof(pr));
-    close(fd);
-    if (result < sizeof (pr))
+    close(ToFileDescriptor(fd));
+    if (result < (int)sizeof(pr))
     {
         errno = EIO;
         return -1;
@@ -1909,8 +1917,8 @@ int32_t SystemNative_ReadProcessInfo(int32_t pid, ProcessInfo* processInfo, uint
 
     psinfo_t pr;
     int result = Common_Read(fd, &pr, sizeof(pr));
-    close(fd);
-    if (result < sizeof (pr))
+    close(ToFileDescriptor(fd));
+    if (result < (int)sizeof(pr))
     {
         errno = EIO;
         return -1;

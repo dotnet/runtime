@@ -900,18 +900,10 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else
                 {
-#if NET
                     if (!d.TryAdd(property, value))
-#else
-                    if (d.ContainsKey(property))
-#endif
                     {
                         ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(current.JsonPropertyInfo!);
                     }
-
-#if !NET
-                    d[property] = value;
-#endif
                 }
             }
         }

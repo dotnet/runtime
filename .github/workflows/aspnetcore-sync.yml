@@ -16,7 +16,7 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout aspnetcore
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         # Test this script using changes in a fork
         repository: 'dotnet/aspnetcore'
@@ -24,7 +24,7 @@ jobs:
         ref: main
         persist-credentials: false
     - name: Checkout runtime
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         # Test this script using changes in a fork
         repository: 'dotnet/runtime'

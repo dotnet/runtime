@@ -614,14 +614,6 @@ public:
             {
                 unsigned vlfvOffset;
             } vlFixedVarArg;
-
-            // VLT_MEMORY
-
-            struct
-            {
-                void* rpValue; // pointer to the in-process
-                               // location of the value.
-            } vlMemory;
         };
 
         // Helper functions
@@ -629,6 +621,8 @@ public:
         bool vlIsInReg(regNumber reg) const;
         bool vlIsOnStack(regNumber reg, signed offset) const;
         bool vlIsOnStack() const;
+
+        static ICorDebugInfo::RegNum mapRegNumToDebugRegNum(regNumber reg);
 
         void storeVariableInRegisters(regNumber reg, regNumber otherReg);
         void storeVariableOnStack(regNumber stackBaseReg, NATIVE_OFFSET variableStackOffset);
@@ -652,8 +646,15 @@ public:
             const LclVarDsc* varDsc, var_types type, regNumber baseReg, int offset, bool isFramePointerUsed);
     };
 
+    struct EmittedCallReturnInfo
+    {
+        IL_OFFSET    callILOffset;
+        emitLocation returnLocation;
+        siVarLoc     returnValueLoc;
+    };
+
 public:
-    siVarLoc getSiVarLoc(const LclVarDsc* varDsc, unsigned int stackLevel) const;
+    siVarLoc getSiVarLoc(const LclVarDsc* varDsc, int offset, int stackLevel) const;
 
 #ifdef DEBUG
     void dumpSiVarLoc(const siVarLoc* varLoc) const;
@@ -863,6 +864,8 @@ public:
 
 protected:
     VariableLiveKeeper* varLiveKeeper; // Used to manage VariableLiveRanges of variables
+
+    jitstd::vector<EmittedCallReturnInfo>* emittedCallReturnInfo;
 
 #ifdef LATE_DISASM
 public:
