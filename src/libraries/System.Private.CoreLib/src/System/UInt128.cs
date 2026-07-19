@@ -1033,7 +1033,9 @@ namespace System
         }
 
         // Lookup table for the powers of ten representable in a UInt128 (10^0 through 10^38).
-        internal static readonly UInt128[] PowersOf10 =
+        internal static ReadOnlySpan<UInt128> PowersOf10 => s_powersOf10;
+
+        private static readonly UInt128[] s_powersOf10 =
         [
             new UInt128(0, 1UL),
             new UInt128(0, 10UL),
