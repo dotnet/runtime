@@ -536,6 +536,25 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             ValidateOptionsResult syncNestedResult = new SyncRootReusingNestedOptionsValidator().Validate("SyncRoot", syncSelfValidating);
             Assert.True(syncNestedResult.Succeeded);
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task TestExplicitTypeTransitiveAndEnumeratedAsyncValidatorsAreAwaited()
+        {
+            // Both the explicit-type transitive validator ([ValidateObjectMembers(typeof(...))]) and the explicit-type
+            // enumerated-items validator ([ValidateEnumeratedItems(typeof(...))]) implement IAsyncValidateOptions<T>, so
+            // the async parent must await their ValidateAsync. AsyncNestedOptions only self-validates asynchronously, so
+            // if either child were dispatched through its synchronous Validate the failure would be silently skipped.
+            var options = new ExplicitAsyncRootOptions
+            {
+                Nested = new AsyncNestedOptions { Level = 5, Id = "trigger-async" },
+                Items = new() { new AsyncNestedOptions { Level = 5, Id = "trigger-async" } }
+            };
+
+            ValidateOptionsResult result = await new ExplicitAsyncRootOptionsValidator().ValidateAsync("Root", options, default);
+
+            Assert.True(result.Failed);
+            Assert.Equal(2, result.Failures.Count(f => f.Contains("Nested async self-validation failed.")));
+        }
 #endif // NET
     }
 
@@ -843,6 +862,28 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
 
     [OptionsValidator]
     public partial class SyncRootReusingNestedOptionsValidator : IValidateOptions<SyncRootReusingNestedOptions>
+    {
+    }
+
+    // An explicitly specified transitive/enumerated validator (typeof(...)) that implements
+    // IAsyncValidateOptions<T> must be dispatched through ValidateAsync by an async parent. Otherwise the parent calls
+    // the child's synchronous Validate and silently skips the child's async-only validation.
+    public class ExplicitAsyncRootOptions
+    {
+        [ValidateObjectMembers(typeof(ExplicitAsyncNestedValidator))]
+        public AsyncNestedOptions? Nested { get; set; }
+
+        [ValidateEnumeratedItems(typeof(ExplicitAsyncNestedValidator))]
+        public List<AsyncNestedOptions>? Items { get; set; }
+    }
+
+    [OptionsValidator]
+    public partial class ExplicitAsyncNestedValidator : IAsyncValidateOptions<AsyncNestedOptions>
+    {
+    }
+
+    [OptionsValidator]
+    public partial class ExplicitAsyncRootOptionsValidator : IAsyncValidateOptions<ExplicitAsyncRootOptions>
     {
     }
 #endif // NET

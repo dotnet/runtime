@@ -882,9 +882,9 @@ namespace Microsoft.Extensions.Options.Generators
 
             var baseName = $"string.IsNullOrEmpty(name) ? \"{vm.Name}\" : $\"{{name}}.{vm.Name}\"";
 
-            // A nested validator only emits ValidateAsync when it was synthesized for an async context. When the resolved
-            // validator does not emit ValidateAsync (a user-supplied validator, or a synthesized one shared with a
-            // synchronous parent), we fall back to its synchronous Validate method to guarantee the generated code compiles.
+            // A nested validator emits an awaited ValidateAsync call only when it was synthesized for an async context or
+            // when it implements IAsyncValidateOptions<T> for the member type.
+            // Otherwise we fall back to its synchronous Validate method to guarantee the generated code compiles.
             string resultExpression = vm.TransValidatorEmitsAsync
                 ? $"await {callSequence}.ValidateAsync({baseName}, options.{vm.Name}{valueAccess}, cancellationToken).ConfigureAwait(false)"
                 : $"{callSequence}.Validate({baseName}, options.{vm.Name}{valueAccess})";

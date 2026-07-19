@@ -20,6 +20,7 @@ namespace Microsoft.Extensions.Options
         private readonly IConfigureOptions<TOptions>[] _setups;
         private readonly IPostConfigureOptions<TOptions>[] _postConfigures;
         private readonly IValidateOptions<TOptions>[] _validations;
+        private readonly bool _hasAsyncOnlyValidators;
 
         /// <summary>
         /// Initializes a new instance with the specified options configurations.
@@ -48,6 +49,27 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
+        /// Initializes a new instance with the specified options configurations.
+        /// </summary>
+        /// <param name="setups">The configuration actions to run.</param>
+        /// <param name="postConfigures">The initialization actions to run.</param>
+        /// <param name="validations">The validations to run.</param>
+        /// <param name="asyncValidations">Services registered as <see cref="IAsyncValidateOptions{TOptions}"/>, used to detect an invalid registration.</param>
+        /// <exception cref="InvalidOperationException">A validator is registered only as <see cref="IAsyncValidateOptions{TOptions}"/> and not as <see cref="IValidateOptions{TOptions}"/>.</exception>
+        public OptionsFactory(IEnumerable<IConfigureOptions<TOptions>> setups, IEnumerable<IPostConfigureOptions<TOptions>> postConfigures, IEnumerable<IValidateOptions<TOptions>> validations, IEnumerable<IAsyncValidateOptions<TOptions>> asyncValidations)
+            : this(setups, postConfigures, validations)
+        {
+            // Any service resolved here is registered only as the IAsyncValidateOptions<TOptions> interface,
+            // which is an invalid registration. Synchronous paths enumerate IValidateOptions<TOptions> and would never see it.
+            // The error is surfaced when the options are created via Create or CreateAsync.
+            foreach (IAsyncValidateOptions<TOptions> _ in asyncValidations)
+            {
+                _hasAsyncOnlyValidators = true;
+                break;
+            }
+        }
+
+        /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
         /// <param name="name">The name of the <typeparamref name="TOptions"/> instance to create.</param>
@@ -56,6 +78,8 @@ namespace Microsoft.Extensions.Options
         /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         public TOptions Create(string name)
         {
+            ThrowIfAsyncOnlyValidatorRegistered();
+
             TOptions options = CreateAndConfigure(name);
 
             if (_validations.Length > 0)
@@ -76,6 +100,8 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         internal async Task<TOptions> CreateAsync(string name, CancellationToken cancellationToken)
         {
+            ThrowIfAsyncOnlyValidatorRegistered();
+
             TOptions options = CreateAndConfigure(name);
 
             if (_validations.Length > 0)
@@ -133,6 +159,18 @@ namespace Microsoft.Extensions.Options
                 throw new OptionsValidationException(name, typeof(TOptions), failures);
             }
         }
+
+        private void ThrowIfAsyncOnlyValidatorRegistered()
+        {
+            if (_hasAsyncOnlyValidators)
+            {
+                throw new InvalidOperationException(SR.Format(SR.AsyncOnlyValidatorRegistration, typeof(TOptions)));
+            }
+        }
+
+        /// <summary>
+        /// Creates a new instance of type <typeparamref name="TOptions"/>.
+        /// </summary>
         /// <param name="name">The name of the <typeparamref name="TOptions"/> instance to create.</param>
         /// <returns>The created <typeparamref name="TOptions"/> instance.</returns>
         /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>

@@ -451,6 +451,7 @@ namespace Microsoft.Extensions.Options.Generators
                                 if (transValidatorType.Constructors.Where(c => !c.Parameters.Any()).Any())
                                 {
                                     transValidatorTypeName = transValidatorType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                                    transValidatorEmitsAsync = isAsync && ValidatorImplementsAsyncInterfaceFor(transValidatorType, memberType);
                                 }
                                 else
                                 {
@@ -514,6 +515,7 @@ namespace Microsoft.Extensions.Options.Generators
                                 if (enumerationValidatorType.Constructors.Where(c => c.Parameters.Length == 0).Any())
                                 {
                                     enumerationValidatorTypeName = enumerationValidatorType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                                    enumerationValidatorEmitsAsync = isAsync && ValidatorImplementsAsyncInterfaceFor(enumerationValidatorType, enumeratedType);
                                 }
                                 else
                                 {

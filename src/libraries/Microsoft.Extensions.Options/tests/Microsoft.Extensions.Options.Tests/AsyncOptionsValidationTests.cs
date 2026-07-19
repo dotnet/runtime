@@ -300,6 +300,62 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.False(spy.SyncCalled);
         }
 
+        [Fact]
+        public void MisregisteredAsyncOnlyValidator_ThrowsClearErrorOnSyncAccess()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>();
+            // Misregistration: registered only as the IAsyncValidateOptions<T> capability interface.
+            services.AddSingleton<IAsyncValidateOptions<FakeOptions>>(
+                new AsyncValidateOptions<FakeOptions>(null, (o, ct) => Task.FromResult(false), "async fail"));
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
+                () => sp.GetRequiredService<IOptions<FakeOptions>>().Value);
+
+            Assert.Contains(nameof(FakeOptions), ex.Message);
+            Assert.Contains(nameof(IValidateOptions<FakeOptions>), ex.Message);
+        }
+
+        [Fact]
+        public async Task MisregisteredAsyncOnlyValidator_ThrowsClearErrorOnStartup()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>().ValidateOnStart();
+            services.AddSingleton<IAsyncValidateOptions<FakeOptions>>(
+                new AsyncValidateOptions<FakeOptions>(null, (o, ct) => Task.FromResult(false), "async fail"));
+            using ServiceProvider sp = services.BuildServiceProvider();
+            IAsyncStartupValidator validator = GetAsyncStartupValidator(sp);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => validator.ValidateAsync(CancellationToken.None));
+        }
+
+        [Fact]
+        public void CorrectlyRegisteredAsyncValidator_DoesNotThrowMisregistrationError()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>().Configure(o => o.Message = "ok");
+            // Correct: an async-capable validator registered through IValidateOptions<T>.
+            services.AddSingleton<IValidateOptions<FakeOptions>>(new CapabilitySpyValidator());
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            FakeOptions value = sp.GetRequiredService<IOptions<FakeOptions>>().Value;
+
+            Assert.Equal("ok", value.Message);
+        }
+
+        [Fact]
+        public void NoAsyncValidators_DoesNotThrowMisregistrationError()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>().Configure(o => o.Message = "ok");
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            FakeOptions value = sp.GetRequiredService<IOptions<FakeOptions>>().Value;
+
+            Assert.Equal("ok", value.Message);
+        }
+
         private class CustomSyncOnlyValidator : IStartupValidator
         {
             public void Validate() { }
