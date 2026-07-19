@@ -984,58 +984,87 @@ namespace SerializationTypes
         }
     }
 
-    [DataContract]
-    public class MyType_InvalidEventMethods_Type_OnSerializing
+    public interface IMyType_InvalidEventMethods
     {
-        [OnSerializing()]
+        public string MethodName { get; }
+    }
+
+    [DataContract]
+    public class MyType_InvalidEventMethods_Type_OnSerializing : IMyType_InvalidEventMethods
+    {
+        [IgnoreDataMember]
+        public string MethodName => nameof(this.OnSerializingMethod);
+
+        [OnSerializing]
         private void OnSerializingMethod(string x) { }
     }
 
     [DataContract]
-    public class MyType_InvalidEventMethods_Type_OnSerialized
+    public class MyType_InvalidEventMethods_Type_OnSerialized : IMyType_InvalidEventMethods
     {
-        [OnSerialized()]
+        [IgnoreDataMember]
+        public string MethodName => nameof(this.OnSerializedMethod);
+
+        [OnSerialized]
         private void OnSerializedMethod(string x) { }
     }
 
     [DataContract]
-    public class MyType_InvalidEventMethods_Type_OnDeserializing
+    public class MyType_InvalidEventMethods_Type_OnDeserializing : IMyType_InvalidEventMethods
     {
-        [OnDeserializing()]
+        [IgnoreDataMember]
+        public string MethodName => nameof(this.OnDeserializingMethod);
+
+        [OnDeserializing]
         private void OnDeserializingMethod(string x) { }
     }
 
     [DataContract]
-    public class MyType_InvalidEventMethods_Type_OnDeserialized
+    public class MyType_InvalidEventMethods_Type_OnDeserialized : IMyType_InvalidEventMethods
     {
-        [OnDeserialized()]
+        [IgnoreDataMember]
+        public string MethodName => nameof(this.OnDeserializedMethod);
+
+        [OnDeserialized]
         private void OnDeserializedMethod(string x) { }
     }
 
     [DataContract]
-    public class MyType_InvalidEventMethods_Length_OnSerializing
+    public class MyType_InvalidEventMethods_Length_OnSerializing : IMyType_InvalidEventMethods
     {
+        [IgnoreDataMember]
+        public string MethodName => nameof(this.OnSerializingMethod);
+
         [OnSerializing()]
         private void OnSerializingMethod(int a, double b) { }
     }
 
     [DataContract]
-    public class MyType_InvalidEventMethods_Length_OnSerialized
+    public class MyType_InvalidEventMethods_Length_OnSerialized : IMyType_InvalidEventMethods
     {
+        [IgnoreDataMember]
+        public string MethodName => nameof(this.OnSerializedMethod);
+
         [OnSerialized()]
         private void OnSerializedMethod(int a, double b) { }
     }
 
     [DataContract]
-    public class MyType_InvalidEventMethods_Length_OnDeserializing
+    public class MyType_InvalidEventMethods_Length_OnDeserializing : IMyType_InvalidEventMethods
     {
+        [IgnoreDataMember]
+        public string MethodName => nameof(this.OnDeserializingMethod);
+
         [OnDeserializing()]
         private void OnDeserializingMethod(int a, double b) { }
     }
 
     [DataContract]
-    public class MyType_InvalidEventMethods_Length_OnDeserialized
+    public class MyType_InvalidEventMethods_Length_OnDeserialized : IMyType_InvalidEventMethods
     {
+        [IgnoreDataMember]
+        public string MethodName => nameof(this.OnDeserializedMethod);
+
         [OnDeserialized()]
         private void OnDeserializedMethod(int a, double b) { }
     }

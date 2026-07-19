@@ -1330,6 +1330,10 @@ public static partial class DataContractSerializerTests
         Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
         Assert.True(output.OnDeserializingMethodInvoked, "output.OnDeserializingMethodInvoked is false");
         Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
+        Assert.False(input.OnDeserializingMethodInvoked, "input.OnDeserializingMethodInvoked is true");
+        Assert.False(input.OnDeserializedMethodInvoked, "input.OnDeserializedMethodInvoked is true");
+        Assert.False(output.OnSerializingMethodInvoked, "output.OnSerializingMethodInvoked is true");
+        Assert.False(output.OnSerializedMethodInvoked, "output.OnSerializedMethodInvoked is true");
     }
 
     [Fact]
@@ -1347,12 +1351,16 @@ public static partial class DataContractSerializerTests
         Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
         Assert.True(output.OnDeserializingMethodInvoked, "output.OnDeserializingMethodInvoked is false");
         Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
+        Assert.False(input.OnDeserializingMethodInvoked, "input.OnDeserializingMethodInvoked is true");
+        Assert.False(input.OnDeserializedMethodInvoked, "input.OnDeserializedMethodInvoked is true");
+        Assert.False(output.OnSerializingMethodInvoked, "output.OnSerializingMethodInvoked is true");
+        Assert.False(output.OnSerializedMethodInvoked, "output.OnSerializedMethodInvoked is true");
     }
 
     [Fact]
     public static void DCS_InvalidEventMethods()
     {
-        object[] objs = [
+        IMyType_InvalidEventMethods[] objs = [
             new MyType_InvalidEventMethods_Type_OnSerializing(),
             new MyType_InvalidEventMethods_Type_OnSerialized(),
             new MyType_InvalidEventMethods_Type_OnDeserializing(),
@@ -1368,13 +1376,19 @@ public static partial class DataContractSerializerTests
         // The deserialization API is "ReadObject", but an error is also thrown at "WriteObject".
         // By doing this, it saves time and effort to create sample XML data manually.
 
-        foreach (var obj in objs)
+        for (int i = 0; i < objs.Length; ++i)
         {
-            var dcs = new DataContractSerializer(obj.GetType());
-            Assert.Throws<InvalidDataContractException>(() =>
+            var obj = objs[i];
+            var t = obj.GetType();
+            var dcs = new DataContractSerializer(t);
+            Console.WriteLine("Testing [{0}/{1}] {2}...", i + 1, objs.Length, t);
+            var ex = Assert.Throws<InvalidDataContractException>(() =>
             {
                 dcs.WriteObject(ms, obj);
             });
+            Assert.Contains(t.FullName, ex.Message);
+            Assert.Contains(obj.MethodName, ex.Message);
+            Console.WriteLine("Testing [{0}/{1}] {2} is OK!", i + 1, objs.Length, t);
         }
     }
 
