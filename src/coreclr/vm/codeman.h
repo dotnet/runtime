@@ -593,7 +593,7 @@ public:
 
 typedef DPTR(class UnwindInfoTable) PTR_UnwindInfoTable;
 // On Windows x64, publish OS UnwindInfo (accessed from RUNTIME_FUNCTION
-// structures) to support the ability unwind the stack. In Win8 and above
+// structures) to support the ability to unwind the stack. In Win8 and above
 // new APIs were defined that allow incremental publishing via a table.
 //
 // UnwindInfoTable is a class that wraps the OS APIs that we use to publish
