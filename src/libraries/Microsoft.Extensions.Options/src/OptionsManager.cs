@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.Options
     {
         private readonly IOptionsFactory<TOptions> _factory;
         private readonly OptionsCache<TOptions> _cache = new OptionsCache<TOptions>(); // Note: this is a private cache
+        private readonly IOptionsMonitorCache<TOptions>? _validatedCache;
 
         /// <summary>
         /// Initializes a new instance with the specified options configurations.
@@ -25,6 +26,22 @@ namespace Microsoft.Extensions.Options
         public OptionsManager(IOptionsFactory<TOptions> factory)
         {
             _factory = factory;
+        }
+
+        /// <summary>
+        /// Initializes a new instance with the specified options factory and shared validated cache.
+        /// </summary>
+        /// <param name="factory">The factory to use to create options.</param>
+        /// <param name="validatedCache">The shared cache holding options instances validated during startup.</param>
+        public OptionsManager(IOptionsFactory<TOptions> factory, IOptionsMonitorCache<TOptions> validatedCache)
+            : this(factory)
+        {
+            // Only consult the shared validated cache for types that have an asynchronous validator.
+            // Sync-only types keep the existing per-scope behavior of creating and validating synchronously.
+            if (factory is OptionsFactory<TOptions> optionsFactory && optionsFactory.HasAsyncValidators)
+            {
+                _validatedCache = validatedCache;
+            }
         }
 
         /// <summary>
@@ -48,10 +65,24 @@ namespace Microsoft.Extensions.Options
                 // Store the options in our instance cache. Avoid closure on fast path by storing state into scoped locals.
                 IOptionsFactory<TOptions> localFactory = _factory;
                 string localName = name;
-                options = _cache.GetOrAdd(name, () => localFactory.Create(localName));
+                IOptionsMonitorCache<TOptions>? localValidatedCache = _validatedCache;
+                options = _cache.GetOrAdd(name, () => CreateValue(localFactory, localName, localValidatedCache));
             }
 
             return options;
+        }
+
+        private static TOptions CreateValue(IOptionsFactory<TOptions> factory, string name, IOptionsMonitorCache<TOptions>? validatedCache)
+        {
+            // For an async-validated type, prefer the value validated during startup (seeded into the shared cache) so a
+            // synchronous snapshot returns the last validated value instead of re-running the throwing synchronous Validate.
+            // If nothing has been validated yet, fall back to Create, which fails fast with an actionable message.
+            if (validatedCache is OptionsCache<TOptions> optionsCache && optionsCache.TryGetValue(name, out TOptions? validated))
+            {
+                return validated;
+            }
+
+            return factory.Create(name);
         }
     }
 }

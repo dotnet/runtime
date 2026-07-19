@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.Options
         private readonly IPostConfigureOptions<TOptions>[] _postConfigures;
         private readonly IValidateOptions<TOptions>[] _validations;
         private readonly bool _hasAsyncOnlyValidators;
+        private readonly bool _hasAsyncValidators;
 
         /// <summary>
         /// Initializes a new instance with the specified options configurations.
@@ -46,6 +47,15 @@ namespace Microsoft.Extensions.Options
             _setups = setups as IConfigureOptions<TOptions>[] ?? new List<IConfigureOptions<TOptions>>(setups).ToArray();
             _postConfigures = postConfigures as IPostConfigureOptions<TOptions>[] ?? new List<IPostConfigureOptions<TOptions>>(postConfigures).ToArray();
             _validations = validations as IValidateOptions<TOptions>[] ?? new List<IValidateOptions<TOptions>>(validations).ToArray();
+
+            foreach (IValidateOptions<TOptions> validation in _validations)
+            {
+                if (validation is IAsyncValidateOptions<TOptions>)
+                {
+                    _hasAsyncValidators = true;
+                    break;
+                }
+            }
         }
 
         /// <summary>
@@ -68,6 +78,11 @@ namespace Microsoft.Extensions.Options
                 break;
             }
         }
+
+        // True when at least one validator registered as IValidateOptions<TOptions> also implements
+        // IAsyncValidateOptions<TOptions>, so a synchronous Create may fail for a genuinely-asynchronous validator.
+        // Used by the options managers to prefer a startup-validated value over re-running synchronous validation.
+        internal bool HasAsyncValidators => _hasAsyncValidators;
 
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.

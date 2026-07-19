@@ -357,6 +357,46 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("ok", value.Message);
         }
 
+        // ---- Phase 9: sync-accessor validated-value caching ----
+
+        [Fact]
+        public async Task Phase9_AsyncValidatedType_SyncAccessorsReturnStartupValidatedValue()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "validated")
+                .Validate(async (FakeOptions o, CancellationToken ct) => await Task.FromResult(true), "async fail")
+                .ValidateOnStart();
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            // Before startup nothing has been validated, so synchronous access fails fast rather than silently skipping.
+            Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<FakeOptions>>().Value);
+
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+
+            // After startup seeds the shared cache, synchronous IOptions<T>.Value returns the validated value.
+            Assert.Equal("validated", sp.GetRequiredService<IOptions<FakeOptions>>().Value.Message);
+
+            // IOptionsSnapshot<T>.Get (scoped) also serves the startup-validated value instead of re-validating synchronously.
+            using IServiceScope scope = sp.CreateScope();
+            Assert.Equal("validated", scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get(null).Message);
+        }
+
+        [Fact]
+        public void Phase9_SyncOnlyType_SyncAccessorsBehaviorUnchanged()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "sync")
+                .Validate(o => o.Message == "sync", "sync fail");
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            // A sync-only type is not async-capable, so the accessors create and validate synchronously as before.
+            Assert.Equal("sync", sp.GetRequiredService<IOptions<FakeOptions>>().Value.Message);
+            using IServiceScope scope = sp.CreateScope();
+            Assert.Equal("sync", scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get(null).Message);
+        }
+
         // ---- Phase 8: opt-in async reload revalidation (ValidateOnChange) ----
 
         [Fact]
