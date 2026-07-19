@@ -5817,6 +5817,29 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		add_extra_method_with_depth (acfg, method, depth + 1);
 	}
 
+	/*
+	 * Nullable<T>.Box/Unbox are runtime-synthesized methods (not part of the
+	 * type's regular method list) that are requested by the
+	 * MONO_RGCTX_INFO_NULLABLE_CLASS_BOX/UNBOX rgctx entries when a Nullable<T>
+	 * is boxed/unboxed through a non-generic interface under gsharedvt sharing.
+	 * In llvmonly mode the caller uses the gsharedvt calling convention and needs
+	 * the object(Nullable<T>) / Nullable<T>(object) gsharedvt out-sig wrappers.
+	 * Those wrappers are only emitted when the Box/Unbox methods themselves are
+	 * AOT-compiled (see the add_gsharedvt_wrappers call driven by compiled method
+	 * signatures). Since the method-iteration loop above never sees these synthetic
+	 * methods, add them explicitly here for every Nullable<T> instantiation,
+	 * otherwise boxing a Nullable<vtype> traps ("function signature mismatch")
+	 * at runtime because JIT compilation is unavailable in aot-only mode.
+	 */
+	if (mono_class_is_nullable (klass)) {
+		MonoMethod *box = try_get_method_nofail (klass, "Box", 1, 0);
+		if (box)
+			add_extra_method_with_depth (acfg, box, depth + 1);
+		MonoMethod *unbox = try_get_method_nofail (klass, "Unbox", 1, 0);
+		if (unbox)
+			add_extra_method_with_depth (acfg, unbox, depth + 1);
+	}
+
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (field->type->type == MONO_TYPE_GENERICINST)
