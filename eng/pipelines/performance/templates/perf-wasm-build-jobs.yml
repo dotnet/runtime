@@ -12,21 +12,16 @@ jobs:
       nameSuffix: wasm
       isOfficialBuild: false
       # The wasm-tools workload manifest now includes the CoreCLR browser-wasm runtime pack
-      # (https://github.com/dotnet/runtime/pull/130380), so installing the workload requires
-      # that pack in the local feed. The Mono build doesn't produce it, so depend on the
-      # CoreCLR build job and download the pack from it.
+      # (https://github.com/dotnet/runtime/pull/130380), so installing the workload needs that
+      # pack staged into the local feed. It's produced by the wasm_coreclr build job, so depend
+      # on it and download its published runtime pack before the workload install.
       dependsOn:
       - build_browser_wasm_linux_Release_wasm_coreclr
       postBuildSteps:
-        - task: DownloadPipelineArtifact@2
-          displayName: Download CoreCLR browser-wasm runtime pack
-          inputs:
-            buildType: current
-            artifactName: BrowserWasmCoreCLRRuntimePack
-            targetPath: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
         - template: /eng/pipelines/performance/templates/perf-wasm-prepare-artifacts-steps.yml
           parameters:
             configForBuild: Release
+            downloadCoreClrRuntimePack: true
 
 # Build CoreCLR runtime for browser-wasm (used by --wasm-coreclr benchmarks)
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -47,18 +42,4 @@ jobs:
             artifactName: BrowserWasmCoreCLR
             sdkDirName: dotnet-none
             includeRefPack: false
-        # Publish the CoreCLR browser-wasm runtime pack nuget separately so the Mono perf
-        # build can install the wasm-tools workload, whose manifest now includes this pack
-        # (see https://github.com/dotnet/runtime/pull/130380).
-        - script: >-
-            mkdir -p $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtime-pack &&
-            cp $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.browser-wasm.*.nupkg $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtime-pack
-          displayName: "Stage CoreCLR browser-wasm runtime pack nuget"
-        - template: /eng/pipelines/common/templates/publish-pipeline-artifacts.yml
-          parameters:
-            isOfficialBuild: false
-            displayName: Publish CoreCLR browser-wasm runtime pack
-            inputs:
-              targetPath: $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtime-pack
-              artifactName: BrowserWasmCoreCLRRuntimePack
-            condition: succeeded()
+            publishCoreClrRuntimePack: true
