@@ -30,7 +30,7 @@ internal static partial class Number
 
     // Stack budget for the little-endian words of C * 10^e; 128 words == 1 KB keeps the common exponent
     // range on the stack, and larger magnitudes (up to ~336 words at the Decimal128 maximum) rent instead.
-    private const int TrigReduceStackNWords = 128;
+    private const int TrigReduceStackWords = 128;
 
     // The leading 340 x 64-bit words of the pure binary fraction 1/(2*pi) (word 0 = bits 2^-1..2^-64).
     // 340 words span the Decimal128 maximum exponent (~2^20408) with room for the reduced significand.
@@ -149,15 +149,15 @@ internal static partial class Number
             // C * 10^power grows by at most one 64-bit word per 19-digit chunk (10^19 < 2^64), starting
             // from the two words of C, so this bounds the little-endian word count exactly. Keep the
             // common range on the stack and rent only the rare extreme-magnitude buffers.
-            int maxNWords = 2 + ((unbiasedExponent + 18) / 19);
+            int maxWords = 2 + ((unbiasedExponent + 18) / 19);
 
             ulong[]? rented = null;
-            Span<ulong> nWords = (maxNWords <= TrigReduceStackNWords)
-                ? stackalloc ulong[TrigReduceStackNWords]
-                : (rented = ArrayPool<ulong>.Shared.Rent(maxNWords));
+            Span<ulong> integerWords = (maxWords <= TrigReduceStackWords)
+                ? stackalloc ulong[TrigReduceStackWords]
+                : (rented = ArrayPool<ulong>.Shared.Rent(maxWords));
 
-            int nCount = DiyFp128ReduceBuildN(coefficient, unbiasedExponent, nWords);
-            DiyFp128ReduceFractionPositive(nWords[..nCount], fractionWords);
+            int wordCount = DiyFp128ReduceBuildInteger(coefficient, unbiasedExponent, integerWords);
+            DiyFp128ReduceFractionPositive(integerWords[..wordCount], fractionWords);
 
             if (rented is not null)
             {
@@ -183,15 +183,15 @@ internal static partial class Number
     }
 
     /// <summary>Builds the little-endian 64-bit words of <c>coefficient * 10^power</c> (power &gt;= 0).</summary>
-    private static int DiyFp128ReduceBuildN(UInt128 coefficient, int power, Span<ulong> nWords)
+    private static int DiyFp128ReduceBuildInteger(UInt128 coefficient, int power, Span<ulong> integerWords)
     {
-        nWords[0] = (ulong)coefficient;
+        integerWords[0] = (ulong)coefficient;
         int count = 1;
 
         ulong high = (ulong)(coefficient >> 64);
         if (high != 0)
         {
-            nWords[1] = high;
+            integerWords[1] = high;
             count = 2;
         }
 
@@ -204,14 +204,14 @@ internal static partial class Number
             UInt128 carry = 0;
             for (int i = 0; i < count; i++)
             {
-                UInt128 product = ((UInt128)nWords[i] * multiplier) + carry;
-                nWords[i] = (ulong)product;
+                UInt128 product = ((UInt128)integerWords[i] * multiplier) + carry;
+                integerWords[i] = (ulong)product;
                 carry = product >> 64;
             }
 
             if (carry != 0)
             {
-                nWords[count++] = (ulong)carry;
+                integerWords[count++] = (ulong)carry;
             }
 
             remaining -= chunk;
@@ -224,12 +224,12 @@ internal static partial class Number
     /// Fills <paramref name="fractionWords"/> with the leading words of <c>frac(N / (2*pi))</c> for the
     /// integer N given by its little-endian words (word 0 = bits 2^-1..2^-64).
     /// </summary>
-    private static void DiyFp128ReduceFractionPositive(ReadOnlySpan<ulong> nWords, Span<ulong> fractionWords)
+    private static void DiyFp128ReduceFractionPositive(ReadOnlySpan<ulong> integerWords, Span<ulong> fractionWords)
     {
         const int Guard = 3;
         int columns = fractionWords.Length + Guard;
 
-        // Each column t sums Nw[j] * Fw[j+t]; the sum can exceed 128 bits, so carry the overflow count.
+        // Each column t sums integerWords[j] * F[j+t]; the sum can exceed 128 bits, so carry the overflow count.
         Span<UInt128> columnLo = stackalloc UInt128[TrigReduceWords + Guard];
         Span<ulong> columnHi = stackalloc ulong[TrigReduceWords + Guard];
 
@@ -240,7 +240,7 @@ internal static partial class Number
             UInt128 acc = 0;
             ulong accHigh = 0;
 
-            for (int j = 0; j < nWords.Length; j++)
+            for (int j = 0; j < integerWords.Length; j++)
             {
                 int fi = j + t;
                 if (fi >= tableLength)
@@ -248,7 +248,7 @@ internal static partial class Number
                     break;
                 }
 
-                UInt128 next = acc + ((UInt128)nWords[j] * TrigOneOverTwoPi[fi]);
+                UInt128 next = acc + ((UInt128)integerWords[j] * TrigOneOverTwoPi[fi]);
                 if (next < acc)
                 {
                     accHigh++;
