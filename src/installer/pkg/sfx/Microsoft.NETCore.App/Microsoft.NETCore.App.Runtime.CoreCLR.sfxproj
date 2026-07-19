@@ -15,7 +15,7 @@
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <UseRidGraph>true</UseRidGraph>
     <!-- WASM CoreCLR ships static libs in the runtime pack so apps can relink with emcc. -->
-    <IncludeStaticLibrariesInPack Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</IncludeStaticLibrariesInPack>
+    <IncludeStaticLibrariesInPack Condition="'$(IncludeStaticLibrariesInPack)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</IncludeStaticLibrariesInPack>
   </PropertyGroup>
 
   <ItemGroup>

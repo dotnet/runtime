@@ -11,6 +11,12 @@ using Xunit.Abstractions;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
+enum TargetRid
+{
+    Host,
+    BrowserWasm
+}
+
 /// <summary>
 /// Describes an assembly compiled by Roslyn as part of a test case.
 /// </summary>
@@ -93,6 +99,16 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     /// Optional validator for this compilation's R2R output image.
     /// </summary>
     public Action<ReadyToRunReader>? Validate { get; init; }
+
+    /// <summary>
+    /// When true, this compilation references the browser-wasm runtime pack (real wasm framework
+    /// assemblies and the wasm System.Private.CoreLib) if it is available, instead of the host
+    /// runtime pack. When the browser-wasm libs are not present the runner falls back to host
+    /// references so the test still runs (with a host-arch corelib). Set this on wasm compilations
+    /// (--targetarch wasm --targetos browser) so they reference target-matching libraries when run
+    /// in a job that downloads the browser-wasm libs.
+    /// </summary>
+    public TargetRid TargetRid { get; init; } = TargetRid.Host;
 
     public string Name => name;
 
@@ -205,10 +221,18 @@ internal sealed class R2RTestRunner
 
             // Step 2: Run each crossgen2 compilation and validate
             var driver = new R2RDriver(_output, _paths);
-            var refPaths = BuildReferencePaths();
+            List<string> hostRefPaths = BuildReferencePaths(useWasmReferences: false);
+            List<string>? wasmRefPaths = null;
 
             foreach(var compilation in testCase.Compilations)
             {
+                List<string> refPaths = hostRefPaths;
+                if (compilation.TargetRid == TargetRid.BrowserWasm)
+                {
+                    wasmRefPaths ??= BuildReferencePaths(useWasmReferences: true);
+                    refPaths = wasmRefPaths;
+                }
+
                 string outputPath = RunCrossgenCompilation(
                     testCase.Name, compilation, driver, compilation.FilePath, refPaths, assemblyPaths);
 
@@ -216,7 +240,7 @@ internal sealed class R2RTestRunner
                 {
                     Assert.True(File.Exists(outputPath), $"R2R image not found: {outputPath}");
                     _output.WriteLine($"  Validating R2R image: {outputPath}");
-                    var reader = new ReadyToRunReader(new SimpleAssemblyResolver(_paths), outputPath);
+                    var reader = new ReadyToRunReader(new SimpleAssemblyResolver(refPaths), outputPath);
                     compilation.Validate(reader);
                 }
             }
@@ -234,11 +258,13 @@ internal sealed class R2RTestRunner
     private Dictionary<string, string> CompileAllAssemblies(
         IEnumerable<CompiledAssembly> assemblies)
     {
-        var compiler = new R2RTestCaseCompiler(_paths);
         var paths = new Dictionary<string, string>();
 
         foreach (var asm in assemblies)
         {
+            // Tests shouldn't require a platform-specific runtime/ref pack for Roslyn compilation
+            var defaultReferences = BuildReferencePaths(useWasmReferences: false);
+            var compiler = new R2RTestCaseCompiler(defaultReferences);
             var sources = asm.SourceResourceNames
                 .Select(R2RTestCaseCompiler.ReadEmbeddedSource)
                 .ToList();
@@ -252,7 +278,7 @@ internal sealed class R2RTestRunner
                 additionalReferences: asm.References.Select(r => r.FilePath).ToList(),
                 features: asm.Features.Count > 0 ? asm.Features : null);
             paths[asm.AssemblyName] = ilPath;
-            _output.WriteLine($"  Roslyn compiled '{asm.AssemblyName}' -> {ilPath}");
+            _output.WriteLine($"Roslyn compiled '{asm.AssemblyName}' -> {ilPath}");
         }
 
         return paths;
@@ -307,6 +333,13 @@ internal sealed class R2RTestRunner
         foreach (var option in compilation.Options)
             args.Add(option.ToArg());
 
+        args.AddRange(compilation.TargetRid switch
+        {
+            TargetRid.Host => [],
+            TargetRid.BrowserWasm => ["--targetos", "browser", "--targetarch", "wasm"],
+            _ => throw new InvalidOperationException($"Unknown target RID: {compilation.TargetRid}")
+        });
+
         // Caller-supplied raw args (for options that take values, e.g. --determinism-stress=N)
         args.AddRange(compilation.AdditionalArgs);
 
@@ -335,32 +368,47 @@ internal sealed class R2RTestRunner
         }
     }
 
-    private List<string> BuildReferencePaths()
+    /// <summary>
+    /// Runtime packs are used as references for both Roslyn compilation and crossgen2 compilation. This method builds the reference paths for both.
+    /// </summary>
+    /// <param name="useWasmReferences">Whether to try to use browser-wasm references.</param>
+    private List<string> BuildReferencePaths(bool useWasmReferences)
     {
-        var paths = new List<string>();
+        List<string> paths;
 
-        paths.Add(Path.Combine(_paths.RuntimePackDir, "*.dll"));
-
-        // SPCL lives in the runtime pack native/ dir in full builds (placed by
-        // externals.csproj BinPlace during libs.pretest).  In partial CI builds
-        // that skip libs.pretest, the runtime pack layout may not exist, but the
-        // CoreCLR artifacts directory always has SPCL after clr.nativecorelib.
-        string spcl = Path.Combine(_paths.RuntimePackNativeDir, "System.Private.CoreLib.dll");
-        if (!File.Exists(spcl))
+        if (useWasmReferences)
         {
-            string fallback = Path.Combine(_paths.CoreCLRArtifactsDir, "System.Private.CoreLib.dll");
-            if (File.Exists(fallback))
+            string? wasmRuntimePackDir = _paths.WasmRuntimePackDir;
+            string? wasmCoreLibPath = _paths.WasmRuntimePackNativeDir is null
+                ? null
+                : Path.Combine(_paths.WasmRuntimePackNativeDir, "System.Private.CoreLib.dll");
+
+            if (wasmRuntimePackDir is not null && wasmCoreLibPath is not null && File.Exists(wasmCoreLibPath))
             {
-                _output.WriteLine($"[R2RTestRunner] SPCL not found at '{spcl}'; using CoreCLR artifacts fallback '{fallback}'");
-                spcl = fallback;
+                _output.WriteLine($"Using browser-wasm runtime pack references from '{wasmRuntimePackDir}'");
+                paths =
+                [
+                    ..Directory.GetFiles(wasmRuntimePackDir, "*.dll"),
+                    wasmCoreLibPath
+                ];
+                return paths;
+            }
+            else
+            {
+                Assert.False(
+                    _paths.RequireWasmReferences,
+                    "Browser-wasm framework references are required, but the browser-wasm runtime pack was not found.");
+                _output.WriteLine($"Browser-wasm runtime pack references not available. Falling back to host references.");
             }
         }
 
-        Assert.True(File.Exists(spcl),
-            $"System.Private.CoreLib.dll not found at '{spcl}'. " +
-            $"Searched RuntimePackNativeDir='{_paths.RuntimePackNativeDir}' and " +
-            $"CoreCLRArtifactsDir='{_paths.CoreCLRArtifactsDir}'");
-        paths.Add(spcl);
+        string coreLibPath = Path.Combine(_paths.RuntimePackNativeDir, "System.Private.CoreLib.dll");
+        Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found: {coreLibPath}");
+
+        paths = [
+            ..Directory.GetFiles(_paths.RuntimePackDir, "*.dll"),
+            coreLibPath
+        ];
 
         return paths;
     }

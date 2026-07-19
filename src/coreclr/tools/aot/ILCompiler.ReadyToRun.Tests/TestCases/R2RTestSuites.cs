@@ -76,13 +76,10 @@ public class R2RTestSuites
                 new(nameof(WasmWebcilModule), [new CrossgenAssembly(wasmWebcilModule)])
                 {
                     OutputFileExtension = ".wasm",
-                    AdditionalArgs =
-                    {
-                        "--targetarch",
-                        "wasm",
-                        "--targetos",
-                        "browser",
-                    },
+                    // Reference the real browser-wasm framework assemblies when they are available
+                    // (e.g. the wasm tools-test job downloads them); otherwise the runner falls back
+                    // to host references so this test still runs everywhere.
+                    TargetRid = TargetRid.BrowserWasm,
                     Validate = Validate,
                 },
             ]));

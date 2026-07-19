@@ -12,6 +12,12 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
+    <RequireWasmReferences Condition="'$(RequireWasmReferences)' == ''">false</RequireWasmReferences>
+    <WasmRuntimePackRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.browser-wasm'))</WasmRuntimePackRoot>
+    <WasmRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
+    <WasmRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
+    <WasmRuntimePackDir Condition="!Exists('$(WasmRuntimePackDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/lib/$(NetCoreAppCurrent)')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
+    <WasmRuntimePackNativeDir Condition="!Exists('$(WasmRuntimePackNativeDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/native')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -72,6 +78,25 @@
           SkipUnchangedFiles="true" />
   </Target>
 
+  <Target Name="ValidatePathsExist"
+          BeforeTargets="Build"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+
+    <Error Condition="!Exists('$(CoreCLRArtifactsPath)\$(BuildArchitecture)\crossgen2')"
+           Text="Crossgen2 inbuild publish directory '$(CoreCLRArtifactsPath)\$(BuildArchitecture)\crossgen2' does not exist. This is a build authoring error and should be generated in the test project build." />
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackNativeDir)')"
+           Text="Runtime pack path '$(MicrosoftNetCoreAppRuntimePackNativeDir)' does not exist." />
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)')"
+           Text="Runtime pack path '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' does not exist." />
+
+    <Error Condition="'$(RequireWasmReferences)' == 'true' and (!Exists('$(WasmRuntimePackDir)') or !Exists('$(WasmRuntimePackNativeDir)System.Private.CoreLib.dll'))"
+           Text="The browser-wasm runtime pack was not found under '$(WasmRuntimePackRoot)'. Build and download the wasm prerequisite artifact before building this test." />
+    <Warning Condition="'$(RequireWasmReferences)' != 'true' and !Exists('$(WasmRuntimePackDir)')"
+             Text="Browser-wasm runtime pack path '$(WasmRuntimePackDir)' does not exist. Browser-wasm ReadyToRun tests will fall back to host references, which may cause unexpected failures. Generate by building the clr.corelib+libs+libs.pretest subsets for browser-wasm." />
+    <Warning Condition="'$(RequireWasmReferences)' != 'true' and !Exists('$(WasmRuntimePackNativeDir)System.Private.CoreLib.dll')"
+             Text="Browser-wasm System.Private.CoreLib.dll was not found under '$(WasmRuntimePackNativeDir)'. Browser-wasm ReadyToRun tests will fall back to host references, which may cause unexpected failures. Generate by building the clr.corelib+libs+libs.pretest subsets for browser-wasm." />
+  </Target>
+
   <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time.
        Exclude subdirectory sources from compilation since they are compiled in-memory by R2RTestCaseCompiler. -->
   <ItemGroup>
@@ -81,6 +106,7 @@
 
   <!-- Pass build-time paths to test runtime via RuntimeHostConfigurationOption -->
   <ItemGroup>
+    <!-- Required Host-Targeting assets -->
     <RuntimeHostConfigurationOption Include="R2RTest.Crossgen2Dir">
       <Value>$(CoreCLRArtifactsPath)/$(BuildArchitecture)/crossgen2</Value>
     </RuntimeHostConfigurationOption>
@@ -90,18 +116,25 @@
     <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackNativeDir">
       <Value>$(MicrosoftNetCoreAppRuntimePackNativeDir)</Value>
     </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.RefPackDir">
-      <Value>$(MicrosoftNetCoreAppRefPackRefDir)</Value>
+
+    <!-- browser-wasm runtime pack paths used for validating wasm R2R compilation.
+         When absent, the wasm R2R compilation falls back to host references.
+         This could cause unexpected failures if crossgen2 expects intrinsics in
+         the wasm System.Private.CoreLib.dll that are not present in the host reference pack.
+         Thus, the RequireWasmReferences option can be used to fail the test build if the wasm
+         runtime pack is not present.
+          -->
+    <RuntimeHostConfigurationOption Include="R2RTest.RequireWasmReferences">
+      <Value>$(RequireWasmReferences)</Value>
     </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRArtifactsDir">
-      <Value>$(CoreCLRArtifactsPath)</Value>
+    <RuntimeHostConfigurationOption Include="R2RTest.WasmRuntimePackDir">
+      <Value>$(WasmRuntimePackDir)</Value>
     </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.TargetArchitecture">
-      <Value>$(TargetArchitecture)</Value>
+    <RuntimeHostConfigurationOption Include="R2RTest.WasmRuntimePackNativeDir">
+      <Value>$(WasmRuntimePackNativeDir)</Value>
     </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.TargetOS">
-      <Value>$(TargetOS)</Value>
-    </RuntimeHostConfigurationOption>
+
+    <!-- Used for gating Debug-only JIT features from being tested. -->
     <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRConfiguration">
       <Value>$(CoreCLRConfiguration)</Value>
     </RuntimeHostConfigurationOption>
