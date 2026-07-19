@@ -45,8 +45,15 @@ namespace Microsoft.Extensions.DependencyInjection
                         if (factory is OptionsFactory<TOptions> asyncFactory)
                         {
                             TOptions validated = await asyncFactory.CreateAsync(name, ct).ConfigureAwait(false);
-                            cache.TryRemove(name);
-                            cache.TryAdd(name, validated);
+                            if (cache is OptionsCache<TOptions> optionsCache)
+                            {
+                                optionsCache.AddOrReplace(name, validated);
+                            }
+                            else
+                            {
+                                cache.TryRemove(name);
+                                cache.TryAdd(name, validated);
+                            }
                         }
                         else
                         {

@@ -422,6 +422,73 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        public void AddOrReplace_AddsWhenAbsentAndReplacesWhenPresent()
+        {
+            var cache = new OptionsCache<FakeOptions>();
+
+            cache.AddOrReplace("name", new FakeOptions { Message = "first" });
+            Assert.True(cache.TryGetValue("name", out FakeOptions? added));
+            Assert.Equal("first", added!.Message);
+
+            // Unlike TryAdd, AddOrReplace overwrites an existing entry.
+            cache.AddOrReplace("name", new FakeOptions { Message = "second" });
+            Assert.True(cache.TryGetValue("name", out FakeOptions? replaced));
+            Assert.Equal("second", replaced!.Message);
+
+            // TryAdd still reports the name already exists after a replace.
+            Assert.False(cache.TryAdd("name", new FakeOptions { Message = "third" }));
+        }
+
+        [Fact]
+        public void AddOrReplace_NullNameUsesDefaultName()
+        {
+            var cache = new OptionsCache<FakeOptions>();
+
+            cache.AddOrReplace(null, new FakeOptions { Message = "value" });
+
+            Assert.True(cache.TryGetValue(Options.DefaultName, out FakeOptions? byDefault));
+            Assert.Equal("value", byDefault!.Message);
+            Assert.True(cache.TryGetValue(null, out FakeOptions? byNull));
+            Assert.Equal("value", byNull!.Message);
+        }
+
+        [Fact]
+        public void AddOrReplace_DerivedCacheRoutesThroughVirtualMembers()
+        {
+            var cache = new CountingOptionsCache();
+
+            // First call: no existing entry, so only TryAdd runs.
+            cache.AddOrReplace("name", new FakeOptions { Message = "first" });
+            Assert.Equal(1, cache.TryRemoveCalls);
+            Assert.Equal(1, cache.TryAddCalls);
+
+            // Second call replaces: TryRemove then TryAdd both run through the overrides.
+            cache.AddOrReplace("name", new FakeOptions { Message = "second" });
+            Assert.Equal(2, cache.TryRemoveCalls);
+            Assert.Equal(2, cache.TryAddCalls);
+            Assert.True(cache.TryGetValue("name", out FakeOptions? replaced));
+            Assert.Equal("second", replaced!.Message);
+        }
+
+        private sealed class CountingOptionsCache : OptionsCache<FakeOptions>
+        {
+            public int TryAddCalls { get; private set; }
+            public int TryRemoveCalls { get; private set; }
+
+            public override bool TryAdd(string? name, FakeOptions options)
+            {
+                TryAddCalls++;
+                return base.TryAdd(name, options);
+            }
+
+            public override bool TryRemove(string? name)
+            {
+                TryRemoveCalls++;
+                return base.TryRemove(name);
+            }
+        }
+
+        [Fact]
         public void CallsPublicGetOrAddForCustomOptionsCache()
         {
             DerivedOptionsCache derivedOptionsCache = new();
