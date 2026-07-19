@@ -214,16 +214,31 @@ namespace System.Threading
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static ulong Read(ref readonly ulong location) =>
-            // Delegate to long overload to ensure atomicity on 32-bit platforms.
-            (ulong)Read(ref Unsafe.As<ulong, long>(ref Unsafe.AsRef(in location)));
+        public static ulong Read(ref readonly ulong location)
+        {
+#if TARGET_64BIT
+            ulong value = location;
+            ReadBarrier();
+            return value;
+#else
+            // On 32-bit, we use Interlocked, since an ordinary volatile read would not be atomic.
+            return Interlocked.CompareExchange(ref Unsafe.AsRef(in location), 0, 0);
+#endif
+        }
 
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static void Write(ref ulong location, ulong value) =>
-            // Delegate to long overload to ensure atomicity on 32-bit platforms.
-            Write(ref Unsafe.As<ulong, long>(ref location), (long)value);
+        public static void Write(ref ulong location, ulong value)
+        {
+#if TARGET_64BIT
+            WriteBarrier();
+            location = value;
+#else
+            // On 32-bit, we use Interlocked, since an ordinary volatile write would not be atomic.
+            Interlocked.Exchange(ref location, value);
+#endif
+        }
 
         [CLSCompliant(false)]
         [Intrinsic]
