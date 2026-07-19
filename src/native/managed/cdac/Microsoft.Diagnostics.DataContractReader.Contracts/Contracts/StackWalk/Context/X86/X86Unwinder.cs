@@ -52,7 +52,7 @@ public class X86Unwinder(Target target)
     {
         IExecutionManager eman = _target.Contracts.ExecutionManager;
 
-        if (eman.GetCodeBlockHandle(context.InstructionPointer.Value) is not CodeBlockHandle cbh)
+        if (eman.GetCodeBlockHandle(context.InstructionPointer) is not CodeBlockHandle cbh)
         {
             throw new InvalidOperationException("Unwind failed, unable to find code block for the instruction pointer.");
         }

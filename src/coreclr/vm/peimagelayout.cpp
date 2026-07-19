@@ -100,14 +100,12 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     if (pFlat == NULL || !pFlat->CheckILOnlyFormat())
         EEFileLoadException::Throw(pOwner->GetPathForErrorMessages(), COR_E_BADIMAGEFORMAT);
 
-// TODO: enable on OSX eventually
-//       right now we have binaries that will trigger this in a singlefile bundle.
-#ifdef TARGET_LINUX
-    // we should not see R2R files here on Unix.
+#if defined(TARGET_UNIX)
+    // We should not see R2R files here on Unix when R2R is expected/allowed for the image.
     // ConvertedImageLayout may be able to handle them, but the fact that we were unable to
     // load directly implies that MAPMapPEFile could not consume what crossgen produced.
-    // that is suspicious, one or another might have a bug.
-    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || disableMapping);
+    // That is suspicious; one or another might have a bug.
+    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || !AllowR2RForImage(pOwner) || pOwner->IsCompressed() || disableMapping);
 #endif
 
     // If the image is R2R with native code (that is, not a component assembly of composite R2R) or has writeable sections,
@@ -748,7 +746,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             mapAccess = PAGE_EXECUTE_READ;
         }
 #endif
-        m_FileMap.Assign(CreateFileMapping(hFile, NULL, mapAccess, 0, 0, NULL));
+        m_FileMap = CreateFileMapping(hFile, NULL, mapAccess, 0, 0, NULL);
         if (m_FileMap == NULL)
             ThrowLastError();
 
@@ -766,7 +764,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         if (view == NULL)
             ThrowLastError();
 
-        m_FileView.Assign(view);
+        m_FileView = view;
         addr = (LPVOID)((size_t)view + offset - mapBegin);
 
         if (isCompressed)
@@ -776,11 +774,11 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             // We will create another anonymous memory-only mapping and uncompress file there.
             // The flat image will refer to the anonymous mapping instead and we will release the original mapping.
 
-            HandleHolder anonMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL);
+            HandleHolder anonMap{ CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL) };
             if (anonMap == NULL)
                 ThrowLastError();
 
-            CLRMapViewHolder anonView = CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+            CLRMapViewHolder anonView{ CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0) };
             if (anonView == NULL)
                 ThrowLastError();
 
@@ -813,8 +811,8 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             addr = anonView;
             size = uncompressedSize;
             // Replace file handles with the handles to anonymous map. This will release the handles to the original view and map.
-            m_FileView.Assign(anonView.Extract());
-            m_FileMap.Assign(anonMap.Extract());
+            m_FileView = std::move(anonView);
+            m_FileMap = std::move(anonMap);
 #else
             _ASSERTE(!"Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost.");
             ThrowHR(E_FAIL); // we don't have any indication of what kind of failure. Possibly a corrupt image.
@@ -861,11 +859,11 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
 
 #endif // defined(TARGET_WINDOWS)
 
-        m_FileMap.Assign(CreateFileMapping(INVALID_HANDLE_VALUE, NULL, mapAccess, 0, size, NULL));
+        m_FileMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, mapAccess, 0, size, NULL);
         if (m_FileMap == NULL)
             ThrowLastError();
 
-        m_FileView.Assign(CLRMapViewOfFile(m_FileMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0));
+        m_FileView = CLRMapViewOfFile(m_FileMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
         if (m_FileView == NULL)
             ThrowLastError();
 

@@ -284,7 +284,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
     {
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeaturePortableEntrypoints) != 0)
+        if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints))
         {
             Data.PortableEntryPoint portableEntryPoint = _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(entrypoint.AsTargetPointer);
             return portableEntryPoint.MethodDesc;
@@ -404,6 +404,20 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
 
         return info.RelativeOffset;
+    }
+
+    bool IExecutionManager.IsGcSafe(TargetCodePointer instructionPointer)
+    {
+        IExecutionManager eman = this;
+        if (eman.GetCodeBlockHandle(instructionPointer) is not CodeBlockHandle cbh)
+            return false; // not managed code
+
+        TargetNUInt relativeOffset = eman.GetRelativeOffset(cbh);
+        eman.GetGCInfo(cbh, out TargetPointer gcInfoAddr, out uint gcVersion);
+        IGCInfoHandle handle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
+
+        uint offset = (uint)relativeOffset.Value;
+        return _target.Contracts.GCInfo.IsGcSafe(handle, offset);
     }
 
     uint IExecutionManager.GetStackParameterSize(CodeBlockHandle codeInfoHandle)

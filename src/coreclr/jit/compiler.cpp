@@ -398,7 +398,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
     // check that HelperCallProperties are initialized
     assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
 
-    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo();
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //
@@ -984,7 +984,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
                 // TODO-SVE: For now, we always pass Vector<T> by reference. Support passing Vector<T> in Z registers.
                 unsigned simdSize = 0;
-                if (structSizeMightRepresentSIMDType(structSize) &&
+                if (structMightRepresentSIMDType(clsHnd) &&
                     (getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize) != TYP_UNDEF) && (simdSize == SIZE_UNKNOWN))
                 {
                     howToReturnStruct = SPK_ByReference;
@@ -2024,6 +2024,13 @@ void Compiler::compSetProcessor()
     // Add virtual vector ISAs. These are both supported as part of the required baseline.
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+#elif defined(TARGET_WASM)
+    // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
+    instructionSetFlags.AddInstructionSet(InstructionSet_WasmBase);
+    instructionSetFlags.AddInstructionSet(InstructionSet_PackedSimd);
+
+    // Add virtual vector ISA. Vector128 is part of the required Wasm SIMD baseline.
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
 #endif // TARGET_ARM64
 
     assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
@@ -2981,6 +2988,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compScopeInfo = opts.compDbgInfo;
 
+#ifdef TARGET_WASM
+    // Wasm uses virtual registers that cannot be encoded in the
+    // ICorDebugInfo register scheme, and there is no native debugger
+    // to consume scope info, so disable it entirely.
+    opts.compScopeInfo = false;
+#endif
+
 #ifdef LATE_DISASM
     codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName,
                                                     info.compMethodInfo->args.pSig);
@@ -3137,6 +3151,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (compIsAsync())
         {
             printf("OPTIONS: compilation is an async state machine\n");
+        }
+
+        if (compIsAsyncVersion())
+        {
+            printf(
+                "OPTIONS: compilation is for an async version of a synchronous method; IL belongs to synchronous method\n");
         }
     }
 #endif
@@ -4936,6 +4956,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_3, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
 
+    // Remove unreachable try regions
+    //
+    DoPhase(this, PHASE_REMOVE_UNREACHABLE_TRY, &Compiler::fgRemoveUnreachableTry);
+
     // Create funclets from the EH handlers.
     //
     DoPhase(this, PHASE_CREATE_FUNCLETS, &Compiler::fgCreateFunclets);
@@ -6046,6 +6070,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_Crc32);
         }
 
+        if (JitConfig.EnableArm64Cssc() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Cssc);
+        }
+
         if (JitConfig.EnableArm64Dp() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Dp);
@@ -6228,6 +6257,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableRiscV64Zbb() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
+        }
+
+        if (JitConfig.EnableRiscV64Zicond() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Zicond);
         }
 #endif
 

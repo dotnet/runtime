@@ -92,10 +92,10 @@ inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID eip) {
     context->Pc = (UINT32)(size_t)eip;
 }
 
-inline LPVOID CORDbgGetSP(const DT_CONTEXT * context) {
+inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
-    return (LPVOID)(size_t)(context->Sp);
+    return (CORDB_ADDRESS)(context->Sp);
 }
 
 inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID esp) {

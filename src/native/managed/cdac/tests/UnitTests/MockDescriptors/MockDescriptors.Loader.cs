@@ -64,6 +64,7 @@ internal sealed class MockLoaderModule : TypedView
     private const string FlagsFieldName = "Flags";
     private const string LoaderAllocatorFieldName = "LoaderAllocator";
     private const string DynamicMetadataFieldName = "DynamicMetadata";
+    private const string MetadataGenerationFieldName = "MetadataGeneration";
     private const string SimpleNameFieldName = "SimpleName";
     private const string PathFieldName = "Path";
     private const string FileNameFieldName = "FileName";
@@ -88,6 +89,7 @@ internal sealed class MockLoaderModule : TypedView
             .AddUInt32Field(FlagsFieldName)
             .AddPointerField(LoaderAllocatorFieldName)
             .AddPointerField(DynamicMetadataFieldName)
+            .AddUInt32Field(MetadataGenerationFieldName)
             .AddPointerField(SimpleNameFieldName)
             .AddPointerField(PathFieldName)
             .AddPointerField(FileNameFieldName)
@@ -272,10 +274,10 @@ internal sealed class MockLoaderBuilder
     }
 
     internal MockLoaderModule AddModule(
-        string? path = null,
         string? fileName = null,
         string? simpleName = null,
         byte[]? simpleNameBytes = null,
+        string? path = null,
         uint flags = 0)
     {
         MockLoaderModule module = ModuleLayout.Create(_allocator.Allocate((ulong)ModuleLayout.Size, "Module"));
@@ -285,15 +287,15 @@ internal sealed class MockLoaderBuilder
             module.Flags = flags;
         }
 
+        if (path is not null)
+        {
+            module.Path = AddUtf16String(path, $"Module path = {path}");
+        }
+
         byte[]? rawSimpleName = simpleName is not null ? Encoding.UTF8.GetBytes(simpleName) : simpleNameBytes;
         if (rawSimpleName is not null)
         {
             module.SimpleName = AddNullTerminatedUtf8(rawSimpleName, "Module simple name");
-        }
-
-        if (path is not null)
-        {
-            module.Path = AddUtf16String(path, $"Module path = {path}");
         }
 
         if (fileName is not null)

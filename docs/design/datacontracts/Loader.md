@@ -54,12 +54,7 @@ record struct ModuleLookupTables(
     TargetPointer MethodDefToILCodeVersioningState,
     uint TableDataOffset);
 
-readonly struct LoaderHeapBlockData
-{
-    TargetPointer Address { get; init; }
-    TargetNUInt Size { get; init; }
-    TargetPointer NextBlock { get; init; }
-}
+readonly record struct LoaderHeapBlock(TargetPointer Address, TargetNUInt Size);
 
 enum LoaderAllocatorHeapType
 {
@@ -100,6 +95,7 @@ bool IsReadyToRun(ModuleHandle handle);
 string GetSimpleName(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
+bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
@@ -118,10 +114,7 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
-// Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
-TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap);
-// Returns the data for the given loader heap block (address, size, and next block pointer).
-LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block);
+IEnumerable<LoaderHeapBlock> EnumerateLoaderHeapBlocks(TargetPointer loaderHeap);
 IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
 
 DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle);
@@ -666,6 +659,19 @@ string GetFileName(ModuleHandle handle)
     return new string(fileName);
 }
 
+bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize)
+{
+    timeStamp = 0;
+    imageSize = 0;
+
+    if (!TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out _, out _))
+        return false;
+    TargetPointer ntHeadersPtr = baseAddress + // offset to NT headers
+    timeStamp = // read from NT header
+    imageSize = // read from NT header
+    return true;
+}
+
 TargetPointer GetLoaderAllocator(ModuleHandle handle)
 {
     return target.ReadPointer(handle.Address + /* Module::LoaderAllocator offset */);
@@ -989,21 +995,22 @@ class InstMethodHashTable
 }
 ```
 
-#### GetFirstLoaderHeapBlock, GetLoaderHeapBlockData
+#### EnumerateLoaderHeapBlocks
 
 ```csharp
-TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
+IEnumerable<LoaderHeapBlock> ILoader.EnumerateLoaderHeapBlocks(TargetPointer loaderHeap)
 {
-    return target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */);
-}
-
-LoaderHeapBlockData ILoader.GetLoaderHeapBlockData(TargetPointer block)
-{
-    return new LoaderHeapBlockData
+    TargetPointer block = target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */);
+    HashSet<TargetPointer> visited = [];
+    while (block != TargetPointer.Null)
     {
-        Address = target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */),
-        Size = target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */),
-        NextBlock = target.ReadPointer(block + /* LoaderHeapBlock::Next offset */),
-    };
+        if (!visited.Add(block))
+            throw new InvalidOperationException();
+
+        yield return new LoaderHeapBlock(
+            target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */),
+            target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */));
+        block = target.ReadPointer(block + /* LoaderHeapBlock::Next offset */);
+    }
 }
 ```
