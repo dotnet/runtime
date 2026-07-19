@@ -9,6 +9,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static partial class OptionsBuilderExtensions
     {
         public static Microsoft.Extensions.Options.OptionsBuilder<TOptions> ValidateOnStart<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(this Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder) where TOptions : class { throw null; }
+        public static Microsoft.Extensions.Options.OptionsBuilder<TOptions> ValidateOnChange<TOptions>(this Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder, Microsoft.Extensions.Options.OptionsReloadValidationBehavior behavior = Microsoft.Extensions.Options.OptionsReloadValidationBehavior.KeepLastGood, System.Action<string?, System.Exception>? onError = null) where TOptions : class { throw null; }
     }
     public static partial class OptionsServiceCollectionExtensions
     {
@@ -234,10 +235,16 @@ namespace Microsoft.Extensions.Options
     public partial class OptionsMonitor<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptionsMonitor<TOptions>, System.IDisposable where TOptions : class
     {
         public OptionsMonitor(Microsoft.Extensions.Options.IOptionsFactory<TOptions> factory, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IOptionsChangeTokenSource<TOptions>> sources, Microsoft.Extensions.Options.IOptionsMonitorCache<TOptions> cache) { }
+        public OptionsMonitor(Microsoft.Extensions.Options.IOptionsFactory<TOptions> factory, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.IOptionsChangeTokenSource<TOptions>> sources, Microsoft.Extensions.Options.IOptionsMonitorCache<TOptions> cache, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Options.ReloadValidationConfiguration<TOptions>> reloadValidationConfigs) { }
         public TOptions CurrentValue { get { throw null; } }
         public void Dispose() { }
         public virtual TOptions Get(string? name) { throw null; }
         public System.IDisposable OnChange(System.Action<TOptions, string> listener) { throw null; }
+    }
+    public enum OptionsReloadValidationBehavior
+    {
+        KeepLastGood = 0,
+        FailReads = 1,
     }
     public partial class OptionsValidationException : System.Exception
     {
@@ -317,6 +324,13 @@ namespace Microsoft.Extensions.Options
         public string? Name { get { throw null; } }
         public virtual void PostConfigure(string? name, TOptions options) { }
         public void PostConfigure(TOptions options) { }
+    }
+    public sealed partial class ReloadValidationConfiguration<TOptions> where TOptions : class
+    {
+        public ReloadValidationConfiguration(string name, Microsoft.Extensions.Options.OptionsReloadValidationBehavior behavior, System.Action<string?, System.Exception>? onError) { }
+        public Microsoft.Extensions.Options.OptionsReloadValidationBehavior Behavior { get { throw null; } }
+        public string Name { get { throw null; } }
+        public System.Action<string?, System.Exception>? OnError { get { throw null; } }
     }
     [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
     public sealed class ValidateEnumeratedItemsAttribute : System.Attribute

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Primitives;
 using Xunit;
 
 namespace Microsoft.Extensions.Options.Tests
@@ -354,6 +355,217 @@ namespace Microsoft.Extensions.Options.Tests
             FakeOptions value = sp.GetRequiredService<IOptions<FakeOptions>>().Value;
 
             Assert.Equal("ok", value.Message);
+        }
+
+        // ---- Phase 8: opt-in async reload revalidation (ValidateOnChange) ----
+
+        [Fact]
+        public void Phase8_ValidReload_PublishesNewValidatedValueAndNotifies()
+        {
+            var source = new ReloadSource();
+            var validator = new ReloadTestValidator();
+            int configureCount = 0;
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = $"v{Interlocked.Increment(ref configureCount)}")
+                .ValidateOnChange();
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(source);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            SeedCache(sp, "seed");
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+            Assert.Equal("seed", monitor.CurrentValue.Message);
+
+            using var changed = new ManualResetEventSlim();
+            string? notified = null;
+            using IDisposable _ = monitor.OnChange((o, n) => { notified = o.Message; changed.Set(); });
+
+            source.Trigger();
+
+            Assert.True(changed.Wait(TimeSpan.FromSeconds(30)), "The change notification was not raised.");
+            Assert.NotEqual("seed", monitor.CurrentValue.Message);
+            Assert.Equal(monitor.CurrentValue.Message, notified);
+        }
+
+        [Fact]
+        public void Phase8_InvalidReload_KeepLastGood_ServesLastGoodAndReportsError()
+        {
+            var source = new ReloadSource();
+            var validator = new ReloadTestValidator { Fail = true };
+            var services = new ServiceCollection();
+            using var errored = new ManualResetEventSlim();
+            Exception? reportedError = null;
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "reloaded")
+                .ValidateOnChange(OptionsReloadValidationBehavior.KeepLastGood, (name, ex) => { reportedError = ex; errored.Set(); });
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(source);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            SeedCache(sp, "good");
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            bool changeFired = false;
+            using IDisposable _ = monitor.OnChange((o, n) => changeFired = true);
+
+            source.Trigger();
+
+            Assert.True(errored.Wait(TimeSpan.FromSeconds(30)), "The error callback was not invoked.");
+            Assert.IsType<OptionsValidationException>(reportedError);
+            // The last validated value keeps being served, and no change notification is raised for a failed reload.
+            Assert.Equal("good", monitor.CurrentValue.Message);
+            Assert.False(changeFired);
+        }
+
+        [Fact]
+        public void Phase8_InvalidReload_FailReads_NextReadThrows()
+        {
+            var source = new ReloadSource();
+            var validator = new ReloadTestValidator { Fail = true };
+            var services = new ServiceCollection();
+            using var errored = new ManualResetEventSlim();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "reloaded")
+                .ValidateOnChange(OptionsReloadValidationBehavior.FailReads, (name, ex) => errored.Set());
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(source);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            SeedCache(sp, "good");
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            source.Trigger();
+
+            Assert.True(errored.Wait(TimeSpan.FromSeconds(30)), "The error callback was not invoked.");
+            // FailReads dropped the cached value, so the next read re-creates and surfaces the failure.
+            Assert.Throws<OptionsValidationException>(() => monitor.CurrentValue);
+        }
+
+        [Fact]
+        public void Phase8_DefaultMonitorWithoutOptIn_UsesLazyRevalidation()
+        {
+            var source = new ReloadSource();
+            int configureCount = 0;
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = $"v{Interlocked.Increment(ref configureCount)}");
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(source);
+            using ServiceProvider sp = services.BuildServiceProvider();
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            Assert.Equal("v1", monitor.CurrentValue.Message);
+
+            // Without ValidateOnChange the default lazy behavior clears the cache and re-creates on the next read.
+            source.Trigger();
+            Assert.Equal("v2", monitor.CurrentValue.Message);
+        }
+
+        [Fact]
+        public void Phase8_RapidReloads_LatestWins()
+        {
+            var source = new ReloadSource();
+            var validator = new ReloadTestValidator();
+            var firstGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            validator.Gate = firstGate.Task;
+            int configureCount = 0;
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = $"v{Interlocked.Increment(ref configureCount)}")
+                .ValidateOnChange();
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(source);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            SeedCache(sp, "seed");
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            using var secondChanged = new ManualResetEventSlim();
+            string? lastNotified = null;
+            using IDisposable _ = monitor.OnChange((o, n) => { lastNotified = o.Message; secondChanged.Set(); });
+
+            // First reload blocks in ValidateAsync on the gate.
+            source.Trigger();
+            // Second reload supersedes the first and completes (its gate was cleared before it started).
+            validator.Gate = null;
+            source.Trigger();
+
+            Assert.True(secondChanged.Wait(TimeSpan.FromSeconds(30)), "The superseding reload did not publish.");
+            string published = monitor.CurrentValue.Message;
+
+            // Release the superseded first reload; it must not overwrite the newer published value.
+            firstGate.SetResult(true);
+            Thread.Sleep(200);
+
+            Assert.Equal(published, monitor.CurrentValue.Message);
+            Assert.Equal(published, lastNotified);
+        }
+
+        [Fact]
+        public void Phase8_DisposeCancelsInFlightReload()
+        {
+            var source = new ReloadSource();
+            var validator = new ReloadTestValidator();
+            var gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            validator.Gate = gate.Task;
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "reloaded")
+                .ValidateOnChange();
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(source);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            SeedCache(sp, "seed");
+            var monitor = (OptionsMonitor<FakeOptions>)sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            source.Trigger();          // starts a background reload blocked on the gate
+            monitor.Dispose();         // cancels the in-flight reload
+            gate.SetResult(true);      // release; the canceled reload must not publish
+            Thread.Sleep(200);
+
+            var cache = (OptionsCache<FakeOptions>)sp.GetRequiredService<IOptionsMonitorCache<FakeOptions>>();
+            Assert.True(cache.TryGetValue(Options.DefaultName, out FakeOptions? value));
+            Assert.Equal("seed", value!.Message);
+        }
+
+        private static void SeedCache(IServiceProvider sp, string message)
+        {
+            var cache = (OptionsCache<FakeOptions>)sp.GetRequiredService<IOptionsMonitorCache<FakeOptions>>();
+            cache.AddOrReplace(Options.DefaultName, new FakeOptions { Message = message });
+        }
+
+        private sealed class ReloadSource : IOptionsChangeTokenSource<FakeOptions>
+        {
+            private readonly FakeChangeToken _token = new FakeChangeToken();
+            public string? Name => null;
+            public IChangeToken GetChangeToken() => _token;
+            public void Trigger() => _token.InvokeChangeCallback();
+        }
+
+        private sealed class ReloadTestValidator : IValidateOptions<FakeOptions>, IAsyncValidateOptions<FakeOptions>
+        {
+            public bool Fail { get; set; }
+            public Task? Gate { get; set; }
+
+            public ValidateOptionsResult Validate(string? name, FakeOptions options)
+                => ValidateOptionsResult.Fail("Synchronous validation is not supported.");
+
+            public async Task<ValidateOptionsResult> ValidateAsync(string? name, FakeOptions options, CancellationToken cancellationToken)
+            {
+                Task? gate = Gate;
+                if (gate is not null)
+                {
+                    var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    using (cancellationToken.Register(static s => ((TaskCompletionSource<bool>)s!).TrySetCanceled(), tcs))
+                    {
+                        await Task.WhenAny(gate, tcs.Task).ConfigureAwait(false);
+                    }
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                return Fail ? ValidateOptionsResult.Fail("async validation failed") : ValidateOptionsResult.Success;
+            }
         }
 
         private class CustomSyncOnlyValidator : IStartupValidator

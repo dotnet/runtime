@@ -66,5 +66,34 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return optionsBuilder;
         }
+
+        /// <summary>
+        /// Enables eager asynchronous revalidation of the options whenever their configuration reloads, instead of the
+        /// default lazy revalidation on next access.
+        /// </summary>
+        /// <typeparam name="TOptions">The type of options.</typeparam>
+        /// <param name="optionsBuilder">The <see cref="OptionsBuilder{TOptions}"/> to configure.</param>
+        /// <param name="behavior">How reads are served when revalidation of a reloaded configuration fails.</param>
+        /// <param name="onError">An optional callback invoked with the options name and the exception when revalidation of a reloaded configuration fails.</param>
+        /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that additional calls can be chained.</returns>
+        /// <remarks>
+        /// On reload the options are re-created and validated in the background (running every registered validator,
+        /// awaiting asynchronous ones); the last successfully validated value keeps being served until the new value
+        /// validates, at which point it is swapped in atomically. This does not run startup validation; combine it with
+        /// <see cref="ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> to also validate the initial value.
+        /// </remarks>
+        public static OptionsBuilder<TOptions> ValidateOnChange<TOptions>(
+            this OptionsBuilder<TOptions> optionsBuilder,
+            OptionsReloadValidationBehavior behavior = OptionsReloadValidationBehavior.KeepLastGood,
+            Action<string?, Exception>? onError = null)
+            where TOptions : class
+        {
+            ArgumentNullException.ThrowIfNull(optionsBuilder);
+
+            optionsBuilder.Services.AddOptions();
+            optionsBuilder.Services.AddSingleton(new ReloadValidationConfiguration<TOptions>(optionsBuilder.Name, behavior, onError));
+
+            return optionsBuilder;
+        }
     }
 }
