@@ -42,7 +42,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(aot: false)]
         [TestCategory("native-mono")]
         [SkipOnPlatform(TestPlatforms.AnyUnix, "The cmd.exe quoting behavior this covers is Windows-specific.")]
-        public async Task NativeBuildWithParenthesesInTempPath(Configuration config, bool aot)
+        public async Task NativeBuildWithSpecialCharsInTempPath(Configuration config, bool aot)
         {
             // Regression test for https://github.com/dotnet/runtime/issues/120327.
             // Native compilation runs the compiler through a temporary batch file created under the
@@ -50,6 +50,8 @@ namespace Wasm.Build.Tests
             // which puts parentheses in %TEMP%. `cmd /c "<path>"` then stripped the quotes around
             // that path and mis-parsed it at the first '(', failing the native build with
             // "'C:\Users\John' is not recognized as an internal or external command".
+            // The unicode chars additionally cover the UTF-8 (chcp 65001) handling in the same
+            // RunShellCommand path, which exists so non-ASCII (e.g. GB18030) temp/user paths work.
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
                 config,
@@ -60,7 +62,7 @@ namespace Wasm.Build.Tests
             UpdateBrowserProgramFile();
             ReplaceMainJsWithMinimalRunMain();
 
-            string tempWithParens = Path.Combine(BuildEnvironment.TmpPath, $"tmp ({GetRandomId()})");
+            string tempWithParens = Path.Combine(BuildEnvironment.TmpPath, $"tmp ({GetRandomId()}) {s_unicodeChars}");
             Directory.CreateDirectory(tempWithParens);
             var envVars = new Dictionary<string, string>
             {
