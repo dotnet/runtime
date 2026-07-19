@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Numerics;
 
 namespace System;
@@ -27,8 +28,9 @@ internal static partial class Number
     // Number of 64-bit fraction words of frac(x / (2*pi)) produced; the tail consumes the top four.
     private const int TrigReduceWords = 8;
 
-    // Upper bound on the little-endian word count of C * 10^e at the Decimal128 maximum (~10^6145).
-    private const int TrigReduceMaxNWords = 336;
+    // Stack budget for the little-endian words of C * 10^e; 128 words == 1 KB keeps the common exponent
+    // range on the stack, and larger magnitudes (up to ~336 words at the Decimal128 maximum) rent instead.
+    private const int TrigReduceStackNWords = 128;
 
     // The leading 340 x 64-bit words of the pure binary fraction 1/(2*pi) (word 0 = bits 2^-1..2^-64).
     // 340 words span the Decimal128 maximum exponent (~2^20408) with room for the reduced significand.
@@ -144,9 +146,23 @@ internal static partial class Number
 
         if (unbiasedExponent >= 0)
         {
-            Span<ulong> nWords = stackalloc ulong[TrigReduceMaxNWords];
+            // C * 10^power grows by at most one 64-bit word per 19-digit chunk (10^19 < 2^64), starting
+            // from the two words of C, so this bounds the little-endian word count exactly. Keep the
+            // common range on the stack and rent only the rare extreme-magnitude buffers.
+            int maxNWords = 2 + ((unbiasedExponent + 18) / 19);
+
+            ulong[]? rented = null;
+            Span<ulong> nWords = (maxNWords <= TrigReduceStackNWords)
+                ? stackalloc ulong[TrigReduceStackNWords]
+                : (rented = ArrayPool<ulong>.Shared.Rent(maxNWords));
+
             int nCount = DiyFp128ReduceBuildN(coefficient, unbiasedExponent, nWords);
             DiyFp128ReduceFractionPositive(nWords[..nCount], fractionWords);
+
+            if (rented is not null)
+            {
+                ArrayPool<ulong>.Shared.Return(rented);
+            }
         }
         else
         {
