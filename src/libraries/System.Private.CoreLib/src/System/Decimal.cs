@@ -1353,7 +1353,8 @@ namespace System
             ulong tmp = value._lo64;
             if (value._hi32 != 0)
             {
-                // For 96-bit mod-10 reduction first do upper-64 remainder then fold in low-32
+                // The magnitude is high64 * 2^32 + low32. Since (a * b + c) % 10 depends only on a % 10,
+                // reduce high64 first, then fold in low32.
                 tmp = ((ulong)value._hi32 << 32) | (tmp >> 32);
                 tmp %= 10;
                 tmp = (tmp << 32) | (uint)value._lo64;
