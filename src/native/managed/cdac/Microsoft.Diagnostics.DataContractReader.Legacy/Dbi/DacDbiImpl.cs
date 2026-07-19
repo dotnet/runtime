@@ -356,9 +356,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             if (pSize == null)
-                throw new ArgumentException(nameof(pSize));
+                throw new ArgumentNullException(nameof(pSize));
             if (vmModule == 0)
                 throw new ArgumentException("Module pointer must be non-zero.", nameof(vmModule));
+
             *pSize = 0;
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));

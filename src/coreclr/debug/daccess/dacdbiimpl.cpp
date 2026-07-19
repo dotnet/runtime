@@ -3942,7 +3942,9 @@ namespace
         for (ULONG32 iteration = 0; ; iteration++)
         {
             ULONG32 dataSize = pSeg->GetDataSize();
-            if (iteration >= MaxPoolSegments || totalSize > MaxPoolBytes || dataSize > MaxPoolBytes)
+            if (iteration >= MaxPoolSegments ||
+                totalSize > MaxPoolBytes ||
+                dataSize > MaxPoolBytes - totalSize)
             {
                 ThrowHR(CLDB_E_FILE_CORRUPT);
             }
@@ -4285,7 +4287,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetReadWriteMetadataSize(VMPTR_Mo
     {
         if (pSize == NULL)
         {
-            ThrowHR(E_INVALIDARG);
+            ThrowHR(E_POINTER);
         }
 
         *pSize = 0;
