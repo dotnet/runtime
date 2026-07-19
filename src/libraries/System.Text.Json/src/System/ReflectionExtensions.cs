@@ -116,11 +116,6 @@ namespace System.Text.Json.Reflection
 #endif
         }
 
-#if !NET
-        public static T CreateDelegate<T>(this MethodInfo methodInfo) where T : Delegate =>
-            (T)methodInfo.CreateDelegate(typeof(T));
-#endif
-
         /// <summary>
         /// Invokes <paramref name="methodInfo"/> without wrapping any exception thrown by the
         /// target method in a <see cref="TargetInvocationException"/>. This matches the behavior of
