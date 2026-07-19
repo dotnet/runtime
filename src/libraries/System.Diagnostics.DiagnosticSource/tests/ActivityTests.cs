@@ -2877,7 +2877,7 @@ namespace System.Diagnostics.Tests
 
             const int ThreadCount = 8;
             const int PerThread = 200;
-            Barrier barrier = new Barrier(ThreadCount * 2);
+            using Barrier barrier = new Barrier(ThreadCount * 2);
 
             Task[] tasks = new Task[ThreadCount * 2];
             for (int t = 0; t < ThreadCount; t++)
@@ -2932,19 +2932,22 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestLinksAndEventsEmptyWhenListenerDeclinesSampling()
+        public void TestNoActivityCreatedAndNoLinksEventsListsTouchedWhenListenerDeclinesSampling()
         {
-            // When no listener requests AllDataAndRecorded, Activity.Create takes the "not recorded" early-exit path
-            // and never touches the co-located ActivityLinksLinkedList/ActivityEventsLinkedList types at all. Links/Events
-            // must still report as empty (via the shared DiagLinkedList<T> empty singleton), regardless of what links
-            // were requested at creation time or added afterward.
+            // When no listener requests anything other than ActivitySamplingResult.None, Activity.Create takes the
+            // "not recorded" early-exit path and returns null before ever constructing an Activity object, so the
+            // co-located ActivityLinksLinkedList/ActivityEventsLinkedList types are never allocated or touched at all
+            // for this call, regardless of what links were requested at creation time. (Unlike ActivitySamplingResult.
+            // None, PropagationData/AllData/AllDataAndRecorded all still create the Activity and pass links/tags/events
+            // through as provided -- "unnecessary" for those listeners per the API doc is only non-binding guidance to
+            // listener authors, not something the runtime enforces by stripping the data.)
             using ActivityListener listener = new ActivityListener
             {
                 ShouldListenTo = _ => true,
                 Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.None,
             };
             ActivitySource.AddActivityListener(listener);
-            using ActivitySource source = new ActivitySource(nameof(TestLinksAndEventsEmptyWhenListenerDeclinesSampling));
+            using ActivitySource source = new ActivitySource(nameof(TestNoActivityCreatedAndNoLinksEventsListsTouchedWhenListenerDeclinesSampling));
 
             var link = new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded));
 
