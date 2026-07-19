@@ -54,13 +54,13 @@ namespace Internal.TypeVerifier
                 if (!type.IsObject && !type.IsModuleType && !type.IsInterface)
                 {
                     VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
-                    return;  
+                    return;
                 }
             }
             else
             {
                 TypeDesc resolvedBaseType = _module.GetType(baseType);
-                
+
                 if (resolvedBaseType.IsValueType ||
                     resolvedBaseType.IsInterface ||
                     !resolvedBaseType.IsDefType)
@@ -161,6 +161,8 @@ namespace Internal.TypeVerifier
                 return "nil";
             }
 
+            // Resolving invalid metadata can fail. Fall back to the handle kind and token
+            // so the original verification error can still be reported.
             try
             {
                 return Format(_module.GetType(handle));

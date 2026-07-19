@@ -66,6 +66,12 @@
 {
 }
 
+.class public auto ansi sealed EnumBase_ValidType_Valid
+    extends [System.Runtime]System.Enum
+{
+    .field public specialname rtspecialname int32 value__
+}
+
 .class public auto ansi beforefieldinit GenericValueTypeSpecBase_InvalidType_InvalidBaseType
     extends valuetype GenericValueTypeBase`1<int32>
 {
