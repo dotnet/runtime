@@ -635,7 +635,12 @@ namespace System.Reflection.Metadata
             // The value is not used, other than for calculating the value of Count property.
             suffix._previousLengthOrFrozenSuffixLengthDelta = suffixPreviousLength + oldSuffixLength - suffix.Length;
 
-            if (!isEmpty)
+            if (isEmpty)
+            {
+                var suffixLast = suffix._nextOrPrevious;
+                _nextOrPrevious = (suffixLast != suffix) ? suffixLast : this;
+            }
+            else
             {
                 // First and last chunks:
                 //

@@ -9,8 +9,18 @@ namespace System
 {
     public static partial class AppContext
     {
+        // Keep in sync with IsKnownHostProperty in src/coreclr/dlls/mscoree/exports.cpp.
+        private static bool IsKnownHostProperty(string name)
+            => name is "TRUSTED_PLATFORM_ASSEMBLIES"
+                    or "NATIVE_DLL_SEARCH_DIRECTORIES"
+                    or "PLATFORM_RESOURCE_ROOTS"
+                    or "APP_PATHS";
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppContext_TryGetHostPropertyValue", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool TryGetHostPropertyValue(string name, StringHandleOnStack retValue);
+
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void OnProcessExit(Exception* pException)
         {
             try
@@ -24,7 +34,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void OnUnhandledException(object* pException, Exception* pOutException)
         {
             try
@@ -38,7 +47,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void OnFirstChanceException(Exception* pException, Exception* pOutException)
         {
             try

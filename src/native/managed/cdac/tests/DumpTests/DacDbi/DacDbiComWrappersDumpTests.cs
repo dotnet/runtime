@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -16,8 +17,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class DacDbiComWrappersDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "ComWrappers";
-    protected override string DumpType => "full";
-
     private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
 
     [ConditionalTheory]

@@ -281,7 +281,7 @@ namespace System.Numerics.Tests
         private static byte[] GetRandomLengthAllOnesUIntByteArray(Random random)
         {
             int gap = random.Next(0, 128);
-            int byteLength = nint.Size + gap * nint.Size + 1;
+            int byteLength = 4 + gap * 4 + 1;
             byte[] array = new byte[byteLength];
             array[0] = 1;
             array[^1] = 0xFF;
@@ -290,9 +290,9 @@ namespace System.Numerics.Tests
         private static byte[] GetRandomLengthFirstUIntMaxSecondUIntMSBMaxArray(Random random)
         {
             int gap = random.Next(0, 128);
-            int byteLength = nint.Size + gap * nint.Size + 1;
+            int byteLength = 4 + gap * 4 + 1;
             byte[] array = new byte[byteLength];
-            array[^(nint.Size + 1)] = 0x80;
+            array[^(4 + 1)] = 0x80;
             array[^1] = 0xFF;
             return array;
         }
@@ -310,7 +310,7 @@ namespace System.Numerics.Tests
 
         public static TheoryData<BigInteger, int, BigInteger> NegativeNumber_TestData()
         {
-            int bpl = nint.Size * 8; // bits per limb
+            int bpl = 32; // bits per word
             BigInteger neg2 = -(BigInteger.One << (3 * bpl - 1));       // -2^(3*bpl-1)
             BigInteger neg1 = neg2 + 1;                                  // -(2^(3*bpl-1) - 1)
             BigInteger neg3 = neg2 + 2;                                  // -(2^(3*bpl-1) - 2)
@@ -433,7 +433,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void PowerOfTwo()
         {
-            int bpl = nint.Size * 8; // bits per limb
+            int bpl = 32; // bits per word
             for (int i = 0; i < bpl; i++)
             {
                 foreach (int k in new int[] { 1, 2, 3, 10 })
@@ -445,7 +445,7 @@ namespace System.Numerics.Tests
                     Assert.Equal(BigInteger.One << i, BigInteger.RotateLeft(plus, bpl));
                     Assert.Equal(BigInteger.One << (bpl * (k - 1) + i), BigInteger.RotateLeft(plus, bpl * k));
 
-                    Assert.Equal(i == bpl - 1 ? BigInteger.One : (new BigInteger((nint)(-1) << (i + 1)) << bpl * k) + 1,
+                    Assert.Equal(i == bpl - 1 ? BigInteger.One : (new BigInteger((int)(-1) << (i + 1)) << bpl * k) + 1,
                         BigInteger.RotateLeft(minus, 1));
                     Assert.Equal((BigInteger.One << bpl) - (BigInteger.One << i), BigInteger.RotateLeft(minus, bpl));
                     Assert.Equal(((BigInteger.One << bpl) - (BigInteger.One << i)) << (bpl * (k - 1)), BigInteger.RotateLeft(minus, bpl * k));
@@ -460,7 +460,7 @@ namespace System.Numerics.Tests
 
         public static TheoryData<BigInteger, int, BigInteger> NegativeNumber_TestData()
         {
-            int bpl = nint.Size * 8; // bits per limb
+            int bpl = 32; // bits per word
             BigInteger neg2 = -(BigInteger.One << (3 * bpl - 1));       // -2^(3*bpl-1)
             BigInteger neg1 = neg2 + 1;                                  // -(2^(3*bpl-1) - 1)
             BigInteger neg3 = neg2 + 2;                                  // -(2^(3*bpl-1) - 2)
@@ -583,7 +583,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void PowerOfTwo()
         {
-            int bpl = nint.Size * 8; // bits per limb
+            int bpl = 32; // bits per word
             for (int i = 0; i < bpl; i++)
             {
                 foreach (int k in new int[] { 1, 2, 3, 10 })

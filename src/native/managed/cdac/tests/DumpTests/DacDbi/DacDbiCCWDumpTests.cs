@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -18,7 +19,6 @@ public class DacDbiCCWDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "CCW";
     protected override string DumpType => "full";
-
     private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
 
     private (TargetPointer Ccw, TargetPointer InterfacePointer) FindBuiltInComCcwWithInterface()

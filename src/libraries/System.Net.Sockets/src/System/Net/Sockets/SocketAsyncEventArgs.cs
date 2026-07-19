@@ -752,8 +752,12 @@ namespace System.Net.Sockets
                         if (_currentSocket != null)
                         {
                             // If this SocketAsyncEventArgs was configured with a socket, then use it.
-                            // If that instance doesn't support this address, move on to the next.
-                            if (!_currentSocket.CanTryAddressFamily(address.AddressFamily))
+                            // If that instance doesn't support this address, move on to the next. The exception
+                            // is platforms without IPv6 dual-mode (e.g. OpenBSD), where a single socket can't
+                            // reach both families: re-create the still-unconnected handle for this address'
+                            // family so the connect can proceed. Dual-mode platforms skip this entirely.
+                            if (!_currentSocket.CanTryAddressFamily(address.AddressFamily) &&
+                                (Socket.OSSupportsIPv6DualMode || !_currentSocket.TryReplaceHandleForAddressFamily(address.AddressFamily)))
                             {
                                 continue;
                             }

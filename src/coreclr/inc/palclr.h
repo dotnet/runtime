@@ -41,13 +41,6 @@
 #endif // !_MSC_VER
 #endif // !NOTHROW_DECL
 
-#ifdef _MSC_VER
-#define EMPTY_BASES_DECL __declspec(empty_bases)
-#else
-#define EMPTY_BASES_DECL
-#endif // !_MSC_VER
-
-
 // PORTABILITY_ASSERT and PORTABILITY_WARNING macros are meant to be used to
 // mark places in the code that needs attention for portability. The usual
 // usage pattern is:

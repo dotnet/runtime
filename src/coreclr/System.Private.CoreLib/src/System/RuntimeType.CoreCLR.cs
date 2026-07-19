@@ -150,7 +150,6 @@ namespace System
                 private readonly MdUtf8String m_name;
                 private readonly MemberListType m_listType;
 
-                [RequiresUnsafe]
                 public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
                     m_name = new MdUtf8String(pUtf8Name, cUtf8Name);
@@ -3416,7 +3415,6 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetGuid")]
-        [RequiresUnsafe]
         private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result);
 
 #if FEATURE_COMINTEROP
@@ -3591,6 +3589,31 @@ namespace System
         #endregion
 
         #region Generics
+
+        public override unsafe Type? GetNullableUnderlyingType()
+        {
+            TypeHandle th = GetNativeTypeHandle();
+            if (!th.IsTypeDesc)
+            {
+                MethodTable* pMT = th.AsMethodTable();
+                if (pMT->IsNullable)
+                {
+                    // The open generic Nullable<> is also classified as Nullable, and a constructed
+                    // Nullable<T> instantiated over a generic variable holds a TypeDesc (not a
+                    // MethodTable*) in InstantiationArg0(). Fall back to managed reflection in
+                    // those cases.
+                    if (pMT->ContainsGenericVariables)
+                    {
+                        return GetGenericArguments()[0];
+                    }
+                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->InstantiationArg0());
+                    GC.KeepAlive(this);
+                    return result;
+                }
+            }
+            return null;
+        }
+
         internal RuntimeType[] GetGenericArgumentsInternal()
         {
             return GetRootElementType().TypeHandle.GetInstantiationInternal();
@@ -4344,14 +4367,12 @@ namespace System
     internal readonly unsafe partial struct MdUtf8String
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
-        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.
         private readonly int m_StringHeapByteLength;
 
-        [RequiresUnsafe]
         internal MdUtf8String(void* pStringHeap)
         {
             byte* pStringBytes = (byte*)pStringHeap;
@@ -4367,7 +4388,6 @@ namespace System
             m_pStringHeap = pStringBytes;
         }
 
-        [RequiresUnsafe]
         internal MdUtf8String(byte* pUtf8String, int cUtf8String)
         {
             m_pStringHeap = pUtf8String;

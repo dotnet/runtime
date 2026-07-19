@@ -109,7 +109,7 @@ namespace Mono.Linker
             // Mark the target type as instantiated
             if (entry.TargetType is { } targetType
                 && _context.Resolve(UnwrapToResolvableType(targetType)) is TypeDefinition targetTypeDef)
-                _context.Annotations.MarkInstantiated(targetTypeDef);
+                _markStep.MarkRequirementsForInstantiatedTypes(targetTypeDef);
         }
 
         public void ProcessType(TypeDefinition definition)

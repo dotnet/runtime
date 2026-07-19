@@ -96,7 +96,6 @@ namespace System.Threading
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
-        [RequiresUnsafe]
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
 

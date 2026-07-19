@@ -51,7 +51,7 @@ namespace System.IO
             return _startIndex >= _endIndex; // Everything has been processed;
         }
 
-        internal void AppendExtraBuffer(ReadOnlySpan<byte> buffer)
+        internal unsafe void AppendExtraBuffer(ReadOnlySpan<byte> buffer)
         {
             // Most inputs to this will have a buffer length of one.
             // The cases where it is larger than one only occur in ReadKey
@@ -376,7 +376,7 @@ namespace System.IO
         /// <summary>Gets whether there's input waiting on stdin.</summary>
         internal static bool StdinReady => Interop.Sys.StdinReady();
 
-        private void EchoToTerminal(char c)
+        private unsafe void EchoToTerminal(char c)
         {
             Span<byte> bytes = stackalloc byte[32]; // 32 bytes seems ample
             int bytesWritten = 1;

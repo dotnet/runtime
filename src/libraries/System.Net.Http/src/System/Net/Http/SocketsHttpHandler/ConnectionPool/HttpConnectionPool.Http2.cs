@@ -64,7 +64,7 @@ namespace System.Net.Http
 
         private bool TryGetPooledHttp2Connection(HttpRequestMessage request, [NotNullWhen(true)] out Http2Connection? connection, out HttpConnectionWaiter<Http2Connection?>? waiter)
         {
-            Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http || _kind == HttpConnectionKind.SocksTunnel || _kind == HttpConnectionKind.SslSocksTunnel);
+            Debug.Assert(_kind is HttpConnectionKind.Https or HttpConnectionKind.SslProxyTunnel or HttpConnectionKind.Http or HttpConnectionKind.ProxyTunnel or HttpConnectionKind.SocksTunnel or HttpConnectionKind.SslSocksTunnel);
 
             // Look for a usable connection.
             while (true)

@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 // Repro for issue fixed 18582 (also seein in 23309) -- stack overflow when remorphing
@@ -200,8 +201,8 @@ public class GitHub_18582
     static int s_x;
 
     [OuterLoop]
-    [Fact]
     [SkipOnCoreClr("Test uses a thread with a small stack; under GC stress this causes too many failures", RuntimeTestModes.AnyJitOptimizationStress)]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         s_x = 1;

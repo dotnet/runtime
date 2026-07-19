@@ -252,7 +252,7 @@ namespace System.Numerics
         public BigInteger(decimal value)
         {
             // First truncate to get scale to 0 and extract bits
-            Span<int> bits = stackalloc int[4];
+            Span<int> bits = [0, 0, 0, 0];
             decimal.GetBits(decimal.Truncate(value), bits);
 
             Debug.Assert(bits.Length == 4 && (bits[3] & DecimalScaleFactorMask) == 0);
@@ -797,33 +797,33 @@ namespace System.Numerics
 
         public static BigInteger Parse(string value)
         {
-            return Parse(value, NumberStyles.Integer);
+            return Parse(value, NumberStyles.Integer, provider: null);
         }
 
         public static BigInteger Parse(string value, NumberStyles style)
         {
-            return Parse(value, style, NumberFormatInfo.CurrentInfo);
+            return Parse(value, style, provider: null);
         }
 
         public static BigInteger Parse(string value, IFormatProvider? provider)
         {
-            return Parse(value, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Parse(value, NumberStyles.Integer, provider);
         }
 
         public static BigInteger Parse(string value, NumberStyles style, IFormatProvider? provider)
         {
             ArgumentNullException.ThrowIfNull(value);
-            return Parse(value.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
+            return Parse(value.AsSpan(), style, provider);
         }
 
         public static bool TryParse([NotNullWhen(true)] string? value, out BigInteger result)
         {
-            return TryParse(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse(value, NumberStyles.Integer, provider: null, out result);
         }
 
         public static bool TryParse([NotNullWhen(true)] string? value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return TryParse(value.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return TryParse(value.AsSpan(), style, provider, out result);
         }
 
         public static BigInteger Parse(ReadOnlySpan<char> value, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
@@ -838,22 +838,40 @@ namespace System.Numerics
 
         public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result)
         {
-            return TryParse(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse(value, NumberStyles.Integer, provider: null, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(value), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(value), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, out BigInteger result)
         {
-            return TryParse(utf8Text, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse(utf8Text, NumberStyles.Integer, provider: null, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
+        {
+            return Number.TryParseBigIntegerPartial(MemoryMarshal.Cast<char, Utf16Char>(s.AsSpan()), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int bytesConsumed)
+        {
+            return Number.TryParseBigIntegerPartial(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
+        {
+            return Number.TryParseBigIntegerPartial(MemoryMarshal.Cast<char, Utf16Char>(s), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
         }
 
         public static int Compare(BigInteger left, BigInteger right)
@@ -2023,6 +2041,39 @@ namespace System.Numerics
                 return sign;
             }
 
+            // Magnitudes that fit in a single 64-bit value convert directly through the correctly
+            // rounded ulong -> double conversion, which the hardware handles far more cheaply than
+            // the general limb scan below. Anything wider falls through to that scan, which stays
+            // cheap until the lower limbs actually have to be examined for rounding.
+            if (bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb)
+            {
+                double result = (double)ToUInt64(bits);
+                return sign < 0 ? -result : result;
+            }
+
+            return ConvertToDouble(value, precision: 53);
+        }
+
+        // Converts a big integer to an IEEE 754 double whose significand is rounded to `precision`
+        // significant bits using round-to-nearest, ties-to-even. For `precision` == 53 this is the
+        // correctly rounded double. For a narrower target (24 for float, 8 for BFloat16) the result is
+        // a double that already lies exactly on that target's grid, so the subsequent narrowing cast
+        // is exact and no double rounding can occur. This relies on every bits[]-backed magnitude
+        // being at least 2^31, which is comfortably within the normal range of every target, so a
+        // target subnormal (which would need more significand bits than the target holds) is never
+        // produced and rounding a single time at `precision` bits is sufficient.
+        private static double ConvertToDouble(BigInteger value, int precision)
+        {
+            Debug.Assert(precision is > 0 and <= 53);
+
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return sign;
+            }
+
             int length = bits.Length;
             int bitsPerLimb = BigIntegerCalculator.BitsPerLimb;
 
@@ -2035,42 +2086,158 @@ namespace System.Numerics
                 return sign == 1 ? double.PositiveInfinity : double.NegativeInfinity;
             }
 
-            ulong h, m, l;
-            int z, exp;
+            // Gather the top 64 significant bits of the magnitude into `man`, with the most
+            // significant set bit at bit 63, and the position of that bit within the full magnitude
+            // in `topBit`. `man` must be 64 bits wide regardless of the limb width, since a single
+            // 32-bit limb cannot hold the full significand. The top limb is always non-zero, so the
+            // leading zero count is strictly less than the limb width. `sticky` records whether any
+            // bit below `man` is set; the bits captured within the top limbs are folded in here and
+            // the remaining `lowerLimbCount` limbs are scanned lazily below, only when the rounding
+            // decision actually depends on them.
             ulong man;
+            int topBit;
+            bool sticky;
+            int lowerLimbCount;
 
             if (nint.Size == 8)
             {
-                h = bits[length - 1];
-                m = length > 1 ? bits[length - 2] : 0;
+                ulong h = bits[length - 1];
+                ulong m = length > 1 ? bits[length - 2] : 0;
 
-                z = BitOperations.LeadingZeroCount(h);
-                exp = (length - 1) * 64 - z;
+                int z = BitOperations.LeadingZeroCount(h);
+                topBit = (length - 1) * 64 + (63 - z);
                 man = z == 0 ? h : (h << z) | (m >> (64 - z));
+
+                // Any bits of `m` not captured in `man` are sticky; lower limbs are scanned later.
+                ulong mLow = z == 0 ? m : (m & ((1UL << (64 - z)) - 1));
+                sticky = mLow != 0;
+                lowerLimbCount = length - 2;
             }
             else
             {
-                h = (uint)bits[length - 1];
-                m = length > 1 ? (uint)bits[length - 2] : 0;
-                l = length > 2 ? (uint)bits[length - 3] : 0;
+                ulong h = (uint)bits[length - 1];
+                ulong m = length > 1 ? (uint)bits[length - 2] : 0;
+                ulong l = length > 2 ? (uint)bits[length - 3] : 0;
 
-                z = BitOperations.LeadingZeroCount((uint)h);
-                exp = (length - 2) * 32 - z;
-                man = (h << 32 + z) | (m << z) | (l >> 32 - z);
+                int z = BitOperations.LeadingZeroCount((uint)h);
+                topBit = (length - 1) * 32 + (31 - z);
+                man = (h << (32 + z)) | (m << z) | (l >> (32 - z));
+
+                // Any bits of `l` not captured in `man` are sticky; lower limbs are scanned later.
+                ulong lLow = l & ((1UL << (32 - z)) - 1);
+                sticky = lLow != 0;
+                lowerLimbCount = length - 3;
             }
 
-            return NumericsHelpers.GetDoubleFromParts(sign, exp, man);
+            // `man` holds 64 bits with the leading 1 at bit 63. Keep the top `precision` bits as the
+            // significand; the next bit down is the round bit and everything below it (together with
+            // `sticky`) determines whether we round up.
+            int shift = 64 - precision;
+            sticky |= (man & ((1UL << (shift - 1)) - 1)) != 0;
+            ulong roundBit = (man >> (shift - 1)) & 1;
+            ulong mantissa = man >> shift;
+
+            // The lower limbs only affect the result when `sticky` is not already set and we are at
+            // the halfway point (the round bit is set); otherwise the rounding decision is already
+            // determined. Scanning them is O(n), so skip it whenever we can.
+            if (!sticky && lowerLimbCount > 0 && roundBit != 0)
+            {
+                sticky = bits.AsSpan(0, lowerLimbCount).ContainsAnyExcept((nuint)0);
+            }
+
+            if (roundBit != 0 && (sticky || (mantissa & 1) != 0))
+            {
+                mantissa++;
+
+                if ((mantissa >> precision) != 0)
+                {
+                    // Rounding carried into a new leading bit; renormalize.
+                    mantissa >>= 1;
+                    topBit++;
+                }
+            }
+
+            int biasedExp = topBit + 1023;
+
+            if (biasedExp >= 0x7FF)
+            {
+                // The rounded value is too large to represent as a finite double.
+                return sign == 1 ? double.PositiveInfinity : double.NegativeInfinity;
+            }
+
+            // `mantissa` holds `precision` significant bits with the leading 1 at bit `precision - 1`.
+            // Shift it up so that leading 1 lands at bit 52, then drop it to form the stored 52-bit
+            // significand. For a narrower `precision` the low bits are left zero, placing the value
+            // exactly on the target type's grid.
+            ulong result = ((mantissa << (53 - precision)) & 0x000F_FFFF_FFFF_FFFF) | ((ulong)biasedExp << 52);
+
+            if (sign < 0)
+            {
+                result |= 0x8000_0000_0000_0000;
+            }
+
+            return BitConverter.UInt64BitsToDouble(result);
+        }
+
+        // Reconstructs the unsigned magnitude of a bits[]-backed BigInteger that is known to fit in
+        // 64 bits (a single 64-bit limb, or at most two 32-bit limbs).
+        private static ulong ToUInt64(nuint[] bits)
+        {
+            Debug.Assert((uint)bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb);
+
+            ulong result = bits[0];
+
+            if (BigIntegerCalculator.BitsPerLimb == 32 && bits.Length > 1)
+            {
+                result |= (ulong)bits[1] << 32;
+            }
+
+            return result;
         }
 
         /// <summary>Explicitly converts a big integer to a <see cref="Half" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to <see cref="Half" /> value.</returns>
-        public static explicit operator Half(BigInteger value) => (Half)(double)value;
+        public static explicit operator Half(BigInteger value)
+        {
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return (Half)sign;
+            }
+
+            // Every bits[]-backed magnitude is at least 2^31, which is far outside Half's finite
+            // range, so the result is always an infinity carrying the value's sign. There is no
+            // finite Half to round to, so skip the limb scan entirely.
+            return sign < 0 ? Half.NegativeInfinity : Half.PositiveInfinity;
+        }
 
         /// <summary>Explicitly converts a big integer to a <see cref="BFloat16" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to <see cref="BFloat16" /> value.</returns>
-        public static explicit operator BFloat16(BigInteger value) => (BFloat16)(double)value;
+        public static explicit operator BFloat16(BigInteger value)
+        {
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return (BFloat16)sign;
+            }
+
+            // Magnitudes up to 64 bits convert directly through the correctly rounded ulong ->
+            // BFloat16 conversion. Wider magnitudes round directly at BFloat16's 8-bit significand,
+            // so the narrowing cast is exact and cannot double round.
+            if (bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb)
+            {
+                BFloat16 result = (BFloat16)ToUInt64(bits);
+                return sign < 0 ? -result : result;
+            }
+
+            return (BFloat16)ConvertToDouble(value, precision: 8);
+        }
 
         public static explicit operator short(BigInteger value) => checked((short)((int)value));
 
@@ -2195,7 +2362,32 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static explicit operator sbyte(BigInteger value) => checked((sbyte)((int)value));
 
-        public static explicit operator float(BigInteger value) => (float)((double)value);
+        public static explicit operator float(BigInteger value)
+        {
+            int sign = value._sign;
+            nuint[]? bits = value._bits;
+
+            if (bits is null)
+            {
+                return sign;
+            }
+
+#if !MONO
+            // Magnitudes up to 64 bits convert directly through the correctly rounded ulong -> float
+            // conversion. Wider magnitudes round directly at float's 24-bit significand, so the
+            // narrowing cast is exact and cannot double round. Mono routes ulong -> float through
+            // double, which double rounds, so it is excluded and always rounds directly below.
+            if (bits.Length <= 64 / BigIntegerCalculator.BitsPerLimb)
+            {
+                float result = (float)ToUInt64(bits);
+                return sign < 0 ? -result : result;
+            }
+#endif
+
+            // Round directly at float's 24-bit significand so the double we produce already lies on
+            // float's grid and the narrowing cast is exact, avoiding any double rounding.
+            return (float)ConvertToDouble(value, precision: 24);
+        }
 
         [CLSCompliant(false)]
         public static explicit operator ushort(BigInteger value) => checked((ushort)((int)value));
@@ -3182,15 +3374,21 @@ namespace System.Numerics
         {
             if (value._bits is null)
             {
-                return nint.LeadingZeroCount(value._sign);
+                // For small values stored in _sign, use 32-bit counting to match the
+                // behavior when _bits was uint[] (where each limb was always 32-bit).
+                return uint.LeadingZeroCount((uint)value._sign);
             }
 
-            // When the value is positive, we just need to get the lzcnt of the most significant bits.
             // When negative, two's complement has infinite sign-extension of 1-bits, so LZC is always 0.
+            if (value._sign < 0)
+            {
+                return 0;
+            }
 
-            return (value._sign >= 0)
-                ? BitOperations.LeadingZeroCount(value._bits[^1])
-                : 0;
+            // When positive, count leading zeros in the most significant 32-bit word.
+            // The & 31 maps the result to 32-bit word semantics: on 64-bit, when the
+            // upper half is zero, LZC is 32 + uint_lzc, and (32 + x) & 31 == x.
+            return BitOperations.LeadingZeroCount(value._bits[^1]) & 31;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
@@ -3198,7 +3396,7 @@ namespace System.Numerics
         {
             if (value._bits is null)
             {
-                return nint.PopCount(value._sign);
+                return int.PopCount(value._sign);
             }
 
             ulong result = 0;
@@ -3215,30 +3413,33 @@ namespace System.Numerics
             }
             else
             {
-                // When the value is negative, we need to popcount the two's complement representation
-                // We'll do this "inline" to avoid needing to unnecessarily allocate.
+                // When the value is negative, we need to PopCount the two's complement
+                // representation. We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                int i = 0;
+                int firstNonZero = value._bits.AsSpan().IndexOfAnyExcept((nuint)0);
+
+                int i = firstNonZero;
                 nuint part;
 
-                do
-                {
-                    // Simply process bits, adding the carry while the previous value is zero
-
-                    part = ~value._bits[i] + 1;
-                    result += (ulong)BitOperations.PopCount(part);
-
-                    i++;
-                }
-                while ((part == 0) && (i < value._bits.Length));
+                // Negate the first non-zero limb (two's complement start).
+                part = ~value._bits[i] + 1;
+                result += (ulong)BitOperations.PopCount(part);
+                i++;
 
                 while (i < value._bits.Length)
                 {
-                    // Then process the remaining bits only utilizing the one's complement
-
+                    // Then process the remaining limbs using ones' complement.
                     part = ~value._bits[i];
                     result += (ulong)BitOperations.PopCount(part);
                     i++;
+                }
+
+                // On 64-bit, when the MSL's upper 32 bits are zero, complementing
+                // produces 0xFFFFFFFF in those bits, adding 32 phantom 1-bits.
+                // Subtract them to maintain 32-bit word semantics.
+                if (Environment.Is64BitProcess && (uint)(value._bits[^1] >> BitsPerUInt32) == 0)
+                {
+                    result -= BitsPerUInt32;
                 }
             }
 
@@ -3257,9 +3458,9 @@ namespace System.Numerics
 
             if (value._bits is null)
             {
-                nuint rs = BitOperations.RotateLeft((nuint)value._sign, rotateAmount);
+                uint rs = uint.RotateLeft((uint)value._sign, rotateAmount);
                 return neg
-                    ? new BigInteger((nint)rs)
+                    ? new BigInteger((int)rs)
                     : new BigInteger(rs);
             }
 
@@ -3278,9 +3479,9 @@ namespace System.Numerics
 
             if (value._bits is null)
             {
-                nuint rs = BitOperations.RotateRight((nuint)value._sign, rotateAmount);
+                uint rs = uint.RotateRight((uint)value._sign, rotateAmount);
                 return neg
-                    ? new BigInteger((nint)rs)
+                    ? new BigInteger((int)rs)
                     : new BigInteger(rs);
             }
 
@@ -3292,18 +3493,223 @@ namespace System.Numerics
             Debug.Assert(bits.Length > 0);
             Debug.Assert(Math.Abs(rotateLeftAmount) <= 0x80000000);
 
+            if (!Environment.Is64BitProcess)
+            {
+                // On 32-bit, nuint and uint are the same width so the standard nuint
+                // rotation algorithm (with BitsPerLimb = 32) is directly correct.
+                return RotateNuint(bits, negative, rotateLeftAmount);
+            }
+
+            // On 64-bit, each nuint limb is 64 bits, but the rotation ring width must
+            // be a multiple of 32 bits for platform-independent results. The last limb
+            // may hold only one significant 32-bit word (upper 32 bits zero).
+
+            // Count effective 32-bit words.
+            int wordCount = bits.Length * 2;
+            bool halfLimb = (uint)(bits[^1] >> BitsPerUInt32) == 0;
+            if (halfLimb) wordCount--;
+
+            // Determine if sign extension adds a 32-bit word.
+            int zWordCount = wordCount;
+            int firstNonZeroLimb = negative ? bits.IndexOfAnyExcept((nuint)0) : 0;
+
+            if (negative)
+            {
+                // The MSW's sign bit indicates whether two's complement needs an extra word.
+                bool mswSignBitSet = halfLimb
+                    ? (int)(uint)bits[^1] < 0               // bit 31 of lower half
+                    : (nint)bits[^1] < 0;                    // bit 63 (= MSW bit 31)
+
+                if (mswSignBitSet)
+                {
+                    // Sign extension needed unless value is exactly -2^(wordCount*32-1).
+                    bool isMinValue = halfLimb
+                        ? ((uint)bits[^1] == UInt32HighBit && firstNonZeroLimb == bits.Length - 1)
+                        : (bits[^1] == ((nuint)UInt32HighBit << BitsPerUInt32) && firstNonZeroLimb == bits.Length - 1);
+
+                    if (!isMinValue)
+                        ++zWordCount;
+                }
+            }
+
+            // Allocate result buffer sized for zWordCount 32-bit words.
+            int zLimbCount = (zWordCount + 1) / 2;
+            bool resultHalfLimb = (zWordCount & 1) != 0;
+
+            Span<nuint> zd = RentedBuffer.Create(zLimbCount, out RentedBuffer zdBuffer);
+            zd.Slice(bits.Length).Clear();
+            bits.CopyTo(zd);
+
+            // Two's complement conversion at nuint level.
+            if (negative)
+            {
+                NumericsHelpers.DangerousMakeTwosComplement(zd);
+
+                if (resultHalfLimb)
+                {
+                    // Complementing the zero padding in the upper 32 of the last limb
+                    // produces phantom 0xFFFFFFFF; clear it.
+                    zd[^1] = (nuint)(uint)zd[^1];
+                }
+            }
+
+            // Decompose the rotation amount at 32-bit word granularity.
+            int digitShift32 = (int)(0x80000000 / BitsPerUInt32);
+            int smallShift32 = 0;
+            bool rotateRight;
+
+            if (rotateLeftAmount < 0)
+            {
+                rotateRight = true;
+                if (rotateLeftAmount != -0x80000000)
+                    (digitShift32, smallShift32) = Math.DivRem(-(int)rotateLeftAmount, BitsPerUInt32);
+            }
+            else
+            {
+                rotateRight = false;
+                if (rotateLeftAmount != 0x80000000)
+                    (digitShift32, smallShift32) = Math.DivRem((int)rotateLeftAmount, BitsPerUInt32);
+            }
+
+            // Perform the rotation.
+            if (!resultHalfLimb)
+            {
+                // Even word count: the ring fills all nuint limbs completely.
+                // An odd 32-bit digit shift is absorbed into the nuint small shift (0..63).
+                int nuintSmallShift = (digitShift32 & 1) * BitsPerUInt32 + smallShift32;
+                int nuintDigitShift = digitShift32 >> 1;
+
+                if (rotateRight)
+                {
+                    BigIntegerCalculator.RightShiftSelf(zd, nuintSmallShift, out nuint carry);
+                    zd[^1] |= carry;
+
+                    nuintDigitShift %= zd.Length;
+                    if (nuintDigitShift != 0)
+                        BigIntegerCalculator.SwapUpperAndLower(zd, nuintDigitShift);
+                }
+                else
+                {
+                    BigIntegerCalculator.LeftShiftSelf(zd, nuintSmallShift, out nuint carry);
+                    zd[0] |= carry;
+
+                    nuintDigitShift %= zd.Length;
+                    if (nuintDigitShift != 0)
+                        BigIntegerCalculator.SwapUpperAndLower(zd, zd.Length - nuintDigitShift);
+                }
+            }
+            else
+            {
+                // Odd word count: the last limb's upper 32 bits are not part of the ring.
+                // The SIMD-accelerated nuint shift handles the bit-level rotation; a carry
+                // fixup accounts for the half-used last limb. The digit swap operates at
+                // uint granularity via MemoryMarshal.Cast because the swap boundary may
+                // fall mid-nuint.
+                if (rotateRight)
+                {
+                    if (smallShift32 != 0)
+                    {
+                        BigIntegerCalculator.RightShiftSelf(zd, smallShift32, out nuint carry);
+                        // The nuint carry is at bit positions (64-shift)..63.
+                        // For the half-limb ring, it wraps to bit (32-shift)..31 of the last word.
+                        zd[^1] |= carry >> BitsPerUInt32;
+                    }
+
+                    int effectiveDigitShift = digitShift32 % zWordCount;
+                    if (effectiveDigitShift != 0)
+                    {
+                        if (!BitConverter.IsLittleEndian)
+                            SwapHalvesWithinLimbs(zd);
+
+                        Span<uint> words = MemoryMarshal.Cast<nuint, uint>(zd).Slice(0, zWordCount);
+                        BigIntegerCalculator.SwapUpperAndLower(words, effectiveDigitShift);
+
+                        if (!BitConverter.IsLittleEndian)
+                            SwapHalvesWithinLimbs(zd);
+                    }
+                }
+                else
+                {
+                    if (smallShift32 != 0)
+                    {
+                        BigIntegerCalculator.LeftShiftSelf(zd, smallShift32, out _);
+                        // Bits that overflowed into the upper 32 of the last limb should wrap.
+                        // The nuint carry is 0 since the upper 32 were zero and shift < 32.
+                        nuint overflow = zd[^1] >> BitsPerUInt32;
+                        zd[^1] = (nuint)(uint)zd[^1];
+                        zd[0] |= overflow;
+                    }
+
+                    int effectiveDigitShift = digitShift32 % zWordCount;
+                    if (effectiveDigitShift != 0)
+                    {
+                        if (!BitConverter.IsLittleEndian)
+                            SwapHalvesWithinLimbs(zd);
+
+                        Span<uint> words = MemoryMarshal.Cast<nuint, uint>(zd).Slice(0, zWordCount);
+                        BigIntegerCalculator.SwapUpperAndLower(words, zWordCount - effectiveDigitShift);
+
+                        if (!BitConverter.IsLittleEndian)
+                            SwapHalvesWithinLimbs(zd);
+                    }
+                }
+            }
+
+            // Check sign bit and convert back from two's complement if needed.
+            bool resultNeg = resultHalfLimb
+                ? negative && (int)(uint)zd[^1] < 0
+                : negative && (nint)zd[^1] < 0;
+
+            if (resultNeg)
+            {
+                NumericsHelpers.DangerousMakeTwosComplement(zd);
+
+                if (resultHalfLimb)
+                {
+                    // Clear phantom bits from complementing the zero padding.
+                    zd[^1] = (nuint)(uint)zd[^1];
+                }
+            }
+            else
+            {
+                negative = false;
+            }
+
+            BigInteger result = new(zd, negative);
+
+            zdBuffer.Dispose();
+
+            return result;
+        }
+
+        /// <summary>
+        /// Swaps the upper and lower 32-bit halves within each nuint limb.
+        /// Used on big-endian 64-bit before/after MemoryMarshal.Cast&lt;nuint, uint&gt;
+        /// to ensure correct 32-bit word ordering.
+        /// </summary>
+        private static void SwapHalvesWithinLimbs(Span<nuint> limbs)
+        {
+            for (int i = 0; i < limbs.Length; i++)
+            {
+                nuint v = limbs[i];
+                limbs[i] = ((v & 0xFFFFFFFF) << BitsPerUInt32) | (v >> BitsPerUInt32);
+            }
+        }
+
+        /// <summary>
+        /// Rotation using the standard nuint algorithm. Only correct on 32-bit where
+        /// nuint and uint have the same width (BitsPerLimb = 32).
+        /// </summary>
+        private static BigInteger RotateNuint(ReadOnlySpan<nuint> bits, bool negative, long rotateLeftAmount)
+        {
+            Debug.Assert(!Environment.Is64BitProcess);
+
             int zLength = bits.Length;
-            int leadingZeroCount = negative ? bits.IndexOfAnyExcept(0u) : 0;
+            int leadingZeroCount = negative ? bits.IndexOfAnyExcept((nuint)0) : 0;
 
             if (negative && (nint)bits[^1] < 0
                 && (leadingZeroCount != bits.Length - 1 || bits[^1] != ((nuint)1 << (BigIntegerCalculator.BitsPerLimb - 1))))
             {
-                // For a shift of N x BitsPerLimb bit,
-                // We check for a special case where its sign bit could be outside the nuint array after 2's complement conversion.
-                // For example given [nuint.MaxValue, nuint.MaxValue, nuint.MaxValue], its 2's complement is [0x01, 0x00, 0x00]
-                // After a BitsPerLimb bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
-                // The expected result is [0x00, 0x00, nuint.MaxValue] (2's complement) or [0x00, 0x00, 0x01] when converted back
-                // If the 2's component's last element is a 0, we will track the sign externally
                 ++zLength;
             }
 
@@ -3316,8 +3722,6 @@ namespace System.Numerics
             {
                 Debug.Assert((uint)leadingZeroCount < (uint)zd.Length);
 
-                // Same as NumericsHelpers.DangerousMakeTwosComplement(zd);
-                // Leading zero count is already calculated.
                 zd[leadingZeroCount] = (nuint)(-(nint)zd[leadingZeroCount]);
                 NumericsHelpers.DangerousMakeOnesComplement(zd.Slice(leadingZeroCount + 1));
             }
@@ -3345,7 +3749,7 @@ namespace System.Numerics
         {
             if (value._bits is null)
             {
-                return nint.TrailingZeroCount(value._sign);
+                return int.TrailingZeroCount(value._sign);
             }
 
             ulong result = 0;

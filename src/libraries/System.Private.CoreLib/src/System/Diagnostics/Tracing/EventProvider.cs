@@ -237,7 +237,6 @@ namespace System.Diagnostics.Tracing
             s_returnCode = error;
         }
 
-        [RequiresUnsafe]
         private static unsafe object? EncodeObject(ref object? data, ref EventData* dataDescriptor, ref byte* dataBuffer, ref uint totalEventSize)
         /*++
 
@@ -463,7 +462,6 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventPayload">
         /// Payload for the ETW event.
         /// </param>
-        [RequiresUnsafe]
         internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, object?[] eventPayload)
         {
             WriteEventErrorCode status = WriteEventErrorCode.NoError;
@@ -674,7 +672,6 @@ namespace System.Diagnostics.Tracing
         /// <param name="data">
         /// pointer  do the event data
         /// </param>
-        [RequiresUnsafe]
         protected internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)
         {
             if (childActivityID != null)
@@ -696,7 +693,6 @@ namespace System.Diagnostics.Tracing
             return true;
         }
 
-        [RequiresUnsafe]
         internal unsafe bool WriteEventRaw(
             ref EventDescriptor eventDescriptor,
             IntPtr eventHandle,
@@ -769,7 +765,6 @@ namespace System.Diagnostics.Tracing
             _liveSessions = null;
         }
 
-        [RequiresUnsafe]
         protected override unsafe void HandleEnableNotification(
                                     EventProvider target,
                                     byte *additionalData,
@@ -870,7 +865,6 @@ namespace System.Diagnostics.Tracing
         }
 
         // Write an event.
-        [RequiresUnsafe]
         internal override unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
@@ -904,7 +898,6 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        [RequiresUnsafe]
         internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
@@ -1153,7 +1146,6 @@ namespace System.Diagnostics.Tracing
             set => _allKeywordMask = unchecked((long)value);
         }
 
-        [RequiresUnsafe]
         protected virtual unsafe void HandleEnableNotification(
                                     EventProvider target,
                                     byte *additionalData,
@@ -1234,7 +1226,6 @@ namespace System.Diagnostics.Tracing
         {
         }
 
-        [RequiresUnsafe]
         internal virtual unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
@@ -1252,14 +1243,12 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        [RequiresUnsafe]
         internal virtual unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
             return IntPtr.Zero;
         }
 
-        [RequiresUnsafe]
         protected unsafe void ProviderCallback(
                         EventProvider target,
                         byte *additionalData,
@@ -1341,7 +1330,6 @@ namespace System.Diagnostics.Tracing
             return args;
         }
 
-        [RequiresUnsafe]
         protected unsafe bool MarshalFilterData(Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data)
         {
             Debug.Assert(filterData != null);

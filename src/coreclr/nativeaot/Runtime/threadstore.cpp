@@ -30,6 +30,8 @@ volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;
 
 GVAL_IMPL_INIT(PTR_Thread, RhpSuspendingThread, 0);
 
+SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);
+
 ThreadStore * GetThreadStore()
 {
     return GetRuntimeInstance()->GetThreadStore();

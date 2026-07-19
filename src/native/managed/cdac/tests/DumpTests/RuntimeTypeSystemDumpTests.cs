@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -49,6 +50,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
         TypeHandle handle = rts.GetTypeHandle(objectMT);
         Assert.False(rts.IsFreeObjectMethodTable(handle));
+        Assert.True(rts.IsObject(handle));
     }
 
     [ConditionalTheory]
@@ -65,6 +67,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
         TypeHandle handle = rts.GetTypeHandle(freeObjMT);
         Assert.True(rts.IsFreeObjectMethodTable(handle));
+        Assert.False(rts.IsObject(handle));
     }
 
     [ConditionalTheory]
@@ -81,6 +84,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
         TypeHandle handle = rts.GetTypeHandle(stringMT);
         Assert.True(rts.IsString(handle));
+        Assert.False(rts.IsObject(handle));
     }
 
     [ConditionalTheory]
@@ -230,6 +234,29 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_IsCorElementTypeObjRef_AreConsistent(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectMethodTable"));
+        TargetPointer stringMT = Target.ReadPointer(Target.ReadGlobalPointer("StringMethodTable"));
+        TargetPointer objectArrayMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectArrayMethodTable"));
+
+        TypeHandle objectHandle = rts.GetTypeHandle(objectMT);
+        TypeHandle stringHandle = rts.GetTypeHandle(stringMT);
+        TypeHandle objectArrayHandle = rts.GetTypeHandle(objectArrayMT);
+
+        TypeHandle intPtrHandle = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.IntPtr");
+
+        Assert.True(rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(objectHandle)));
+        Assert.True(rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(stringHandle)));
+        Assert.True(rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(objectArrayHandle)));
+        Assert.False(rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(intPtrHandle)));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_ObjectMethodTableHasIntroducedMethods(TestConfiguration config)
     {
         InitializeDumpTest(config);
@@ -316,9 +343,8 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_IsValueType(TestConfiguration config)
     {
-        InitializeDumpTest(config, "LocalVariables", "full");
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
-        ILoader loader = Target.Contracts.Loader;
 
         // Object and String are not value types
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
@@ -330,20 +356,12 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         Assert.False(rts.IsValueType(rts.GetTypeHandle(stringMT)));
 
         // Int32 is a value type (TruePrimitive category)
-        TargetPointer systemAssembly = loader.GetSystemAssembly();
-        ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
-        TypeHandle int32Type = rts.GetTypeByNameAndModule(
-            "Int32",
-            "System",
-            coreLibModule);
+        TypeHandle int32Type = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.Int32");
         Assert.True(int32Type.Address != 0, "Could not find Int32 type in CoreLib");
         Assert.True(rts.IsValueType(int32Type));
 
         // Nullable<> is a value type (Category_Nullable) — loaded because Container<int>.Value is int?
-        TypeHandle nullableType = rts.GetTypeByNameAndModule(
-            "Nullable`1",
-            "System",
-            coreLibModule);
+        TypeHandle nullableType = Target.Contracts.ManagedTypeSource.GetTypeHandle("System.Nullable`1");
         Assert.True(nullableType.Address != 0, "Could not find Nullable<> type in CoreLib");
         Assert.True(rts.IsValueType(nullableType));
     }
@@ -352,20 +370,14 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_GenericTypeDefinitionContainsGenericVariables(TestConfiguration config)
     {
-        // TODO: use default debuggee as soon as heap dumps are fixed
-        InitializeDumpTest(config, "LocalVariables", "full");
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
-        ILoader loader = Target.Contracts.Loader;
 
         // Look up the generic type definition List<> in System.Private.CoreLib.
         // The debuggee instantiates List<int>, so the runtime has loaded
         // both the closed List<int> MT and the open List<T> type definition MT.
-        TargetPointer systemAssembly = loader.GetSystemAssembly();
-        ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
-        TypeHandle listTypeDef = rts.GetTypeByNameAndModule(
-            "List`1",
-            "System.Collections.Generic",
-            coreLibModule);
+        TypeHandle listTypeDef = Target.Contracts.ManagedTypeSource.GetTypeHandle(
+            "System.Collections.Generic.List`1");
         Assert.True(listTypeDef.Address != 0, "Could not find List<> type definition in CoreLib");
 
         Assert.True(rts.IsGenericTypeDefinition(listTypeDef));
