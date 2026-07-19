@@ -921,6 +921,12 @@ uint32_t interceptor_ICJI::getAddressAlignment(
     return original_ICorJitInfo->getAddressAlignment(address);
 }
 
+void interceptor_ICJI::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    original_ICorJitInfo->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
+}
+
 uint32_t interceptor_ICJI::getThreadTLSIndex(
           void** ppIndirection)
 {

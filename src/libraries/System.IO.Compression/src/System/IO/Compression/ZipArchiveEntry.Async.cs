@@ -37,7 +37,7 @@ public partial class ZipArchiveEntry
     /// <list type="bullet">
     /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
     /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed (both write-only).</description></item>
-    /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> reads directly from the archive. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="OpenAsync(CancellationToken)"/>).</description></item>
+    /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> provides a read-only stream over the entry's current content, including any modifications made in the current session. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="OpenAsync(CancellationToken)"/>).</description></item>
     /// </list>
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
@@ -134,7 +134,12 @@ public partial class ZipArchiveEntry
                 }
                 return access switch
                 {
-                    FileAccess.Read => OpenInReadModeAsync(checkOpenable: true, password, cancellationToken),
+                    // Reads in Update mode must observe content written earlier in this session and
+                    // treat a newly created entry as empty. Only an unmodified entry that already
+                    // exists in the archive can be read directly without loading it into memory.
+                    FileAccess.Read => _storedUncompressedData is not null || !_originallyInArchive
+                        ? OpenInUpdateModeForReadAsync(cancellationToken)
+                        : OpenInReadModeAsync(checkOpenable: true, password, cancellationToken),
                     FileAccess.Write => usePassword
                         ? OpenInUpdateModeWithPasswordAsync(loadExistingContent: false, password, cancellationToken)
                         : CastToStreamAsync(OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken)),
@@ -321,6 +326,22 @@ public partial class ZipArchiveEntry
         return new WrappedStream(_storedUncompressedData, this,
             onClosed: thisRef => thisRef!._currentlyOpenForWrite = false,
             notifyEntryOnWrite: true);
+    }
+
+    // Returns a read-only view over the entry's current uncompressed buffer in Update mode.
+    // It reflects modifications made earlier in the current session (and is empty for a freshly created
+    // entry), unlike OpenInReadModeAsync which reads the original bytes directly from the archive. The stream
+    // shares the underlying buffer with the entry rather than copying it, so it is not isolated from later
+    // in-place writes; callers are expected to finish reading before reopening the entry for writing.
+    private async Task<Stream> OpenInUpdateModeForReadAsync(CancellationToken cancellationToken)
+    {
+        if (_currentlyOpenForWrite)
+        {
+            throw new IOException(SR.UpdateModeOneStream);
+        }
+
+        MemoryStream uncompressedData = await GetUncompressedDataAsync(cancellationToken).ConfigureAwait(false);
+        return new MemoryStream(uncompressedData.GetBuffer(), 0, (int)uncompressedData.Length, writable: false);
     }
 
     private async Task<MemoryStream> GetUncompressedDataAsync(CancellationToken cancellationToken)
