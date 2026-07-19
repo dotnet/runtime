@@ -42,6 +42,40 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(aot: false)]
+        [TestCategory("native-mono")]
+        [SkipOnPlatform(TestPlatforms.AnyUnix, "The cmd.exe quoting behavior this covers is Windows-specific.")]
+        public async Task NativeBuildWithParenthesesInTempPath(Configuration config, bool aot)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/120327.
+            // Native compilation runs the compiler through a temporary batch file created under the
+            // temp directory. Windows user profile names can contain parentheses (e.g. "John(US)"),
+            // which puts parentheses in %TEMP%. `cmd /c "<path>"` then stripped the quotes around
+            // that path and mis-parsed it at the first '(', failing the native build with
+            // "'C:\Users\John' is not recognized as an internal or external command".
+            ProjectInfo info = CreateWasmTemplateProject(
+                Template.WasmBrowser,
+                config,
+                aot,
+                "parens_temp",
+                extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+
+            UpdateBrowserProgramFile();
+            ReplaceMainJsWithMinimalRunMain();
+
+            string tempWithParens = Path.Combine(BuildEnvironment.TmpPath, $"tmp ({info.ProjectName})");
+            Directory.CreateDirectory(tempWithParens);
+            var envVars = new Dictionary<string, string>
+            {
+                ["TMP"] = tempWithParens,
+                ["TEMP"] = tempWithParens,
+            };
+
+            PublishProject(info, config, new PublishOptions(ExtraBuildEnvironmentVariables: envVars), isNativeBuild: true);
+            await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));
+        }
+
+        [Theory]
         [BuildAndRun(aot: true)]
         [TestCategory("native-mono")]
         public void AOTNotSupportedWithNoTrimming(Configuration config, bool aot)
