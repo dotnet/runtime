@@ -82,4 +82,5 @@ internal sealed class TestPaths
     public static string CoreCLRConfiguration => GetRequiredConfig("R2RTest.CoreCLRConfiguration");
     public static bool IsReleaseCoreCLR => string.Equals(CoreCLRConfiguration, "Release", StringComparison.OrdinalIgnoreCase);
     public static bool IsNotReleaseCoreCLR => !IsReleaseCoreCLR;
+    public static bool ArmOnHostOSSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 }

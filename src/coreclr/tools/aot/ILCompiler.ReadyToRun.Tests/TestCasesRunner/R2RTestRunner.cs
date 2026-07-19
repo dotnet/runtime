@@ -14,6 +14,7 @@ namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 enum TargetRid
 {
     Host,
+    HostArm,
     BrowserWasm
 }
 
@@ -100,14 +101,6 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     /// </summary>
     public Action<ReadyToRunReader>? Validate { get; init; }
 
-    /// <summary>
-    /// When true, this compilation references the browser-wasm runtime pack (real wasm framework
-    /// assemblies and the wasm System.Private.CoreLib) if it is available, instead of the host
-    /// runtime pack. When the browser-wasm libs are not present the runner falls back to host
-    /// references so the test still runs (with a host-arch corelib). Set this on wasm compilations
-    /// (--targetarch wasm --targetos browser) so they reference target-matching libraries when run
-    /// in a job that downloads the browser-wasm libs.
-    /// </summary>
     public TargetRid TargetRid { get; init; } = TargetRid.Host;
 
     public string Name => name;
@@ -336,6 +329,7 @@ internal sealed class R2RTestRunner
         args.AddRange(compilation.TargetRid switch
         {
             TargetRid.Host => [],
+            TargetRid.HostArm => ["--targetarch", "arm"],
             TargetRid.BrowserWasm => ["--targetos", "browser", "--targetarch", "wasm"],
             _ => throw new InvalidOperationException($"Unknown target RID: {compilation.TargetRid}")
         });

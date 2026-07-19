@@ -150,7 +150,12 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    // Note: The arm tests compile for an arm32 target, but they are compiled with the host Corelib. If there are
+    // load-bearing dependencies in the arm32 corelib (that aren't present in the host corelib) that crossgen2 requires,
+    // these tests may fail. Wasm tests are similar, but since it doesn't require a special cross-build setup, they use
+    // a wasm corelib in CI. arm32 tests could be similarly set up, but it hasn't been done yet.
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.ArmOnHostOSSupported))]
     public void ArmThumbBitRelocationTargets()
     {
         var inlineableLib = new CompiledAssembly
@@ -174,7 +179,7 @@ public class R2RTestSuites
                     new CrossgenAssembly(inlineableLib) { Kind = Crossgen2InputKind.Reference },
                 ])
                 {
-                    Options = [Crossgen2Option.TargetArchArm],
+                    TargetRid = TargetRid.HostArm,
                     Validate = Validate,
                 },
             ]));
@@ -187,7 +192,7 @@ public class R2RTestSuites
     }
 
     // JitStressProcedureSplitting is only available in Debug/Checked JIT builds.
-    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotReleaseCoreCLR))]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotReleaseCoreCLR), nameof(TestPaths.ArmOnHostOSSupported))]
     public void ArmThumbBitHotColdRuntimeFunctions()
     {
         var hotColdSplitting = new CompiledAssembly
@@ -201,9 +206,9 @@ public class R2RTestSuites
             [
                 new(nameof(ArmThumbBitHotColdRuntimeFunctions), [new CrossgenAssembly(hotColdSplitting)])
                 {
+                    TargetRid = TargetRid.HostArm,
                     Options =
                     [
-                        Crossgen2Option.TargetArchArm,
                         Crossgen2Option.Optimize,
                         Crossgen2Option.HotColdSplitting,
                     ],

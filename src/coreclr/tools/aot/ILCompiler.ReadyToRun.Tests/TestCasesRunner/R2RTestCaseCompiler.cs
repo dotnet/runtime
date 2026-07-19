@@ -9,7 +9,6 @@ using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
-using Xunit.Abstractions;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
@@ -85,7 +84,7 @@ internal sealed class R2RTestCaseCompiler
                 .Where(d => d.Severity == DiagnosticSeverity.Error)
                 .Select(d => d.ToString());
             throw new InvalidOperationException(
-                $"Compilation of '{assemblyName}' failed:\nReferences:\n{string.Join(Environment.NewLine, compilation.References.Select(r => r.Display))}\n\n{string.Join("\n", errors)}");
+                $"Compilation of '{assemblyName}' failed:\n{string.Join("\n", errors)}");
         }
 
         return outputPath;
