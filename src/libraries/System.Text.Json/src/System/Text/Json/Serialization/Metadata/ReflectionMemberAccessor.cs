@@ -188,22 +188,21 @@ namespace System.Text.Json.Serialization.Metadata
 #endif
         }
 
+        private delegate TProperty ValueTypePropertyGetter<TProperty, TDeclaringType>(ref TDeclaringType obj);
+
         public override Func<TDeclaringType, TProperty> CreatePropertyGetter<TDeclaringType, TProperty>(PropertyInfo propertyInfo)
         {
             MethodInfo getMethodInfo = propertyInfo.GetMethod!;
 
-            // We can directly wrap a delegate over the getter only if the declaring type is a reference type.
-            if (!typeof(TDeclaringType).IsValueType)
+            // If TDeclaringType is a value type, the instance is passed by reference,
+            // so we need to create a wrapper delegate to account for this.
+            if (typeof(TDeclaringType).IsValueType)
             {
-                return getMethodInfo.CreateDelegate<Func<TDeclaringType, TProperty>>();
+                ValueTypePropertyGetter<TProperty, TDeclaringType> f = getMethodInfo.CreateDelegate<ValueTypePropertyGetter<TProperty, TDeclaringType>>();
+                return obj => f(ref obj);
             }
 
-#if NET
-            MethodInvoker invoker = MethodInvoker.Create(getMethodInfo);
-            return obj => (TProperty)invoker.Invoke(obj)!;
-#else
-            return obj => (TProperty)getMethodInfo.InvokeNoWrapExceptions(obj, null)!;
-#endif
+            return getMethodInfo.CreateDelegate<Func<TDeclaringType, TProperty>>();
         }
 
         public override Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo)
