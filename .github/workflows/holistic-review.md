@@ -391,6 +391,14 @@ This dispatched worker has no sub-agent or task tooling. Skip the skill's `Disco
 
 Follow the review skill for the range selected in Step 1. Consult existing PR comments and reviews as directed by the skill, but do not modify, hide, supersede, or otherwise remove prior comments or reviews.
 
+Explicitly assess whether the PR's added complexity is necessary and proportionate to its validated
+goal. Do not treat size, low-level code, or specialized algorithms as concerns by themselves when
+the problem inherently requires them and the design is well-factored, tested, and consistent with
+established direction. Escalate only when a materially simpler approach meets the same requirements,
+the complexity is poorly encapsulated or duplicative, or the demonstrated benefit is too narrow to
+justify the maintenance burden. When the tradeoff remains unresolved, use `⚠️ Needs Human Review`
+and state the specific decision a maintainer should make.
+
 Use the review skill's exact top-level body structure. After `## Holistic Review`, immediately emit `**Motivation**:`, `**Approach**:`, and `**Summary**:` in that order. Do not add a `### Holistic Assessment` subheading, substitute a `Verdict` field, or rename those fields.
 
 For each actionable finding that is specific to one changed line or a contiguous changed range, invoke the `create_pull_request_review_comment` safe output before submitting the review. Use the dispatched `pull_request_number`, the changed file path, and the exact right-side line or range. Put the complete actionable explanation in that inline comment. Do not create inline comments for unchanged lines, broad/cross-cutting findings, non-actionable observations, or findings without a precise changed location; include those only in the visible `### Detailed Findings` section of the review body. Do not duplicate a finding's full explanation in both places: identify inline findings briefly in the body and link to the relevant file and line when possible.
