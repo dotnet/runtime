@@ -3008,6 +3008,7 @@ namespace System.Tests
         [InlineData(0xB1C0000000000000UL)] // -0
         [InlineData(0x31C0000000000001UL)] // +1
         [InlineData(0x3180000000003039UL)] // 123.45
+        [InlineData(0x6C7386F26FC0FFFFUL)] // 9999999999999999 (leading digit 9)
         [InlineData(0x7800000000000000UL)] // +Infinity
         [InlineData(0xF800000000000000UL)] // -Infinity
         [InlineData(0x7C00000000000000UL)] // NaN
