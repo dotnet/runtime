@@ -9,6 +9,14 @@ public unsafe partial class Test
     public unsafe static int Main(string[] args)
     {
         Console.WriteLine($"main: {args.Length}");
+
+        // Take the addresses of the [UnmanagedCallersOnly] methods so the trimmer keeps them
+        // and their native export symbols are generated (they are only referenced from native code).
+        GC.KeepAlive((IntPtr)(delegate* unmanaged<int, int, int, int, int, int, int, int, int>)&Sum8);
+        GC.KeepAlive((IntPtr)(delegate* unmanaged<int, int, int, int, int, int, int, int, int, int>)&Sum9);
+        GC.KeepAlive((IntPtr)(delegate* unmanaged<long, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long>)&Sum16);
+        GC.KeepAlive((IntPtr)(delegate* unmanaged<int, int, int, int, int, int, int, int, int, int, int, int, void>)&Void12);
+
         Console.WriteLine($"TestOutput -> ManagedSum8 returned {CallSum8()}");
         Console.WriteLine($"TestOutput -> ManagedSum9 returned {CallSum9()}");
         Console.WriteLine($"TestOutput -> ManagedSum16 returned {CallSum16()}");
