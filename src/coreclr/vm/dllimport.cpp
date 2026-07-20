@@ -4110,7 +4110,14 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
 
     MethodTable* pStructMT = pMD->GetClassInstantiation()[0].GetMethodTable();
 
-    _ASSERTE(pStructMT->IsValueType());
+    if (!pStructMT->IsValueType())
+    {
+        // StructureMarshaler<T> is only valid for value types. If T is a reference type,
+        // gracefully fall back to the managed IL implementation rather than asserting.
+        // This can happen when tools call PrepareMethod on generic instantiations with a
+        // reference type as the type argument.
+        return false;
+    }
 
     if (pStructMT->IsBlittable() || pStructMT->IsEnum())
     {

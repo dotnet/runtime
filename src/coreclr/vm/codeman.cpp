@@ -92,21 +92,6 @@ unsigned   ExecutionManager::m_LCG_JumpStubBlockFullCount;
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
 
-// Support for new style unwind information (to allow OS to stack crawl JIT compiled code).
-
-typedef NTSTATUS (WINAPI* RtlAddGrowableFunctionTableFnPtr) (
-        PVOID *DynamicTable, PRUNTIME_FUNCTION FunctionTable, ULONG EntryCount,
-        ULONG MaximumEntryCount, ULONG_PTR rangeStart, ULONG_PTR rangeEnd);
-typedef VOID (WINAPI* RtlGrowFunctionTableFnPtr) (PVOID DynamicTable, ULONG NewEntryCount);
-typedef VOID (WINAPI* RtlDeleteGrowableFunctionTableFnPtr) (PVOID DynamicTable);
-
-// OS entry points (only exist on Win8 and above)
-static RtlAddGrowableFunctionTableFnPtr pRtlAddGrowableFunctionTable;
-static RtlGrowFunctionTableFnPtr pRtlGrowFunctionTable;
-static RtlDeleteGrowableFunctionTableFnPtr pRtlDeleteGrowableFunctionTable;
-
-static bool s_publishingActive;              // Publishing to ETW is turned on
-
 namespace
 {
     // Uses unsigned subtraction to handle sequence counter wrapping correctly.
@@ -200,40 +185,6 @@ namespace
 }
 
 /****************************************************************************/
-// initialize the entry points for new win8 unwind info publishing functions.
-// return true if the initialize is successful (the functions exist)
-bool InitUnwindFtns()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HINSTANCE hNtdll = GetModuleHandle(W("ntdll.dll"));
-    if (hNtdll != NULL)
-    {
-        void* growFunctionTable = GetProcAddress(hNtdll, "RtlGrowFunctionTable");
-        void* deleteGrowableFunctionTable = GetProcAddress(hNtdll, "RtlDeleteGrowableFunctionTable");
-        void* addGrowableFunctionTable = GetProcAddress(hNtdll, "RtlAddGrowableFunctionTable");
-
-        // All or nothing AddGroableFunctionTable is last (marker)
-        if (growFunctionTable != NULL &&
-            deleteGrowableFunctionTable != NULL &&
-            addGrowableFunctionTable != NULL)
-        {
-            pRtlGrowFunctionTable = (RtlGrowFunctionTableFnPtr) growFunctionTable;
-            pRtlDeleteGrowableFunctionTable = (RtlDeleteGrowableFunctionTableFnPtr) deleteGrowableFunctionTable;
-            pRtlAddGrowableFunctionTable = (RtlAddGrowableFunctionTableFnPtr) addGrowableFunctionTable;
-        }
-        // Don't call FreeLibrary(hNtdll) because GetModuleHandle did *NOT* increment the reference count!
-    }
-
-    return (pRtlAddGrowableFunctionTable != NULL);
-}
-
-/****************************************************************************/
 UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd)
     : m_publishLock(CrstUnwindInfoTablePublishLock)
     , m_pendingLock(CrstUnwindInfoTablePendingLock)
@@ -272,7 +223,6 @@ UnwindInfoTable::~UnwindInfoTable()
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    _ASSERTE(s_publishingActive);
 
     // We do this lock free to because too many places still want no-trigger.   It should be OK
     // It would be cleaner if we could take the lock (we did not have to be GC_NOTRIGGER)
@@ -285,7 +235,7 @@ UnwindInfoTable::~UnwindInfoTable()
 void UnwindInfoTable::Register()
 {
     // Caller holds m_publishLock.
-    NTSTATUS ret = pRtlAddGrowableFunctionTable(&hHandle, pTable, cTableCurCount, cTableMaxCount, iRangeStart, iRangeEnd);
+    NTSTATUS ret = RtlAddGrowableFunctionTable(&hHandle, pTable, cTableCurCount, cTableMaxCount, iRangeStart, iRangeEnd);
     if (ret != STATUS_SUCCESS)
     {
         _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
@@ -307,7 +257,7 @@ void UnwindInfoTable::UnRegister()
     if (handle != 0)
     {
         STRESS_LOG3(LF_JIT, LL_INFO100, "UnwindInfoTable::UnRegister Handle: %p [%p, %p]\n", handle, iRangeStart, iRangeEnd);
-        pRtlDeleteGrowableFunctionTable(handle);
+        RtlDeleteGrowableFunctionTable(handle);
     }
 }
 
@@ -323,8 +273,6 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-
-    _ASSERTE(s_publishingActive);
 
     if (m_registrationFailed)
         return;
@@ -408,7 +356,7 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 
         if (hHandle != NULL)
         {
-            pRtlGrowFunctionTable(hHandle, cTableCurCount);
+            RtlGrowFunctionTable(hHandle, cTableCurCount);
         }
         else
         {
@@ -562,9 +510,6 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     CONTRACTL_END;
     _ASSERTE(unwindInfoPtr != NULL);
 
-    if (!s_publishingActive)
-        return;
-
     UnwindInfoTable* unwindInfo = VolatileLoad(unwindInfoPtr);
     if (unwindInfo == NULL)
         return;
@@ -617,8 +562,6 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
 /* static */ void UnwindInfoTable::PublishUnwindInfoForMethod(TADDR baseAddress, PT_RUNTIME_FUNCTION methodUnwindData, int methodUnwindDataCount)
 {
     STANDARD_VM_CONTRACT;
-    if (!s_publishingActive)
-        return;
 
     TADDR entry = baseAddress + methodUnwindData->BeginAddress;
     RangeSection * pRS = ExecutionManager::FindCodeRange(entry, ExecutionManager::GetScanFlags());
@@ -653,9 +596,6 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     }
     CONTRACTL_END;
 
-    if (!s_publishingActive)
-        return;
-
     RangeSection * pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
     _ASSERTE(pRS != NULL);
     if (pRS != NULL)
@@ -672,28 +612,6 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     }
 }
 
-/*****************************************************************************/
-// We only do this on Windows x64 (other platforms use frame-based stack crawling),
-// We want good stack traces so we need to publish unwind information so ETW can
-// walk the stack.
-/* static */ void UnwindInfoTable::Initialize()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!s_publishingActive);
-
-    // If we don't have the APIs we need, give up
-    if (!InitUnwindFtns())
-        return;
-
-    s_publishingActive = true;
-}
-
 #else
 /* static */ void UnwindInfoTable::PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* methodUnwindData, int methodUnwindDataCount)
 {
@@ -701,11 +619,6 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
 }
 
 /* static */ void UnwindInfoTable::UnpublishUnwindInfoForMethod(TADDR entryPoint)
-{
-    LIMITED_METHOD_CONTRACT;
-}
-
-/* static */ void UnwindInfoTable::Initialize()
 {
     LIMITED_METHOD_CONTRACT;
 }
@@ -1810,6 +1723,11 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & RiscV64IntrinsicConstants_Zbs) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zbs))
     {
         CPUCompileFlags.Set(InstructionSet_Zbs);
+    }
+
+    if (((cpuFeatures & RiscV64IntrinsicConstants_Zicond) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zicond))
+    {
+        CPUCompileFlags.Set(InstructionSet_Zicond);
     }
 #endif
 
