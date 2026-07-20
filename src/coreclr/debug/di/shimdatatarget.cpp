@@ -106,27 +106,28 @@ HRESULT STDMETHODCALLTYPE ShimDataTarget::GetTargetInfo(CorDebugTargetInfo * pTa
         return E_INVALIDARG;
     }
 
-#if defined(_M_IX86) || defined(__i386__)
+    // host and target are the same for live debugging as of now
+#if defined(HOST_X86)
     pTargetInfo->arch = CORDB_ARCH_X86;
-#elif defined(_M_X64) || defined(__x86_64__)
+#elif defined(HOST_AMD64)
     pTargetInfo->arch = CORDB_ARCH_AMD64;
-#elif defined(_M_ARM) || defined(__arm__)
+#elif defined(HOST_ARM)
     pTargetInfo->arch = CORDB_ARCH_ARM;
-#elif defined(_M_ARM64) || defined(__aarch64__)
+#elif defined(HOST_ARM64)
     pTargetInfo->arch = CORDB_ARCH_ARM64;
-#elif defined(__loongarch64)
+#elif defined(HOST_LOONGARCH64)
     pTargetInfo->arch = CORDB_ARCH_LOONGARCH64;
-#elif defined(__riscv) && (__riscv_xlen == 64)
+#elif defined(HOST_RISCV64)
     pTargetInfo->arch = CORDB_ARCH_RISCV64;
 #else
     pTargetInfo->arch = CORDB_ARCH_UNKNOWN;
 #endif
 
-#if defined(__APPLE__)
+#if defined(HOST_APPLE)
     pTargetInfo->os = CORDB_OS_MACOS;
-#elif defined(__linux__)
+#elif defined(HOST_UNIX)
     pTargetInfo->os = CORDB_OS_LINUX;
-#elif defined(_WIN32)
+#elif defined(HOST_WINDOWS)
     pTargetInfo->os = CORDB_OS_WINDOWS;
 #else
     pTargetInfo->os = CORDB_OS_UNKNOWN;
