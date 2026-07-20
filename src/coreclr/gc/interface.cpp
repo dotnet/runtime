@@ -2075,14 +2075,6 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
     uint8_t* current_alloc_allocated = pGenGCHeap->alloc_allocated;
     size_t gen0_size = 0;
 #ifdef USE_REGIONS
-    // Walk every gen0 region. free_list_space/free_obj_space (gen0_frag) are per-generation
-    // totals accumulated across all gen0 regions, so gen0_size must likewise span all of them.
-    // The ephemeral region is the one that holds alloc_allocated and is capped there; any other
-    // gen0 region (which can be linked before or after the ephemeral one, e.g. a pinned region
-    // that survived in place) is counted up to its heap_segment_allocated. Stopping at the
-    // ephemeral region here used to drop those regions' span while still subtracting their
-    // fragmentation, making gen0_frag exceed gen0_size and underflowing the subtraction below
-    // (issue #106712).
     heap_segment* gen0_seg = generation_start_segment (gen);
     while (gen0_seg)
     {

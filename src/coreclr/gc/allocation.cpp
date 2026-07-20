@@ -2371,15 +2371,10 @@ BOOL gc_heap::a_fit_free_list_p (int gen_number,
             {
                 assert (prev_free_item == 0);
                 dprintf (3, ("couldn't use this free area, discarding"));
+                generation_free_obj_space (gen) += free_list_size;
 
-                // Update ordering for lock-free readers (e.g. GCHeap::ApproxTotalBytesInUse):
-                // remove the bytes from free_list_space before adding them to free_obj_space so
-                // the transient a concurrent reader can observe is a harmless under-count rather
-                // than an over-count that would make gen0 fragmentation (free_list_space +
-                // free_obj_space) appear larger than the gen0 span and underflow (issue #106712).
                 gen_allocator->unlink_item (a_l_idx, free_list, prev_free_item, FALSE);
                 generation_free_list_space (gen) -= free_list_size;
-                generation_free_obj_space (gen) += free_list_size;
                 assert ((ptrdiff_t)generation_free_list_space (gen) >= 0);
             }
             else
