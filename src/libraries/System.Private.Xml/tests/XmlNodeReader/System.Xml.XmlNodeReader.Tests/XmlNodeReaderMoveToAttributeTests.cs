@@ -143,7 +143,6 @@ namespace System.Xml.XmlNodeReaderTests
             Assert.Equal("other", nodeReader.Name);
         }
 
-
         [Fact]
         public void NodeReaderMoveToNonexistentAttributeWithNamespace()
         {
