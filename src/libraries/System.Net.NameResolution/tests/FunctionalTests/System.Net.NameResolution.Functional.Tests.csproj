@@ -5,12 +5,14 @@
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
     <XunitShowProgress Condition="'$(TargetOS)' == 'wasi'">true</XunitShowProgress>
-    <!-- https://github.com/dotnet/runtime/issues/126862 -->
-    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ActivityTest.cs" />
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="DnsResolverTest.cs" />
+    <Compile Include="DnsResolverLoopbackTest.cs" />
+    <Compile Include="LoopbackDnsServer.cs" />
+    <Compile Include="DnsResponseBuilder.cs" />
     <Compile Include="GetHostByAddressTest.cs" />
     <Compile Include="GetHostByNameTest.cs" />
     <Compile Include="ResolveTest.cs" />
@@ -36,5 +38,8 @@
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
              Link="Common\TestUtilities\System\DisableParallelization.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="DnsResolverImpersonatedTest.cs" />
   </ItemGroup>
 </Project>

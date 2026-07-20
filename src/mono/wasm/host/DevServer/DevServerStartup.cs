@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using System.Net.WebSockets;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -71,28 +70,6 @@ internal sealed class DevServerStartup
         });
 
         app.UseWebSockets();
-
-        if (options.OnConsoleConnected is not null)
-        {
-            app.Use(async (ctx, next) =>
-            {
-                if (ctx.Request.Path.StartsWithSegments("/console"))
-                {
-                    if (!ctx.WebSockets.IsWebSocketRequest)
-                    {
-                        ctx.Response.StatusCode = 400;
-                        return;
-                    }
-
-                    using WebSocket socket = await ctx.WebSockets.AcceptWebSocketAsync();
-                    await options.OnConsoleConnected(socket);
-                }
-                else
-                {
-                    await next(ctx);
-                }
-            });
-        }
 
         app.UseEndpoints(endpoints =>
         {

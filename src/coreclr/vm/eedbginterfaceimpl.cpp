@@ -237,7 +237,7 @@ OBJECTHANDLE EEDbgInterfaceImpl::GetThreadException(Thread *pThread)
     }
     CONTRACTL_END;
 
-    OBJECTHANDLE oh = pThread->GetThrowableAsHandle();
+    OBJECTHANDLE oh = pThread->GetThrowableAsPseudoHandle();
 
     if (oh != NULL)
     {
@@ -259,6 +259,7 @@ bool EEDbgInterfaceImpl::IsThreadExceptionNull(Thread *pThread)
     }
     CONTRACTL_END;
 
+<<<<<<< HEAD
     //
     // We're assuming that the handle on the
     // thread is a strong handle and we're goona check it for
@@ -274,6 +275,9 @@ bool EEDbgInterfaceImpl::IsThreadExceptionNull(Thread *pThread)
     void *pThrowable = *((void**)h);
 
     return pThrowable == NULL;
+=======
+    return pThread->IsThrowableNull();
+>>>>>>> origin/main
 }
 
 void EEDbgInterfaceImpl::ClearThreadException(Thread *pThread)
@@ -1323,17 +1327,6 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
     *pEEIsManagedExceptionStateMask = Thread::TSNC_DebuggerIsManagedException;
 }
 
-void EEDbgInterfaceImpl::DebuggerModifyingLogSwitch (int iNewLevel,
-                                                     const WCHAR *pLogSwitchName)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-}
-
 
 HRESULT EEDbgInterfaceImpl::SetIPFromSrcToDst(Thread *pThread,
                                               SLOT addrStart,
@@ -1381,11 +1374,11 @@ void EEDbgInterfaceImpl::SetDebugState(Thread *pThread,
 
     if (state == THREAD_SUSPEND)
     {
-        pThread->SetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+        pThread->SetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
     }
     else
     {
-        pThread->ResetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+        pThread->ResetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
     }
 }
 
@@ -1443,7 +1436,7 @@ CorDebugUserState EEDbgInterfaceImpl::GetPartialUserState(Thread *pThread)
         ret |= (unsigned)USER_STOPPED;
     }
 
-    if (ts & Thread::TS_Interruptible)
+    if (ts & Thread::TS_WaitSleepJoin)
     {
         ret |= (unsigned)USER_WAIT_SLEEP_JOIN;
     }

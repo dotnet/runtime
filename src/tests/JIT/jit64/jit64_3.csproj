@@ -1,4 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Huge methods need large native JIT allocations, so limit concurrent Crossgen2 compilations. -->
+    <CompositeCrossGen2TestExtraArguments>$(CompositeCrossGen2TestExtraArguments) --parallelism:1</CompositeCrossGen2TestExtraArguments>
+  </PropertyGroup>
+
   <ItemGroup>
     <MergedWrapperProjectReference Include="opt/**/*.??proj" />
   </ItemGroup>

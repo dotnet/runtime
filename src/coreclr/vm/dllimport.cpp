@@ -4108,12 +4108,19 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
 
     MethodTable* pStructMT = pMD->GetClassInstantiation()[0].GetMethodTable();
 
-    _ASSERTE(pStructMT->IsValueType());
-
-    if (pStructMT->IsBlittable())
+    if (!pStructMT->IsValueType())
     {
-        // No need to generate stubs for blittable types since they can be marshaled by value without any transformation.
-        // The default IL implementation is correct.
+        // StructureMarshaler<T> is only valid for value types. If T is a reference type,
+        // gracefully fall back to the managed IL implementation rather than asserting.
+        // This can happen when tools call PrepareMethod on generic instantiations with a
+        // reference type as the type argument.
+        return false;
+    }
+
+    if (pStructMT->IsBlittable() || pStructMT->IsEnum())
+    {
+        // No need to generate stubs for blittable types or enums since they can be marshaled
+        // by value without any transformation. The default IL implementation is correct.
         return false;
     }
 
@@ -5904,6 +5911,12 @@ PCODE JitILStub(MethodDesc* pStubMD)
         // We need an entry point that can be called multiple times
         pCode = pStubMD->GetMultiCallableAddrOfCode();
     }
+    else
+    {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pStubMD->GetPortableEntryPoint());
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+    }
 
     return pCode;
 }
@@ -6001,6 +6014,7 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
     }
     CONTRACTL_END;
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame());
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this function is called by CLR to native assembly stubs which are called by
     // managed code as a result, we need an unwind and continue handler to translate
@@ -6011,6 +6025,7 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     return pMD->GetPInvokeTarget();
 }
@@ -6034,6 +6049,7 @@ static void GetILStubForCalli(VASigCookie* pVASigCookie, MethodDesc* pMD)
 
     PCODE pTempILStub = (PCODE)NULL;
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame());
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this function is called by CLR to native assembly stubs which are called by
     // managed code as a result, we need an unwind and continue handler to translate
@@ -6133,6 +6149,7 @@ static void GetILStubForCalli(VASigCookie* pVASigCookie, MethodDesc* pMD)
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 }
 
 EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock, VASigCookie *pVASigCookie, MethodDesc *pMD)

@@ -208,8 +208,7 @@ FCIMPL4(HRESULT, MetaDataImport::GetUserString, IMDInternalImport* pScope, mdTok
 {
     FCALL_CONTRACT;
 
-    BOOL bHasExtendedChars;
-    return pScope->GetUserString(tk, pCount, &bHasExtendedChars, pszName);
+    return pScope->GetUserString(tk, pCount, pszName);
 }
 FCIMPLEND
 

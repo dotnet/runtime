@@ -105,6 +105,10 @@ namespace ILCompiler.DependencyAnalysis
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,
             ArrayOfEmbeddedDataNode,
+            InterfaceDispatchCellInfoSection,
+            InterfaceDispatchCellSection,
+            GvmDispatchCellInfoSection,
+            GvmDispatchCellSection,
 
             //
             // Wasm type signatures (need to be emitted some time before the unordered phase)

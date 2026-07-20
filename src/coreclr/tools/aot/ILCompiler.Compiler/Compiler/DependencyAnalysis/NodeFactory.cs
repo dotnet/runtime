@@ -48,8 +48,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             _target = context.Target;
 
-            InitialInterfaceDispatchStub = new AddressTakenExternFunctionSymbolNode(new Utf8String("RhpInitialDynamicInterfaceDispatch"u8));
-
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
             _vtableSliceProvider = vtableSliceProvider;
@@ -105,11 +103,6 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public NameMangler NameMangler
-        {
-            get;
-        }
-
-        public ISymbolNode InitialInterfaceDispatchStub
         {
             get;
         }
@@ -457,9 +450,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new FrozenRuntimeTypeNode(key, withMetadata: false);
             });
 
-            _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
+            _dispatchCells = new NodeCache<DispatchCellKey, DispatchCellNode>(callSiteCell =>
             {
-                return new InterfaceDispatchCellNode(callSiteCell.Target, callSiteCell.CallsiteId);
+                return new DispatchCellNode(callSiteCell.Target, callSiteCell.CallsiteId);
             });
 
             _interfaceDispatchMaps = new NodeCache<TypeDesc, InterfaceDispatchMapNode>((TypeDesc type) =>
@@ -881,11 +874,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private NodeCache<DispatchCellKey, InterfaceDispatchCellNode> _interfaceDispatchCells;
+        private NodeCache<DispatchCellKey, DispatchCellNode> _dispatchCells;
 
-        public InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method, ISortableSymbolNode callSite = null)
+        public DispatchCellNode DispatchCell(MethodDesc method, ISortableSymbolNode callSite = null)
         {
-            return _interfaceDispatchCells.GetOrAdd(new DispatchCellKey(method, callSite));
+            return _dispatchCells.GetOrAdd(new DispatchCellKey(method, callSite));
         }
 
         private NodeCache<MethodDesc, RuntimeMethodHandleNode> _runtimeMethodHandles;
@@ -1569,7 +1562,7 @@ namespace ILCompiler.DependencyAnalysis
             byte[] stringBytes = new byte[stringBytesCount + 1];
             Encoding.UTF8.GetBytes(str, 0, str.Length, stringBytes, 0);
 
-            Utf8String symbolName = new Utf8String("__utf8str_" + NameMangler.GetMangledStringName(str));
+            Utf8String symbolName = Utf8String.Concat("__utf8str_"u8, NameMangler.GetMangledStringName(str).AsSpan());
 
             return ReadOnlyDataBlob(symbolName, stringBytes, 1);
         }
@@ -1651,8 +1644,6 @@ namespace ILCompiler.DependencyAnalysis
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
 
-        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode();
-
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
         public Dictionary<ISymbolNode, (Utf8String Name, bool Hidden)> NodeAliases = new Dictionary<ISymbolNode, (Utf8String, bool)>();
@@ -1673,7 +1664,6 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
-            graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             graph.AddRoot(ModuleInitializerList, "Module initializer list is always generated");
 
             if (_inlinedThreadStatics.IsComputed())

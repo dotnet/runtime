@@ -17,7 +17,7 @@ public class PerfNotIf
     bool m_i;
 
 
-    PerfNotIf()
+    public PerfNotIf()
     {
         m_i = true;
         /* JVM

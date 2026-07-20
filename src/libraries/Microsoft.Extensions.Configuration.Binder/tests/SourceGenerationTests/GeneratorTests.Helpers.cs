@@ -206,17 +206,15 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             return assemblies;
         }
 
-        public static byte[] CreateAssemblyImage(Compilation compilation)
+        private static void AssertCanCreateAssemblyImage(Compilation compilation)
         {
-            MemoryStream ms = new MemoryStream();
-            var emitResult = compilation.Emit(ms);
+            var emitResult = compilation.Emit(Stream.Null);
             if (!emitResult.Success)
             {
                 // Explicit failures to include in the test output.
                 string errorMessage = string.Join(Environment.NewLine, emitResult.Diagnostics.Select(d => d.ToString()));
                 throw new InvalidOperationException(errorMessage);
             }
-            return ms.ToArray();
         }
     }
 }

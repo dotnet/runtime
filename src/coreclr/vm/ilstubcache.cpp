@@ -131,7 +131,6 @@ namespace
             case DynamicMethodDesc::StubDelegateInvokeMethod:  return "IL_STUB_Delegate_Invoke";
             case DynamicMethodDesc::StubUnboxingIL:         return "IL_STUB_UnboxingStub";
             case DynamicMethodDesc::StubInstantiating:      return "IL_STUB_InstantiatingStub";
-            case DynamicMethodDesc::StubWrapperDelegate:    return "IL_STUB_WrapperDelegate_Invoke";
             case DynamicMethodDesc::StubTailCallStoreArgs:  return "IL_STUB_StoreTailCallArgs";
             case DynamicMethodDesc::StubTailCallCallTarget: return "IL_STUB_CallTailCallTarget";
             case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_VirtualStaticMethodDispatch";
@@ -233,11 +232,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     if (SF_IsDelegateInvokeMethod(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubDelegateInvokeMethod);
-    }
-    else
-    if (SF_IsWrapperDelegateStub(dwStubFlags))
-    {
-        pMD->SetILStubType(DynamicMethodDesc::StubWrapperDelegate);
     }
     else
     if (SF_IsUnboxingILStub(dwStubFlags))

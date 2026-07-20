@@ -113,7 +113,7 @@ HRESULT GetCurrentThreadTypeNT5(THDTYPE* pType)
     {
         GCX_PREEMP();
 
-        SafeComHolderPreemp<IComThreadingInfo> pThreadInfo;
+        ComHolderPreemp<IComThreadingInfo> pThreadInfo;
         hr = SafeQueryInterface(pObjCurrCtx, IID_IComThreadingInfo, (IUnknown **)&pThreadInfo);
         if(hr == S_OK)
         {
@@ -144,7 +144,7 @@ HRESULT GetCurrentApartmentTypeNT5(IObjectContext *pObjCurrCtx, APTTYPE* pType)
     {
         GCX_PREEMP();
 
-        SafeComHolderPreemp<IComThreadingInfo> pThreadInfo;
+        ComHolderPreemp<IComThreadingInfo> pThreadInfo;
         hr = SafeQueryInterface(pObjCurrCtx, IID_IComThreadingInfo, (IUnknown **)&pThreadInfo);
         if(hr == S_OK)
         {

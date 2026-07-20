@@ -168,6 +168,10 @@ namespace System.Reflection
 
         public override Type GetGenericTypeDefinition() => throw new NotSupportedException(SR.NotSupported_ModifiedType);
 
+#if NET11_0_OR_GREATER
+        public override Type? GetNullableUnderlyingType() => _unmodifiedType.GetNullableUnderlyingType() is not null ? GetGenericArguments()[0] : null;
+#endif
+
         // Generic parameters are supported.
         internal override RoType[] GetGenericTypeParametersNoCopy() => _unmodifiedType.GetGenericTypeParametersNoCopy();
         internal override RoType[] GetGenericTypeArgumentsNoCopy() => _unmodifiedType.GetGenericTypeArgumentsNoCopy();

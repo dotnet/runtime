@@ -195,7 +195,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     return pCurDomain->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
 }
 
-extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly)
+extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, QCall::ObjectHandleOnStack retLoadedAssembly)
 {
     QCALL_CONTRACT;
 
@@ -213,7 +213,9 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
 
     if (pwzILPath != NULL)
     {
-        pILImage = PEImage::OpenImage(pwzILPath);
+        pILImage = PEImage::OpenImage(pwzILPath,
+            MDInternalImport_Default,
+            AssemblyProbeExtension::Probe(SString{ SString::Literal, pwzILPath }));
 
         // Need to verify that this is a valid CLR assembly.
         if (!pILImage->CheckILFormat())

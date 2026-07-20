@@ -72,7 +72,7 @@ namespace
         }
         CONTRACTL_END;
 
-        SafeComHolder<IMetaDataDispenserEx> pDispenser;
+        ComHolderAnyMode<IMetaDataDispenserEx> pDispenser;
 
         // Get the Dispenser interface.
         CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void**)&pDispenser);
@@ -406,10 +406,10 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     // add such a reference. Also because the referenced assembly if dynamic strong name, it may
     // not be ready to be hashed!
 
-    SafeComHolder<IMetaDataAssemblyEmit> pAssemblyEmit;
+    ComHolderAnyMode<IMetaDataAssemblyEmit> pAssemblyEmit;
     DefineEmitScope(
         IID_IMetaDataAssemblyEmit,
-        &pAssemblyEmit);
+        (void**)&pAssemblyEmit);
 
     // Now create a dynamic PE file out of the name & metadata
     PEAssemblyHolder pPEAssembly;
@@ -1662,15 +1662,12 @@ mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssembl
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(refedAssembly));
         PRECONDITION(CheckPointer(pAssemEmitter, NULL_NOT_OK));
     }
     CONTRACTL_END;
-
-    SafeComHolder<IMetaDataAssemblyEmit> emitHolder;
 
     AssemblySpec spec;
     spec.InitializeSpec(refedAssembly->GetPEAssembly());
@@ -2566,12 +2563,22 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
             // Create an AssemblyNameObject from the string.
             FriendAssemblyNameHolder pFriendAssemblyName;
             pFriendAssemblyName = new FriendAssemblyName_t;
-            hr = pFriendAssemblyName->InitNoThrow(displayName);
-
-            if (SUCCEEDED(hr))
+            EX_TRY
             {
-                hr = pFriendAssemblyName->CheckFriendAssemblyName();
+                pFriendAssemblyName->Init(displayName);
             }
+            EX_HOOK
+            {
+                // Preserve the underlying reason the friend assembly name could not be
+                // parsed (e.g. a malformed identity string) as the inner exception, while
+                // reporting the assembly that declared the invalid friend.
+                Exception *pInnerException = GET_EXCEPTION();
+                if (!pInnerException->IsTransient())
+                    EEFileLoadException::Throw(pAssembly, pInnerException->GetHR(), pInnerException);
+            }
+            EX_END_HOOK
+
+            hr = pFriendAssemblyName->CheckFriendAssemblyName();
 
             if (FAILED(hr))
             {

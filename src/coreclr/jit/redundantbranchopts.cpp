@@ -442,7 +442,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
     // Exclude floating point relops.
     //
-    if (varTypeIsFloating(vnStore->TypeOfVN(domApp.m_args[0])))
+    if (varTypeIsFloating(vnStore->TypeOfVN(domApp.GetArg(0))))
     {
         return;
     }
@@ -459,16 +459,16 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
     // If the dominating compare has the form R(x,y), see if tree compare has the
     // form R*(x,y) or R*(y,x) where we can infer R* from R.
     //
-    VNFunc const domFunc = domApp.m_func;
+    VNFunc const domFunc = domApp.GetFunc();
     VNFuncApp    treeApp;
     if (inRange && ValueNumStore::VNFuncIsComparison(domFunc) && vnStore->GetVNFunc(rii->treeNormVN, &treeApp))
     {
-        if (((treeApp.m_args[0] == domApp.m_args[0]) && (treeApp.m_args[1] == domApp.m_args[1])) ||
-            ((treeApp.m_args[0] == domApp.m_args[1]) && (treeApp.m_args[1] == domApp.m_args[0])))
+        if (((treeApp.GetArg(0) == domApp.GetArg(0)) && (treeApp.GetArg(1) == domApp.GetArg(1))) ||
+            ((treeApp.GetArg(0) == domApp.GetArg(1)) && (treeApp.GetArg(1) == domApp.GetArg(0))))
         {
-            const bool swapped = (treeApp.m_args[0] == domApp.m_args[1]);
+            const bool swapped = (treeApp.GetArg(0) == domApp.GetArg(1));
 
-            VNFunc const treeFunc = treeApp.m_func;
+            VNFunc const treeFunc = treeApp.GetFunc();
             VNFunc       domFunc1 = domFunc;
 
             if (swapped)
@@ -493,8 +493,8 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
             }
         }
 
-        if (((treeApp.m_args[0] == domApp.m_args[0]) || (treeApp.m_args[0] == domApp.m_args[1]) ||
-             (treeApp.m_args[1] == domApp.m_args[0]) || (treeApp.m_args[1] == domApp.m_args[1])) &&
+        if (((treeApp.GetArg(0) == domApp.GetArg(0)) || (treeApp.GetArg(0) == domApp.GetArg(1)) ||
+             (treeApp.GetArg(1) == domApp.GetArg(0)) || (treeApp.GetArg(1) == domApp.GetArg(1))) &&
             optRelopTryInferWithOneEqualOperand(domApp, treeApp, rii))
         {
             return;
@@ -512,19 +512,19 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
         return;
     }
 
-    if (domApp.m_args[1] != vnStore->VNZeroForType(TYP_INT))
+    if (domApp.GetArg(1) != vnStore->VNZeroForType(TYP_INT))
     {
         return;
     }
 
-    const ValueNum predVN = domApp.m_args[0];
+    const ValueNum predVN = domApp.GetArg(0);
     VNFuncApp      predFuncApp;
     if (!vnStore->GetVNFunc(predVN, &predFuncApp))
     {
         return;
     }
 
-    genTreeOps const predOper = genTreeOps(predFuncApp.m_func);
+    genTreeOps const predOper = genTreeOps(predFuncApp.GetFunc());
 
     if (!GenTree::StaticOperIs(predOper, GT_AND, GT_OR, GT_NOT))
     {
@@ -535,9 +535,9 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
     //
     // See if one of {AND,OR,NOT} operands is related.
     //
-    for (unsigned int i = 0; (i < predFuncApp.m_arity) && !rii->canInfer; i++)
+    for (unsigned int i = 0; (i < predFuncApp.GetArity()) && !rii->canInfer; i++)
     {
-        ValueNum pVN = predFuncApp.m_args[i];
+        ValueNum pVN = predFuncApp.GetArg(i);
 
         for (auto vnRelation : s_vnRelations)
         {
@@ -612,13 +612,13 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
                                                    RelopImplicationInfo* rii)
 {
     // Canonicalize constants to be on the right.
-    VNFunc   domFunc = domApp.m_func;
-    ValueNum domOp1  = domApp.m_args[0];
-    ValueNum domOp2  = domApp.m_args[1];
+    VNFunc   domFunc = domApp.GetFunc();
+    ValueNum domOp1  = domApp.GetArg(0);
+    ValueNum domOp2  = domApp.GetArg(1);
 
-    VNFunc   treeFunc = treeApp.m_func;
-    ValueNum treeOp1  = treeApp.m_args[0];
-    ValueNum treeOp2  = treeApp.m_args[1];
+    VNFunc   treeFunc = treeApp.GetFunc();
+    ValueNum treeOp1  = treeApp.GetArg(0);
+    ValueNum treeOp2  = treeApp.GetArg(1);
 
     if (vnStore->IsVNConstant(domOp1))
     {
@@ -790,7 +790,8 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         return false;
     }
 
-    const ValueNum treeNormVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
+    // Not const: the relop simplification below may rewrite `tree` and refresh this VN.
+    ValueNum treeNormVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
 
     if (vnStore->IsVNConstant(treeNormVN))
     {
@@ -800,12 +801,12 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
     // Exclude floating point compares.
     //
     VNFuncApp treeApp;
-    if (!vnStore->GetVNFunc(treeNormVN, &treeApp) || !ValueNumStore::VNFuncIsComparison(treeApp.m_func))
+    if (!vnStore->GetVNFunc(treeNormVN, &treeApp) || !ValueNumStore::VNFuncIsComparison(treeApp.GetFunc()))
     {
         return false;
     }
 
-    if (varTypeIsFloating(vnStore->TypeOfVN(treeApp.m_args[0])))
+    if (varTypeIsFloating(vnStore->TypeOfVN(treeApp.GetArg(0))))
     {
         return false;
     }
@@ -1013,15 +1014,15 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             VNFunc    newRelopFunc = VNF_NONE;
             if (vnStore->IsVNRelop(andVN, &andApp) && vnStore->GetVNFunc(blockPathVN, &pathApp))
             {
-                if (andApp.m_args[0] == pathApp.m_args[0] && andApp.m_args[1] == pathApp.m_args[1])
+                if (andApp.GetArg(0) == pathApp.GetArg(0) && andApp.GetArg(1) == pathApp.GetArg(1))
                 {
-                    newRelopFunc = andApp.m_func;
+                    newRelopFunc = andApp.GetFunc();
                 }
-                else if (andApp.m_args[0] == pathApp.m_args[1] && andApp.m_args[1] == pathApp.m_args[0])
+                else if (andApp.GetArg(0) == pathApp.GetArg(1) && andApp.GetArg(1) == pathApp.GetArg(0))
                 {
                     andVN = vnStore->GetRelatedRelop(andVN, ValueNumStore::VN_RELATION_KIND::VRK_Swap);
                     vnStore->GetVNFunc(andVN, &andApp);
-                    newRelopFunc = andApp.m_func;
+                    newRelopFunc = andApp.GetFunc();
                 }
 
                 JITDUMPEXEC(vnStore->vnDump(this, blockPathVN));
@@ -1105,6 +1106,9 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             }
 
             fgValueNumberTree(tree);
+
+            // We rewrote block's relop; refresh its VN so later dom branches don't use a stale one (#128062).
+            treeNormVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
         }
         madeChanges = true;
 
@@ -2227,7 +2231,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
     // of leaf can meaningfully make it here.
     //
     VNFuncApp treeNormVNFuncApp;
-    if (!vnStore->GetVNFunc(treeNormVN, &treeNormVNFuncApp) || !(treeNormVNFuncApp.m_arity == 2))
+    if (!vnStore->GetVNFunc(treeNormVN, &treeNormVNFuncApp) || !(treeNormVNFuncApp.GetArity() == 2))
     {
         return false;
     }
@@ -2249,7 +2253,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
 
     for (int i = 0; i < 2; i++)
     {
-        const ValueNum phiDefVN = treeNormVNFuncApp.m_args[i];
+        const ValueNum phiDefVN = treeNormVNFuncApp.GetArg(i);
         VNPhiDef       phiDef;
         if (!vnStore->GetPhiDef(phiDefVN, &phiDef))
         {
@@ -2323,7 +2327,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
 
         // Find VNs for the relevant phi inputs from this block.
         //
-        ValueNum newRelopArgs[] = {treeNormVNFuncApp.m_args[0], treeNormVNFuncApp.m_args[1]};
+        ValueNum newRelopArgs[] = {treeNormVNFuncApp.GetArg(0), treeNormVNFuncApp.GetArg(1)};
         bool     updatedArg     = false;
 
         for (int i = 0; i < 2; i++)
@@ -2376,10 +2380,10 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
         // pred. See if that simplifies the relop.
         //
         const ValueNum substVN =
-            vnStore->VNForFunc(tree->TypeGet(), treeNormVNFuncApp.m_func, newRelopArgs[0], newRelopArgs[1]);
+            vnStore->VNForFunc(tree->TypeGet(), treeNormVNFuncApp.GetFunc(), newRelopArgs[0], newRelopArgs[1]);
 
         JITDUMP("... substituting (" FMT_VN "," FMT_VN ") for (" FMT_VN "," FMT_VN ") in " FMT_VN " gives " FMT_VN "\n",
-                newRelopArgs[0], newRelopArgs[1], treeNormVNFuncApp.m_args[0], treeNormVNFuncApp.m_args[1], treeNormVN,
+                newRelopArgs[0], newRelopArgs[1], treeNormVNFuncApp.GetArg(0), treeNormVNFuncApp.GetArg(1), treeNormVN,
                 substVN);
 
         // If this VN is constant, we're all set!

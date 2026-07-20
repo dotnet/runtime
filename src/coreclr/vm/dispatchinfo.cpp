@@ -698,7 +698,7 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(!pMD->IsAsyncMethod());
     }
@@ -840,10 +840,7 @@ void DispatchMemberInfo::SetUpDispParamMarshalerForMarshalInfo(int iParam, Marsh
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pInfo));
     }
     CONTRACTL_END;
@@ -963,9 +960,9 @@ DispatchMemberInfo* DispatchInfo::FindMember(DISPID DispID)
     if ((DispID == DISPID_UNKNOWN) || (DispID == -2))
         return NULL;
 
-    // Lookup in the hashtable to find member with the specified DISPID. Note: this hash is unsynchronized, but Gethash
+    // Lookup in the hashtable to find member with the specified DISPID. Note: this hash is unsynchronized, but LookupValueByUniqueKey
     // doesn't require synchronization.
-    UPTR Data = (UPTR)m_DispIDToMemberInfoMap.Gethash(DispID2HashKey(DispID));
+    UPTR Data = (UPTR)m_DispIDToMemberInfoMap.LookupValueByUniqueKey(DispID2HashKey(DispID));
     if (Data != -1)
     {
         // We have found the member, so ensure it is initialized and return it.
@@ -1631,7 +1628,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
             {
                 // VarArg scenario
                 // Here we only unmarshal the object whose corresponding VARIANT is VarArg
-                OleVariant::MarshalVariantArrayComToOle((BASEARRAYREF*)&pObjs->TmpObj, (void *)(aByrefArgOleVariant[i]), NULL, TRUE, FALSE, TRUE, TRUE, -1);
+                OleVariant::MarshalVarArgVariantArrayToOle((PTRARRAYREF*)&pObjs->TmpObj, (aByrefArgOleVariant[i]));
             }
             else
             {
@@ -2149,7 +2146,13 @@ void DispatchInfo::MarshalParamManagedToNativeRef(DispatchMemberInfo *pMemberInf
         MethodTable *pElementMT = (*(BASEARRAYREF *)pSrcObj)->GetArrayElementTypeHandle().GetMethodTable();
 
         // Convert the contents of the managed array into the original SAFEARRAY.
-        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *)pSrcObj, *V_ARRAYREF(pRefVar), ElementVt, pElementMT);
+        PCODE pConvertCode;
+        {
+            GCX_PREEMP();
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, ElementVt, pElementMT, TRUE)->GetMultiCallableAddrOfCode();
+        }
+
+        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *)pSrcObj, *V_ARRAYREF(pRefVar), ElementVt, pElementMT, pConvertCode);
     }
     else
 {
@@ -2953,8 +2956,8 @@ DISPID DispatchInfo::GenerateDispID()
     }
     CONTRACTL_END;
 
-    // Find the next unused DISPID. Note, the hash is unsynchronized, but Gethash doesn't require synchronization.
-    for (; (UPTR)m_DispIDToMemberInfoMap.Gethash(DispID2HashKey(m_CurrentDispID)) != -1; m_CurrentDispID++);
+    // Find the next unused DISPID. Note, the hash is unsynchronized, but LookupValueByUniqueKey doesn't require synchronization.
+    for (; (UPTR)m_DispIDToMemberInfoMap.LookupValueByUniqueKey(DispID2HashKey(m_CurrentDispID)) != -1; m_CurrentDispID++);
     return m_CurrentDispID++;
 }
 

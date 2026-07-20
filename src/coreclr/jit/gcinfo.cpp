@@ -196,7 +196,7 @@ void GCInfo::gcMarkRegSetNpt(regMaskTP regMask DEBUGARG(bool forceOutput))
 
 void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
 {
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     regMaskTP regMask = genRegMask(reg);
 
     switch (type)
@@ -211,7 +211,7 @@ void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
             gcMarkRegSetNpt(regMask);
             break;
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 }
 
 //------------------------------------------------------------------------

@@ -415,17 +415,10 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(nuint_t))
                 {
                     // We have at least 4/8 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<nuint>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUIntPtrLittleEndian(source);
                 }
                 else
                 {
@@ -437,7 +430,7 @@ namespace System
 
                     for (int i = 0; i < source.Length; i++)
                     {
-                        nuint part = Unsafe.Add(ref sourceRef, i);
+                        nuint part = source[i];
                         part <<= (i * 8);
                         result |= part;
                     }
@@ -1175,6 +1168,30 @@ namespace System
                 result = default;
                 return false;
             }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nuint result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(s.AsSpan(), style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nuint, nuint_t>(ref result), out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nuint result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(s, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nuint, nuint_t>(ref result), out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out nuint result, out int bytesConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(utf8Text, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out Unsafe.As<nuint, nuint_t>(ref result), out bytesConsumed) == Number.ParsingStatus.OK;
         }
 
         //

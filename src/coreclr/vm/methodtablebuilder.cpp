@@ -1174,6 +1174,10 @@ MethodTableBuilder::CopyParentVtable()
      }
 }
 
+#ifdef TARGET_ARM64
+extern "C" uint64_t GetSveLengthFromOS();
+#endif
+
 //*******************************************************************************
 // Determine if this is the special SIMD type System.Numerics.Vector<T>, whose
 // size is determined dynamically based on the hardware and the presence of JIT
@@ -1186,7 +1190,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (!bmtProp->fIsIntrinsicType)
         return false;
 
@@ -1205,6 +1209,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     CORJIT_FLAGS CPUCompileFlags       = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
     uint32_t     numInstanceFieldBytes = 16;
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
     {
         numInstanceFieldBytes = 64;
@@ -1213,13 +1218,19 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     {
         numInstanceFieldBytes = 32;
     }
+#elif defined(TARGET_ARM64)
+    if (CPUCompileFlags.IsSet(InstructionSet_VectorT))
+    {
+        numInstanceFieldBytes = (uint32_t) GetSveLengthFromOS();
+    }
+#endif
 
     if (numInstanceFieldBytes != 16)
     {
         bmtFP->NumInstanceFieldBytes = numInstanceFieldBytes;
         return true;
     }
-#endif // TARGET_X86 || TARGET_AMD64
+#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
 
     return false;
 }
@@ -4450,7 +4461,7 @@ IS_VALUETYPE:
                             SetHasFieldsWhichMustBeInited();
 
 #ifdef FEATURE_READYTORUN
-                        if (!(pByValueClass->IsTruePrimitive() || pByValueClass->IsEnum()))
+                        if (!pByValueClass->IsPrimitive())
                         {
                             CheckLayoutDependsOnOtherModules(pByValueClass);
                         }
@@ -10738,10 +10749,9 @@ void MethodTableBuilder::CheckForSystemTypes()
 
         // Check if it is a primitive type
         CorElementType type = CorTypeInfo::FindPrimitiveType(name);
-        if (type != ELEMENT_TYPE_END)
+        if (type != ELEMENT_TYPE_END && CorTypeInfo::IsPrimitiveType(type))
         {
-            pMT->SetInternalCorElementType(type);
-            pMT->SetIsTruePrimitive();
+            pMT->SetInternalCorElementType(type, true);
 
 #if defined(TARGET_X86) && defined(UNIX_X86_ABI)
             switch (type)
@@ -10773,18 +10783,6 @@ void MethodTableBuilder::CheckForSystemTypes()
         else if (strcmp(name, g_NullableName) == 0)
         {
             pMT->SetIsNullable();
-        }
-        else if (strcmp(name, g_RuntimeArgumentHandleName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
-        else if (strcmp(name, g_RuntimeMethodHandleInternalName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
-        else if (strcmp(name, g_RuntimeFieldHandleInternalName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
         }
         else if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
         {
@@ -12026,7 +12024,7 @@ VOID MethodTableBuilder::CheckLayoutDependsOnOtherModules(MethodTable * pDepende
     STANDARD_VM_CONTRACT;
 
     // These cases are expected to be handled by the caller
-    _ASSERTE(!(pDependencyMT == g_pObjectClass || pDependencyMT->IsTruePrimitive() || ((g_pEnumClass != NULL) && pDependencyMT->IsEnum())));
+    _ASSERTE(!(pDependencyMT == g_pObjectClass || pDependencyMT->IsPrimitive()));
 
     //
     // WARNING: Changes in this algorithm are potential ReadyToRun breaking changes !!!
