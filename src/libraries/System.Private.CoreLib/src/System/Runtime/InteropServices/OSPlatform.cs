@@ -15,6 +15,21 @@ namespace System.Runtime.InteropServices
 
         public static OSPlatform Windows { get; } = new OSPlatform("WINDOWS");
 
+        public static OSPlatform Android { get; } = new OSPlatform("ANDROID");
+
+        public static OSPlatform iOS { get; } = new OSPlatform("IOS");
+
+        public static OSPlatform tvOS { get; } = new OSPlatform("TVOS");
+
+        public static OSPlatform Browser { get; } = new OSPlatform("BROWSER");
+
+        public static OSPlatform MacCatalyst { get; } = new OSPlatform("MACCATALYST");
+
+        public static OSPlatform Wasi { get; } = new OSPlatform("WASI");
+
+        public static OSPlatform OpenBSD { get; } = new OSPlatform("OPENBSD");
+
+        public static OSPlatform Haiku { get; } = new OSPlatform("HAIKU");
         internal string Name { get; }
 
         private OSPlatform(string osPlatform)
