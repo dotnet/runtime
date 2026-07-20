@@ -823,7 +823,7 @@ static uint64_t GetMemorySizeMultiplier(char units)
     return 1;
 }
 
-#if !defined(__APPLE__) && !defined(__HAIKU__)
+#ifdef TARGET_LINUX
 // Try to read the MemAvailable entry from /proc/meminfo.
 // Return true if the /proc/meminfo existed, the entry was present and we were able to parse it.
 static bool ReadMemAvailable(uint64_t* memAvailable)
@@ -856,7 +856,7 @@ static bool ReadMemAvailable(uint64_t* memAvailable)
 
     return foundMemAvailable;
 }
-#endif // !defined(__APPLE__) && !defined(__HAIKU__)
+#endif // TARGET_LINUX
 
 // Get size of the largest cache on the processor die
 // Parameters:

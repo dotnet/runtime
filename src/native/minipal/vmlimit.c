@@ -9,7 +9,7 @@
 
 #include <sys/resource.h>
 
-#if !defined(__APPLE__) && !defined(__HAIKU__)
+#ifdef TARGET_LINUX
 static size_t get_vmalloc_total(void)
 {
     FILE* memInfoFile = fopen("/proc/meminfo", "r");
@@ -50,7 +50,7 @@ static size_t get_vmalloc_total(void)
 
     return result;
 }
-#endif // !defined(__APPLE__) && !defined(__HAIKU__)
+#endif // TARGET_LINUX
 
 size_t minipal_get_virtual_address_space_limit(void)
 {
@@ -73,13 +73,13 @@ size_t minipal_get_virtual_address_space_limit(void)
     }
 #endif
 
-#if !defined(__APPLE__) && !defined(__HAIKU__)
+#ifndef TARGET_LINUX
     size_t vmallocTotal = get_vmalloc_total();
     if (vmallocTotal < limit)
     {
         limit = vmallocTotal;
     }
-#endif
+#endif // TARGET_LINUX
 
     cached_limit = limit;
 
