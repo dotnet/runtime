@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="DerivedTypeIsNotSupportedMessageFormat">
         <source>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</source>
-        <target state="new">Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</target>
+        <target state="translated">Il tipo specificato '{0}' non è un tipo derivato supportato per il tipo polimorfico '{1}'. I tipi derivati devono essere assegnabili al tipo di base.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedTypeIsNotSupportedTitle">
         <source>Derived type is not a supported polymorphic derived type.</source>
-        <target state="new">Derived type is not a supported polymorphic derived type.</target>
+        <target state="translated">Il tipo derivato non è un tipo derivato polimorfico supportato.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
@@ -64,22 +64,22 @@
       </trans-unit>
       <trans-unit id="DerivedTypeDiscriminatorCollisionMessageFormat">
         <source>The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</source>
-        <target state="new">The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</target>
+        <target state="translated">Il discriminatore di tipo '{0}' è specificato più di una volta per il tipo polimorfico '{1}'. I tipi derivati devono corrispondere a discriminatori univoci.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedTypeDiscriminatorCollisionTitle">
         <source>Derived types produce a duplicate type discriminator.</source>
-        <target state="new">Derived types produce a duplicate type discriminator.</target>
+        <target state="translated">I tipi derivati producono un discriminatore di tipo duplicato.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleMessageFormat">
         <source>The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</source>
-        <target state="new">The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</target>
+        <target state="translated">Il tipo derivato dedotto '{0}' è meno accessibile del tipo base polimorfico '{1}'. I tipi derivati dedotti devono essere accessibili almeno quanto il tipo di base.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleTitle">
         <source>Inferred derived type is less accessible than the polymorphic base type.</source>
-        <target state="new">Inferred derived type is less accessible than the polymorphic base type.</target>
+        <target state="translated">Il tipo derivato dedotto è meno accessibile del tipo base polimorfico.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
