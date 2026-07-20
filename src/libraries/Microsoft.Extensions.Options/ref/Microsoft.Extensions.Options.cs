@@ -225,7 +225,6 @@ namespace Microsoft.Extensions.Options
     public partial class OptionsManager<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptions<TOptions>, Microsoft.Extensions.Options.IOptionsSnapshot<TOptions> where TOptions : class
     {
         public OptionsManager(Microsoft.Extensions.Options.IOptionsFactory<TOptions> factory) { }
-        public OptionsManager(Microsoft.Extensions.Options.IOptionsFactory<TOptions> factory, Microsoft.Extensions.Options.IOptionsMonitorCache<TOptions> validatedCache) { }
         public TOptions Value { get { throw null; } }
         public virtual TOptions Get(string? name) { throw null; }
     }

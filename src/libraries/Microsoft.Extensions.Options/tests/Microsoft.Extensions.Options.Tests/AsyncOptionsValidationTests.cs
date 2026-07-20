@@ -199,8 +199,8 @@ namespace Microsoft.Extensions.Options.Tests
 
             ServiceProvider sp = services.BuildServiceProvider();
 
-            // The custom validator is not async-capable, so the host falls back to the sync path
-            // (validator.Validate()) — no InvalidCastException and no async validation.
+            // The custom validator is not async-capable, so the host falls back to the sync path (validator.Validate())
+            // This means no InvalidCastException and no async validation.
             IStartupValidator validator = sp.GetRequiredService<IStartupValidator>();
             Assert.IsType<CustomSyncOnlyValidator>(validator);
             Assert.False(validator is IAsyncStartupValidator);
@@ -374,12 +374,40 @@ namespace Microsoft.Extensions.Options.Tests
 
             await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
 
-            // After startup seeds the shared cache, synchronous IOptions<T>.Value returns the validated value.
+            // After startup seeds the shared cache, the singleton IOptions<T>.Value returns the validated value.
             Assert.Equal("validated", sp.GetRequiredService<IOptions<FakeOptions>>().Value.Message);
 
-            // IOptionsSnapshot<T>.Get (scoped) also serves the startup-validated value instead of re-validating synchronously.
+            // IOptionsSnapshot<T> is scoped and creates per scope; it does not consult the shared validated cache, so
+            // for an async-only validator (whose synchronous Validate cannot run) a scoped access fails fast.
             using IServiceScope scope = sp.CreateScope();
-            Assert.Equal("validated", scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get(null).Message);
+            Assert.Throws<OptionsValidationException>(
+                () => scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get(null));
+        }
+
+        [Fact]
+        public void AsyncValidatedOptions_SyncCapableValidator_SnapshotIsPerScope()
+        {
+            int configureCount = 0;
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = $"v{Interlocked.Increment(ref configureCount)}")
+                .ValidateOnStart();
+            services.AddSingleton<IValidateOptions<FakeOptions>>(new SyncCapableAsyncValidator());
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            FakeOptions first, second;
+            using (IServiceScope scope = sp.CreateScope())
+            {
+                first = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get(null);
+            }
+            using (IServiceScope scope = sp.CreateScope())
+            {
+                second = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get(null);
+            }
+
+            // A validator that is async-capable but whose synchronous Validate works keeps the per-scope IOptionsSnapshot
+            // semantics: each scope creates and validates a fresh instance rather than sharing the startup-validated one.
+            Assert.NotSame(first, second);
         }
 
         [Fact]
@@ -825,6 +853,14 @@ namespace Microsoft.Extensions.Options.Tests
         private class CustomSyncOnlyValidator : IStartupValidator
         {
             public void Validate() { }
+        }
+
+        private sealed class SyncCapableAsyncValidator : IValidateOptions<FakeOptions>, IAsyncValidateOptions<FakeOptions>
+        {
+            public ValidateOptionsResult Validate(string? name, FakeOptions options) => ValidateOptionsResult.Success;
+
+            public Task<ValidateOptionsResult> ValidateAsync(string? name, FakeOptions options, CancellationToken cancellationToken = default)
+                => Task.FromResult(ValidateOptionsResult.Success);
         }
 
         private sealed class OptionsEventSourceListener : EventListener
