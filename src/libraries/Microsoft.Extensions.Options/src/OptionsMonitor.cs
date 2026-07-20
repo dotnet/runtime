@@ -176,6 +176,10 @@ namespace Microsoft.Extensions.Options
                     }
                 }
 
+                // Always surface the failure through the event source so a reload failure is observable even when no
+                // error callback was supplied. This is independent of the user callback below.
+                OptionsEventSource.Log.ReloadValidationFailed(name, typeof(TOptions), ex);
+
                 try
                 {
                     config.OnError?.Invoke(name, ex);

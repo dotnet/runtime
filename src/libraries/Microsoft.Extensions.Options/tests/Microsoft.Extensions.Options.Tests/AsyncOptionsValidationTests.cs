@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -519,6 +520,30 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        public void ValidateOnChange_InvalidReload_WithoutErrorCallback_EmitsEventSourceFailure()
+        {
+            using var listener = new OptionsEventSourceListener();
+            var source = new ReloadSource();
+            var validator = new ReloadTestValidator { Fail = true };
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "reloaded")
+                .ValidateOnChange();
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(source);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            SeedCache(sp, "good");
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            source.Trigger();
+
+            Assert.True(listener.FailureReported.Wait(TimeSpan.FromSeconds(30)), "The reload failure was not reported to the event source.");
+            // The failure is observable through the event source even though no onError callback was supplied.
+            Assert.Equal("good", monitor.CurrentValue.Message);
+        }
+
+        [Fact]
         public void ValidateOnChange_InvalidReload_FailReads_NextReadThrows()
         {
             var source = new ReloadSource();
@@ -671,6 +696,33 @@ namespace Microsoft.Extensions.Options.Tests
         private class CustomSyncOnlyValidator : IStartupValidator
         {
             public void Validate() { }
+        }
+
+        private sealed class OptionsEventSourceListener : EventListener
+        {
+            public ManualResetEventSlim FailureReported { get; } = new ManualResetEventSlim();
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == "Microsoft-Extensions-Options")
+                {
+                    EnableEvents(eventSource, EventLevel.Error);
+                }
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (eventData.EventName == "ReloadValidationFailed")
+                {
+                    FailureReported.Set();
+                }
+            }
+
+            public override void Dispose()
+            {
+                base.Dispose();
+                FailureReported.Dispose();
+            }
         }
 
         private sealed class CapabilitySpyValidator : IValidateOptions<FakeOptions>, IAsyncValidateOptions<FakeOptions>

@@ -10,7 +10,9 @@ namespace Microsoft.Extensions.Options
     public enum OptionsReloadValidationBehavior
     {
         /// <summary>
-        /// Keeps serving the last successfully validated value and reports the failure through the error callback.
+        /// Keeps serving the last successfully validated value.
+        /// The failure is reported to the <c>Microsoft-Extensions-Options</c> event source
+        /// and, if one was supplied, to the error callback.
         /// </summary>
         KeepLastGood,
 
