@@ -7047,7 +7047,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		g_assert (bb);
 	}
 
-	if (cfg->gsharedvt_min) {
+	if (cfg->gsharedvt_min && cfg->method == method) {
 		/*
 		 * Minimal gsharedvt (used for llvmonly, see mini_method_compile) only
 		 * supports methods whose signature and locals have no variable-length
@@ -7069,6 +7069,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 * Methods that don't depend on their variable-length arguments (the common
 		 * minimal-gsharedvt case, e.g. List<T>.get_Count) have non-variable
 		 * signatures/locals and are unaffected.
+		 *
+		 * gsharedvt_min is compile-wide and mono_method_to_ir runs recursively for
+		 * inlinees, so only promote when compiling the root method (cfg->method ==
+		 * method); otherwise the cleared flag would leak into the outer method even
+		 * if the inline is aborted.
 		 */
 		gboolean needs_full = mini_is_gsharedvt_variable_signature (sig);
 		for (int i = 0; !needs_full && i < header->num_locals; ++i) {
