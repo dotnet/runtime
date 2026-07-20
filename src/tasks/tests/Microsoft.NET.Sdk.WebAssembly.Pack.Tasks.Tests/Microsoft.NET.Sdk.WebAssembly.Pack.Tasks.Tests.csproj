@@ -1,14 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.props" />
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <IsTestProject>true</IsTestProject>
+    <TestFramework>xunit</TestFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" />
-
     <ProjectReference Include="..\..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
   </ItemGroup>
 
