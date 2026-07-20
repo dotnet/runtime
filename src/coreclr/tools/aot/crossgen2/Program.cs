@@ -78,17 +78,19 @@ namespace ILCompiler
 
             (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
-            bool isFixedInstructionSet = ReadyToRunCompilerContext.IsFixedInstructionSetTarget(targetOS, targetArchitecture);
+            bool targetAllowsRuntimeCodeGeneration = ReadyToRunCompilerContext.GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
 
-            // Crossgen2 is partial AOT and its pre-compiled methods can be
-            // thrown away at runtime if they mismatch in required ISAs or
-            // computed layouts of structs. Thus we want to ensure that usage
-            // of Vector<T> is only optimistic and doesn't hard code a dependency
-            // that would cause the entire image to be invalidated.
-            bool isVectorTOptimistic = !isFixedInstructionSet;
+            // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
+            // they mismatch in required ISAs or computed layouts of structs. On targets that allow
+            // runtime code generation we keep Vector<T> usage optimistic so we never hard code a
+            // dependency that could invalidate the entire image. Fixed-instruction-set targets (Apple
+            // mobile, WASM) have no runtime code generation, so an ISA mismatch cannot invalidate the
+            // image; there we make Vector<T> non-optimistic and hard code the ISA support so the
+            // pre-compiled code uses it directly instead of falling back to the interpreter.
+            bool isVectorTOptimistic = targetAllowsRuntimeCodeGeneration;
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
-            if (isFixedInstructionSet)
+            if (!targetAllowsRuntimeCodeGeneration)
             {
                 // These platforms do not support jitted code, so we want to ensure that we don't
                 // need to fall back to the interpreter for any hardware-intrinsic optimizations.
@@ -100,7 +102,7 @@ namespace ILCompiler
                 SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger,
                 allowOptimistic: allowOptimistic,
                 isReadyToRun: true);
-            if (isFixedInstructionSet)
+            if (!targetAllowsRuntimeCodeGeneration)
             {
                 instructionSetSupport = Helpers.GetFixedInstructionSetSupport(instructionSetSupport);
             }
@@ -148,6 +150,7 @@ namespace ILCompiler
             // Initialize type system context
             //
             _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib,
+                targetAllowsRuntimeCodeGeneration,
                 instructionSetSupport,
                 oldTypeSystemContext: null);
 
@@ -292,6 +295,7 @@ namespace ILCompiler
                         bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
                         typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib,
+                            targetAllowsRuntimeCodeGeneration,
                             _typeSystemContext.InstructionSetSupport,
                             _typeSystemContext);
                         typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;

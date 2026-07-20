@@ -58,11 +58,13 @@ namespace ILCompiler
             TargetDetails details,
             SharedGenericsMode genericsMode,
             bool bubbleIncludesCoreModule,
+            bool targetAllowsRuntimeCodeGeneration,
             InstructionSetSupport instructionSetSupport,
             CompilerTypeSystemContext oldTypeSystemContext)
             : base(details, genericsMode)
         {
             BubbleIncludesCoreModule = bubbleIncludesCoreModule;
+            TargetAllowsRuntimeCodeGeneration = targetAllowsRuntimeCodeGeneration;
             InstructionSetSupport = instructionSetSupport;
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
@@ -99,22 +101,18 @@ namespace ILCompiler
 
         public InstructionSetSupport InstructionSetSupport { get; }
 
-        public bool TargetAllowsRuntimeCodeGeneration
-        {
-            get
-            {
-#if FEATURE_DYNAMIC_CODE_COMPILED
-                return !IsFixedInstructionSetTarget(Target.OperatingSystem, Target.Architecture);
-#else
-                return false;
-#endif
-            }
-        }
+        public bool TargetAllowsRuntimeCodeGeneration { get; }
 
-        public static bool IsFixedInstructionSetTarget(TargetOS operatingSystem, TargetArchitecture architecture)
+        public static bool GetTargetAllowsRuntimeCodeGeneration(TargetOS operatingSystem, TargetArchitecture architecture)
         {
-            return operatingSystem is TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator
-                || architecture is TargetArchitecture.Wasm32;
+#if FEATURE_DYNAMIC_CODE_COMPILED
+            return operatingSystem is not (TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator or TargetOS.Browser or TargetOS.Wasi)
+                && architecture is not TargetArchitecture.Wasm32;
+#else
+            _ = operatingSystem;
+            _ = architecture;
+            return false;
+#endif
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)

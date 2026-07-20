@@ -369,6 +369,9 @@ namespace System.CommandLine
             unsupportedInstructionSets.ExpandInstructionSetByReverseImplication(instructionSetSupport.Architecture);
             unsupportedInstructionSets.Set64BitInstructionSetVariants(instructionSetSupport.Architecture);
 
+            if (instructionSetSupport.Architecture is TargetArchitecture.X86 or TargetArchitecture.ARM)
+                unsupportedInstructionSets.Set64BitInstructionSetVariantsUnconditionally(instructionSetSupport.Architecture);
+
             return new InstructionSetSupport(
                 instructionSetSupport.SupportedFlags,
                 unsupportedInstructionSets,
