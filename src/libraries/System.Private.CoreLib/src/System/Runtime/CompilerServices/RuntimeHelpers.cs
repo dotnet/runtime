@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
+
+#if NATIVEAOT
+using Internal.Runtime;
+#endif
 
 namespace System.Runtime.CompilerServices
 {
@@ -196,5 +199,35 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         internal static void SetNextCallAsyncContinuation(object value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
+
+        internal static unsafe bool TypeEquivalent(object a, object b)
+        {
+            Debug.Assert(a is not null);
+            Debug.Assert(b is not null);
+
+#if MONO
+            // Mono doesn't have MethodTables nor Equivalence
+            return a.GetType() == b.GetType();
+#else
+            MethodTable* pMTa = GetMethodTable(a);
+            MethodTable* pMTb = GetMethodTable(b);
+
+            if (pMTa == pMTb)
+                return true;
+
+#if FEATURE_TYPEEQUIVALENCE
+            bool ret = pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence &&
+                       // only use QCall to check the type equivalence scenario
+                       AreTypesEquivalent(pMTa, pMTb);
+
+            GC.KeepAlive(a);
+            GC.KeepAlive(b);
+
+            return ret;
+#else
+            return false;
+#endif // FEATURE_TYPEEQUIVALENCE
+#endif
+        }
     }
 }
