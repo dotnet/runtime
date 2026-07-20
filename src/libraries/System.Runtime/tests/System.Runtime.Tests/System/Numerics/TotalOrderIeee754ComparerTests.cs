@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -66,6 +67,7 @@ namespace System.Runtime.Tests
             var comparer = new TotalOrderIeee754Comparer<double>();
             Assert.Equal(result, Math.Sign(comparer.Compare(x, y)));
         }
+
         public static IEnumerable<object[]> HalfTestData
         {
             get
@@ -373,6 +375,38 @@ namespace System.Runtime.Tests
             public static bool operator >(StubFloatingPointIeee754 left, StubFloatingPointIeee754 right) => false;
             public static bool operator <=(StubFloatingPointIeee754 left, StubFloatingPointIeee754 right) => false;
             public static bool operator >=(StubFloatingPointIeee754 left, StubFloatingPointIeee754 right) => false;
+        }
+
+        public static IEnumerable<object[]> Decimal32TestData
+        {
+            get
+            {
+                yield return new object[] { Decimal32.Zero, Decimal32.Zero, 0 };
+                yield return new object[] { Decimal32.NegativeZero, Decimal32.NegativeZero, 0 };
+                yield return new object[] { Decimal32.Zero, Decimal32.NegativeZero, 1 };
+                yield return new object[] { Decimal32.NegativeZero, Decimal32.Zero, -1 };
+                yield return new object[] { Decimal32.Zero, Decimal32.One, -1 };
+                yield return new object[] { Decimal32.PositiveInfinity, Decimal32.One, 1 };
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0xFC00_0000), Decimal32.NegativeInfinity, -1 };
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0xFC00_0000), Decimal32.NegativeOne, -1 };
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0x7C00_0000), Decimal32.One, 1 };
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0x7C00_0000), Decimal32.PositiveInfinity, 1 };
+                yield return new object[] { Decimal32.NaN, Decimal32.NaN, 0 };
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0xFC00_0000), Unsafe.BitCast<uint, Decimal32>(0x7C00_0000), -1 };
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0x7C00_0000), Unsafe.BitCast<uint, Decimal32>(0x7C00_0001), -1 }; // implementation defined, not part of IEEE 754 totalOrder
+
+                // Decimal specific
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0x3300_0001), Unsafe.BitCast<uint, Decimal32>(0x3280_000A), -1 }; // 1e1 < 10e0
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0x3300_0001), Unsafe.BitCast<uint, Decimal32>(0x3280_0009), 1 }; // 1e1 > 9e0
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Decimal32TestData))]
+        public void TotalOrderTestDecimal32(Decimal32 x, Decimal32 y, int result)
+        {
+            var comparer = new TotalOrderIeee754Comparer<Decimal32>();
+            Assert.Equal(result, Math.Sign(comparer.Compare(x, y)));
         }
     }
 }
