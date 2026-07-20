@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Runtime.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ControlledExecutionTests
     {
         private volatile bool _readyForCancellation;

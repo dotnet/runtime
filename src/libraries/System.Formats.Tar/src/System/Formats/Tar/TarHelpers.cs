@@ -49,27 +49,8 @@ namespace System.Formats.Tar
             => type is TarEntryType.Directory or TarEntryType.DirectoryList ? (int)DefaultDirectoryMode : (int)DefaultFileMode;
 
         // Helps advance the stream a total number of bytes larger than int.MaxValue.
-        internal static void AdvanceStream(Stream archiveStream, long bytesToDiscard)
-        {
-            if (archiveStream.CanSeek)
-            {
-                archiveStream.Position += bytesToDiscard;
-            }
-            else if (bytesToDiscard > 0)
-            {
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToDiscard));
-                while (bytesToDiscard > 0)
-                {
-                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
-                    archiveStream.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
-                    bytesToDiscard -= currentLengthToRead;
-                }
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
-        }
-
-        // Asynchronously helps advance the stream a total number of bytes larger than int.MaxValue.
-        internal static async ValueTask AdvanceStreamAsync(Stream archiveStream, long bytesToDiscard, CancellationToken cancellationToken)
+        internal static async ValueTask AdvanceStreamCoreAsync<TAdapter>(Stream archiveStream, long bytesToDiscard, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -80,45 +61,44 @@ namespace System.Formats.Tar
             else if (bytesToDiscard > 0)
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToDiscard));
-                while (bytesToDiscard > 0)
+                try
                 {
-                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
-                    await archiveStream.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
-                    bytesToDiscard -= currentLengthToRead;
+                    while (bytesToDiscard > 0)
+                    {
+                        int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
+                        await TAdapter.ReadExactlyAsync(archiveStream, buffer.AsMemory(0, currentLengthToRead), cancellationToken).ConfigureAwait(false);
+                        bytesToDiscard -= currentLengthToRead;
+                    }
                 }
-                ArrayPool<byte>.Shared.Return(buffer);
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 
         // Helps copy a specific number of bytes from one stream into another.
-        internal static void CopyBytes(Stream origin, Stream destination, long bytesToCopy)
-        {
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToCopy));
-            while (bytesToCopy > 0)
-            {
-                int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
-                origin.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
-                destination.Write(buffer.AsSpan(0, currentLengthToRead));
-                bytesToCopy -= currentLengthToRead;
-            }
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
-
-        // Asynchronously helps copy a specific number of bytes from one stream into another.
-        internal static async ValueTask CopyBytesAsync(Stream origin, Stream destination, long bytesToCopy, CancellationToken cancellationToken)
+        internal static async ValueTask CopyBytesCoreAsync<TAdapter>(Stream origin, Stream destination, long bytesToCopy, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToCopy));
-            while (bytesToCopy > 0)
+            try
             {
-                int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
-                Memory<byte> memory = buffer.AsMemory(0, currentLengthToRead);
-                await origin.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
-                await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
-                bytesToCopy -= currentLengthToRead;
+                while (bytesToCopy > 0)
+                {
+                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
+                    Memory<byte> memory = buffer.AsMemory(0, currentLengthToRead);
+                    await TAdapter.ReadExactlyAsync(origin, memory, cancellationToken).ConfigureAwait(false);
+                    await TAdapter.WriteAsync(destination, memory, cancellationToken).ConfigureAwait(false);
+                    bytesToCopy -= currentLengthToRead;
+                }
             }
-            ArrayPool<byte>.Shared.Return(buffer);
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
         // Returns the number of bytes until the next multiple of the record size.
@@ -194,6 +174,9 @@ namespace System.Formats.Tar
             return false;
         }
 
+        // Chooses the compatible regular file entry type for the specified format.
+        internal static TarEntryType GetRegularFileEntryTypeForFormat(TarEntryFormat format) => format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+
         // When writing an entry that came from an archive of a different format, if its entry type happens to
         // be an incompatible regular file entry type, convert it to the compatible one.
         // No change for all other entry types.
@@ -268,7 +251,7 @@ namespace System.Formats.Tar
 
         [DoesNotReturn]
         private static void ThrowInvalidNumber() =>
-            throw new InvalidDataException(SR.Format(SR.TarInvalidNumber));
+            throw new InvalidDataException(SR.TarInvalidNumber);
 
         // Returns the null-terminated UTF8 string contained in the specified buffer.
         internal static string ParseUtf8String(ReadOnlySpan<byte> buffer)
@@ -290,22 +273,11 @@ namespace System.Formats.Tar
         // After the file contents, there may be zero or more null characters,
         // which exist to ensure the data is aligned to the record size. Skip them and
         // set the stream position to the first byte of the next entry.
-        internal static int SkipBlockAlignmentPadding(Stream archiveStream, long size)
+        internal static async ValueTask<int> SkipBlockAlignmentPaddingCoreAsync<TAdapter>(Stream archiveStream, long size, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             int bytesToSkip = CalculatePadding(size);
-            AdvanceStream(archiveStream, bytesToSkip);
-            return bytesToSkip;
-        }
-
-        // After the file contents, there may be zero or more null characters,
-        // which exist to ensure the data is aligned to the record size.
-        // Asynchronously skip them and set the stream position to the first byte of the next entry.
-        internal static async ValueTask<int> SkipBlockAlignmentPaddingAsync(Stream archiveStream, long size, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            int bytesToSkip = CalculatePadding(size);
-            await AdvanceStreamAsync(archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(false);
+            await AdvanceStreamCoreAsync<TAdapter>(archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(false);
             return bytesToSkip;
         }
 

@@ -26,7 +26,7 @@ namespace System.Net.Sockets
             PreferInlineCompletions = 16,
             IsSocket = 32,
             IsDisconnected = 64,
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             TfoEnabled = 128
 #endif
         }
@@ -70,7 +70,7 @@ namespace System.Net.Sockets
             set => SetFlag(Flags.IsSocket, value);
         }
 
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
         internal bool TfoEnabled
         {
             get => (_flags & Flags.TfoEnabled) != 0;
@@ -98,7 +98,7 @@ namespace System.Net.Sockets
             target.DualMode = DualMode;
             target.ExposedHandleOrUntrackedConfiguration = ExposedHandleOrUntrackedConfiguration;
             target.IsSocket = IsSocket;
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             target.TfoEnabled = TfoEnabled;
 #endif
         }
@@ -130,6 +130,8 @@ namespace System.Net.Sockets
                 // If transitioning from non-blocking to blocking, we keep the native socket in non-blocking mode, and emulate
                 // blocking operations within SocketAsyncContext on top of epoll/kqueue.
                 // This avoids problems with switching to native blocking while there are pending operations.
+                // Note: After ConnectAsync completes, we may restore the native socket to blocking mode
+                // to optimize subsequent synchronous operations (see SetBlocking/SetHandleBlocking).
                 if (value)
                 {
                     AsyncContext.SetHandleNonBlocking();
@@ -138,6 +140,20 @@ namespace System.Net.Sockets
         }
 
         internal bool IsUnderlyingHandleBlocking => !AsyncContext.IsHandleNonBlocking;
+
+        /// <summary>
+        /// Sets the underlying socket to blocking mode.
+        /// Only sets blocking if the user hasn't explicitly set Blocking = false (i.e., IsNonBlocking is false).
+        /// This is only safe to call when the socket is guaranteed by construction to not be used concurrently
+        /// with any other operation, such as at the completion of ConnectAsync.
+        /// </summary>
+        internal void SetBlocking()
+        {
+            if (!IsNonBlocking && !IsClosed)
+            {
+                AsyncContext.SetHandleBlocking();
+            }
+        }
 
         internal int ReceiveTimeout
         {

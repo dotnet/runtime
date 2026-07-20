@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -283,6 +284,141 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
                 }
 
                 Assert.ThrowsAny<CryptographicException>(() => contents.Decrypt(pw));
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void DecodeDeeplyNestedPfx(bool withDecodeError)
+        {
+            const int Depth = 3333;
+            int errorTarget = withDecodeError ? Depth / 4 * 3 : -1;
+            byte[] pfx = BuildPfx(Depth, errorTarget);
+
+            Pkcs12Info info = Pkcs12Info.Decode(pfx, out _, skipCopy: true);
+            Pkcs12SafeContents contents = Assert.Single(info.AuthenticatedSafe);
+            Pkcs12SafeContents deepContents = contents;
+
+            int count = withDecodeError ? errorTarget - 1: Depth;
+
+            for (int i = 0; i < count; i++)
+            {
+                Pkcs12SafeBag bag = Assert.Single(contents.GetBags());
+                Pkcs12SafeContentsBag typedBag = Assert.IsType<Pkcs12SafeContentsBag>(bag);
+                contents = typedBag.SafeContents;
+            }
+
+            Pkcs12SafeBag finalBag = Assert.Single(contents.GetBags());
+
+            if (withDecodeError)
+            {
+                Assert.IsNotType<Pkcs12SecretBag>(finalBag);
+                Assert.Equal("1.2.840.113549.1.12.10.1.6", finalBag.GetBagId().Value);
+
+                ValueAsnReader reader = new ValueAsnReader(finalBag.EncodedBagValue.Span, AsnEncodingRules.BER);
+                ValueAsnReader inner = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
+                reader = inner;
+
+                inner = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
+                reader = inner;
+
+                reader.ReadObjectIdentifier();
+                inner = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                AssertExtensions.TrueExpression(inner.ReadBoolean());
+            }
+            else
+            {
+                Pkcs12SecretBag secretBag = Assert.IsType<Pkcs12SecretBag>(finalBag);
+                Assert.Equal("1.2.840.113549.1.9.21", secretBag.GetSecretType().Value);
+                ReadOnlySpan<byte> expectedValue = [0x04, 0x03, 0x01, 0x02, 0x03];
+                AssertExtensions.SequenceEqual(expectedValue, secretBag.SecretValue.Span);
+            }
+
+            Pkcs12SafeContents newContents = new Pkcs12SafeContents();
+            // Assert.NoThrow
+            newContents.AddNestedContents(deepContents);
+
+            static byte[] BuildPfx(int depth, int errorDepth)
+            {
+                // If depth is 0, the output is 80 bytes.
+                // Each nested bag adds a 13 byte OID, and 3 CONSTRUCTED values each with a 1-byte tag.
+                // As the depth increases, the length-length increases for the CONSTRUCTED values, up
+                // to 3 length-value bytes for the worst case (assuming we don't pass a big enough depth
+                // to exceed 16.7MB).
+                // So, call each nested bag 13 + 3 * (1 + 1 + 3) = 28 bytes.
+                // The 80 bytes of overhead can be ignored, because of the over-counting for the low iteration count.
+                // For 3333 the estimate is 93,324, and the actual output is 85,520.
+                AsnWriter builder = new AsnWriter(AsnEncodingRules.DER, checked(28 * depth));
+                Asn1Tag context0 = new Asn1Tag(TagClass.ContextSpecific, 0);
+                const string Pkcs7Data = "1.2.840.113549.1.7.1";
+                const string Pkcs12SafeContents = "1.2.840.113549.1.12.10.1.6";
+
+                using (builder.PushSequence())
+                {
+                    builder.WriteInteger(3);
+
+                    using (builder.PushSequence())
+                    {
+                        builder.WriteObjectIdentifier(Pkcs7Data);
+
+                        using (builder.PushSequence(context0))
+                        using (builder.PushOctetString())
+                        using (builder.PushSequence())
+                        {
+                            using (builder.PushSequence())
+                            {
+                                builder.WriteObjectIdentifier(Pkcs7Data);
+
+                                using (builder.PushSequence(context0))
+                                using (builder.PushOctetString())
+                                using (builder.PushSequence())
+                                {
+                                    for (int i = 0; i < depth; i++)
+                                    {
+                                        builder.PushSequence();
+                                        builder.WriteObjectIdentifier(Pkcs12SafeContents);
+                                        builder.PushSequence(context0);
+
+                                        if (i == errorDepth)
+                                        {
+                                            builder.WriteBoolean(true);
+                                        }
+
+                                        builder.PushSequence();
+                                    }
+
+                                    using (builder.PushSequence())
+                                    {
+                                        builder.WriteObjectIdentifier("1.2.840.113549.1.12.10.1.5");
+
+                                        using (builder.PushSequence(context0))
+                                        using (builder.PushSequence())
+                                        {
+                                            builder.WriteObjectIdentifier("1.2.840.113549.1.9.21");
+
+                                            using (builder.PushSequence(context0))
+                                            {
+                                                builder.WriteOctetString([0x01, 0x02, 0x03]);
+                                            }
+                                        }
+                                    }
+
+                                    for (int i = 0; i < depth; i++)
+                                    {
+                                        builder.PopSequence();
+                                        builder.PopSequence(context0);
+                                        builder.PopSequence();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return builder.Encode();
             }
         }
 

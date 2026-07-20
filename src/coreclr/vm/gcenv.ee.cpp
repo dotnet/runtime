@@ -13,6 +13,7 @@
 #include "../gc/env/gcenv.ee.h"
 #include "threadsuspend.h"
 #include "interoplibinterface.h"
+#include "exinfo.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -199,10 +200,23 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
-    while (pGCFrame != GCFRAME_TOP)
+    while (pGCFrame != NULL)
     {
         pGCFrame->GcScanRoots(fn, sc);
         pGCFrame = pGCFrame->PtrNextFrame();
+    }
+
+    // Scan the ExInfo chain for exception objects held by direct pointer.
+    // Superseded ExInfo objects may live in logically dead parts of the stack
+    // that the normal GC stackwalk skips (e.g., when one exception dispatch
+    // supersedes a previous one). We keep them alive for post-mortem debugging
+    // and SOS. This mirrors NativeAOT's GcScanRootsWorker (thread.cpp:569-573).
+    PTR_ExInfo pExInfo = pThread->GetExceptionState()->GetCurrentExceptionTracker();
+    while (pExInfo != NULL)
+    {
+        PTR_PTR_Object pRef = dac_cast<PTR_PTR_Object>(&pExInfo->m_exception);
+        fn(pRef, sc, 0);
+        pExInfo = pExInfo->GetPreviousExceptionTracker();
     }
 }
 
@@ -822,7 +836,9 @@ void GCProfileWalkHeap(bool etwOnly)
 
 void WalkFReachableObjects(bool isCritical, void* objectID)
 {
-	(&g_profControlBlock)->FinalizeableObjectQueued(isCritical, (ObjectID)objectID);
+#if defined(PROFILING_SUPPORTED)
+    (&g_profControlBlock)->FinalizeableObjectQueued(isCritical, (ObjectID)objectID);
+#endif // PROFILING_SUPPORTED
 }
 
 static fq_walk_fn g_FQWalkFn = &WalkFReachableObjects;
@@ -836,9 +852,13 @@ void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
         size_t context = 0;
 
-        // When we're walking objects allocated by class, then we don't want to walk the large
-        // object heap because then it would count things that may have been around for a while.
-        GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, false);
+        // ObjectsAllocatedByClass callback can lead to enormous overhead in the case of Server GC,
+        // so it was made skippable. See https://github.com/dotnet/runtime/issues/108230 for details.
+        if (!CORProfilerSkipAllocatedByClassStatistic()) {
+            // When we're walking objects allocated by class, then we don't want to walk the large
+            // object heap because then it would count things that may have been around for a while.
+            GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, false);
+        }
 
         // Notify that we've reached the end of the Gen 0 scan
         (&g_profControlBlock)->EndAllocByClass(&context);
@@ -858,7 +878,7 @@ void GCToEEInterface::DiagUpdateGenerationBounds()
 
 void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent)
 {
-#ifdef GC_PROFILING
+#if defined(GC_PROFILING) || defined(PERFTRACING_DISABLE_THREADS)
     // We were only doing generation bounds and GC finish callback for non concurrent GCs so
     // I am keeping that behavior to not break profilers. But if BasicGC monitoring is enabled
     // we will do these for all GCs.
@@ -866,7 +886,9 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
     {
         GCProfileWalkHeap(false);
     }
+#endif // defined(GC_PROFILING) || defined(PERFTRACING_DISABLE_THREADS)
 
+#ifdef GC_PROFILING
     if (CORProfilerTrackBasicGC() || (!fConcurrent && CORProfilerTrackGC()))
     {
         DiagUpdateGenerationBounds();

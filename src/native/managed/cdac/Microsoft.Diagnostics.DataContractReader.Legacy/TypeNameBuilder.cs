@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using Microsoft.Diagnostics.DataContractReader;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -67,7 +68,6 @@ public struct TypeNameBuilder
         ILoader loader = target.Contracts.Loader;
         string methodName;
         TypeHandle th = default;
-        Contracts.ModuleHandle module = default;
 
         bool isNoMetadataMethod = runtimeTypeSystem.IsNoMetadataMethod(method, out methodName);
         if (isNoMetadataMethod)
@@ -119,10 +119,14 @@ public struct TypeNameBuilder
         }
         else
         {
-            module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th));
-            MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
-            MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
-            stringBuilder.Append(reader.GetString(methodDef.Name));
+            uint rowId = EcmaMetadataUtils.GetRowId(runtimeTypeSystem.GetMethodToken(method));
+            if (rowId != 0)
+            {
+                Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th));
+                MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
+                MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)rowId));
+                stringBuilder.Append(reader.GetString(methodDef.Name));
+            }
         }
 
         ReadOnlySpan<TypeHandle> genericMethodInstantiation = runtimeTypeSystem.GetGenericMethodInstantiation(method);
@@ -131,19 +135,12 @@ public struct TypeNameBuilder
             AppendInst(target, stringBuilder, genericMethodInstantiation, format);
         }
 
-        if (format.HasFlag(TypeNameFormat.FormatSignature))
+        if (format.HasFlag(TypeNameFormat.FormatSignature) &&
+            runtimeTypeSystem.TryGetMethodSignature(method, out ReadOnlySpan<byte> signature))
         {
-            ReadOnlySpan<byte> signature;
-            MetadataReader? reader = default;
-            if (!runtimeTypeSystem.IsStoredSigMethodDesc(method, out signature))
-            {
-                reader = target.Contracts.EcmaMetadata.GetMetadata(module);
-                if (reader is not null)
-                {
-                    MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
-                    signature = reader.GetBlobBytes(methodDef.Signature);
-                }
-            }
+            Contracts.ModuleHandle methodModule = loader.GetModuleHandleFromModulePtr(
+                runtimeTypeSystem.GetModule(runtimeTypeSystem.GetTypeHandle(runtimeTypeSystem.GetMethodTable(method))));
+            MetadataReader? reader = target.Contracts.EcmaMetadata.GetMetadata(methodModule);
 
             ReadOnlySpan<TypeHandle> typeInstantiationSigFormat = default;
             if (!th.IsNull)
@@ -244,7 +241,7 @@ public struct TypeNameBuilder
                 tnb.AddName(reader.GetString(genericParam.Name));
                 format &= ~TypeNameFormat.FormatAssembly;
             }
-            else if (typeSystemContract.IsFunctionPointer(typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv))
+            else if (typeSystemContract.IsFunctionPointer(typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv))
             {
                 if (format.HasFlag(TypeNameFormat.FormatNamespace))
                 {
@@ -260,7 +257,7 @@ public struct TypeNameBuilder
                         AppendType(tnb.Target, stringBuilder, retAndArgTypes[i], format);
                     }
 
-                    if ((callConv & 0x7) == 0x5) // Is this the VARARG calling convention?
+                    if (((byte)callConv & 0x7) == 0x5) // Is this the VARARG calling convention?
                     {
                         if (retAndArgTypes.Length > 2)
                         {
@@ -283,7 +280,14 @@ public struct TypeNameBuilder
                 Contracts.ModuleHandle moduleHandle = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(typeSystemContract.GetModule(typeHandle));
                 if (MetadataTokens.EntityHandle((int)typeDefToken).IsNil)
                 {
-                    tnb.AddName("(dynamicClass)");
+                    if (typeSystemContract.IsContinuationWithoutMetadata(typeHandle))
+                    {
+                        AppendContinuationName(ref tnb, typeSystemContract, typeHandle);
+                    }
+                    else
+                    {
+                        tnb.AddName("(dynamicClass)");
+                    }
                 }
                 else
                 {
@@ -480,6 +484,52 @@ public struct TypeNameBuilder
         }
     }
 
+    /// <summary>
+    /// Builds the synthetic name for a dynamically-created continuation method table, mirroring the
+    /// native <c>AsyncContinuationsManager::PrintContinuationName</c> in <c>asynccontinuations.h</c>.
+    /// </summary>
+    /// <remarks>
+    /// The name has the form:
+    /// <c>Continuation_&lt;dataSize&gt;[_&lt;gcOffset&gt;_&lt;gcCount&gt;]*</c>
+    /// where:
+    /// <list type="bullet">
+    ///   <item><description>
+    ///     <c>dataSize</c> is the number of bytes of data payload (base size minus the fixed
+    ///     object-header and continuation-header overhead).
+    ///   </description></item>
+    ///   <item><description>
+    ///     Each <c>_gcOffset_gcCount</c> pair describes one GC-pointer run: <c>gcOffset</c> is the
+    ///     offset in bytes from the start of the data payload to the run, and <c>gcCount</c> is the
+    ///     number of pointer-sized GC references in that run.
+    ///   </description></item>
+    /// </list>
+    /// Only GC descriptor series whose <c>startoffset</c> is at or above the continuation data
+    /// payload (i.e., after the fixed <c>CORINFO_Continuation</c> header fields) are included.
+    /// </remarks>
+    private static void AppendContinuationName(ref TypeNameBuilder tnb, IRuntimeTypeSystem typeSystemContract, TypeHandle typeHandle)
+    {
+        uint baseSize = typeSystemContract.GetBaseSize(typeHandle);
+        uint continuationDataOffset = tnb.Target.GetTypeInfo(DataType.ContinuationObject).Size!.Value;
+        uint objHeaderSize = tnb.Target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        uint dataSize = baseSize - (objHeaderSize + continuationDataOffset);
+
+        var name = new StringBuilder("Continuation_");
+        name.Append(dataSize);
+
+        foreach ((uint seriesOffset, uint seriesSize) in typeSystemContract.GetGCDescSeries(typeHandle))
+        {
+            if (seriesOffset < continuationDataOffset)
+                continue;
+
+            name.Append('_');
+            name.Append(seriesOffset - continuationDataOffset);
+            name.Append('_');
+            name.Append(seriesSize / (uint)tnb.Target.PointerSize);
+        }
+
+        tnb.AddNameNoEscaping(name);
+    }
+
     private static void AppendNestedTypeDef(ref TypeNameBuilder tnb, MetadataReader reader, TypeDefinitionHandle typeDefToken, TypeNameFormat format)
     {
         TypeDefinition typeDef = reader.GetTypeDefinition(typeDefToken);
@@ -603,7 +653,7 @@ public struct TypeNameBuilder
 
     private static bool IsTypeNameReservedChar(char c)
     {
-        return TypeNameReservedChars().IndexOf(c) != -1;
+        return TypeNameReservedChars().Contains(c);
     }
 
     private void EscapeName(string name)

@@ -41,7 +41,7 @@ int main(const int argc, const char *argv[])
     const long timeout_mins = strtol(argv[1], nullptr, 10);
     int exit_code = run_timed_process(timeout_mins * 60000L, argc-2, &argv[2]);
 
-    printf("App Exit Code: %d\n", exit_code);
+    printf("Exit Code: %d\n", exit_code);
     return exit_code;
 }
 
@@ -58,7 +58,6 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
 
     STARTUPINFOA startup_info;
     PROCESS_INFORMATION proc_info;
-    unsigned long exit_code;
 
     ZeroMemory(&startup_info, sizeof(startup_info));
     startup_info.cb = sizeof(startup_info);
@@ -72,7 +71,11 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
         return error_code;
     }
 
-    WaitForSingleObject(proc_info.hProcess, timeout_ms);
+    if (WaitForSingleObject(proc_info.hProcess, timeout_ms) == WAIT_TIMEOUT)
+    {
+        printf("Child process took too long. Timed out...\n");
+    }
+    DWORD exit_code;
     GetExitCodeProcess(proc_info.hProcess, &exit_code);
 
     CloseHandle(proc_info.hProcess);

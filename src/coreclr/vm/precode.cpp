@@ -958,3 +958,47 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
 }
 
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+TADDR GetInterpreterCodeFromEntryPointIfPresent(TADDR entryPoint)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+#ifdef FEATURE_INTERPRETER
+    if (entryPoint == (TADDR)NULL)
+    {
+        return (TADDR)NULL;
+    }
+
+    RangeSection * pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    if (pRS == NULL)
+    {
+        // Address not in any code range - this is a portable entry point.
+        MethodDesc* pMD = PortableEntryPoint::GetMethodDesc((PCODE)entryPoint);
+        PTR_InterpByteCodeStart pInterpCode = pMD->GetInterpreterCode();
+        if (pInterpCode != NULL)
+        {
+            entryPoint = dac_cast<TADDR>(pInterpCode);
+        }
+    }
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            if (dac_cast<PTR_StubPrecode>(PCODEToPINSTR(entryPoint))->GetType() == PRECODE_INTERPRETER)
+            {
+                entryPoint = (dac_cast<PTR_InterpreterPrecode>(PCODEToPINSTR(entryPoint)))->GetData()->ByteCodeAddr;
+            }
+        }
+    }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_INTERPRETER
+
+    return entryPoint;
+}

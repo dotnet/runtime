@@ -1,31 +1,77 @@
 parameters:
   configForBuild: 'Release'
+  artifactName: 'BrowserWasm'
+  runtimeFlavor: 'mono'
+  sdkDirName: 'dotnet-latest'
+  includeRefPack: true
+  # The Mono (default) build installs the wasm-tools workload, whose manifest now includes the
+  # CoreCLR browser-wasm runtime pack (Microsoft.NETCore.App.Runtime.browser-wasm). A Mono-only
+  # build doesn't produce that pack, so download it from the CoreCLR build job and stage it into
+  # the local package feed before installing the workload.
+  downloadCoreClrRuntimePack: false
+  # The CoreCLR build publishes its runtime pack so the Mono build (above) can consume it.
+  publishCoreClrRuntimePack: false
 
 steps:
+  # Stage the CoreCLR browser-wasm runtime pack (built by the wasm_coreclr job) into the local
+  # package feed so the wasm-tools workload install below can resolve it.
+  - ${{ if eq(parameters.downloadCoreClrRuntimePack, true) }}:
+    - task: DownloadPipelineArtifact@2
+      displayName: "Download CoreCLR runtime pack for workload install"
+      inputs:
+        buildType: current
+        artifactName: BrowserWasmCoreCLRRuntimePack_$(_hostedOs)
+        targetPath: $(Build.SourcesDirectory)/artifacts/coreclr-runtimepack
+    - script: >-
+        mkdir -p $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping &&
+        cp $(Build.SourcesDirectory)/artifacts/coreclr-runtimepack/*.nupkg $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/
+      displayName: "Stage CoreCLR runtime pack into local feed"
+
   - script: >-
       ./dotnet.sh build -p:TargetOS=browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
       /p:Configuration=${{ parameters.configForBuild }}
       /p:ContinuousIntegrationBuild=true
+      /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
       /t:InstallWorkloadUsingArtifacts
       /bl:$(Build.SourcesDirectory)/artifacts/log/${{ parameters.configForBuild }}/InstallWorkloadUsingArtifacts.binlog
       $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
     displayName: "Install workload using artifacts"
 
+  # Stage artifacts: create staging/, copy SDK, runtime pack, and nugets
   - script: >-
       mkdir -p $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
-      cp -r $(Build.SourcesDirectory)/artifacts/bin/dotnet-latest $(Build.SourcesDirectory)/artifacts/staging &&
+      cp -r $(Build.SourcesDirectory)/artifacts/bin/${{ parameters.sdkDirName }} $(Build.SourcesDirectory)/artifacts/staging &&
       cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging &&
-      cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging &&
       cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
       cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NETCore.App.Ref* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
     displayName: "Prepare artifacts staging directory"
+
+  # Mono also needs the ref pack directory (CoreCLR gets it from nugets)
+  - ${{ if eq(parameters.includeRefPack, true) }}:
+    - script: cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging
+      displayName: "Stage ref pack directory"
+
+  # Publish the CoreCLR browser-wasm runtime pack nuget on its own so the Mono build job can stage
+  # it into its local feed for the wasm-tools workload install.
+  - ${{ if eq(parameters.publishCoreClrRuntimePack, true) }}:
+    - script: >-
+        mkdir -p $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtimepack &&
+        find $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping -maxdepth 1 -name 'Microsoft.NETCore.App.Runtime.browser-wasm.*.nupkg' -not -name '*.symbols.nupkg' -exec cp {} $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtimepack \;
+      displayName: "Stage CoreCLR runtime pack for workload"
+    - template: /eng/pipelines/common/templates/publish-pipeline-artifacts.yml
+      parameters:
+        isOfficialBuild: false
+        displayName: Publish CoreCLR runtime pack for workload
+        inputs:
+          targetPath: $(Build.SourcesDirectory)/artifacts/staging-coreclr-runtimepack
+          artifactName: BrowserWasmCoreCLRRuntimePack_$(_hostedOs)
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
       rootFolder: '$(Build.SourcesDirectory)/artifacts/staging'
       includeRootFolder: true
       displayName: Browser Wasm Artifacts
-      artifactName: BrowserWasm
+      artifactName: ${{ parameters.artifactName }}
       archiveType: tar
       tarCompression: gz
       archiveExtension: '.tar.gz'

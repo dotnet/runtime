@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 #pragma warning disable 1717
 #pragma warning disable 0219
@@ -385,6 +386,7 @@ public struct BB
 
 public class App
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/102296", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
     [Fact]
     public static void TestEntryPoint()
     {

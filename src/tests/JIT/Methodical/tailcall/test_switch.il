@@ -8,6 +8,8 @@
 
 .assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace JitTest_test_switch
 {
   .class public auto ansi beforefieldinit Test
@@ -38,6 +40,11 @@
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+          string('needs triage')
+          type([TestLibrary]TestLibrary.PlatformDetection)
+          string[2] ('IsMonoRuntime' 'IsArm64Process')
+      }
       .entrypoint
       .maxstack  4
       .locals (int32 V_0)

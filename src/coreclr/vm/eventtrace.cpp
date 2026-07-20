@@ -50,11 +50,16 @@ DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = {
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context };
-#else
+#elif defined(FEATURE_EVENTSOURCE_XPLAT)
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_LTTNG_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_LTTNG_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_LTTNG_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_LTTNG_Context };
+#else
+DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context };
+DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context };
+DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context };
+DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context };
 #endif // HOST_UNIX
 
 #ifdef FEATURE_NATIVEAOT
@@ -2277,9 +2282,9 @@ void InitializeEventTracing()
     // providers can do so now
     ETW::TypeSystemLog::PostRegistrationInit();
 
-#if defined(HOST_UNIX) && defined (FEATURE_PERFTRACING)
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
     XplatEventLogger::InitializeLogger();
-#endif // HOST_UNIX && FEATURE_PERFTRACING
+#endif // FEATURE_EVENTSOURCE_XPLAT
 }
 
 // Plumbing to funnel event pipe callbacks and ETW callbacks together into a single common
@@ -2851,7 +2856,12 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         // This check has been copied from StackTraceInfo::AppendElement
         if (!(pCf->HasFaulted() || pCf->IsIPadjusted()) && exceptionEIP != 0)
         {
-            exceptionEIP = (PVOID)((UINT_PTR)exceptionEIP - 1);
+#ifdef TARGET_WASM
+            if (!ExecutionManager::IsVirtualIP((PCODE)exceptionEIP))
+#endif
+            {
+                exceptionEIP = (PVOID)((UINT_PTR)exceptionEIP - 1);
+            }
         }
 
         gc.exceptionMessageRef =  ((EXCEPTIONREF)gc.exceptionObj)->GetMessage();
@@ -3989,9 +3999,9 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
         return;
     }
 
-    if (!pLayout->HasNTHeaders())
+    if (!pLayout->HasHeaders())
     {
-        // Without NT headers, we'll have a tough time finding the debug directory
+        // Without headers, we'll have a tough time finding the debug directory
         // entries. This can happen for nlp files.
         return;
     }
@@ -4411,27 +4421,13 @@ TADDR MethodAndStartAddressToEECodeInfoPointer(MethodDesc *pMethodDesc, PCODE pN
     } CONTRACTL_END;
 
     // MethodDesc ==> Code Address ==>JitManager
-    TADDR start = PCODEToPINSTR(pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode());
+    TADDR start = pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode();
     if(start == 0) {
         // this method hasn't been jitted
         return 0;
     }
 
-#ifdef FEATURE_INTERPRETER
-    RangeSection * pRS = ExecutionManager::FindCodeRange(PINSTRToPCODE(start), ExecutionManager::GetScanFlags());
-    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
-    {
-        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
-        {
-            if (((StubPrecode*)start)->GetType() == PRECODE_INTERPRETER)
-            {
-                start = ((InterpreterPrecode*)start)->GetData()->ByteCodeAddr;
-            }
-        }
-    }
-#endif // FEATURE_INTERPRETER
-
-    return start;
+    return GetInterpreterCodeFromEntryPointIfPresent(start);
 }
 
 /****************************************************************************/
@@ -4976,13 +4972,49 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
                                                    BOOL fSendRichDebugInfoEvent,
                                                    BOOL fGetCodeIds)
 {
+    _ASSERTE(pLoaderAllocatorFilter == nullptr || pLoaderAllocatorFilter->IsCollectible());
+    _ASSERTE(pLoaderAllocatorFilter == nullptr || !fGetCodeIds);
+
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+    SendEventsForJitMethodsHelper2(
+        ExecutionManager::GetEEJitManager()->GetCodeHeapIterator(pLoaderAllocatorFilter),
+        dwEventOptions,
+        fLoadOrDCStart,
+        fUnloadOrDCEnd,
+        fSendMethodEvent,
+        fSendILToNativeMapEvent,
+        fSendRichDebugInfoEvent,
+        fGetCodeIds);
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
+
+#ifdef FEATURE_INTERPRETER
+    SendEventsForJitMethodsHelper2(
+        ExecutionManager::GetInterpreterJitManager()->GetCodeHeapIterator(pLoaderAllocatorFilter),
+        dwEventOptions,
+        fLoadOrDCStart,
+        fUnloadOrDCEnd,
+        fSendMethodEvent,
+        fSendILToNativeMapEvent,
+        fSendRichDebugInfoEvent,
+        fGetCodeIds);
+#endif // FEATURE_INTERPRETER
+}
+// Called be ETW::MethodLog::SendEventsForJitMethods
+// Sends the ETW events once our caller determines whether or not rejit locks can be acquired
+VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
+                                                   CodeHeapIterator heapIterator,
+                                                   DWORD dwEventOptions,
+                                                   BOOL fLoadOrDCStart,
+                                                   BOOL fUnloadOrDCEnd,
+                                                   BOOL fSendMethodEvent,
+                                                   BOOL fSendILToNativeMapEvent,
+                                                   BOOL fSendRichDebugInfoEvent,
+                                                   BOOL fGetCodeIds)
+{
     CONTRACTL{
         THROWS;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-
-    _ASSERTE(pLoaderAllocatorFilter == nullptr || pLoaderAllocatorFilter->IsCollectible());
-    _ASSERTE(pLoaderAllocatorFilter == nullptr || !fGetCodeIds);
 
     // Set of methods for which we already have sent a MethodDetails event.
     // Only used when sending rich debug info that would otherwise send a lot
@@ -4990,7 +5022,6 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
     MethodDescSet sentMethodDetailsSet;
     MethodDescSet* pSentMethodDetailsSet = fSendRichDebugInfoEvent ? &sentMethodDetailsSet : NULL;
 
-    CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator(pLoaderAllocatorFilter);
     while (heapIterator.Next())
     {
         MethodDesc * pMD = heapIterator.GetMethod();
@@ -4998,14 +5029,6 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
             continue;
 
         PCODE codeStart = PINSTRToPCODE(heapIterator.GetMethodCode());
-
-#ifdef FEATURE_INTERPRETER
-        // Interpreter-TODO - If the code for this was generated by the interpreter, the native
-        // code start which will match up with the NativeCodeVersion/GetNativeCode result is the
-        // IntepreterPrecode, which is not what is found in the NativeCode portion of the MethodDesc
-        // or in the NativeCodeVersion. So we should build out the ability to get the right result
-        // as otherwise we will continue through the loop and skip all the interpreter data.
-#endif // FEATURE_INTERPRETER
 
         // Get info relevant to the native code version. In some cases, such as collectible loader
         // allocators, we don't support code versioning so we need to short circuit the call.
@@ -5022,7 +5045,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
             if (nativeCodeVersion.IsNull())
             {
                 // The code version manager hasn't been updated with the jitted code
-                if (codeStart != pMD->GetNativeCode())
+                if (codeStart != MethodAndStartAddressToEECodeInfoPointer(pMD, (PCODE)NULL))
                 {
                     continue;
                 }
@@ -5035,7 +5058,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
         }
         else
 #endif // FEATURE_CODE_VERSIONING
-        if (codeStart != pMD->GetNativeCode())
+        if (codeStart != MethodAndStartAddressToEECodeInfoPointer(pMD, (PCODE)NULL))
         {
             continue;
         }
@@ -5278,13 +5301,13 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
             ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, pLoaderAllocator, enumerationOptions);
         }
 
-        // Iterate on all DomainAssembly loaded from the same AssemblyLoaderAllocator
-        DomainAssemblyIterator domainAssemblyIt = pLoaderAllocator->Id()->GetDomainAssemblyIterator();
-        while (!domainAssemblyIt.end())
+        // Iterate on all Assemblies loaded from the same AssemblyLoaderAllocator
+        AssemblyIterator assemblyIt = pLoaderAllocator->Id()->GetAssemblyIterator();
+        while (!assemblyIt.end())
         {
-            Assembly *pAssembly = domainAssemblyIt->GetAssembly(); // TODO: handle iterator
+            Assembly *pAssembly = assemblyIt;
 
-            Module* pModule = domainAssemblyIt->GetAssembly()->GetModule();
+            Module* pModule = pAssembly->GetModule();
             ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload)
@@ -5292,7 +5315,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
                 ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
             }
 
-            domainAssemblyIt++;
+            assemblyIt++;
         }
 
         // Load Jit Method events
@@ -5594,10 +5617,10 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
 }
 #endif // FEATURE_PERFTRACING
 
-#if defined(HOST_UNIX)  && defined(FEATURE_PERFTRACING)
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
 // This is a wrapper method for LTTng. See https://github.com/dotnet/coreclr/pull/27273 for details.
 extern "C" bool XplatEventLoggerIsEnabled()
 {
     return XplatEventLogger::IsEventLoggingEnabled();
 }
-#endif // HOST_UNIX && FEATURE_PERFTRACING
+#endif // FEATURE_EVENTSOURCE_XPLAT

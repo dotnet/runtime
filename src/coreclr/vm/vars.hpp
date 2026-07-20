@@ -33,13 +33,30 @@ class LoaderHeap;
 class IGCHeap;
 class Object;
 class StringObject;
-class ArrayClass;
 class MethodTable;
 class MethodDesc;
 class SyncBlockCache;
 class SyncTableEntry;
 class ThreadStore;
 namespace ETW { class CEtwTracer; };
+#ifdef FEATURE_COMWRAPPERS
+inline constexpr size_t g_numKnownQueryInterfaceImplementations = 2;
+namespace InteropLib { namespace ABI {
+    struct ComInterfaceDispatch;
+    using QueryInterfaceMethod = HRESULT (STDMETHODCALLTYPE *)(InteropLib::ABI::ComInterfaceDispatch*, REFIID, void**);
+#ifndef DACCESS_COMPILE
+    extern QueryInterfaceMethod g_knownQueryInterfaceImplementations[g_numKnownQueryInterfaceImplementations];
+#endif // !DACCESS_COMPILE
+} }
+
+GARY_DECL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
+
+#endif // FEATURE_COMWRAPPERS
+
+#ifdef FEATURE_OBJCMARSHAL
+GVAL_DECL(OBJECTHANDLE, g_ObjectiveCTrackingInfoTable);
+#endif // FEATURE_OBJCMARSHAL
+
 class DebugInterface;
 class DebugInfoManager;
 class EEDbgInterfaceImpl;
@@ -347,8 +364,10 @@ GPTR_DECL(MethodTable,      g_pWeakReferenceOfTClass);
 
 #ifdef DACCESS_COMPILE
 GPTR_DECL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+GPTR_DECL(EEClass,          g_singletonContinuationEEClass);
 #else
 GVAL_DECL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+GVAL_DECL(Volatile<EEClass*>, g_singletonContinuationEEClass);
 #endif
 
 #ifdef FEATURE_COMINTEROP
@@ -368,6 +387,8 @@ GVAL_DECL(DWORD,            g_gcNotificationFlags);
 GPTR_DECL(MethodTable,      g_pEHClass);
 GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
+
+GPTR_DECL(MethodDesc,       g_pEnvironmentCallEntryPointMethodDesc);
 
 // Full path to the managed entry assembly - stored for ease of identifying the entry asssembly for diagnostics
 GVAL_DECL(PTR_WSTR, g_EntryAssemblyPath);
@@ -532,14 +553,8 @@ inline bool CORDebuggerAttached()
     return (g_CORDebuggerControlFlags & DBCF_ATTACHED) && !IsAtProcessExit();
 }
 
-// This only check debugger bits. However JIT optimizations can be disabled by other ways on a module
-// In most cases Module::AreJITOptimizationsDisabled() should be the prefered for checking if JIT optimizations
-// are disabled for a module (it does check both debugger bits and profiler jit deoptimization flag)
 #define CORDebuggerAllowJITOpts(dwDebuggerBits)           \
-    (((dwDebuggerBits) & DACF_ALLOW_JIT_OPTS)             \
-     ||                                                   \
-     ((g_CORDebuggerControlFlags & DBCF_ALLOW_JIT_OPT) && \
-      !((dwDebuggerBits) & DACF_USER_OVERRIDE)))
+    (((dwDebuggerBits) & DACF_ALLOW_JIT_OPTS) != 0)
 
 #define CORDebuggerEnCMode(dwDebuggerBits)                         \
     ((dwDebuggerBits) & DACF_ENC_ENABLED)

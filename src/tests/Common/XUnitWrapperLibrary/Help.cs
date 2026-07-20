@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace XUnitWrapperLibrary;
 
@@ -32,12 +28,6 @@ public static class Help
 
         Options:
             --help, -h, /?, -?       Display this help text.
-            --exclusion-list=FILE
-                                     Path to a file containing a list of tests to exclude.
-                                     Each line in the file should be in the following format:
-                                        displayName, reason
-                                     (In the dotnet/runtime repository, this file is typically generated as part of the build process as 'src/tests/issues.targets'.)
-                                     If you are running tests outside the repository context, you may need to create your own exclusion list file in the format shown above.
         """;
 
         Console.WriteLine(help);

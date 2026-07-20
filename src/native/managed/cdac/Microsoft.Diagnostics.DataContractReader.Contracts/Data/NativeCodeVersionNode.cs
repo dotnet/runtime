@@ -1,34 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class NativeCodeVersionNode : IData<NativeCodeVersionNode>
+[CdacType(nameof(DataType.NativeCodeVersionNode))]
+internal sealed partial class NativeCodeVersionNode : IData<NativeCodeVersionNode>
 {
-    static NativeCodeVersionNode IData<NativeCodeVersionNode>.Create(Target target, TargetPointer address) => new NativeCodeVersionNode(target, address);
-    public NativeCodeVersionNode(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.NativeCodeVersionNode);
+    [Field] public TargetPointer Next { get; }
+    [Field] public TargetPointer MethodDesc { get; }
 
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
-        NativeCode = target.ReadCodePointer(address + (ulong)type.Fields[nameof(NativeCode)].Offset);
-        Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        ILVersionId = target.ReadNUInt(address + (ulong)type.Fields[nameof(ILVersionId)].Offset);
-        if (type.Fields.ContainsKey(nameof(GCCoverageInfo)))
-        {
-            GCCoverageInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(GCCoverageInfo)].Offset);
-        }
-    }
+    [Field] public TargetCodePointer NativeCode { get; }
+    [Field] public uint Flags { get; }
+    [Field] public TargetNUInt ILVersionId { get; }
 
-    public TargetPointer Next { get; init; }
-    public TargetPointer MethodDesc { get; init; }
-
-    public TargetCodePointer NativeCode { get; init; }
-    public uint Flags { get; init; }
-    public TargetNUInt ILVersionId { get; init; }
-
-    public TargetPointer? GCCoverageInfo { get; init; }
+    [Field] public TargetPointer? GCCoverageInfo { get; }
+    [Field] public uint OptimizationTier { get; }
 }

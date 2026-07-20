@@ -5,9 +5,12 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public unsafe class AliasingRetBuf
 {
+    [ActiveIssue("Fails after removing patching step: https://github.com/dotnet/runtime/pull/62863", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static int TestEntryPoint()
     {

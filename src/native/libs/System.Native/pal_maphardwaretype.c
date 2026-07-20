@@ -7,6 +7,13 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+// SunOS defines both AF_LINK and AF_PACKET but AF_LINK is preferred.
+// Using AF_PACKET on SunOS requires access to system-private headers.
+// Use undef to keep all the changes here.
+#if defined(TARGET_SUNOS)
+#undef AF_PACKET
+#endif
+
 #if defined(AF_PACKET)
 #if HAVE_NETPACKET_PACKET_H
 #include <netpacket/packet.h>

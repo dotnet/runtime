@@ -101,11 +101,15 @@ parser.add_argument("--il_link", dest="il_link", action="store_true", default=Fa
 parser.add_argument("--long_gc", dest="long_gc", action="store_true", default=False)
 parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", default=False)
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
+parser.add_argument("--use_managed_ilasm", dest="use_managed_ilasm", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 parser.add_argument("--interpreter", dest="interpreter", action="store_true", default=False)
+parser.add_argument("--node", dest="node", action="store_true", default=False)
+parser.add_argument("--runner_filter", dest="runner_filter", default=None)
+parser.add_argument("--active_issue_details", dest="active_issue_details", action="store_true", default=False)
 
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
@@ -113,6 +117,7 @@ parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="s
 parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
 parser.add_argument("--tiering_test", dest="tiering_test", action="store_true", default=False)
 parser.add_argument("--run_nativeaot_tests", dest="run_nativeaot_tests", action="store_true", default=False)
+parser.add_argument("--tree", dest="tree", default=None, help="Only run tests under the specified subtree (e.g. JIT/Regression).")
 
 ################################################################################
 # Globals
@@ -200,7 +205,7 @@ class DebugEnv:
 
         configurations = launch_json["configurations"]
 
-        dbg_type = "cppvsdbg" if self.host_os == "windows" else ""
+        dbg_type = "cppvsdbg" if sys.platform == "win32" else ""
 
         env = {
             "DOTNET_AssertOnNYI": "1",
@@ -226,7 +231,7 @@ class DebugEnv:
             environment.append(env)
 
         unique_name = "%s_%s_%s_%s" % (self.test_path, self.args.host_os, self.args.arch, self.args.build_type)
-        corerun_path = os.path.join(self.args.core_root, "corerun%s" % (".exe" if self.args.host_os == "windows" else ""))
+        corerun_path = os.path.join(self.args.core_root, "corerun%s" % (".exe" if sys.platform == "win32" else ""))
         configuration = defaultdict(lambda: None, {
             "name": unique_name,
             "type": dbg_type,
@@ -263,7 +268,7 @@ class DebugEnv:
         """ Create the repro wrapper
         """
 
-        if self.args.host_os == "windows":
+        if sys.platform == "win32":
             self.__create_batch_wrapper__()
         else:
             self.__create_bash_wrapper__()
@@ -399,12 +404,12 @@ def create_and_use_test_env(_os, env, func):
         #
         # errors.
 
-        tempfile_suffix = ".bat" if _os == "windows" else ""
+        tempfile_suffix = ".bat" if sys.platform == "win32" else ""
         test_env = tempfile.NamedTemporaryFile(mode="w", suffix=tempfile_suffix, delete=False)
         try:
             file_header = None
 
-            if _os == "windows":
+            if sys.platform == "win32":
                 file_header = """\
 @REM Temporary test env for test run.
 @echo on
@@ -420,7 +425,7 @@ def create_and_use_test_env(_os, env, func):
             for key in dotnet_vars:
                 value = dotnet_vars[key]
                 command = None
-                if _os == "windows":
+                if sys.platform == "win32":
                     command = "set"
                 else:
                     command = "export"
@@ -438,7 +443,7 @@ def create_and_use_test_env(_os, env, func):
 
                 contents += line
 
-            if _os == "windows":
+            if sys.platform == "win32":
                 file_suffix = """\
 @echo off
 """
@@ -574,6 +579,12 @@ def call_msbuild(args):
     if args.limited_core_dumps:
         command += ["/p:LimitedCoreDumps=true"]
 
+    if args.runner_filter:
+        command += ["/p:RunnerFilter=%s" % args.runner_filter]
+
+    if args.tree:
+        command += ["/p:TestSubtree=%s" % args.tree]
+
     print(" ".join(command))
 
     sys.stdout.flush() # flush output before creating sub-process
@@ -605,7 +616,7 @@ def setup_coredump_generation(host_os):
     """
     global coredump_pattern
 
-    if host_os == "osx" or "freebsd":
+    if host_os == "osx" or "freebsd" or "openbsd":
         coredump_pattern = subprocess.check_output("sysctl -n kern.corefile", shell=True).rstrip()
     elif host_os == "linux":
         with open("/proc/sys/kernel/core_pattern", "r") as f:
@@ -681,7 +692,7 @@ def print_info_from_coredump_file(host_os, arch, coredump_name, executable_name)
 
     command = ""
 
-    if host_os == "osx" or "freebsd":
+    if host_os == "osx" or "freebsd" or "openbsd":
         command = "lldb -c %s -b -o 'bt all' -o 'disassemble -b -p'" % coredump_name
     elif host_os == "linux":
         command = "gdb --batch -ex \"thread apply all bt full\" -ex \"disassemble /r $pc\" -ex \"quit\" %s %s" % (executable_name, coredump_name)
@@ -824,6 +835,15 @@ def run_tests(args,
         print("Setting RunningIlasmRoundTrip=1")
         os.environ["RunningIlasmRoundTrip"] = "1"
 
+    if args.use_managed_ilasm:
+        if not args.ilasmroundtrip:
+            print("--use_managed_ilasm implies --ilasmroundtrip; enabling ilasm round trip.")
+            print("Setting RunningIlasmRoundTrip=1")
+            os.environ["RunningIlasmRoundTrip"] = "1"
+        print("Using managed ILasm for round trip.")
+        print("Setting IlasmRoundTripUseManagedIlasm=1")
+        os.environ["IlasmRoundTripUseManagedIlasm"] = "1"
+
     if args.run_crossgen2_tests:
         print("Running tests R2R (Crossgen2)")
         print("Setting RunCrossGen2=1")
@@ -858,6 +878,11 @@ def run_tests(args,
         print("Running tests with the interpreter")
         print("Setting RunInterpreter=1")
         os.environ["RunInterpreter"] = "1"
+
+    if args.node:
+        print("Running tests with the NodeJS")
+        print("Setting RunWithNodeJS=1")
+        os.environ["RunWithNodeJS"] = "1"
 
     if gc_stress:
         per_test_timeout *= 8
@@ -969,6 +994,11 @@ def setup_args(args):
                               "Error setting ilasmroundtrip")
 
     coreclr_setup_args.verify(args,
+                              "use_managed_ilasm",
+                              lambda arg: True,
+                              "Error setting use_managed_ilasm")
+
+    coreclr_setup_args.verify(args,
                               "large_version_bubble",
                               lambda arg: True,
                               "Error setting large_version_bubble")
@@ -1014,9 +1044,29 @@ def setup_args(args):
                               "Error setting run_nativeaot_tests")
 
     coreclr_setup_args.verify(args,
+                              "tree",
+                              lambda arg: True,
+                              "Error setting tree")
+
+    coreclr_setup_args.verify(args,
                               "interpreter",
                               lambda arg: True,
                               "Error setting interpreter")
+
+    coreclr_setup_args.verify(args,
+                              "node",
+                              lambda arg: True,
+                              "Error setting node")
+
+    coreclr_setup_args.verify(args,
+                              "runner_filter",
+                              lambda arg: True,
+                              "Error setting runner_filter")
+
+    coreclr_setup_args.verify(args,
+                              "active_issue_details",
+                              lambda arg: True,
+                              "Error setting active_issue_details")
 
     if coreclr_setup_args.sequential and coreclr_setup_args.parallel:
         print("Error: don't specify both --sequential and -parallel")
@@ -1049,11 +1099,12 @@ def setup_args(args):
     print("logs_dir                 : %s" % coreclr_setup_args.logs_dir)
 
     coreclr_setup_args.repro_location = os.path.join(coreclr_setup_args.logs_dir, "repro")
-    coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
+    script_ext = ".cmd" if sys.platform == "win32" else ".sh"
+    coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % script_ext)
     coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.runtime_repo_location, "src", "tests")
-    coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
-    coreclr_setup_args.tieringtest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "tieringtest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
-    coreclr_setup_args.nativeaottest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "nativeaottest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
+    coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % script_ext)
+    coreclr_setup_args.tieringtest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "tieringtest%s" % script_ext)
+    coreclr_setup_args.nativeaottest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "nativeaottest%s" % script_ext)
 
     return coreclr_setup_args
 
@@ -1190,6 +1241,44 @@ def find_test_from_name(host_os, test_location, test_name):
 
     return location
 
+def parse_crashed_runner_file(args, item):
+    """ Parse a crashed runner marker file
+
+    Args:
+        args                 : arguments
+        item                 : crash marker filename in the logs directory
+
+    Returns:
+        dict with 'name', 'exit_code', and 'script' keys, or None
+    """
+    crash_file = os.path.join(args.logs_dir, item)
+    # Derive display name: "Foo.Bar.testRun.xml.crashed" -> "Foo.Bar"
+    name = item
+    if name.lower().endswith(".testrun.xml.crashed"):
+        name = name[:-len(".testrun.xml.crashed")]
+
+    exit_code = None
+    script = None
+    try:
+        with open(crash_file, 'r', encoding='utf-8') as f:
+            # WriteLinesToFile splits on ';', so ExitCode= and Script= are on separate lines.
+            for line in f:
+                line = line.strip()
+                if line.startswith("ExitCode="):
+                    exit_code = line[len("ExitCode="):]
+                elif line.startswith("Script="):
+                    script = line[len("Script="):]
+    except Exception as e:
+        print("Warning: Failed to parse crash file %s: %s" % (crash_file, e))
+        return None
+
+    # If we could not parse any useful information, treat this as a parse failure.
+    if exit_code is None and script is None:
+        print("Warning: Crash file %s did not contain ExitCode or Script information." % crash_file)
+        return None
+
+    return {"name": name, "exit_code": exit_code, "script": script}
+
 def parse_test_results(args, tests, assemblies):
     """ Parse the test results for test execution information
 
@@ -1197,10 +1286,14 @@ def parse_test_results(args, tests, assemblies):
         args                 : arguments
         tests                : list of individual test results (filled in by this function)
         assemblies           : dictionary of per-assembly aggregations (filled in by this function)
+
+    Returns:
+        list of crashed runner info dicts with 'name', 'exit_code', and 'script' keys
     """
     print("Parsing test results from (%s)" % args.logs_dir)
 
     found = False
+    crashed_runners = []
 
     for item in os.listdir(args.logs_dir):
         item_lower = item.lower()
@@ -1210,10 +1303,84 @@ def parse_test_results(args, tests, assemblies):
             if item_lower.endswith(".testrun.xml"):
                 item_name = item[:-len(".testrun.xml")]
             parse_test_results_xml_file(args, item, item_name, tests, assemblies)
+        elif item_lower == "standalonerunnertestresults.testrun.log":
+            found = True
+            parse_standalone_runner_results_file(args, item, tests, assemblies)
+        elif item_lower.endswith(".testrun.xml.crashed"):
+            found = True
+            crash_info = parse_crashed_runner_file(args, item)
+            if crash_info is not None:
+                crashed_runners.append(crash_info)
 
     if not found:
-        print("Unable to find testRun.xml. This normally means the tests did not run.")
+        print("Unable to find testRun.xml or StandaloneRunnerTestResults.testrun.log. This normally means the tests did not run.")
         print("It could also mean there was a problem logging. Please run the tests again.")
+
+    return crashed_runners
+
+def parse_standalone_runner_results_file(args, item, tests, assemblies):
+    """ Parse test results from a standalone runner results log file
+
+    Args:
+        args                 : arguments
+        item                 : log filename in the logs directory
+        tests                : list of individual test results (filled in by this function)
+        assemblies           : dictionary of per-assembly aggregations (filled in by this function)
+    """
+
+    log_result_file = os.path.join(args.logs_dir, item)
+    print("Analyzing {}".format(log_result_file))
+
+    assembly_name = "StandaloneRunnerTests"
+    assembly_info = assemblies[assembly_name]
+    if assembly_info is None:
+        assembly_info = defaultdict(lambda: None, {
+            "name": assembly_name,
+            "display_name": assembly_name,
+            "is_merged_tests_run": False,
+            "time": 0.0,
+            "passed": 0,
+            "failed": 0,
+            "skipped": 0,
+            "active_issue": 0,
+        })
+
+    with open(log_result_file, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Format is: "<script-path>: <Result>" where Result is "Pass" or "Fail"
+            last_colon_idx = line.rfind(': ')
+            if last_colon_idx == -1:
+                continue
+
+            script_path = line[:last_colon_idx]
+            result = line[last_colon_idx + 2:]
+
+            # Derive a test name from the script path
+            test_name = os.path.basename(script_path)
+            test_name_without_ext = os.path.splitext(test_name)[0]
+
+            tests.append(defaultdict(lambda: None, {
+                "name": test_name_without_ext,
+                "test_path": script_path,
+                "result": result,
+                "time": 0.0,
+                "test_output": None,
+                "assembly_display_name": assembly_name,
+                "is_merged": False
+            }))
+
+            if result == "Pass":
+                assembly_info["passed"] += 1
+            elif result == "Fail":
+                assembly_info["failed"] += 1
+            else:
+                assembly_info["skipped"] += 1
+
+    assemblies[assembly_name] = assembly_info
 
 def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
     """ Parse test results from a single xml results file
@@ -1229,7 +1396,11 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
 
     xml_result_file = os.path.join(args.logs_dir, item)
     print("Analyzing {}".format(xml_result_file))
-    xml_assemblies = xml.etree.ElementTree.parse(xml_result_file).getroot()
+    try:
+        xml_assemblies = xml.etree.ElementTree.parse(xml_result_file).getroot()
+    except Exception as e:
+        print("Warning: Failed to parse %s (possibly truncated from a crashed runner): %s" % (xml_result_file, e))
+        return
     for assembly in xml_assemblies:
         if "name" not in assembly.attrib:
             continue
@@ -1245,23 +1416,17 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
         if len(item_name) > 0:
             display_name = item_name
 
-        # Is the results XML from a merged tests model run?
-        assembly_is_merged_tests_run = False
-        assembly_test_framework = assembly.attrib["test-framework"]
-        # Non-merged tests give something like "xUnit.net 2.5.3.0"
-        if assembly_test_framework == "XUnitWrapperGenerator-generated-runner":
-            assembly_is_merged_tests_run = True
-
         assembly_info = assemblies[assembly_name]
         if assembly_info is None:
             assembly_info = defaultdict(lambda: None, {
                 "name": assembly_name,
                 "display_name": display_name,
-                "is_merged_tests_run" : assembly_is_merged_tests_run,
+                "is_merged_tests_run" : True,
                 "time": 0.0,
                 "passed": 0,
                 "failed": 0,
                 "skipped": 0,
+                "active_issue": 0,
             })
         assembly_info["time"] += float(assembly.attrib["time"])
 
@@ -1293,23 +1458,17 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                         test_name += " (" + name + ")"
                     result = test.attrib["result"]
                     time = float(collection.attrib["time"])
-                    if assembly_is_merged_tests_run:
-                        # REVIEW: Even if the test is a .dll file or .CMD file and is found, we don't know how to
-                        # build a repro case with it.
-                        test_location_on_filesystem = None
-                    else:
-                        test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, name)
-                    if test_location_on_filesystem is None or not os.path.isfile(test_location_on_filesystem):
-                        test_location_on_filesystem = None
                     test_output = test.findtext("output")
+                    skip_reason = test.findtext("reason") if result == "Skip" else None
                     tests.append(defaultdict(lambda: None, {
                         "name": test_name,
-                        "test_path": test_location_on_filesystem,
+                        "test_path": None,
                         "result" : result,
                         "time": time,
                         "test_output": test_output,
+                        "skip_reason": skip_reason,
                         "assembly_display_name": display_name,
-                        "is_merged": assembly_is_merged_tests_run
+                        "is_merged": True
                     }))
                     if result == "Pass":
                         assembly_info["passed"] += 1
@@ -1317,14 +1476,18 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                         assembly_info["failed"] += 1
                     else:
                         assembly_info["skipped"] += 1
+                        reason = test.findtext("reason")
+                        if reason is not None and reason.startswith("ActiveIssue:"):
+                            assembly_info["active_issue"] += 1
         assemblies[assembly_name] = assembly_info
 
-def print_summary(tests, assemblies):
+def print_summary(tests, assemblies, crashed_runners=None):
     """ Print a summary of the test results
 
     Args:
         tests (defaultdict[String]: { }): The tests that were reported by
                                         : xunit
+        crashed_runners (list): list of dicts with 'name', 'exit_code', 'script' for crashed runners
     """
 
     assert tests is not None
@@ -1359,14 +1522,15 @@ def print_summary(tests, assemblies):
                 print("# Test output recorded in log file.")
             print("")
 
-    print("Time [secs] | Total | Passed | Failed | Skipped | Assembly Execution Summary")
-    print("============================================================================")
+    print("Time [secs] | Total | Passed | Failed | Skipped | ActiveIssue | Assembly Execution Summary")
+    print("===========================================================================================")
 
     total_time = 0.0
     total_total = 0
     total_passed = 0
     total_failed = 0
     total_skipped = 0
+    total_active_issue = 0
 
     for assembly in assemblies:
         assembly = assemblies[assembly]
@@ -1375,17 +1539,142 @@ def print_summary(tests, assemblies):
         passed = assembly["passed"]
         failed = assembly["failed"]
         skipped = assembly["skipped"]
+        active_issue = assembly["active_issue"] if assembly["active_issue"] is not None else 0
         total = passed + failed + skipped
-        print("%11.3f | %5d | %6d | %6d | %7d | %s" % (time, total, passed, failed, skipped, name))
+        print("%11.3f | %5d | %6d | %6d | %7d | %11d | %s" % (time, total, passed, failed, skipped, active_issue, name))
         total_time += time
         total_total += total
         total_passed += passed
         total_failed += failed
         total_skipped += skipped
+        total_active_issue += active_issue
 
-    print("----------------------------------------------------------------------------")
-    print("%11.3f | %5d | %6d | %6d | %7d | (total)" % (total_time, total_total, total_passed, total_failed, total_skipped))
+    print("-------------------------------------------------------------------------------------------")
+    print("%11.3f | %5d | %6d | %6d | %7d | %11d | (total)" % (total_time, total_total, total_passed, total_failed, total_skipped, total_active_issue))
     print("")
+
+    if crashed_runners:
+        print("Crashed Runners (%d):" % len(crashed_runners))
+        print("  Exit Code | Runner")
+        print("  ----------|-------")
+        for runner in crashed_runners:
+            exit_code = runner["exit_code"] if runner["exit_code"] is not None else "?"
+            print("  %9s | %s" % (exit_code, runner["name"]))
+        print("")
+
+def _parse_issue_reference(issue_ref):
+    """ Parse an issue reference (URL or bare number) into (repo, number, display) tuple.
+
+    Args:
+        issue_ref: issue URL string or bare number
+
+    Returns:
+        (repo, number, display) where repo may be None for non-GitHub URLs
+    """
+    m = re.match(r'https://github\.com/([^/]+/[^/]+)/issues/(\d+)', issue_ref)
+    if m:
+        return m.group(1), m.group(2), "#%s" % m.group(2)
+    if issue_ref.isdigit():
+        return "dotnet/runtime", issue_ref, "#%s" % issue_ref
+    return None, None, issue_ref
+
+def _fetch_issue_titles(issues):
+    """ Fetch issue titles from GitHub via the gh CLI.
+
+    Args:
+        issues: dict mapping issue reference to list of (test_name, runner_name) tuples
+
+    Returns:
+        dict mapping issue reference to title string
+    """
+    issue_titles = {}
+    try:
+        import shutil
+        if shutil.which("gh") is None:
+            return issue_titles
+        print("Fetching issue titles from GitHub (%d issues)..." % len(issues))
+        for ref in issues:
+            repo, number, _ = _parse_issue_reference(ref)
+            if repo is None or number is None:
+                continue
+            try:
+                result = subprocess.run(
+                    ["gh", "issue", "view", number, "--repo", repo, "--json", "title", "--jq", ".title"],
+                    capture_output=True, text=True, timeout=10)
+                if result.returncode == 0 and result.stdout.strip():
+                    issue_titles[ref] = result.stdout.strip()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    return issue_titles
+
+def print_active_issue_summary(tests, show_details=False):
+    """ Print a summary of ActiveIssue-skipped tests.
+
+    When show_details is True, fetches issue titles from GitHub and prints
+    per-issue breakdown with runner info.
+
+    Args:
+        tests: list of test result dicts
+        show_details: if True, fetch titles and show per-issue test breakdown
+
+    Returns:
+        dict mapping issue reference to list of (test_name, runner_name) tuples
+    """
+    issues = defaultdict(list)
+    for test in tests:
+        if test.get("result") != "Skip":
+            continue
+        reason = test.get("skip_reason")
+        if reason is None:
+            reason = test.get("test_output")
+        if reason is None:
+            continue
+        if not reason.startswith("ActiveIssue:"):
+            continue
+        url = reason[len("ActiveIssue:"):].strip()
+        runner = test.get("assembly_display_name") or "unknown"
+        issues[url].append((test["name"], runner))
+
+    if not issues:
+        print("ActiveIssue Summary (0 issues, 0 tests):")
+        print("")
+        return issues
+
+    issue_titles = _fetch_issue_titles(issues) if show_details else {}
+
+    total_tests = sum(len(v) for v in issues.values())
+    print("ActiveIssue Summary (%d issues, %d tests):" % (len(issues), total_tests))
+    print("  %5s | %s" % ("Tests", "Issue"))
+    print("  ------|%s" % ("-" * 60))
+    for ref in sorted(issues.keys(), key=lambda u: len(issues[u]), reverse=True):
+        _, _, display_issue = _parse_issue_reference(ref)
+        title = issue_titles.get(ref, "")
+        title_suffix = " - %s" % title if title else ""
+        print("  %5d | %s%s" % (len(issues[ref]), display_issue, title_suffix))
+    print("")
+
+    if show_details:
+        print("ActiveIssue Details:")
+        print("")
+        for ref in sorted(issues.keys(), key=lambda u: len(issues[u]), reverse=True):
+            _, _, display_issue = _parse_issue_reference(ref)
+            title = issue_titles.get(ref, "")
+            title_suffix = " - %s" % title if title else ""
+            print("  %s%s (%d tests)" % (display_issue, title_suffix, len(issues[ref])))
+            by_runner = defaultdict(list)
+            for test_name, runner_name in issues[ref]:
+                by_runner[runner_name].append(test_name)
+            for runner in sorted(by_runner.keys()):
+                tests_in_runner = by_runner[runner]
+                print("    [%s]" % runner)
+                for test_name in sorted(tests_in_runner):
+                    print("      %s" % test_name)
+        print("")
+
+    return issues
 
 def create_repro(args, env, tests):
     """ Go through the failing tests and create repros for them
@@ -1452,8 +1741,9 @@ def main(args):
 
     assemblies = defaultdict(lambda: None)
     tests = []
-    parse_test_results(args, tests, assemblies)
-    print_summary(tests, assemblies)
+    crashed_runners = parse_test_results(args, tests, assemblies)
+    print_summary(tests, assemblies, crashed_runners)
+    active_issues = print_active_issue_summary(tests, show_details=args.active_issue_details)
     repro_count = create_repro(args, env, tests)
 
     print("")

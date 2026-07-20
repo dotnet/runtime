@@ -20,9 +20,7 @@ namespace System
         public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         public static bool IsNetFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
         public static bool HasWindowsShell => IsWindows && IsNotWindowsServerCore && IsNotWindowsNanoServer && IsNotWindowsIoTCore;
-        public static bool IsWindows7 => IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
         public static bool IsWindows8x => IsWindows && GetWindowsVersion() == 6 && (GetWindowsMinorVersion() == 2 || GetWindowsMinorVersion() == 3);
-        public static bool IsWindows8xOrLater => IsWindowsVersionOrLater(6, 2);
         public static bool IsWindows10OrLater => IsWindowsVersionOrLater(10, 0);
         public static bool IsWindowsServer2019 => IsWindows && IsNotWindowsNanoServer && GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildVersion() == 17763;
         public static bool IsWindowsServer2022 => IsWindows && IsNotWindowsNanoServer && GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildVersion() == 20348;
@@ -30,7 +28,6 @@ namespace System
         public static bool IsWindowsNanoServer => IsWindows && (IsNotWindowsIoTCore && GetWindowsInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
         public static bool IsWindowsServerCore => IsWindows && GetWindowsInstallationType().Equals("Server Core", StringComparison.OrdinalIgnoreCase);
         public static int WindowsVersion => IsWindows ? (int)GetWindowsVersion() : -1;
-        public static bool IsNotWindows7 => !IsWindows7;
         public static bool IsNotWindows8x => !IsWindows8x;
         public static bool IsNotWindowsNanoServer => !IsWindowsNanoServer;
         public static bool IsNotWindowsServerCore => !IsWindowsServerCore;
@@ -71,6 +68,11 @@ namespace System
 
         // Windows 11 2024 Update (24H2)
         public static bool IsWindows10Version26100OrGreater => IsWindowsVersionOrLater(10, 0, 26100);
+
+        // TODO (https://github.com/dotnet/runtime/issues/129787): This build has Composite ML-DSA support but is a preview build.
+        // This should be changed to the next official release build once it is available.
+        // Windows 11 Preview Build 28120 (Experimental Channel)
+        public static bool IsWindows10Version28120OrGreater => IsWindowsVersionOrLater(10, 0, 28120);
 
         public static bool IsWindowsIoTCore
         {
@@ -203,7 +205,7 @@ namespace System
                 if (s_isInAppContainer != -1)
                     return s_isInAppContainer == 1;
 
-                if (!IsWindows || IsWindows7)
+                if (!IsWindows)
                 {
                     s_isInAppContainer = 0;
                     return false;

@@ -36,7 +36,7 @@ namespace System.SpanTests
         {
             Span<uint> span = new Span<uint>(new uint[] { 1 });
             Span<EmptyStruct> emptyspan = MemoryMarshal.Cast<uint, EmptyStruct>(span);
-            Assert.Equal(1, Unsafe.SizeOf<EmptyStruct>());
+            Assert.Equal(1, sizeof(EmptyStruct));
             Assert.Equal(4, emptyspan.Length);
         }
 
@@ -80,6 +80,17 @@ namespace System.SpanTests
         {
             Span<TestHelpers.StructWithReferences> span = new Span<TestHelpers.StructWithReferences>(Array.Empty<TestHelpers.StructWithReferences>());
             TestHelpers.AssertThrows<ArgumentException, TestHelpers.StructWithReferences>(span, (_span) => MemoryMarshal.Cast<TestHelpers.StructWithReferences, uint>(_span).DontBox());
+        }
+
+        [Fact]
+        public static void CastSpan_ImplicitSpanConversion_ReturnsMutableSpan()
+        {
+            // Validates that when an array (which is convertible to both Span<T> and ReadOnlySpan<T>)
+            // is passed to Cast, the Span<T> overload is selected, returning Span<TTo>.
+            // This is enabled by [OverloadResolutionPriority(1)] on the Span<T> overload.
+            int[] array = [0x44332211];
+            Span<byte> asBytes = MemoryMarshal.Cast<int, byte>(array);
+            Assert.Equal(4, asBytes.Length);
         }
     }
 }

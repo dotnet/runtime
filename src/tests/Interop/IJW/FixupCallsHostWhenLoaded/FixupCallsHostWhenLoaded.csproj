@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <CrossGenTest>false</CrossGenTest> <!-- https://github.com/dotnet/runtime/issues/83942 -->
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
@@ -8,6 +9,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FixupCallsHostWhenLoaded.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <CMakeProjectReference Include="../IjwNativeDll/CMakeLists.txt" />

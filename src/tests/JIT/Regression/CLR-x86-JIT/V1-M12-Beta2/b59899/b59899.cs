@@ -10,7 +10,7 @@ public class SamplesArray
 {
     [OuterLoop]
     [Fact]
-    [ActiveIssue("(No issue specified)", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Arrays with non-zero lower bounds", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestEntryPoint()
     {
         int[] myLens = new int[1] { 5 };

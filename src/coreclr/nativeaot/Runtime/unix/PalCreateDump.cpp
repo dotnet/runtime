@@ -191,10 +191,7 @@ BuildCreateDumpCommandLine(
     argv[argc++] = g_ppidarg;
     argv[argc++] = nullptr;
 
-    if (argc >= MAX_ARGV_ENTRIES)
-    {
-        return false;
-    }
+    assert(argc < MAX_ARGV_ENTRIES);
     return true;
 }
 
@@ -271,7 +268,14 @@ CreateCrashDump(
         // Execute the createdump program
         if (execv(argv[0], (char* const *)argv) == -1)
         {
-            fprintf(stderr, "Problem launching createdump (may not have execute permissions): execv(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
+            if (errno == ENOENT)
+            {
+                fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", argv[0]);
+            }
+            else
+            {
+                fprintf(stderr, "Problem launching createdump (may not have execute permissions): execv(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
+            }
             exit(-1);
         }
     }
@@ -597,36 +601,58 @@ PalCreateDumpInitialize()
         }
 
         // Build the createdump program path for the command line
-        Dl_info info;
-        if (dladdr((void*)&PalCreateDumpInitialize, &info) == 0)
-        {
-            return false;
-        }
         const char* DumpGeneratorName = "createdump";
-        int programLen = strlen(info.dli_fname) + strlen(DumpGeneratorName) + 1;
-        char* program = (char*)malloc(programLen);
-        if (program == nullptr)
+        char* dumpToolPath = nullptr;
+        char* program = nullptr;
+        
+        // Check if user provided a custom path to createdump tool directory
+        if (RhConfig::Environment::TryGetStringValue("DbgCreateDumpToolPath", &dumpToolPath))
         {
-            return false;
-        }
-        strncpy(program, info.dli_fname, programLen);
-        char *last = strrchr(program, '/');
-        if (last != nullptr)
-        {
-            *(last + 1) = '\0';
+            // Use the provided directory path and concatenate with "createdump"
+            size_t dumpToolPathLen = strlen(dumpToolPath);
+            bool needsSlash = dumpToolPathLen > 0 && dumpToolPath[dumpToolPathLen - 1] != '/';
+            int programLen = dumpToolPathLen + (needsSlash ? 1 : 0) + strlen(DumpGeneratorName) + 1;
+            program = (char*)malloc(programLen);
+            if (program == nullptr)
+            {
+                free(dumpToolPath);
+                return false;
+            }
+            strncpy(program, dumpToolPath, programLen);
+            if (needsSlash)
+            {
+                strncat(program, "/", programLen);
+            }
+            strncat(program, DumpGeneratorName, programLen);
+            free(dumpToolPath);
         }
         else
         {
-            program[0] = '\0';
+            // Default behavior: derive path from current library location
+            Dl_info info;
+            if (dladdr((void*)&PalCreateDumpInitialize, &info) == 0)
+            {
+                return false;
+            }
+            int programLen = strlen(info.dli_fname) + strlen(DumpGeneratorName) + 1;
+            program = (char*)malloc(programLen);
+            if (program == nullptr)
+            {
+                return false;
+            }
+            strncpy(program, info.dli_fname, programLen);
+            char *last = strrchr(program, '/');
+            if (last != nullptr)
+            {
+                *(last + 1) = '\0';
+            }
+            else
+            {
+                program[0] = '\0';
+            }
+            strncat(program, DumpGeneratorName, programLen);
         }
-        strncat(program, DumpGeneratorName, programLen);
 
-        struct stat fileData;
-        if (stat(program, &fileData) == -1 || !S_ISREG(fileData.st_mode))
-        {
-            fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", program);
-            return true;
-        }
         g_szCreateDumpPath = program;
 
         // Format the app pid for the createdump command line

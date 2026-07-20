@@ -1618,9 +1618,17 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                 Instantiation genericLoadInst(thisinst, ntypars);
 
-                if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner->GetSpecialInstantiationType()))
+                if (ClassLoader::EligibleForSpecialMarkerTypeUsage(genericLoadInst, pMTInterfaceMapOwner))
                 {
                     thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
+                    if (thRet.AsMethodTable()->GetInstantiation()[0] == pMTInterfaceMapOwner->GetSpecialInstantiationType())
+                    {
+                        // We loaded the special marker type, but it is ALSO the exact expected type which isn't a valid combination
+                        // In this case return something else (object) to indicate that
+                        // we found an invalid situation and this function should be retried without the special marker type logic enabled.
+                        thRet = TypeHandle(g_pObjectClass);
+                        break;
+                    }
                 }
                 else
                 {
@@ -1645,7 +1653,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                         // the loaded type is not the expected type we should be looking for to return a special marker type, but the normal load has
                         // found a type which claims to be a special marker type. In this case return something else (object) to indicate that
                         // we found an invalid situation and this function should be retried without the special marker type logic enabled.
-                        thRet = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_OBJECT));
+                        thRet = TypeHandle(g_pObjectClass);
                         break;
                     }
                     else if (!handlingRecursiveGenericFieldScenario)
@@ -5452,92 +5460,6 @@ VOID MetaSig::GcScanRoots(ArgDestination *pValue,
             _ASSERTE(0); // can't get here.
     }
 }
-
-
-#ifndef DACCESS_COMPILE
-
-void MetaSig::EnsureSigValueTypesLoaded(MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    SigTypeContext typeContext(pMD);
-
-    Module * pModule = pMD->GetModule();
-
-    // The signature format is approximately:
-    // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
-    // There is also a blob length at pSig-1.
-    SigPointer ptr = pMD->GetSigPointer();
-
-    // Skip over calling convention.
-    IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);
-
-    uint32_t numArgs = 0;
-    IfFailThrowBF(ptr.GetData(&numArgs), BFA_BAD_SIGNATURE, pModule);
-
-    // Force a load of value type arguments.
-    for(ULONG i=0; i <= numArgs; i++)
-    {
-        ptr.PeekElemTypeNormalized(pModule,&typeContext);
-        // Move to next argument token.
-        IfFailThrowBF(ptr.SkipExactlyOne(), BFA_BAD_SIGNATURE, pModule);
-    }
-}
-
-// this walks the sig and checks to see if all  types in the sig can be loaded
-
-// This is used by ComCallableWrapper to give good error reporting
-/*static*/
-void MetaSig::CheckSigTypesCanBeLoaded(MethodDesc * pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    SigTypeContext typeContext(pMD);
-
-    Module * pModule = pMD->GetModule();
-
-    // The signature format is approximately:
-    // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
-    // There is also a blob length at pSig-1.
-    SigPointer ptr = pMD->GetSigPointer();
-
-    // Skip over calling convention.
-    IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);
-
-    uint32_t numArgs = 0;
-    IfFailThrowBF(ptr.GetData(&numArgs), BFA_BAD_SIGNATURE, pModule);
-
-    // must do a skip so we skip any class tokens associated with the return type
-    IfFailThrowBF(ptr.SkipExactlyOne(), BFA_BAD_SIGNATURE, pModule);
-
-    // Force a load of value type arguments.
-    for(uint32_t i=0; i < numArgs; i++)
-    {
-        unsigned type = ptr.PeekElemTypeNormalized(pModule,&typeContext);
-        if (type == ELEMENT_TYPE_VALUETYPE || type == ELEMENT_TYPE_CLASS)
-        {
-            ptr.GetTypeHandleThrowing(pModule, &typeContext);
-        }
-        // Move to next argument token.
-        IfFailThrowBF(ptr.SkipExactlyOne(), BFA_BAD_SIGNATURE, pModule);
-    }
-}
-
-#endif // #ifndef DACCESS_COMPILE
 
 CorElementType MetaSig::GetReturnTypeNormalized(TypeHandle * pthValueType) const
 {

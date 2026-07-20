@@ -129,7 +129,6 @@ class     PInvoke;
 class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
-class     DomainAssembly;
 class     DeadlockAwareLock;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
@@ -492,55 +491,53 @@ public:
     // If we are trying to suspend a thread, we set the appropriate pending bit to
     // indicate why we want to suspend it (TS_AbortRequested or TS_DebugSuspendPending).
     //
-    // If instead the thread has blocked itself, via WaitSuspendEvent, we indicate
-    // this with TS_SyncSuspended.  However, we need to know whether the synchronous
-    // suspension is for a user request, or for an internal one (GC & Debug).  That's
-    // because a user request is not allowed to resume a thread suspended for
-    // debugging or GC.  -- That's not stricly true.  It is allowed to resume such a
+    // If instead the thread has blocked itself, via WaitForDebugSuspend, we indicate
+    // this with TS_DebugSyncSuspended.  A user request is not allowed to resume a thread
+    // suspended for debugging.  -- That's not strictly true.  It is allowed to resume such a
     // thread so long as it was ALSO suspended by the user.  In other words, this
     // ensures that user resumptions aren't unbalanced from user suspensions.
     //
     enum ThreadState
     {
-        TS_Unknown                = 0x00000000,    // threads are initialized this way
+        TS_Unknown                = 0x00000000,    // threads are initialized this way. [cDAC] [Thread]: Contract depends on this value.
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
 
-        // unused                 = 0x00000002,
-        TS_GCSuspendRedirected    = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspention routine.
+        TS_SuspensionTrapped      = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code). [cDAC] [Thread]: Contract depends on this value.
+        TS_GCSuspendRedirected    = 0x00000004,    // Thread has been redirected to suspension routine. [cDAC] [Thread]: Contract depends on this value.
 
-        TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
+        TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads? [cDAC] [Thread]: Contract depends on this value.
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
-        // unused                 = 0x00000020,
+        TS_SyncBlockCleanup       = 0x00000020,    // The synch block needs to be cleaned up.
 
         TS_ExecutingOnAltStack    = 0x00000040,    // Runtime is executing on an alternate stack located anywhere in the memory
 
 #ifdef FEATURE_HIJACK
-        TS_Hijacked               = 0x00000080,    // Return address has been hijacked
+        TS_Hijacked               = 0x00000080,    // Return address has been hijacked. [cDAC] [Thread]: Contract depends on this value.
 #endif // FEATURE_HIJACK
 
         // unused                 = 0x00000100,
-        TS_Background             = 0x00000200,    // Thread is a background thread
-        TS_Unstarted              = 0x00000400,    // Thread has never been started
-        TS_Dead                   = 0x00000800,    // Thread is dead
+        TS_Background             = 0x00000200,    // Thread is a background thread. [cDAC] [Thread]: Contract depends on this value.
+        TS_Unstarted              = 0x00000400,    // Thread has never been started. [cDAC] [Thread]: Contract depends on this value.
+        TS_Dead                   = 0x00000800,    // .NET runtime has finished shutting down this thread, and it is about to be terminated by the OS.
 
         TS_WeOwn                  = 0x00001000,    // Exposed object initiated this thread
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        TS_CoInitialized          = 0x00002000,    // CoInitialize has been called for this thread
+        TS_CoInitialized          = 0x00002000,    // CoInitialize has been called for this thread. [cDAC] [Thread]: Contract depends on this value.
 
-        TS_InSTA                  = 0x00004000,    // Thread hosts an STA
-        TS_InMTA                  = 0x00008000,    // Thread is part of the MTA
+        TS_InSTA                  = 0x00004000,    // Thread hosts an STA. [cDAC] [Thread]: Contract depends on this value.
+        TS_InMTA                  = 0x00008000,    // Thread is part of the MTA. [cDAC] [Thread]: Contract depends on this value.
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
         // Some bits that only have meaning for reporting the state to clients.
-        TS_ReportDead             = 0x00010000,    // in WaitForOtherThreads()
+        TS_Stopped                = 0x00010000,    // Thread has started to shut down and should not run managed code. Equivalent to ThreadState.Stopped. [cDAC] [Thread]: Contract depends on this value.
         TS_FullyInitialized       = 0x00020000,    // Thread is fully initialized and we are ready to broadcast its existence to external clients
 
         // unused                 = 0x00040000,
 
-        TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent
-        TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync
+        TS_DebugSyncSuspended     = 0x00080000,    // Thread has suspended itself at a safe point in response to a debugger suspend request. [cDAC] [Thread]: Contract depends on this value.
+        TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync. [cDAC] [Thread]: Contract depends on this value.
 
         TS_StackCrawlNeeded       = 0x00200000,    // A stackcrawl is needed on this thread, such as for thread abort
                                                    // See comment for s_pWaitForStackCrawlEvent for reason.
@@ -548,9 +545,9 @@ public:
         // unused                 = 0x00400000,
 
         // unused                 = 0x00800000,
-        TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread?
+        TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread? [cDAC] [Thread]: Contract depends on this value.
 
-        TS_Interruptible          = 0x02000000,    // sitting in a Sleep(), Wait(), Join()
+        TS_WaitSleepJoin          = 0x02000000,    // sitting in a Sleep(), Wait(), Join(). [cDAC] [Thread]: Contract depends on this value.
         TS_Interrupted            = 0x04000000,    // was awakened by an interrupt APC. !!! This can be moved to TSNC
 
         // unused
@@ -561,7 +558,7 @@ public:
                                                    // We can clean up the unmanaged part now.
 
         TS_FailStarted            = 0x40000000,    // The thread fails during startup.
-        TS_Detached               = 0x80000000,    // Thread was detached by DllMain
+        TS_Detached               = 0x80000000,    // Thread was detached by DllMain. [cDAC] [Thread]: Contract depends on this value.
 
         // <TODO> @TODO: We need to reclaim the bits that have no concurrency issues (i.e. they are only
         //         manipulated by the owning thread) and move them off to a different DWORD.  Note if this
@@ -571,22 +568,13 @@ public:
         TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
     };
 
-    // Thread flags that aren't really states in themselves but rather things the thread
-    // has to do.
-    enum ThreadTasks
-    {
-        TT_CleanupSyncBlock       = 0x00000001, // The synch block needs to be cleaned up.
-    };
-
     // Thread flags that have no concurrency issues (i.e., they are only manipulated by the owning thread). Use these
     // state flags when you have a new thread state that doesn't belong in the ThreadState enum above.
-    //
-    // <TODO>@TODO: its possible that the ThreadTasks from above and these flags should be merged.</TODO>
     enum ThreadStateNoConcurrency
     {
         TSNC_Unknown                    = 0x00000000, // threads are initialized this way
 
-        TSNC_DebuggerUserSuspend        = 0x00000001, // marked "suspended" by the debugger
+        // unused                       = 0x00000001,
         // unused                       = 0x00000002,
         TSNC_DebuggerIsStepping         = 0x00000004, // debugger is stepping this thread
         TSNC_DebuggerIsManagedException = 0x00000008, // EH is re-raising a managed exception.
@@ -624,13 +612,8 @@ public:
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
         TSNC_SkipManagedPersonalityRoutine = 0x02000000, // Ignore the ProcessCLRException calls when propagating exception to external native code
-        TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
-                                                      // This almost mirrors the TS_Interruptible state however that flag can change
-                                                      // during GC-preemptive mode whereas this one cannot.
-#ifdef FEATURE_COMINTEROP
-        TSNC_WinRTInitialized           = 0x08000000, // the thread has initialized WinRT
-#endif // FEATURE_COMINTEROP
-
+        // unused                       = 0x04000000,
+        // unused                       = 0x08000000,
         TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechanism during
                                                       // thread startup so can be skipped.
 
@@ -642,6 +625,14 @@ public:
         TSNC_EtwStackWalkInProgress     = 0x80000000, // Set on the thread so that ETW can know that stackwalking is in progress
                                                       // and does not proceed with a stackwalk on the same thread
                                                       // There are cases during managed debugging when we can run into this situation
+    };
+
+    // Thread state flags that are only written by the debugger (out-of-proc) and read by the runtime (in-proc).
+    // Separated from ThreadStateNoConcurrency to avoid read-modify-write races between the debugger and the runtime.
+    enum DebuggerControlledThreadState
+    {
+        DCTS_None               = 0x00000000, // [cDAC] [Thread]: Contract depends on this value.
+        DCTS_UserSuspend        = 0x00000001, // Marked "suspended" by the debugger [cDAC] [Thread]: Contract depends on this value.
     };
 
 public:
@@ -693,6 +684,24 @@ public:
         return ((DWORD)m_StateNC & tsnc);
     }
 
+    void SetDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_DebuggerControlledThreadState = (DebuggerControlledThreadState)((DWORD)m_DebuggerControlledThreadState.Load() | dcts);
+    }
+
+    void ResetDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_DebuggerControlledThreadState = (DebuggerControlledThreadState)((DWORD)m_DebuggerControlledThreadState.Load() & ~dcts);
+    }
+
+    BOOL HasDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return ((DWORD)m_DebuggerControlledThreadState.Load() & dcts);
+    }
+
     void MarkEtwStackWalkInProgress()
     {
         WRAPPER_NO_CONTRACT;
@@ -714,19 +723,19 @@ public:
     DWORD RequireSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_ThreadTasks & TT_CleanupSyncBlock);
+        return (m_State & TS_SyncBlockCleanup);
     }
 
     void SetSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_ThreadTasks, TT_CleanupSyncBlock);
+        InterlockedOr((LONG*)&m_State, TS_SyncBlockCleanup);
     }
 
     void ResetSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedAnd((LONG*)&m_ThreadTasks, ~TT_CleanupSyncBlock);
+        InterlockedAnd((LONG*)&m_State, ~TS_SyncBlockCleanup);
     }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -747,20 +756,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         ResetThreadState(TS_CoInitialized);
     }
-
-#ifdef FEATURE_COMINTEROP
-    BOOL IsWinRTInitialized()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return HasThreadStateNC(TSNC_WinRTInitialized);
-    }
-
-    void ResetWinRTInitialized()
-    {
-        LIMITED_METHOD_CONTRACT;
-        ResetThreadStateNC(TSNC_WinRTInitialized);
-    }
-#endif // FEATURE_COMINTEROP
 
     void CleanupCOMState();
 
@@ -852,8 +847,11 @@ public:
         return (m_State & TS_WeOwn);
     }
 
-    // For reporting purposes, grab a consistent snapshot of the thread's state
-    ThreadState GetSnapshotState();
+    ThreadState GetState()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_State;
+    }
 
     // For delayed destruction of threads
     DWORD           IsDetached()
@@ -919,29 +917,22 @@ public:
     // we fire the AllocationTick event. It's only for tooling purpose.
     TypeHandle m_thAllocContextObj;
 
-#ifndef TARGET_UNIX
-private:
-    _NT_TIB *m_pTEB;
+#ifdef FEATURE_INTERPRETER
 public:
-    _NT_TIB *GetTEB() {
-        LIMITED_METHOD_CONTRACT;
-        return m_pTEB;
-    }
-    PEXCEPTION_REGISTRATION_RECORD *GetExceptionListPtr() {
-        WRAPPER_NO_CONTRACT;
-        return &GetTEB()->ExceptionList;
-    }
-#endif // !TARGET_UNIX
+    PTR_InterpThreadContext m_pInterpThreadContext;
+    InterpThreadContext* GetInterpThreadContext();
+    InterpThreadContext* GetOrCreateInterpThreadContext();
+#endif // FEATURE_INTERPRETER
 
     inline void SetTHAllocContextObj(TypeHandle th) {LIMITED_METHOD_CONTRACT; m_thAllocContextObj = th; }
 
     inline TypeHandle GetTHAllocContextObj() {LIMITED_METHOD_CONTRACT; return m_thAllocContextObj; }
 
-    // Flags used to indicate tasks the thread has to do.
-    ThreadTasks          m_ThreadTasks;
-
     // Flags for thread states that have no concurrency issues.
     ThreadStateNoConcurrency m_StateNC;
+
+    // Flags for thread states controlled by the debugger.
+    Volatile<DebuggerControlledThreadState> m_DebuggerControlledThreadState;
 
 private:
 #ifdef _DEBUG
@@ -1119,7 +1110,6 @@ public:
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     void            CoUninitialize();
     void            BaseCoUninitialize();
-    void            BaseWinRTUninitialize();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
     void        CooperativeCleanup();
@@ -1456,8 +1446,6 @@ public:
     //---------------------------------------------------------------
     // Last exception to be thrown
     //---------------------------------------------------------------
-    inline void SetThrowable(OBJECTREF pThrowable
-                             DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags = ThreadExceptionState::STEC_All));
 
     OBJECTREF GetThrowable()
     {
@@ -1466,25 +1454,25 @@ public:
         return m_ExceptionState.GetThrowable();
     }
 
-    // An unmnaged thread can check if a managed is processing an exception
     BOOL HasException()
     {
         LIMITED_METHOD_CONTRACT;
-        OBJECTHANDLE pThrowable = m_ExceptionState.GetThrowableAsHandle();
-        return pThrowable && *PTR_UNCHECKED_OBJECTREF(pThrowable);
+        return !IsThrowableNull();
     }
 
-    OBJECTHANDLE GetThrowableAsHandle()
+    // See ExInfo::GetThrowableAsPseudoHandle for details on the pseudo-handle.
+    OBJECTHANDLE GetThrowableAsPseudoHandle()
     {
-        LIMITED_METHOD_CONTRACT;
-        return m_ExceptionState.GetThrowableAsHandle();
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return m_ExceptionState.GetThrowableAsPseudoHandle();
     }
 
     // special null test (for use when we're in the wrong GC mode)
     BOOL IsThrowableNull()
     {
         WRAPPER_NO_CONTRACT;
-        return IsHandleNullUnchecked(m_ExceptionState.GetThrowableAsHandle());
+        return m_ExceptionState.IsThrowableNull();
     }
 
     BOOL IsExceptionInProgress()
@@ -2102,7 +2090,7 @@ public:
     // SKIPFUNCLETS includes functionless frames but excludes all funclets and everything between funclets and their parent methods
     #define SKIPFUNCLETS                    0x0002
 
-    #define POPFRAMES                       0x0004
+    // UNUSED                               0x0004
 
     #define QUICKUNWIND                     0x0008 // do not restore all registers during unwind
 
@@ -2194,7 +2182,7 @@ public:
     void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightUnwind = false);
 
     static PCODE VirtualUnwindCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
-                                           EECodeInfo * pCodeInfo = NULL);
+                                           EECodeInfo * pCodeInfo = NULL ARM64_ARG(TADDR * pSpForPacSign = NULL));
     static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
 #ifndef DACCESS_COMPILE
     static PCODE VirtualUnwindLeafCallFrame(T_CONTEXT* pContext);
@@ -2247,10 +2235,9 @@ public:
     {
         return m_PreventAbort != 0;
     }
-    // The ThreadStore manages a list of all the threads in the system.  I
-    // can't figure out how to expand the ThreadList template type without
-    // making m_Link public.
-    SLink       m_Link;
+    // The ThreadStore manages a list of all the threads in the system.
+    // Next pointer for SList linkage (ThreadStore::m_ThreadList).
+    PTR_Thread  m_pNext = NULL;
 
     // Debugger per-thread flag for enabling notification on "manual"
     // method calls,  for stepping logic
@@ -2262,10 +2249,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_TraceCallCount;
     }
-
-    // Functions to get/set culture information for current thread.
-    static OBJECTREF GetCulture(BOOL bUICulture);
-    static void SetCulture(OBJECTREF *CultureObj, BOOL bUICulture);
 
 private:
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -2332,8 +2315,6 @@ private:
     UINT_PTR    m_CacheStackSufficientExecutionLimit;
     UINT_PTR    m_CacheStackStackAllocNonRiskyExecutionLimit;
 
-#define HARD_GUARD_REGION_SIZE GetOsPageSize()
-
 private:
     //
     static HRESULT CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope = STSGuarantee_OnlyIfEnabled);
@@ -2346,8 +2327,8 @@ private:
 
     // Every stack has a single reserved page at its limit that we call the 'hard guard page'. This page is never
     // committed, and access to it after a stack overflow will terminate the thread.
-#define HARD_GUARD_REGION_SIZE GetOsPageSize()
-#define SIZEOF_DEFAULT_STACK_GUARANTEE 1 * GetOsPageSize()
+#define HARD_GUARD_REGION_SIZE (minipal_getpagesize())
+#define SIZEOF_DEFAULT_STACK_GUARANTEE (minipal_getpagesize())
 
 public:
     // This will return the last stack address that one could write to before a stack overflow.
@@ -2438,8 +2419,8 @@ private:
 
     // For suspends.  The thread waits on this event.  A client sets the event to cause
     // the thread to resume.
-    void    WaitSuspendEvents();
-    BOOL    WaitSuspendEventsHelper(void);
+    void    WaitForDebugSuspend();
+    BOOL    WaitForDebugSuspendHelper(void);
 
     // Helpers to ensure that the bits for suspension and the number of active
     // traps remain coordinated.
@@ -2472,7 +2453,7 @@ private:
             //
             // Construct the destination state we desire - all suspension bits turned off.
             //
-            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
+            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_DebugSyncSuspended));
 
             if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
             {
@@ -2535,6 +2516,9 @@ private:
     void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet));
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
+#ifdef TARGET_ARM64
+    VOID        *m_pSpForPacSign;         // stack pointer value that was used to sign LR with PACIASP
+#endif
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
     MethodDesc  *m_HijackedFunction;      // remember what we hijacked
 
@@ -2702,8 +2686,7 @@ public:
     }
 
     void SafeUpdateLastThrownObject(void);
-    OBJECTREF SafeSetThrowables(OBJECTREF pThrowable
-                                DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags = ThreadExceptionState::STEC_All),
+    OBJECTREF SafeSetThrowables(OBJECTREF pThrowable,
                                 BOOL isUnhandled = FALSE);
 
     bool IsLastThrownObjectStackOverflowException()
@@ -2737,13 +2720,6 @@ private:
     PTR_CONTEXT m_debuggerFilterContext;
 
     //---------------------------------------------------------------
-    // m_profilerFilterContext holds an additional context for the
-    // case when a (sampling) profiler wishes to hijack the thread
-    // and do a stack walk on the same thread.
-    //---------------------------------------------------------------
-    T_CONTEXT *m_pProfilerFilterContext;
-
-    //---------------------------------------------------------------
     // m_hijackLock holds a BOOL that is used for mutual exclusion
     // between profiler stack walks and thread hijacks (bashing
     // return addresses on the stack)
@@ -2761,13 +2737,21 @@ private:
     //---------------------------------------------------------------
     BOOL    m_fInteropDebuggingHijacked;
 
+
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+    //---------------------------------------------------------------
+    // m_profilerFilterContext holds an additional context for the
+    // case when a (sampling) profiler wishes to hijack the thread
+    // and do a stack walk on the same thread.
+    //---------------------------------------------------------------
+    T_CONTEXT *m_pProfilerFilterContext;
+
     //---------------------------------------------------------------
     // Bitmask to remember per-thread state useful for the profiler API.  See
     // COR_PRF_CALLBACKSTATE_* flags in clr\src\inc\ProfilePriv.h for bit values.
     //---------------------------------------------------------------
     DWORD m_profilerCallbackState;
 
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
     //---------------------------------------------------------------
     // m_dwProfilerEvacuationCounters keeps track of how many profiler
     // callback calls remain on the stack
@@ -2775,7 +2759,7 @@ private:
     // Why volatile?
     // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization.
     Volatile<DWORD> m_dwProfilerEvacuationCounters[MAX_NOTIFICATION_PROFILERS + 1];
-#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+#endif // PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA
 
 private:
 #ifndef DACCESS_COMPILE
@@ -2844,6 +2828,7 @@ public:
     void SetFilterContext(T_CONTEXT *pContext);
     T_CONTEXT *GetFilterContext(void);
 
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
     void SetProfilerFilterContext(T_CONTEXT *pContext)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2851,37 +2836,37 @@ public:
         m_pProfilerFilterContext = pContext;
     }
 
-#ifdef PROFILING_SUPPORTED
     FORCEINLINE DWORD GetProfilerEvacuationCounter(size_t slot)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
-        return m_dwProfilerEvacuationCounters[slot];
+        return m_dwProfilerEvacuationCounters[slot].Load();
     }
 
     FORCEINLINE void IncProfilerEvacuationCounter(size_t slot)
     {
+        // All manipulation of the evacuation counters must be done from within the thread. A value of 0 or non-zero signals to other threads that various behavior should occur.
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
         DWORD newValue =
 #endif // _DEBUG
-        ++m_dwProfilerEvacuationCounters[slot];
+        m_dwProfilerEvacuationCounters[slot] = m_dwProfilerEvacuationCounters[slot].Load() + 1;
         _ASSERTE(newValue != 0U);
     }
 
     FORCEINLINE void DecProfilerEvacuationCounter(size_t slot)
     {
         LIMITED_METHOD_CONTRACT;
+        // All manipulation of the evacuation counters must be done from within the thread. A value of 0 or non-zero signals to other threads that various behavior should occur.
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
         DWORD newValue =
 #endif // _DEBUG
-        --m_dwProfilerEvacuationCounters[slot];
+        m_dwProfilerEvacuationCounters[slot] = m_dwProfilerEvacuationCounters[slot].Load() - 1;
         _ASSERTE(newValue != (DWORD)-1);
     }
 
-#endif // PROFILING_SUPPORTED
 
     // Used by the profiler API to find which flags have been set on the Thread object,
     // in order to authorize a profiler's call into ICorProfilerInfo(2).
@@ -2913,11 +2898,16 @@ public:
         m_profilerCallbackState |= dwFlags;
         return dwRet;
     }
+#endif // PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA
 
     T_CONTEXT *GetProfilerFilterContext(void)
     {
         LIMITED_METHOD_CONTRACT;
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
         return m_pProfilerFilterContext;
+#else
+        return NULL;
+#endif // PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA
     }
 
     //-------------------------------------------------------------------------
@@ -3332,7 +3322,7 @@ private:
     Exception* m_pExceptionDuringStartup;
 
 public:
-    void HandleThreadStartupFailure();
+    OBJECTREF GetExceptionDuringStartup();
 
 #ifdef HAVE_GCCOVER
 private:
@@ -3602,32 +3592,11 @@ public:
 #ifdef FEATURE_PERFTRACING
 private:
 
-    // SampleProfiler thread state.  This is set on suspension and cleared before restart.
-    // True if the thread was in cooperative mode.  False if it was in preemptive when the suspension started.
-    Volatile<ULONG> m_gcModeOnSuspension;
-
     // The activity ID for the current thread.
     // An activity ID of zero means the thread is not executing in the context of an activity.
     GUID m_activityId;
 
 public:
-    bool GetGCModeOnSuspension()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_gcModeOnSuspension != 0U;
-    }
-
-    void SaveGCModeOnSuspension()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_gcModeOnSuspension = m_fPreemptiveGCDisabled;
-    }
-
-    void ClearGCModeOnSuspension()
-    {
-        m_gcModeOnSuspension = 0;
-    }
-
     LPCGUID GetActivityId() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -3786,13 +3755,6 @@ private:
     bool m_hasPendingActivation;
 
     friend struct ::cdac_data<Thread>;
-
-#ifdef FEATURE_INTERPRETER
-public:
-    InterpThreadContext *m_pInterpThreadContext;
-    InterpThreadContext* GetInterpThreadContext();
-    InterpThreadContext* GetOrCreateInterpThreadContext();
-#endif // FEATURE_INTERPRETER
 };
 
 template<>
@@ -3801,22 +3763,32 @@ struct cdac_data<Thread>
     static constexpr size_t Id = offsetof(Thread, m_ThreadId);
     static constexpr size_t OSId = offsetof(Thread, m_OSThreadId);
     static constexpr size_t State = offsetof(Thread, m_State);
+    static constexpr size_t DebuggerControlledThreadState = offsetof(Thread, m_DebuggerControlledThreadState);
     static constexpr size_t PreemptiveGCDisabled = offsetof(Thread, m_fPreemptiveGCDisabled);
     static constexpr size_t RuntimeThreadLocals = offsetof(Thread, m_pRuntimeThreadLocals);
     static constexpr size_t Frame = offsetof(Thread, m_pFrame);
+    static constexpr size_t GCFrame = offsetof(Thread, m_pGCFrame);
+    static constexpr size_t CachedStackBase = offsetof(Thread, m_CacheStackBase);
+    static constexpr size_t CachedStackLimit = offsetof(Thread, m_CacheStackLimit);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
-    static constexpr size_t Link = offsetof(Thread, m_Link);
+    static constexpr size_t LastThrownObjectIsUnhandled = offsetof(Thread, m_ltoIsUnhandled);
+    static constexpr size_t Link = offsetof(Thread, m_pNext);
     static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
+    static constexpr size_t CurrentCustomDebuggerNotification = offsetof(Thread, m_hCurrNotification);
 
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
         "Thread::m_ExceptionState is of type ThreadExceptionState");
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
-    #ifndef TARGET_UNIX
-    static constexpr size_t TEB = offsetof(Thread, m_pTEB);
+    static constexpr size_t DebuggerFilterContext = offsetof(Thread, m_debuggerFilterContext);
+    static constexpr size_t InteropDebuggingHijacked = offsetof(Thread, m_fInteropDebuggingHijacked);
+#ifdef TARGET_WINDOWS
+    static constexpr size_t ThreadHandle = offsetof(Thread, m_ThreadHandle);
+#endif
+#ifndef TARGET_UNIX
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
-    #endif
+#endif
 };
 
 // End of class Thread
@@ -3836,7 +3808,7 @@ void UndoRevert(BOOL bReverted, HANDLE hToken);
 // ThreadStore::m_pThreadStore.
 // ---------------------------------------------------------------------------
 
-typedef SList<Thread, false, PTR_Thread> ThreadList;
+typedef SListTail<Thread> ThreadList;
 
 
 // The ThreadStore is a singleton class
@@ -4075,7 +4047,7 @@ public:
 template<>
 struct cdac_data<ThreadStore>
 {
-    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_link);
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_pHead);
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
     static constexpr size_t UnstartedCount = offsetof(ThreadStore, m_UnstartedThreadCount);
     static constexpr size_t BackgroundCount = offsetof(ThreadStore, m_BackgroundThreadCount);
@@ -4087,7 +4059,6 @@ typedef StateHolder<ThreadStore::LockThreadStore,ThreadStore::UnlockThreadStore>
 
 
 // This class dispenses small thread ids for the thin lock mechanism.
-// Recently we started using this class to dispense domain neutral module IDs as well.
 class IdDispenser
 {
 private:

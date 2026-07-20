@@ -223,7 +223,7 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 length = stringValue.Length;
             }
-            else if (value is System.Collections.ICollection collectionValue)
+            else if (value is global::System.Collections.ICollection collectionValue)
             {
                 length = collectionValue.Count;
             }
@@ -268,7 +268,7 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 length = stringValue.Length;
             }
-            else if (value is System.Collections.ICollection collectionValue)
+            else if (value is global::System.Collections.ICollection collectionValue)
             {
                 length = collectionValue.Count;
             }
@@ -318,7 +318,7 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 length = stringValue.Length;
             }
-            else if (value is System.Collections.ICollection collectionValue)
+            else if (value is global::System.Collections.ICollection collectionValue)
             {
                 length = collectionValue.Count;
             }
@@ -502,7 +502,7 @@ namespace Microsoft.Extensions.Options.Generators
                         }
                         if (_needToConvertMinMax)
                         {
-                            System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+                            global::System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
 {{initializationString}}
                         }
                         int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
@@ -524,7 +524,7 @@ namespace Microsoft.Extensions.Options.Generators
                 return true;
             }
 
-            System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+            global::System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
             object? convertedValue;
 
 {{convertValue}}
@@ -546,7 +546,7 @@ namespace Microsoft.Extensions.Options.Generators
                 (true, true) => "The field {0} must be between {1} exclusive and {2} exclusive.",
             };
         }
-        private object? ConvertValue(object? value, System.Globalization.CultureInfo formatProvider)
+        private object? ConvertValue(object? value, global::System.Globalization.CultureInfo formatProvider)
         {
             if (value is string stringValue)
             {
@@ -602,7 +602,7 @@ namespace Microsoft.Extensions.Options.Generators
                 sb.Append(first ? $"if " : $"{padding}else if ");
                 sb.AppendLine($"(validationContext.ObjectInstance is {type} && OtherProperty == \"{property}\")");
                 sb.AppendLine($"{padding}{{");
-                sb.AppendLine($"{padding}    result = Equals(value, (({type})validationContext.ObjectInstance).{property});");
+                sb.AppendLine($"{padding}    result = Equals(value, (({type})validationContext.ObjectInstance).{EscapeIdentifier(property)});");
                 sb.AppendLine($"{padding}}}");
                 first = false;
             }
@@ -683,8 +683,8 @@ namespace Microsoft.Extensions.Options.Generators
                 // We disable the warning on `new ValidationContext(object)` usage as we use it in a safe way that not require executing the reflection code.
                 // This is done by initializing the DisplayName in the context which is the part trigger reflection if it is not initialized. For
                 // projects targeting .NET 10 and above, we can avoid the suppression since we use the new trim-safe constructor.
-                OutLn("#if !NET10_0_OR_GREATER");
-                OutLn($"[System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(\"Trimming\", \"IL2026:RequiresUnreferencedCode\",");
+                OutLn("#if !NET");
+                OutLn($"[global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(\"Trimming\", \"IL2026:RequiresUnreferencedCode\",");
                 OutLn($"     Justification = \"The created ValidationContext object is used in a way that never call reflection\")]");
                 OutLn("#endif");
             }
@@ -692,7 +692,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutLn($"public {(makeStatic ? "static " : string.Empty)}global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, {modelToValidate.Name} options)");
             OutOpenBrace();
             OutLn($"global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;");
-            OutLn("#if NET10_0_OR_GREATER");
+            OutLn("#if NET");
             OutLn($"var context = new {StaticValidationContextType}(options, \"{modelToValidate.SimpleName}\", null, null);");
             OutLn("#else");
             OutLn($"var context = new {StaticValidationContextType}(options);");
@@ -751,7 +751,7 @@ namespace Microsoft.Extensions.Options.Generators
                 OutLn($"validationAttributes.Add({_staticValidationAttributeHolderClassFQN}.{staticValidationAttributeInstance.FieldName});");
             }
 
-            OutLn($"if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.{vm.Name}{_TryGetValueNullableAnnotation}, context, validationResults, validationAttributes))");
+            OutLn($"if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.{EscapeIdentifier(vm.Name)}{_TryGetValueNullableAnnotation}, context, validationResults, validationAttributes))");
             OutOpenBrace();
             OutLn($"(builder ??= new()).AddResults(validationResults);");
             OutCloseBrace();
@@ -834,17 +834,18 @@ namespace Microsoft.Extensions.Options.Generators
             var valueAccess = (vm.IsNullable && vm.IsValueType) ? ".Value" : string.Empty;
 
             var baseName = $"string.IsNullOrEmpty(name) ? \"{vm.Name}\" : $\"{{name}}.{vm.Name}\"";
+            var memberAccess = $"options.{EscapeIdentifier(vm.Name)}";
 
             if (vm.IsNullable)
             {
-                OutLn($"if (options.{vm.Name} is not null)");
+                OutLn($"if ({memberAccess} is not null)");
                 OutOpenBrace();
-                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({baseName}, options.{vm.Name}{valueAccess}));");
+                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({baseName}, {memberAccess}{valueAccess}));");
                 OutCloseBrace();
             }
             else
             {
-                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({baseName}, options.{vm.Name}{valueAccess}));");
+                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({baseName}, {memberAccess}{valueAccess}));");
             }
         }
 
@@ -864,15 +865,17 @@ namespace Microsoft.Extensions.Options.Generators
                 callSequence = $"{_staticValidatorHolderClassFQN}.{staticValidatorInstance.FieldName}";
             }
 
+            var memberAccess = $"options.{EscapeIdentifier(vm.Name)}";
+
             if (vm.IsNullable)
             {
-                OutLn($"if (options.{vm.Name} is not null)");
+                OutLn($"if ({memberAccess} is not null)");
             }
 
             OutOpenBrace();
 
             OutLn($"var count = 0;");
-            OutLn($"foreach (var o in options.{vm.Name}{valueAccess})");
+            OutLn($"foreach (var o in {memberAccess}{valueAccess})");
             OutOpenBrace();
 
             if (vm.EnumeratedIsNullable)
@@ -903,6 +906,14 @@ namespace Microsoft.Extensions.Options.Generators
             OutCloseBrace();
             OutCloseBrace();
         }
+
+        /// <summary>
+        /// Prefixes an identifier with "@" when it would otherwise be parsed as a keyword (e.g. a member declared as <c>@class</c>).
+        /// </summary>
+        private static string EscapeIdentifier(string identifier)
+            => SyntaxFacts.GetKeywordKind(identifier) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(identifier) != SyntaxKind.None
+                ? "@" + identifier
+                : identifier;
 
     #pragma warning disable CA1822 // Mark members as static: static should come before non-static, but we want the method to be here
         private StaticFieldInfo GetOrAddStaticValidator(ref Dictionary<string, StaticFieldInfo> staticValidatorsDict, string validatorTypeFQN)

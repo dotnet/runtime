@@ -8,12 +8,14 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using Xunit;
+using TestLibrary;
 
 namespace IntelHardwareIntrinsicTest._Sse1
 {
     public partial class Program
     {
         [Xunit.ActiveIssue("https://github.com/dotnet/runtime/issues/75767", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoLLVMAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75767", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMAOT))]
         [Fact]
         public static unsafe void Shuffle()
         {

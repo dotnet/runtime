@@ -19,6 +19,7 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicCode()
         {
             Assert.Equal(RuntimeFeature.IsDynamicCodeSupported, RuntimeFeature.IsSupported("IsDynamicCodeSupported"));
@@ -32,6 +33,9 @@ namespace System.Runtime.CompilerServices.Tests
 
         [Fact]
         [SkipOnMono("IsDynamicCodeCompiled returns false in cases where mono doesn't support these features")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+        // The CoreCLR interpreter is not a JIT, so RuntimeFeature.IsDynamicCodeCompiled is false.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter))]
         public static void DynamicCode_Jit()
         {
             if (PlatformDetection.IsNativeAot)

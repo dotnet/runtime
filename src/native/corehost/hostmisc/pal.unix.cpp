@@ -24,7 +24,7 @@
 #include <mach-o/dyld.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
-#elif defined(__sun)
+#elif defined(__sun) || defined(TARGET_OPENBSD)
 #include <sys/utsname.h>
 #elif defined(TARGET_FREEBSD)
 #include <sys/types.h>
@@ -136,92 +136,20 @@ bool pal::getcwd(pal::string_t* recv)
     return true;
 }
 
-namespace
-{
-    bool get_loaded_library_from_proc_maps(const pal::char_t* library_name, pal::dll_t* dll, pal::string_t* path)
-    {
-        char* line = nullptr;
-        size_t lineLen = 0;
-        ssize_t read;
-        FILE* file = pal::file_open(_X("/proc/self/maps"), _X("r"));
-        if (file == nullptr)
-            return false;
-
-        // Read maps file line by line to check fo the library
-        bool found = false;
-        pal::string_t path_local;
-        while ((read = getline(&line, &lineLen, file)) != -1)
-        {
-            char buf[PATH_MAX];
-            if (sscanf(line, "%*p-%*p %*[-rwxsp] %*p %*[:0-9a-f] %*d %s\n", buf) == 1)
-            {
-                path_local = buf;
-                size_t pos = path_local.rfind(DIR_SEPARATOR);
-                if (pos == std::string::npos)
-                    continue;
-
-                pos = path_local.find(library_name, pos);
-                if (pos != std::string::npos)
-                {
-                    found = true;
-                    break;
-                }
-            }
-        }
-
-        fclose(file);
-        free(line);
-        if (!found)
-            return false;
-
-        pal::dll_t dll_maybe = dlopen(path_local.c_str(), RTLD_LAZY | RTLD_NOLOAD);
-        if (dll_maybe == nullptr)
-            return false;
-
-        *dll = dll_maybe;
-        path->assign(path_local);
-        return true;
-    }
-}
-
 bool pal::get_loaded_library(
     const char_t* library_name,
     const char* symbol_name,
     /*out*/ dll_t* dll,
     /*out*/ pal::string_t* path)
 {
-    pal::string_t library_name_local;
-#if defined(TARGET_OSX)
-    if (!pal::is_path_fully_qualified(library_name))
-        library_name_local.append("@rpath/");
-#endif
-    library_name_local.append(library_name);
-
-    dll_t dll_maybe = dlopen(library_name_local.c_str(), RTLD_LAZY | RTLD_NOLOAD);
-    if (dll_maybe == nullptr)
-    {
-        if (pal::is_path_fully_qualified(library_name))
-            return false;
-
-        // dlopen on some systems only finds loaded libraries when given the full path
-        // Check proc maps as a fallback
-        return get_loaded_library_from_proc_maps(library_name, dll, path);
-    }
-
-    // Not all systems support getting the path from just the handle (e.g. dlinfo),
-    // so we rely on the caller passing in a symbol name so that we get (any) address
-    // in the library
-    assert(symbol_name != nullptr);
-    pal::proc_t proc = pal::get_symbol(dll_maybe, symbol_name);
-    Dl_info info;
-    if (dladdr(proc, &info) == 0)
-    {
-        dlclose(dll_maybe);
+    pal_dll_t dll_c = nullptr;
+    pal_char_t* path_c = nullptr;
+    if (!::pal_get_loaded_library(library_name, symbol_name, &dll_c, &path_c))
         return false;
-    }
 
-    *dll = dll_maybe;
-    path->assign(info.dli_fname);
+    *dll = dll_c;
+    path->assign(path_c);
+    free(path_c);
     return true;
 }
 
@@ -495,16 +423,14 @@ bool get_install_location_from_file(const pal::string_t& file_path, bool& file_f
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
-    //  ***Used only for testing***
-    pal::string_t environment_override;
-    if (test_only_getenv(_X("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH"), &environment_override))
-    {
-        recv->assign(environment_override);
-        return true;
-    }
-    //  ***************************
+    recv->clear();
+    pal::char_t* dir = pal_get_dotnet_self_registered_dir();
+    if (dir == nullptr)
+        return false;
 
-    return pal::get_dotnet_self_registered_dir_for_arch(get_current_arch(), recv);
+    recv->assign(dir);
+    free(dir);
+    return true;
 }
 
 bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::string_t* recv)
@@ -562,7 +488,13 @@ namespace
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
-    return get_default_installation_dir_for_arch(get_current_arch(), recv);
+    pal::char_t* dir = pal_get_default_installation_dir();
+    if (dir == nullptr)
+        return false;
+
+    recv->assign(dir);
+    free(dir);
+    return true;
 }
 
 bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
@@ -703,6 +635,31 @@ pal::string_t pal::get_current_os_rid_platform()
                 .append(str, pos - str);
         }
     }
+
+    return ridOS;
+}
+#elif defined(TARGET_OPENBSD)
+pal::string_t pal::get_current_os_rid_platform()
+{
+    // Code:
+    //   struct utsname u;
+    //   if (uname(&u) != -1)
+    //       printf("sysname: %s, release: %s, version: %s, machine: %s\n",
+    //              u.sysname, u.release, u.version, u.machine);
+    //
+    // Example output on OpenBSD:
+    //       sysname: OpenBSD, release: 7.4, version: GENERIC#123, machine: amd64
+
+    pal::string_t ridOS;
+    struct utsname utsname_obj;
+
+    if (uname(&utsname_obj) < 0)
+    {
+        return ridOS;
+    }
+
+    ridOS.append(_X("openbsd."))
+        .append(utsname_obj.release); // e.g. openbsd.7.4
 
     return ridOS;
 }
@@ -902,11 +859,9 @@ pal::string_t pal::get_current_os_rid_platform()
 
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
-    char* path = minipal_getexepath();
-    if (!path)
-    {
+    pal_char_t* path = ::pal_get_own_executable_path();
+    if (path == nullptr)
         return false;
-    }
 
     recv->assign(path);
     free(path);
@@ -947,14 +902,13 @@ bool pal::get_current_module(dll_t* mod)
 bool pal::getenv(const pal::char_t* name, pal::string_t* recv)
 {
     recv->clear();
+    pal_char_t* value = ::pal_getenv(name);
+    if (value == nullptr)
+        return false;
 
-    auto result = ::getenv(name);
-    if (result != nullptr)
-    {
-        recv->assign(result);
-    }
-
-    return (recv->length() > 0);
+    recv->assign(value);
+    free(value);
+    return true;
 }
 
 extern char **environ;
@@ -977,7 +931,16 @@ void pal::enumerate_environment_variables(const std::function<void(const pal::ch
 
 bool pal::fullpath(pal::string_t* path, bool skip_error_logging)
 {
-    return realpath(path, skip_error_logging);
+    if (path->empty())
+        return false;
+
+    pal_char_t* resolved = ::pal_fullpath(path->c_str(), skip_error_logging);
+    if (resolved == nullptr)
+        return false;
+
+    path->assign(resolved);
+    free(resolved);
+    return true;
 }
 
 bool pal::realpath(pal::string_t* path, bool skip_error_logging)
@@ -1005,16 +968,12 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 
 bool pal::file_exists(const pal::string_t& path)
 {
-    return (::access(path.c_str(), F_OK) == 0);
+    return ::pal_file_exists(path.c_str());
 }
 
 bool pal::is_directory(const pal::string_t& path)
 {
-    struct stat sb;
-    if (::stat(path.c_str(), &sb) != 0)
-        return false;
-
-    return S_ISDIR(sb.st_mode);
+    return ::pal_directory_exists(path.c_str());
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)
@@ -1112,32 +1071,24 @@ void pal::readdir_onlydirectories(const pal::string_t& path, const string_t& pat
 
 void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::string_t>* list)
 {
-    ::readdir(path, _X("*"), true, list);
+    assert(list != nullptr);
+    ::pal_readdir_onlydirectories(path.c_str(),
+        [](const pal_char_t* name, void* ctx) -> bool
+        {
+            static_cast<std::vector<pal::string_t>*>(ctx)->emplace_back(name);
+            return true;
+        },
+        list);
 }
 
 bool pal::is_running_in_wow64()
 {
-    return false;
+    return ::pal_get_process_emulation() == pal_process_emulation_wow64;
 }
 
 bool pal::is_emulating_x64()
 {
-    int is_translated_process = 0;
-#if defined(TARGET_OSX)
-    size_t size = sizeof(is_translated_process);
-    if (sysctlbyname("sysctl.proc_translated", &is_translated_process, &size, NULL, 0) == -1)
-    {
-        trace::info(_X("Could not determine whether the current process is running under Rosetta."));
-        if (errno != ENOENT)
-        {
-            trace::info(_X("Call to sysctlbyname failed: %s"), strerror(errno).c_str());
-        }
-
-        return false;
-    }
-#endif
-
-    return is_translated_process == 1;
+    return ::pal_get_process_emulation() == pal_process_emulation_x64;
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

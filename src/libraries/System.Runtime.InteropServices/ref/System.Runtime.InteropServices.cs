@@ -1573,6 +1573,9 @@ namespace System.Runtime.InteropServices
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        public static bool TryParsePartial([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result, out int charsConsumed) { throw null; }
+        public static bool TryParsePartial(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result, out int bytesConsumed) { throw null; }
+        public static bool TryParsePartial(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result, out int charsConsumed) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class OptionalAttribute : System.Attribute
@@ -1581,6 +1584,8 @@ namespace System.Runtime.InteropServices
     }
     public enum PosixSignal
     {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGKILL = -11,
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         SIGTSTP = -10,
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
@@ -1714,6 +1719,7 @@ namespace System.Runtime.InteropServices
     public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
     {
         public UnmanagedCallersOnlyAttribute() { }
+        public System.Type? AssociatedSourceType;
         public System.Type[]? CallConvs;
         public string? EntryPoint;
     }
@@ -2446,6 +2452,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         public static GCHandle CreateReferenceTrackingHandle(
             object obj,
             out System.Span<System.IntPtr> taggedMemory) => throw null;
+        public static System.Span<System.IntPtr> GetOrCreateReferenceTrackingMemory(object obj) => throw null;
         public enum MessageSendFunction
         {
             MsgSend,
@@ -2536,7 +2543,7 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free() { throw null; }
         }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
     public sealed partial class MarshalUsingAttribute : System.Attribute
     {
         public MarshalUsingAttribute() { }

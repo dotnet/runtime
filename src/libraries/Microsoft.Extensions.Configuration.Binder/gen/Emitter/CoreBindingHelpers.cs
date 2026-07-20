@@ -359,8 +359,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitStartBlock(returnExpression);
                     foreach (PropertySpec property in initOnlyProps)
                     {
-                        string propertyName = property.Name;
-                        _writer.WriteLine($@"{propertyName} = {propertyName},");
+                        // Properties bound through a matching constructor parameter don't have a local of their
+                        // own; their bound value lives in the local named after the parameter.
+                        string valueExpr = property.MatchingCtorParam?.Name ?? property.Name;
+                        _writer.WriteLine($@"{property.Name} = {valueExpr},");
                     }
                     EmitEndBlock(endBraceTrailingSource: ";");
                 }
@@ -413,8 +415,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
                         {
                             // Add exception logic for parameter ctors; must be present in configuration object.
-                            // In case of Arrays, we emit extra block to handle empty arrays. The throw block will not be `else` case at that time.
-                            EmitThrowBlock(condition: _typeIndex.GetEffectiveTypeSpec(member.TypeRef) is ArraySpec ? $"if ({member.Name} is null)" : "else");
+                            // In case of Arrays and IEnumerable<T>, we emit extra block to handle collection. The throw block will not be `else` case at that time.
+                            TypeSpec typeSpec = _typeIndex.GetEffectiveTypeSpec(member.TypeRef);
+                            EmitThrowBlock(condition: typeSpec is ArraySpec || typeSpec.IsExactIEnumerableOfT ? $"if ({member.Name} is null)" : "else");
                         }
 
                         _writer.WriteLine();

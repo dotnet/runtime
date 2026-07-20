@@ -42,11 +42,11 @@ namespace System.Net
         private const string Ping = "Ping";
         private const string Pong = "Pong";
 
-        [Event(KeepAliveSentId, Keywords = Keywords.Debug, Level = EventLevel.Informational)]
+        [Event(KeepAliveSentId, Level = EventLevel.Informational)]
         private void KeepAliveSent(string objName, string opcode, long payload) =>
             WriteEvent(KeepAliveSentId, objName, opcode, payload);
 
-        [Event(KeepAliveAckedId, Keywords = Keywords.Debug, Level = EventLevel.Informational)]
+        [Event(KeepAliveAckedId, Level = EventLevel.Informational)]
         private void KeepAliveAcked(string objName, long payload) =>
             WriteEvent(KeepAliveAckedId, objName, payload);
 
@@ -75,7 +75,7 @@ namespace System.Net
         // Debug Messages
         //
 
-        [Event(WsTraceId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        [Event(WsTraceId, Level = EventLevel.Verbose)]
         private void WsTrace(string objName, string memberName, string message) =>
             WriteEvent(WsTraceId, objName, memberName, message);
 
@@ -98,11 +98,11 @@ namespace System.Net
         // Close
         //
 
-        [Event(CloseStartId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        [Event(CloseStartId, Level = EventLevel.Verbose)]
         private void CloseStart(string objName, string memberName) =>
             WriteEvent(CloseStartId, objName, memberName);
 
-        [Event(CloseStopId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        [Event(CloseStopId, Level = EventLevel.Verbose)]
         private void CloseStop(string objName, string memberName) =>
             WriteEvent(CloseStopId, objName, memberName);
 
@@ -124,11 +124,11 @@ namespace System.Net
         // ReceiveAsyncPrivate
         //
 
-        [Event(ReceiveStartId, Keywords = Keywords.Debug, Level = EventLevel.Informational)]
+        [Event(ReceiveStartId, Level = EventLevel.Informational)]
         private void ReceiveStart(string objName, string memberName, int bufferLength) =>
             WriteEvent(ReceiveStartId, objName, memberName, bufferLength);
 
-        [Event(ReceiveStopId, Keywords = Keywords.Debug, Level = EventLevel.Informational)]
+        [Event(ReceiveStopId, Level = EventLevel.Informational)]
         private void ReceiveStop(string objName, string memberName) =>
             WriteEvent(ReceiveStopId, objName, memberName);
 
@@ -150,11 +150,11 @@ namespace System.Net
         // SendFrameAsync
         //
 
-        [Event(SendStartId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        [Event(SendStartId, Level = EventLevel.Verbose)]
         private void SendStart(string objName, string memberName, string opcode, int bufferLength) =>
             WriteEvent(SendStartId, objName, memberName, opcode, bufferLength);
 
-        [Event(SendStopId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        [Event(SendStopId, Level = EventLevel.Verbose)]
         private void SendStop(string objName, string memberName) =>
             WriteEvent(SendStopId, objName, memberName);
 
@@ -176,11 +176,11 @@ namespace System.Net
         // AsyncMutex
         //
 
-        [Event(MutexEnterId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        [Event(MutexEnterId, Level = EventLevel.Verbose)]
         private void MutexEnter(string objName, string memberName) =>
             WriteEvent(MutexEnterId, objName, memberName);
 
-        [Event(MutexExitId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        [Event(MutexExitId, Level = EventLevel.Verbose)]
         private void MutexExit(string objName, string memberName) =>
             WriteEvent(MutexExitId, objName, memberName);
 

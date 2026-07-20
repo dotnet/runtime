@@ -27,7 +27,7 @@ env:
   ALLOW_FAILURE: ${{ github.event_name == 'workflow_dispatch' }}
 
   LABEL_PREFIX: "area-"
-  THRESHOLD: 0.40
+  THRESHOLD: ${{ vars.ISSUE_LABELER_PREDICTION_THRESHOLD || '0.05' }}
   DEFAULT_LABEL: "needs-area-label"
 
 jobs:
@@ -40,7 +40,7 @@ jobs:
     steps:
       - name: "Restore issues model from cache"
         id: restore-model
-        uses: dotnet/issue-labeler/restore@46125e85e6a568dc712f358c39f35317366f5eed # v2.0.0
+        uses: dotnet/issue-labeler/restore@46125e85e6a568dc712f358c39f35317366f5eed # v2.0.0-release
         with:
           type: issues
           fail-on-cache-miss: ${{ env.ALLOW_FAILURE }}
@@ -49,7 +49,7 @@ jobs:
       - name: "Predict issue labels"
         id: prediction
         if: ${{ steps.restore-model.outputs.cache-hit == 'true' }}
-        uses: dotnet/issue-labeler/predict@46125e85e6a568dc712f358c39f35317366f5eed # v2.0.0
+        uses: dotnet/issue-labeler/predict@46125e85e6a568dc712f358c39f35317366f5eed # v2.0.0-release
         with:
           issues: ${{ inputs.issues || github.event.issue.number }}
           label_prefix: ${{ env.LABEL_PREFIX }}

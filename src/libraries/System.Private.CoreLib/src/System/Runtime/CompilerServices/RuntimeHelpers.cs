@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -40,7 +41,7 @@ namespace System.Runtime.CompilerServices
 
                 if (length == 0)
                 {
-                    return Array.Empty<T>();
+                    return [];
                 }
 
                 dest = new T[length];
@@ -178,9 +179,17 @@ namespace System.Runtime.CompilerServices
         internal static bool IsKnownConstant<T>(T t) where T : struct => false;
 #pragma warning restore IDE0060
 
+        // Returns true if the method being compiled is a runtime-async method.
+        // This is folded to a compile-time constant by the JIT and the interpreter.
+        [Intrinsic]
+        internal static bool IsRuntimeAsync() => false;
+
         /// <returns>true if the given type is a reference type or a value type that contains references or by-refs; otherwise, false.</returns>
         [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct => IsReferenceOrContainsReferences<T>();
+        public static bool IsReferenceOrContainsReferences<T>() where T : allows ref struct => IsReferenceOrContainsReferences<T>();
+
+        [Intrinsic]
+        internal static void WriteBarrier(ref object? dst, object? obj) => dst = obj;
 
         [Intrinsic]
         internal static unsafe void SetNextCallGenericContext(void* value) => throw new UnreachableException(); // Unconditionally expanded intrinsic

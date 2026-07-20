@@ -7,10 +7,11 @@
     <!-- disable warnings about obsolete APIs,
         Type has no accessible constructors which use only CLS-compliant types -->
     <NoWarn>$(NoWarn);0809;0618;CS3015</NoWarn>
+    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
+    <NoWarn>$(NoWarn);CS9368</NoWarn>
     <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <FeatureWasmManagedThreads Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
-    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(WasmEnableThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
     <DefineConstants>$(DefineConstants);BUILDING_CORELIB_REFERENCE</DefineConstants>
     <!-- Disable binplacing since the System.Private.CoreLib reference assembly is internal to our build and shouldn't be exposed anywhere -->
     <EnableBinPlacing>false</EnableBinPlacing>

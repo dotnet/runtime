@@ -645,7 +645,7 @@ namespace System.Reflection.Emit
             int stackChange = 0;
 
             // Push the return value if there is one.
-            if (methodInfo.ReturnType != voidType)
+            if (methodInfo.ReturnType.UnderlyingSystemType != voidType)
             {
                 stackChange++;
             }
@@ -720,11 +720,29 @@ namespace System.Reflection.Emit
             _il.Token(_moduleBuilder.GetSignatureToken(unmanagedCallConv, returnType, parameterTypes));
         }
 
+        /// <inheritdoc/>
+        public override void EmitCalli(Type functionPointerType)
+        {
+            ArgumentNullException.ThrowIfNull(functionPointerType);
+
+            if (!functionPointerType.IsFunctionPointer)
+                throw new ArgumentException(SR.Argument_MustBeFunctionPointer, nameof(functionPointerType));
+
+            int stackChange = GetStackChange(
+                functionPointerType.GetFunctionPointerReturnType(),
+                _moduleBuilder.GetTypeFromCoreAssembly(CoreTypeId.Void),
+                functionPointerType.GetFunctionPointerParameterTypes());
+
+            UpdateStackSize(stackChange);
+            Emit(OpCodes.Calli);
+            _il.Token(_moduleBuilder.GetFunctionPointerSignatureToken(functionPointerType));
+        }
+
         private static int GetStackChange(Type? returnType, Type voidType, Type[]? parameterTypes)
         {
             int stackChange = 0;
             // If there is a non-void return type, push one.
-            if (returnType != voidType)
+            if (returnType?.UnderlyingSystemType != voidType)
             {
                 stackChange++;
             }

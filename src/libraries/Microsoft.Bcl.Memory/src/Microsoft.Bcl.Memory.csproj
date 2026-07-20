@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
+    <NoWarn>$(NoWarn);CS9368</NoWarn>
     <DefineConstants>$(DefineConstants);MICROSOFT_BCL_MEMORY</DefineConstants>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides Base64Url, Utf8, Index, and Range types support for .NET Framework and .NET Standard.</PackageDescription>
@@ -25,10 +27,11 @@
     <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Url\Base64UrlDecoder.cs" Link="System\Buffers\Text\Base64Url\Base64UrlDecoder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Url\Base64UrlEncoder.cs" Link="System\Buffers\Text\Base64Url\Base64UrlEncoder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Url\Base64UrlValidator.cs" Link="System\Buffers\Text\Base64Url\Base64UrlValidator.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs" Link="System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="Polyfills\System.Numerics.BitOperations.netstandard20.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitOperationsPolyfills.cs" Link="Common\Polyfills\BitOperationsPolyfills.cs" />
     <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Text\Ascii.Utility.cs" Link="System\Text\Ascii.Utility.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Text\Ascii.Utility.Helpers.cs" Link="System\Text\Ascii.Utility.Helpers.cs" />

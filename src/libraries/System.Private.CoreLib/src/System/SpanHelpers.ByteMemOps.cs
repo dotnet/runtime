@@ -7,6 +7,7 @@
 #endif
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -256,7 +257,7 @@ namespace System
 
 #if MONO
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static unsafe extern void memmove(void* dest, void* src, nuint len);
+        private static extern unsafe void memmove(void* dest, void* src, nuint len);
 #else
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
@@ -479,7 +480,7 @@ namespace System
 
 #if MONO
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static unsafe extern void memset(void* dest, int value, nuint len);
+        private static extern unsafe void memset(void* dest, int value, nuint len);
 #else
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memset")]

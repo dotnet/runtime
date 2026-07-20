@@ -346,16 +346,25 @@ namespace Tracing.Tests.Common
         {
             if (!OperatingSystem.IsWindows() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
             {
-                Func<(IEnumerable<IGrouping<int,FileInfo>>, List<int>)> getPidsAndSockets = () =>
+                Func<(IEnumerable<IGrouping<int,FileInfo>>, List<int>)> GetPidsAndSockets = () =>
                 {
                     IEnumerable<IGrouping<int,FileInfo>> currentIpcs = Directory.GetFiles(Path.GetTempPath(), "dotnet-diagnostic*")
-                        .Select(filename => new { pid = int.Parse(Regex.Match(filename, @"dotnet-diagnostic-(?<pid>\d+)").Groups["pid"].Value), fileInfo = new FileInfo(filename) })
+                        .Select(filename =>
+                        {
+                            var match = Regex.Match(filename, @"dotnet-diagnostic-(?<pid>\d+)");
+                            if (match.Success && match.Groups["pid"].Success && !string.IsNullOrEmpty(match.Groups["pid"].Value))
+                            {
+                                return new { pid = int.Parse(match.Groups["pid"].Value), fileInfo = new FileInfo(filename) };
+                            }
+                            return null;
+                        })
+                        .Where(fileInfoGroup => fileInfoGroup is not null)
                         .GroupBy(fileInfos => fileInfos.pid, fileInfos => fileInfos.fileInfo);
                     List<int> currentPids = System.Diagnostics.Process.GetProcesses().Select(pid => pid.Id).ToList();
                     return (currentIpcs, currentPids);
                 };
 
-                var (currentIpcs, currentPids) = getPidsAndSockets();
+                var (currentIpcs, currentPids) = GetPidsAndSockets();
 
                 foreach (var ipc in currentIpcs)
                 {

@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
+using TestLibrary;
 
 class LCIDNative
 {
@@ -28,6 +29,8 @@ public class LCIDTest
         return new string(chars);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: LCID marshalling", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("PInvoke LCIDConversionAttribute not supported on Mono", TestRuntimes.Mono)]
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("PInvoke LCIDConversionAttribute not supported on Mono")]

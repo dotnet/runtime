@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "exinfo.h"
+#include "exkind.h"
 #include "dbginterface.h"
 
 #include "eetoprofinterfacewrapper.inl"
@@ -12,7 +13,6 @@
 
 ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pExceptionContext, ExKind exceptionKind) :
     m_pPrevNestedInfo(pThread->GetExceptionState()->GetCurrentExceptionTracker()),
-    m_hThrowable{},
     m_ptrs({pExceptionRecord, pExceptionContext}),
     m_fDeliveredFirstChanceNotification(FALSE),
     m_ExceptionCode((pExceptionRecord != PTR_NULL) ? pExceptionRecord->ExceptionCode : 0),
@@ -30,13 +30,24 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     m_propagateExceptionContext(NULL),
 #endif // HOST_UNIX
     m_CurrentClause({}),
-    m_pMDToReportFunctionLeave(NULL)
+    m_pMDToReportFunctionLeave(NULL),
+    m_reportedFunctionEnterWasForFunclet(false)
 #ifdef HOST_WINDOWS
     , m_pLongJmpBuf(NULL),
     m_longJmpReturnValue(0)
 #endif // HOST_WINDOWS
 {
     pThread->GetExceptionState()->m_pCurrentTracker = this;
+
+    // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots
+    // (not via GCPROTECT - reporting the same location twice corrupts the GC
+    // relocation logic; see clr-code-guide.md §2.1.5).  Mark the slot as
+    // protected in the debug OBJECTREF tracking table so that checked-build
+    // validation knows the reference is rooted.
+#ifdef USE_CHECKED_OBJECTREFS
+    Thread::ObjectRefProtected(&m_exception);
+#endif
+
     m_pInitialFrame = pThread->GetFrame();
     if (exceptionKind == ExKind::HardwareFault)
     {
@@ -70,14 +81,7 @@ void ExInfo::TakeExceptionPointersOwnership(PAL_SEHException* ex)
 
 void ExInfo::ReleaseResources()
 {
-    if (m_hThrowable)
-    {
-        if (!CLRException::IsPreallocatedExceptionHandle(m_hThrowable))
-        {
-            DestroyHandle(m_hThrowable);
-        }
-        m_hThrowable = NULL;
-    }
+    m_exception = NULL;
 
 #ifndef TARGET_UNIX
     // Clear any held Watson Bucketing details
@@ -177,7 +181,15 @@ void ExInfo::MakeCallbacksRelatedToHandler(
         if (fIsFilterHandler)
         {
             m_EHClauseInfo.SetEHClauseType(COR_PRF_CLAUSE_FILTER);
-            EEToDebuggerExceptionInterfaceWrapper::ExceptionFilter(pMD, (TADDR) dwHandlerStartPC, pEHClause->FilterOffset, (BYTE*)sf.SP);
+
+            // Suppress the debugger filter notification for the runtime helper that invokes
+            // the main program entrypoint (Environment.CallEntryPoint). This method has
+            // a filter clause that may return false, but the debugger intercepts at the notification
+            // before the filter evaluates, preventing the exception from propagating as unhandled.
+            if (pMD != g_pEnvironmentCallEntryPointMethodDesc)
+            {
+                EEToDebuggerExceptionInterfaceWrapper::ExceptionFilter(pMD, (TADDR) dwHandlerStartPC, pEHClause->FilterOffset, (BYTE*)sf.SP);
+            }
 
             EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFilterEnter(pMD);
             ETW::ExceptionLog::ExceptionFilterBegin(pMD, (PVOID)dwHandlerStartPC);

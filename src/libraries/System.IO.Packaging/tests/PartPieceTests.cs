@@ -284,7 +284,9 @@ namespace System.IO.Packaging.Tests
             using var zipArchive = new ZipArchive(ms, ZipArchiveMode.Read);
             string[] archiveNames = partPieceLists.Split(',');
 
+#pragma warning disable IL3050 // s_ZipPackagePartPieceType is a reference type, this is safe to suppress
             Type genericSortedSetType = typeof(SortedSet<>).MakeGenericType(s_ZipPackagePartPieceType);
+#pragma warning restore IL3050
             MethodInfo sortedSetAddMethod = genericSortedSetType.GetMethod("Add");
             PropertyInfo zipPackagePartPieceNumberProperty = s_ZipPackagePartPieceType.GetProperty("PieceNumber", BindingFlags.NonPublic | BindingFlags.Instance);
             System.Collections.IEnumerable partPieces = (System.Collections.IEnumerable)Activator.CreateInstance(genericSortedSetType);
@@ -636,6 +638,22 @@ namespace System.IO.Packaging.Tests
             }
 
             zipArchive.Dispose();
+        }
+
+        [Fact]
+        public void InterleavedZipPackagePartStream_Length_ReturnsCorrectValueWhenCanSeekIsFalse()
+        {
+            using MemoryStream package = new(_partPieceSampleZipPackage);
+
+            using Package zipPackage = Package.Open(package, FileMode.Open, FileAccess.Read);
+            PackagePart partEntry = zipPackage.GetPart(new Uri("/ReadablePartPieceEntry.bin", UriKind.Relative));
+            using Stream stream = partEntry.GetStream(FileMode.Open);
+
+            // When the package is opened with FileAccess.Read, the underlying zip entry stream
+            // does not support seeking but Length should still return the correct value.
+            // ReadablePartPieceEntry.bin has 4 pieces of 16 bytes each = 64 bytes total.
+            Assert.False(stream.CanSeek);
+            Assert.Equal(64, stream.Length);
         }
     }
 }

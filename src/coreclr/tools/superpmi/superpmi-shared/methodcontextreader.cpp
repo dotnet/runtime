@@ -65,7 +65,7 @@ std::string MethodContextReader::CheckForPairedFile(const std::string& fileName,
     if (suffix_offset == std::string::npos || suffix_offset == 0 || (tmp != to_lower(fileName.substr(suffix_offset))))
         return std::string();
 
-    if (test_filename_available(fileName))
+    if (!test_filename_available(fileName))
         return std::string();
 
     // next, check foo.orig.new from foo.orig
@@ -353,7 +353,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
 
             MethodContext* mc;
 
-            if (!MethodContext::Initialize(-1, buff, mcb.size, &mc))
+            if (!MethodContext::Initialize(-1, buff, mcb.size, /* readCompileResults */ true, &mc))
                 return MethodContextBuffer(-1);
 
             mc->dumpMethodHashToBuffer(mcHash, MM3_HASH_BUFFER_SIZE);

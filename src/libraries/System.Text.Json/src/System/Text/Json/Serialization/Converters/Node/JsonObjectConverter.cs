@@ -41,6 +41,12 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
+        internal override void WriteExtensionDataValue(Utf8JsonWriter writer, JsonObject? value, JsonSerializerOptions options)
+        {
+            Debug.Assert(value is not null);
+            value.WriteContentsTo(writer, options);
+        }
+
         public override void Write(Utf8JsonWriter writer, JsonObject? value, JsonSerializerOptions options)
         {
             if (value is null)

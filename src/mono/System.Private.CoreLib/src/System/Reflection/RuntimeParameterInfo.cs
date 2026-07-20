@@ -425,6 +425,6 @@ namespace System.Reflection
 
         internal Type[] GetCustomModifiersFromModifiedType(bool optional, int genericArgumentPosition) => GetTypeModifiers(ParameterType, Member, Position, optional, genericArgumentPosition) ?? Type.EmptyTypes;
 
-        public override Type GetModifiedParameterType() => ModifiedType.Create(ParameterType, this, PositionImpl + 1);
+        public override Type GetModifiedParameterType() => ModifiedType.Create(ParameterType, this);
     }
 }

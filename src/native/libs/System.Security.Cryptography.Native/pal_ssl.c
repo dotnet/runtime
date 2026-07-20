@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_ssl.h"
+#include "pal_bio.h"
 #include "openssl.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_rsa.h"
@@ -87,20 +88,50 @@ static void DetectCiphersuiteConfiguration(void)
 {
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
-    assert(ctx != NULL);
+    if (ctx == NULL)
+    {
+        // Sometimes when OpenSSL is misconfigured the call above fails on first try.
+        // This gives it one more chance and we bail out if it still fails.
+        ctx = SSL_CTX_new(TLS_method());
+        if (ctx == NULL)
+        {
+            ERR_clear_error();
+            return;
+        }
+    }
+
 
     // SSL_get_ciphers returns a shared pointer, no need to save/free it.
     // It gets invalidated every time we touch the configuration, so we can't ask just once, either.
     SSL* ssl = SSL_new(ctx);
-    assert(ssl != NULL);
+    if (ssl == NULL)
+    {
+        ERR_clear_error();
+        SSL_CTX_free(ctx);
+        return;
+    }
     int defaultCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
     SSL_free(ssl);
 
     int rv = SSL_CTX_set_cipher_list(ctx, "ALL");
-    assert(rv);
+    if (!rv)
+    {
+        // If cipher list configuration fails, assume no custom cipher configuration.
+        // This can happen with broken OpenSSL configurations. By returning early,
+        // g_config_specified_ciphersuites stays 0 and we use the default cipher list.
+        ERR_clear_error();
+        SSL_CTX_free(ctx);
+        return;
+    }
 
     ssl = SSL_new(ctx);
-    assert(ssl != NULL);
+    if (ssl == NULL)
+    {
+        ERR_clear_error();
+        SSL_CTX_free(ctx);
+        return;
+    }
+
     int allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
     SSL_free(ssl);
 
@@ -111,13 +142,29 @@ static void DetectCiphersuiteConfiguration(void)
     if (allCount == defaultCount)
     {
         rv = SSL_CTX_set_cipher_list(ctx, "RSA");
-        assert(rv);
+        if (!rv)
+        {
+            // If cipher list configuration fails, assume no custom cipher configuration.
+            ERR_clear_error();
+            SSL_CTX_free(ctx);
+            return;
+        }
         ssl = SSL_new(ctx);
-        assert(ssl != NULL);
+        if (ssl == NULL)
+        {
+            ERR_clear_error();
+            SSL_CTX_free(ctx);
+            return;
+        }
         allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
         SSL_free(ssl);
-        // If the implicit default, "ALL", and "RSA" all have the same cardinality, just fail.
-        assert(allCount != defaultCount);
+        // If the implicit default, "ALL", and "RSA" all have the same cardinality,
+        // we can't determine if there's a custom configuration, so treat it like not found.
+        if (allCount == defaultCount)
+        {
+            SSL_CTX_free(ctx);
+            return;
+        }
     }
 
     if (!SSL_CTX_config(ctx, "system_default"))
@@ -128,11 +175,13 @@ static void DetectCiphersuiteConfiguration(void)
     else
     {
         ssl = SSL_new(ctx);
-        assert(ssl != NULL);
-        int after = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
-        SSL_free(ssl);
+        if (ssl != NULL)
+        {
+            int after = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
+            SSL_free(ssl);
 
-        g_config_specified_ciphersuites = (allCount != after);
+            g_config_specified_ciphersuites = (allCount != after);
+        }
     }
 
     SSL_CTX_free(ctx);
@@ -148,13 +197,18 @@ const SSL_METHOD* CryptoNative_SslV2_3Method(void)
 {
     // No error queue impact.
     const SSL_METHOD* method = TLS_method();
-    assert(method != NULL);
+
     return method;
 }
 
 SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
 {
     ERR_clear_error();
+
+    if (method == NULL)
+    {
+        return NULL;
+    }
 
     SSL_CTX* ctx = SSL_CTX_new(method);
 
@@ -374,14 +428,6 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
     return result;
 }
 
-static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
-{
-    (void)preverify_ok;
-    (void)store;
-    // We don't care. Real verification happens in managed code.
-    return 1;
-}
-
 int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
     ERR_clear_error();
@@ -394,8 +440,13 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
     if (SSL_version(ssl) == TLS1_3_VERSION)
     {
         // Post-handshake auth reqires SSL_VERIFY_PEER to be set
-        CryptoNative_SslSetVerifyPeer(ssl);
-        return SSL_verify_client_post_handshake(ssl);
+        CryptoNative_SslSetVerifyPeer(ssl, 0);
+        int ret = SSL_verify_client_post_handshake(ssl);
+        if (ret != 1)
+        {
+            *error = CryptoNative_SslGetError(ssl, ret);
+        }
+        return ret;
     }
 #endif
 
@@ -405,15 +456,13 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
     int pending = SSL_renegotiate_pending(ssl);
     if (!pending)
     {
-        SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+        CryptoNative_SslSetVerifyPeer(ssl, 0);
         int ret = SSL_renegotiate(ssl);
         if(ret != 1)
         {
             *error = CryptoNative_SslGetError(ssl, ret);
-            return ret;
         }
-
-        return CryptoNative_SslDoHandshake(ssl, error);
+        return ret;
     }
 
     *error = SSL_ERROR_NONE;
@@ -424,7 +473,6 @@ int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
 {
     ERR_clear_error();
 
-    SSL_peek(ssl, NULL, 0);
     return SSL_renegotiate_pending(ssl) != 0;
 }
 
@@ -440,17 +488,151 @@ void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
     SSL_set_bio(ssl, rbio, wbio);
 }
 
-int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error)
+int32_t CryptoNative_SslHandshake(
+    SSL* ssl,
+    const uint8_t* inputPtr,
+    int32_t inputLen,
+    int32_t* consumed,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* outputWritten,
+    int32_t* outputPending,
+    int32_t* errorCode)
 {
+    if (outputWritten != NULL) *outputWritten = 0;
+    if (outputPending != NULL) *outputPending = 0;
+    if (consumed != NULL) *consumed = 0;
+
     ERR_clear_error();
-    int32_t result = SSL_do_handshake(ssl);
-    if (result == 1)
+
+    BIO* inputBio = SSL_get_rbio(ssl);
+    BIO* outputBio = SSL_get_wbio(ssl);
+
+    if (inputBio != NULL)
     {
-        *error = SSL_ERROR_NONE;
+        CryptoNative_BioSetReadWindow(inputBio, inputPtr, inputLen);
     }
-    else
+    if (outputBio != NULL)
     {
-        *error = CryptoNative_SslGetError(ssl, result);
+        CryptoNative_BioSetWriteWindow(outputBio, outputPtr, outputCap);
+    }
+
+    // this peek ensures that the SSL handshake state machine starts processing
+    // renegotiation and post-handshake client cert requests
+    SSL_peek(ssl, NULL, 0);
+
+    int32_t result = SSL_do_handshake(ssl);
+    *errorCode = (result == 1) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
+
+    if (outputBio != NULL)
+    {
+        CryptoNative_BioGetWriteResult(outputBio, outputWritten, outputPending);
+        CryptoNative_BioSetWriteWindow(outputBio, NULL, 0);
+    }
+    if (inputBio != NULL)
+    {
+        int32_t leftover = 0;
+        CryptoNative_BioClearReadWindow(inputBio, &leftover);
+        if (consumed != NULL)
+        {
+            *consumed = inputLen - leftover;
+        }
+    }
+
+    return result;
+}
+
+int32_t CryptoNative_SslEncrypt(
+    SSL* ssl,
+    const uint8_t* plaintextPtr,
+    int32_t plaintextLen,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* outputWritten,
+    int32_t* outputPending,
+    int32_t* errorCode)
+{
+    if (outputWritten != NULL) *outputWritten = 0;
+    if (outputPending != NULL) *outputPending = 0;
+
+    ERR_clear_error();
+
+    BIO* outputBio = SSL_get_wbio(ssl);
+    if (outputBio != NULL)
+    {
+        CryptoNative_BioSetWriteWindow(outputBio, outputPtr, outputCap);
+    }
+
+    int32_t result = SSL_write(ssl, plaintextPtr, plaintextLen);
+    *errorCode = (result > 0) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
+
+    if (outputBio != NULL)
+    {
+        CryptoNative_BioGetWriteResult(outputBio, outputWritten, outputPending);
+        CryptoNative_BioSetWriteWindow(outputBio, NULL, 0);
+    }
+
+    return result;
+}
+
+int32_t CryptoNative_SslDecrypt(
+    SSL* ssl,
+    uint8_t* inputPtr,
+    int32_t inputLen,
+    int32_t* consumed,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* leftoverOffset,
+    int32_t* leftoverLength,
+    int32_t* errorCode)
+{
+    if (leftoverOffset != NULL) *leftoverOffset = 0;
+    if (leftoverLength != NULL) *leftoverLength = 0;
+    if (consumed != NULL) *consumed = 0;
+
+    ERR_clear_error();
+
+    BIO* inputBio = SSL_get_rbio(ssl);
+    if (inputBio != NULL)
+    {
+        CryptoNative_BioSetReadWindow(inputBio, inputPtr, inputLen);
+    }
+
+    int32_t result = 0;
+    int32_t leftover = 0;
+
+    if (outputCap > 0)
+    {
+        result = SSL_read(ssl, outputPtr, outputCap);
+    }
+
+    // If the caller-provided destination is empty or full, look for additional plaintext that
+    // SSL would otherwise buffer internally and stash it in-place in the input buffer so the
+    // caller can pick it up on the next call. Skip the probe when the first SSL_read already
+    // failed - that error/state should be reported as-is.
+    if (result > 0 ? SSL_pending(ssl) > 0 : outputCap == 0)
+    {
+        leftover = SSL_read(ssl, inputPtr, inputLen);
+    }
+
+    // The first SSL_read determines the outcome when it produced bytes; otherwise the second
+    // SSL_read (the one that was actually attempted) does. Only report leftoverLength when it
+    // is positive - a negative value from a failed second read is not user-visible plaintext.
+    int32_t outcome = result > 0 ? result : leftover;
+    *errorCode = (outcome > 0) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, outcome);
+    if (leftover > 0)
+    {
+        *leftoverLength = leftover;
+    }
+
+    if (inputBio != NULL)
+    {
+        int32_t unread = 0;
+        CryptoNative_BioClearReadWindow(inputBio, &unread);
+        if (consumed != NULL)
+        {
+            *consumed = inputLen - unread;
+        }
     }
 
     return result;
@@ -464,11 +646,22 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
+    X509* cert = SSL_get1_peer_certificate(ssl);
+    CryptoNative_SslUpdateOcspStaple(ssl, cert);
+
+    // No error queue impact.
+    return cert;
+}
+
+void CryptoNative_SslUpdateOcspStaple(SSL* ssl, X509* cert)
+{
+    if (ssl == NULL || cert == NULL)
+        return;
+
     const uint8_t* data = NULL;
     long len = SSL_get_tlsext_status_ocsp_resp(ssl, &data);
-    X509* cert = SSL_get1_peer_certificate(ssl);
 
-    if (len > 0 && cert != NULL && !X509_get_ex_data(cert, g_x509_ocsp_index))
+    if (len > 0 && !X509_get_ex_data(cert, g_x509_ocsp_index))
     {
         OCSP_RESPONSE* ocspResp = d2i_OCSP_RESPONSE(NULL, &data, len);
 
@@ -481,9 +674,6 @@ X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
             X509_set_ex_data(cert, g_x509_ocsp_index, ocspResp);
         }
     }
-
-    // No error queue impact.
-    return cert;
 }
 
 X509* CryptoNative_SslGetCertificate(SSL* ssl)
@@ -545,10 +735,15 @@ X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
     return SSL_get_client_CA_list(ssl);
 }
 
-void CryptoNative_SslSetVerifyPeer(SSL* ssl)
+void CryptoNative_SslSetVerifyPeer(SSL* ssl, int32_t failIfNoPeerCert)
 {
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
-    SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+    int mode = SSL_VERIFY_PEER;
+    if (failIfNoPeerCert)
+    {
+        mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+    }
+    SSL_set_verify(ssl, mode, NULL);
 }
 
 int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
@@ -992,6 +1187,14 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
     const SSL_CIPHER* cipher = SSL_get_current_cipher(ssl);
     if (!cipher)
     {
+        // During the handshake (e.g. inside the cert verify callback),
+        // the current cipher may not be set yet (TLS 1.2 sets it at
+        // ChangeCipherSpec). Fall back to the pending cipher which is
+        // available as soon as ServerHello is processed.
+        cipher = SSL_get_pending_cipher(ssl);
+    }
+    if (!cipher)
+    {
         *cipherId = -1;
         return 0;
     }
@@ -1004,9 +1207,9 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 }
 
 // This function generates key pair and creates simple certificate.
-static int MakeSelfSignedCertificate(X509* cert, EVP_PKEY* evp)
+// On success, the generated key is stored in *pEvp and the caller takes ownership.
+static int MakeSelfSignedCertificate(X509* cert, EVP_PKEY** pEvp)
 {
-    RSA* rsa = NULL;
     ASN1_TIME* time = ASN1_TIME_new();
     X509_NAME * asnName;
     unsigned char * name = (unsigned char*)"localhost";
@@ -1017,35 +1220,40 @@ static int MakeSelfSignedCertificate(X509* cert, EVP_PKEY* evp)
 
     if (pkey != NULL)
     {
-        rsa = EVP_PKEY_get1_RSA(pkey);
-        EVP_PKEY_free(pkey);
-    }
+        X509_set_pubkey(cert, pkey);
 
-    if (rsa != NULL)
-    {
-        if (EVP_PKEY_set1_RSA(evp, rsa) == 1)
+        asnName = X509_NAME_dup(X509_get_subject_name(cert));
+
+        if (asnName != NULL)
         {
-            rsa = NULL;
+            X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
+            X509_set_subject_name(cert, asnName);
+            X509_NAME_free(asnName);
+
+            asnName =  X509_NAME_dup(X509_get_issuer_name(cert));
+
+            if (asnName != NULL)
+            {
+                X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
+                X509_set_issuer_name(cert, asnName);
+                X509_NAME_free(asnName);
+
+                ASN1_TIME_set(time, 0);
+                X509_set1_notBefore(cert, time);
+                X509_set1_notAfter(cert, time);
+
+                ret = X509_sign(cert, pkey, EVP_sha256());
+            }
         }
 
-        X509_set_pubkey(cert, evp);
-
-        asnName = X509_get_subject_name(cert);
-        X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
-
-        asnName =  X509_get_issuer_name(cert);
-        X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
-
-        ASN1_TIME_set(time, 0);
-        X509_set1_notBefore(cert, time);
-        X509_set1_notAfter(cert, time);
-
-        ret = X509_sign(cert, evp, EVP_sha256());
-    }
-
-    if (rsa != NULL)
-    {
-        RSA_free(rsa);
+        if (ret)
+        {
+            *pEvp = pkey;
+        }
+        else
+        {
+            EVP_PKEY_free(pkey);
+        }
     }
 
     if (time != NULL)
@@ -1151,21 +1359,21 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
     SSL_CTX* clientCtx = CryptoNative_SslCtxCreate(TLS_method());
     SSL_CTX* serverCtx = CryptoNative_SslCtxCreate(TLS_method());
     X509 * cert = X509_new();
-    EVP_PKEY* evp = CryptoNative_EvpPkeyCreate();
+    EVP_PKEY* evp = NULL;
     BIO *bio1 = BIO_new(BIO_s_mem());
     BIO *bio2 = BIO_new(BIO_s_mem());
 
     SSL* client = NULL;
     SSL* server = NULL;
 
-    if (clientCtx != NULL && serverCtx != NULL && cert != NULL && evp != NULL && bio1 != NULL && bio2 != NULL)
+    if (clientCtx != NULL && serverCtx != NULL && cert != NULL && bio1 != NULL && bio2 != NULL)
     {
         CryptoNative_SslCtxSetProtocolOptions(serverCtx, protocol);
         CryptoNative_SslCtxSetProtocolOptions(clientCtx, protocol);
         SSL_CTX_set_verify(clientCtx, SSL_VERIFY_NONE, NULL);
         SSL_CTX_set_verify(serverCtx, SSL_VERIFY_NONE, NULL);
 
-        if (MakeSelfSignedCertificate(cert, evp))
+        if (MakeSelfSignedCertificate(cert, &evp))
         {
             CryptoNative_SslCtxUseCertificate(serverCtx, cert);
             CryptoNative_SslCtxUsePrivateKey(serverCtx, evp);
@@ -1214,7 +1422,7 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
 
     if (evp != NULL)
     {
-        CryptoNative_EvpPkeyDestroy(evp, NULL);
+        CryptoNative_EvpPkeyDestroy(evp);
     }
 
     if (bio1)
@@ -1259,4 +1467,31 @@ void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len)
     {
         OPENSSL_free(copy);
     }
+}
+
+void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertVerifyCallback callback)
+{
+    if (ctx != NULL)
+    {
+        SSL_CTX_set_cert_verify_callback(ctx, callback, NULL);
+    }
+}
+
+SSL* CryptoNative_X509StoreCtxGetSslPtr(X509_STORE_CTX* storeCtx)
+{
+    return (SSL*)X509_STORE_CTX_get_ex_data(storeCtx, SSL_get_ex_data_X509_STORE_CTX_idx());
+}
+
+void CryptoNative_X509StoreCtxSetError(X509_STORE_CTX* storeCtx, int32_t error)
+{
+    X509_STORE_CTX_set_error(storeCtx, error);
+}
+
+/*
+Shims SSL_get_SSL_CTX to retrieve the SSL_CTX from the SSL.
+*/
+SSL_CTX* CryptoNative_SslGetSslCtx(SSL* ssl)
+{
+    // No error queue impact.
+    return SSL_get_SSL_CTX(ssl);
 }

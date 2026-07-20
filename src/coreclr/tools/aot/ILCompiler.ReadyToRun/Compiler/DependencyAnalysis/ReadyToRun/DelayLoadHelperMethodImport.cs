@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// In addition to PrecodeHelperImport instances of this import type emit GC ref map
     /// entries into the R2R executable.
     /// </summary>
-    public class DelayLoadHelperMethodImport : DelayLoadHelperImport, IMethodNode
+    public class DelayLoadHelperMethodImport : DelayLoadHelperImport, IMethodCodeNodeWithTypeSignature
     {
         private readonly MethodWithToken _method;
 

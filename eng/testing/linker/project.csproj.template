@@ -43,7 +43,7 @@
     <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
     <_WebAssemblyPropsFile>{WasmSdkPackBuildPath}Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
     <_WebAssemblyTargetsFile>{WasmSdkPackBuildPath}Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
-    <_WebAssemblySdkToolsDirectory>{WasmSdkPackTasksPath}</_WebAssemblySdkToolsDirectory>
+    <_WebAssemblySdkTasksDirectory>{WasmSdkPackTasksPath}</_WebAssemblySdkTasksDirectory>
     <UsingBrowserRuntimeWorkload>true</UsingBrowserRuntimeWorkload>
 
     <!-- Needed for targetingpacks.targets -->
@@ -85,7 +85,6 @@
   </Target>
 
   <Import Project="{NativeSanitizersTargets}" />
-  <Import Project="$(RepositoryEngineeringDir)pruning.targets" />
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
 
   <ItemGroup>

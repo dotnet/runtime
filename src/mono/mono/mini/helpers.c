@@ -79,7 +79,7 @@ static const gint16 opidx [] = {
 #ifndef DISABLE_LOGGING
 const char*
 mono_inst_name (int op) {
-	if (op >= OP_LOAD && op <= OP_LAST)
+	if (op >= OP_LOAD && op < OP_LAST)
 		return (const char*)&opstr + opidx [op - OP_LOAD];
 	if (op < OP_LOAD)
 		return mono_opcode_name (op);
@@ -182,6 +182,7 @@ MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 		if (cindex == 64)
 			cindex = 0;
 	}
+	g_hash_table_destroy(offset_to_bb_hash);
 	fprintf (ofd, "\n");
 	fclose (ofd);
 

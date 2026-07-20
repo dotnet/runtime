@@ -123,6 +123,7 @@
 #include "clsload.hpp"
 #include "object.h"
 #include "hash.h"
+#include "ebr.h"
 #include "ecall.h"
 #include "ceemain.h"
 #include "dllimport.h"
@@ -146,7 +147,6 @@
 #include "eventtrace.h"
 #include "corhost.h"
 #include "binder.h"
-#include "olevariant.h"
 #include "comcallablewrapper.h"
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
@@ -175,6 +175,10 @@
 
 #include "stringarraylist.h"
 #include "stubhelpers.h"
+#include "pregeneratedstringthunks.h"
+#ifdef TARGET_WASM
+#include "wasm/helpers.hpp"
+#endif
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -206,7 +210,15 @@
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "crashreportstackwalker.h"
+#endif // FEATURE_INPROC_CRASHREPORT
+
 #include "genanalysis.h"
+
+#ifdef HAVE_GCCOVER
+#include "cdacstress.h"
+#endif
 
 HRESULT EEStartup();
 
@@ -663,11 +675,21 @@ void EEStartupHelper()
 
 #ifdef FEATURE_TIERED_COMPILATION
         TieredCompilationManager::StaticInitialize();
-        CallCountingManager::StaticInitialize();
+        CallCountingStub::StaticInitialize();
 #endif // FEATURE_TIERED_COMPILATION
 
         OnStackReplacementManager::StaticInitialize();
         MethodTable::InitMethodDataCache();
+
+        InitializePregeneratedStringThunkHash();
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        InitializePendingThunkResolutionLock();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+#ifdef TARGET_WASM
+        InitializeWasmThunkCaches();
+#endif // TARGET_WASM
 
 #ifdef TARGET_UNIX
         ExecutableAllocator::InitPreferredRange();
@@ -694,16 +716,28 @@ void EEStartupHelper()
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
 
+#if defined(HOST_ANDROID) || defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
+        PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
+#endif
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+        CrashReportConfigure();
+#endif // FEATURE_INPROC_CRASHREPORT
+
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {
             unsigned facilities = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogFacility, LF_ALL);
             unsigned level = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
             unsigned bytesPerThread = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
             unsigned totalBytes = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
-            CLRConfigStringHolder logFilename = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogFilename);
+            CLRConfigStringHolder logFilename(CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogFilename));
             StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase(), logFilename);
             g_pStressLog = &StressLog::theLog;
         }
+#endif
+
+#ifdef FEATURE_PERFMAP
+        PerfMap::Initialize();
 #endif
 
 #ifdef FEATURE_PERFTRACING
@@ -731,7 +765,6 @@ void EEStartupHelper()
 #endif
 
 #ifdef FEATURE_PERFMAP
-        PerfMap::Initialize();
         InitThreadManagerPerfMapData();
 #endif
 
@@ -744,8 +777,6 @@ void EEStartupHelper()
 #ifndef TARGET_UNIX
         IfFailGoLog(EnsureRtlFunctions());
 #endif // !TARGET_UNIX
-
-        UnwindInfoTable::Initialize();
 
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
@@ -782,6 +813,10 @@ void EEStartupHelper()
         // Crsts and SimpleRWLocks all use the same spin heuristics
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
+
+        // Initialize EBR (Epoch-Based Reclamation) for safe deferred deletion.
+        // This must be done before any HashMap is initialized with fAsyncMode=TRUE.
+        g_EbrCollector.Init();
 
         StubManager::InitializeStubManagers();
 
@@ -820,6 +855,10 @@ void EEStartupHelper()
         COMDelegate::Init();
 
         ExecutionManager::Init();
+
+#ifdef FEATURE_PERFMAP
+        PerfMap::SignalDependenciesReady();
+#endif
 
         JitHost::Init();
 
@@ -918,9 +957,6 @@ void EEStartupHelper()
         // On windows the finalizer thread is already partially created and is waiting
         // right before doing HasStarted(). We will release it now.
         FinalizerThread::EnableFinalization();
-#elif defined(TARGET_WASM)
-        // on wasm we need to run finalizers on main thread as we are single threaded
-        // active issue: https://github.com/dotnet/runtime/issues/114096
 #else
         // This isn't done as part of InitializeGarbageCollector() above because
         // debugger must be initialized before creating EE thread objects
@@ -951,6 +987,9 @@ void EEStartupHelper()
 #ifdef HAVE_GCCOVER
         MethodDesc::Init();
 #endif
+#ifdef CDAC_STRESS
+        CdacStressPolicy::Initialize();
+#endif
 
         Assembly::Initialize();
 
@@ -976,8 +1015,8 @@ void EEStartupHelper()
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
-        // align up to GetOsPageSize(), with a maximum of 1 MB
-        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, GetOsPageSize()), (DWORD)(1024 * 1024));
+        // align up to minipal_getpagesize(), with a maximum of 1 MB
+        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, minipal_getpagesize()), (DWORD)(1024 * 1024));
         // allocate the buffer. this is never touched while the process is running, so it doesn't
         // contribute to the process' working set. it is needed only as a "shadow" for a mini-metadata
         // buffer that will be set up and reported / updated in the Watson process (the
@@ -1072,7 +1111,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 
 // EEStartup is responsible for all the one time initialization of the runtime.  Some of the highlights of
 // what it does include
-//     * Creates the default and shared, appdomains.
+//     * Creates the global AppDomain
 //     * Loads System.Private.CoreLib and loads up the fundamental types (System.Object ...)
 //
 // see code:EEStartup#TableOfContents for more on the runtime in general.
@@ -1229,7 +1268,11 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         }
 
         // Indicate the EE is the shut down phase.
-        g_fEEShutDown |= ShutDown_Start;
+        InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Start);
+
+#ifdef CDAC_STRESS
+        CdacStressPolicy::Shutdown();
+#endif
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)
         {
@@ -1354,7 +1397,7 @@ part2:
             // lock -- after the OS has stopped all other threads.
             if (fIsDllUnloading && (g_fEEShutDown & ShutDown_Phase2) == 0)
             {
-                g_fEEShutDown |= ShutDown_Phase2;
+                InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Phase2);
 
                 if (!g_fFastExitProcess)
                 {
@@ -1588,7 +1631,7 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 {
                     if (GCHeapUtilities::IsGCInProgress())
                     {
-                        g_fEEShutDown |= ShutDown_Phase2;
+                        InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Phase2);
                         break;
                     }
 

@@ -191,7 +191,7 @@ VEH_ACTION CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo);
 // Actual UEF worker prototype for use by GCUnhandledExceptionFilter.
 extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo);
 
-VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow = FALSE);
+VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable);
 
 #if defined(DACCESS_COMPILE)
 
@@ -206,8 +206,69 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow);
 
 #ifdef FEATURE_INTERPRETER
-VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP);
-#endif // FEATURE_INTERPRETER
+class ResumeAfterCatchException;
+#endif
+
+#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASM)
+VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchException& ex, Frame *pFrame, TADDR ssp);
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+#define READ_SSP() _rdsspq()
+#else
+#define READ_SSP() 0
+#endif
+
+// Install / uninstall handler at a native to managed code boundary.
+
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContext, ssp) \
+        CONTEXT *__pResumeAfterCatchContext = pContext;                \
+        TADDR __pResumeAfterCatchSSP = ssp;                            \
+        TADDR __resumeSP = 0, __resumeIP = 0;                          \
+        try                                                            \
+        {
+
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame) \
+        Frame *__pResumeAfterCatchFrame = pFrame;             \
+        TADDR __pResumeAfterCatchSSP = READ_SSP();            \
+        TADDR __resumeSP = 0, __resumeIP = 0;                 \
+        try                                                   \
+        {
+
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT                                                              \
+        }                                                                                                              \
+        catch (const ResumeAfterCatchException& ex)                                                                    \
+        {                                                                                                              \
+            /* We don't rethrow the exception here to work around a Windows bug in shadow stack pointer updating */    \
+            /* tracked by (internal) OS issue: https://microsoft.visualstudio.com/OS/_workitems/edit/62622295 */       \
+            ex.GetResumeContext(&__resumeSP, &__resumeIP);                                                             \
+        }                                                                                                              \
+        if (__resumeSP != 0)                                                                                           \
+        {                                                                                                              \
+            ResumeAfterCatchException ex(__resumeSP, __resumeIP);                                                      \
+            RethrowResumeAfterCatchExceptionSkipManagedFrames(ex, __pResumeAfterCatchContext, __pResumeAfterCatchSSP); \
+        }
+
+
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME                                                             \
+        }                                                                                                           \
+        catch (const ResumeAfterCatchException& ex)                                                                 \
+        {                                                                                                           \
+            /* We don't rethrow the exception here to work around a Windows bug in shadow stack pointer updating */ \
+            /* tracked by (internal) OS issue: https://microsoft.visualstudio.com/OS/_workitems/edit/62622295 */    \
+            ex.GetResumeContext(&__resumeSP, &__resumeIP);                                                          \
+        }                                                                                                           \
+        if (__resumeSP != 0)                                                                                        \
+        {                                                                                                           \
+            ResumeAfterCatchException ex(__resumeSP, __resumeIP);                                                   \
+            RethrowResumeAfterCatchException(ex, __pResumeAfterCatchFrame, __pResumeAfterCatchSSP);                 \
+        }
+
+#else // FEATURE_INTERPRETER && !HOST_WASM
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame)
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContext, ssp)
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT
+#endif // FEATURE_INTERPRETER && !HOST_WASM
 
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
@@ -223,11 +284,11 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
         }                                           \
         catch (PAL_SEHException& ex)                \
-        {                                           \
-            if (nativeRethrow)                      \
-            {                                       \
-                throw;                              \
-            }                                       \
+        {                        \
+            if (nativeRethrow || (ex.HasTargetFrame() && ex.TargetFrameSp > (SIZE_T)&exCopy))               \
+            { \
+                throw; \
+            } \
             exCopy = std::move(ex);                 \
             hasCaughtException = true;              \
         }                                           \
