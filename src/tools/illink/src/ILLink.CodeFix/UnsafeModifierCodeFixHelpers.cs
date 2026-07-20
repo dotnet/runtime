@@ -25,12 +25,16 @@ namespace ILLink.CodeFix
         private static readonly SyntaxToken s_safeModifier =
             ((FieldDeclarationSyntax)SyntaxFactory.ParseMemberDeclaration("safe int field;")!).Modifiers[0];
 
+        /// <summary>
+        /// Registers an add-unsafe action for a supported declaration that has no existing safety modifier.
+        /// </summary>
         internal static async Task RegisterAddUnsafeCodeFixAsync(
             CodeFixContext context,
             LocalizableString codeFixTitle,
             Func<SyntaxNode, bool> isSupportedDeclaration)
         {
-            if (await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not { } root)
+            var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            if (root is null)
                 return;
 
             SyntaxNode targetNode = root.FindNode(
@@ -53,6 +57,9 @@ namespace ILLink.CodeFix
                 context.Diagnostics[0]);
         }
 
+        /// <summary>
+        /// Finds the nearest declaration whose modifier list can contain unsafe-v2 contract markers.
+        /// </summary>
         internal static SyntaxNode? FindDeclaration(SyntaxNode node) =>
             node.AncestorsAndSelf().FirstOrDefault(static ancestor =>
                 ancestor is MemberDeclarationSyntax
@@ -62,6 +69,9 @@ namespace ILLink.CodeFix
         internal static bool HasModifier(SyntaxNode declaration, SyntaxKind modifier) =>
             GetModifiers(declaration).Any(modifier);
 
+        /// <summary>
+        /// Checks for the contextual <c>safe</c> modifier without depending on a newer SyntaxKind API.
+        /// </summary>
         internal static bool HasSafeModifier(SyntaxNode declaration)
         {
             foreach (SyntaxToken modifier in GetModifiers(declaration))
@@ -73,6 +83,9 @@ namespace ILLink.CodeFix
             return false;
         }
 
+        /// <summary>
+        /// Adds unsafe while preserving declaration-specific modifiers and trivia.
+        /// </summary>
         internal static async Task<Document> AddUnsafeModifierAsync(
             Document document,
             SyntaxNode declaration,
@@ -99,6 +112,9 @@ namespace ILLink.CodeFix
             return editor.GetChangedDocument();
         }
 
+        /// <summary>
+        /// Removes unsafe without disturbing modifiers that the current SyntaxGenerator does not model.
+        /// </summary>
         internal static async Task<Document> RemoveUnsafeModifierAsync(
             Document document,
             SyntaxNode declaration,
@@ -126,6 +142,9 @@ namespace ILLink.CodeFix
             return editor.GetChangedDocument();
         }
 
+        /// <summary>
+        /// Replaces unsafe with the contextual safe token required by field-like explicit-layout contracts.
+        /// </summary>
         internal static async Task<Document> ReplaceUnsafeWithSafeModifierAsync(
             Document document,
             SyntaxNode declaration,
@@ -194,15 +213,9 @@ namespace ILLink.CodeFix
         private static SyntaxTokenList AddUnsafeModifier(SyntaxTokenList modifiers)
         {
             // Match SyntaxGenerator's canonical order by placing unsafe before extern.
-            int insertionIndex = modifiers.Count;
-            for (int i = 0; i < modifiers.Count; i++)
-            {
-                if (modifiers[i].IsKind(SyntaxKind.ExternKeyword))
-                {
-                    insertionIndex = i;
-                    break;
-                }
-            }
+            int insertionIndex = modifiers.IndexOf(SyntaxKind.ExternKeyword);
+            if (insertionIndex < 0)
+                insertionIndex = modifiers.Count;
 
             SyntaxToken unsafeModifier = SyntaxFactory.Token(SyntaxKind.UnsafeKeyword)
                 .WithTrailingTrivia(SyntaxFactory.ElasticSpace);
@@ -223,6 +236,7 @@ namespace ILLink.CodeFix
             SyntaxTriviaList leadingTrivia = modifiers[unsafeIndex].LeadingTrivia;
             modifiers = modifiers.RemoveAt(unsafeIndex);
 
+            // If unsafe owned the declaration's leading trivia, move it to the next modifier.
             if (unsafeIndex == 0 && modifiers.Count > 0)
             {
                 modifiers = modifiers.Replace(
@@ -235,25 +249,13 @@ namespace ILLink.CodeFix
 
         private static SyntaxToken GetUnsafeModifier(SyntaxNode declaration)
         {
-            foreach (SyntaxToken modifier in GetModifiers(declaration))
-            {
-                if (modifier.IsKind(SyntaxKind.UnsafeKeyword))
-                    return modifier;
-            }
-
-            return default;
+            SyntaxTokenList modifiers = GetModifiers(declaration);
+            int unsafeIndex = GetUnsafeModifierIndex(modifiers);
+            return unsafeIndex >= 0 ? modifiers[unsafeIndex] : default;
         }
 
-        private static int GetUnsafeModifierIndex(SyntaxTokenList modifiers)
-        {
-            for (int i = 0; i < modifiers.Count; i++)
-            {
-                if (modifiers[i].IsKind(SyntaxKind.UnsafeKeyword))
-                    return i;
-            }
-
-            return -1;
-        }
+        private static int GetUnsafeModifierIndex(SyntaxTokenList modifiers) =>
+            modifiers.IndexOf(SyntaxKind.UnsafeKeyword);
     }
 }
 #endif

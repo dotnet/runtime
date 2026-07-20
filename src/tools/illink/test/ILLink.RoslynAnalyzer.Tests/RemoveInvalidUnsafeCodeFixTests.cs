@@ -56,6 +56,16 @@ namespace ILLink.RoslynAnalyzer.Tests
                     fixedSource);
             await test.RunAsync();
         }
+
+        [Fact]
+        public async Task DoesNotRemoveUnsafeForAnotherInvalidModifier()
+        {
+            var source = "class C { public unsafe virtual int {|CS0106:F|}; }";
+
+            var test = UnsafeMigrationTestHelpers
+                .CreateCodeFixTest<DynamicallyAccessedMembersAnalyzer, RemoveInvalidUnsafeCodeFixProvider>(source);
+            await test.RunAsync();
+        }
     }
 }
 #endif

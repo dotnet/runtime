@@ -4,13 +4,13 @@
 #if DEBUG
 using System.Collections.Immutable;
 using System.Composition;
-using System.Globalization;
 using System.Threading.Tasks;
 using ILLink.CodeFixProvider;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ILLink.CodeFix
 {
@@ -38,15 +38,8 @@ namespace ILLink.CodeFix
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Diagnostic diagnostic = context.Diagnostics[0];
-            // CS0106 is shared by every invalid modifier, so only handle the unsafe-specific form.
-            if (diagnostic.Id == InvalidModifierDiagnosticId
-                && diagnostic.GetMessage(CultureInfo.InvariantCulture)
-                    .IndexOf("'unsafe'", System.StringComparison.Ordinal) < 0)
-            {
-                return;
-            }
-
-            if (await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not { } root)
+            var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            if (root is null)
                 return;
 
             SyntaxNode targetNode = root.FindNode(
@@ -57,6 +50,11 @@ namespace ILLink.CodeFix
             {
                 return;
             }
+
+            // CS0106 is shared by every invalid modifier. Restrict this fixer to declaration shapes where
+            // Roslyn specifically reports unsafe as invalid, rather than inspecting localized message text.
+            if (diagnostic.Id == InvalidModifierDiagnosticId && !IsInvalidUnsafeDeclaration(declaration))
+                return;
 
             string title = CodeFixTitle.ToString();
             context.RegisterCodeFix(
@@ -69,6 +67,17 @@ namespace ILLink.CodeFix
                     title),
                 diagnostic);
         }
+
+        /// <summary>
+        /// Identifies the well-formed declarations for which Roslyn reports unsafe-specific <c>CS0106</c>.
+        /// </summary>
+        private static bool IsInvalidUnsafeDeclaration(SyntaxNode declaration) =>
+            declaration switch
+            {
+                EnumDeclarationSyntax => true,
+                FieldDeclarationSyntax { Modifiers: var modifiers } => modifiers.Any(SyntaxKind.ConstKeyword),
+                _ => false,
+            };
     }
 }
 #endif

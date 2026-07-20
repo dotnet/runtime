@@ -83,6 +83,9 @@ namespace ILLink.RoslynAnalyzer
             return default;
         }
 
+        /// <summary>
+        /// Resolves the declaration symbol, using the first declared variable for field-like syntax nodes.
+        /// </summary>
         internal static ISymbol? GetDeclaredSymbol(
             SyntaxNode declaration,
             SemanticModel semanticModel,
@@ -95,6 +98,9 @@ namespace ILLink.RoslynAnalyzer
                 _ => semanticModel.GetDeclaredSymbol(declaration, cancellationToken),
             };
 
+        /// <summary>
+        /// Filters out declarations such as static constructors and destructors that cannot expose caller-unsafe contracts.
+        /// </summary>
         internal static bool IsUnsafeContractMember(SyntaxNode declaration, ISymbol? symbol) =>
             symbol switch
             {
@@ -112,6 +118,9 @@ namespace ILLink.RoslynAnalyzer
                 _ => false,
             };
 
+        /// <summary>
+        /// Implements the legacy pointer-signature compatibility test used by both migration analyzers.
+        /// </summary>
         internal static bool HasPointerOrFunctionPointerSignature(ISymbol symbol) =>
             // Match Roslyn's compatibility rule: only member signature types participate, not constraints.
             symbol switch
@@ -125,6 +134,9 @@ namespace ILLink.RoslynAnalyzer
                 _ => false,
             };
 
+        /// <summary>
+        /// Finds safety documentation on this declaration, another partial part, or an associated property.
+        /// </summary>
         internal static bool HasSafetyDocumentation(
             SyntaxNode declaration,
             ISymbol? symbol,
@@ -140,6 +152,9 @@ namespace ILLink.RoslynAnalyzer
                 .Any(HasSafetyDocumentation);
         }
 
+        /// <summary>
+        /// Determines whether removing unsafe must be paired with safe to avoid recreating CS9392.
+        /// </summary>
         internal static bool RequiresExplicitSafetyModifier(SyntaxNode declaration, ISymbol? symbol)
         {
             if (declaration is AccessorDeclarationSyntax || symbol?.ContainingType is not { } containingType)

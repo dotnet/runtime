@@ -49,7 +49,8 @@ namespace ILLink.CodeFix
                 return;
             }
 
-            if (await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not { } root)
+            var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            if (root is null)
                 return;
 
             SyntaxNode targetNode = root.FindNode(
