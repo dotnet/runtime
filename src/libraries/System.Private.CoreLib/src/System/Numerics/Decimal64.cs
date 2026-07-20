@@ -978,6 +978,12 @@ namespace System.Numerics
         /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
         public static Decimal64 Pow(Decimal64 x, Decimal64 y) => new Decimal64(Number.PowDecimalIeee754<Decimal64, ulong>(x._value, y._value));
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        public static Decimal64 ReciprocalEstimate(Decimal64 x) => One / x;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        public static Decimal64 ReciprocalSqrtEstimate(Decimal64 x) => One / Sqrt(x);
+
         /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
         public static Decimal64 RootN(Decimal64 x, int n) => new Decimal64(Number.RootNDecimalIeee754<Decimal64, ulong>(x._value, n));
 
