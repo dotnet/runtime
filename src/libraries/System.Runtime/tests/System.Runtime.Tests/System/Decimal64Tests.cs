@@ -1700,6 +1700,1239 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL)] // exp(+0) = 1
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL)] // exp(-0) = 1
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // exp(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x31C0000000000000UL)] // exp(-Infinity) = +0
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // exp(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC00000000000000UL, 0xFC00000000000000UL)] // exp(-NaN) = -NaN (sign preserved)
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void ExpTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Exp(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        [InlineData(10.0)]
+        [InlineData(-7.5)]
+        public static void ExpAccuracyTest(double input)
+        {
+            // Decimal64 evaluates exp in the software binary128 engine (as Intel does). Comparing through
+            // binary64 bounds the check to double precision; the full accuracy is covered elsewhere.
+            double expected = double.Exp(input);
+            double actual = (double)Decimal64.Exp((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(expected), $"exp({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL)] // exp10(+0) = 1
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL)] // exp10(-0) = 1
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // exp10(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x31C0000000000000UL)] // exp10(-Infinity) = +0
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // exp10(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void Exp10Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Exp10(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void Exp10AccuracyTest(double input)
+        {
+            double expected = double.Exp10(input);
+            double actual = (double)Decimal64.Exp10((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(expected), $"exp10({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL)] // exp2(+0) = 1
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL)] // exp2(-0) = 1
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // exp2(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x31C0000000000000UL)] // exp2(-Infinity) = +0
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // exp2(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void Exp2Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Exp2(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void Exp2AccuracyTest(double input)
+        {
+            double expected = double.Exp2(input);
+            double actual = (double)Decimal64.Exp2((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(expected), $"exp2({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // expm1(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // expm1(-0) = -0 (sign preserved)
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // expm1(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0xB1C0000000000001UL)] // expm1(-Infinity) = -1
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // expm1(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void ExpM1Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.ExpM1(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void ExpM1AccuracyTest(double input)
+        {
+            double expected = double.ExpM1(input);
+            double actual = (double)Decimal64.ExpM1((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(expected), $"expm1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // exp2m1(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // exp2m1(-0) = -0 (sign preserved)
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // exp2m1(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0xB1C0000000000001UL)] // exp2m1(-Infinity) = -1
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // exp2m1(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void Exp2M1Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Exp2M1(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void Exp2M1AccuracyTest(double input)
+        {
+            double expected = double.Exp2M1(input);
+            double actual = (double)Decimal64.Exp2M1((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(expected), $"exp2m1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // exp10m1(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // exp10m1(-0) = -0 (sign preserved)
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // exp10m1(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0xB1C0000000000001UL)] // exp10m1(-Infinity) = -1
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // exp10m1(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void Exp10M1Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Exp10M1(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        public static void Exp10M1AccuracyTest(double input)
+        {
+            double expected = double.Exp10M1(input);
+            double actual = (double)Decimal64.Exp10M1((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(expected), $"exp10m1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0xF800000000000000UL)] // log(+0) = -Infinity
+        [InlineData(0xB1C0000000000000UL, 0xF800000000000000UL)] // log(-0) = -Infinity
+        [InlineData(0x31C0000000000001UL, 0x31C0000000000000UL)] // log(1) = +0
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // log(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // log(-Infinity) = NaN
+        [InlineData(0xB1C0000000000001UL, 0x7C00000000000000UL)] // log(-1) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // log(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC00000000000000UL, 0xFC00000000000000UL)] // log(-NaN) = -NaN (sign preserved)
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void LogTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(2.0)]
+        [InlineData(0.5)]
+        [InlineData(2.5)]
+        [InlineData(100.0)]
+        [InlineData(0.001)]
+        public static void LogAccuracyTest(double input)
+        {
+            // Decimal64 evaluates log in the software binary128 engine (as Intel does). Comparing through
+            // binary64 bounds the check to double precision; the full accuracy is covered elsewhere.
+            double expected = double.Log(input);
+            double actual = (double)Decimal64.Log((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x7C00000000000000UL, 0x31C0000000000002UL, 0x7C00000000000000UL)] // log(NaN, 2) = NaN
+        [InlineData(0x31C0000000000002UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // log(2, NaN) = NaN
+        [InlineData(0x31C0000000000002UL, 0x31C0000000000001UL, 0x7C00000000000000UL)] // log(2, 1) = NaN (base 1)
+        public static void LogNewBaseTest(ulong value, ulong newBase, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log(Unsafe.BitCast<ulong, Decimal64>(value), Unsafe.BitCast<ulong, Decimal64>(newBase))));
+        }
+
+        [Theory]
+        [InlineData(8.0, 2.0)]
+        [InlineData(100.0, 10.0)]
+        [InlineData(2.5, 3.0)]
+        public static void LogNewBaseAccuracyTest(double input, double newBase)
+        {
+            double expected = double.Log(input, newBase);
+            double actual = (double)Decimal64.Log((Decimal64)input, (Decimal64)newBase);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log({input}, {newBase}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0xF800000000000000UL)] // log2(+0) = -Infinity
+        [InlineData(0xB1C0000000000000UL, 0xF800000000000000UL)] // log2(-0) = -Infinity
+        [InlineData(0x31C0000000000001UL, 0x31C0000000000000UL)] // log2(1) = +0
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // log2(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // log2(-Infinity) = NaN
+        [InlineData(0xB1C0000000000001UL, 0x7C00000000000000UL)] // log2(-1) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // log2(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void Log2Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log2(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(2.0)]
+        [InlineData(0.5)]
+        [InlineData(8.0)]
+        [InlineData(0.001)]
+        public static void Log2AccuracyTest(double input)
+        {
+            double expected = double.Log2(input);
+            double actual = (double)Decimal64.Log2((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log2({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0xF800000000000000UL)] // log10(+0) = -Infinity
+        [InlineData(0xB1C0000000000000UL, 0xF800000000000000UL)] // log10(-0) = -Infinity
+        [InlineData(0x31C0000000000001UL, 0x31C0000000000000UL)] // log10(1) = +0
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // log10(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // log10(-Infinity) = NaN
+        [InlineData(0xB1C0000000000001UL, 0x7C00000000000000UL)] // log10(-1) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // log10(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void Log10Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log10(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(10.0)]
+        [InlineData(0.5)]
+        [InlineData(1000.0)]
+        [InlineData(0.001)]
+        public static void Log10AccuracyTest(double input)
+        {
+            double expected = double.Log10(input);
+            double actual = (double)Decimal64.Log10((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log10({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // logP1(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // logP1(-0) = -0 (sign preserved)
+        [InlineData(0xB1C0000000000001UL, 0xF800000000000000UL)] // logP1(-1) = -Infinity
+        [InlineData(0xB1C0000000000002UL, 0x7C00000000000000UL)] // logP1(-2) = NaN
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // logP1(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // logP1(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // logP1(NaN) = NaN
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        public static void LogP1Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.LogP1(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(1.0)]
+        [InlineData(-0.5)]
+        [InlineData(2.5)]
+        [InlineData(1e-6)]
+        public static void LogP1AccuracyTest(double input)
+        {
+            double expected = double.LogP1(input);
+            double actual = (double)Decimal64.LogP1((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"logP1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // log2P1(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // log2P1(-0) = -0 (sign preserved)
+        [InlineData(0xB1C0000000000001UL, 0xF800000000000000UL)] // log2P1(-1) = -Infinity
+        [InlineData(0xB1C0000000000002UL, 0x7C00000000000000UL)] // log2P1(-2) = NaN
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // log2P1(+Infinity) = +Infinity
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // log2P1(NaN) = NaN
+        public static void Log2P1Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log2P1(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(1.0)]
+        [InlineData(-0.5)]
+        [InlineData(7.0)]
+        [InlineData(1e-6)]
+        public static void Log2P1AccuracyTest(double input)
+        {
+            double expected = double.Log2P1(input);
+            double actual = (double)Decimal64.Log2P1((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log2P1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // log10P1(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // log10P1(-0) = -0 (sign preserved)
+        [InlineData(0xB1C0000000000001UL, 0xF800000000000000UL)] // log10P1(-1) = -Infinity
+        [InlineData(0xB1C0000000000002UL, 0x7C00000000000000UL)] // log10P1(-2) = NaN
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // log10P1(+Infinity) = +Infinity
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // log10P1(NaN) = NaN
+        public static void Log10P1Test(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Log10P1(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(1.0)]
+        [InlineData(-0.5)]
+        [InlineData(9.0)]
+        [InlineData(1e-6)]
+        public static void Log10P1AccuracyTest(double input)
+        {
+            double expected = double.Log10P1(input);
+            double actual = (double)Decimal64.Log10P1((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log10P1({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // cbrt(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // cbrt(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0xF800000000000000UL)] // cbrt(-Infinity) = -Infinity
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // cbrt(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // cbrt(-0) = -0
+        public static void CbrtTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Cbrt(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(8.0)]
+        [InlineData(-8.0)]
+        [InlineData(27.0)]
+        [InlineData(0.125)]
+        [InlineData(2.0)]
+        [InlineData(-2.0)]
+        [InlineData(1000000.0)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.5)]
+        public static void CbrtAccuracyTest(double input)
+        {
+            // Decimal64 evaluates cbrt through the binary128 engine (as Intel does); comparing the result
+            // cast back to binary64 stays within a few ulps of double.Cbrt.
+            double expected = double.Cbrt(input);
+            double actual = (double)Decimal64.Cbrt((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cbrt({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x7C00000000000000UL, 0x7800000000000000UL, 0x7800000000000000UL)] // hypot(NaN, +Infinity) = +Infinity
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL, 0x7800000000000000UL)] // hypot(+Infinity, NaN) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x31C0000000000002UL, 0x7800000000000000UL)] // hypot(-Infinity, 2) = +Infinity
+        [InlineData(0x7C00000000000000UL, 0x31C0000000000002UL, 0x7C00000000000000UL)] // hypot(NaN, 2) = NaN
+        [InlineData(0x31C0000000000002UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // hypot(2, NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x31C0000000000002UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0x31C0000000000002UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL, 0x31C0000000000000UL)] // hypot(+0, +0) = +0
+        [InlineData(0xB1C0000000000003UL, 0x31C0000000000000UL, 0x31C0000000000003UL)] // hypot(-3, +0) = 3
+        [InlineData(0x31C0000000000000UL, 0xB1C0000000000004UL, 0x31C0000000000004UL)] // hypot(+0, -4) = 4
+        public static void HypotTest(ulong x, ulong y, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Hypot(Unsafe.BitCast<ulong, Decimal64>(x), Unsafe.BitCast<ulong, Decimal64>(y))));
+        }
+
+        [Theory]
+        [InlineData(3.0, 4.0)]
+        [InlineData(5.0, 12.0)]
+        [InlineData(-8.0, 15.0)]
+        [InlineData(1.0, 1.0)]
+        [InlineData(0.5, 0.25)]
+        [InlineData(1000.0, 0.001)]
+        [InlineData(2.5, -6.5)]
+        public static void HypotAccuracyTest(double x, double y)
+        {
+            // Decimal64 evaluates hypot through the binary128 engine (as Intel does); comparing the result
+            // cast back to binary64 stays within a few ulps of double.Hypot.
+            double expected = double.Hypot(x, y);
+            double actual = (double)Decimal64.Hypot((Decimal64)x, (Decimal64)y);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"hypot({x}, {y}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x7C00000000001234UL, 5, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 5, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        [InlineData(0x31C0000000000008UL, 0, 0x7C00000000000000UL)] // rootn(x, 0) = NaN
+        [InlineData(0x7800000000000000UL, 5, 0x7800000000000000UL)] // rootn(+Infinity, odd > 0) = +Infinity
+        [InlineData(0x7800000000000000UL, 4, 0x7800000000000000UL)] // rootn(+Infinity, even > 0) = +Infinity
+        [InlineData(0x7800000000000000UL, -5, 0x31C0000000000000UL)] // rootn(+Infinity, n < 0) = +0
+        [InlineData(0xF800000000000000UL, 5, 0xF800000000000000UL)] // rootn(-Infinity, odd > 0) = -Infinity
+        [InlineData(0xF800000000000000UL, 4, 0x7C00000000000000UL)] // rootn(-Infinity, even > 0) = NaN
+        [InlineData(0xF800000000000000UL, -5, 0xB1C0000000000000UL)] // rootn(-Infinity, odd < 0) = -0
+        [InlineData(0x31C0000000000000UL, 5, 0x31C0000000000000UL)] // rootn(+0, odd > 0) = +0
+        [InlineData(0xB1C0000000000000UL, 5, 0xB1C0000000000000UL)] // rootn(-0, odd > 0) = -0
+        [InlineData(0xB1C0000000000000UL, 4, 0x31C0000000000000UL)] // rootn(-0, even > 0) = +0
+        [InlineData(0x31C0000000000000UL, -5, 0x7800000000000000UL)] // rootn(+0, n < 0) = +Infinity
+        [InlineData(0xB1C0000000000000UL, -5, 0xF800000000000000UL)] // rootn(-0, odd < 0) = -Infinity
+        [InlineData(0xB1C0000000000004UL, 2, 0x7C00000000000000UL)] // rootn(-4, even) = NaN
+        public static void RootNTest(ulong value, int n, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.RootN(Unsafe.BitCast<ulong, Decimal64>(value), n)));
+        }
+
+        [Theory]
+        [InlineData(8.0, 3)]
+        [InlineData(-8.0, 3)]
+        [InlineData(27.0, 3)]
+        [InlineData(16.0, 4)]
+        [InlineData(32.0, 5)]
+        [InlineData(1000.0, 3)]
+        [InlineData(2.0, 2)]
+        [InlineData(0.5, 2)]
+        [InlineData(2.0, -2)]
+        [InlineData(8.0, -3)]
+        [InlineData(2.0, int.MinValue)]
+        public static void RootNAccuracyTest(double input, int n)
+        {
+            // Decimal64 evaluates rootn through the binary128 engine (as Intel does); comparing the result
+            // cast back to binary64 stays within a few ulps of double.RootN.
+            double expected = double.RootN(input, n);
+            double actual = (double)Decimal64.RootN((Decimal64)input, n);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"rootn({input}, {n}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x7C00000000000000UL, 0x31C0000000000000UL, 0x31C0000000000001UL)] // pow(NaN, +0) = 1
+        [InlineData(0x31C0000000000002UL, 0x31C0000000000000UL, 0x31C0000000000001UL)] // pow(2, +0) = 1
+        [InlineData(0x31C0000000000002UL, 0xB1C0000000000000UL, 0x31C0000000000001UL)] // pow(2, -0) = 1
+        [InlineData(0x31C0000000000001UL, 0x7C00000000000000UL, 0x31C0000000000001UL)] // pow(1, NaN) = 1
+        [InlineData(0x31C0000000000001UL, 0x7800000000000000UL, 0x31C0000000000001UL)] // pow(1, +Infinity) = 1
+        [InlineData(0x7C00000000000000UL, 0x31C0000000000002UL, 0x7C00000000000000UL)] // pow(NaN, 2) = NaN
+        [InlineData(0x31C0000000000002UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // pow(2, NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x31C0000000000002UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0x31C0000000000002UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared
+        [InlineData(0x31C0000000000002UL, 0x7800000000000000UL, 0x7800000000000000UL)] // pow(2, +Infinity) = +Infinity (|x| > 1)
+        [InlineData(0x31C0000000000002UL, 0xF800000000000000UL, 0x31C0000000000000UL)] // pow(2, -Infinity) = +0
+        [InlineData(0xB1C0000000000001UL, 0x7800000000000000UL, 0x31C0000000000001UL)] // pow(-1, +Infinity) = 1 (|x| == 1)
+        [InlineData(0x7800000000000000UL, 0x31C0000000000002UL, 0x7800000000000000UL)] // pow(+Infinity, 2) = +Infinity
+        [InlineData(0x7800000000000000UL, 0xB1C0000000000002UL, 0x31C0000000000000UL)] // pow(+Infinity, -2) = +0
+        [InlineData(0xF800000000000000UL, 0x31C0000000000003UL, 0xF800000000000000UL)] // pow(-Infinity, 3) = -Infinity (odd)
+        [InlineData(0xF800000000000000UL, 0x31C0000000000002UL, 0x7800000000000000UL)] // pow(-Infinity, 2) = +Infinity (even)
+        [InlineData(0xF800000000000000UL, 0xB1C0000000000003UL, 0xB1C0000000000000UL)] // pow(-Infinity, -3) = -0 (odd, y < 0)
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000002UL, 0x31C0000000000000UL)] // pow(+0, 2) = +0
+        [InlineData(0x31C0000000000000UL, 0xB1C0000000000002UL, 0x7800000000000000UL)] // pow(+0, -2) = +Infinity
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000003UL, 0xB1C0000000000000UL)] // pow(-0, 3) = -0 (odd)
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000002UL, 0x31C0000000000000UL)] // pow(-0, 2) = +0 (even)
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000003UL, 0xF800000000000000UL)] // pow(-0, -3) = -Infinity (odd, y < 0)
+        public static void PowTest(ulong value, ulong exponent, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Pow(Unsafe.BitCast<ulong, Decimal64>(value), Unsafe.BitCast<ulong, Decimal64>(exponent))));
+        }
+
+        [Theory]
+        [InlineData(2.0, 10.0)]
+        [InlineData(3.0, 4.0)]
+        [InlineData(10.0, 3.0)]
+        [InlineData(2.5, 2.0)]
+        [InlineData(0.5, 3.0)]
+        [InlineData(-2.0, 3.0)]  // negative base, odd integer exponent -> negative result
+        [InlineData(-2.0, 2.0)]  // negative base, even integer exponent -> positive result
+        [InlineData(9.0, 0.5)]   // fractional exponent (square root)
+        public static void PowAccuracyTest(double x, double y)
+        {
+            // Decimal64 evaluates pow through the binary128 engine (as Intel does); comparing the result
+            // cast back to binary64 stays within a few ulps of double.Pow.
+            double expected = double.Pow(x, y);
+            double actual = (double)Decimal64.Pow((Decimal64)x, (Decimal64)y);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"pow({x}, {y}): expected {expected}, got {actual}");
+        }
+
+        [Fact]
+        public static void PowNegativeBaseNonIntegerReturnsNaN()
+        {
+            Assert.True(Decimal64.IsNaN(Decimal64.Pow((Decimal64)(-2.0), (Decimal64)0.5)));
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // sin(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // sin(-0) = -0
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // sin(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // sin(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // sin(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void SinTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Sin(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        [InlineData(100.0)]
+        [InlineData(-0.1)] // negative, |x| < 0.5: exercises the small-argument quadrant sign
+        [InlineData(-0.25)]
+        public static void SinAccuracyTest(double input)
+        {
+            // Decimal64 evaluates sin in the software binary128 engine (as Intel does). Comparing through
+            // binary64 bounds the check to double precision.
+            double expected = double.Sin(input);
+            double actual = (double)Decimal64.Sin((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"sin({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData("1E100", -0.37237612366127669, -0.92808190507465534, 0.40123196199081435)]
+        [InlineData("1E300", -0.985750425160377, -0.16821444437424507, 5.8600819259448981)]
+        [InlineData("9.999999999999999E384", 0.10945032811433361, 0.99399226640636632, 0.1101118507793177)] // max Decimal64
+        [InlineData("1.234567890123456E5", -0.99866344433892212, 0.051684861817756632, -19.322165315257272)] // negative exponent, |x| >= 1
+        public static void TrigLargeArgumentTest(string value, double expectedSin, double expectedCos, double expectedTan)
+        {
+            // Large arguments no longer convert to binary128 exactly, so the range reduction runs in the
+            // decimal domain. Verify (through binary64) that sin/cos/tan reduce mod 2*pi at any magnitude.
+            Decimal64 x = Decimal64.Parse(value, CultureInfo.InvariantCulture);
+            AssertClose(expectedSin, (double)Decimal64.Sin(x), value, "sin");
+            AssertClose(expectedCos, (double)Decimal64.Cos(x), value, "cos");
+            AssertClose(expectedTan, (double)Decimal64.Tan(x), value, "tan");
+
+            static void AssertClose(double expected, double actual, string value, string fn)
+                => Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"{fn}({value}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL)] // cos(+0) = 1
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL)] // cos(-0) = 1
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // cos(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // cos(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // cos(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void CosTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Cos(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        [InlineData(100.0)]
+        [InlineData(-0.3)]
+        [InlineData(-0.1)]
+        public static void CosAccuracyTest(double input)
+        {
+            // Decimal64 evaluates cos in the software binary128 engine (as Intel does).
+            double expected = double.Cos(input);
+            double actual = (double)Decimal64.Cos((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cos({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // tan(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // tan(-0) = -0
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // tan(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // tan(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // tan(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void TanTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Tan(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        [InlineData(-0.2)]
+        [InlineData(-0.1)]
+        public static void TanAccuracyTest(double input)
+        {
+            // Decimal64 evaluates tan in the software binary128 engine (as Intel does).
+            double expected = double.Tan(input);
+            double actual = (double)Decimal64.Tan((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"tan({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL, 0x31C0000000000001UL)] // sincos(+0) = (+0, 1)
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL, 0x31C0000000000001UL)] // sincos(-0) = (-0, 1)
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // sincos(+Infinity) = (NaN, NaN)
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // sincos(NaN) = (NaN, NaN)
+        public static void SinCosTest(ulong value, ulong expectedSin, ulong expectedCos)
+        {
+            (Decimal64 sin, Decimal64 cos) = Decimal64.SinCos(Unsafe.BitCast<ulong, Decimal64>(value));
+            Assert.Equal(expectedSin, Unsafe.BitCast<Decimal64, ulong>(sin));
+            Assert.Equal(expectedCos, Unsafe.BitCast<Decimal64, ulong>(cos));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        [InlineData(-0.1)]
+        public static void SinCosAccuracyTest(double input)
+        {
+            (Decimal64 sin, Decimal64 cos) = Decimal64.SinCos((Decimal64)input);
+            Assert.True(double.Abs((double)sin - double.Sin(input)) <= 1e-13 * double.Abs(double.MaxMagnitude(double.Sin(input), 1.0)), $"sincos({input}).Sin");
+            Assert.True(double.Abs((double)cos - double.Cos(input)) <= 1e-13 * double.Abs(double.MaxMagnitude(double.Cos(input), 1.0)), $"sincos({input}).Cos");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // atan(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // atan(-0) = -0
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // atan(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AtanTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Atan(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(2.5)]
+        [InlineData(-3.25)]
+        [InlineData(100.0)]
+        [InlineData(double.PositiveInfinity)] // atan(+Infinity) = +pi/2
+        [InlineData(double.NegativeInfinity)] // atan(-Infinity) = -pi/2
+        public static void AtanAccuracyTest(double input)
+        {
+            // Decimal64 evaluates atan in the software binary128 engine (as Intel does).
+            double expected = double.Atan(input);
+            double actual = (double)Decimal64.Atan((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atan({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // asin(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // asin(-0) = -0
+        [InlineData(0x31C0000000000002UL, 0x7C00000000000000UL)] // asin(2) is outside [-1, 1] -> NaN
+        [InlineData(0xB1C0000000000002UL, 0x7C00000000000000UL)] // asin(-2) is outside [-1, 1] -> NaN
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // asin(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // asin(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // asin(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AsinTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Asin(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        public static void AsinAccuracyTest(double input)
+        {
+            // Decimal64 evaluates asin in the software binary128 engine (as Intel does).
+            double expected = double.Asin(input);
+            double actual = (double)Decimal64.Asin((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"asin({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000002UL, 0x7C00000000000000UL)] // acos(2) is outside [-1, 1] -> NaN
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // acos(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // acos(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // acos(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AcosTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Acos(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.75)]
+        public static void AcosAccuracyTest(double input)
+        {
+            // Decimal64 evaluates acos in the software binary128 engine (as Intel does).
+            double expected = double.Acos(input);
+            double actual = (double)Decimal64.Acos((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"acos({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL, 0x31C0000000000000UL)] // atan2(+0, +1) = +0
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL, 0xB1C0000000000000UL)] // atan2(-0, +1) = -0
+        [InlineData(0x7C00000000000000UL, 0x31C0000000000001UL, 0x7C00000000000000UL)] // atan2(NaN, x) = NaN
+        [InlineData(0x31C0000000000001UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // atan2(y, NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x31C0000000000001UL, 0x7C00000000001234UL)] // NaN payload preserved
+        public static void Atan2Test(ulong y, ulong x, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Atan2(Unsafe.BitCast<ulong, Decimal64>(y), Unsafe.BitCast<ulong, Decimal64>(x))));
+        }
+
+        [Theory]
+        [InlineData(1.0, 1.0)]
+        [InlineData(-1.0, 1.0)]
+        [InlineData(1.0, -1.0)]
+        [InlineData(-1.0, -1.0)]
+        [InlineData(0.5, 2.0)]
+        [InlineData(1.0, 0.0)]
+        [InlineData(-1.0, 0.0)]
+        [InlineData(0.0, -1.0)]
+        [InlineData(double.PositiveInfinity, 1.0)]
+        [InlineData(double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NegativeInfinity)]
+        public static void Atan2AccuracyTest(double y, double x)
+        {
+            // Decimal64 evaluates atan2 in the software binary128 engine (as Intel does).
+            double expected = double.Atan2(y, x);
+            double actual = (double)Decimal64.Atan2((Decimal64)y, (Decimal64)x);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atan2({y}, {x}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // sinPi(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // sinPi(-0) = -0
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // sinPi(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // sinPi(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // sinPi(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void SinPiTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.SinPi(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData("0.25", "0.707106781186547524400844362104849039284835938")]
+        [InlineData("-0.75", "-0.707106781186547524400844362104849039284835938")]
+        [InlineData("2.25", "0.707106781186547524400844362104849039284835938")]
+        [InlineData("0.1", "0.309016994374947424102293417182819058860154590")]
+        [InlineData("-2.75", "-0.707106781186547524400844362104849039284835938")]
+        [InlineData("1234.567", "0.977929339830721821623106314809873749321959736")]
+        [InlineData("0.5", "1.00000000000000000000000000000000000000000000")] // sinPi(1/2) = 1 exactly
+        [InlineData("-0.5", "-1.00000000000000000000000000000000000000000000")]
+        [InlineData("1", "0.0")] // sinPi(integer) is an exact zero
+        [InlineData("2", "0.0")]
+        public static void SinPiAccuracyTest(string input, string oracle)
+        {
+            // The engine evaluates in software binary128 (as Intel does), so the result is compared to a
+            // high-precision oracle -- the true value rounded to Decimal64 by the independently tested parser --
+            // in decimal ULPs rather than round-tripped through double.
+            Decimal64 actual = Decimal64.SinPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL)] // cosPi(+0) = 1
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL)] // cosPi(-0) = 1
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // cosPi(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // cosPi(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // cosPi(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void CosPiTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.CosPi(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.5)]
+        [InlineData(-0.5)]
+        [InlineData(1.5)]
+        [InlineData(-1.5)]
+        public static void CosPiHalfIntegerReturnsPositiveZero(double input)
+        {
+            // cosPi at a half-integer is +0; comparing through double hides the sign, so check the raw sign bit.
+            Decimal64 cosPi = Decimal64.CosPi((Decimal64)input);
+            Assert.Equal(0.0, (double)cosPi);
+            Assert.Equal(0UL, Unsafe.BitCast<Decimal64, ulong>(cosPi) >> 63);
+
+            (Decimal64 _, Decimal64 cos) = Decimal64.SinCosPi((Decimal64)input);
+            Assert.Equal(0.0, (double)cos);
+            Assert.Equal(0UL, Unsafe.BitCast<Decimal64, ulong>(cos) >> 63);
+        }
+
+        [Theory]
+        [InlineData("0.25", "0.707106781186547524400844362104849039284835938")]
+        [InlineData("-0.75", "-0.707106781186547524400844362104849039284835938")]
+        [InlineData("2.25", "0.707106781186547524400844362104849039284835938")]
+        [InlineData("0.1", "0.951056516295153572116439333379382143405698634")]
+        [InlineData("1234.567", "-0.208935890402411702274907259384464393664923236")]
+        [InlineData("0.4999999", "0.000000314159265358974156133484288383422682765979151")]
+        [InlineData("1", "-1.00000000000000000000000000000000000000000000")] // cosPi(odd integer) = -1 exactly
+        [InlineData("2", "1.00000000000000000000000000000000000000000000")] // cosPi(even integer) = 1 exactly
+        [InlineData("0.5", "0.0")] // cosPi(half-integer) is an exact zero
+        [InlineData("1.5", "0.0")]
+        public static void CosPiAccuracyTest(string input, string oracle)
+        {
+            Decimal64 actual = Decimal64.CosPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // tanPi(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // tanPi(-0) = -0
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // tanPi(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // tanPi(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // tanPi(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void TanPiTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.TanPi(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Fact]
+        public static void TanPiPoleTest()
+        {
+            // Half-integer arguments are poles; tanPi returns a signed infinity matching sinPi's sign.
+            Assert.Equal(0x7800000000000000UL, Unsafe.BitCast<Decimal64, ulong>(Decimal64.TanPi((Decimal64)0.5)));
+            Assert.Equal(0xF800000000000000UL, Unsafe.BitCast<Decimal64, ulong>(Decimal64.TanPi((Decimal64)1.5)));
+        }
+
+        [Theory]
+        [InlineData("0.125", "0.414213562373095048801688724209698078569671875")]
+        [InlineData("-0.375", "-2.41421356237309504880168872420969807856967188")]
+        [InlineData("0.1", "0.324919696232906326155871412215134464954903472")]
+        [InlineData("0.499", "318.308838985550445921686695436921420182774937")]
+        [InlineData("0", "0.0")]
+        [InlineData("1", "-0")] // tanPi(odd integer) = -0 (sin=+0, cos=-1)
+        [InlineData("2", "0.0")]
+        public static void TanPiAccuracyTest(string input, string oracle)
+        {
+            Decimal64 actual = Decimal64.TanPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL, 0x31C0000000000001UL)] // sinCosPi(+0) = (+0, 1)
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL, 0x31C0000000000001UL)] // sinCosPi(-0) = (-0, 1)
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // sinCosPi(+Infinity) = (NaN, NaN)
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // sinCosPi(NaN) = (NaN, NaN)
+        public static void SinCosPiTest(ulong value, ulong expectedSin, ulong expectedCos)
+        {
+            (Decimal64 sin, Decimal64 cos) = Decimal64.SinCosPi(Unsafe.BitCast<ulong, Decimal64>(value));
+            Assert.Equal(expectedSin, Unsafe.BitCast<Decimal64, ulong>(sin));
+            Assert.Equal(expectedCos, Unsafe.BitCast<Decimal64, ulong>(cos));
+        }
+
+        [Theory]
+        [InlineData("0.25", "0.707106781186547524400844362104849039284835938", "0.707106781186547524400844362104849039284835938")]
+        [InlineData("-0.75", "-0.707106781186547524400844362104849039284835938", "-0.707106781186547524400844362104849039284835938")]
+        [InlineData("0.1", "0.309016994374947424102293417182819058860154590", "0.951056516295153572116439333379382143405698634")]
+        [InlineData("1234.567", "0.977929339830721821623106314809873749321959736", "-0.208935890402411702274907259384464393664923236")]
+        [InlineData("0.5", "1.00000000000000000000000000000000000000000000", "0.0")]
+        public static void SinCosPiAccuracyTest(string input, string sinOracle, string cosOracle)
+        {
+            (Decimal64 sin, Decimal64 cos) = Decimal64.SinCosPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(sin),
+                Unsafe.BitCast<Decimal64, ulong>(Decimal64.Parse(sinOracle, CultureInfo.InvariantCulture)),
+                recordedUlp: 0.0);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(cos),
+                Unsafe.BitCast<Decimal64, ulong>(Decimal64.Parse(cosOracle, CultureInfo.InvariantCulture)),
+                recordedUlp: 0.0);
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // atanPi(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // atanPi(-0) = -0
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // atanPi(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AtanPiTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.AtanPi(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(double.PositiveInfinity, 0.5)] // atanPi(+Infinity) = +1/2 exactly
+        [InlineData(double.NegativeInfinity, -0.5)] // atanPi(-Infinity) = -1/2 exactly
+        public static void AtanPiInfinityTest(double input, double expected)
+        {
+            Assert.Equal(expected, (double)Decimal64.AtanPi((Decimal64)input));
+        }
+
+        [Theory]
+        [InlineData("0.5", "0.147583617650433274175401076224740525951134524")]
+        [InlineData("-1.25", "-0.285223287477277274422189653693486081234733538")]
+        [InlineData("0.1", "0.0317255174305535695149771186013020006193286726")]
+        [InlineData("9999999", "0.499999968169008198521858801725742756587314478")]
+        [InlineData("0.25", "0.0779791303773693254605128897731301351165246188")]
+        [InlineData("0", "0.0")]
+        public static void AtanPiAccuracyTest(string input, string oracle)
+        {
+            Decimal64 actual = Decimal64.AtanPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // asinPi(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // asinPi(-0) = -0
+        [InlineData(0x31C0000000000002UL, 0x7C00000000000000UL)] // asinPi(2) is outside [-1, 1] -> NaN
+        [InlineData(0xB1C0000000000002UL, 0x7C00000000000000UL)] // asinPi(-2) is outside [-1, 1] -> NaN
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // asinPi(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // asinPi(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // asinPi(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AsinPiTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.AsinPi(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData("0.25", "0.0804306232551662437709501933284842555840644312")]
+        [InlineData("-0.5", "-0.166666666666666666666666666666666666666666667")]
+        [InlineData("0.999", "0.485763562593760344929193647583989467842912869")]
+        [InlineData("0.9999999", "0.499857647490130293655918256194735962900618804")]
+        [InlineData("0.5", "0.166666666666666666666666666666666666666666667")]
+        [InlineData("1", "0.500000000000000000000000000000000000000000000")] // asinPi(1) = 1/2
+        [InlineData("-1", "-0.500000000000000000000000000000000000000000000")]
+        [InlineData("0", "0.0")]
+        public static void AsinPiAccuracyTest(string input, string oracle)
+        {
+            Decimal64 actual = Decimal64.AsinPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000002UL, 0x7C00000000000000UL)] // acosPi(2) is outside [-1, 1] -> NaN
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // acosPi(+Infinity) = NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // acosPi(-Infinity) = NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // acosPi(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AcosPiTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.AcosPi(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Fact]
+        public static void AcosPiZeroTest()
+        {
+            // acosPi(+/-0) = 1/2 exactly.
+            Assert.Equal(0.5, (double)Decimal64.AcosPi((Decimal64)0.0));
+            Assert.Equal(0.5, (double)Decimal64.AcosPi((Decimal64)(-0.0)));
+        }
+
+        [Theory]
+        [InlineData("0.25", "0.419569376744833756229049806671515744415935569")]
+        [InlineData("-0.5", "0.666666666666666666666666666666666666666666667")]
+        [InlineData("0.999", "0.0142364374062396550708063524160105321570871313")]
+        [InlineData("0.9999999", "0.000142352509869706344081743805264037099381195810")]
+        [InlineData("0.5", "0.333333333333333333333333333333333333333333333")]
+        [InlineData("0", "0.500000000000000000000000000000000000000000000")] // acosPi(0) = 1/2
+        [InlineData("1", "0.0")] // acosPi(1) = 0
+        [InlineData("-1", "1.00000000000000000000000000000000000000000000")] // acosPi(-1) = 1
+        public static void AcosPiAccuracyTest(string input, string oracle)
+        {
+            Decimal64 actual = Decimal64.AcosPi(Decimal64.Parse(input, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL, 0x31C0000000000000UL)] // atan2Pi(+0, +1) = +0
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL, 0xB1C0000000000000UL)] // atan2Pi(-0, +1) = -0
+        [InlineData(0x7C00000000000000UL, 0x31C0000000000001UL, 0x7C00000000000000UL)] // atan2Pi(NaN, x) = NaN
+        [InlineData(0x31C0000000000001UL, 0x7C00000000000000UL, 0x7C00000000000000UL)] // atan2Pi(y, NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x31C0000000000001UL, 0x7C00000000001234UL)] // NaN payload preserved
+        public static void Atan2PiTest(ulong y, ulong x, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Atan2Pi(Unsafe.BitCast<ulong, Decimal64>(y), Unsafe.BitCast<ulong, Decimal64>(x))));
+        }
+
+        [Theory]
+        [InlineData(double.PositiveInfinity, 1.0, 0.5)] // atan2Pi(+Infinity, finite) = 1/2
+        [InlineData(double.PositiveInfinity, double.PositiveInfinity, 0.25)] // atan2Pi(+Infinity, +Infinity) = 1/4
+        [InlineData(double.NegativeInfinity, double.NegativeInfinity, -0.75)] // atan2Pi(-Infinity, -Infinity) = -3/4
+        public static void Atan2PiInfinityTest(double y, double x, double expected)
+        {
+            Assert.Equal(expected, (double)Decimal64.Atan2Pi((Decimal64)y, (Decimal64)x));
+        }
+
+        [Theory]
+        [InlineData("1", "2", "0.147583617650433274175401076224740525951134524")]
+        [InlineData("-1", "2", "-0.147583617650433274175401076224740525951134524")]
+        [InlineData("2", "1", "0.352416382349566725824598923775259474048865476")]
+        [InlineData("1", "-2", "0.852416382349566725824598923775259474048865476")]
+        [InlineData("0.1", "0.7", "0.0451672353008665483508021524494810519022690478")]
+        [InlineData("1234", "-5", "0.501289741265151584446027359785209733861286641")]
+        [InlineData("-1", "-1", "-0.750000000000000000000000000000000000000000000")] // atan2Pi(-1, -1) = -3/4
+        [InlineData("1", "0", "0.500000000000000000000000000000000000000000000")] // atan2Pi(1, 0) = 1/2
+        public static void Atan2PiAccuracyTest(string y, string x, string oracle)
+        {
+            Decimal64 actual = Decimal64.Atan2Pi(Decimal64.Parse(y, CultureInfo.InvariantCulture), Decimal64.Parse(x, CultureInfo.InvariantCulture));
+            Decimal64 expected = Decimal64.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal64, ulong>(actual),
+                Unsafe.BitCast<Decimal64, ulong>(expected),
+                recordedUlp: 0.0);
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // sinh(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // sinh(-0) = -0
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // sinh(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0xF800000000000000UL)] // sinh(-Infinity) = -Infinity
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // sinh(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void SinhTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Sinh(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.5)]
+        [InlineData(2.0)]
+        [InlineData(20.0)]
+        public static void SinhAccuracyTest(double input)
+        {
+            // Decimal64 evaluates sinh in the software binary128 engine (as Intel does).
+            double expected = double.Sinh(input);
+            double actual = (double)Decimal64.Sinh((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"sinh({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000001UL)] // cosh(+0) = 1
+        [InlineData(0xB1C0000000000000UL, 0x31C0000000000001UL)] // cosh(-0) = 1
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // cosh(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x7800000000000000UL)] // cosh(-Infinity) = +Infinity
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // cosh(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void CoshTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Cosh(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.5)]
+        [InlineData(2.0)]
+        [InlineData(20.0)]
+        public static void CoshAccuracyTest(double input)
+        {
+            // Decimal64 evaluates cosh in the software binary128 engine (as Intel does).
+            double expected = double.Cosh(input);
+            double actual = (double)Decimal64.Cosh((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"cosh({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // tanh(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // tanh(-0) = -0
+        [InlineData(0x7800000000000000UL, 0x31C0000000000001UL)] // tanh(+Infinity) = 1
+        [InlineData(0xF800000000000000UL, 0xB1C0000000000001UL)] // tanh(-Infinity) = -1
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // tanh(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void TanhTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Tanh(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.5)]
+        [InlineData(2.0)]
+        public static void TanhAccuracyTest(double input)
+        {
+            // Decimal64 evaluates tanh in the software binary128 engine (as Intel does).
+            double expected = double.Tanh(input);
+            double actual = (double)Decimal64.Tanh((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"tanh({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // asinh(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // asinh(-0) = -0
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // asinh(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0xF800000000000000UL)] // asinh(-Infinity) = -Infinity
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // asinh(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AsinhTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Asinh(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(1.0)]
+        [InlineData(-1.5)]
+        [InlineData(2.0)]
+        [InlineData(20.0)]
+        public static void AsinhAccuracyTest(double input)
+        {
+            // Decimal64 evaluates asinh in the software binary128 engine (as Intel does).
+            double expected = double.Asinh(input);
+            double actual = (double)Decimal64.Asinh((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"asinh({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000001UL, 0x31C0000000000000UL)] // acosh(1) = +0
+        [InlineData(0x7800000000000000UL, 0x7800000000000000UL)] // acosh(+Infinity) = +Infinity
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // acosh(-Infinity) is a domain error -> NaN
+        [InlineData(0x31C0000000000000UL, 0x7C00000000000000UL)] // acosh(+0) is a domain error -> NaN
+        [InlineData(0xB1C0000000000001UL, 0x7C00000000000000UL)] // acosh(-1) is a domain error -> NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // acosh(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AcoshTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Acosh(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(1.5)]
+        [InlineData(2.0)]
+        [InlineData(5.0)]
+        [InlineData(100.0)]
+        public static void AcoshAccuracyTest(double input)
+        {
+            // Decimal64 evaluates acosh in the software binary128 engine (as Intel does).
+            double expected = double.Acosh(input);
+            double actual = (double)Decimal64.Acosh((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"acosh({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x31C0000000000000UL)] // atanh(+0) = +0
+        [InlineData(0xB1C0000000000000UL, 0xB1C0000000000000UL)] // atanh(-0) = -0
+        [InlineData(0x31C0000000000001UL, 0x7800000000000000UL)] // atanh(+1) = +Infinity (pole)
+        [InlineData(0xB1C0000000000001UL, 0xF800000000000000UL)] // atanh(-1) = -Infinity (pole)
+        [InlineData(0x7800000000000000UL, 0x7C00000000000000UL)] // atanh(+Infinity) is a domain error -> NaN
+        [InlineData(0xF800000000000000UL, 0x7C00000000000000UL)] // atanh(-Infinity) is a domain error -> NaN
+        [InlineData(0x7C00000000000000UL, 0x7C00000000000000UL)] // atanh(NaN) = NaN
+        [InlineData(0x7C00000000001234UL, 0x7C00000000001234UL)] // NaN payload preserved
+        [InlineData(0xFC04000000000000UL, 0xFC00000000000000UL)] // out-of-range NaN payload cleared (sign preserved)
+        public static void AtanhTest(ulong value, ulong expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Atanh(Unsafe.BitCast<ulong, Decimal64>(value))));
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.25)]
+        [InlineData(-0.5)]
+        [InlineData(0.75)]
+        [InlineData(-0.9)]
+        public static void AtanhAccuracyTest(double input)
+        {
+            // Decimal64 evaluates atanh in the software binary128 engine (as Intel does).
+            double expected = double.Atanh(input);
+            double actual = (double)Decimal64.Atanh((Decimal64)input);
+            Assert.True(double.Abs(actual - expected) <= 1e-13 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"atanh({input}): expected {expected}, got {actual}");
+        }
+
+        [Theory]
         [InlineData(0x31C0000000000001UL, 0x3180000000000001UL, 0x3180000000000064UL)] // quantize(1, 1E-2) = 1.00 (exact scale up)
         [InlineData(0x31A0000000000019UL, 0x31C0000000000001UL, 0x31C0000000000002UL)] // quantize(2.5, 1E0) = 2 (ties to even)
         [InlineData(0x31A0000000000023UL, 0x31C0000000000001UL, 0x31C0000000000004UL)] // quantize(3.5, 1E0) = 4 (ties to even)
@@ -1800,6 +3033,59 @@ namespace System.Tests
         {
             Decimal64 result = Decimal64.FusedMultiplyAdd(Unsafe.BitCast<ulong, Decimal64>(x), Unsafe.BitCast<ulong, Decimal64>(y), Unsafe.BitCast<ulong, Decimal64>(z));
             Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64TranscendentalUnary), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void TranscendentalUnary_IntelReferenceVectors(string operation, ulong value, ulong expected, double recordedUlp)
+        {
+            Decimal64 x = Unsafe.BitCast<ulong, Decimal64>(value);
+
+            Decimal64 result = operation switch
+            {
+                "sin" => Decimal64.Sin(x),
+                "cos" => Decimal64.Cos(x),
+                "tan" => Decimal64.Tan(x),
+                "asin" => Decimal64.Asin(x),
+                "acos" => Decimal64.Acos(x),
+                "atan" => Decimal64.Atan(x),
+                "sinh" => Decimal64.Sinh(x),
+                "cosh" => Decimal64.Cosh(x),
+                "tanh" => Decimal64.Tanh(x),
+                "asinh" => Decimal64.Asinh(x),
+                "acosh" => Decimal64.Acosh(x),
+                "atanh" => Decimal64.Atanh(x),
+                "exp" => Decimal64.Exp(x),
+                "exp2" => Decimal64.Exp2(x),
+                "exp10" => Decimal64.Exp10(x),
+                "expm1" => Decimal64.ExpM1(x),
+                "log" => Decimal64.Log(x),
+                "log2" => Decimal64.Log2(x),
+                "log10" => Decimal64.Log10(x),
+                "log1p" => Decimal64.LogP1(x),
+                "cbrt" => Decimal64.Cbrt(x),
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(Unsafe.BitCast<Decimal64, ulong>(result), expected, recordedUlp);
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64TranscendentalBinary), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void TranscendentalBinary_IntelReferenceVectors(string operation, ulong left, ulong right, ulong expected, double recordedUlp)
+        {
+            Decimal64 x = Unsafe.BitCast<ulong, Decimal64>(left);
+            Decimal64 y = Unsafe.BitCast<ulong, Decimal64>(right);
+
+            Decimal64 result = operation switch
+            {
+                "atan2" => Decimal64.Atan2(x, y),
+                "pow" => Decimal64.Pow(x, y),
+                "hypot" => Decimal64.Hypot(x, y),
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(Unsafe.BitCast<Decimal64, ulong>(result), expected, recordedUlp);
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
@@ -3058,6 +4344,12 @@ namespace System.Tests
             Assert.Equal(0, integer.GetExponentShortestBitLength());
 
             Assert.Equal(123, Decimal64.ConvertToInteger<int>(Unsafe.BitCast<ulong, Decimal64>(0x3180000000003039UL)));
+        }
+
+        [Fact]
+        public static void IDecimalFloatingPointIeee754_GenericSurface()
+        {
+            GenericIeee754Surface.Verify<Decimal64>();
         }
 
     }

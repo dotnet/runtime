@@ -164,10 +164,14 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //
 GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
-    if ((node->gtFlags & GTF_IND_NONFAULTING) == 0)
+    if (((node->gtFlags & GTF_IND_NONFAULTING) == 0) ||
+        (node->TypeIs(TYP_SIMD12) && !node->Addr()->OperIs(GT_LCL_ADDR)))
     {
         // We need to be able to null check the address, and that requires multiple uses of the address operand.
-        SetMultiplyUsed(node->Addr() DEBUGARG("LowerStoreIndir faulting Addr"));
+        // SIMD12 stores also re-materialize the address for the trailing lane store, so force it there as well -
+        // unless the address is a re-materializable LCL_ADDR (the local-to-stack store rewrite), which codegen
+        // re-emits directly.
+        SetMultiplyUsed(node->Addr() DEBUGARG("LowerStoreIndir Addr (null check or simd12 lane store)"));
     }
 
     ContainCheckStoreIndir(node);
@@ -459,9 +463,11 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         return;
     }
 
-    if (indirNode->OperIs(GT_IND) && ((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0))
+    if (indirNode->OperIs(GT_IND) &&
+        (((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0) || indirNode->TypeIs(TYP_SIMD12)))
     {
-        SetMultiplyUsed(indirNode->Addr() DEBUGARG("ContainCheckIndir faulting load Addr"));
+        // SIMD12 loads re-materialize the address for the trailing lane load, so force it there regardless.
+        SetMultiplyUsed(indirNode->Addr() DEBUGARG("ContainCheckIndir load Addr (null check or simd12 lane load)"));
     }
 
     // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
@@ -829,6 +835,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic      intrinsic = node->GetHWIntrinsicId();
     HWIntrinsicCategory category  = HWIntrinsicInfo::lookupCategory(intrinsic);
     bool                hasImmOp  = HWIntrinsicInfo::HasImmediateOperand(intrinsic);
+    GenTree*            addr      = nullptr;
+
+    if (node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr))
+    {
+        SetMultiplyUsed(addr DEBUGARG("LowerHWIntrinsic memory address (null check)"));
+    }
 
     switch (intrinsic)
     {
@@ -918,7 +930,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_PackedSimd_LoadScalarVector128:
         case NI_PackedSimd_LoadWideningVector128:
         {
-            // These intrinsics don't a required immediate operand
+            // These intrinsics don't require an immediate operand
             assert(!hasImmOp);
             break;
         }

@@ -19,7 +19,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 {
     private readonly Target _target;
     private readonly IXCLRDataFrame? _legacyImpl;
-    private readonly IXCLRDataFrame2? _legacyImpl2;
 
     private readonly IStackDataFrameHandle _dataFrame;
 
@@ -27,14 +26,13 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     {
         _target = target;
         _legacyImpl = legacyImpl;
-        _legacyImpl2 = legacyImpl as IXCLRDataFrame2;
 
         _dataFrame = dataFrame;
     }
 
     // IXCLRDataFrame implementation
     int IXCLRDataFrame.GetFrameType(uint* simpleType, uint* detailedType)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFrameType(simpleType, detailedType) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataFrame.GetContext(
         uint contextFlags,
@@ -406,14 +404,14 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
 
     int IXCLRDataFrame.GetNumTypeArguments(uint* numTypeArgs)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetNumTypeArguments(numTypeArgs) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataFrame.GetTypeArgumentByIndex(uint index, DacComNullableByRef<IXCLRDataTypeInstance> typeArg)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetTypeArgumentByIndex(index, typeArg) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     // IXCLRDataFrame2 implementation
     int IXCLRDataFrame2.GetExactGenericArgsToken(DacComNullableByRef<IXCLRDataValue> genericToken)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl2 is not null ? _legacyImpl2.GetExactGenericArgsToken(genericToken) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     // ========== Metadata resolution helpers ==========
 

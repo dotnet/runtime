@@ -76,6 +76,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case HW_Category_MemoryLoad:
             {
                 emitAttr elemSize = emitActualTypeSize(node->GetSimdBaseType());
+                GenTree* addr     = nullptr;
+                bool     isMem    = node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr);
+                assert(isMem && addr != nullptr);
+
+                regNumber addrReg = GetMultiUseOperandReg(addr);
+                genEmitNullCheck(addrReg);
+
                 if (info.needsJumpTableFallback())
                 {
                     genHWIntrinsicJumpTableFallback(node, info);

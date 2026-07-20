@@ -105,6 +105,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_WasmBase_LeadingZeroCount:
+        {
+            assert(sig->numArgs == 1);
+
+            op1     = impPopStack().val;
+            retNode = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount,
+                                                                nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+            break;
+        }
+
+        case NI_WasmBase_TrailingZeroCount:
+        {
+            assert(sig->numArgs == 1);
+
+            op1     = impPopStack().val;
+            retNode = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount,
+                                                                nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+            break;
+        }
+
         case NI_PackedSimd_CompareGreaterThan:
         {
             assert(sig->numArgs == 2);
