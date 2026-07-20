@@ -24,7 +24,7 @@ public class WasmR2RInfoTests
     // Builds a target whose FunctionTableIndexRangeList global points at a *slot* (pointer-to-pointer),
     // matching the CDAC_GLOBAL_POINTER contract. WasmR2RInfo must dereference the slot to reach the
     // list head; walking from the slot address directly reads garbage and finds nothing.
-    private static TestPlaceholderTarget CreateTarget()
+    private static TestPlaceholderTarget CreateTarget(bool emptyList = false)
     {
         TargetTestHelpers helpers = new(WasmArch);
         var targetBuilder = new TestPlaceholderTarget.Builder(WasmArch);
@@ -67,8 +67,9 @@ public class WasmR2RInfoTests
         helpers.WritePointer(sectionFrag.Data.AsSpan().Slice(secFields["Next"].Offset, helpers.PointerSize), 0ul);
 
         // The slot holds the pointer to the list head. The global points at the slot, not the head.
+        // An empty list (null head) is the real runtime state before any virtual-IP ranges register.
         var slotFrag = allocator.Allocate((uint)helpers.PointerSize, "FunctionTableIndexRangeListSlot");
-        helpers.WritePointer(slotFrag.Data.AsSpan().Slice(0, helpers.PointerSize), sectionFrag.Address);
+        helpers.WritePointer(slotFrag.Data.AsSpan().Slice(0, helpers.PointerSize), emptyList ? 0ul : sectionFrag.Address);
 
         var types = new Dictionary<DataType, Target.TypeInfo>
         {
@@ -109,5 +110,17 @@ public class WasmR2RInfoTests
         WasmR2RInfo info = new(CreateTarget());
 
         Assert.False(info.TryGetVirtualIPBase(MinFunctionTableIndex + 100, out _));
+    }
+
+    [Fact]
+    public void EmptyRangeList_ResolvesToNoSection()
+    {
+        // The runtime registers virtual-IP ranges lazily, so the FunctionTableIndexRangeList head is
+        // null until the first managed stack walk. FindSection must treat an empty list as a clean
+        // "no R2R sections" answer rather than dereferencing the null head.
+        WasmR2RInfo info = new(CreateTarget(emptyList: true));
+
+        Assert.False(info.TryGetVirtualIPBase(FunctionTableIndex, out _));
+        Assert.False(info.TryGetUnwindData(FunctionTableIndex, out _));
     }
 }
