@@ -3124,6 +3124,123 @@ EXTERN_C const IID IID_ICorDebugDataTarget4;
 #endif  /* __ICorDebugDataTarget4_INTERFACE_DEFINED__ */
 
 
+/* interface __MIDL_itf_cordebug_ICorDebugDataTarget5 */
+/* [local] */
+
+typedef
+enum CorDebugTargetArchitecture
+    {
+        CORDB_ARCH_UNKNOWN  = 0,
+        CORDB_ARCH_X86  = ( CORDB_ARCH_UNKNOWN + 1 ) ,
+        CORDB_ARCH_AMD64    = ( CORDB_ARCH_X86 + 1 ) ,
+        CORDB_ARCH_ARM  = ( CORDB_ARCH_AMD64 + 1 ) ,
+        CORDB_ARCH_ARM64    = ( CORDB_ARCH_ARM + 1 ) ,
+        CORDB_ARCH_LOONGARCH64  = ( CORDB_ARCH_ARM64 + 1 ) ,
+        CORDB_ARCH_RISCV64  = ( CORDB_ARCH_LOONGARCH64 + 1 ) ,
+        CORDB_ARCH_WASM = ( CORDB_ARCH_RISCV64 + 1 )
+    }   CorDebugTargetArchitecture;
+
+typedef
+enum CorDebugTargetOperatingSystem
+    {
+        CORDB_OS_UNKNOWN    = 0,
+        CORDB_OS_WINDOWS    = ( CORDB_OS_UNKNOWN + 1 ) ,
+        CORDB_OS_MACOS  = ( CORDB_OS_WINDOWS + 1 ) ,
+        CORDB_OS_LINUX  = ( CORDB_OS_MACOS + 1 )
+    }   CorDebugTargetOperatingSystem;
+
+typedef struct CorDebugTargetInfo
+    {
+    CorDebugTargetArchitecture arch;
+    CorDebugTargetOperatingSystem os;
+    }   CorDebugTargetInfo;
+
+
+
+#ifndef __ICorDebugDataTarget5_INTERFACE_DEFINED__
+#define __ICorDebugDataTarget5_INTERFACE_DEFINED__
+
+/* interface ICorDebugDataTarget5 */
+/* [unique][local][uuid][object] */
+
+
+EXTERN_C const IID IID_ICorDebugDataTarget5;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+
+    MIDL_INTERFACE("A5634045-7D7E-4497-A608-44D6BFE4FC28")
+    ICorDebugDataTarget5 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetTargetInfo(
+            /* [out] */ CorDebugTargetInfo *pTargetInfo) = 0;
+
+    };
+
+
+#else   /* C style interface */
+
+    typedef struct ICorDebugDataTarget5Vtbl
+    {
+        BEGIN_INTERFACE
+
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+            ICorDebugDataTarget5 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */
+            _COM_Outptr_  void **ppvObject);
+
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
+            ICorDebugDataTarget5 * This);
+
+        DECLSPEC_XFGVIRT(IUnknown, Release)
+        ULONG ( STDMETHODCALLTYPE *Release )(
+            ICorDebugDataTarget5 * This);
+
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget5, GetTargetInfo)
+        HRESULT ( STDMETHODCALLTYPE *GetTargetInfo )(
+            ICorDebugDataTarget5 * This,
+            /* [out] */ CorDebugTargetInfo *pTargetInfo);
+
+        END_INTERFACE
+    } ICorDebugDataTarget5Vtbl;
+
+    interface ICorDebugDataTarget5
+    {
+        CONST_VTBL struct ICorDebugDataTarget5Vtbl *lpVtbl;
+    };
+
+
+
+#ifdef COBJMACROS
+
+
+#define ICorDebugDataTarget5_QueryInterface(This,riid,ppvObject)    \
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
+
+#define ICorDebugDataTarget5_AddRef(This)   \
+    ( (This)->lpVtbl -> AddRef(This) )
+
+#define ICorDebugDataTarget5_Release(This)  \
+    ( (This)->lpVtbl -> Release(This) )
+
+
+#define ICorDebugDataTarget5_GetTargetInfo(This,pTargetInfo)    \
+    ( (This)->lpVtbl -> GetTargetInfo(This,pTargetInfo) )
+
+#endif /* COBJMACROS */
+
+
+#endif  /* C style interface */
+
+
+
+
+#endif  /* __ICorDebugDataTarget5_INTERFACE_DEFINED__ */
+
+
 #ifndef __ICorDebugMutableDataTarget_INTERFACE_DEFINED__
 #define __ICorDebugMutableDataTarget_INTERFACE_DEFINED__
 

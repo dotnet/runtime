@@ -16,6 +16,7 @@ IID_ISequentialStream
 IID_IStream
 IID_ICLRDataTarget
 IID_ICorDebugDataTarget4
+IID_ICorDebugDataTarget5
 IID_ICLRDataEnumMemoryRegionsCallback
 nativeStringResourceTable_mscorrc
 

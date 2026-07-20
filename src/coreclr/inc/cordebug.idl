@@ -835,6 +835,60 @@ interface ICorDebugDataTarget4 : IUnknown
 };
 
 /*
+ * Describes the processor architecture of the target process.
+ */
+typedef enum CorDebugTargetArchitecture
+{
+    CORDB_ARCH_UNKNOWN,
+    CORDB_ARCH_X86,
+    CORDB_ARCH_AMD64,
+    CORDB_ARCH_ARM,
+    CORDB_ARCH_ARM64,
+    CORDB_ARCH_LOONGARCH64,
+    CORDB_ARCH_RISCV64,
+    CORDB_ARCH_WASM
+} CorDebugTargetArchitecture;
+
+/*
+ * Describes the operating system of the target process.
+ */
+typedef enum CorDebugTargetOperatingSystem
+{
+    CORDB_OS_UNKNOWN,
+    CORDB_OS_WINDOWS,
+    CORDB_OS_MACOS,
+    CORDB_OS_LINUX
+} CorDebugTargetOperatingSystem;
+
+/*
+ * Describes the processor architecture and operating system of the target process.
+ */
+typedef struct CorDebugTargetInfo
+{
+    CorDebugTargetArchitecture    arch;
+    CorDebugTargetOperatingSystem os;
+} CorDebugTargetInfo;
+
+/*
+ * Data target that can report the processor architecture and operating system
+ * of the target process.
+ */
+[
+    object,
+    uuid(A5634045-7D7E-4497-A608-44D6BFE4FC28),
+    local,
+    pointer_default(unique)
+]
+interface ICorDebugDataTarget5 : IUnknown
+{
+    /*
+     * GetTargetInfo returns the processor architecture and operating system
+     * of the target process.
+     */
+    HRESULT GetTargetInfo([out] CorDebugTargetInfo * pTargetInfo);
+};
+
+/*
  * Mutable extension to the data target.  This version of ICorDebugDataTarget
  * can be implemented by targets that wish to support modification of the target
  * process (such as for live invasive debugging).

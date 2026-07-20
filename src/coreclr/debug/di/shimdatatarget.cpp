@@ -38,6 +38,10 @@ HRESULT STDMETHODCALLTYPE ShimDataTarget::QueryInterface(
     {
         *pInterface = static_cast<ICorDebugDataTarget4 *>(this);
     }
+    else if (InterfaceId == IID_ICorDebugDataTarget5)
+    {
+        *pInterface = static_cast<ICorDebugDataTarget5 *>(this);
+    }
     else
     {
         *pInterface = NULL;
@@ -88,4 +92,45 @@ void ShimDataTarget::HookContinueStatusChanged(FPContinueStatusChanged fpContinu
 {
     m_fpContinueStatusChanged = fpContinueStatusChanged;
     m_pContinueStatusChangedUserData = pUserData;
+}
+
+//---------------------------------------------------------------------------------------
+// ICorDebugDataTarget5::GetTargetInfo
+//
+// Reports the processor architecture and operating system of the target process.
+//
+HRESULT STDMETHODCALLTYPE ShimDataTarget::GetTargetInfo(CorDebugTargetInfo * pTargetInfo)
+{
+    if (pTargetInfo == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+#if defined(_M_IX86) || defined(__i386__)
+    pTargetInfo->arch = CORDB_ARCH_X86;
+#elif defined(_M_X64) || defined(__x86_64__)
+    pTargetInfo->arch = CORDB_ARCH_AMD64;
+#elif defined(_M_ARM) || defined(__arm__)
+    pTargetInfo->arch = CORDB_ARCH_ARM;
+#elif defined(_M_ARM64) || defined(__aarch64__)
+    pTargetInfo->arch = CORDB_ARCH_ARM64;
+#elif defined(__loongarch64)
+    pTargetInfo->arch = CORDB_ARCH_LOONGARCH64;
+#elif defined(__riscv) && (__riscv_xlen == 64)
+    pTargetInfo->arch = CORDB_ARCH_RISCV64;
+#else
+    pTargetInfo->arch = CORDB_ARCH_UNKNOWN;
+#endif
+
+#if defined(__APPLE__)
+    pTargetInfo->os = CORDB_OS_MACOS;
+#elif defined(__linux__)
+    pTargetInfo->os = CORDB_OS_LINUX;
+#elif defined(_WIN32)
+    pTargetInfo->os = CORDB_OS_WINDOWS;
+#else
+    pTargetInfo->os = CORDB_OS_UNKNOWN;
+#endif
+
+    return S_OK;
 }
