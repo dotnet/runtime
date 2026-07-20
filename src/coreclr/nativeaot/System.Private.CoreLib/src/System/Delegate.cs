@@ -303,7 +303,7 @@ namespace System
             }
 
             // Return the delegate Invoke method for marshalled function pointers and LINQ expressions
-            if ((_target is NativeFunctionPointerWrapper) || (_methodPtr == GetThunk(ObjectArrayThunk)))
+            if (_target is NativeFunctionPointerWrapper || _methodPtr == GetThunk(ObjectArrayThunk))
             {
                 return GetInvokeMethod(GetType());
             }
@@ -322,7 +322,7 @@ namespace System
             }
 
             // Return the delegate Invoke method for marshalled function pointers and LINQ expressions
-            if ((_target is NativeFunctionPointerWrapper) || (_methodPtr == GetThunk(ObjectArrayThunk)))
+            if (_target is NativeFunctionPointerWrapper || _methodPtr == GetThunk(ObjectArrayThunk))
             {
                 Type t = GetType();
                 return new DiagnosticMethodInfo("Invoke", t.FullName, t.Module.Assembly.FullName);
@@ -375,7 +375,7 @@ namespace System
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure) =>
             ReflectionAugments.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
 
-        internal IntPtr TryGetOpenStaticFunctionPointer() => (GetThunk(OpenStaticThunk) == _methodPtr) ? _extraFunctionPointerOrData : 0;
+        internal IntPtr TryGetOpenStaticFunctionPointer() => GetThunk(OpenStaticThunk) == _methodPtr ? _extraFunctionPointerOrData : 0;
 
         internal NativeFunctionPointerWrapper? TryGetNativeFunctionPointerWrapper() => _target as NativeFunctionPointerWrapper;
 
@@ -391,7 +391,7 @@ namespace System
 
             RuntimeAugments.EnsureMethodTableSafeToAllocate(delegateEEType);
 
-            Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
+            Delegate del = (Delegate)RuntimeImports.RhNewObject(delegateEEType);
 
             IntPtr objArrayThunk = del.GetThunk(ObjectArrayThunk);
             if (objArrayThunk == IntPtr.Zero)
@@ -485,8 +485,8 @@ namespace System
             }
 
             if (!ReferenceEquals(_helperObject, other._helperObject) ||
-                (!FunctionPointerOps.Compare(_extraFunctionPointerOrData, other._extraFunctionPointerOrData)) ||
-                (!FunctionPointerOps.Compare(_methodPtr, other._methodPtr)))
+                !FunctionPointerOps.Compare(_extraFunctionPointerOrData, other._extraFunctionPointerOrData) ||
+                !FunctionPointerOps.Compare(_methodPtr, other._methodPtr))
             {
                 return false;
             }
