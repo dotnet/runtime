@@ -151,7 +151,20 @@ namespace System
                 t_deliveringFirstChanceNotification = true;
                 try
                 {
-                    FirstChanceExceptionEventArgs args = new(e);
+                    FirstChanceExceptionEventArgs args;
+                    try
+                    {
+                        args = new(e);
+                    }
+                    catch (Exception allocationFailure)
+                    {
+                        // Failing to allocate the event args (e.g. OutOfMemoryException in a
+                        // low-memory situation) leaves us unable to deliver the notification.
+                        // Fail fast rather than proceeding with invalid state.
+                        Environment.FailFast("Failed to allocate FirstChanceExceptionEventArgs.", allocationFailure);
+                        throw; // unreachable
+                    }
+
                     foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
                     {
                         try
