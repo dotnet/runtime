@@ -12574,7 +12574,19 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "get_ReplacementFallback",
        "get_DecoderFallback",
        "get_MaxCharCount",
-       "op_Equality"
+       "op_Equality",
+
+       "Concat",
+       "AllCharsInUInt32AreAscii",
+       "InvalidateCachedCursorPosition",
+       "SetLastSystemError",
+       "GetLastSystemError",
+       "get_UnderlyingSystemType",
+       "TryGetSpan",
+       "GetCharsFast",
+       "AddKey",
+       "Copy",
+
 
 
     };
