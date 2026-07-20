@@ -791,7 +791,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             // For TypeRefs, try to resolve in the same module's TypeDef table.
             TypeReference typeRef = reader.GetTypeReference(handle);
             MetadataReader moduleReader = _target.Contracts.EcmaMetadata.GetMetadata(_moduleHandle)
-                ?? throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+                ?? throw new InvalidOperationException("Module has no metadata.");
             foreach (TypeDefinitionHandle tdh in moduleReader.TypeDefinitions)
             {
                 TypeDefinition td = moduleReader.GetTypeDefinition(tdh);
