@@ -12,7 +12,7 @@ namespace ILLink.RoslynAnalyzer
 {
     /// <summary>
     /// Reports <c>IL5005</c> when an explicit unsafe member contract has no <c>&lt;safety&gt;</c> XML documentation.
-    /// Diagnostic properties guide the fixer when pointer compatibility or <c>CS9392</c> requires preserving a modifier.
+    /// The diagnostic is disabled by default while this migration tooling remains experimental.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class UnsafeMemberMissingSafetyDocumentationAnalyzer : DiagnosticAnalyzer
@@ -21,7 +21,9 @@ namespace ILLink.RoslynAnalyzer
         public const string RequiresExplicitSafetyModifierProperty = nameof(RequiresExplicitSafetyModifierProperty);
 
         private static readonly DiagnosticDescriptor s_rule =
-            DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.UnsafeMemberMissingSafetyDocumentation);
+            DiagnosticDescriptors.GetDiagnosticDescriptor(
+                DiagnosticId.UnsafeMemberMissingSafetyDocumentation,
+                isEnabledByDefault: false);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [s_rule];
 

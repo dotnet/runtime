@@ -14,6 +14,14 @@ namespace ILLink.RoslynAnalyzer.Tests
     public class PointerSignatureRequiresUnsafeAnalyzerTests
     {
         [Fact]
+        public void IsDisabledByDefault()
+        {
+            var analyzer = new PointerSignatureRequiresUnsafeAnalyzer();
+
+            Assert.False(analyzer.SupportedDiagnostics[0].IsEnabledByDefault);
+        }
+
+        [Fact]
         public async Task ReportsPointerSignaturesOnAllSupportedMemberKinds()
         {
             var source = """
@@ -29,7 +37,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public int* {|IL5006:Property|} { get; set; }
                     public int* {|IL5006:this|}[int* index] => index;
                     public delegate*<void> {|IL5006:Field|};
-                    public event Outer<int*[]>.D? {|IL5006:Event|};
+                    public event Outer<int*[]>.D {|IL5006:Event|};
                     public event Outer<int*[]>.D {|IL5006:ManualEvent|}
                     {
                         add { }

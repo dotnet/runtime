@@ -12,13 +12,15 @@ namespace ILLink.RoslynAnalyzer
 {
     /// <summary>
     /// Reports <c>IL5006</c> for pointer or function-pointer signatures that lost their legacy caller-unsafe contract.
-    /// An existing <c>unsafe</c>/<c>safe</c> modifier or a <c>&lt;safety&gt;</c> XML comment suppresses the diagnostic.
+    /// The diagnostic is disabled by default while this migration tooling remains experimental.
     /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class PointerSignatureRequiresUnsafeAnalyzer : DiagnosticAnalyzer
     {
         private static readonly DiagnosticDescriptor s_rule =
-            DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.PointerSignatureRequiresUnsafe);
+            DiagnosticDescriptors.GetDiagnosticDescriptor(
+                DiagnosticId.PointerSignatureRequiresUnsafe,
+                isEnabledByDefault: false);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [s_rule];
 

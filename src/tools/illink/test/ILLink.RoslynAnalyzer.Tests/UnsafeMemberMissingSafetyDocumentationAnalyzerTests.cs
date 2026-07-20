@@ -14,6 +14,14 @@ namespace ILLink.RoslynAnalyzer.Tests
     public class UnsafeMemberMissingSafetyDocumentationAnalyzerTests
     {
         [Fact]
+        public void IsDisabledByDefault()
+        {
+            var analyzer = new UnsafeMemberMissingSafetyDocumentationAnalyzer();
+
+            Assert.False(analyzer.SupportedDiagnostics[0].IsEnabledByDefault);
+        }
+
+        [Fact]
         public async Task ReportsAllUnsafeContractMemberKinds()
         {
             var source = """
@@ -52,7 +60,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                         remove { }
                     }
 
-                    public {|IL5005:unsafe|} event Action? EventField;
+                    public {|IL5005:unsafe|} event Action EventField;
                     public {|IL5005:unsafe|} int Field;
 
                     public void Outer()

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if DEBUG
+using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
@@ -66,9 +67,14 @@ namespace ILLink.RoslynAnalyzer.Tests
 
             var compilationOptions = (CSharpCompilationOptions)project.CompilationOptions!;
             // CS9377 is emitted at a warning level above the test framework's default.
+            var diagnosticOptions = compilationOptions.SpecificDiagnosticOptions
+                .SetItems(CSharpVerifierHelper.NullableWarnings)
+                .SetItem(DiagnosticId.UnsafeMemberMissingSafetyDocumentation.AsString(), ReportDiagnostic.Warn)
+                .SetItem(DiagnosticId.PointerSignatureRequiresUnsafe.AsString(), ReportDiagnostic.Warn);
             compilationOptions = compilationOptions
                 .WithAllowUnsafe(true)
-                .WithWarningLevel(999);
+                .WithWarningLevel(999)
+                .WithSpecificDiagnosticOptions(diagnosticOptions);
 
             return solution.WithProjectParseOptions(projectId, parseOptions)
                 .WithProjectCompilationOptions(projectId, compilationOptions);
