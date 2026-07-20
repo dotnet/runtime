@@ -757,8 +757,8 @@ extern "C" __attribute__((naked)) void JIT_PInvokeEnd(void* sp, InlinedCallFrame
 #else
 extern "C" void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 {
-     UNREFERENCED_PARAMETER(sp);
-     UNREFERENCED_PARAMETER(pep);
+    UNREFERENCED_PARAMETER(sp);
+    UNREFERENCED_PARAMETER(pep);
 
     Thread* pThread = (Thread*)pFrame->m_pThread;
 

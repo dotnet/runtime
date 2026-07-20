@@ -3224,8 +3224,8 @@ namespace Internal.JitInterface
                 || _compilation.NodeFactory.Target.IsWasm)
             {
                 // Suppress GC transition P/Invokes are called directly, since we can't do a GC transition at this point.
-                 // On Wasm, we also call directly because the runtime doesn't generate P/Invoke import precodes/stubs; instead,
-                 // errors are reported when we fix up the method.
+                // On Wasm, we also call directly because the runtime doesn't generate P/Invoke import precodes/stubs; instead,
+                // errors are reported when we fix up the method.
                 pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetPInvokeTargetNode(methodWithToken));
                 pLookup.accessType = InfoAccessType.IAT_PVALUE;
             }
