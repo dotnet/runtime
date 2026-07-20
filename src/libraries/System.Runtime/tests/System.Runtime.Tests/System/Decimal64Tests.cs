@@ -2987,6 +2987,7 @@ namespace System.Tests
         [InlineData(0xF800000000000000UL)] // -Infinity
         [InlineData(0x7C00000000000000UL)] // NaN
         [InlineData(0x3180000000003039UL)] // 123.45
+        [InlineData(0x7DFC0000000004D2UL)] // NaN with reserved-bit garbage (binary copy preserves non-canonical bits)
         public static void EncodeDecodeBinaryRoundTrips(ulong bits)
         {
             Decimal64 value = Decimal64.DecodeBinary(bits);
@@ -3017,6 +3018,28 @@ namespace System.Tests
         {
             Decimal64 value = Decimal64.DecodeBinary(bits);
             Assert.Equal(bits, Unsafe.BitCast<Decimal64, ulong>(Decimal64.DecodeDecimal(Decimal64.EncodeDecimal(value))));
+        }
+
+        [Fact]
+        public static void CrossEncodingCanonicalizesNaN()
+        {
+            // The bits between the signaling bit and the payload are reserved; a cross-encoding conversion drops them.
+            const ulong ReservedMask = 0x01FC_0000_0000_0000UL;
+            const ulong SignalingBit = 0x0200_0000_0000_0000UL;
+
+            // BID -> DPD drops reserved-bit garbage while preserving the sign, marker, signaling bit, and payload.
+            ulong canonicalDpd = Decimal64.EncodeDecimal(Decimal64.DecodeBinary(0x7C000000000004D2UL));
+            ulong garbageDpd = Decimal64.EncodeDecimal(Decimal64.DecodeBinary(0x7C000000000004D2UL | ReservedMask));
+            Assert.Equal(canonicalDpd, garbageDpd);
+            Assert.Equal(0ul, garbageDpd & ReservedMask);
+
+            // DPD -> BID canonicalizes the same way.
+            Assert.Equal(0x7C000000000004D2UL, Decimal64.EncodeBinary(Decimal64.DecodeDecimal(canonicalDpd | ReservedMask)));
+
+            // The signaling bit is preserved both ways (IEEE 754 exceptions are treated as disabled, so sNaN is not quieted).
+            ulong signalingDpd = Decimal64.EncodeDecimal(Decimal64.DecodeBinary(0x7C000000000004D2UL | SignalingBit));
+            Assert.Equal(SignalingBit, signalingDpd & SignalingBit);
+            Assert.Equal(0x7C000000000004D2UL | SignalingBit, Decimal64.EncodeBinary(Decimal64.DecodeDecimal(signalingDpd)));
         }
 
 

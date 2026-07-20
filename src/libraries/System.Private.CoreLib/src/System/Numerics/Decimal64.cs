@@ -45,6 +45,7 @@ namespace System.Numerics
         private const ulong SignMask = 0x8000_0000_0000_0000;
         private const ulong MostSignificantBitOfSignificandMask = 0x0020_0000_0000_0000;
         private const ulong NaNMask = 0x7C00_0000_0000_0000;
+        private const ulong SNaNMask = 0x7E00_0000_0000_0000;
         private const ulong InfinityMask = 0x7800_0000_0000_0000;
         private const ulong MaxSignificand = 9_999_999_999_999_999;
         private const ulong MaxInternalValue = 0x77FB_86F2_6FC0_FFFF; // 9.999_999_999_999_999 * 10^384; aka 9_999_999_999_999_999 * 10^369
@@ -1743,6 +1744,8 @@ namespace System.Numerics
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NaNMask => NaNMask;
+
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.SNaNMask => SNaNMask;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.SignMask => SignMask;
 

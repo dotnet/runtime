@@ -52,6 +52,7 @@ namespace System.Numerics
         private const uint SignMask = 0x8000_0000;
         private const uint MostSignificantBitOfSignificandMask = 0x0080_0000;
         private const uint NaNMask = 0x7C00_0000;
+        private const uint SNaNMask = 0x7E00_0000;
         private const uint InfinityMask = 0x7800_0000;
         private const uint MaxSignificand = 9_999_999;
         private const uint MaxInternalValue = 0x77F8_967F; // +9.999_999 * 10^96; aka +9_999_999 * 10^90
@@ -1751,6 +1752,8 @@ namespace System.Numerics
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NaNMask => NaNMask;
+
+        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.SNaNMask => SNaNMask;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.SignMask => SignMask;
 

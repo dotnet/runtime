@@ -50,6 +50,7 @@ namespace System.Numerics
 
         private const ulong SignMaskUpper = 0x8000_0000_0000_0000;
         private const ulong NaNMaskUpper = 0x7C00_0000_0000_0000;
+        private const ulong SNaNMaskUpper = 0x7E00_0000_0000_0000;
         private const ulong InfinityMaskUpper = 0x7800_0000_0000_0000;
 
         public static Decimal128 PositiveInfinity => new Decimal128(PositiveInfinityValue);
@@ -1771,6 +1772,8 @@ namespace System.Numerics
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MostSignificantBitOfSignificandMask => new UInt128(0x0002_0000_0000_0000, 0);
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NaNMask => new UInt128(NaNMaskUpper, 0);
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SNaNMask => new UInt128(SNaNMaskUpper, 0);
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SignMask => new UInt128(SignMaskUpper, 0);
 

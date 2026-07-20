@@ -535,7 +535,9 @@ namespace System
             if (TDecimal.IsNaN(bidBits))
             {
                 // The sign, the five-bit NaN marker, and the signaling bit occupy the same positions in both
-                // encodings; only the trailing payload changes representation (binary integer to declets).
+                // encodings; only the trailing payload changes representation (binary integer to declets). This
+                // is a cross-encoding conversion, so the reserved bits between the signaling bit and the payload
+                // are dropped to keep the result canonical.
                 TValue payload = bidBits & payloadMask;
 
                 if (payload >= TDecimal.Power10(TDecimal.Precision - 1))
@@ -543,7 +545,7 @@ namespace System
                     payload = TValue.Zero;
                 }
 
-                return (bidBits & ~payloadMask) | PackDeclets(payload, declets);
+                return (bidBits & (TDecimal.SignMask | TDecimal.SNaNMask)) | PackDeclets(payload, declets);
             }
 
             DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(bidBits);
@@ -587,14 +589,13 @@ namespace System
 
             if (TDecimal.IsNaN(dpdBits))
             {
+                // The sign, the five-bit NaN marker, and the signaling bit occupy the same positions in both
+                // encodings; only the trailing payload changes representation (declets to binary integer). This
+                // is a cross-encoding conversion, so the reserved bits between the signaling bit and the payload
+                // are dropped to keep the result canonical.
                 TValue payload = UnpackDeclets(dpdBits & payloadMask, declets);
 
-                if (payload >= TDecimal.Power10(TDecimal.Precision - 1))
-                {
-                    payload = TValue.Zero;
-                }
-
-                return (dpdBits & ~payloadMask) | payload;
+                return (dpdBits & (TDecimal.SignMask | TDecimal.SNaNMask)) | payload;
             }
 
             int exponentContinuationBits = (Unsafe.SizeOf<TValue>() * 8) - 6 - TDecimal.NumberBitsSignificand;

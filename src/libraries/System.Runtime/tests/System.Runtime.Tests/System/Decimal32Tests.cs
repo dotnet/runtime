@@ -2986,6 +2986,7 @@ namespace System.Tests
         [InlineData(0xF8000000U)] // -Infinity
         [InlineData(0x7C000000U)] // NaN
         [InlineData(0x31803039U)] // 123.45
+        [InlineData(0x7DF004D2U)] // NaN with reserved-bit garbage (binary copy preserves non-canonical bits)
         public static void EncodeDecodeBinaryRoundTrips(uint bits)
         {
             Decimal32 value = Decimal32.DecodeBinary(bits);
@@ -3016,6 +3017,28 @@ namespace System.Tests
         {
             Decimal32 value = Decimal32.DecodeBinary(bits);
             Assert.Equal(bits, Unsafe.BitCast<Decimal32, uint>(Decimal32.DecodeDecimal(Decimal32.EncodeDecimal(value))));
+        }
+
+        [Fact]
+        public static void CrossEncodingCanonicalizesNaN()
+        {
+            // The bits between the signaling bit and the payload are reserved; a cross-encoding conversion drops them.
+            const uint ReservedMask = 0x01F0_0000U;
+            const uint SignalingBit = 0x0200_0000U;
+
+            // BID -> DPD drops reserved-bit garbage while preserving the sign, marker, signaling bit, and payload.
+            uint canonicalDpd = Decimal32.EncodeDecimal(Decimal32.DecodeBinary(0x7C0004D2U));
+            uint garbageDpd = Decimal32.EncodeDecimal(Decimal32.DecodeBinary(0x7C0004D2U | ReservedMask));
+            Assert.Equal(canonicalDpd, garbageDpd);
+            Assert.Equal(0u, garbageDpd & ReservedMask);
+
+            // DPD -> BID canonicalizes the same way.
+            Assert.Equal(0x7C0004D2U, Decimal32.EncodeBinary(Decimal32.DecodeDecimal(canonicalDpd | ReservedMask)));
+
+            // The signaling bit is preserved both ways (IEEE 754 exceptions are treated as disabled, so sNaN is not quieted).
+            uint signalingDpd = Decimal32.EncodeDecimal(Decimal32.DecodeBinary(0x7C0004D2U | SignalingBit));
+            Assert.Equal(SignalingBit, signalingDpd & SignalingBit);
+            Assert.Equal(0x7C0004D2U | SignalingBit, Decimal32.EncodeBinary(Decimal32.DecodeDecimal(signalingDpd)));
         }
 
 
