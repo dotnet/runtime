@@ -814,7 +814,7 @@ namespace System
                 {
                     ThrowFormatException(value);
                 }
-                ThrowOverflowException(SR.Overflow_Decimal);
+                ThrowDecimalOverflowException();
             }
 
             return result;
@@ -1735,9 +1735,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowOverflowException(string message)
+        internal static void ThrowDecimalOverflowException()
         {
-            throw new OverflowException(message);
+            throw new OverflowException(SR.Overflow_Decimal);
         }
 
         internal static TFloat NumberToFloat<TFloat>(ref NumberBuffer number)

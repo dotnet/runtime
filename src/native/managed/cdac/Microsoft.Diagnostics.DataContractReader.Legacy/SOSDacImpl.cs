@@ -467,7 +467,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetAssemblyLocation(ClrDataAddress assembly, int count, char* location, uint* pNeeded)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetAssemblyLocation(assembly, count, location, pNeeded) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? modules, uint* pNeeded)
     {
         int hr = HResults.S_OK;
@@ -929,7 +929,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetDacModuleHandle(void* phModule)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetDacModuleHandle(phModule) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetDomainFromContext(ClrDataAddress context, ClrDataAddress* domain)
     {
         int hr = HResults.S_OK;
@@ -1004,11 +1004,11 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetFailedAssemblyData(ClrDataAddress assembly, uint* pContext, int* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyData(assembly, pContext, pResult) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyDisplayName(assembly, count, name, pNeeded) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyList(ClrDataAddress appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyList(appDomain, count, values, pNeeded) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyLocation(ClrDataAddress assembly, uint count, char* location, uint* pNeeded)
     {
         int hr = HResults.S_OK;
@@ -1853,7 +1853,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetHandleEnumForGC(uint gen, DacComNullableByRef<ISOSHandleEnum> ppHandleEnum)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetHandleEnumForGC(gen, ppHandleEnum) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHandleEnumForTypes([In, MarshalUsing(CountElementName = "count")] uint[] types, uint count, DacComNullableByRef<ISOSHandleEnum> ppHandleEnum)
     {
         int hr = HResults.S_OK;
@@ -1880,7 +1880,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetHeapAllocData(uint count, void* data, uint* pNeeded)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetHeapAllocData(count, data, pNeeded) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHeapAnalyzeData(ClrDataAddress addr, DacpGcHeapAnalyzeData* data)
     {
         int hr = HResults.S_OK;
