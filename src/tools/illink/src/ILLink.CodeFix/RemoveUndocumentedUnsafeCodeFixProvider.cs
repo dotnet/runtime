@@ -17,7 +17,7 @@ namespace ILLink.CodeFix
 {
     /// <summary>
     /// Fixes <c>IL5005</c> by removing undocumented legacy unsafe scopes that became caller contracts under unsafe-v2.
-    /// Pointer signatures retain <c>unsafe</c>, while field-like <c>CS9392</c> declarations are changed to <c>safe</c>.
+    /// Pointer signatures and field-like <c>CS9392</c> declarations retain <c>unsafe</c> for compatibility and safety.
     /// </summary>
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(RemoveUndocumentedUnsafeCodeFixProvider)), Shared]
     public sealed class RemoveUndocumentedUnsafeCodeFixProvider : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider
@@ -25,12 +25,6 @@ namespace ILLink.CodeFix
         private static LocalizableString RemoveCodeFixTitle =>
             new LocalizableResourceString(
                 nameof(Resources.RemoveUndocumentedUnsafeCodeFixTitle),
-                Resources.ResourceManager,
-                typeof(Resources));
-
-        private static LocalizableString ReplaceCodeFixTitle =>
-            new LocalizableResourceString(
-                nameof(Resources.ReplaceUndocumentedUnsafeWithSafeCodeFixTitle),
                 Resources.ResourceManager,
                 typeof(Resources));
 
@@ -42,9 +36,10 @@ namespace ILLink.CodeFix
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Diagnostic diagnostic = context.Diagnostics[0];
-            // These members were already caller-unsafe under the legacy pointer compatibility rules.
-            if (diagnostic.Properties.ContainsKey(
-                UnsafeMemberMissingSafetyDocumentationAnalyzer.PointerSignatureProperty))
+            // Pointer signatures were already caller-unsafe under legacy rules. Field-like explicit and extended
+            // layout declarations must also keep a marker for CS9392, and default to unsafe until manually audited.
+            if (diagnostic.Properties.ContainsKey(UnsafeMemberMissingSafetyDocumentationAnalyzer.PointerSignatureProperty)
+                || diagnostic.Properties.ContainsKey(UnsafeMemberMissingSafetyDocumentationAnalyzer.RequiresExplicitSafetyModifierProperty))
             {
                 return;
             }
@@ -62,24 +57,15 @@ namespace ILLink.CodeFix
                 return;
             }
 
-            bool replaceWithSafe = diagnostic.Properties.ContainsKey(
-                    UnsafeMemberMissingSafetyDocumentationAnalyzer.RequiresExplicitSafetyModifierProperty)
-                && !UnsafeModifierCodeFixHelpers.HasSafeModifier(declaration);
-            // Bare removal would recreate CS9392 for field-backed explicit or extended layout members.
-            string title = (replaceWithSafe ? ReplaceCodeFixTitle : RemoveCodeFixTitle).ToString();
+            string title = RemoveCodeFixTitle.ToString();
 
             context.RegisterCodeFix(
                 CodeAction.Create(
                     title,
-                    cancellationToken => replaceWithSafe
-                        ? UnsafeModifierCodeFixHelpers.ReplaceUnsafeWithSafeModifierAsync(
-                            context.Document,
-                            declaration,
-                            cancellationToken)
-                        : UnsafeModifierCodeFixHelpers.RemoveUnsafeModifierAsync(
-                            context.Document,
-                            declaration,
-                            cancellationToken),
+                    cancellationToken => UnsafeModifierCodeFixHelpers.RemoveUnsafeModifierAsync(
+                        context.Document,
+                        declaration,
+                        cancellationToken),
                     title),
                 diagnostic);
         }

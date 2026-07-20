@@ -138,9 +138,6 @@
   <data name="RemoveUndocumentedUnsafeCodeFixTitle" xml:space="preserve">
     <value>Remove undocumented 'unsafe' modifier</value>
   </data>
-  <data name="ReplaceUndocumentedUnsafeWithSafeCodeFixTitle" xml:space="preserve">
-    <value>Mark field-like member 'safe'</value>
-  </data>
   <data name="AddUnsafeToPointerSignatureCodeFixTitle" xml:space="preserve">
     <value>Add 'unsafe' to pointer signature</value>
   </data>

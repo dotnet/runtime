@@ -153,7 +153,7 @@ namespace ILLink.RoslynAnalyzer
         }
 
         /// <summary>
-        /// Determines whether removing unsafe must be paired with safe to avoid recreating CS9392.
+        /// Determines whether removing unsafe must be suppressed to avoid recreating CS9392.
         /// </summary>
         internal static bool RequiresExplicitSafetyModifier(SyntaxNode declaration, ISymbol? symbol)
         {

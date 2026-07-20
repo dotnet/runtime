@@ -10,7 +10,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 {
     /// <summary>
     /// Verifies the <c>IL5005</c> fixer removes legacy unsafe scopes without weakening pointer compatibility.
-    /// Explicit and extended-layout cases confirm that required <c>CS9392</c> markers become <c>safe</c> instead.
+    /// Explicit and extended-layout cases confirm that required <c>CS9392</c> markers remain <c>unsafe</c>.
     /// </summary>
     public class RemoveUndocumentedUnsafeCodeFixTests
     {
@@ -67,7 +67,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public async Task ReplacesUnsafeWithSafeForExplicitLayoutField()
+        public async Task KeepsUnsafeForExplicitLayoutField()
         {
             var source = """
                 using System.Runtime.InteropServices;
@@ -79,26 +79,14 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public {|IL5005:unsafe|} int F;
                 }
                 """;
-            var fixedSource = """
-                using System.Runtime.InteropServices;
-
-                [StructLayout(LayoutKind.Explicit)]
-                class C
-                {
-                    [FieldOffset(0)]
-                    public safe int F;
-                }
-                """;
 
             var test = UnsafeMigrationTestHelpers
-                .CreateCodeFixTest<UnsafeMemberMissingSafetyDocumentationAnalyzer, RemoveUndocumentedUnsafeCodeFixProvider>(
-                    source,
-                    fixedSource);
+                .CreateCodeFixTest<UnsafeMemberMissingSafetyDocumentationAnalyzer, RemoveUndocumentedUnsafeCodeFixProvider>(source);
             await test.RunAsync();
         }
 
         [Fact]
-        public async Task ReplacesUnsafeWithSafeForExplicitLayoutProperty()
+        public async Task KeepsUnsafeForExplicitLayoutProperty()
         {
             var source = """
                 using System.Runtime.InteropServices;
@@ -110,26 +98,14 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public {|IL5005:unsafe|} int P { get; set; }
                 }
                 """;
-            var fixedSource = """
-                using System.Runtime.InteropServices;
-
-                [StructLayout(LayoutKind.Explicit)]
-                class C
-                {
-                    [field: FieldOffset(0)]
-                    public safe int P { get; set; }
-                }
-                """;
 
             var test = UnsafeMigrationTestHelpers
-                .CreateCodeFixTest<UnsafeMemberMissingSafetyDocumentationAnalyzer, RemoveUndocumentedUnsafeCodeFixProvider>(
-                    source,
-                    fixedSource);
+                .CreateCodeFixTest<UnsafeMemberMissingSafetyDocumentationAnalyzer, RemoveUndocumentedUnsafeCodeFixProvider>(source);
             await test.RunAsync();
         }
 
         [Fact]
-        public async Task ReplacesUnsafeWithSafeForExplicitLayoutEvent()
+        public async Task KeepsUnsafeForExplicitLayoutEvent()
         {
             var source = """
                 using System;
@@ -142,27 +118,14 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public {|IL5005:unsafe|} event Action E;
                 }
                 """;
-            var fixedSource = """
-                using System;
-                using System.Runtime.InteropServices;
-
-                [StructLayout(LayoutKind.Explicit)]
-                class C
-                {
-                    [field: FieldOffset(0)]
-                    public safe event Action E;
-                }
-                """;
 
             var test = UnsafeMigrationTestHelpers
-                .CreateCodeFixTest<UnsafeMemberMissingSafetyDocumentationAnalyzer, RemoveUndocumentedUnsafeCodeFixProvider>(
-                    source,
-                    fixedSource);
+                .CreateCodeFixTest<UnsafeMemberMissingSafetyDocumentationAnalyzer, RemoveUndocumentedUnsafeCodeFixProvider>(source);
             await test.RunAsync();
         }
 
         [Fact]
-        public async Task ReplacesUnsafeWithSafeForExtendedLayoutField()
+        public async Task KeepsUnsafeForExtendedLayoutField()
         {
             var source = """
                 using System.Runtime.InteropServices;
@@ -173,20 +136,9 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public {|IL5005:unsafe|} int F;
                 }
                 """;
-            var fixedSource = """
-                using System.Runtime.InteropServices;
-
-                [ExtendedLayout(ExtendedLayoutKind.CUnion)]
-                struct S
-                {
-                    public safe int F;
-                }
-                """;
 
             var test = UnsafeMigrationTestHelpers
-                .CreateCodeFixTest<UnsafeMemberMissingSafetyDocumentationAnalyzer, RemoveUndocumentedUnsafeCodeFixProvider>(
-                    source,
-                    fixedSource);
+                .CreateCodeFixTest<UnsafeMemberMissingSafetyDocumentationAnalyzer, RemoveUndocumentedUnsafeCodeFixProvider>(source);
             await test.RunAsync();
         }
 

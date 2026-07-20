@@ -21,10 +21,6 @@ namespace ILLink.CodeFix
     /// </summary>
     internal static class UnsafeModifierCodeFixHelpers
     {
-        // The referenced Workspaces package parses safe but does not expose SyntaxKind.SafeKeyword yet.
-        private static readonly SyntaxToken s_safeModifier =
-            ((FieldDeclarationSyntax)SyntaxFactory.ParseMemberDeclaration("safe int field;")!).Modifiers[0];
-
         /// <summary>
         /// Registers an add-unsafe action for a supported declaration that has no existing safety modifier.
         /// </summary>
@@ -142,24 +138,6 @@ namespace ILLink.CodeFix
             return editor.GetChangedDocument();
         }
 
-        /// <summary>
-        /// Replaces unsafe with the contextual safe token required by field-like explicit-layout contracts.
-        /// </summary>
-        internal static async Task<Document> ReplaceUnsafeWithSafeModifierAsync(
-            Document document,
-            SyntaxNode declaration,
-            CancellationToken cancellationToken)
-        {
-            SyntaxToken unsafeModifier = GetUnsafeModifier(declaration);
-            SyntaxToken safeModifier = s_safeModifier
-                .WithLeadingTrivia(unsafeModifier.LeadingTrivia)
-                .WithTrailingTrivia(unsafeModifier.TrailingTrivia);
-
-            var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
-            editor.ReplaceNode(declaration, declaration.ReplaceToken(unsafeModifier, safeModifier));
-            return editor.GetChangedDocument();
-        }
-
         private static SyntaxTokenList GetModifiers(SyntaxNode declaration) =>
             declaration switch
             {
@@ -245,13 +223,6 @@ namespace ILLink.CodeFix
             }
 
             return modifiers;
-        }
-
-        private static SyntaxToken GetUnsafeModifier(SyntaxNode declaration)
-        {
-            SyntaxTokenList modifiers = GetModifiers(declaration);
-            int unsafeIndex = GetUnsafeModifierIndex(modifiers);
-            return unsafeIndex >= 0 ? modifiers[unsafeIndex] : default;
         }
 
         private static int GetUnsafeModifierIndex(SyntaxTokenList modifiers) =>
