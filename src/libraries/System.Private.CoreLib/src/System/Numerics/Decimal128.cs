@@ -9,6 +9,10 @@ using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
+    /// <summary>
+    /// Represents a decimal floating-point number that uses the IEEE 754 <c>decimal128</c> interchange format, providing 34 decimal digits of precision.
+    /// </summary>
+    /// <remarks>The IEEE 754 standard defines two interchange encodings for decimal floating-point: binary integer decimal (BID) and densely packed decimal (DPD). Which encoding is used is determined by the underlying ABI for the platform and defaults to BID where the ABI does not otherwise specify.</remarks>
     public readonly struct Decimal128
         : IComparable,
           IComparable<Decimal128>,
@@ -52,14 +56,28 @@ namespace System.Numerics
         private const ulong NaNMaskUpper = 0x7C00_0000_0000_0000;
         private const ulong InfinityMaskUpper = 0x7800_0000_0000_0000;
 
+        /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         public static Decimal128 PositiveInfinity => new Decimal128(PositiveInfinityValue);
+
+        /// <summary>Gets a value that represents negative <c>infinity</c>.</summary>
         public static Decimal128 NegativeInfinity => new Decimal128(NegativeInfinityValue);
+
+        /// <summary>Gets a value that represents <c>NaN</c>.</summary>
         public static Decimal128 NaN => new Decimal128(QuietNaNValue);
+
+        /// <summary>Gets a value that represents negative <c>zero</c>.</summary>
         public static Decimal128 NegativeZero => new Decimal128(NegativeZeroValue);
+
+        /// <summary>Gets the value <c>0</c> for the type.</summary>
         public static Decimal128 Zero => new Decimal128(ZeroValue);
+
+        /// <summary>Gets the minimum value of the current type.</summary>
         public static Decimal128 MinValue => new Decimal128(upper: 0xDFFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
+
+        /// <summary>Gets the maximum value of the current type.</summary>
         public static Decimal128 MaxValue => new Decimal128(upper: 0x5FFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
 
+        /// <summary>Gets the smallest value such that can be added to <c>0</c> that does not result in <c>0</c>.</summary>
         public static Decimal128 Epsilon => new Decimal128(upper: 0x0000_0000_0000_0000, lower: 0x0000_0000_0000_0001); // Smallest positive subnormal value, aka 1 * 10^-6176
 
         internal Decimal128(UInt128 value)

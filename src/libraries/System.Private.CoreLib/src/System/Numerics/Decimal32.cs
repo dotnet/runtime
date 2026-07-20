@@ -10,6 +10,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
+    /// <summary>
+    /// Represents a decimal floating-point number that uses the IEEE 754 <c>decimal32</c> interchange format, providing 7 decimal digits of precision.
+    /// </summary>
+    /// <remarks>The IEEE 754 standard defines two interchange encodings for decimal floating-point: binary integer decimal (BID) and densely packed decimal (DPD). Which encoding is used is determined by the underlying ABI for the platform and defaults to BID where the ABI does not otherwise specify.</remarks>
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Decimal32
         : IComparable,
@@ -57,14 +61,28 @@ namespace System.Numerics
         private const uint MaxInternalValue = 0x77F8_967F; // +9.999_999 * 10^96; aka +9_999_999 * 10^90
         private const uint MinInternalValue = 0xF7F8_967F; // -9.999_999 * 10^96; aka -9_999_999 * 10^90
 
+        /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         public static Decimal32 PositiveInfinity => new Decimal32(PositiveInfinityValue);
+
+        /// <summary>Gets a value that represents negative <c>infinity</c>.</summary>
         public static Decimal32 NegativeInfinity => new Decimal32(NegativeInfinityValue);
+
+        /// <summary>Gets a value that represents <c>NaN</c>.</summary>
         public static Decimal32 NaN => new Decimal32(QuietNaNValue);
+
+        /// <summary>Gets a value that represents negative <c>zero</c>.</summary>
         public static Decimal32 NegativeZero => new Decimal32(NegativeZeroValue);
+
+        /// <summary>Gets the value <c>0</c> for the type.</summary>
         public static Decimal32 Zero => new Decimal32(ZeroValue);
+
+        /// <summary>Gets the minimum value of the current type.</summary>
         public static Decimal32 MinValue => new Decimal32(MinInternalValue);
+
+        /// <summary>Gets the maximum value of the current type.</summary>
         public static Decimal32 MaxValue => new Decimal32(MaxInternalValue);
 
+        /// <summary>Gets the smallest value such that can be added to <c>0</c> that does not result in <c>0</c>.</summary>
         public static Decimal32 Epsilon => new Decimal32(0x0000_0001); // Smallest positive subnormal value, aka 1 * 10^-101
 
         private static ReadOnlySpan<uint> UInt32Powers10 =>

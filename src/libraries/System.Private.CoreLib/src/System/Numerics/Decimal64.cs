@@ -9,6 +9,10 @@ using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
+    /// <summary>
+    /// Represents a decimal floating-point number that uses the IEEE 754 <c>decimal64</c> interchange format, providing 16 decimal digits of precision.
+    /// </summary>
+    /// <remarks>The IEEE 754 standard defines two interchange encodings for decimal floating-point: binary integer decimal (BID) and densely packed decimal (DPD). Which encoding is used is determined by the underlying ABI for the platform and defaults to BID where the ABI does not otherwise specify.</remarks>
     public readonly struct Decimal64
         : IComparable,
           IComparable<Decimal64>,
@@ -50,14 +54,28 @@ namespace System.Numerics
         private const ulong MaxInternalValue = 0x77FB_86F2_6FC0_FFFF; // 9.999_999_999_999_999 * 10^384; aka 9_999_999_999_999_999 * 10^369
         private const ulong MinInternalValue = 0xF7FB_86F2_6FC0_FFFF; // -9.999_999_999_999_999 * 10^384; aka -9_999_999_999_999_999 * 10^369
 
+        /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         public static Decimal64 PositiveInfinity => new Decimal64(PositiveInfinityValue);
+
+        /// <summary>Gets a value that represents negative <c>infinity</c>.</summary>
         public static Decimal64 NegativeInfinity => new Decimal64(NegativeInfinityValue);
+
+        /// <summary>Gets a value that represents <c>NaN</c>.</summary>
         public static Decimal64 NaN => new Decimal64(QuietNaNValue);
+
+        /// <summary>Gets a value that represents negative <c>zero</c>.</summary>
         public static Decimal64 NegativeZero => new Decimal64(NegativeZeroValue);
+
+        /// <summary>Gets the value <c>0</c> for the type.</summary>
         public static Decimal64 Zero => new Decimal64(ZeroValue);
+
+        /// <summary>Gets the minimum value of the current type.</summary>
         public static Decimal64 MinValue => new Decimal64(MinInternalValue);
+
+        /// <summary>Gets the maximum value of the current type.</summary>
         public static Decimal64 MaxValue => new Decimal64(MaxInternalValue);
 
+        /// <summary>Gets the smallest value such that can be added to <c>0</c> that does not result in <c>0</c>.</summary>
         public static Decimal64 Epsilon => new Decimal64(0x0000_0000_0000_0001); // Smallest positive subnormal value, aka 1 * 10^-398
 
         private static ReadOnlySpan<ulong> UInt64Powers10 =>
