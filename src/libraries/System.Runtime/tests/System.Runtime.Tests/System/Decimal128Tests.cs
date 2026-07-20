@@ -3060,6 +3060,21 @@ namespace System.Tests
             Assert.Equal(expected, Decimal128.HaveSameQuantum(x, y));
         }
 
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL)] // +0
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL)] // -0
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL)] // +1
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL)] // -Infinity
+        [InlineData(0x7C00000000000000UL, 0x0000000000000000UL)] // NaN
+        public static void EncodeDecodeBinaryRoundTrips(ulong upper, ulong lower)
+        {
+            UInt128 bits = new UInt128(upper, lower);
+            Decimal128 value = Decimal128.DecodeBinary(bits);
+            Assert.Equal(bits, Decimal128.EncodeBinary(value));
+            Assert.Equal(bits, Unsafe.BitCast<Decimal128, UInt128>(value));
+        }
+
 
         [Theory]
         [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000003UL, 0x3040000000000000UL, 0x0000000000000004UL, 0x3040000000000000UL, 0x000000000000000AUL)] // 2 * 3 + 4 = 10

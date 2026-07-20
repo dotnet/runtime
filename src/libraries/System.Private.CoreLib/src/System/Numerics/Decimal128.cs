@@ -227,6 +227,18 @@ namespace System.Numerics
             return Number.GetDecimalIeee754HashCode<Decimal128, UInt128>(new UInt128(_upper, _lower));
         }
 
+        /// <summary>Encodes a value as its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The BID bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static UInt128 EncodeBinary(Decimal128 x) => new UInt128(x._upper, x._lower);
+
+        /// <summary>Decodes a value from its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The BID bit pattern to decode.</param>
+        /// <returns>The value represented by the BID bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal128 DecodeBinary(UInt128 x) => new Decimal128(x);
+
         /// <summary>
         /// Returns a string representation of the current value.
         /// </summary>

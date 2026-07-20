@@ -2978,6 +2978,21 @@ namespace System.Tests
             Assert.Equal(expected, Decimal32.HaveSameQuantum(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y)));
         }
 
+        [Theory]
+        [InlineData(0x32800000U)] // +0
+        [InlineData(0xB2800000U)] // -0
+        [InlineData(0x32800001U)] // +1
+        [InlineData(0x78000000U)] // +Infinity
+        [InlineData(0xF8000000U)] // -Infinity
+        [InlineData(0x7C000000U)] // NaN
+        [InlineData(0x31803039U)] // 123.45
+        public static void EncodeDecodeBinaryRoundTrips(uint bits)
+        {
+            Decimal32 value = Decimal32.DecodeBinary(bits);
+            Assert.Equal(bits, Decimal32.EncodeBinary(value));
+            Assert.Equal(bits, Unsafe.BitCast<Decimal32, uint>(value));
+        }
+
 
         [Theory]
         [InlineData(0x32800002U, 0x32800003U, 0x32800004U, 0x3280000AU)] // 2 * 3 + 4 = 10

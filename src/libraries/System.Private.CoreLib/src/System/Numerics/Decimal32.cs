@@ -233,6 +233,18 @@ namespace System.Numerics
             return Number.GetDecimalIeee754HashCode<Decimal32, uint>(_value);
         }
 
+        /// <summary>Encodes a value as its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The BID bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static uint EncodeBinary(Decimal32 x) => x._value;
+
+        /// <summary>Decodes a value from its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The BID bit pattern to decode.</param>
+        /// <returns>The value represented by the BID bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal32 DecodeBinary(uint x) => new Decimal32(x);
+
         /// <summary>
         /// Returns a string representation of the current value.
         /// </summary>

@@ -11477,6 +11477,10 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Decimal128 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Decimal128 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Decimal128 DecodeBinary(System.UInt128 x) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.UInt128 EncodeBinary(System.Numerics.Decimal128 x) { throw null; }
         public bool Equals(System.Numerics.Decimal128 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal128 Exp(System.Numerics.Decimal128 x) { throw null; }
@@ -11719,6 +11723,10 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Decimal32 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Decimal32 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Decimal32 DecodeBinary(uint x) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint EncodeBinary(System.Numerics.Decimal32 x) { throw null; }
         public bool Equals(System.Numerics.Decimal32 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal32 Exp(System.Numerics.Decimal32 x) { throw null; }
@@ -11965,6 +11973,10 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Decimal64 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Decimal64 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Decimal64 DecodeBinary(ulong x) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong EncodeBinary(System.Numerics.Decimal64 x) { throw null; }
         public bool Equals(System.Numerics.Decimal64 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal64 Exp(System.Numerics.Decimal64 x) { throw null; }

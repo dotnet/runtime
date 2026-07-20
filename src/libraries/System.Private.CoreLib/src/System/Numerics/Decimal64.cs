@@ -234,6 +234,18 @@ namespace System.Numerics
             return Number.GetDecimalIeee754HashCode<Decimal64, ulong>(_value);
         }
 
+        /// <summary>Encodes a value as its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The BID bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static ulong EncodeBinary(Decimal64 x) => x._value;
+
+        /// <summary>Decodes a value from its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The BID bit pattern to decode.</param>
+        /// <returns>The value represented by the BID bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal64 DecodeBinary(ulong x) => new Decimal64(x);
+
         /// <summary>
         /// Returns a string representation of the current value.
         /// </summary>
