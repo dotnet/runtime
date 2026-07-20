@@ -398,6 +398,8 @@ namespace System.Runtime.Tests
                 // Decimal specific
                 yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0x3300_0001), Unsafe.BitCast<uint, Decimal32>(0x3280_000A), -1 }; // 1e1 < 10e0
                 yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0x3300_0001), Unsafe.BitCast<uint, Decimal32>(0x3280_0009), 1 }; // 1e1 > 9e0
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0xB300_0001), Unsafe.BitCast<uint, Decimal32>(0xB280_000A), 1 }; // -1e1 > -10e0
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0xB300_0001), Unsafe.BitCast<uint, Decimal32>(0xB280_0009), -1 }; // -1e1 < -9e0
             }
         }
 

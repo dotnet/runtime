@@ -147,7 +147,7 @@ namespace System.Numerics
 
                         if (T.IsNegative(x))
                         {
-                            return T.IsNegative(y) ? -CompareExponent(x, y) : -1;
+                            return T.IsNegative(y) ? CompareExponent(y, x) : -1;
                         }
                         else
                         {
@@ -160,7 +160,7 @@ namespace System.Numerics
                         // and the value with smaller exponent is considered closer to zero.
 
                         // This only applies to IEEE 754 decimals.
-                        return T.IsNegative(x) ? CompareExponent(x, y) : -CompareExponent(x, y);
+                        return T.IsNegative(x) ? CompareExponent(x, y) : CompareExponent(y, x);
                     }
                 }
                 else
