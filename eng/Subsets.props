@@ -666,6 +666,11 @@
 
   <ItemGroup Condition="$(_subset.Contains('+libs.tests+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)tests.proj" Category="libs" Test="true" />
+    <!-- Unit tests for build tasks. Only run on desktop CoreCLR test legs; these plain
+         MSBuild-task tests don't apply to Mono/wasm/mobile runtime test legs. -->
+    <ProjectToBuild Condition="'$(RuntimeFlavor)' == 'CoreCLR' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx')"
+                    Include="$(RepoTasksDir)tests\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.Tests\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.Tests.csproj"
+                    Category="libs" Test="true" />
   </ItemGroup>
 
   <!-- Host.pretest subset (consumes live built libraries assets so needs to come after libraries) -->
