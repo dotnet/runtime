@@ -486,7 +486,6 @@ namespace System
 
             if (!ReferenceEquals(_helperObject, other._helperObject) ||
                 (!FunctionPointerOps.Compare(_extraFunctionPointerOrData, other._extraFunctionPointerOrData)) ||
-                (!FunctionPointerOps.Compare(_extraFunctionPointerOrData, other._extraFunctionPointerOrData)) ||
                 (!FunctionPointerOps.Compare(_methodPtr, other._methodPtr)))
             {
                 return false;
