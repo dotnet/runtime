@@ -1,0 +1,3 @@
+# Keep this file until the corresponding Azure DevOps pipeline is disabled or deleted.
+trigger: none
+pr: none
