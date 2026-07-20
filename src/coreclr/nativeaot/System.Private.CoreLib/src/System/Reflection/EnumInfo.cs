@@ -51,7 +51,7 @@ namespace System.Reflection
         /// </summary>
         public Dictionary<string, TStorage> GetNamesToValuesIgnoreCase()
         {
-            return _namesToValuesIgnoreCase ?? Initialize();
+            return Volatile.Read(ref _namesToValuesIgnoreCase) ?? Initialize();
 
             Dictionary<string, TStorage> Initialize()
             {
@@ -68,9 +68,9 @@ namespace System.Reflection
                 }
 
                 // Publish atomically. If another thread raced and already published a lookup,
-                // reuse theirs so every caller observes a single cached instance. The plain
-                // read on the fast path above is safe: the reference is published with release
-                // semantics and readers reach the contents through a data-dependent access.
+                // reuse theirs so every caller observes a single cached instance. The fast-path
+                // Volatile.Read pairs an acquire load with this release publish so readers always
+                // observe a fully-initialized dictionary.
                 return Interlocked.CompareExchange(ref _namesToValuesIgnoreCase, lookup, null) ?? lookup;
             }
         }
