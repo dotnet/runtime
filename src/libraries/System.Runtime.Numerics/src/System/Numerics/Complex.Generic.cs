@@ -579,60 +579,108 @@ namespace System.Numerics
 
         public static Complex<T> Exp(Complex<T> value)
         {
-            T expReal = T.Exp(value.m_real);
-            return FromPolarCoordinates(expReal, value.m_imaginary);
+            T real = value.m_real;
+            T imaginary = value.m_imaginary;
+
+            // IEEE 754 / C23 Annex G.6.3.1 special values. cexp(conj(z)) == conj(cexp(z)).
+            // The general formula below (e^x * cis(y)) already yields the correct results for finite
+            // real parts and for -INF real parts with finite imaginary parts, so only the remaining
+            // infinite / NaN real cases need explicit handling.
+
+            if (T.IsInfinity(real))
+            {
+                if (T.IsNegative(real))
+                {
+                    if (!T.IsFinite(imaginary))
+                    {
+                        // -INF + iINF or -INF + iNaN -> +-0 +- 0i (signs unspecified).
+                        return new Complex<T>(T.Zero, T.Zero);
+                    }
+                    // -INF + iy (finite y) -> +0 * cis(y); handled by the general formula.
+                }
+                else
+                {
+                    if (imaginary == T.Zero)
+                    {
+                        // +INF + i0 -> +INF + i0.
+                        return new Complex<T>(real, imaginary);
+                    }
+
+                    if (!T.IsFinite(imaginary))
+                    {
+                        // +INF + iINF or +INF + iNaN -> +-INF + iNaN (sign of the real part is unspecified).
+                        return new Complex<T>(T.PositiveInfinity, T.NaN);
+                    }
+                    // +INF + iy (finite nonzero y) -> +INF * cis(y); handled by the general formula.
+                }
+            }
+            else if (T.IsNaN(real))
+            {
+                // NaN + i0 -> NaN + i0; NaN + iy (y != 0) and NaN + iNaN -> NaN + iNaN.
+                return (imaginary == T.Zero) ? new Complex<T>(T.NaN, imaginary) : new Complex<T>(T.NaN, T.NaN);
+            }
+
+            T expReal = T.Exp(real);
+            return FromPolarCoordinates(expReal, imaginary);
         }
 
         public static Complex<T> Sqrt(Complex<T> value)
         {
-            // Handle NaN input cases according to IEEE 754
-            if (T.IsNaN(value.m_real))
+            T real = value.m_real;
+            T imaginary = value.m_imaginary;
+
+            // IEEE 754 / C23 Annex G.6.4.2 special values. csqrt is continuous onto the branch
+            // cut along the negative real axis taking the sign of the imaginary part into account,
+            // and csqrt(conj(z)) == conj(csqrt(z)), so the sign of the imaginary part is preserved.
+
+            if (T.IsInfinity(imaginary))
             {
-                if (T.IsInfinity(value.m_imaginary))
-                {
-                    return new Complex<T>(T.PositiveInfinity, value.m_imaginary);
-                }
-                return new Complex<T>(T.NaN, T.NaN);
+                // x + iINF -> +INF + iINF for any x (including NaN).
+                return new Complex<T>(T.PositiveInfinity, imaginary);
             }
-            if (T.IsNaN(value.m_imaginary))
+
+            if (T.IsInfinity(real))
             {
-                if (T.IsPositiveInfinity(value.m_real))
+                if (T.IsNegative(real))
                 {
-                    return new Complex<T>(T.NaN, T.PositiveInfinity);
+                    // -INF + iy -> +0 + iINF (finite y); -INF + iNaN -> NaN +- iINF (sign unspecified).
+                    if (T.IsNaN(imaginary))
+                    {
+                        return new Complex<T>(T.NaN, T.PositiveInfinity);
+                    }
+
+                    return new Complex<T>(T.Zero, T.CopySign(T.PositiveInfinity, imaginary));
                 }
-                if (T.IsNegativeInfinity(value.m_real))
-                {
-                    return new Complex<T>(T.PositiveInfinity, T.NaN);
-                }
+
+                // +INF + iy -> +INF + i0 (finite y); +INF + iNaN -> +INF + iNaN.
+                return new Complex<T>(T.PositiveInfinity, T.IsNaN(imaginary) ? T.NaN : T.CopySign(T.Zero, imaginary));
+            }
+
+            if (T.IsNaN(real) || T.IsNaN(imaginary))
+            {
+                // NaN + iy or x + iNaN with the other part finite -> NaN + iNaN.
                 return new Complex<T>(T.NaN, T.NaN);
             }
 
-            if (value.m_imaginary == T.Zero)
+            if (imaginary == T.Zero)
             {
-                // Handle the trivial case quickly.
-                if (value.m_real < T.Zero)
+                // On the real axis, propagate the sign of the zero imaginary part.
+                if (T.IsNegative(real))
                 {
-                    return new Complex<T>(T.Zero, T.Sqrt(-value.m_real));
+                    return new Complex<T>(T.Zero, T.CopySign(T.Sqrt(-real), imaginary));
                 }
 
-                return new Complex<T>(T.Sqrt(value.m_real), T.Zero);
+                return new Complex<T>(T.Sqrt(real), T.CopySign(T.Zero, imaginary));
             }
 
             // If the components are too large, Hypot will overflow, even though the subsequent sqrt would
             // make the result representable. To avoid this, we re-scale (by exact powers of 2 for accuracy)
             // when we encounter very large components to avoid intermediate infinities.
             bool rescale = false;
-            T realCopy = value.m_real;
-            T imaginaryCopy = value.m_imaginary;
+            T realCopy = real;
+            T imaginaryCopy = imaginary;
             if ((T.Abs(realCopy) >= s_sqrtRescaleThreshold) || (T.Abs(imaginaryCopy) >= s_sqrtRescaleThreshold))
             {
-                if (T.IsInfinity(value.m_imaginary))
-                {
-                    // We need to handle infinite imaginary parts specially because otherwise
-                    // our formulas below produce inf/inf = NaN.
-                    return new Complex<T>(T.PositiveInfinity, imaginaryCopy);
-                }
-
                 T quarter = T.CreateChecked(0.25);
                 realCopy *= quarter;
                 imaginaryCopy *= quarter;

@@ -1807,10 +1807,10 @@ namespace System.Numerics.Tests
             yield return new object[] { double.NaN, double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity };
 
             // (inf, NaN) returns (inf, NaN)
-            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.PositiveInfinity };
+            yield return new object[] { double.PositiveInfinity, double.NaN, double.PositiveInfinity, double.NaN };
 
-            // (-inf, NaN) returns (NaN, inf)
-            yield return new object[] { double.NegativeInfinity, double.NaN, double.PositiveInfinity, double.NaN };
+            // (-inf, NaN) returns (NaN, inf) (sign of the imaginary part is unspecified)
+            yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, double.PositiveInfinity };
 
             // Otherwise, NaN in any component produces NaNs in both components.
             yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
