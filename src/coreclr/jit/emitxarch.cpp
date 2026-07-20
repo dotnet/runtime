@@ -88,7 +88,23 @@ bool emitter::IsAvx512OnlyInstruction(instruction ins)
 bool emitter::IsApxOnlyInstruction(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & Encoding_APX_EVEX) != 0;
+    bool     isApxOnly = (flags & Encoding_EVEX_APX_ONLY) != 0;
+
+#ifdef DEBUG
+#ifdef TARGET_AMD64
+    if (isApxOnly)
+    {
+        // Encoding_EVEX_APX_ONLY is reserved for instructions introduced by APX, not legacy
+        // instructions such as ADD that gain an APX encoding through NDD or NF. Keep this check
+        // independent of the flag so an incompatible use in instrsxarch.h fails in debug builds.
+        bool isKnownApxOnlyInstruction = (ins >= INS_push2) && (ins <= INS_pop2);
+        isKnownApxOnlyInstruction |= ((ins >= FIRST_APX_INSTRUCTION) && (ins <= LAST_APX_INSTRUCTION)) ||
+                                     (ins == INS_tzcnt_apx) || (ins == INS_lzcnt_apx) || (ins == INS_popcnt_apx);
+        assert(isKnownApxOnlyInstruction);
+    }
+#endif // TARGET_AMD64
+#endif // DEBUG
+    return isApxOnly;
 }
 
 bool emitter::IsAVXVNNIFamilyInstruction(instruction ins)
@@ -384,10 +400,22 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         return ((flags & INS_FLAGS_APX_EVEX_PROMOTABLE) != 0) || IsBMIInstruction(ins) || IsKMOVInstruction(ins);
     }
 
-    // Fast path: most SIMD instructions have Encoding_EVEX set directly.
     insFlags flags = CodeGenInterface::instInfo[ins];
+
     if ((flags & Encoding_EVEX) != 0)
     {
+#if defined(FEATURE_HW_INTRINSICS)
+        // AVX-VNNI-INT instructions share instruction IDs for their VEX and EVEX forms. Encoding_EVEX
+        // indicates that an EVEX form exists, but that form still requires AVXVNNIINT_V512 support.
+        // Keep this check before the generic Encoding_EVEX fast return.
+        static_assert(LAST_AVXVNNIINT8_INSTRUCTION + 1 == FIRST_AVXVNNIINT16_INSTRUCTION);
+        if ((unsigned)(ins - FIRST_AVXVNNIINT8_INSTRUCTION) <=
+            (unsigned)(LAST_AVXVNNIINT16_INSTRUCTION - FIRST_AVXVNNIINT8_INSTRUCTION))
+        {
+            return m_compiler->compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT_V512);
+        }
+#endif // FEATURE_HW_INTRINSICS
+
         return true;
     }
 
@@ -419,23 +447,6 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
             return m_compiler->compSupportsHWIntrinsic(InstructionSet_AES_V512);
         }
 
-        case INS_vpdpwsud:
-        case INS_vpdpwsuds:
-        case INS_vpdpwusd:
-        case INS_vpdpwusds:
-        case INS_vpdpwuud:
-        case INS_vpdpwuuds:
-        case INS_vpdpbssd:
-        case INS_vpdpbssds:
-        case INS_vpdpbsud:
-        case INS_vpdpbsuds:
-        case INS_vpdpbuud:
-        case INS_vpdpbuuds:
-        {
-            // Evex versions of AvxVnniInt8 + AvxVnniInt16 will be supported
-            return m_compiler->compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT_V512);
-        }
-
         case INS_vpdpbusd:
         case INS_vpdpwssd:
         case INS_vpdpbusds:
@@ -453,7 +464,6 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
 
         default:
         {
-            // Already handled by the fast paths above.
             return false;
         }
     }
@@ -2015,7 +2025,13 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         }
         else
         {
-            // APX-Legacy-EVEX and APX-only instructions: only use EVEX when required.
+            // APX-only instructions have no legacy encoding and therefore always require EVEX.
+            if (IsApxOnlyInstruction(ins))
+            {
+                return true;
+            }
+
+            // APX-Legacy-EVEX instructions only use EVEX when required.
             if (id->idIsNoApxEvexPromotion())
             {
                 return false;
@@ -2027,11 +2043,6 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
             }
 
             if (IsApxNfCompatibleInstruction(ins) && id->idIsEvexNfContextSet())
-            {
-                return true;
-            }
-
-            if (IsApxOnlyInstruction(ins))
             {
                 return true;
             }
