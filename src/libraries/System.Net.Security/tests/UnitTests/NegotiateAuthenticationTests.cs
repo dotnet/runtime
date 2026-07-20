@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Security;
 using System.Net.Test.Common;
+using System.Security.Authentication.ExtendedProtection;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,6 +23,7 @@ namespace System.Net.Security.Tests
         private static bool UseManagedNtlm => PlatformDetection.IsUbuntu24 || PlatformDetection.IsUbuntu26 || PlatformDetection.IsOpenSUSE16;
         private static bool IsNtlmAvailable => UseManagedNtlm || Capability.IsNtlmInstalled() || OperatingSystem.IsAndroid() || OperatingSystem.IsTvOS();
         private static bool IsNtlmUnavailable => !IsNtlmAvailable;
+        private static bool OSDoesNotSupportExtendedProtection => !ExtendedProtectionPolicy.OSSupportsExtendedProtection;
 
         private static NetworkCredential s_testCredentialRight = new NetworkCredential("rightusername", "rightpassword");
         private static NetworkCredential s_testCredentialWrong = new NetworkCredential("rightusername", "wrongpassword");
@@ -420,6 +422,12 @@ namespace System.Net.Security.Tests
                 }
             }
             while (!ntAuth.IsAuthenticated);
+        }
+
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(OSDoesNotSupportExtendedProtection))]
+        public void ExtendedProtectionPolicy_NotSupported_Throws()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => new NegotiateAuthentication(new NegotiateAuthenticationServerOptions { Policy = new ExtendedProtectionPolicy(PolicyEnforcement.Always) }));
         }
     }
 }

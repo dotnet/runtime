@@ -10,19 +10,16 @@ namespace System.Net.Security.Tests
 {
     public partial class NegotiateAuthenticationKerberosTest
     {
-        [Fact]
+        [ConditionalFact(typeof(ExtendedProtectionPolicy), nameof(ExtendedProtectionPolicy.OSSupportsExtendedProtection))]
         public Task ChannelBindings_Matching_Endpoint_Succeeds() => RunMatchingTest(ChannelBindingKind.Endpoint);
 
-        [Fact]
+        [ConditionalFact(typeof(ExtendedProtectionPolicy), nameof(ExtendedProtectionPolicy.OSSupportsExtendedProtection))]
         public Task ChannelBindings_Matching_Unique_Succeeds() => RunMatchingTest(ChannelBindingKind.Unique);
 
-        // The negative tests only run on Linux: macOS's Heimdal-derived GSS.framework does not
-        // reject a channel binding mismatch (the exchange completes successfully), so it cannot
-        // report GSS_S_BAD_BINDINGS the way MIT Kerberos does.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
+        [ConditionalFact(typeof(ExtendedProtectionPolicy), nameof(ExtendedProtectionPolicy.OSSupportsExtendedProtection))]
         public Task ChannelBindings_Mismatched_Endpoint_FailsWithBadBinding() => RunMismatchTest(ChannelBindingKind.Endpoint);
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
+        [ConditionalFact(typeof(ExtendedProtectionPolicy), nameof(ExtendedProtectionPolicy.OSSupportsExtendedProtection))]
         public Task ChannelBindings_Mismatched_Unique_FailsWithBadBinding() => RunMismatchTest(ChannelBindingKind.Unique);
 
         private async Task RunMatchingTest(ChannelBindingKind kind)
