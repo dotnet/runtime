@@ -72,6 +72,18 @@ namespace BitwiseEquatableTests
             Check<EnumPair>(true);
             Check<EnumAndInt>(true);
             Check<RecEnum>(true);
+            // Generic value types: the exact instantiation must be threaded through field and token
+            // resolution. A 'T' field is compared via EqualityComparer<T>.Default.Equals (Roslyn cannot
+            // emit inline '==' for a type parameter), so this also exercises that path per instantiation.
+            Check<GenPair<int>>(true);
+            Check<GenPair<Point>>(true);
+            Check<GenPair<RecTwo>>(true);
+            Check<GenPair<string>>(false);   // reference argument: contains GC pointers
+            Check<GenPair<float>>(false);     // float: Default.Equals is not bitwise
+            Check<GenMixed<int>>(true);       // inline '==' for an int field plus EqualityComparer for T
+            Check<GenMixed<float>>(false);
+            Check<GenForwardsToOp<int>>(true);// forwards into a generic op_Equality
+            Check<GenPadded<int>>(false);     // leading byte forces padding before the T field
         }
 
         // The following structs have no Equals/GetHashCode override, so ValueType.Equals/GetHashCode go
@@ -101,6 +113,35 @@ namespace BitwiseEquatableTests
     public record struct RecPadded(int X, byte Y);
     public record struct RecFloat(float X, int Y);
     public record struct RecEnum(ColorInt A, ColorInt B);
+
+    // Generic value types. A 'T' field is compared via EqualityComparer<T>.Default.Equals.
+    public record struct GenPair<T>(T A, T B);
+
+    public struct GenMixed<T> : IEquatable<GenMixed<T>>
+    {
+        public int X; public T Y;
+        public bool Equals(GenMixed<T> o) => X == o.X && System.Collections.Generic.EqualityComparer<T>.Default.Equals(Y, o.Y);
+        public override bool Equals(object o) => o is GenMixed<T> p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public struct GenForwardsToOp<T> : IEquatable<GenForwardsToOp<T>>
+    {
+        public T V;
+        public bool Equals(GenForwardsToOp<T> o) => this == o;
+        public static bool operator ==(GenForwardsToOp<T> a, GenForwardsToOp<T> b) => System.Collections.Generic.EqualityComparer<T>.Default.Equals(a.V, b.V);
+        public static bool operator !=(GenForwardsToOp<T> a, GenForwardsToOp<T> b) => !(a == b);
+        public override bool Equals(object o) => o is GenForwardsToOp<T> p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
+
+    public struct GenPadded<T> : IEquatable<GenPadded<T>>
+    {
+        public byte B; public T V;
+        public bool Equals(GenPadded<T> o) => B == o.B && System.Collections.Generic.EqualityComparer<T>.Default.Equals(V, o.V);
+        public override bool Equals(object o) => o is GenPadded<T> p && Equals(p);
+        public override int GetHashCode() => 0;
+    }
 
     // Int-backed enum: two fields pack to 8 bytes with no padding.
     public enum ColorInt { A, B, C }

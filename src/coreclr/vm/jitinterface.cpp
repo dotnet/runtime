@@ -7324,29 +7324,38 @@ namespace
         return false;
     }
 
-    // Resolves an in-module FieldDef token. Returns NULL for anything else (e.g. a MemberRef,
-    // which only arises for generic or cross-module references we deliberately don't handle yet).
-    FieldDesc* TryResolveInModuleFieldDef(Module* pModule, mdToken token)
+    // Resolves a field token (FieldDef, or a MemberRef over a generic TypeSpec) using 'pContext'. Returns
+    // NULL for any other kind or on failure.
+    FieldDesc* TryResolveFieldToken(Module* pModule, mdToken token, const SigTypeContext* pContext)
     {
         STANDARD_VM_CONTRACT;
-        if (TypeFromToken(token) != mdtFieldDef)
-            return NULL;
-        return pModule->LookupFieldDef(token);
-    }
 
-    // Resolves an in-module MethodDef token. Returns NULL for anything else.
-    MethodDesc* TryResolveInModuleMethodDef(Module* pModule, mdToken token)
-    {
-        STANDARD_VM_CONTRACT;
-        if (TypeFromToken(token) != mdtMethodDef)
+        mdToken kind = TypeFromToken(token);
+        if (kind != mdtFieldDef && kind != mdtMemberRef)
             return NULL;
-        return MemberLoader::GetMethodDescFromMethodDef(pModule, token, Instantiation(), Instantiation());
+
+        FieldDesc* pField = NULL;
+
+        EX_TRY
+        {
+            pField = MemberLoader::GetFieldDescFromMemberDefOrRef(
+                pModule, token, pContext, FALSE /* strictMetadataChecks */);
+        }
+        EX_CATCH
+        {
+            pField = NULL;
+            RethrowTerminalExceptions();
+        }
+        EX_END_CATCH
+
+        return pField;
     }
 
     // Resolves a method token, including a cross-module MemberRef (a primitive's Equals lives in
-    // CoreLib). Returns NULL if the token kind is unexpected or resolution fails.
-    // Callers only match non-generic methods, so a MethodSpec resolves to its generic definition.
-    MethodDesc* TryResolveMethodToken(Module* pModule, mdToken token)
+    // CoreLib) or a MethodSpec/MemberRef that mentions the enclosing instantiation. 'pContext' supplies
+    // that instantiation so tokens over a generic parameter resolve to the concrete argument. Returns
+    // NULL if the token kind is unexpected or resolution fails.
+    MethodDesc* TryResolveMethodToken(Module* pModule, mdToken token, const SigTypeContext* pContext)
     {
         STANDARD_VM_CONTRACT;
 
@@ -7354,13 +7363,12 @@ namespace
         if (kind != mdtMethodDef && kind != mdtMemberRef && kind != mdtMethodSpec)
             return NULL;
 
-        SigTypeContext typeContext;
         MethodDesc* pMD = NULL;
 
         EX_TRY
         {
             pMD = MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
-                pModule, token, &typeContext, FALSE /* strictMetadataChecks */, FALSE /* allowInstParam */);
+                pModule, token, pContext, FALSE /* strictMetadataChecks */, FALSE /* allowInstParam */);
         }
         EX_CATCH
         {
@@ -7370,6 +7378,34 @@ namespace
         EX_END_CATCH
 
         return pMD;
+    }
+
+    // Resolves a type token (TypeDef/TypeRef/TypeSpec) in 'pContext', or the null handle if the kind is
+    // unexpected or resolution fails. A generic type appears as a TypeSpec, so a raw token compare is not
+    // enough.
+    TypeHandle TryResolveTypeToken(Module* pModule, mdToken token, const SigTypeContext* pContext)
+    {
+        STANDARD_VM_CONTRACT;
+
+        mdToken kind = TypeFromToken(token);
+        if (kind != mdtTypeDef && kind != mdtTypeRef && kind != mdtTypeSpec)
+            return TypeHandle();
+
+        TypeHandle th;
+
+        EX_TRY
+        {
+            th = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
+                pModule, token, pContext, ClassLoader::ReturnNullIfNotFound, ClassLoader::FailIfUninstDefOrRef);
+        }
+        EX_CATCH
+        {
+            th = TypeHandle();
+            RethrowTerminalExceptions();
+        }
+        EX_END_CATCH
+
+        return th;
     }
 
     // Unwraps an unboxing stub (interface dispatch on a value type) to the instance method that has IL.
@@ -7434,19 +7470,22 @@ namespace
     }
 
     // A field is memcmp-comparable if it is a bit-comparable primitive or an enum (always integer-backed).
-    // FieldDesc::GetFieldType() reports ELEMENT_TYPE_VALUETYPE for enums, so resolve the underlying type
-    // explicitly -- this keeps the VM in parity with the managed IsBitwiseComparablePrimitive.
-    bool IsBitwiseComparableField(FieldDesc* pField)
+    // 'fieldTh' is the field's exact type (resolved against the owning instantiation), so a generic field
+    // like 'T' is inspected as its concrete argument.
+    bool IsBitwiseComparableType(TypeHandle fieldTh)
     {
         STANDARD_VM_CONTRACT;
 
-        CorElementType et = pField->GetFieldType();
+        if (fieldTh.IsNull())
+            return false;
+
+        CorElementType et = fieldTh.GetSignatureCorElementType();
         if (IsBitwiseComparablePrimitive(et))
             return true;
 
         if (et == ELEMENT_TYPE_VALUETYPE)
         {
-            MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
+            MethodTable* pFieldMT = fieldTh.GetMethodTable();
             if (pFieldMT != NULL && pFieldMT->IsEnum())
                 return IsBitwiseComparablePrimitive(pFieldMT->GetInternalCorElementType());
         }
@@ -7456,28 +7495,27 @@ namespace
 
     // Accepts a primitive field compared via 'x.Equals(y)' instead of 'x == y'; for these integer-like
     // types both lower to the same bit-for-bit compare.
-    bool IsPrimitiveEqualsCall(MethodDesc* pCallee, FieldDesc* pField)
+    bool IsPrimitiveEqualsCall(MethodDesc* pCallee, TypeHandle fieldTh)
     {
         STANDARD_VM_CONTRACT;
 
-        if (pCallee == NULL || !IsBitwiseComparableField(pField))
+        if (pCallee == NULL || !IsBitwiseComparableType(fieldTh))
             return false;
 
-        MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
-        MethodDesc* pFieldEquals = GetIEquatableEqualsImpl(pFieldMT);
+        MethodDesc* pFieldEquals = GetIEquatableEqualsImpl(fieldTh.GetMethodTable());
         return pFieldEquals != NULL && pFieldEquals == UnwrapStub(pCallee);
     }
 
     // Accepts a nested value-type field compared through its own IEquatable<F>.Equals, but only when
     // that Equals is itself a provable field-wise compare (its layout is covered by the recursion).
-    bool IsNestedFieldwiseEquatable(MethodDesc* pCallee, FieldDesc* pField, StackSArray<MethodDesc*>& scannedMethods)
+    bool IsNestedFieldwiseEquatable(MethodDesc* pCallee, TypeHandle fieldTh, StackSArray<MethodDesc*>& scannedMethods)
     {
         STANDARD_VM_CONTRACT;
 
-        if (pCallee == NULL || pField->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
+        if (pCallee == NULL || fieldTh.GetSignatureCorElementType() != ELEMENT_TYPE_VALUETYPE)
             return false;
 
-        MethodTable* pNestedMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
+        MethodTable* pNestedMT = fieldTh.GetMethodTable();
         if (pNestedMT == NULL)
             return false;
 
@@ -7510,22 +7548,21 @@ namespace
 
     // Accepts a field compared via 'EqualityComparer<F>.Default.Equals(this.F, other.F)', but only when
     // Default.Equals is itself a memcmp: F must be a bit-comparable primitive or a nested value type that
-    // is itself provably field-wise.
-    bool IsEqualityComparerDefaultEquals(MethodDesc* pGetDefault, MethodDesc* pEquals, FieldDesc* pField, StackSArray<MethodDesc*>& scannedMethods)
+    // is itself provably field-wise. 'fieldTh' is the field's exact type.
+    bool IsEqualityComparerDefaultEquals(MethodDesc* pGetDefault, MethodDesc* pEquals, TypeHandle fieldTh, StackSArray<MethodDesc*>& scannedMethods)
     {
         STANDARD_VM_CONTRACT;
 
-        TypeHandle fieldTh = pField->GetFieldTypeHandleThrowing();
         if (!IsEqualityComparerMethod(pGetDefault, fieldTh, "get_Default", true /* isStatic */) ||
             !IsEqualityComparerMethod(pEquals, fieldTh, "Equals", false /* isStatic */))
         {
             return false;
         }
 
-        if (IsBitwiseComparableField(pField))
+        if (IsBitwiseComparableType(fieldTh))
             return true;
 
-        if (pField->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
+        if (fieldTh.GetSignatureCorElementType() != ELEMENT_TYPE_VALUETYPE)
             return false;
 
         MethodTable* pNestedMT = fieldTh.GetMethodTable();
@@ -7567,6 +7604,8 @@ namespace
 
         const unsigned codeSize = header.GetCodeSize();
         Module* pModule = pEqualsMD->GetModule();
+        TypeHandle valueTypeTh(valueTypeMT);
+        SigTypeContext sigTypeContext(valueTypeTh);
 
         // Track which instance fields have been compared so we can require full coverage.
         const DWORD fieldCount = valueTypeMT->GetNumInstanceFields();
@@ -7612,10 +7651,12 @@ namespace
             if (leftFieldTok != rightFieldTok)
                 return false;
 
-            FieldDesc* pField = TryResolveInModuleFieldDef(pModule, leftFieldTok);
+            FieldDesc* pField = TryResolveFieldToken(pModule, leftFieldTok, &sigTypeContext);
+            // The resolved field's enclosing MT is the open/approx definition, so match by type-def
+            // rather than an exact MT compare, which would fail for an instantiation.
             if (pField == NULL ||
                 pField->IsStatic() ||
-                pField->GetApproxEnclosingMethodTable() != valueTypeMT)
+                !pField->GetApproxEnclosingMethodTable()->HasSameTypeDefAs(valueTypeMT))
             {
                 return false;
             }
@@ -7631,10 +7672,13 @@ namespace
                 return false;
             compared[numCompared++] = pField;
 
+            // The field's exact type in this instantiation (e.g. 'T' -> its concrete argument).
+            TypeHandle fieldTh = pField->GetExactFieldType(valueTypeTh);
+
             if (getDefaultTok == mdTokenNil && leftLoad == CEE_LDFLD)
             {
                 // Inline '==': only integer-like primitives (and enums) are memcmp-equivalent.
-                if (!IsBitwiseComparableField(pField))
+                if (!IsBitwiseComparableType(fieldTh))
                     return false;
 
                 int target;
@@ -7665,9 +7709,9 @@ namespace
                 // callvirt EqualityComparer<F>::Equals(!0, !0).
                 if (ip + 5 > codeSize || pIL[ip] != CEE_CALLVIRT)
                     return false;
-                MethodDesc* pGetDefault = TryResolveMethodToken(pModule, getDefaultTok);
-                MethodDesc* pEquals = TryResolveMethodToken(pModule, ReadILToken(pIL + ip + 1));
-                if (!IsEqualityComparerDefaultEquals(pGetDefault, pEquals, pField, scannedMethods))
+                MethodDesc* pGetDefault = TryResolveMethodToken(pModule, getDefaultTok, &sigTypeContext);
+                MethodDesc* pEquals = TryResolveMethodToken(pModule, ReadILToken(pIL + ip + 1), &sigTypeContext);
+                if (!IsEqualityComparerDefaultEquals(pGetDefault, pEquals, fieldTh, scannedMethods))
                     return false;
             }
             else
@@ -7675,8 +7719,8 @@ namespace
                 // '.Equals' call form: a primitive's own Equals, or a nested type's field-wise Equals.
                 if (ip + 5 > codeSize || pIL[ip] != CEE_CALL)
                     return false;
-                MethodDesc* pCallee = TryResolveMethodToken(pModule, ReadILToken(pIL + ip + 1));
-                if (!IsPrimitiveEqualsCall(pCallee, pField) && !IsNestedFieldwiseEquatable(pCallee, pField, scannedMethods))
+                MethodDesc* pCallee = TryResolveMethodToken(pModule, ReadILToken(pIL + ip + 1), &sigTypeContext);
+                if (!IsPrimitiveEqualsCall(pCallee, fieldTh) && !IsNestedFieldwiseEquatable(pCallee, fieldTh, scannedMethods))
                     return false;
             }
             ip += 5;
@@ -7728,13 +7772,6 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        // Generic value types are out of scope: their Equals bodies can carry TypeSpec/MethodSpec
-        // tokens needing a type context to resolve. Bail before any layout inspection.
-        if (valueTypeMT->HasInstantiation())
-        {
-            return false;
-        }
-
         // EnC can replace the Equals IL after the fold, so don't trust the scan for an editable module.
         if (pEqualsMD->GetModule()->IsEditAndContinueEnabled())
         {
@@ -7762,16 +7799,21 @@ namespace
                 COR_ILMETHOD_DECODER header(pILMethod);
                 const BYTE* pIL = header.Code;
                 const unsigned codeSize = header.GetCodeSize();
+                Module* pModule = pEqualsMD->GetModule();
+                TypeHandle valueTypeTh(valueTypeMT);
+                SigTypeContext sigTypeContext(valueTypeTh);
 
-                // 02 71 <T:4> 03 28 <op_Equality:4> 2A
+                // 02 71 <T:4> 03 28 <op_Equality:4> 2A. The 'ldobj' operand is a TypeSpec for a generic
+                // type, so resolve it in context rather than comparing the raw token.
                 if (pIL != NULL && codeSize == 13 &&
                     pIL[0] == CEE_LDARG_0 &&
-                    pIL[1] == CEE_LDOBJ && ReadILToken(pIL + 2) == valueTypeMT->GetCl() &&
+                    pIL[1] == CEE_LDOBJ &&
                     pIL[6] == CEE_LDARG_1 &&
                     pIL[7] == CEE_CALL &&
-                    pIL[12] == CEE_RET)
+                    pIL[12] == CEE_RET &&
+                    TryResolveTypeToken(pModule, ReadILToken(pIL + 2), &sigTypeContext).GetMethodTable() == valueTypeMT)
                 {
-                    MethodDesc* pOpEquality = TryResolveInModuleMethodDef(pEqualsMD->GetModule(), ReadILToken(pIL + 8));
+                    MethodDesc* pOpEquality = TryResolveMethodToken(pModule, ReadILToken(pIL + 8), &sigTypeContext);
                     if (pOpEquality != NULL &&
                         pOpEquality->IsStatic() &&
                         pOpEquality->GetMethodTable() == valueTypeMT &&

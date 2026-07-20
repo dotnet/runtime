@@ -332,7 +332,7 @@ namespace Internal.IL.Stubs
             if (type is not MetadataType mdType || !mdType.IsValueType)
                 return false;
 
-            bool? equatable = ImplementsIEquatable(mdType.GetTypeDefinition());
+            bool? equatable = ImplementsIEquatable(mdType);
             if (!equatable.HasValue)
                 return false;
 
@@ -358,11 +358,6 @@ namespace Internal.IL.Stubs
         /// </summary>
         public static bool IsIEquatableEqualsFieldwise(MetadataType type)
         {
-            // Generic value types are out of scope: keep the field-wise scan to non-generic types.
-            // Bail before any layout inspection.
-            if (type.HasInstantiation)
-                return false;
-
             // Unmanaged (so a byte-wise compare is meaningful) and tightly packed (no padding anywhere the
             // compare would inspect) -- matching the CoreCLR VM, which checks these separately.
             if (type.ContainsGCPointers)
@@ -372,17 +367,38 @@ namespace Internal.IL.Stubs
                 return false;
 
             MethodDesc equalsImpl = GetIEquatableEqualsImplementation(type);
-            if (equalsImpl is not EcmaMethod ecmaImpl)
+            if (equalsImpl == null)
                 return false;
 
-            MethodIL methodIL = EcmaMethodIL.Create(ecmaImpl);
+            MethodIL methodIL = GetScannableMethodIL(equalsImpl);
+            if (methodIL == null)
+                return false;
 
             // A common pattern forwards `bool Equals(T other) => this == other;` to a user-defined
             // `op_Equality`. Follow that single forward before scanning the field-wise comparison.
-            if (TryGetOpEqualityForward(methodIL, type) is EcmaMethod forwarded)
-                methodIL = EcmaMethodIL.Create(forwarded);
+            if (TryGetOpEqualityForward(methodIL, type) is MethodDesc forwarded)
+            {
+                methodIL = GetScannableMethodIL(forwarded);
+                if (methodIL == null)
+                    return false;
+            }
 
             return ScanFieldwiseEqualsBody(methodIL, type);
+        }
+
+        // Builds the IL to scan for a method that may live on an instantiated type. The IL is defined on the
+        // typical (open) method; wrapping it in an InstantiatedMethodIL makes token lookups resolve fields
+        // and methods in the exact instantiation. Returns null if the method has no ECMA-backed body.
+        private static MethodIL GetScannableMethodIL(MethodDesc method)
+        {
+            if (method.GetTypicalMethodDefinition() is not EcmaMethod typicalMethod)
+                return null;
+
+            MethodIL typicalIL = EcmaMethodIL.Create(typicalMethod);
+            if (typicalIL == null)
+                return null;
+
+            return method == typicalMethod ? typicalIL : new InstantiatedMethodIL(method, typicalIL);
         }
 
         private static bool IsTightlyPacked(MetadataType type)
@@ -428,10 +444,6 @@ namespace Internal.IL.Stubs
 
         private static MethodDesc GetIEquatableEqualsImplementation(MetadataType type)
         {
-            // Keep token resolution simple by only handling non-generic value types.
-            if (type.HasInstantiation)
-                return null;
-
             MetadataType iequatableType = type.Context.SystemModule.GetKnownType("System"u8, "IEquatable`1"u8);
             MethodDesc equalsInterfaceMethod = iequatableType.MakeInstantiatedType(type).GetMethod("Equals"u8, null);
             if (equalsInterfaceMethod == null)
