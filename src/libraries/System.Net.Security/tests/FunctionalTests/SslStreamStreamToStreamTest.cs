@@ -367,10 +367,10 @@ namespace System.Net.Security.Tests
 
         // Regression test for buffer-pool reuse on the encrypted write/handshake output path
         // (SslStreamPal.*.EncryptMessage / HandshakeInternal -> ProtocolToken.SetPayload).
-        // Exercises many back-to-back writes of varying sizes -- including sizes that force
-        // token buffer growth via EnsureAvailableSpace -- and verifies data integrity across
-        // pooled-buffer reuse, so any accidental data bleed between reused rented buffers,
-        // truncation, or double-return corruption would be caught.
+        // Exercises many back-to-back writes of varying sizes -- including sizes much larger
+        // than typical, to exercise pooled payload buffers of different rented sizes -- and
+        // verifies data integrity across pooled-buffer reuse, so any accidental data bleed
+        // between reused rented buffers, truncation, or double-return corruption would be caught.
         [Fact]
         public async Task SslStream_StreamToStream_RepeatedVariableSizeWrites_RoundTripsCorrectly()
         {
