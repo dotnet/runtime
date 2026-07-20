@@ -199,7 +199,7 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                if (TOperator.ShouldEarlyExitOnNan && typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                 {
                     Vector128<T> nanMask = Vector128.IsNaN(current);
                     if (nanMask != Vector128<T>.Zero)
@@ -244,7 +244,7 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector128<T> result = Vector128.Create(x);
-            if (TOperator.ShouldEarlyExitOnNan && typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
             {
                 Vector128<T> nanMask = Vector128.IsNaN(result);
                 if (nanMask != Vector128<T>.Zero)
