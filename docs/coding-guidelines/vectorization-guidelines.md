@@ -23,8 +23,9 @@ than silently succeeding. (On a few targets — Browser/WASI and .NET Framework 
 unprotected allocation that won't fault, so don't rely on the guard being present everywhere.)
 
 `BoundedMemory.Allocate<T>(elementCount)` places the poison page immediately *after* the buffer (the
-default `PoisonPagePlacement.After`) and fills it with random data, so running the method under test
-against its `Span` faults immediately on any read past the end:
+default `PoisonPagePlacement.After`), so running the method under test against its `Span` faults
+immediately on any read past the end. It also fills the buffer with random data, sparing the test from
+seeding its own inputs:
 
 ```csharp
 [Theory]
@@ -89,8 +90,9 @@ reference, then resumed execution — but `currentSearchSpace` was invalid and t
 the loop condition could read stale memory. See the [issue](https://github.com/dotnet/runtime/issues/75792#issuecomment-1249973858)
 and the [fix](https://github.com/dotnet/runtime/pull/75857) for details.
 
-The takeaway: when you do drop to the element-offset overloads, keep every intermediate `ref` pointing
-within its buffer, and be especially careful with backwards iteration.
+The takeaway: the element-offset overloads exist precisely so you don't hand-advance a `ref`. When you
+must do the pointer math yourself with `Unsafe.Add`/`Unsafe.Subtract`, keep every intermediate `ref`
+pointing within its buffer, and be especially careful with backwards iteration.
 
 ## Real-world examples in this repo
 
