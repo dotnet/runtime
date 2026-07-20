@@ -2098,8 +2098,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_ConvertMaskToVector:
                 // PMOV would be ideal here, but it is in SVE2.1.
-                // Instead, use a predicated move: MOV <Zd>.<T>, <Pg>/Z, #1
-                GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, 1, opt);
+                // Instead, use a predicated move: MOV <Zd>.<T>, <Pg>/Z, #-1
+                GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, -1, opt);
                 break;
 
             case NI_Sve_ConvertVectorToMask:

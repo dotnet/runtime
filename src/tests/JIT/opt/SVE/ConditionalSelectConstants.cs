@@ -21,7 +21,7 @@ public class ConditionalSelectConstants
         {
             var smoke = Smoke();
             Console.WriteLine(smoke);
-            if (smoke != Vector.Create<int>(1))
+            if (smoke != Vector.Create<int>(-1))
             {
                 fail = true;
             }
