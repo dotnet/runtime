@@ -538,6 +538,12 @@ public struct ClrDataILAddressMap
     public ClrDataSourceType type;
 }
 
+public struct ClrDataAddressRange
+{
+    public ClrDataAddress startAddress;
+    public ClrDataAddress endAddress;
+}
+
 [GeneratedComInterface]
 [Guid("ECD73800-22CA-4b0d-AB55-E9BA7E6318A5")]
 public unsafe partial interface IXCLRDataMethodInstance
@@ -597,7 +603,7 @@ public unsafe partial interface IXCLRDataMethodInstance
     int StartEnumExtents(ulong* handle);
 
     [PreserveSig]
-    int EnumExtent(ulong* handle, /*CLRDATA_ADDRESS_RANGE*/ void* extent);
+    int EnumExtent(ulong* handle, ClrDataAddressRange* extent);
 
     [PreserveSig]
     int EndEnumExtents(ulong handle);

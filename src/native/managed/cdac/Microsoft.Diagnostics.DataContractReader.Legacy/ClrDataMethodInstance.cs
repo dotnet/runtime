@@ -16,14 +16,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstance
 {
-    private const string InvalidExtentHandleMessage = "The handle does not reference a valid EnumMethodExtents instance.";
-
-    private struct ClrDataAddressRange
-    {
-        public ClrDataAddress StartAddress;
-        public ClrDataAddress EndAddress;
-    }
-
     private sealed class EnumMethodExtents : IEnum<ClrDataAddressRange>
     {
         public IEnumerator<ClrDataAddressRange> Enumerator { get; }
@@ -402,7 +394,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
         if (code == TargetCodePointer.Null)
         {
-            throw new InvalidOperationException($"Method descriptor has no valid native code pointer (methodDesc={_methodDesc.Address:x}; the method may not be JIT-compiled yet).");
+            throw new InvalidCastException(); // E_NOINTERFACE
         }
 
         IExecutionManager executionManager = _target.Contracts.ExecutionManager;
@@ -423,8 +415,8 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         uint codeLength = gcInfo.GetCodeLength(gcInfoHandle);
         return new ClrDataAddressRange
         {
-            StartAddress = startAddress,
-            EndAddress = startAddress + codeLength,
+            startAddress = startAddress,
+            endAddress = startAddress + codeLength,
         };
     }
 
@@ -466,7 +458,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         return hr;
     }
 
-    int IXCLRDataMethodInstance.EnumExtent(ulong* handle, void* extent)
+    int IXCLRDataMethodInstance.EnumExtent(ulong* handle, ClrDataAddressRange* extent)
     {
         int hr = HResults.S_OK;
         EnumMethodExtents? extents = null;
@@ -477,14 +469,16 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             if (extent is null)
                 throw new ArgumentNullException(nameof(extent));
             if (*handle == 0)
-                throw new ArgumentException(InvalidExtentHandleMessage, nameof(handle));
+                throw new ArgumentException("Invalid extent handle.", nameof(handle));
 
             GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
-            object? target = gcHandle.Target;
-            extents = target as EnumMethodExtents ?? throw new ArgumentException(InvalidExtentHandleMessage, nameof(handle));
+            if (gcHandle.Target is not EnumMethodExtents methodExtents)
+                throw new ArgumentException("Invalid extent handle.", nameof(handle));
+
+            extents = methodExtents;
             if (extents.Enumerator.MoveNext())
             {
-                *(ClrDataAddressRange*)extent = extents.Enumerator.Current;
+                *extent = extents.Enumerator.Current;
             }
             else
             {
@@ -506,9 +500,8 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
-                ClrDataAddressRange* result = (ClrDataAddressRange*)extent;
-                Debug.Assert(result->StartAddress == extentLocal.StartAddress, $"StartAddress - cDAC: {result->StartAddress:x}, DAC: {extentLocal.StartAddress:x}");
-                Debug.Assert(result->EndAddress == extentLocal.EndAddress, $"EndAddress - cDAC: {result->EndAddress:x}, DAC: {extentLocal.EndAddress:x}");
+                Debug.Assert(extent->startAddress == extentLocal.startAddress, $"StartAddress - cDAC: {extent->startAddress:x}, DAC: {extentLocal.startAddress:x}");
+                Debug.Assert(extent->endAddress == extentLocal.endAddress, $"EndAddress - cDAC: {extent->endAddress:x}, DAC: {extentLocal.endAddress:x}");
             }
         }
 #endif
@@ -525,7 +518,9 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             if (handle != 0)
             {
                 GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
-                EnumMethodExtents extents = gcHandle.Target as EnumMethodExtents ?? throw new ArgumentException(InvalidExtentHandleMessage, nameof(handle));
+                if (gcHandle.Target is not EnumMethodExtents extents)
+                    throw new ArgumentException("Invalid extent handle.", nameof(handle));
+
                 legacyHandle = extents.LegacyHandle;
                 ((IEnum<ClrDataAddressRange>)extents).Dispose();
                 gcHandle.Free();
