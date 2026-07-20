@@ -3470,22 +3470,36 @@ namespace System
             // Fast path: round straight to the target precision. Dragon4's significant-digit cutoff is correctly
             // rounded (round-half-even from the exact value), and because the coefficient then has at most Precision
             // digits the shared pipeline performs no second rounding of significant digits, so the result is singly
-            // (correctly) rounded without materializing the full exact expansion. This is only valid when the value
-            // does not fall into the subnormal decimal range: there the coefficient must be rounded to fewer than
-            // Precision digits, which would double round the cutoff result, so those values take the exact path below.
-            Dragon4<TFloat>(value, cutoffNumber: TDecimal.Precision, isSignificantDigits: true, ref number);
+            // (correctly) rounded without materializing the full exact expansion.
+            Dragon4<TFloat>(value, cutoffNumber: TDecimal.Precision, isSignificantDigits: true, ref number, out bool isExact);
             number.IsNegative = isNegative;
 
-            if ((number.Scale - number.DigitsCount) >= TDecimal.MinAdjustedExponent)
+            // IEEE convertFormat delivers the preferred (quantum) exponent Scale - DigitsCount for an exact result and
+            // Scale - Precision for an inexact one. Dragon4 gives the former directly. When the value is inexact its
+            // cutoff coefficient normally already spans Precision digits, but a rounding carry can drop trailing digits
+            // (for example 262143.99999999997 rounds to 262144), leaving DigitsCount < Precision and an exponent one or
+            // more places too high; re-materialize those trailing zeros so the coefficient carries the full Precision
+            // width. The subnormal decimal range is excluded because there the coefficient must round to fewer than
+            // Precision digits, which would double round the cutoff result, so those values take the exact path below.
+            if ((number.Scale - TDecimal.Precision) >= TDecimal.MinAdjustedExponent)
             {
+                if (!isExact && (number.DigitsCount < TDecimal.Precision))
+                {
+                    int end = TDecimal.Precision;
+                    digits.Slice(number.DigitsCount, end - number.DigitsCount).Fill((byte)'0');
+                    digits[end] = (byte)'\0';
+                    number.DigitsCount = end;
+                }
+
                 MaterializePreferredZeros(ref number, digits);
                 number.CheckConsistency();
                 return NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
             }
 
-            // Subnormal decimal range: produce the exact decimal expansion and let the pipeline round once. Passing a
-            // length-based cutoff of int.MaxValue makes the buffer size the limiting factor, and NumberBufferLength is
-            // large enough to hold the full expansion so the result is exact and a single rounding to precision follows.
+            // Subnormal decimal range: produce the full exact expansion and let the pipeline round once to the reduced
+            // precision the clamped quantum allows. Passing a length-based cutoff of int.MaxValue makes the buffer size
+            // the limiting factor, and NumberBufferLength is large enough to hold the full expansion so the result is
+            // exact and a single rounding to precision follows.
             Dragon4<TFloat>(value, cutoffNumber: int.MaxValue, isSignificantDigits: false, ref number);
             number.IsNegative = isNegative;
 
@@ -3494,11 +3508,11 @@ namespace System
 
             return NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
 
-            // IEEE convertFormat delivers the preferred (quantum) exponent: for an exact result it is the
-            // representable exponent closest to zero from below. Dragon4 strips trailing zeros, which can push the
-            // exponent above zero (e.g. 1000 -> digits "1", Scale 4, exponent 3). Re-materialize those trailing zeros
-            // to bring the exponent down to zero so integer-valued inputs keep quantum one (matching the decimal parse
-            // path); the shared pipeline then rounds when the coefficient exceeds the target precision.
+            // For an exact result IEEE convertFormat delivers the representable exponent closest to zero from below.
+            // Dragon4 strips trailing zeros, which can push the exponent above zero (e.g. 1000 -> digits "1", Scale 4,
+            // exponent 3). Re-materialize those trailing zeros to bring the exponent down to zero so integer-valued
+            // inputs keep quantum one (matching the decimal parse path); the shared pipeline then rounds when the
+            // coefficient exceeds the target precision.
             static void MaterializePreferredZeros(ref NumberBuffer number, Span<byte> digits)
             {
                 int preferredZeros = number.Scale - number.DigitsCount;
