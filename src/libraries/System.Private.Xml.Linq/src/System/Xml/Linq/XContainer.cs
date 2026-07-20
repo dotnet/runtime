@@ -901,6 +901,7 @@ namespace System.Xml.Linq
             private readonly IXmlLineInfo? _lineInfo;
             private XContainer _currentContainer;
             private string? _baseUri;
+            private string? _textValue;
             private StringBuilder? _textBuffer;
 
             public ContentReader(XContainer rootContainer)
@@ -915,22 +916,49 @@ namespace System.Xml.Linq
                 _lineInfo = (o & LoadOptions.SetLineInfo) != 0 ? r as IXmlLineInfo : null;
             }
 
-            // Consecutive text nodes are buffered and materialized as a single string in one
-            // pass rather than being concatenated one chunk at a time. Some readers (notably the
-            // one used by DataContractSerializer over a stream) deliver a single logical text
-            // value as many small text nodes; appending each of them individually via
-            // AddStringSkipNotify concatenates immutable strings and degrades to O(n^2).
-            // Buffering keeps loading linear. Every read loop calls this once before handling any
-            // non-text node (so document order is preserved) and once more after the loop ends
-            // (so trailing buffered text is not lost when the reader stops at end-of-input rather
-            // than an EndElement).
+            private void BufferText(string value)
+            {
+                if (_textBuffer is not null)
+                {
+                    _textBuffer.Append(value);
+                }
+                else if (_textValue is null)
+                {
+                    _textValue = value;
+                }
+                else
+                {
+                    _textBuffer = new StringBuilder(_textValue).Append(value);
+                    _textValue = null;
+                }
+            }
+
+            // A single text node is retained as its original string. Consecutive text nodes are
+            // promoted to a StringBuilder and materialized in one pass rather than being
+            // concatenated one chunk at a time. Some readers (notably the one used by
+            // DataContractSerializer over a stream) deliver a single logical text value as many
+            // small text nodes; appending each of them individually via AddStringSkipNotify
+            // concatenates immutable strings and degrades to O(n^2). Every read loop calls this
+            // once before handling any non-text node (so document order is preserved) and once
+            // more after the loop ends (so trailing buffered text is not lost when the reader
+            // stops at end-of-input rather than an EndElement).
             internal void FlushBufferedText()
             {
-                if (_textBuffer is StringBuilder sb && sb.Length > 0)
+                if (_textBuffer is StringBuilder buffer)
                 {
-                    _currentContainer.AddStringSkipNotify(sb.ToString());
-                    sb.Clear();
+                    if (buffer.Length > 0)
+                    {
+                        _currentContainer.AddStringSkipNotify(buffer.ToString());
+                    }
+
+                    _textBuffer = null;
                 }
+                else if (!string.IsNullOrEmpty(_textValue))
+                {
+                    _currentContainer.AddStringSkipNotify(_textValue);
+                }
+
+                _textValue = null;
             }
 
             public bool ReadContentFrom(XContainer rootContainer, XmlReader r)
@@ -938,7 +966,7 @@ namespace System.Xml.Linq
                 XmlNodeType nodeType = r.NodeType;
                 if (nodeType is XmlNodeType.Text or XmlNodeType.SignificantWhitespace or XmlNodeType.Whitespace)
                 {
-                    (_textBuffer ??= new StringBuilder()).Append(r.Value);
+                    BufferText(r.Value);
                     return true;
                 }
 
@@ -997,7 +1025,7 @@ namespace System.Xml.Linq
                 XmlNodeType nodeType = r.NodeType;
                 if (nodeType is XmlNodeType.Text or XmlNodeType.SignificantWhitespace or XmlNodeType.Whitespace)
                 {
-                    (_textBuffer ??= new StringBuilder()).Append(await r.GetValueAsync().ConfigureAwait(false));
+                    BufferText(await r.GetValueAsync().ConfigureAwait(false));
                     return true;
                 }
 
@@ -1065,7 +1093,7 @@ namespace System.Xml.Linq
                 if (nodeType is XmlNodeType.Text or XmlNodeType.SignificantWhitespace or XmlNodeType.Whitespace
                     && !((_baseUri != null && _baseUri != baseUri) || (_lineInfo != null && _lineInfo.HasLineInfo())))
                 {
-                    (_textBuffer ??= new StringBuilder()).Append(r.Value);
+                    BufferText(r.Value);
                     return true;
                 }
 
@@ -1187,7 +1215,7 @@ namespace System.Xml.Linq
                 if (nodeType is XmlNodeType.Text or XmlNodeType.SignificantWhitespace or XmlNodeType.Whitespace
                     && !((_baseUri != null && _baseUri != baseUri) || (_lineInfo != null && _lineInfo.HasLineInfo())))
                 {
-                    (_textBuffer ??= new StringBuilder()).Append(await r.GetValueAsync().ConfigureAwait(false));
+                    BufferText(await r.GetValueAsync().ConfigureAwait(false));
                     return true;
                 }
 

@@ -252,6 +252,18 @@ namespace System.Xml.Linq.Tests
             Assert.Equal(original.Value, textNode.Value);
         }
 
+        [Fact]
+        public void LoadSingleTextNodeReusesReaderValue()
+        {
+            const string xml = "<root>single text value</root>";
+            using var reader = new ChunkingXmlReader(XmlReader.Create(new StringReader(xml)), int.MaxValue);
+
+            XElement loaded = XElement.Load(reader, LoadOptions.None);
+
+            XText textNode = Assert.IsType<XText>(Assert.Single(loaded.Nodes()));
+            Assert.Same(reader.LastTextValue, textNode.Value);
+        }
+
         [Theory]
         [InlineData(1)]
         [InlineData(3)]
@@ -329,6 +341,8 @@ namespace System.Xml.Linq.Tests
             private string? _pendingText;
             private int _position;
 
+            public string? LastTextValue { get; private set; }
+
             public ChunkingXmlReader(XmlReader inner, int chunkSize)
             {
                 _inner = inner;
@@ -373,12 +387,22 @@ namespace System.Xml.Linq.Tests
             {
                 get
                 {
+                    string value;
                     if (_pendingText != null)
                     {
-                        return _pendingText.Substring(_position, Math.Min(_chunkSize, _pendingText.Length - _position));
+                        value = _pendingText.Substring(_position, Math.Min(_chunkSize, _pendingText.Length - _position));
+                    }
+                    else
+                    {
+                        value = _inner.Value;
                     }
 
-                    return _inner.Value;
+                    if (NodeType == XmlNodeType.Text)
+                    {
+                        LastTextValue = value;
+                    }
+
+                    return value;
                 }
             }
 
