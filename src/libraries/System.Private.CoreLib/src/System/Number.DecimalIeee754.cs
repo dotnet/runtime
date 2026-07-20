@@ -516,6 +516,215 @@ namespace System
             return value;
         }
 
+        /// <summary>
+        /// Converts a value from its IEEE 754 binary integer decimal (BID) bit pattern to the equivalent
+        /// densely packed decimal (DPD) bit pattern.
+        /// </summary>
+        internal static TValue EncodeDecimalIeee754<TDecimal, TValue>(TValue bidBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (TDecimal.IsInfinity(bidBits))
+            {
+                return ((bidBits & TDecimal.SignMask) != TValue.Zero) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            int declets = TDecimal.NumberBitsSignificand / 10;
+            TValue payloadMask = (TValue.One << TDecimal.NumberBitsSignificand) - TValue.One;
+
+            if (TDecimal.IsNaN(bidBits))
+            {
+                // The sign, the five-bit NaN marker, and the signaling bit occupy the same positions in both
+                // encodings; only the trailing payload changes representation (binary integer to declets).
+                TValue payload = bidBits & payloadMask;
+
+                if (payload >= TDecimal.Power10(TDecimal.Precision - 1))
+                {
+                    payload = TValue.Zero;
+                }
+
+                return (bidBits & ~payloadMask) | PackDeclets(payload, declets);
+            }
+
+            DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(bidBits);
+            uint biasedExponent = (uint)(decoded.UnbiasedExponent + TDecimal.ExponentBias);
+
+            TValue scale = TDecimal.Power10(TDecimal.Precision - 1);
+            TValue leadingDigit = decoded.Significand / scale;
+            uint msd = uint.CreateTruncating(leadingDigit);
+
+            int exponentContinuationBits = (Unsafe.SizeOf<TValue>() * 8) - 6 - TDecimal.NumberBitsSignificand;
+            uint exponentHigh = biasedExponent >> exponentContinuationBits;
+            uint exponentLow = biasedExponent & ((1u << exponentContinuationBits) - 1);
+
+            // The leading digit and the two most-significant exponent bits share the five-bit combination field.
+            uint combination = (msd <= 7)
+                ? (exponentHigh << 3) | msd
+                : 0b11000u | (exponentHigh << 1) | (msd - 8);
+
+            TValue result = (decoded.Signed ? TDecimal.SignMask : TValue.Zero);
+            result |= TValue.CreateTruncating(combination) << (TDecimal.NumberBitsSignificand + exponentContinuationBits);
+            result |= TValue.CreateTruncating(exponentLow) << TDecimal.NumberBitsSignificand;
+            result |= PackDeclets(decoded.Significand - (leadingDigit * scale), declets);
+            return result;
+        }
+
+        /// <summary>
+        /// Converts a value from its IEEE 754 densely packed decimal (DPD) bit pattern to the equivalent
+        /// binary integer decimal (BID) bit pattern.
+        /// </summary>
+        internal static TValue DecodeDecimalIeee754<TDecimal, TValue>(TValue dpdBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (TDecimal.IsInfinity(dpdBits))
+            {
+                return ((dpdBits & TDecimal.SignMask) != TValue.Zero) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            int declets = TDecimal.NumberBitsSignificand / 10;
+            TValue payloadMask = (TValue.One << TDecimal.NumberBitsSignificand) - TValue.One;
+
+            if (TDecimal.IsNaN(dpdBits))
+            {
+                TValue payload = UnpackDeclets(dpdBits & payloadMask, declets);
+
+                if (payload >= TDecimal.Power10(TDecimal.Precision - 1))
+                {
+                    payload = TValue.Zero;
+                }
+
+                return (dpdBits & ~payloadMask) | payload;
+            }
+
+            int exponentContinuationBits = (Unsafe.SizeOf<TValue>() * 8) - 6 - TDecimal.NumberBitsSignificand;
+            uint combination = uint.CreateTruncating(dpdBits >> (TDecimal.NumberBitsSignificand + exponentContinuationBits)) & 0x1F;
+            uint exponentLow = uint.CreateTruncating(dpdBits >> TDecimal.NumberBitsSignificand) & ((1u << exponentContinuationBits) - 1);
+
+            uint exponentHigh;
+            uint msd;
+
+            if ((combination >> 3) != 0b11)
+            {
+                exponentHigh = combination >> 3;
+                msd = combination & 0x7;
+            }
+            else
+            {
+                exponentHigh = (combination >> 1) & 0x3;
+                msd = 8 | (combination & 1);
+            }
+
+            int unbiasedExponent = (int)((exponentHigh << exponentContinuationBits) | exponentLow) - TDecimal.ExponentBias;
+            TValue significand = (TValue.CreateTruncating(msd) * TDecimal.Power10(TDecimal.Precision - 1)) + UnpackDeclets(dpdBits & payloadMask, declets);
+
+            bool signed = (dpdBits & TDecimal.SignMask) != TValue.Zero;
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, unbiasedExponent);
+        }
+
+        /// <summary>Packs the trailing decimal digits of a coefficient into densely packed decimal declets.</summary>
+        private static TValue PackDeclets<TValue>(TValue low, int declets)
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            TValue thousand = TValue.CreateTruncating(1000);
+            TValue trailing = TValue.Zero;
+
+            for (int i = 0; i < declets; i++)
+            {
+                TValue quotient = low / thousand;
+                uint group = uint.CreateTruncating(low - (quotient * thousand));
+                low = quotient;
+
+                uint declet = DigitsToDeclet((int)(group / 100), (int)((group / 10) % 10), (int)(group % 10));
+                trailing |= TValue.CreateTruncating(declet) << (10 * i);
+            }
+
+            return trailing;
+        }
+
+        /// <summary>Unpacks densely packed decimal declets into the trailing decimal digits of a coefficient.</summary>
+        private static TValue UnpackDeclets<TValue>(TValue trailing, int declets)
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            TValue thousand = TValue.CreateTruncating(1000);
+            TValue decletMask = TValue.CreateTruncating(0x3FF);
+            TValue low = TValue.Zero;
+
+            for (int i = declets - 1; i >= 0; i--)
+            {
+                uint declet = uint.CreateTruncating((trailing >> (10 * i)) & decletMask);
+                (int d2, int d1, int d0) = DecletToDigits(declet);
+                low = (low * thousand) + TValue.CreateTruncating((d2 * 100) + (d1 * 10) + d0);
+            }
+
+            return low;
+        }
+
+        /// <summary>Packs three decimal digits (each 0-9) into a ten-bit densely packed decimal declet.</summary>
+        private static uint DigitsToDeclet(int d2, int d1, int d0)
+        {
+            // See IEEE 754-2019 Table 3.6. Each digit's unit bit passes through unchanged (b7, b4, b0);
+            // the high bits of each digit and a three-bit selector for which digits are 8 or 9 fill the rest.
+            int u2 = d2 & 1;
+            int u1 = d1 & 1;
+            int u0 = d0 & 1;
+
+            int p2 = (d2 >> 2) & 1;
+            int q2 = (d2 >> 1) & 1;
+            int p1 = (d1 >> 2) & 1;
+            int q1 = (d1 >> 1) & 1;
+            int p0 = (d0 >> 2) & 1;
+            int q0 = (d0 >> 1) & 1;
+
+            bool large2 = d2 >= 8;
+            bool large1 = d1 >= 8;
+            bool large0 = d0 >= 8;
+
+            (int b9, int b8, int b6, int b5, int b3, int b2, int b1) = (large2, large1, large0) switch
+            {
+                (false, false, false) => (p2, q2, p1, q1, 0, p0, q0),
+                (false, false, true) => (p2, q2, p1, q1, 1, 0, 0),
+                (false, true, false) => (p2, q2, p0, q0, 1, 0, 1),
+                (true, false, false) => (p0, q0, p1, q1, 1, 1, 0),
+                (true, true, false) => (p0, q0, 0, 0, 1, 1, 1),
+                (true, false, true) => (p1, q1, 0, 1, 1, 1, 1),
+                (false, true, true) => (p2, q2, 1, 0, 1, 1, 1),
+                (true, true, true) => (0, 0, 1, 1, 1, 1, 1),
+            };
+
+            return (uint)((b9 << 9) | (b8 << 8) | (u2 << 7) | (b6 << 6) | (b5 << 5) | (u1 << 4) | (b3 << 3) | (b2 << 2) | (b1 << 1) | u0);
+        }
+
+        /// <summary>Unpacks a ten-bit densely packed decimal declet into three decimal digits (each 0-9).</summary>
+        private static (int D2, int D1, int D0) DecletToDigits(uint declet)
+        {
+            static int Digit(int hi, int mid, int lo) => (hi << 2) | (mid << 1) | lo;
+
+            int b0 = (int)(declet & 1);
+            int b1 = (int)((declet >> 1) & 1);
+            int b2 = (int)((declet >> 2) & 1);
+            int b3 = (int)((declet >> 3) & 1);
+            int b4 = (int)((declet >> 4) & 1);
+            int b5 = (int)((declet >> 5) & 1);
+            int b6 = (int)((declet >> 6) & 1);
+            int b7 = (int)((declet >> 7) & 1);
+            int b8 = (int)((declet >> 8) & 1);
+            int b9 = (int)((declet >> 9) & 1);
+
+            // See IEEE 754-2019 Table 3.6. b3 then b2/b1 then b6/b5 select which digits were 8 or 9.
+            return (b3, b2, b1, b6, b5) switch
+            {
+                (0, _, _, _, _) => (Digit(b9, b8, b7), Digit(b6, b5, b4), Digit(b2, b1, b0)),
+                (1, 0, 0, _, _) => (Digit(b9, b8, b7), Digit(b6, b5, b4), 8 | b0),
+                (1, 0, 1, _, _) => (Digit(b9, b8, b7), 8 | b4, Digit(b6, b5, b0)),
+                (1, 1, 0, _, _) => (8 | b7, Digit(b6, b5, b4), Digit(b9, b8, b0)),
+                (1, 1, 1, 0, 0) => (8 | b7, 8 | b4, Digit(b9, b8, b0)),
+                (1, 1, 1, 0, 1) => (8 | b7, Digit(b9, b8, b4), 8 | b0),
+                (1, 1, 1, 1, 0) => (Digit(b9, b8, b7), 8 | b4, 8 | b0),
+                _ => (8 | b7, 8 | b4, 8 | b0),
+            };
+        }
+
         private static TValue RoundToZeroOrEpsilon<TDecimal, TValue>(ref NumberBuffer coefficient)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>

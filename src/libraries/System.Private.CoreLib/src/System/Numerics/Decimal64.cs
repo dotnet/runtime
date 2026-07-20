@@ -246,6 +246,18 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static Decimal64 DecodeBinary(ulong x) => new Decimal64(x);
 
+        /// <summary>Encodes a value as its IEEE 754 densely packed decimal (DPD) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The DPD bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static ulong EncodeDecimal(Decimal64 x) => Number.EncodeDecimalIeee754<Decimal64, ulong>(x._value);
+
+        /// <summary>Decodes a value from its IEEE 754 densely packed decimal (DPD) representation.</summary>
+        /// <param name="x">The DPD bit pattern to decode.</param>
+        /// <returns>The value represented by the DPD bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal64 DecodeDecimal(ulong x) => new Decimal64(Number.DecodeDecimalIeee754<Decimal64, ulong>(x));
+
         /// <summary>
         /// Returns a string representation of the current value.
         /// </summary>

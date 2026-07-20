@@ -3075,6 +3075,32 @@ namespace System.Tests
             Assert.Equal(bits, Unsafe.BitCast<Decimal128, UInt128>(value));
         }
 
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0x2208000000000000UL, 0x0000000000000000UL)] // +0
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL, 0x2208000000000000UL, 0x0000000000000001UL)] // +1
+        public static void EncodeDecimalKnownVectors(ulong bidUpper, ulong bidLower, ulong dpdUpper, ulong dpdLower)
+        {
+            UInt128 bid = new UInt128(bidUpper, bidLower);
+            UInt128 dpd = new UInt128(dpdUpper, dpdLower);
+            Assert.Equal(dpd, Decimal128.EncodeDecimal(Decimal128.DecodeBinary(bid)));
+            Assert.Equal(bid, Decimal128.EncodeBinary(Decimal128.DecodeDecimal(dpd)));
+        }
+
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL)] // +0
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL)] // -0
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL)] // +1
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL)] // -Infinity
+        [InlineData(0x7C00000000000000UL, 0x0000000000000000UL)] // NaN
+        [InlineData(0x7C00000000000000UL, 0x00000000000004D2UL)] // NaN with payload
+        public static void EncodeDecodeDecimalRoundTrips(ulong upper, ulong lower)
+        {
+            UInt128 bits = new UInt128(upper, lower);
+            Decimal128 value = Decimal128.DecodeBinary(bits);
+            Assert.Equal(bits, Unsafe.BitCast<Decimal128, UInt128>(Decimal128.DecodeDecimal(Decimal128.EncodeDecimal(value))));
+        }
+
 
         [Theory]
         [InlineData(0x3040000000000000UL, 0x0000000000000002UL, 0x3040000000000000UL, 0x0000000000000003UL, 0x3040000000000000UL, 0x0000000000000004UL, 0x3040000000000000UL, 0x000000000000000AUL)] // 2 * 3 + 4 = 10

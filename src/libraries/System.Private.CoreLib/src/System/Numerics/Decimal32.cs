@@ -245,6 +245,18 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static Decimal32 DecodeBinary(uint x) => new Decimal32(x);
 
+        /// <summary>Encodes a value as its IEEE 754 densely packed decimal (DPD) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The DPD bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static uint EncodeDecimal(Decimal32 x) => Number.EncodeDecimalIeee754<Decimal32, uint>(x._value);
+
+        /// <summary>Decodes a value from its IEEE 754 densely packed decimal (DPD) representation.</summary>
+        /// <param name="x">The DPD bit pattern to decode.</param>
+        /// <returns>The value represented by the DPD bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal32 DecodeDecimal(uint x) => new Decimal32(Number.DecodeDecimalIeee754<Decimal32, uint>(x));
+
         /// <summary>
         /// Returns a string representation of the current value.
         /// </summary>

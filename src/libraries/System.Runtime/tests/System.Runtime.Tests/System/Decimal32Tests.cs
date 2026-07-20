@@ -2993,6 +2993,31 @@ namespace System.Tests
             Assert.Equal(bits, Unsafe.BitCast<Decimal32, uint>(value));
         }
 
+        [Theory]
+        [InlineData(0x32800000U, 0x22500000U)] // +0
+        [InlineData(0x32800001U, 0x22500001U)] // +1
+        public static void EncodeDecimalKnownVectors(uint bid, uint dpd)
+        {
+            Assert.Equal(dpd, Decimal32.EncodeDecimal(Decimal32.DecodeBinary(bid)));
+            Assert.Equal(bid, Decimal32.EncodeBinary(Decimal32.DecodeDecimal(dpd)));
+        }
+
+        [Theory]
+        [InlineData(0x32800000U)] // +0
+        [InlineData(0xB2800000U)] // -0
+        [InlineData(0x32800001U)] // +1
+        [InlineData(0x31803039U)] // 123.45
+        [InlineData(0x6CB8967FU)] // 9999999 (leading digit 9)
+        [InlineData(0x78000000U)] // +Infinity
+        [InlineData(0xF8000000U)] // -Infinity
+        [InlineData(0x7C000000U)] // NaN
+        [InlineData(0x7C0004D2U)] // NaN with payload
+        public static void EncodeDecodeDecimalRoundTrips(uint bits)
+        {
+            Decimal32 value = Decimal32.DecodeBinary(bits);
+            Assert.Equal(bits, Unsafe.BitCast<Decimal32, uint>(Decimal32.DecodeDecimal(Decimal32.EncodeDecimal(value))));
+        }
+
 
         [Theory]
         [InlineData(0x32800002U, 0x32800003U, 0x32800004U, 0x3280000AU)] // 2 * 3 + 4 = 10

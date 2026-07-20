@@ -11480,7 +11480,11 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Decimal128 DecodeBinary(System.UInt128 x) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Decimal128 DecodeDecimal(System.UInt128 x) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.UInt128 EncodeBinary(System.Numerics.Decimal128 x) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.UInt128 EncodeDecimal(System.Numerics.Decimal128 x) { throw null; }
         public bool Equals(System.Numerics.Decimal128 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal128 Exp(System.Numerics.Decimal128 x) { throw null; }
@@ -11726,7 +11730,11 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Decimal32 DecodeBinary(uint x) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Decimal32 DecodeDecimal(uint x) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static uint EncodeBinary(System.Numerics.Decimal32 x) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint EncodeDecimal(System.Numerics.Decimal32 x) { throw null; }
         public bool Equals(System.Numerics.Decimal32 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal32 Exp(System.Numerics.Decimal32 x) { throw null; }
@@ -11976,7 +11984,11 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Decimal64 DecodeBinary(ulong x) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Decimal64 DecodeDecimal(ulong x) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static ulong EncodeBinary(System.Numerics.Decimal64 x) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong EncodeDecimal(System.Numerics.Decimal64 x) { throw null; }
         public bool Equals(System.Numerics.Decimal64 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal64 Exp(System.Numerics.Decimal64 x) { throw null; }

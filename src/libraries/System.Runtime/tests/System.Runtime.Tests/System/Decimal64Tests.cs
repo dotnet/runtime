@@ -2994,6 +2994,30 @@ namespace System.Tests
             Assert.Equal(bits, Unsafe.BitCast<Decimal64, ulong>(value));
         }
 
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x2238000000000000UL)] // +0
+        [InlineData(0x31C0000000000001UL, 0x2238000000000001UL)] // +1
+        public static void EncodeDecimalKnownVectors(ulong bid, ulong dpd)
+        {
+            Assert.Equal(dpd, Decimal64.EncodeDecimal(Decimal64.DecodeBinary(bid)));
+            Assert.Equal(bid, Decimal64.EncodeBinary(Decimal64.DecodeDecimal(dpd)));
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL)] // +0
+        [InlineData(0xB1C0000000000000UL)] // -0
+        [InlineData(0x31C0000000000001UL)] // +1
+        [InlineData(0x3180000000003039UL)] // 123.45
+        [InlineData(0x7800000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL)] // -Infinity
+        [InlineData(0x7C00000000000000UL)] // NaN
+        [InlineData(0x7C000000000004D2UL)] // NaN with payload
+        public static void EncodeDecodeDecimalRoundTrips(ulong bits)
+        {
+            Decimal64 value = Decimal64.DecodeBinary(bits);
+            Assert.Equal(bits, Unsafe.BitCast<Decimal64, ulong>(Decimal64.DecodeDecimal(Decimal64.EncodeDecimal(value))));
+        }
+
 
         [Theory]
         [InlineData(0x31C0000000000002UL, 0x31C0000000000003UL, 0x31C0000000000004UL, 0x31C000000000000AUL)] // 2 * 3 + 4 = 10
