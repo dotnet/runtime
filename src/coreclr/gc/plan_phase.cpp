@@ -2223,7 +2223,7 @@ retry:
                               generation_allocation_pointer (gen))))
                         {
                             LOG((LF_GC, LL_INFO10, "remaining pinned plug %zx while leaving segment on allocation",
-                                         pinned_plug (loh_oldest_pin())));
+                                         (size_t)pinned_plug (loh_oldest_pin())));
                             dprintf (1, ("queue empty: %d", loh_pinned_plug_que_empty_p()));
                             FATAL_GC_ERROR();
                         }
