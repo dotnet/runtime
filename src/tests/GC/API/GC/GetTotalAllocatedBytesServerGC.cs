@@ -31,8 +31,6 @@ using Xunit;
 
 public class GetTotalAllocatedBytesServerGC
 {
-    private static volatile object s_sink;
-
     [Fact]
     public static void TestEntryPoint()
     {
