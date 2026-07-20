@@ -119,6 +119,34 @@ namespace System.Numerics.Tests
             Verify<float>(Complex<float>.Tanh, "Tanh", real, imaginary, expectedReal, expectedImaginary);
             Verify<Half>(Complex<Half>.Tanh, "Tanh", real, imaginary, expectedReal, expectedImaginary);
         }
+
+        [Theory]
+        [MemberData(nameof(Asin_SpecialValues))]
+        public static void Asin(double real, double imaginary, double expectedReal, double expectedImaginary)
+        {
+            Verify<double>(Complex<double>.Asin, "Asin", real, imaginary, expectedReal, expectedImaginary);
+            Verify<float>(Complex<float>.Asin, "Asin", real, imaginary, expectedReal, expectedImaginary);
+            Verify<Half>(Complex<Half>.Asin, "Asin", real, imaginary, expectedReal, expectedImaginary);
+        }
+
+        [Theory]
+        [MemberData(nameof(Acos_SpecialValues))]
+        public static void Acos(double real, double imaginary, double expectedReal, double expectedImaginary)
+        {
+            Verify<double>(Complex<double>.Acos, "Acos", real, imaginary, expectedReal, expectedImaginary);
+            Verify<float>(Complex<float>.Acos, "Acos", real, imaginary, expectedReal, expectedImaginary);
+            Verify<Half>(Complex<Half>.Acos, "Acos", real, imaginary, expectedReal, expectedImaginary);
+        }
+
+        [Theory]
+        [MemberData(nameof(Atan_SpecialValues))]
+        public static void Atan(double real, double imaginary, double expectedReal, double expectedImaginary)
+        {
+            Verify<double>(Complex<double>.Atan, "Atan", real, imaginary, expectedReal, expectedImaginary);
+            Verify<float>(Complex<float>.Atan, "Atan", real, imaginary, expectedReal, expectedImaginary);
+            Verify<Half>(Complex<Half>.Atan, "Atan", real, imaginary, expectedReal, expectedImaginary);
+        }
+
         public static IEnumerable<object[]> Sqrt_SpecialValues() => new object[][]
         {
             new object[] { NegativeInfinity, NegativeInfinity, PositiveInfinity, NegativeInfinity },
@@ -473,6 +501,65 @@ namespace System.Numerics.Tests
             new object[] { NaN, 0.0, NaN, 0.0 },
             new object[] { NaN, 1.0, NaN, NaN },
             new object[] { NaN, PositiveInfinity, NaN, NaN },
+            new object[] { NaN, NaN, NaN, NaN },
+        };
+
+        public static IEnumerable<object[]> Asin_SpecialValues() => new object[][]
+        {
+            new object[] { NegativeInfinity, NaN, NaN, NegativeInfinity },
+            new object[] { -1.0, NegativeInfinity, -0.0, NegativeInfinity },
+            new object[] { -1.0, PositiveInfinity, -0.0, PositiveInfinity },
+            new object[] { -1.0, NaN, NaN, NaN },
+            new object[] { -0.0, NegativeInfinity, -0.0, NegativeInfinity },
+            new object[] { -0.0, PositiveInfinity, -0.0, PositiveInfinity },
+            new object[] { -0.0, NaN, -0.0, NaN },
+            new object[] { 0.0, NegativeInfinity, 0.0, NegativeInfinity },
+            new object[] { 0.0, PositiveInfinity, 0.0, PositiveInfinity },
+            new object[] { 0.0, NaN, 0.0, NaN },
+            new object[] { 1.0, NegativeInfinity, 0.0, NegativeInfinity },
+            new object[] { 1.0, PositiveInfinity, 0.0, PositiveInfinity },
+            new object[] { 1.0, NaN, NaN, NaN },
+            new object[] { PositiveInfinity, NaN, NaN, NegativeInfinity },
+            new object[] { NaN, NegativeInfinity, NaN, NegativeInfinity },
+            new object[] { NaN, -1.0, NaN, NaN },
+            new object[] { NaN, -0.0, NaN, NaN },
+            new object[] { NaN, 0.0, NaN, NaN },
+            new object[] { NaN, 1.0, NaN, NaN },
+            new object[] { NaN, PositiveInfinity, NaN, PositiveInfinity },
+            new object[] { NaN, NaN, NaN, NaN },
+        };
+
+        public static IEnumerable<object[]> Acos_SpecialValues() => new object[][]
+        {
+            new object[] { NegativeInfinity, NaN, NaN, PositiveInfinity },
+            new object[] { -1.0, NaN, NaN, NaN },
+            new object[] { 1.0, NaN, NaN, NaN },
+            new object[] { PositiveInfinity, -1.0, 0.0, PositiveInfinity },
+            new object[] { PositiveInfinity, -0.0, 0.0, PositiveInfinity },
+            new object[] { PositiveInfinity, 0.0, 0.0, NegativeInfinity },
+            new object[] { PositiveInfinity, 1.0, 0.0, NegativeInfinity },
+            new object[] { PositiveInfinity, NaN, NaN, PositiveInfinity },
+            new object[] { NaN, NegativeInfinity, NaN, PositiveInfinity },
+            new object[] { NaN, -1.0, NaN, NaN },
+            new object[] { NaN, -0.0, NaN, NaN },
+            new object[] { NaN, 0.0, NaN, NaN },
+            new object[] { NaN, 1.0, NaN, NaN },
+            new object[] { NaN, PositiveInfinity, NaN, NegativeInfinity },
+            new object[] { NaN, NaN, NaN, NaN },
+        };
+
+        public static IEnumerable<object[]> Atan_SpecialValues() => new object[][]
+        {
+            new object[] { -1.0, NaN, NaN, NaN },
+            new object[] { -0.0, NaN, NaN, NaN },
+            new object[] { 0.0, NaN, NaN, NaN },
+            new object[] { 1.0, NaN, NaN, NaN },
+            new object[] { NaN, NegativeInfinity, NaN, -0.0 },
+            new object[] { NaN, -1.0, NaN, NaN },
+            new object[] { NaN, -0.0, NaN, -0.0 },
+            new object[] { NaN, 0.0, NaN, 0.0 },
+            new object[] { NaN, 1.0, NaN, NaN },
+            new object[] { NaN, PositiveInfinity, NaN, 0.0 },
             new object[] { NaN, NaN, NaN, NaN },
         };
 

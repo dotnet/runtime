@@ -531,6 +531,13 @@ namespace System.Numerics.Tests
             Complex cosComplex = Complex.Cos(complex);
             Complex acosComplex = Complex.Acos(cosComplex);
 
+            // When Cos overflows to a non-finite intermediate the round-trip is not recoverable;
+            // Acos then follows the Annex G special-value rules rather than returning the input.
+            if (!Complex.IsFinite(cosComplex))
+            {
+                return;
+            }
+
             if (!real.Equals(acosComplex.Real) || !imaginary.Equals(acosComplex.Imaginary))
             {
                 double realDiff = Math.Abs(Math.Abs(real) - Math.Abs(acosComplex.Real));
@@ -559,9 +566,9 @@ namespace System.Numerics.Tests
             // NaN values
             yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
             yield return new object[] { -1.0, double.NaN, double.NaN, double.NaN };
-            yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, double.PositiveInfinity };
             yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NegativeInfinity };
         }
 
         [Theory, MemberData(nameof(ACos_Advanced_TestData))]
@@ -694,10 +701,10 @@ namespace System.Numerics.Tests
 
             // NaN values
             yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
-            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
-            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { 0.0, double.NaN, 0.0, double.NaN };
+            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.NegativeInfinity };
             yield return new object[] { double.NaN, 1.0, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN, double.NegativeInfinity };
         }
 
         [Theory, MemberData(nameof(ASin_Advanced_TestData))]

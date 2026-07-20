@@ -424,6 +424,13 @@ namespace System.Numerics
 
         public static Complex<T> Asin(Complex<T> value)
         {
+            if (!IsFinite(value))
+            {
+                // asin(z) = -i casinh(iz); AsinhSpecialValue carries the Annex G G.6.2.2 special values.
+                Complex<T> s = AsinhSpecialValue(-value.m_imaginary, value.m_real);
+                return new Complex<T>(s.m_imaginary, -s.m_real);
+            }
+
             Asin_Internal(T.Abs(value.Real), T.Abs(value.Imaginary), out T b, out T bPrime, out T v);
 
             T u;
@@ -440,6 +447,43 @@ namespace System.Numerics
             if (value.Imaginary < T.Zero) v = -v;
 
             return new Complex<T>(u, v);
+        }
+
+        // IEEE 754 / C23 Annex G.6.2.2 casinh special values. At least one component must be non-finite.
+        // casinh is odd and casinh(conj(z)) == conj(casinh(z)), so the real part is odd in the real
+        // component and the imaginary part is odd in the imaginary component.
+        private static Complex<T> AsinhSpecialValue(T a, T b)
+        {
+            T absB = T.Abs(b);
+            T re, im;
+
+            if (T.IsInfinity(a))
+            {
+                // +-INF + i(INF|finite|NaN).
+                re = T.PositiveInfinity;
+                im = T.IsInfinity(absB) ? T.Pi / T.CreateChecked(4) :
+                     T.IsNaN(absB) ? T.NaN : T.Zero;
+            }
+            else if (T.IsNaN(a))
+            {
+                if (absB == T.Zero)
+                {
+                    return new Complex<T>(T.NaN, b);
+                }
+                // NaN + iINF -> +-INF + iNaN (real sign unspecified); NaN + i(finite nonzero|NaN) -> NaN + iNaN.
+                re = T.IsInfinity(absB) ? T.PositiveInfinity : T.NaN;
+                im = T.NaN;
+            }
+            else
+            {
+                // a is finite; b is non-finite. x + iINF -> +INF + iPi/2; x + iNaN -> NaN + iNaN.
+                re = T.IsInfinity(absB) ? T.PositiveInfinity : T.NaN;
+                im = T.IsInfinity(absB) ? T.Pi / T.CreateChecked(2) : T.NaN;
+            }
+
+            re = T.IsNaN(re) || T.IsNaN(a) ? re : T.CopySign(re, a);
+            im = T.IsNaN(im) || T.IsNaN(b) ? im : T.CopySign(im, b);
+            return new Complex<T>(re, im);
         }
 
         public static Complex<T> Cos(Complex<T> value)
@@ -499,6 +543,11 @@ namespace System.Numerics
 
         public static Complex<T> Acos(Complex<T> value)
         {
+            if (!IsFinite(value))
+            {
+                return AcosSpecialValue(value.m_real, value.m_imaginary);
+            }
+
             Asin_Internal(T.Abs(value.Real), T.Abs(value.Imaginary), out T b, out T bPrime, out T v);
 
             T u;
@@ -515,6 +564,57 @@ namespace System.Numerics
             if (value.Imaginary > T.Zero) v = -v;
 
             return new Complex<T>(u, v);
+        }
+
+        // IEEE 754 / C23 Annex G.6.1.1 cacos special values. At least one component must be non-finite.
+        // cacos(conj(z)) == conj(cacos(z)), so the imaginary part is odd in the imaginary component.
+        private static Complex<T> AcosSpecialValue(T x, T y)
+        {
+            T absY = T.Abs(y);
+            T re, im;
+
+            if (T.IsInfinity(x))
+            {
+                if (T.IsNegative(x))
+                {
+                    // -INF + i(INF|finite|NaN).
+                    re = T.IsInfinity(absY) ? T.Pi * T.CreateChecked(0.75) : T.IsNaN(absY) ? T.NaN : T.Pi;
+                }
+                else
+                {
+                    // +INF + i(INF|finite|NaN).
+                    re = T.IsInfinity(absY) ? T.Pi / T.CreateChecked(4) : T.IsNaN(absY) ? T.NaN : T.Zero;
+                }
+                im = T.IsNaN(absY) ? T.PositiveInfinity : T.NegativeInfinity;
+            }
+            else if (T.IsNaN(x))
+            {
+                // NaN + iINF -> NaN - iINF; NaN + i(finite|NaN) -> NaN + iNaN.
+                re = T.NaN;
+                im = T.IsInfinity(absY) ? T.NegativeInfinity : T.NaN;
+            }
+            else
+            {
+                // x is finite; y is non-finite. x + iINF -> Pi/2 - iINF; +-0 + iNaN -> Pi/2 + iNaN;
+                // x + iNaN (x nonzero) -> NaN + iNaN.
+                if (T.IsInfinity(absY))
+                {
+                    re = T.Pi / T.CreateChecked(2);
+                    im = T.NegativeInfinity;
+                }
+                else
+                {
+                    re = (x == T.Zero) ? T.Pi / T.CreateChecked(2) : T.NaN;
+                    im = T.NaN;
+                }
+            }
+
+            // The imaginary part is odd in y. Only flip when y carries a determinate sign.
+            if (!T.IsNaN(im) && !T.IsNaN(y) && T.IsNegative(y))
+            {
+                im = -im;
+            }
+            return new Complex<T>(re, im);
         }
 
         public static Complex<T> Tan(Complex<T> value)
@@ -588,8 +688,56 @@ namespace System.Numerics
 
         public static Complex<T> Atan(Complex<T> value)
         {
+            if (!IsFinite(value))
+            {
+                // atan(z) = -i catanh(iz); AtanhSpecialValue carries the Annex G G.6.2.3 special values.
+                Complex<T> t = AtanhSpecialValue(-value.m_imaginary, value.m_real);
+                return new Complex<T>(t.m_imaginary, -t.m_real);
+            }
+
             Complex<T> two = new(T.CreateChecked(2), T.Zero);
             return (ImaginaryOne / two) * (Log(One - ImaginaryOne * value) - Log(One + ImaginaryOne * value));
+        }
+
+        // IEEE 754 / C23 Annex G.6.2.3 catanh special values. At least one component must be non-finite.
+        // catanh is odd and catanh(conj(z)) == conj(catanh(z)), so the real part is odd in the real
+        // component and the imaginary part is odd in the imaginary component.
+        private static Complex<T> AtanhSpecialValue(T a, T b)
+        {
+            T absB = T.Abs(b);
+            T re, im;
+
+            if (T.IsInfinity(a))
+            {
+                // +-INF + i(INF|finite|NaN) -> +-0 + i(Pi/2 or NaN).
+                re = T.Zero;
+                im = T.IsNaN(absB) ? T.NaN : T.Pi / T.CreateChecked(2);
+            }
+            else if (T.IsNaN(a))
+            {
+                // NaN + iINF -> +-0 + iPi/2 (real sign unspecified); NaN + i(finite|NaN) -> NaN + iNaN.
+                re = T.IsInfinity(absB) ? T.Zero : T.NaN;
+                im = T.IsInfinity(absB) ? T.Pi / T.CreateChecked(2) : T.NaN;
+            }
+            else
+            {
+                // a is finite; b is non-finite. x + iINF -> +0 + iPi/2; +-0 + iNaN -> +-0 + iNaN;
+                // x + iNaN (x nonzero) -> NaN + iNaN.
+                if (T.IsInfinity(absB))
+                {
+                    re = T.Zero;
+                    im = T.Pi / T.CreateChecked(2);
+                }
+                else
+                {
+                    re = (a == T.Zero) ? a : T.NaN;
+                    im = T.NaN;
+                }
+            }
+
+            re = T.IsNaN(re) || T.IsNaN(a) ? re : T.CopySign(re, a);
+            im = T.IsNaN(im) || T.IsNaN(b) ? im : T.CopySign(im, b);
+            return new Complex<T>(re, im);
         }
 
         private static void Asin_Internal(T x, T y, out T b, out T bPrime, out T v)
