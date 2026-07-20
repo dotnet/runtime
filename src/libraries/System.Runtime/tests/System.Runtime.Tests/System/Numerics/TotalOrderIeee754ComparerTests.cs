@@ -165,26 +165,26 @@ namespace System.Runtime.Tests
         {
             get
             {
-                yield return new object[] { Decimal32.Parse("0"), Decimal32.Parse("0"), 0 };
+                yield return new object[] { Decimal32.Parse("0", CultureInfo.InvariantCulture), Decimal32.Parse("0", CultureInfo.InvariantCulture), 0 };
                 yield return new object[] { Decimal32.NegativeZero, Decimal32.NegativeZero, 0 };
-                yield return new object[] { Decimal32.Parse("0"), Decimal32.NegativeZero, 1 };
-                yield return new object[] { Decimal32.NegativeZero, Decimal32.Parse("0"), -1 };
-                yield return new object[] { Decimal32.Parse("0"), Decimal32.Parse("1"), -1 };
-                yield return new object[] { Decimal32.PositiveInfinity, Decimal32.Parse("1"), 1 };
+                yield return new object[] { Decimal32.Parse("0", CultureInfo.InvariantCulture), Decimal32.NegativeZero, 1 };
+                yield return new object[] { Decimal32.NegativeZero, Decimal32.Parse("0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal32.Parse("0", CultureInfo.InvariantCulture), Decimal32.Parse("1", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal32.PositiveInfinity, Decimal32.Parse("1", CultureInfo.InvariantCulture), 1 };
                 yield return new object[] { Decimal32.NaN, Decimal32.NegativeInfinity, -1 };
-                yield return new object[] { Decimal32.NaN, Decimal32.Parse("-1"), -1 };
-                yield return new object[] { -Decimal32.NaN, Decimal32.Parse("1"), 1 };
+                yield return new object[] { Decimal32.NaN, Decimal32.Parse("-1", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { -Decimal32.NaN, Decimal32.Parse("1", CultureInfo.InvariantCulture), 1 };
                 yield return new object[] { -Decimal32.NaN, Decimal32.PositiveInfinity, 1 };
                 yield return new object[] { Decimal32.NaN, Decimal32.NaN, 0 };
                 yield return new object[] { Decimal32.NaN, -Decimal32.NaN, -1 };
                 // Cohort members: equal value, differing quantum exponent (totalOrder orders by exponent)
-                yield return new object[] { Decimal32.Parse("1.00"), Decimal32.Parse("1.0"), -1 };
-                yield return new object[] { Decimal32.Parse("1.0"), Decimal32.Parse("1.00"), 1 };
-                yield return new object[] { Decimal32.Parse("1e1"), Decimal32.Parse("10e0"), 1 };
-                yield return new object[] { Decimal32.Parse("-1.00"), Decimal32.Parse("-1.0"), 1 };
-                yield return new object[] { Decimal32.Parse("-1.0"), Decimal32.Parse("-1.00"), -1 };
-                yield return new object[] { Decimal32.Parse("0.00"), Decimal32.Parse("0"), -1 };
-                yield return new object[] { Decimal32.Parse("-0.00"), Decimal32.NegativeZero, 1 };
+                yield return new object[] { Decimal32.Parse("1.00", CultureInfo.InvariantCulture), Decimal32.Parse("1.0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal32.Parse("1.0", CultureInfo.InvariantCulture), Decimal32.Parse("1.00", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal32.Parse("1e1", CultureInfo.InvariantCulture), Decimal32.Parse("10e0", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal32.Parse("-1.00", CultureInfo.InvariantCulture), Decimal32.Parse("-1.0", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal32.Parse("-1.0", CultureInfo.InvariantCulture), Decimal32.Parse("-1.00", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal32.Parse("0.00", CultureInfo.InvariantCulture), Decimal32.Parse("0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal32.Parse("-0.00", CultureInfo.InvariantCulture), Decimal32.NegativeZero, 1 };
             }
         }
 
@@ -200,26 +200,26 @@ namespace System.Runtime.Tests
         {
             get
             {
-                yield return new object[] { Decimal64.Parse("0"), Decimal64.Parse("0"), 0 };
+                yield return new object[] { Decimal64.Parse("0", CultureInfo.InvariantCulture), Decimal64.Parse("0", CultureInfo.InvariantCulture), 0 };
                 yield return new object[] { Decimal64.NegativeZero, Decimal64.NegativeZero, 0 };
-                yield return new object[] { Decimal64.Parse("0"), Decimal64.NegativeZero, 1 };
-                yield return new object[] { Decimal64.NegativeZero, Decimal64.Parse("0"), -1 };
-                yield return new object[] { Decimal64.Parse("0"), Decimal64.Parse("1"), -1 };
-                yield return new object[] { Decimal64.PositiveInfinity, Decimal64.Parse("1"), 1 };
+                yield return new object[] { Decimal64.Parse("0", CultureInfo.InvariantCulture), Decimal64.NegativeZero, 1 };
+                yield return new object[] { Decimal64.NegativeZero, Decimal64.Parse("0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal64.Parse("0", CultureInfo.InvariantCulture), Decimal64.Parse("1", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal64.PositiveInfinity, Decimal64.Parse("1", CultureInfo.InvariantCulture), 1 };
                 yield return new object[] { Decimal64.NaN, Decimal64.NegativeInfinity, -1 };
-                yield return new object[] { Decimal64.NaN, Decimal64.Parse("-1"), -1 };
-                yield return new object[] { -Decimal64.NaN, Decimal64.Parse("1"), 1 };
+                yield return new object[] { Decimal64.NaN, Decimal64.Parse("-1", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { -Decimal64.NaN, Decimal64.Parse("1", CultureInfo.InvariantCulture), 1 };
                 yield return new object[] { -Decimal64.NaN, Decimal64.PositiveInfinity, 1 };
                 yield return new object[] { Decimal64.NaN, Decimal64.NaN, 0 };
                 yield return new object[] { Decimal64.NaN, -Decimal64.NaN, -1 };
                 // Cohort members: equal value, differing quantum exponent (totalOrder orders by exponent)
-                yield return new object[] { Decimal64.Parse("1.00"), Decimal64.Parse("1.0"), -1 };
-                yield return new object[] { Decimal64.Parse("1.0"), Decimal64.Parse("1.00"), 1 };
-                yield return new object[] { Decimal64.Parse("1e1"), Decimal64.Parse("10e0"), 1 };
-                yield return new object[] { Decimal64.Parse("-1.00"), Decimal64.Parse("-1.0"), 1 };
-                yield return new object[] { Decimal64.Parse("-1.0"), Decimal64.Parse("-1.00"), -1 };
-                yield return new object[] { Decimal64.Parse("0.00"), Decimal64.Parse("0"), -1 };
-                yield return new object[] { Decimal64.Parse("-0.00"), Decimal64.NegativeZero, 1 };
+                yield return new object[] { Decimal64.Parse("1.00", CultureInfo.InvariantCulture), Decimal64.Parse("1.0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal64.Parse("1.0", CultureInfo.InvariantCulture), Decimal64.Parse("1.00", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal64.Parse("1e1", CultureInfo.InvariantCulture), Decimal64.Parse("10e0", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal64.Parse("-1.00", CultureInfo.InvariantCulture), Decimal64.Parse("-1.0", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal64.Parse("-1.0", CultureInfo.InvariantCulture), Decimal64.Parse("-1.00", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal64.Parse("0.00", CultureInfo.InvariantCulture), Decimal64.Parse("0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal64.Parse("-0.00", CultureInfo.InvariantCulture), Decimal64.NegativeZero, 1 };
             }
         }
 
@@ -235,26 +235,26 @@ namespace System.Runtime.Tests
         {
             get
             {
-                yield return new object[] { Decimal128.Parse("0"), Decimal128.Parse("0"), 0 };
+                yield return new object[] { Decimal128.Parse("0", CultureInfo.InvariantCulture), Decimal128.Parse("0", CultureInfo.InvariantCulture), 0 };
                 yield return new object[] { Decimal128.NegativeZero, Decimal128.NegativeZero, 0 };
-                yield return new object[] { Decimal128.Parse("0"), Decimal128.NegativeZero, 1 };
-                yield return new object[] { Decimal128.NegativeZero, Decimal128.Parse("0"), -1 };
-                yield return new object[] { Decimal128.Parse("0"), Decimal128.Parse("1"), -1 };
-                yield return new object[] { Decimal128.PositiveInfinity, Decimal128.Parse("1"), 1 };
+                yield return new object[] { Decimal128.Parse("0", CultureInfo.InvariantCulture), Decimal128.NegativeZero, 1 };
+                yield return new object[] { Decimal128.NegativeZero, Decimal128.Parse("0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal128.Parse("0", CultureInfo.InvariantCulture), Decimal128.Parse("1", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal128.PositiveInfinity, Decimal128.Parse("1", CultureInfo.InvariantCulture), 1 };
                 yield return new object[] { Decimal128.NaN, Decimal128.NegativeInfinity, -1 };
-                yield return new object[] { Decimal128.NaN, Decimal128.Parse("-1"), -1 };
-                yield return new object[] { -Decimal128.NaN, Decimal128.Parse("1"), 1 };
+                yield return new object[] { Decimal128.NaN, Decimal128.Parse("-1", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { -Decimal128.NaN, Decimal128.Parse("1", CultureInfo.InvariantCulture), 1 };
                 yield return new object[] { -Decimal128.NaN, Decimal128.PositiveInfinity, 1 };
                 yield return new object[] { Decimal128.NaN, Decimal128.NaN, 0 };
                 yield return new object[] { Decimal128.NaN, -Decimal128.NaN, -1 };
                 // Cohort members: equal value, differing quantum exponent (totalOrder orders by exponent)
-                yield return new object[] { Decimal128.Parse("1.00"), Decimal128.Parse("1.0"), -1 };
-                yield return new object[] { Decimal128.Parse("1.0"), Decimal128.Parse("1.00"), 1 };
-                yield return new object[] { Decimal128.Parse("1e1"), Decimal128.Parse("10e0"), 1 };
-                yield return new object[] { Decimal128.Parse("-1.00"), Decimal128.Parse("-1.0"), 1 };
-                yield return new object[] { Decimal128.Parse("-1.0"), Decimal128.Parse("-1.00"), -1 };
-                yield return new object[] { Decimal128.Parse("0.00"), Decimal128.Parse("0"), -1 };
-                yield return new object[] { Decimal128.Parse("-0.00"), Decimal128.NegativeZero, 1 };
+                yield return new object[] { Decimal128.Parse("1.00", CultureInfo.InvariantCulture), Decimal128.Parse("1.0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal128.Parse("1.0", CultureInfo.InvariantCulture), Decimal128.Parse("1.00", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal128.Parse("1e1", CultureInfo.InvariantCulture), Decimal128.Parse("10e0", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal128.Parse("-1.00", CultureInfo.InvariantCulture), Decimal128.Parse("-1.0", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal128.Parse("-1.0", CultureInfo.InvariantCulture), Decimal128.Parse("-1.00", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal128.Parse("0.00", CultureInfo.InvariantCulture), Decimal128.Parse("0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal128.Parse("-0.00", CultureInfo.InvariantCulture), Decimal128.NegativeZero, 1 };
             }
         }
 
