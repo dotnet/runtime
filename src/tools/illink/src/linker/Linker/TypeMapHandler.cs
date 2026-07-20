@@ -241,6 +241,13 @@ namespace Mono.Linker
             if (attr.Attribute.ConstructorArguments is not ([{ Value: string }]))
                 return;
 
+            // If the type map group has been seen, process the attribute immediately.
+            if (_referencedExternalTypeMaps.Contains(typeMapGroup) || _referencedProxyTypeMaps.Contains(typeMapGroup))
+            {
+                MarkAssemblyTargetIfReady(typeMapGroup, attr, resolvedTargetAssembly, callingMethod: null);
+                return;
+            }
+
             // Otherwise, it's pending until the type map group is seen.
             // Note: resolvedTargetAssembly may be null if the assembly could not be resolved (e.g., it doesn't
             // exist in the input). In that case the attribute will be dropped (not marked) when the group is seen.
