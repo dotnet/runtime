@@ -2963,7 +2963,7 @@ namespace System.Tests
         [InlineData(0xFC00000000000000UL, 0xFC00000000000000UL)] // quantum(-NaN) = -NaN (propagated)
         public static void QuantumTest(ulong value, ulong expected)
         {
-            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Quantum(Unsafe.BitCast<ulong, Decimal64>(value))));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.GetQuantum(Unsafe.BitCast<ulong, Decimal64>(value))));
         }
 
         [Theory]
@@ -2976,7 +2976,7 @@ namespace System.Tests
         [InlineData(0x7800000000000000UL, 0x31C0000000000001UL, false)] // Infinity vs finite
         public static void SameQuantumTest(ulong x, ulong y, bool expected)
         {
-            Assert.Equal(expected, Decimal64.SameQuantum(Unsafe.BitCast<ulong, Decimal64>(x), Unsafe.BitCast<ulong, Decimal64>(y)));
+            Assert.Equal(expected, Decimal64.HaveSameQuantum(Unsafe.BitCast<ulong, Decimal64>(x), Unsafe.BitCast<ulong, Decimal64>(y)));
         }
 
 
@@ -3146,7 +3146,7 @@ namespace System.Tests
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64Quantum), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void Quantum_IntelReferenceVectors(ulong value, ulong expected)
         {
-            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Quantum(Unsafe.BitCast<ulong, Decimal64>(value))));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.GetQuantum(Unsafe.BitCast<ulong, Decimal64>(value))));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]

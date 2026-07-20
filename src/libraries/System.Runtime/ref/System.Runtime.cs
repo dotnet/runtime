@@ -11488,6 +11488,8 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 Floor(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 FusedMultiplyAdd(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right, System.Numerics.Decimal128 addend) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static System.Numerics.Decimal128 GetQuantum(System.Numerics.Decimal128 x) { throw null; }
+        public static bool HaveSameQuantum(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
         public static System.Numerics.Decimal128 Hypot(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
         public static int ILogB(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 Ieee754Remainder(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
@@ -11612,13 +11614,11 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal128 Pow(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
         public static System.Numerics.Decimal128 Quantize(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
-        public static System.Numerics.Decimal128 Quantum(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 RootN(System.Numerics.Decimal128 x, int n) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x, int digits) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x, int digits, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Decimal128 Round(System.Numerics.Decimal128 x, System.MidpointRounding mode) { throw null; }
-        public static bool SameQuantum(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
         public static System.Numerics.Decimal128 ScaleB(System.Numerics.Decimal128 x, int n) { throw null; }
         public static int Sign(System.Numerics.Decimal128 value) { throw null; }
         public static System.Numerics.Decimal128 Sin(System.Numerics.Decimal128 x) { throw null; }
@@ -11727,6 +11727,8 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 Floor(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 FusedMultiplyAdd(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right, System.Numerics.Decimal32 addend) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static System.Numerics.Decimal32 GetQuantum(System.Numerics.Decimal32 x) { throw null; }
+        public static bool HaveSameQuantum(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
         public static System.Numerics.Decimal32 Hypot(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
         public static int ILogB(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Ieee754Remainder(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
@@ -11855,13 +11857,11 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal32 Pow(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
         public static System.Numerics.Decimal32 Quantize(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
-        public static System.Numerics.Decimal32 Quantum(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 RootN(System.Numerics.Decimal32 x, int n) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x, int digits) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x, int digits, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Decimal32 Round(System.Numerics.Decimal32 x, System.MidpointRounding mode) { throw null; }
-        public static bool SameQuantum(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
         public static System.Numerics.Decimal32 ScaleB(System.Numerics.Decimal32 x, int n) { throw null; }
         public static int Sign(System.Numerics.Decimal32 value) { throw null; }
         public static System.Numerics.Decimal32 Sin(System.Numerics.Decimal32 x) { throw null; }
@@ -11970,6 +11970,8 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 Floor(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 FusedMultiplyAdd(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right, System.Numerics.Decimal64 addend) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static System.Numerics.Decimal64 GetQuantum(System.Numerics.Decimal64 x) { throw null; }
+        public static bool HaveSameQuantum(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
         public static System.Numerics.Decimal64 Hypot(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
         public static int ILogB(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 Ieee754Remainder(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }
@@ -12096,13 +12098,11 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal64 Pow(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
         public static System.Numerics.Decimal64 Quantize(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
-        public static System.Numerics.Decimal64 Quantum(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 RootN(System.Numerics.Decimal64 x, int n) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x, int digits) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x, int digits, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Decimal64 Round(System.Numerics.Decimal64 x, System.MidpointRounding mode) { throw null; }
-        public static bool SameQuantum(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
         public static System.Numerics.Decimal64 ScaleB(System.Numerics.Decimal64 x, int n) { throw null; }
         public static int Sign(System.Numerics.Decimal64 value) { throw null; }
         public static System.Numerics.Decimal64 Sin(System.Numerics.Decimal64 x) { throw null; }
@@ -12534,8 +12534,8 @@ namespace System.Numerics
     public partial interface IDecimalFloatingPointIeee754<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IExponentialFunctions<TSelf>, System.Numerics.IFloatingPoint<TSelf>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IFloatingPointIeee754<TSelf>, System.Numerics.IHyperbolicFunctions<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.ILogarithmicFunctions<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IPowerFunctions<TSelf>, System.Numerics.IRootFunctions<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.ITrigonometricFunctions<TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IDecimalFloatingPointIeee754<TSelf>?
     {
         static abstract TSelf Quantize(TSelf x, TSelf y);
-        static abstract TSelf Quantum(TSelf x);
-        static abstract bool SameQuantum(TSelf x, TSelf y);
+        static abstract TSelf GetQuantum(TSelf x);
+        static abstract bool HaveSameQuantum(TSelf x, TSelf y);
     }
     public partial interface IDecrementOperators<TSelf> where TSelf : System.Numerics.IDecrementOperators<TSelf>?
     {
