@@ -64,6 +64,12 @@ namespace System.Net.Http
         /// </summary>
         /// <param name="content">The HTTP content to compress.</param>
         /// <param name="compressionOptions">The options used to fine-tune the compression.</param>
+        /// <remarks>
+        /// RFC 9659 requires that the "zstd" content coding be decodable with a window size of 8 MB (2^23) and
+        /// recommends that encoders not produce frames requiring a larger window. When supplying custom options,
+        /// consider limiting <see cref="ZstandardCompressionOptions.WindowLog2"/> to 23 or less so that the
+        /// produced content is accepted by servers that enforce this limit.
+        /// </remarks>
         public ZstandardCompressedContent(HttpContent content, ZstandardCompressionOptions compressionOptions)
         {
             ArgumentNullException.ThrowIfNull(content);
