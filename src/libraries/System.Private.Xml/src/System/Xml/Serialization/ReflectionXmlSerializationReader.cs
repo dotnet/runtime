@@ -21,13 +21,6 @@ namespace System.Xml.Serialization
     {
         private readonly XmlMapping _mapping;
 
-        // The XML specification defines whitespace as exactly these four characters (#x20, #x9,
-        // #xA, #xD). Splitting whitespace-separated list text on this set is the default; it matches
-        // the XSD list/NMTOKENS definition and lets items contain other Unicode whitespace. The
-        // UseLegacyXmlListSeparation switch restores splitting on .NET's broader char.IsWhiteSpace()
-        // set (String.Split with a null separator).
-        private static readonly char[] s_xmlListWhitespace = [' ', '\t', '\n', '\r'];
-
         internal static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
         internal static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
 
@@ -711,9 +704,7 @@ namespace System.Xml.Serialization
                         {
                             // The text content is a whitespace-separated list; split it and add each
                             // value to the array-like member (mirrors [XmlAttribute] list handling).
-                            // See s_xmlListWhitespace for the default vs. legacy whitespace behavior.
-                            char[]? separators = System.Xml.LocalAppContextSwitches.UseLegacyXmlListSeparation ? null : s_xmlListWhitespace;
-                            foreach (string item in stringValue.Split(separators, StringSplitOptions.RemoveEmptyEntries))
+                            foreach (string item in SplitXmlListValues(stringValue, removeEmptyEntries: true))
                             {
                                 anyText.Source!(item);
                             }
@@ -2028,9 +2019,7 @@ namespace System.Xml.Serialization
                 if (attribute.IsList)
                 {
                     string listValues = Reader.Value;
-                    // See s_xmlListWhitespace for the default vs. legacy whitespace behavior.
-                    char[]? separators = System.Xml.LocalAppContextSwitches.UseLegacyXmlListSeparation ? null : s_xmlListWhitespace;
-                    string[] vals = listValues.Split(separators);
+                    string[] vals = SplitXmlListValues(listValues, removeEmptyEntries: false);
                     Array arrayValue = Array.CreateInstance(member.Mapping.TypeDesc!.Type!.GetElementType()!, vals.Length);
                     for (int i = 0; i < vals.Length; i++)
                     {

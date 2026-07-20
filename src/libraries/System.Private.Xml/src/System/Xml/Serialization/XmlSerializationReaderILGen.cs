@@ -25,10 +25,6 @@ namespace System.Xml.Serialization
         private readonly Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
         private int _nextIdNumber;
 
-        // Cached, lazily-initialized static field on the generated reader that holds the four XML
-        // whitespace characters used to split list values. See EmitXmlListSeparators.
-        private FieldBuilder? _xmlListWhitespaceField;
-
         internal Dictionary<string, EnumMapping> Enums => field ??= new Dictionary<string, EnumMapping>();
 
         private static readonly string[] s_checkTypeString = new string[] { "checkType" };
@@ -2031,51 +2027,6 @@ namespace System.Xml.Serialization
             ilg.WhileEnd();
         }
 
-        // Emits IL that evaluates the char[] separators passed to string.Split for list values and
-        // stores the result in a local, which is returned. For the default (non-legacy) behavior the
-        // four characters the XML specification defines as whitespace (#x20, #x9, #xA, #xD) are cached
-        // in a private static field on the generated reader, so the array is allocated at most once
-        // instead of on every deserialization (the previous ".ToCharArray()" emitted a fresh array per
-        // call). The lazy-init race is benign: the array is only ever read. For the legacy behavior the
-        // separator is always null (restoring String.Split's broader char.IsWhiteSpace() splitting), so
-        // this emits nothing and returns null; the caller loads null directly.
-        private LocalBuilder? EmitXmlListSeparators(bool legacyWhitespace)
-        {
-            if (legacyWhitespace)
-            {
-                return null;
-            }
-
-            _xmlListWhitespaceField ??= this.typeBuilder.DefineField(
-                "s_xmlListWhitespace",
-                typeof(char[]),
-                FieldAttributes.Private | FieldAttributes.Static);
-
-            LocalBuilder separators = ilg.DeclareOrGetLocal(typeof(char[]), "listSeparators");
-            ilg.LoadMember(_xmlListWhitespaceField);
-            ilg.Load(null);
-            ilg.If(Cmp.EqualTo);
-
-            ilg.NewArray(typeof(char), 4);
-            ilg.Stloc(separators);
-            ReadOnlySpan<char> xmlWhitespace = [' ', '\t', '\n', '\r'];
-            for (int i = 0; i < xmlWhitespace.Length; i++)
-            {
-                ilg.Ldloc(separators);
-                ilg.Ldc(i);
-                ilg.Ldc((int)xmlWhitespace[i]);
-                ilg.Stelem(typeof(char));
-            }
-            ilg.Ldloc(separators);
-            ilg.StoreMember(_xmlListWhitespaceField);
-
-            ilg.EndIf();
-
-            ilg.LoadMember(_xmlListWhitespaceField);
-            ilg.Stloc(separators);
-            return separators;
-        }
-
         private void WriteAttribute(Member member)
         {
             AttributeAccessor attribute = member.Mapping.Attribute!;
@@ -2114,16 +2065,13 @@ namespace System.Xml.Serialization
             {
                 if (attribute.IsList)
                 {
-                    // By default split attribute list values on exactly the four XML whitespace
-                    // characters (#x20, #x9, #xA, #xD); UseLegacyXmlListSeparation restores the
-                    // previous broader char.IsWhiteSpace() splitting via Split((char[])null).
-                    bool legacyWhitespace = System.Xml.LocalAppContextSwitches.UseLegacyXmlListSeparation;
-                    LocalBuilder locListValues = ilg.DeclareOrGetLocal(typeof(string), "listValues");
+                    // Split the whitespace-separated attribute list into its items. The shared helper
+                    // owns the separator set and honors UseLegacyXmlListSeparation at read time.
                     LocalBuilder locVals = ilg.DeclareOrGetLocal(typeof(string[]), "vals");
-                    MethodInfo String_Split = typeof(string).GetMethod(
-                        "Split",
-                        CodeGenerator.InstanceBindingFlags,
-                        new Type[] { typeof(char[]) }
+                    MethodInfo XmlSerializationReader_SplitXmlListValues = typeof(XmlSerializationReader).GetMethod(
+                        "SplitXmlListValues",
+                        CodeGenerator.StaticBindingFlags,
+                        new Type[] { typeof(string), typeof(bool) }
                         )!;
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                         "get_Reader",
@@ -2138,18 +2086,8 @@ namespace System.Xml.Serialization
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
                     ilg.Call(XmlReader_get_Value);
-                    ilg.Stloc(locListValues);
-                    LocalBuilder? locSeparators = EmitXmlListSeparators(legacyWhitespace);
-                    ilg.Ldloc(locListValues);
-                    if (locSeparators is null)
-                    {
-                        ilg.Load(null);
-                    }
-                    else
-                    {
-                        ilg.Ldloc(locSeparators);
-                    }
-                    ilg.Call(String_Split);
+                    ilg.Ldc(false);
+                    ilg.Call(XmlSerializationReader_SplitXmlListValues);
                     ilg.Stloc(locVals);
                     LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(int), "i");
                     ilg.For(localI, 0, locVals);
@@ -2417,18 +2355,13 @@ namespace System.Xml.Serialization
                 if (member.IsArrayLike && text.IsList)
                 {
                     // The text content is a whitespace-separated list; split it and add each value to
-                    // the array-like member (mirrors [XmlAttribute] list handling). By default we split
-                    // on exactly the four characters the XML spec defines as whitespace (#x20, #x9, #xA,
-                    // #xD), matching the XSD list/NMTOKENS definition and letting items contain other
-                    // Unicode whitespace. The UseLegacyXmlListSeparation switch restores the previous
-                    // behavior of splitting on .NET's broader char.IsWhiteSpace() set (Split(null)).
-                    bool legacyWhitespace = System.Xml.LocalAppContextSwitches.UseLegacyXmlListSeparation;
-                    LocalBuilder locListValues = ilg.DeclareOrGetLocal(typeof(string), "listValues");
+                    // the array-like member (mirrors [XmlAttribute] list handling). The shared helper
+                    // owns the separator set and honors UseLegacyXmlListSeparation at read time.
                     LocalBuilder locVals = ilg.DeclareOrGetLocal(typeof(string[]), "vals");
-                    MethodInfo String_Split = typeof(string).GetMethod(
-                        "Split",
-                        CodeGenerator.InstanceBindingFlags,
-                        new Type[] { typeof(char[]), typeof(StringSplitOptions) }
+                    MethodInfo XmlSerializationReader_SplitXmlListValues = typeof(XmlSerializationReader).GetMethod(
+                        "SplitXmlListValues",
+                        CodeGenerator.StaticBindingFlags,
+                        new Type[] { typeof(string), typeof(bool) }
                         )!;
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                         "get_Reader",
@@ -2443,19 +2376,8 @@ namespace System.Xml.Serialization
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
                     ilg.Call(XmlReader_ReadContentAsString);
-                    ilg.Stloc(locListValues);
-                    LocalBuilder? locSeparators = EmitXmlListSeparators(legacyWhitespace);
-                    ilg.Ldloc(locListValues);
-                    if (locSeparators is null)
-                    {
-                        ilg.Load(null);
-                    }
-                    else
-                    {
-                        ilg.Ldloc(locSeparators);
-                    }
-                    ilg.Ldc((int)StringSplitOptions.RemoveEmptyEntries);
-                    ilg.Call(String_Split);
+                    ilg.Ldc(true);
+                    ilg.Call(XmlSerializationReader_SplitXmlListValues);
                     ilg.Stloc(locVals);
                     LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(int), "i");
                     ilg.For(localI, 0, locVals);
