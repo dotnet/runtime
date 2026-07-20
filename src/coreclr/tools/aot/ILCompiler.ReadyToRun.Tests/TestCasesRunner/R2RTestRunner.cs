@@ -365,7 +365,7 @@ internal sealed class R2RTestRunner
     /// <summary>
     /// Runtime packs are used as references for both Roslyn compilation and crossgen2 compilation. This method builds the reference paths for both.
     /// </summary>
-    /// <param name="useWasmReferences">Whether to try to use browser-wasm references.</param>
+    /// <param name="useWasmReferences">Whether to try to use browser-wasm references. The host references are used as a fallback if browser-wasm references are not available.</param>
     private List<string> BuildReferencePaths(bool useWasmReferences)
     {
         List<string> paths;
@@ -377,7 +377,8 @@ internal sealed class R2RTestRunner
                 ? null
                 : Path.Combine(_paths.WasmRuntimePackNativeDir, "System.Private.CoreLib.dll");
 
-            if (wasmRuntimePackDir is not null && wasmCoreLibPath is not null && File.Exists(wasmCoreLibPath))
+            if (wasmRuntimePackDir is not null && wasmCoreLibPath is not null
+                && File.Exists(wasmCoreLibPath) && Directory.Exists(wasmRuntimePackDir))
             {
                 _output.WriteLine($"Using browser-wasm runtime pack references from '{wasmRuntimePackDir}'");
                 paths =
@@ -398,6 +399,7 @@ internal sealed class R2RTestRunner
 
         string coreLibPath = Path.Combine(_paths.RuntimePackNativeDir, "System.Private.CoreLib.dll");
         Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found: {coreLibPath}");
+        Assert.True(Directory.Exists(_paths.RuntimePackDir), $"Runtime pack directory not found: {_paths.RuntimePackDir}");
 
         paths = [
             ..Directory.GetFiles(_paths.RuntimePackDir, "*.dll"),
