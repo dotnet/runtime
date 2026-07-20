@@ -13,31 +13,25 @@ namespace System.Runtime.CompilerServices
     {
         internal static partial class DispatcherIds
         {
-            public static ulong GetDispatcherId(ref AsyncDispatcherInfo info)
-            {
-                if (info.CurrentTask != null)
-                {
-                    return (ulong)info.CurrentTask.Id;
-                }
-                return 0;
-            }
+            public static ulong GetDispatcherId(Task dispatcher) => (ulong)dispatcher.Id;
+
+            public static ulong GetDispatcherId(ref AsyncDispatcherInfo info) => info.AsyncProfilerInfo.DispatcherId;
 
             public static unsafe ulong CaptureParentDispatcherId()
             {
                 AsyncDispatcherInfo* v2 = AsyncDispatcherInfo.t_current;
                 AsyncStateMachineDispatcherInfo* v1 = AsyncStateMachineDispatcherInfo.t_current;
 
-                Task? parent = null;
                 if (v2 != null && (v1 == null || (void*)v2 < (void*)v1))
                 {
-                    parent = v2->CurrentTask;
+                    return v2->AsyncProfilerInfo.DispatcherId;
                 }
                 else if (v1 != null)
                 {
-                    parent = v1->Dispatcher;
+                    return v1->AsyncProfilerInfo.DispatcherId;
                 }
 
-                return parent != null ? (ulong)parent.Id : 0;
+                return 0;
             }
         }
 
