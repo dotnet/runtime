@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -62,6 +63,28 @@ namespace System.Numerics
             {
                 return CompareIntegerSemantic(BitConverter.HalfToInt16Bits((Half)(object)x!), BitConverter.HalfToInt16Bits((Half)(object)y!));
             }
+            else if (typeof(T) == typeof(BFloat16))
+            {
+                return CompareIntegerSemantic(Unsafe.BitCast<BFloat16, short>((BFloat16)(object)x!), Unsafe.BitCast<BFloat16, short>((BFloat16)(object)y!));
+            }
+            else if (typeof(T) == typeof(NFloat))
+            {
+                return CompareIntegerSemantic(Unsafe.BitCast<NFloat, nint>((NFloat)(object)x!), Unsafe.BitCast<NFloat, nint>((NFloat)(object)y!));
+            }
+            else if (typeof(T) == typeof(Decimal32))
+            {
+                return CompareDecimal<Decimal32, uint>(((Decimal32)(object)x!)._value, ((Decimal32)(object)y!)._value);
+            }
+            else if (typeof(T) == typeof(Decimal64))
+            {
+                return CompareDecimal<Decimal64, ulong>(((Decimal64)(object)x!)._value, ((Decimal64)(object)y!)._value);
+            }
+            else if (typeof(T) == typeof(Decimal128))
+            {
+                Decimal128 xValue = (Decimal128)(object)x!;
+                Decimal128 yValue = (Decimal128)(object)y!;
+                return CompareDecimal<Decimal128, UInt128>(new UInt128(xValue._upper, xValue._lower), new UInt128(yValue._upper, yValue._lower));
+            }
             else
             {
                 return CompareGeneric(x, y);
@@ -97,6 +120,32 @@ namespace System.Numerics
                     return 1;
                 }
 
+                static int CompareExponent(T x, T y)
+                {
+                    // Equal values with differing representations only differ by their exponent, so the
+                    // unbiased (quantum) exponents are read and compared using signed semantics. For a
+                    // given type both exponents share the same byte count.
+
+                    // Prevent stack overflow for huge numbers
+                    const int StackAllocThreshold = 256;
+
+                    int xExponentLength = x!.GetExponentByteCount();
+                    int yExponentLength = y!.GetExponentByteCount();
+
+                    Span<byte> exponentX = (uint)xExponentLength <= StackAllocThreshold ? stackalloc byte[xExponentLength] : new byte[xExponentLength];
+                    Span<byte> exponentY = (uint)yExponentLength <= StackAllocThreshold ? stackalloc byte[yExponentLength] : new byte[yExponentLength];
+
+                    x.WriteExponentBigEndian(exponentX);
+                    y.WriteExponentBigEndian(exponentY);
+
+                    // The exponents are two's complement big-endian. Flipping the sign bit of the most
+                    // significant byte maps the signed ordering onto an unsigned byte-wise comparison.
+                    exponentX[0] ^= 0x80;
+                    exponentY[0] ^= 0x80;
+
+                    return exponentX.SequenceCompareTo(exponentY);
+                }
+
                 // If < or > returns true, the result satisfies definition of totalOrder too
 
                 if (x < y)
@@ -109,27 +158,20 @@ namespace System.Numerics
                 }
                 else if (x == y)
                 {
-                    if (T.IsZero(x)) // only zeros are equal to zeros
+                    // Only zeros are equal to zeros, and totalOrder places -0 before +0.
+                    if (T.IsZero(x) && (T.IsNegative(x) != T.IsNegative(y)))
                     {
-                        // IEEE 754 numbers are either positive or negative. Skip check for the opposite.
-
-                        if (T.IsNegative(x))
-                        {
-                            return T.IsNegative(y) ? 0 : -1;
-                        }
-                        else
-                        {
-                            return T.IsPositive(y) ? 0 : 1;
-                        }
+                        return T.IsNegative(x) ? -1 : 1;
                     }
-                    else
-                    {
-                        // Equivalant values are compared by their exponent parts,
-                        // and the value with smaller exponent is considered closer to zero.
 
-                        // This only applies to IEEE 754 decimals. Consider to add support if decimals are added into .NET.
-                        return 0;
-                    }
+                    // Values that are equal but have differing representations are IEEE 754 decimal cohort
+                    // members (e.g. 1.0 and 1.00, or same-signed zeros with differing exponents). These are
+                    // ordered by exponent: the value with the smaller exponent is closer to zero for positive
+                    // values, and the ordering is reversed for negative values. Binary types have a unique
+                    // representation per value, so their exponents already match and this returns 0.
+
+                    int exponentComparison = CompareExponent(x, y);
+                    return T.IsNegative(x) ? -exponentComparison : exponentComparison;
                 }
                 else
                 {
@@ -140,7 +182,6 @@ namespace System.Numerics
                     {
                         // IEEE 754 totalOrder only defines the order of NaN type bit (the first bit of significand)
                         // To match the integer semantic comparison above, here we compare all the significand bits
-                        // Revisit this if decimals are added
 
                         // Leave the space for custom floating-point type that has variable significand length
 
@@ -199,6 +240,69 @@ namespace System.Numerics
                     }
                 }
             }
+        }
+
+        // Fast path for the built-in IEEE 754 decimal types. Decimal bit patterns are not monotonic
+        // in totalOrder (unlike binary formats), so this replicates the generic totalOrder while
+        // unpacking each operand at most twice instead of the four-plus unpacks the generic path incurs.
+        private static int CompareDecimal<TDecimal, TValue>(TValue xBits, TValue yBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            bool xIsNaN = TDecimal.IsNaN(xBits);
+            bool yIsNaN = TDecimal.IsNaN(yBits);
+
+            if (xIsNaN || yIsNaN)
+            {
+                // totalOrder places NaNs at the extremes ordered by sign: -qNaN < -sNaN < finite < +sNaN < +qNaN.
+                bool xIsNegative = TDecimal.IsNegative(xBits);
+
+                if (xIsNaN && yIsNaN)
+                {
+                    if (xIsNegative != TDecimal.IsNegative(yBits))
+                    {
+                        return xIsNegative ? -1 : 1;
+                    }
+
+                    // Same-signed NaNs are ordered by their decoded significand (payload), matching the
+                    // significand comparison the generic path uses.
+                    TValue xSignificand = Number.UnpackDecimalIeee754<TDecimal, TValue>(xBits).Significand;
+                    TValue ySignificand = Number.UnpackDecimalIeee754<TDecimal, TValue>(yBits).Significand;
+
+                    int payload = xSignificand.CompareTo(ySignificand);
+                    return xIsNegative ? -payload : payload;
+                }
+
+                if (xIsNaN)
+                {
+                    return xIsNegative ? -1 : 1;
+                }
+
+                return TDecimal.IsNegative(yBits) ? 1 : -1;
+            }
+
+            int result = Number.CompareDecimalIeee754<TDecimal, TValue>(xBits, yBits);
+
+            if (result != 0)
+            {
+                return result;
+            }
+
+            // The values are numerically equal but may have differing representations (decimal cohort
+            // members such as 1.0 and 1.00, or same-signed zeros with differing exponents).
+            Number.DecodedDecimalIeee754<TValue> x = Number.UnpackDecimalIeee754<TDecimal, TValue>(xBits);
+            Number.DecodedDecimalIeee754<TValue> y = Number.UnpackDecimalIeee754<TDecimal, TValue>(yBits);
+
+            // totalOrder places -0 before +0.
+            if ((x.Significand == TValue.Zero) && (x.Signed != y.Signed))
+            {
+                return x.Signed ? -1 : 1;
+            }
+
+            // Cohort members differ only by exponent: the value with the smaller exponent is closer to
+            // zero for positive values, and the ordering is reversed for negative values.
+            int exponentComparison = x.UnbiasedExponent.CompareTo(y.UnbiasedExponent);
+            return x.Signed ? -exponentComparison : exponentComparison;
         }
 
         /// <summary>
