@@ -82,7 +82,7 @@
 
     LoopEnd:
         ldloc.1
-        call class [System.Runtime]System.Threading.Tasks.Task`1<int32> [System.Runtime]System.Threading.Tasks.Task::FromResult<int32>(!!0)
+        call class [System.Runtime]System.Threading.Tasks.Task`1<!!0> [System.Runtime]System.Threading.Tasks.Task::FromResult<int32>(!!0)
         ret
     }
 
@@ -166,16 +166,37 @@
     // --- runtime-async await wrappers ------------------------------------
     // These runtime-async methods await the result of the ordinary vararg
     // methods. This exercises the 'await' path against a Task/ValueTask that is
-    // produced by a vararg call site.
+    // produced by a vararg call site. The vararg call site itself is isolated in
+    // a dedicated non-async helper so that the async method (which may run on
+    // any platform) never contains a vararg call instruction.
+
+    .method private hidebysig static class [System.Runtime]System.Threading.Tasks.Task`1<int32>
+            MakeOrdinaryTaskVararg() cil managed noinlining
+    {
+        .maxstack 4
+        ldc.i4.s 10
+        ldc.i4.s 20
+        ldc.i4.s 12
+        call vararg class [System.Runtime]System.Threading.Tasks.Task`1<int32> Async2Varargs::OrdinaryTaskVararg(int32, ..., int32, int32)
+        ret
+    }
+
+    .method private hidebysig static valuetype [System.Runtime]System.Threading.Tasks.ValueTask`1<int32>
+            MakeOrdinaryValueTaskVararg() cil managed noinlining
+    {
+        .maxstack 4
+        ldc.i4.s 100
+        ldc.i4.s 30
+        ldc.i4.s 7
+        call vararg valuetype [System.Runtime]System.Threading.Tasks.ValueTask`1<int32> Async2Varargs::OrdinaryValueTaskVararg(int32, ..., int32, int32)
+        ret
+    }
 
     .method private hidebysig static class [System.Runtime]System.Threading.Tasks.Task`1<int32>
             AwaitOrdinaryTaskVararg() cil managed async noinlining
     {
         .maxstack 8
-        ldc.i4.s 10
-        ldc.i4.s 20
-        ldc.i4.s 12
-        call vararg class [System.Runtime]System.Threading.Tasks.Task`1<int32> Async2Varargs::OrdinaryTaskVararg(int32, ..., int32, int32)
+        call class [System.Runtime]System.Threading.Tasks.Task`1<int32> Async2Varargs::MakeOrdinaryTaskVararg()
         call !!0 [System.Runtime]System.Runtime.CompilerServices.AsyncHelpers::Await<int32>(class [System.Runtime]System.Threading.Tasks.Task`1<!!0>)
         ret
     }
@@ -184,10 +205,7 @@
             AwaitOrdinaryValueTaskVararg() cil managed async noinlining
     {
         .maxstack 8
-        ldc.i4.s 100
-        ldc.i4.s 30
-        ldc.i4.s 7
-        call vararg valuetype [System.Runtime]System.Threading.Tasks.ValueTask`1<int32> Async2Varargs::OrdinaryValueTaskVararg(int32, ..., int32, int32)
+        call valuetype [System.Runtime]System.Threading.Tasks.ValueTask`1<int32> Async2Varargs::MakeOrdinaryValueTaskVararg()
         call !!0 [System.Runtime]System.Runtime.CompilerServices.AsyncHelpers::Await<int32>(valuetype [System.Runtime]System.Threading.Tasks.ValueTask`1<!!0>)
         ret
     }
