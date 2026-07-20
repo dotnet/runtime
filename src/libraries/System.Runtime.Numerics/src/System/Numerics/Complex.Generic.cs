@@ -368,14 +368,57 @@ namespace System.Numerics
 
         public static Complex<T> Sin(Complex<T> value)
         {
+            if (!IsFinite(value))
+            {
+                // sin(z) = -i sinh(iz); Sinh carries the Annex G special values.
+                Complex<T> sinh = Sinh(new Complex<T>(-value.m_imaginary, value.m_real));
+                return new Complex<T>(sinh.m_imaginary, -sinh.m_real);
+            }
+
             (T sin, T cos) = T.SinCos(value.m_real);
             return new Complex<T>(sin * T.Cosh(value.m_imaginary), cos * T.Sinh(value.m_imaginary));
         }
 
         public static Complex<T> Sinh(Complex<T> value)
         {
+            T real = value.m_real;
+            T imaginary = value.m_imaginary;
+
+            // IEEE 754 / C23 Annex G.6.2.5 special values. sinh is odd and csinh(conj(z)) == conj(csinh(z)).
+            if (!T.IsFinite(real))
+            {
+                if (T.IsNaN(real))
+                {
+                    // NaN + i0 -> NaN + i0; NaN + iy (y != 0) -> NaN + iNaN.
+                    return (imaginary == T.Zero) ? new Complex<T>(real, imaginary) : new Complex<T>(T.NaN, T.NaN);
+                }
+
+                // real is +-INF.
+                if (imaginary == T.Zero)
+                {
+                    // +-INF + i0 -> +-INF + i0.
+                    return new Complex<T>(real, imaginary);
+                }
+
+                if (!T.IsFinite(imaginary))
+                {
+                    // +-INF + i(INF|NaN) -> +-INF + iNaN.
+                    return new Complex<T>(real, T.NaN);
+                }
+
+                // +-INF + iy (finite nonzero) -> +-INF * cis(y).
+                (T sinInf, T cosInf) = T.SinCos(imaginary);
+                return new Complex<T>(T.Sinh(real) * cosInf, T.Cosh(real) * sinInf);
+            }
+
+            if (!T.IsFinite(imaginary))
+            {
+                // real is finite. +-0 + i(INF|NaN) -> +-0 + iNaN; x + i(INF|NaN) (x != 0) -> NaN + iNaN.
+                return (real == T.Zero) ? new Complex<T>(real, T.NaN) : new Complex<T>(T.NaN, T.NaN);
+            }
+
             // Use sinh(z) = -i sin(iz) to compute via sin(z).
-            Complex<T> sin = Sin(new Complex<T>(-value.m_imaginary, value.m_real));
+            Complex<T> sin = Sin(new Complex<T>(-imaginary, real));
             return new Complex<T>(sin.m_imaginary, -sin.m_real);
         }
 
@@ -401,14 +444,57 @@ namespace System.Numerics
 
         public static Complex<T> Cos(Complex<T> value)
         {
+            if (!IsFinite(value))
+            {
+                // cos(z) = cosh(iz); Cosh carries the Annex G special values.
+                return Cosh(new Complex<T>(-value.m_imaginary, value.m_real));
+            }
+
             (T sin, T cos) = T.SinCos(value.m_real);
             return new Complex<T>(cos * T.Cosh(value.m_imaginary), -sin * T.Sinh(value.m_imaginary));
         }
 
         public static Complex<T> Cosh(Complex<T> value)
         {
+            T real = value.m_real;
+            T imaginary = value.m_imaginary;
+
+            // IEEE 754 / C23 Annex G.6.2.4 special values. cosh is even and ccosh(conj(z)) == conj(ccosh(z)).
+            if (!T.IsFinite(real))
+            {
+                if (T.IsNaN(real))
+                {
+                    // NaN + i0 -> NaN + i0; NaN + iy (y != 0) -> NaN + iNaN.
+                    return (imaginary == T.Zero) ? new Complex<T>(T.NaN, imaginary) : new Complex<T>(T.NaN, T.NaN);
+                }
+
+                // real is +-INF; cosh is even so the real part of the result is +INF.
+                if (imaginary == T.Zero)
+                {
+                    // +-INF + i0 -> +INF + i0, imaginary sign = sign(real) XOR sign(imaginary).
+                    T imag = (T.IsNegative(real) ^ T.IsNegative(imaginary)) ? -T.Zero : T.Zero;
+                    return new Complex<T>(T.PositiveInfinity, imag);
+                }
+
+                if (!T.IsFinite(imaginary))
+                {
+                    // +-INF + i(INF|NaN) -> +INF + iNaN.
+                    return new Complex<T>(T.PositiveInfinity, T.NaN);
+                }
+
+                // +-INF + iy (finite nonzero) -> +INF * cis(y), sinh carrying the sign of the real part.
+                (T sinInf, T cosInf) = T.SinCos(imaginary);
+                return new Complex<T>(T.Cosh(real) * cosInf, T.Sinh(real) * sinInf);
+            }
+
+            if (!T.IsFinite(imaginary))
+            {
+                // real is finite. +-0 + i(INF|NaN) -> NaN + i(+-0); x + i(INF|NaN) (x != 0) -> NaN + iNaN.
+                return (real == T.Zero) ? new Complex<T>(T.NaN, T.CopySign(T.Zero, real)) : new Complex<T>(T.NaN, T.NaN);
+            }
+
             // Use cosh(z) = cos(iz) to compute via cos(z).
-            return Cos(new Complex<T>(-value.m_imaginary, value.m_real));
+            return Cos(new Complex<T>(-imaginary, real));
         }
 
         public static Complex<T> Acos(Complex<T> value)
@@ -433,6 +519,13 @@ namespace System.Numerics
 
         public static Complex<T> Tan(Complex<T> value)
         {
+            if (!IsFinite(value))
+            {
+                // tan(z) = -i tanh(iz); Tanh carries the Annex G special values.
+                Complex<T> tanh = Tanh(new Complex<T>(-value.m_imaginary, value.m_real));
+                return new Complex<T>(tanh.m_imaginary, -tanh.m_real);
+            }
+
             // tan z = sin z / cos z, but to avoid unnecessary repeated trig computations, use
             //   tan z = (sin(2x) + i sinh(2y)) / (cos(2x) + cosh(2y))
             // (see Abramowitz & Stegun 4.3.57 or derive by hand), and compute trig functions here.
@@ -461,8 +554,35 @@ namespace System.Numerics
 
         public static Complex<T> Tanh(Complex<T> value)
         {
+            T real = value.m_real;
+            T imaginary = value.m_imaginary;
+
+            // IEEE 754 / C23 Annex G.6.2.6 special values. tanh is odd and ctanh(conj(z)) == conj(ctanh(z)).
+            if (!T.IsFinite(real))
+            {
+                if (T.IsNaN(real))
+                {
+                    // NaN + i0 -> NaN + i0; NaN + iy (y != 0) -> NaN + iNaN.
+                    return (imaginary == T.Zero) ? new Complex<T>(real, imaginary) : new Complex<T>(T.NaN, T.NaN);
+                }
+
+                // real is +-INF -> +-1 + i0, with the imaginary sign taken from sin(2y).
+                T re = T.CopySign(T.One, real);
+                if (T.IsFinite(imaginary))
+                {
+                    return new Complex<T>(re, T.CopySign(T.Zero, T.Sin(imaginary + imaginary)));
+                }
+                return new Complex<T>(re, T.CopySign(T.Zero, imaginary));
+            }
+
+            if (!T.IsFinite(imaginary))
+            {
+                // real is finite. +-0 + i(INF|NaN) -> +-0 + iNaN; x + i(INF|NaN) (x != 0) -> NaN + iNaN.
+                return (real == T.Zero) ? new Complex<T>(real, T.NaN) : new Complex<T>(T.NaN, T.NaN);
+            }
+
             // Use tanh(z) = -i tan(iz) to compute via tan(z).
-            Complex<T> tan = Tan(new Complex<T>(-value.m_imaginary, value.m_real));
+            Complex<T> tan = Tan(new Complex<T>(-imaginary, real));
             return new Complex<T>(tan.m_imaginary, -tan.m_real);
         }
 

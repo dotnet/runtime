@@ -1870,9 +1870,9 @@ namespace System.Numerics.Tests
             yield return new object[] { 0.0, double.PositiveInfinity, 0.0, 1.0 };
             yield return new object[] { 0.0, double.NegativeInfinity, 0.0, -1.0 };
 
-            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
+            yield return new object[] { 0.0, double.NaN, 0.0, double.NaN };
+            yield return new object[] { double.NaN, 0.0, double.NaN, 0.0 };
+            yield return new object[] { double.NaN, double.PositiveInfinity, -0.0, 1.0 };
             yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
 
             yield return new object[] { 0.0, 750.0, 0.0, 1.0 };
@@ -1933,9 +1933,9 @@ namespace System.Numerics.Tests
             yield return new object[] { double.PositiveInfinity, 0.0, 1.0, 0.0 };
             yield return new object[] { double.NegativeInfinity, 0.0, -1.0, 0.0 };
 
-            yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
-            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.NaN };
-            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, 0.0, double.NaN, 0.0 };
+            yield return new object[] { double.PositiveInfinity, double.NaN, 1.0, -0.0 };
+            yield return new object[] { 0.0, double.NaN, 0.0, double.NaN };
             yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
 
             yield return new object[] { -750.0, 0.0, -1.0, 0.0 };
