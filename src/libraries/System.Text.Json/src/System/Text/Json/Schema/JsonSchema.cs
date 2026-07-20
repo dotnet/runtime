@@ -80,8 +80,7 @@ namespace System.Text.Json.Schema
 
         public int? MaxLength { get; set { VerifyMutable(); field = value; } }
 
-        public bool? Deprecated { get => _deprecated; set { VerifyMutable(); _deprecated = value; } }
-        private bool? _deprecated;
+        public bool? Deprecated { get; set { VerifyMutable(); field = value; } }
 
         public string? ContentEncoding { get; set { VerifyMutable(); field = value; } }
 
