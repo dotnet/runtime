@@ -2850,7 +2850,6 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
         PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
-        PRECONDITION(!*pMayHaveReenteredCooperativeGCMode);
     } CONTRACTL_END;
 
     size_t dispatchHolderSize = sizeof(DispatchHolder);
@@ -2936,7 +2935,6 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
         PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
-        PRECONDITION(!*pMayHaveReenteredCooperativeGCMode);
     } CONTRACTL_END;
 
     //allocate from the requisite heap and copy the template over it.
