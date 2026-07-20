@@ -565,6 +565,65 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task MultiProxy_PAC_Failover_CredentialsNotSend_Succeeds()
+        {
+            if (IsWinHttpHandler)
+            {
+                // PAC-based failover is only supported on Windows/SocketsHttpHandler
+                return;
+            }
+
+            using LoopbackProxyServer failingProxyServer = LoopbackProxyServer.Create(new LoopbackProxyServer.Options
+            {
+                AuthenticationSchemes = AuthenticationSchemes.Basic,
+                ConnectionCloseAfter407 = true,
+                KillConnectionAfterAuth = true
+            });
+            using LoopbackProxyServer succeedingProxyServer = LoopbackProxyServer.Create();
+            string proxyConfigString = $"{failingProxyServer.Uri.Host}:{failingProxyServer.Uri.Port} {succeedingProxyServer.Uri.Host}:{succeedingProxyServer.Uri.Port}";
+
+            // Create a WinInetProxyHelper and override its values with our own.
+            Type winInetProxyHelperType = Type.GetType("System.Net.Http.WinInetProxyHelper, System.Net.Http", true);
+            object winInetProxyHelper = Activator.CreateInstance(winInetProxyHelperType, true);
+            winInetProxyHelperType.GetField("_autoConfigUrl", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, null);
+            winInetProxyHelperType.GetField("_autoDetect", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, false);
+            winInetProxyHelperType.GetField("_proxy", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, proxyConfigString);
+            winInetProxyHelperType.GetField("_proxyBypass", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, null);
+
+            // Create a HttpWindowsProxy with our custom WinInetProxyHelper.
+            IWebProxy httpWindowsProxy = (IWebProxy)Activator.CreateInstance(Type.GetType("System.Net.Http.HttpWindowsProxy, System.Net.Http", true), Reflection.BindingFlags.Public | Reflection.BindingFlags.NonPublic| Reflection.BindingFlags.Instance, null, new[] { winInetProxyHelper }, null);
+
+            // Run a request with that proxy.
+            Task requestTask = LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    using HttpClient client = CreateHttpClient(handler);
+                    handler.Proxy = httpWindowsProxy;
+                    handler.Proxy.Credentials = new NetworkCredential("username", "password", $"{failingProxyServer.Uri.Host}:{failingProxyServer.Uri.Port}");
+
+                    // First request is expected to hit the failing proxy server, then failover to the succeeding proxy server.
+                    Assert.Equal("foo", await client.GetStringAsync(uri));
+                    Assert.Equal("bar", await client.GetStringAsync(uri));
+                },
+                async server =>
+                {
+                    await server.HandleRequestAsync(statusCode: HttpStatusCode.OK, content: "foo");
+                    await server.HandleRequestAsync(statusCode: HttpStatusCode.OK, content: "bar");
+                });
+
+            // Wait for request to finish.
+            await requestTask;
+
+            Assert.Equal(2, succeedingProxyServer.Requests.Count);
+            foreach (var request in succeedingProxyServer.Requests)
+            {
+                Assert.Null(request.AuthorizationHeaderValueToken);
+            }
+        }
+
         [Theory]
         [InlineData("1.2.3.4")]
         [InlineData("1.2.3.4:8080")]
