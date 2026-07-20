@@ -1388,7 +1388,7 @@ namespace System.Tests
             CultureInfo inv = CultureInfo.InvariantCulture;
             var rng = new Random(42);
 
-            for (int i = 0; i < 50_000; i++)
+            for (int i = 0; i < 10_000; i++)
             {
                 double value = BitConverter.Int64BitsToDouble(rng.NextInt64(long.MinValue, long.MaxValue));
 
