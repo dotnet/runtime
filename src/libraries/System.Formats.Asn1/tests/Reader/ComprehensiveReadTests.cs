@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 using X509KeyUsageCSharpStyle=System.Formats.Asn1.Tests.Reader.ReadNamedBitListBase.X509KeyUsageCSharpStyle;
@@ -11,6 +12,58 @@ namespace System.Formats.Asn1.Tests.Reader
 {
     public static class ComprehensiveReadTests
     {
+        [Fact]
+        public static void ReadVisibleString_VectorSizedRange()
+        {
+            const int PayloadLength = 128;
+            byte[] encoded = new byte[PayloadLength + 3];
+            char[] expected = new char[PayloadLength];
+            encoded[0] = (byte)UniversalTagNumber.VisibleString;
+            encoded[1] = 0x81;
+            encoded[2] = PayloadLength;
+
+            for (int i = 0; i < PayloadLength; i++)
+            {
+                byte value = i % 2 == 0 ? (byte)0x20 : (byte)0x7E;
+                encoded[i + 3] = value;
+                expected[i] = (char)value;
+            }
+
+            Assert.Equal(
+                new string(expected),
+                AsnDecoder.ReadCharacterString(
+                    encoded,
+                    AsnEncodingRules.DER,
+                    UniversalTagNumber.VisibleString,
+                    out int bytesConsumed));
+            Assert.Equal(encoded.Length, bytesConsumed);
+        }
+
+        [Theory]
+        [InlineData(0x1F, 10)]
+        [InlineData(0x7F, 10)]
+        [InlineData(0x1F, 128)]
+        [InlineData(0x7F, 128)]
+        public static void ReadVisibleString_Invalid(byte invalidValue, int invalidIndex)
+        {
+            const int PayloadLength = 129;
+            byte[] encoded = new byte[PayloadLength + 3];
+            encoded[0] = (byte)UniversalTagNumber.VisibleString;
+            encoded[1] = 0x81;
+            encoded[2] = PayloadLength;
+            encoded.AsSpan(3).Fill((byte)'A');
+            encoded[invalidIndex + 3] = invalidValue;
+
+            AsnContentException exception = Assert.Throws<AsnContentException>(
+                () => AsnDecoder.ReadCharacterString(
+                    encoded,
+                    AsnEncodingRules.DER,
+                    UniversalTagNumber.VisibleString,
+                    out _));
+            DecoderFallbackException fallback = Assert.IsType<DecoderFallbackException>(exception.InnerException);
+            Assert.Equal(invalidIndex, fallback.Index);
+        }
+
         [Fact]
         public static void ReadMicrosoftComCert()
         {
