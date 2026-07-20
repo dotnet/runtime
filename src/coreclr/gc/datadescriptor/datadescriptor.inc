@@ -13,19 +13,21 @@ CDAC_TYPES_BEGIN()
 #ifdef SERVER_GC
 CDAC_TYPE_BEGIN(GCHeap)
 CDAC_TYPE_INDETERMINATE(GCHeap)
+#ifdef BACKGROUND_GC
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, MarkArray, cdac_data<GC_NAMESPACE::gc_heap>::MarkArray)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, NextSweepObj, cdac_data<GC_NAMESPACE::gc_heap>::NextSweepObj)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, BackgroundMinSavedAddr, cdac_data<GC_NAMESPACE::gc_heap>::BackgroundMinSavedAddr)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, BackgroundMaxSavedAddr, cdac_data<GC_NAMESPACE::gc_heap>::BackgroundMaxSavedAddr)
+#endif // BACKGROUND_GC
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, AllocAllocated, cdac_data<GC_NAMESPACE::gc_heap>::AllocAllocated)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, EphemeralHeapSegment, cdac_data<GC_NAMESPACE::gc_heap>::EphemeralHeapSegment)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, CardTable, cdac_data<GC_NAMESPACE::gc_heap>::CardTable)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, FinalizeQueue, cdac_data<GC_NAMESPACE::gc_heap>::FinalizeQueue)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, GenerationTable, cdac_data<GC_NAMESPACE::gc_heap>::GenerationTable)
-#ifndef USE_REGIONS
+#if !defined(USE_REGIONS) && defined(BACKGROUND_GC)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, SavedSweepEphemeralSeg, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralSeg)
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, SavedSweepEphemeralStart, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralStart)
-#endif // !USE_REGIONS
+#endif // !USE_REGIONS && BACKGROUND_GC
 CDAC_TYPE_FIELD(GCHeap, TYPE(OomHistory), OomData, cdac_data<GC_NAMESPACE::gc_heap>::OomData)
 #ifdef HEAP_ANALYZE
 CDAC_TYPE_FIELD(GCHeap, T_POINTER, InternalRootArray, cdac_data<GC_NAMESPACE::gc_heap>::InternalRootArray)
@@ -154,19 +156,21 @@ CDAC_GLOBAL(CountFreeRegionKinds, T_UINT32, (uint32_t)FREE_REGION_KINDS)
 
 
 #ifndef SERVER_GC
+#ifdef BACKGROUND_GC
 CDAC_GLOBAL_POINTER(GCHeapMarkArray, cdac_data<GC_NAMESPACE::gc_heap>::MarkArray)
 CDAC_GLOBAL_POINTER(GCHeapNextSweepObj, cdac_data<GC_NAMESPACE::gc_heap>::NextSweepObj)
 CDAC_GLOBAL_POINTER(GCHeapBackgroundMinSavedAddr, cdac_data<GC_NAMESPACE::gc_heap>::BackgroundMinSavedAddr)
 CDAC_GLOBAL_POINTER(GCHeapBackgroundMaxSavedAddr, cdac_data<GC_NAMESPACE::gc_heap>::BackgroundMaxSavedAddr)
+#endif // BACKGROUND_GC
 CDAC_GLOBAL_POINTER(GCHeapAllocAllocated, cdac_data<GC_NAMESPACE::gc_heap>::AllocAllocated)
 CDAC_GLOBAL_POINTER(GCHeapEphemeralHeapSegment, cdac_data<GC_NAMESPACE::gc_heap>::EphemeralHeapSegment)
 CDAC_GLOBAL_POINTER(GCHeapCardTable, cdac_data<GC_NAMESPACE::gc_heap>::CardTable)
 CDAC_GLOBAL_POINTER(GCHeapFinalizeQueue, cdac_data<GC_NAMESPACE::gc_heap>::FinalizeQueue)
 CDAC_GLOBAL_POINTER(GCHeapGenerationTable, cdac_data<GC_NAMESPACE::gc_heap>::GenerationTable)
-#ifndef USE_REGIONS
+#if !defined(USE_REGIONS) && defined(BACKGROUND_GC)
 CDAC_GLOBAL_POINTER(GCHeapSavedSweepEphemeralSeg, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralSeg)
 CDAC_GLOBAL_POINTER(GCHeapSavedSweepEphemeralStart, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralStart)
-#endif // !USE_REGIONS
+#endif // !USE_REGIONS && BACKGROUND_GC
 CDAC_GLOBAL_POINTER(GCHeapOomData, cdac_data<GC_NAMESPACE::gc_heap>::OomData)
 #ifdef HEAP_ANALYZE
 CDAC_GLOBAL_POINTER(GCHeapInternalRootArray, cdac_data<GC_NAMESPACE::gc_heap>::InternalRootArray)

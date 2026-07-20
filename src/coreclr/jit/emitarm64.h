@@ -197,6 +197,10 @@ FORCEINLINE bool OptimizeLdrStr(instruction ins,
 
 bool OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, emitAttr regAttr);
 
+// Try to fold the page offset of a preceding relocatable "add Rd,Rd,#:lo12:sym" (PAGEOFFSET_12A)
+// into a "ldr Rd,[Rd]" to form "ldr Rd,[Rd,#:lo12:sym]" (PAGEOFFSET_12L), removing the add.
+bool TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2);
+
 emitLclVarAddr* emitGetLclVarPairLclVar2(instrDesc* id)
 {
     assert(id->idIsLclVarPair());
@@ -1058,9 +1062,6 @@ static bool emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size);
 // true if this 'imm' can be encoded as the offset in an unscaled ldr/str instruction
 static bool emitIns_valid_imm_for_unscaled_ldst_offset(INT64 imm);
 
-// true if this 'imm' can be encoded as the offset in an scaled SVE ldr/str instruction
-static bool emitIns_valid_imm_for_scaled_sve_ldst_offset(INT64 imm);
-
 // true if this 'imm' can be encoded as a input operand to a ccmp instruction
 static bool emitIns_valid_imm_for_ccmp(INT64 imm);
 
@@ -1461,7 +1462,7 @@ inline static ssize_t computeRelPageAddr(size_t dstAddr, size_t srcAddr)
 /*                   Output target-independent instructions             */
 /************************************************************************/
 
-void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
+void emitIns_J(instruction ins, BasicBlock* dst, bool keepShort = false);
 
 /************************************************************************/
 /*           The public entry points to output instructions             */

@@ -52,9 +52,11 @@ private:
     bool IfConvertCheckStmts(BasicBlock* block, IfConvertOperation* foundOperation);
     bool IfConvertTryGetElseFromJtrueBlock(GenTreeLclVar* thenStore, IfConvertOperation* foundOperation);
 
-    GenTree* TryTransformSelectOperOrLocal(GenTree* oper, GenTree* lcl);
-    GenTree* TryTransformSelectOperOrZero(GenTree* oper, GenTree* lcl);
-    GenTree* TryTransformSelectToOrdinaryOps(GenTree* trueInput, GenTree* falseInput);
+    GenTree* TryOptimizeSelect(GenTreeConditional* select);
+    GenTree* TrySelectToCnsOpCond(GenTreeConditional* select);
+    GenTree* TrySelectToLclOpCond(GenTreeConditional* select);
+    GenTree* TrySelectToCondOpLcl(GenTreeConditional* select);
+
 #ifdef DEBUG
     void IfConvertDump();
 #endif
@@ -148,7 +150,20 @@ bool OptIfConversionDsc::IfConvertCheckFlow()
         return false;
     }
 
+    // The Then/Else blocks will be removed by if-conversion, so they must be in the same
+    // EH region as m_startBlock. Otherwise they may be the start of a try/handler region
+    // (and thus marked BBF_DONT_REMOVE), or removing them could leave dangling EH state.
+    if (!BasicBlock::sameEHRegion(falseBb, m_startBlock))
+    {
+        return false;
+    }
+
     m_finalBlock = HasElseBlock() ? trueBb->GetUniqueSucc() : trueBb;
+
+    if (HasElseBlock() && !BasicBlock::sameEHRegion(trueBb, m_startBlock))
+    {
+        return false;
+    }
 
     // m_finalBlock is only allowed to be null if both return.
     // E.g: Then block exits by throwing an exception => we bail here.
@@ -189,20 +204,11 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperati
                 return false;
             }
 
-            // Ensure the operation has integer type.
-            if (!varTypeIsIntegralOrI(tree))
+            // Ensure the operation has integer or float type.
+            if (!(varTypeIsIntegralOrI(tree) || varTypeIsFloating(tree)))
             {
                 return false;
             }
-
-#ifndef TARGET_64BIT
-            // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
-            // handle contained relops efficiently after decomposition.
-            if (varTypeIsLong(tree))
-            {
-                return false;
-            }
-#endif
 
             GenTree* op1 = tree->gtGetOp1();
 
@@ -567,17 +573,22 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
     }
 
-    // Get the select node inputs.
-    var_types selectType;
-    GenTree*  selectTrueInput;
-    GenTree*  selectFalseInput;
+    // Get the SELECT inputs.
+    GenTree* selectTrueInput;
+    GenTree* selectFalseInput;
     if (m_mainOper == GT_STORE_LCL_VAR)
     {
         selectFalseInput = m_thenOperation.node->AsLclVar()->Data();
-        selectTrueInput  = (m_elseOperation.block != nullptr) ? m_elseOperation.node->AsLclVar()->Data() : nullptr;
-
-        // Pick the type as the type of the local, which should always be compatible even for implicit coercions.
-        selectType = genActualType(m_thenOperation.node);
+        if (m_elseOperation.block == nullptr)
+        {
+            // The code doesn't explicitly express an Else operation, use the unmodified local.
+            GenTreeLclVar* store = m_thenOperation.node->AsLclVar();
+            selectTrueInput      = m_compiler->gtNewLclVarNode(store->GetLclNum(), store->TypeGet());
+        }
+        else
+        {
+            selectTrueInput = m_elseOperation.node->AsLclVar()->Data();
+        }
     }
     else
     {
@@ -587,25 +598,84 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 
         selectTrueInput  = m_elseOperation.node->AsOp()->GetReturnValue();
         selectFalseInput = m_thenOperation.node->AsOp()->GetReturnValue();
-        selectType       = genActualType(m_thenOperation.node);
     }
 
-    GenTree* select = TryTransformSelectToOrdinaryOps(selectTrueInput, selectFalseInput);
-    if (select == nullptr)
+    GenTree* select = m_compiler->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput,
+                                                       genActualType(m_thenOperation.node));
+
+#ifdef DEBUG
+    JITDUMP("\nSELECT created:\n");
+    if (m_compiler->verbose)
     {
-#ifdef TARGET_RISCV64
-        JITDUMP("Skipping if-conversion that cannot be transformed to ordinary operations\n");
-        return false;
+        m_compiler->gtDispTree(select);
+    }
 #endif
-        if (selectTrueInput == nullptr)
+
+    {
+        GenTree* optSelect = TryOptimizeSelect(select->AsConditional());
+        if (optSelect != nullptr)
         {
-            // Duplicate the destination of the Then store.
-            assert(m_mainOper == GT_STORE_LCL_VAR && (m_elseOperation.block == nullptr));
-            GenTreeLclVar* store = m_thenOperation.node->AsLclVar();
-            selectTrueInput      = m_compiler->gtNewLclVarNode(store->GetLclNum(), store->TypeGet());
+            select = optSelect;
+
+#ifdef DEBUG
+            JITDUMP("\nSELECT after optimizations:\n");
+            if (m_compiler->verbose)
+            {
+                m_compiler->gtDispTree(select);
+            }
+#endif
         }
-        // Create a select node
-        select = m_compiler->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
+    }
+
+    if (select->OperIs(GT_SELECT))
+    {
+        if (varTypeIsFloating(select))
+        {
+            JITDUMP("Abort: SELECT of type float\n");
+            return true;
+        }
+
+#ifdef TARGET_RISCV64
+        // Without Zicond, riscv64 has no native lowering for GT_SELECT - the
+        // branchy form is kept. With Zicond the SELECT is lowered to a
+        // czero.{eqz,nez}/or sequence, but only for integer-typed selects.
+        bool canCodegenSelect = m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zicond) &&
+                                varTypeIsIntegralOrI(select->TypeGet());
+        if (!canCodegenSelect)
+        {
+            JITDUMP("Skipping if-conversion that could not be optimized to ordinary operations\n");
+            return true;
+        }
+
+        // RISC-V has no flag register, so any branchless SELECT must first materialize
+        // the condition into a 0/1 register before the czero/or sequence (>=5 insns).
+        // When one arm is a no-op (read of an existing local) and the other is a small
+        // immediate, the branchy form fits in ~2 insns (branch + addi), so keep it.
+        GenTreeConditional* sel      = select->AsConditional();
+        GenTree*            selTrue  = sel->gtOp1;
+        GenTree*            selFalse = sel->gtOp2;
+
+        auto isLocalNoOp = [](GenTree* n) {
+            return n->OperIs(GT_LCL_VAR);
+        };
+        auto isSmallImm = [](GenTree* n) {
+            return n->IsIntegralConst() && emitter::isValidSimm12(n->AsIntConCommon()->IntegralValue());
+        };
+
+        if ((isLocalNoOp(selTrue) && isSmallImm(selFalse)) || (isSmallImm(selTrue) && isLocalNoOp(selFalse)))
+        {
+            JITDUMP("Skipping if-conversion: branchy form fits in ~2 insns; Zicond would need 5+\n");
+            return true;
+        }
+#elif !defined(TARGET_64BIT)
+        // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
+        // handle contained relops efficiently after decomposition.
+        if (varTypeIsLong(select))
+        {
+            JITDUMP("Abort: SELECT of type Long on 32-bit system\n");
+            return true;
+        }
+#endif
     }
 
     // Use the SELECT as the source of the Then STORE/RETURN.
@@ -674,6 +744,45 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     return true;
 }
 
+//-----------------------------------------------------------------------------
+// TryOptimizeSelect: Try to optimize SELECT
+//
+// Arguments:
+//     select - The SELECT node
+//
+// Return Value:
+//     Optimized node, otherwise nullptr.
+//
+GenTree* OptIfConversionDsc::TryOptimizeSelect(GenTreeConditional* select)
+{
+    GenTree* opt = m_compiler->gtFoldExprConditional(select);
+    if (!opt->OperIs(GT_SELECT))
+    {
+        return opt;
+    }
+
+    opt = TrySelectToCnsOpCond(select);
+    if (opt != nullptr)
+    {
+        return opt;
+    }
+
+    opt = TrySelectToLclOpCond(select);
+    if (opt != nullptr)
+    {
+        return opt;
+    }
+
+    opt = TrySelectToCondOpLcl(select);
+    if (opt != nullptr)
+    {
+        return opt;
+    }
+
+    return nullptr;
+}
+
+#ifdef TARGET_RISCV64
 struct IntConstSelectOper
 {
     genTreeOps oper;
@@ -685,17 +794,6 @@ struct IntConstSelectOper
         return oper != GT_NONE;
     }
 };
-
-//-----------------------------------------------------------------------------
-// MatchIntConstSelectValues: Matches an operation so that `trueVal` can be calculated as:
-//     oper(type, falseVal, condition)
-//
-// Notes:
-//     A non-zero bitIndex (log2(trueVal)) differentiates (condition << bitIndex) from (falseVal << condition).
-//
-// Return Value:
-//     The matched operation (if any).
-//
 static IntConstSelectOper MatchIntConstSelectValues(int64_t trueVal, int64_t falseVal)
 {
     if (trueVal == falseVal + 1)
@@ -737,21 +835,98 @@ static IntConstSelectOper MatchIntConstSelectValues(int64_t trueVal, int64_t fal
 
     return {GT_NONE};
 }
+#endif // TARGET_RISCV64
 
 //-----------------------------------------------------------------------------
-// TryTransformSelectOperOrLocal: Try to trasform "cond ? oper(lcl, (-)1) : lcl" into "oper(')(lcl, cond)"
+// TrySelectToCnsOpCond: Try to optimize:
+// SELECT(cond,   0,   1) ->         cond
+// SELECT(cond,   3,   3) ->    3
+// SELECT(cond,   6,   5) ->    5 +  cond
+// SELECT(cond, -25, -13) ->  -25 >> cond
 //
 // Arguments:
-//     trueInput  - expression to be evaluated when m_cond is true
-//     falseInput - expression to be evaluated when m_cond is false
+//     select - The SELECT node
 //
 // Return Value:
-//     The transformed expression, or null if no transformation took place
+//     Optimized node, otherwise nullptr.
 //
-GenTree* OptIfConversionDsc::TryTransformSelectOperOrLocal(GenTree* trueInput, GenTree* falseInput)
+GenTree* OptIfConversionDsc::TrySelectToCnsOpCond(GenTreeConditional* select)
 {
-    GenTree* oper = trueInput;
-    GenTree* lcl  = falseInput;
+    GenTree* cond       = select->gtCond;
+    GenTree* trueInput  = select->gtOp1;
+    GenTree* falseInput = select->gtOp2;
+
+    if (!cond->OperIsCompare() || !trueInput->IsIntegralConst() || !falseInput->IsIntegralConst())
+    {
+        return nullptr;
+    }
+
+    int64_t trueVal  = trueInput->AsIntConCommon()->IntegralValue();
+    int64_t falseVal = falseInput->AsIntConCommon()->IntegralValue();
+
+    if ((trueVal == 1 && falseVal == 0) || (trueVal == 0 && falseVal == 1))
+    {
+        GenTree* retCond = (trueVal == 1) ? cond : m_compiler->gtReverseCond(cond);
+        if (retCond->TypeGet() != select->TypeGet())
+        {
+            retCond = m_compiler->gtNewCastNode(select->TypeGet(), retCond, true, select->TypeGet());
+        }
+        return retCond;
+    }
+    else if (trueVal == falseVal)
+    {
+        return m_compiler->gtWrapWithSideEffects(trueInput, cond);
+    }
+
+#ifdef TARGET_RISCV64
+    bool               isCondReversed = false;
+    IntConstSelectOper selectOper     = MatchIntConstSelectValues(trueVal, falseVal);
+    if (!selectOper.isMatched())
+    {
+        isCondReversed = true;
+        selectOper     = MatchIntConstSelectValues(falseVal, trueVal);
+    }
+    if (selectOper.isMatched())
+    {
+        GenTree* left  = isCondReversed ? trueInput : falseInput;
+        GenTree* right = isCondReversed ? m_compiler->gtReverseCond(cond) : cond;
+        if (selectOper.bitIndex > 0)
+        {
+            assert(selectOper.oper == GT_LSH);
+            left->AsIntConCommon()->SetIntegralValue(selectOper.bitIndex);
+            std::swap(left, right);
+        }
+        return m_compiler->gtNewOperNode(selectOper.oper, selectOper.type, left, right);
+    }
+#endif // TARGET_RISCV64
+
+    return nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// TrySelectToLclOpCond: Try to optimize:
+// SELECT(cond, x  + 1, x) -> x  + cond
+// SELECT(cond, x  | 1, x) -> x  | cond
+// SELECT(cond, x  ^ 1, x) -> x  ^ cond
+// SELECT(cond, x << 1, x) -> x << cond
+//
+// Arguments:
+//     select - The SELECT node
+//
+// Return Value:
+//     Optimized node, otherwise nullptr.
+//
+GenTree* OptIfConversionDsc::TrySelectToLclOpCond(GenTreeConditional* select)
+{
+#ifdef TARGET_RISCV64
+    GenTree* cond = select->gtCond;
+    GenTree* oper = select->gtOp1;
+    GenTree* lcl  = select->gtOp2;
+
+    if (!cond->OperIsCompare())
+    {
+        return nullptr;
+    }
 
     bool isCondReversed = !lcl->OperIsAnyLocal();
     if (isCondReversed)
@@ -771,32 +946,41 @@ GenTree* OptIfConversionDsc::TryTransformSelectOperOrLocal(GenTree* trueInput, G
             if (lcl2->OperIs(GT_LCL_VAR) && (lcl2->AsLclVar()->GetLclNum() == lclNum))
             {
                 oper->AsOp()->gtOp1 = lcl2;
-                oper->AsOp()->gtOp2 = isCondReversed ? m_compiler->gtReverseCond(m_cond) : m_cond;
+                oper->AsOp()->gtOp2 = isCondReversed ? m_compiler->gtReverseCond(cond) : cond;
                 if (isDecrement)
                     oper->ChangeOper(GT_SUB);
 
-                oper->gtFlags |= m_cond->gtFlags & GTF_ALL_EFFECT;
+                oper->gtFlags |= cond->gtFlags & GTF_ALL_EFFECT;
                 return oper;
             }
         }
     }
+#endif // TARGET_RISCV64
     return nullptr;
 }
 
 //-----------------------------------------------------------------------------
-// TryTransformSelectOperOrZero: Try to trasform "cond ? oper(1, expr) : 0" into "oper(cond, expr)"
+// TrySelectToCondOpLcl: Try to optimize:
+// SELECT(cond, 1 << x, 0) -> cond << x
+// SELECT(cond, 1  & x, 0) -> cond  & x
 //
 // Arguments:
-//     trueInput  - expression to be evaluated when m_cond is true
-//     falseInput - expression to be evaluated when m_cond is false
+//     select - The SELECT node
 //
 // Return Value:
-//     The transformed expression, or null if no transformation took place
+//     Optimized node, otherwise nullptr.
 //
-GenTree* OptIfConversionDsc::TryTransformSelectOperOrZero(GenTree* trueInput, GenTree* falseInput)
+GenTree* OptIfConversionDsc::TrySelectToCondOpLcl(GenTreeConditional* select)
 {
-    GenTree* oper = trueInput;
-    GenTree* zero = falseInput;
+#ifdef TARGET_RISCV64
+    GenTree* cond = select->gtCond;
+    GenTree* oper = select->gtOp1;
+    GenTree* zero = select->gtOp2;
+
+    if (!cond->OperIsCompare())
+    {
+        return nullptr;
+    }
 
     bool isCondReversed = !zero->IsIntegralConst();
     if (isCondReversed)
@@ -811,95 +995,12 @@ GenTree* OptIfConversionDsc::TryTransformSelectOperOrZero(GenTree* trueInput, Ge
 
         if (one->IsIntegralConst(1))
         {
-            oper->AsOp()->gtOp1 = isCondReversed ? m_compiler->gtReverseCond(m_cond) : m_cond;
+            oper->AsOp()->gtOp1 = isCondReversed ? m_compiler->gtReverseCond(cond) : cond;
             oper->AsOp()->gtOp2 = expr;
 
-            oper->gtFlags |= m_cond->gtFlags & GTF_ALL_EFFECT;
+            oper->gtFlags |= cond->gtFlags & GTF_ALL_EFFECT;
             return oper;
         }
-    }
-    return nullptr;
-}
-
-//-----------------------------------------------------------------------------
-// TryTransformSelectToOrdinaryOps: Try transforming the identified if-else expressions to a single expression
-//
-// This is meant mostly for RISC-V where the condition (1 or 0) is stored in a regular general-purpose register
-// which can be fed as an argument to standard operations, e.g.
-//     * (cond ? 6 : 5) becomes (5 + cond)
-//     * (cond ? -25 : -13) becomes (-25 >> cond)
-//     * if (cond) a++; becomes (a + cond)
-//     * (cond ? 1 << a : 0) becomes (cond << a)
-//
-// Arguments:
-//     trueInput  - expression to be evaluated when m_cond is true, or null if there is no else expression
-//     falseInput - expression to be evaluated when m_cond is false
-//
-// Return Value:
-//     The transformed single expression equivalent to the if-else expressions, or null if no transformation took place
-//
-GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput, GenTree* falseInput)
-{
-    assert(falseInput != nullptr);
-
-    if ((trueInput != nullptr && trueInput->IsIntegralConst()) && falseInput->IsIntegralConst())
-    {
-        int64_t trueVal  = trueInput->AsIntConCommon()->IntegralValue();
-        int64_t falseVal = falseInput->AsIntConCommon()->IntegralValue();
-        if (trueInput->TypeIs(TYP_INT) && falseInput->TypeIs(TYP_INT))
-        {
-            if (trueVal == 1 && falseVal == 0)
-            {
-                // compare ? true : false  -->  compare
-                return m_cond;
-            }
-            else if (trueVal == 0 && falseVal == 1)
-            {
-                // compare ? false : true  -->  reversed_compare
-                return m_compiler->gtReverseCond(m_cond);
-            }
-        }
-#ifdef TARGET_RISCV64
-        if (varTypeIsIntegral(trueInput) && varTypeIsIntegral(falseInput) && (trueVal != falseVal))
-        {
-            bool               isCondReversed = false;
-            IntConstSelectOper selectOper     = MatchIntConstSelectValues(trueVal, falseVal);
-            if (!selectOper.isMatched())
-            {
-                isCondReversed = true;
-                selectOper     = MatchIntConstSelectValues(falseVal, trueVal);
-            }
-            if (selectOper.isMatched())
-            {
-                GenTree* left  = isCondReversed ? trueInput : falseInput;
-                GenTree* right = isCondReversed ? m_compiler->gtReverseCond(m_cond) : m_cond;
-                if (selectOper.bitIndex > 0)
-                {
-                    assert(selectOper.oper == GT_LSH);
-                    left->AsIntConCommon()->SetIntegralValue(selectOper.bitIndex);
-                    std::swap(left, right);
-                }
-                return m_compiler->gtNewOperNode(selectOper.oper, selectOper.type, left, right);
-            }
-        }
-#endif // TARGET_RISCV64
-    }
-#ifdef TARGET_RISCV64
-    else
-    {
-        if (trueInput == nullptr)
-        {
-            assert(m_mainOper == GT_STORE_LCL_VAR && (m_elseOperation.block == nullptr));
-            trueInput = m_thenOperation.node;
-        }
-
-        GenTree* transformed = TryTransformSelectOperOrLocal(trueInput, falseInput);
-        if (transformed != nullptr)
-            return transformed;
-
-        transformed = TryTransformSelectOperOrZero(trueInput, falseInput);
-        if (transformed != nullptr)
-            return transformed;
     }
 #endif // TARGET_RISCV64
     return nullptr;

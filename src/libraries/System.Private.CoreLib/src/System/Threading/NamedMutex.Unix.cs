@@ -262,7 +262,6 @@ namespace System.Threading
             }
         }
 
-        [RequiresUnsafe]
         private static unsafe void InitializeSharedData(void* v)
         {
             if (UsePThreadMutexes)
@@ -648,7 +647,7 @@ namespace System.Threading
                 _processDataHeader = processDataHeader;
             }
 
-            public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize, ref LockHolder lockHolder)
+            public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, ref LockHolder lockHolder)
             {
                 lockHolder.Dispose();
                 LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();

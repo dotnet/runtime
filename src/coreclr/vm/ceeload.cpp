@@ -41,6 +41,11 @@
 #include "threads.h"
 #include "nativeimage.h"
 
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+#include <minipal/utf8.h>
+#include <minipal/getexepath.h>
+#endif // TARGET_UNIX && !DACCESS_COMPILE
+
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
 
@@ -368,6 +373,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
 
     m_loaderAllocator = NULL;
     m_pDynamicMetadata = (TADDR)NULL;
+    m_dwMetadataGeneration = 0;
 
     m_pPEAssembly->AddRef();
 }
@@ -660,6 +666,7 @@ void Module::ApplyMetaData()
     // Ensure for MethodDef
     ulCount = GetMDImport()->GetCountWithTokenKind(mdtMethodDef) + 1;
     EnsureMethodDefCanBeStored(TokenFromRid(ulCount, mdtMethodDef));
+    m_dwMetadataGeneration++;
 }
 
 //
@@ -1663,7 +1670,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACT_END;
 
@@ -1697,7 +1704,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         THROWS;
         WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACT_END;
 
@@ -1751,7 +1758,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         // where right now...</REVISIT_TODO>
         HRESULT hr = S_OK;
 
-        SafeComHolder<ISymUnmanagedBinder> pBinder;
+        ReleaseHolder<ISymUnmanagedBinder> pBinder;
 
         if (g_pDebugInterface == NULL)
         {
@@ -1779,11 +1786,11 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         // hard disk for files.
         ErrorModeHolder errorMode{};
 
-        SafeComHolder<ISymUnmanagedReader> pReader;
+        ReleaseHolder<ISymUnmanagedReader> pReader;
 
         if (fInMemorySymbols)
         {
-            SafeComHolder<IStream> pIStream( NULL );
+            ReleaseHolder<IStream> pIStream( NULL );
 
             // If debug stream is already specified, don't bother to go through fusion
             // This is the common case for case 2 (hosted modules) and case 3 (Ref.Emit).
@@ -1807,7 +1814,12 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             }
             if (SUCCEEDED(hr))
             {
-                hr = pBinder->GetReaderFromStream(GetRWImporter(), pIStream, &pReader);
+                // Hand the reader an inert importer rather than the module's real
+                // (RW) metadata interface: the reader only needs it to satisfy the
+                // binder, and producing the real importer would force this module's
+                // metadata to its locked RW backing store.
+                ReleaseHolder<IMetaDataImport2> pNoopImport = GetNoopMetaDataImport2();
+                hr = pBinder->GetReaderFromStream(pNoopImport, pIStream, &pReader);
             }
         }
         else
@@ -1815,13 +1827,12 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // The assembly is on disk, so try and load symbols based on the path to the assembly (case 1)
             const SString &path = m_pPEAssembly->GetPath();
 
-            // Call Fusion to ensure that any PDB's are shadow copied before
-            // trying to get a symbol reader. This has to be done once per
-            // Assembly.
-            ReleaseHolder<IUnknown> pUnk = NULL;
-            hr = GetReadablePublicMetaDataInterface(ofReadOnly, IID_IMetaDataImport, &pUnk);
-            if (SUCCEEDED(hr))
-                hr = pBinder->GetReaderForFile(pUnk, path, NULL, &pReader);
+            // Hand the reader an inert importer rather than a readable metadata
+            // interface for this module: the reader only needs it to satisfy the
+            // binder, and obtaining the real importer would force this module's
+            // metadata to its locked RW backing store.
+            ReleaseHolder<IMetaDataImport2> pNoopImport = GetNoopMetaDataImport2();
+            hr = pBinder->GetReaderForFile(pNoopImport, path, NULL, &pReader);
         }
 
         if (SUCCEEDED(hr))
@@ -1885,7 +1896,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     STANDARD_VM_CONTRACT;
 
     // Create a IStream from the memory for the syms.
-    SafeComHolder<CGrowableStream> pStream(new CGrowableStream());
+    ComHolderPreemp<CGrowableStream> pStream(new CGrowableStream());
 
     // Do not need to AddRef the CGrowableStream because the constructor set it to 1
     // ref count already. The Module will keep a copy for its own use.
@@ -2217,10 +2228,9 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
     }
     CONTRACTL_END;
 
-    BOOL fIs80Plus;
     DWORD dwCharCount;
     LPCWSTR pString;
-    if (FAILED(GetMDImport()->GetUserString(token, &dwCharCount, &fIs80Plus, &pString)) ||
+    if (FAILED(GetMDImport()->GetUserString(token, &dwCharCount, &pString)) ||
         (pString == NULL))
     {
         THROW_BAD_FORMAT(BFA_BAD_STRING_TOKEN_RANGE, this);
@@ -2240,12 +2250,7 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
     pstrData->SetStringBuffer(pSwapped);
 #endif // !!BIGENDIAN
 
-        // MD and String look at this bit in opposite ways.  Here's where we'll do the conversion.
-        // MD sets the bit to true if the string contains characters greater than 80.
-        // String sets the bit to true if the string doesn't contain characters greater than 80.
-
     pstrData->SetCharCount(dwCharCount);
-    pstrData->SetIsOnlyLowChars(!fIs80Plus);
 }
 
 
@@ -3583,6 +3588,14 @@ void Module::RunEagerFixupsUnlocked()
             {
                 _ASSERTE(IsReadyToRun());
                 GetReadyToRunInfo()->DisableAllR2RCode();
+
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+                if (GetReadyToRunInfo()->HasStrippedILBodies())
+                {
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
+                        W("ReadyToRun code was disabled by a failed eager fixup, but the image has stripped IL bodies and this runtime has no JIT fallback."));
+                }
+#endif // !FEATURE_DYNAMIC_CODE_COMPILED
             }
             else
             {
@@ -3591,6 +3604,10 @@ void Module::RunEagerFixupsUnlocked()
         }
     }
 
+#ifdef TARGET_WASM
+    // For WASM, register virtual IP ranges instead of real code address ranges.
+    GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+#else
     TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
 
     ExecutionManager::AddCodeRange(
@@ -3598,6 +3615,7 @@ void Module::RunEagerFixupsUnlocked()
         ExecutionManager::GetReadyToRunJitManager(),
         RangeSection::RANGE_SECTION_NONE,
         this /* pHeapListOrZapModule */);
+#endif // TARGET_WASM
 }
 #endif // !DACCESS_COMPILE
 
@@ -3632,23 +3650,43 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
 
 static LPCWSTR s_pCommandLine = NULL;
 
-// Retrieve the full command line for the current process.
-LPCWSTR GetManagedCommandLine()
+#ifdef TARGET_UNIX
+static LPWSTR s_pExePath = NULL;
+
+static LPWSTR GetExePath()
 {
-    LIMITED_METHOD_CONTRACT;
-    return s_pCommandLine;
+    LPWSTR pExePath = VolatileLoadWithoutBarrier(&s_pExePath);
+
+    if (pExePath == nullptr)
+    {
+        char* exePath = minipal_getexepath();
+        size_t exePathLen = minipal_get_length_utf8_to_utf16(exePath, strlen(exePath), 0);
+        pExePath = new WCHAR[exePathLen + 1];
+        minipal_convert_utf8_to_utf16(exePath, strlen(exePath), (CHAR16_T*)pExePath, exePathLen + 1, 0);
+        pExePath[exePathLen] = W('\0');
+        free(exePath);
+        s_pExePath = pExePath;
+    }
+
+    return pExePath;
 }
+#endif // TARGET_UNIX
 
 LPCWSTR GetCommandLineForDiagnostics()
 {
     // Get the managed command line.
-    LPCWSTR pCmdLine = GetManagedCommandLine();
+    LPCWSTR pCmdLine = VolatileLoadWithoutBarrier(&s_pCommandLine);
 
-    // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
+    // GetCommandLineForDiagnostics can be called without s_pCommandLine being initialized
+    // when the runtime is hosted without entrypoint assembly
     if (pCmdLine == nullptr)
     {
+#ifdef TARGET_WINDOWS
         // Use the result from GetCommandLineW() instead
         pCmdLine = GetCommandLineW();
+#else
+        pCmdLine = GetExePath();
+#endif // TARGET_WINDOWS
     }
 
     return pCmdLine;
@@ -3692,18 +3730,17 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     }
     CONTRACTL_END;
 
-    // Get the command line.
-    LPCWSTR osCommandLine = GetCommandLineW();
-
 #ifndef TARGET_UNIX
-    // On Windows, osCommandLine contains the executable and all arguments.
-    s_pCommandLine = osCommandLine;
+    // On Windows, GetCommandLineW contains the executable and all arguments.
+    s_pCommandLine = GetCommandLineW();
 #else
     // On UNIX, the PAL doesn't have the command line arguments, so we must build the command line.
-    // osCommandLine contains the full path to the executable.
-    SIZE_T  commandLineLen = (u16_strlen(osCommandLine) + 1);
+    // exePath contains the full path to the executable.
+    LPCWSTR exePath = GetExePath();
+    SIZE_T  commandLineLen = (u16_strlen(exePath) + 1);
 
-    // We will append pwzAssemblyPath to the 'corerun' osCommandLine
+    // Append assembly path to approximate the command line for generic hosts like `dotnet`.
+    // This isn't quite correct for apphost, as the app name will be duplicated.
     commandLineLen += (u16_strlen(pwzAssemblyPath) + 1);
 
     for (int i = 0; i < argc; i++)
@@ -3717,7 +3754,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     SIZE_T remainingLen    = commandLineLen;
     LPWSTR pCursor         = pNewCommandLine;
 
-    Append_Next_Item(&pCursor, &remainingLen, osCommandLine,   true);
+    Append_Next_Item(&pCursor, &remainingLen, exePath,   true);
     Append_Next_Item(&pCursor, &remainingLen, pwzAssemblyPath, (argc > 0));
 
     for (int i = 0; i < argc; i++)
@@ -4001,6 +4038,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
         delete (uint32_t*)m_pDynamicMetadata;
 
         m_pDynamicMetadata = (TADDR)pBuffer.Extract();
+        m_dwMetadataGeneration++;
     }
 
     //

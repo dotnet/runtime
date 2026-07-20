@@ -21,6 +21,7 @@
 #ifdef FEATURE_COMINTEROP
 #include <oletls.h>
 #include "olecontexthelpers.h"
+#include "olevariant.h"
 #include "runtimecallablewrapper.h"
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
@@ -344,11 +345,11 @@ extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHand
     if (pIntf == NULL)
     {
         // Still not in the cache and we've ensured the OLE TLS data was created.
-        SafeComHolder<IUnknown> pRetUnk = ComObject::GetComIPFromRCWThrowing(&objRef, pComInfo->m_pInterfaceMT);
+        ComHolderAnyMode<IUnknown> pRetUnk{ ComObject::GetComIPFromRCWThrowing(&objRef, pComInfo->m_pInterfaceMT) };
         *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
         _ASSERTE(*ppTarget != NULL);
 
-        pIntf = pRetUnk.Extract();
+        pIntf = pRetUnk.Detach();
         *pfNeedsRelease = TRUE;
     }
 

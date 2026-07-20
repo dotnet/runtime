@@ -190,7 +190,7 @@ namespace System.Text.Json
             return reader.TrySkipPartial(reader.CurrentDepth);
         }
 
-        public static bool TryLookupUtf8Key<TValue>(
+        public static unsafe bool TryLookupUtf8Key<TValue>(
             this Dictionary<string, TValue> dictionary,
             ReadOnlySpan<byte> utf8Key,
             [MaybeNullWhen(false)] out TValue result)

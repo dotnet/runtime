@@ -365,6 +365,12 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
         pRD->pCurrentContextPointers            = pRD->pCallerContextPointers;
         pRD->pCallerContextPointers             = tempPtrs;
 
+#if defined(TARGET_ARM64)
+        TADDR tempSpForPacSign          = pRD->CurrentContextSpForPacSign;
+        pRD->CurrentContextSpForPacSign = pRD->CallerContextSpForPacSign;
+        pRD->CallerContextSpForPacSign  = tempSpForPacSign;
+#endif // TARGET_ARM64
+
 #ifdef TARGET_X86
         pRD->PCTAddr = pRD->pCurrentContext->Esp - pCodeInfo->GetCodeManager()->GetStackParameterSize(pCodeInfo) - sizeof(DWORD);
 #endif
@@ -388,7 +394,11 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
         pRD->pCurrentContext->Esp = pRD->SP;
         pRD->pCurrentContext->Eip = pRD->ControlPC;
 #else
-        VirtualUnwindCallFrame(pRD->pCurrentContext, pRD->pCurrentContextPointers, pCodeInfo);
+        ARM64_ONLY(pRD->CurrentContextSpForPacSign = 0;)
+        VirtualUnwindCallFrame(pRD->pCurrentContext,
+                               pRD->pCurrentContextPointers,
+                               pCodeInfo
+                               ARM64_ARG(&pRD->CurrentContextSpForPacSign));
 #endif
     }
 
@@ -400,7 +410,6 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
 #endif // TARGET_AMD64 && TARGET_WINDOWS
     SyncRegDisplayToCurrentContext(pRD);
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     return pRD->ControlPC;
 }
@@ -409,12 +418,9 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
 // static
 PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                                         T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers /*= NULL*/,
-                                        EECodeInfo * pCodeInfo /*= NULL*/)
+                                        EECodeInfo * pCodeInfo /*= NULL*/
+                                        ARM64_ARG(TADDR * pSpForPacSign /*= NULL*/))
 {
-#ifdef TARGET_WASM
-    _ASSERTE("VirtualUnwindCallFrame is not supported on WebAssembly");
-    return 0;
-#else
     CONTRACTL
     {
         NOTHROW;
@@ -520,6 +526,17 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     #endif // HOST_64BIT
         PVOID               HandlerData;
 
+#if defined(TARGET_ARM64)
+        RtlVirtualUnwindWithSpForPacSign(0,
+                                         uImageBase,
+                                         uControlPc,
+                                         pFunctionEntry,
+                                         pContext,
+                                         &HandlerData,
+                                         &EstablisherFrame,
+                                         pContextPointers,
+                                         (PULONG64)pSpForPacSign);
+#else
         RtlVirtualUnwind(0,
                          uImageBase,
                          uControlPc,
@@ -528,6 +545,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                          &HandlerData,
                          &EstablisherFrame,
                          pContextPointers);
+#endif
 
         uControlPc = GetIP(pContext);
     }
@@ -550,7 +568,6 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 #endif // !DACCESS_COMPILE
 
     return uControlPc;
-#endif // TARGET_WASM
 }
 
 #ifndef DACCESS_COMPILE
@@ -1451,6 +1468,7 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
     pRD->SSP = pOtherRD->SSP;
 #endif
 
+#ifndef TARGET_WASM
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = (pRD->pCurrentContextPointers->regname == NULL) ? pOtherRD->pCurrentContext->regname : *pRD->pCurrentContextPointers->regname;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -1458,6 +1476,11 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pOtherRD->pCurrentContext->regname;
     ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
+#else // TARGET_WASM
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pOtherRD->pCurrentContext->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // !TARGET_WASM
 
     pRD->IsCallerContextValid = pOtherRD->IsCallerContextValid;
     if (pRD->IsCallerContextValid)
@@ -1470,6 +1493,7 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
         SetFirstArgReg(pRD->pCallerContext, GetFirstArgReg(pOtherRD->pCallerContext));
 #endif
 
+#ifndef TARGET_WASM
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = (pRD->pCallerContextPointers->regname == NULL) ? pOtherRD->pCallerContext->regname : *pRD->pCallerContextPointers->regname;
         ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -1477,6 +1501,11 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = pOtherRD->pCallerContext->regname;
         ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
+#else // TARGET_WASM
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = pOtherRD->pCallerContext->regname;
+        ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // !TARGET_WASM
     }
     SyncRegDisplayToCurrentContext(pRD);
 }

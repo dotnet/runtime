@@ -2114,7 +2114,7 @@ void DbgTransportSession::TransportWorker()
 // significant data to vary wildy from event to event).
 DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 {
-    DWORD cbBaseSize = offsetof(DebuggerIPCEvent, LeftSideStartupData);
+    DWORD cbBaseSize = offsetof(DebuggerIPCEvent, MetadataUpdateData);
     DWORD cbAdditionalSize = 0;
 
     switch (pEvent->type & DB_IPCE_TYPE_MASK)
@@ -2133,12 +2133,10 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_INTERCEPT_EXCEPTION_RESULT:
     case DB_IPCE_INTERCEPT_EXCEPTION_COMPLETE:
     case DB_IPCE_CREATE_PROCESS:
-    case DB_IPCE_SET_NGEN_COMPILER_FLAGS_RESULT:
     case DB_IPCE_LEFTSIDE_STARTUP:
     case DB_IPCE_ASYNC_BREAK:
     case DB_IPCE_CONTINUE:
     case DB_IPCE_ATTACHING:
-    case DB_IPCE_GET_NGEN_COMPILER_FLAGS:
     case DB_IPCE_DETACH_FROM_PROCESS:
     case DB_IPCE_CONTROL_C_EVENT_RESULT:
     case DB_IPCE_BEFORE_GARBAGE_COLLECTION:
@@ -2211,10 +2209,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         cbAdditionalSize = sizeof(pEvent->FirstLogMessage);
         break;
 
-    case DB_IPCE_LOGSWITCH_SET_MESSAGE:
-        cbAdditionalSize = sizeof(pEvent->LogSwitchSettingMessage);
-        break;
-
     case DB_IPCE_CREATE_APP_DOMAIN:
         cbAdditionalSize = sizeof(pEvent->AppDomainData);
         break;
@@ -2267,22 +2261,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         cbAdditionalSize = sizeof(pEvent->SetJMCFunctionStatus);
         break;
 
-    case DB_IPCE_GET_THREAD_FOR_TASKID_RESULT:
-        cbAdditionalSize = sizeof(pEvent->GetThreadForTaskIdResult);
-        break;
-
-    case DB_IPCE_CREATE_CONNECTION:
-        cbAdditionalSize = sizeof(pEvent->CreateConnection);
-        break;
-
-    case DB_IPCE_DESTROY_CONNECTION:
-        cbAdditionalSize = sizeof(pEvent->ConnectionChange);
-        break;
-
-    case DB_IPCE_CHANGE_CONNECTION:
-        cbAdditionalSize = sizeof(pEvent->ConnectionChange);
-        break;
-
     case DB_IPCE_EXCEPTION_CALLBACK2:
         cbAdditionalSize = sizeof(pEvent->ExceptionCallback2);
         break;
@@ -2301,14 +2279,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     case DB_IPCE_ENC_ADD_FUNCTION:
         cbAdditionalSize = sizeof(pEvent->EnCUpdate);
-        break;
-
-    case DB_IPCE_GET_NGEN_COMPILER_FLAGS_RESULT:
-        cbAdditionalSize = sizeof(pEvent->JitDebugInfo);
-        break;
-
-    case DB_IPCE_GET_GCHANDLE_INFO_RESULT:
-        cbAdditionalSize = sizeof(pEvent->GetGCHandleInfoResult);
         break;
 
     case DB_IPCE_SET_IP:
@@ -2353,20 +2323,12 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         cbAdditionalSize = sizeof(pEvent->ApplyChanges);
         break;
 
-    case DB_IPCE_SET_NGEN_COMPILER_FLAGS:
-        cbAdditionalSize = sizeof(pEvent->JitDebugInfo);
-        break;
-
     case DB_IPCE_IS_TRANSITION_STUB:
         cbAdditionalSize = sizeof(pEvent->IsTransitionStub);
         break;
 
     case DB_IPCE_IS_TRANSITION_STUB_RESULT:
         cbAdditionalSize = sizeof(pEvent->IsTransitionStubResult);
-        break;
-
-    case DB_IPCE_MODIFY_LOGSWITCH:
-        cbAdditionalSize = sizeof(pEvent->LogSwitchSettingMessage);
         break;
 
     case DB_IPCE_ENABLE_LOG_MESSAGES:
@@ -2409,10 +2371,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         cbAdditionalSize = sizeof(pEvent->SetJMCFunctionStatus);
         break;
 
-    case DB_IPCE_GET_THREAD_FOR_TASKID:
-        cbAdditionalSize = sizeof(pEvent->GetThreadForTaskId);
-        break;
-
     case DB_IPCE_FUNC_EVAL_RUDE_ABORT:
         cbAdditionalSize = sizeof(pEvent->FuncEvalRudeAbort);
         break;
@@ -2427,10 +2385,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     case DB_IPCE_INTERCEPT_EXCEPTION:
         cbAdditionalSize = sizeof(pEvent->InterceptException);
-        break;
-
-    case DB_IPCE_GET_GCHANDLE_INFO:
-        cbAdditionalSize = sizeof(pEvent->GetGCHandleInfo);
         break;
 
     case DB_IPCE_CUSTOM_NOTIFICATION:

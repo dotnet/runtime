@@ -116,7 +116,7 @@ struct CallerStackFrame : StackFrame
 
     static inline CallerStackFrame FromRegDisplay(REGDISPLAY* pRD)
     {
-        _ASSERTE(pRD->IsCallerSPValid || pRD->IsCallerContextValid);
+        _ASSERTE(pRD->IsCallerContextValid);
         return CallerStackFrame(GetSP(pRD->pCallerContext));
     }
 };

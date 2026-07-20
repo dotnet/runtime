@@ -15,7 +15,7 @@
 // TODO: Set this value to 0 for Wasm
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT (1024 - 1)
 #elif defined (TARGET_UNIX)
-#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)
+#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((minipal_getpagesize() / 2) - 1)
 #else
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
 #endif
@@ -179,8 +179,6 @@ EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase_Helper, MethodTable *pMT);
 EXTERN_C void DoJITFailFast();
 EXTERN_C FCDECL0(void, JIT_FailFast);
 
-FCDECL0(int, JIT_GetCurrentManagedThreadId);
-
 EXTERN_C void ReversePInvokeBadTransition();
 
 #if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
@@ -188,11 +186,10 @@ EXTERN_C void ReversePInvokeBadTransition();
 extern "C" FCDECL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, CheckedWriteBarrierKinds kind);
 #else
 // Regular checked write barrier.
-extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
+extern "C" FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 
 #ifdef TARGET_ARM64
 #define RhpCheckedAssignRef RhpCheckedAssignRefArm64
-#define RhpByRefAssignRef RhpByRefAssignRefArm64
 #define RhpAssignRef RhpAssignRefArm64
 #elif defined (TARGET_LOONGARCH64)
 #define RhpAssignRef RhpAssignRefLoongArch64
@@ -202,12 +199,10 @@ extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 
 #endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 
-extern "C" FCDECL2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
 
-extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
+extern "C" FCDECL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 
@@ -260,8 +255,6 @@ void ValidateWriteBarrierHelpers();
 
 extern "C"
 {
-    void STDCALL JIT_ByRefWriteBarrier();      // JIThelp.asm/JIThelp.s
-
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
     void STDCALL JIT_TailCall();                    // JIThelp.asm
 #endif // defined(TARGET_X86) && !defined(UNIX_X86_ABI)
@@ -304,6 +297,7 @@ class CEEInfo : public ICorJitInfo
     void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
 
     void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
+
 public:
 #include "icorjitinfoimpl_generated.h"
     uint32_t getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);
@@ -413,6 +407,12 @@ public:
                                                    MethodDesc * pTemplateMD /* for method-based slots */,
                                                    MethodDesc * pCallerMD,
                                                    CORINFO_LOOKUP *pResultLookup);
+    void FinishComputeRuntimeLookup(
+        SigBuilder& sig,
+        MethodDesc* pCallerMD,
+        CORINFO_LOOKUP* pResultLookup);
+
+    void ComputeRuntimeLookupForAwaitCall(MethodDesc* pCallerMD, MethodDesc* pTypicalAwaitMD, CORINFO_LOOKUP* lookup);
 
 #if defined(FEATURE_GDBJIT)
     CalledMethod * GetCalledMethods() { return m_pCalledMethods; }
@@ -426,6 +426,7 @@ public:
 protected:
     COR_ILMETHOD_DECODER* getMethodInfoWorker(
         MethodDesc* ftn,
+        MethodDesc* ilFtn,
         COR_ILMETHOD_DECODER* header,
         CORINFO_METHOD_INFO* methInfo,
         CORINFO_CONTEXT_HANDLE exactContext = NULL);
@@ -968,7 +969,7 @@ public:
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
-    
+
     virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
 };
 #endif // FEATURE_INTERPRETER

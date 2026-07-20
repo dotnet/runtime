@@ -39,7 +39,6 @@ static PalObjectTypeId sg_rgWaitObjectsIds[] =
         otiAutoResetEvent,
         otiManualResetEvent,
         otiSemaphore,
-        otiProcess,
         otiThread
     };
 static CAllowedObjectTypes sg_aotWaitObject(sg_rgWaitObjectsIds,
@@ -108,37 +107,6 @@ WaitForSingleObjectEx(IN HANDLE hHandle,
     return dwRet;
 }
 
-
-/*++
-Function:
-  WaitForMultipleObjects
-
-See MSDN doc.
-
---*/
-DWORD
-PALAPI
-WaitForMultipleObjects(IN DWORD nCount,
-                       IN CONST HANDLE *lpHandles,
-                       IN BOOL bWaitAll,
-                       IN DWORD dwMilliseconds)
-{
-    DWORD dwRet;
-
-    PERF_ENTRY(WaitForMultipleObjects);
-    ENTRY("WaitForMultipleObjects(nCount=%d, lpHandles=%p,"
-          " bWaitAll=%d, dwMilliseconds=%u)\n",
-          nCount, lpHandles, bWaitAll, dwMilliseconds);
-
-    CPalThread * pThread = InternalGetCurrentThread();
-
-    dwRet = InternalWaitForMultipleObjectsEx(pThread, nCount, lpHandles,
-                                             bWaitAll, dwMilliseconds);
-
-    LOGEXIT("WaitForMultipleObjects returns DWORD %u\n", dwRet);
-    PERF_EXIT(WaitForMultipleObjects);
-    return dwRet;
-}
 
 /*++
 Function:
@@ -553,4 +521,3 @@ DWORD CorUnix::InternalSleepEx (
     return dwRet;
 #endif // !FEATURE_MULTITHREADING
 }
-

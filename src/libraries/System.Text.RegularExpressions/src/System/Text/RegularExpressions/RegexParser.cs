@@ -87,7 +87,7 @@ namespace System.Text.RegularExpressions
             (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 #pragma warning restore RS1035
 
-        public static RegexOptions ParseOptionsInPattern(string pattern, RegexOptions options)
+        public static unsafe RegexOptions ParseOptionsInPattern(string pattern, RegexOptions options)
         {
             using var parser = new RegexParser(pattern, options, CultureInfo.InvariantCulture, // since we won't perform case conversions, culture doesn't matter in this case.
                 new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
@@ -100,7 +100,7 @@ namespace System.Text.RegularExpressions
             return foundOptionsInPattern;
         }
 
-        public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
+        public static unsafe RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
         {
             using var parser = new RegexParser(pattern, options, culture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
 
@@ -134,7 +134,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>This static call constructs a flat concatenation node given a replacement pattern.</summary>
-        public static RegexReplacement ParseReplacement(string pattern, RegexOptions options, Hashtable caps, int capsize, Hashtable capnames)
+        public static unsafe RegexReplacement ParseReplacement(string pattern, RegexOptions options, Hashtable caps, int capsize, Hashtable capnames)
         {
 #pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
@@ -156,7 +156,7 @@ namespace System.Text.RegularExpressions
                 : EscapeImpl(input.AsSpan(), indexOfMetachar);
         }
 
-        private static string EscapeImpl(ReadOnlySpan<char> input, int indexOfMetachar)
+        private static unsafe string EscapeImpl(ReadOnlySpan<char> input, int indexOfMetachar)
         {
             // For small inputs we allocate on the stack. In most cases a buffer three
             // times larger the original string should be sufficient as usually not all
@@ -218,7 +218,7 @@ namespace System.Text.RegularExpressions
                 input;
         }
 
-        private static string UnescapeImpl(string input, int i)
+        private static unsafe string UnescapeImpl(string input, int i)
         {
             var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
 

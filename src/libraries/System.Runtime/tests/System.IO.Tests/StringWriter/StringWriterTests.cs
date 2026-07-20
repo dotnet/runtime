@@ -325,7 +325,12 @@ namespace System.IO.Tests
                 sw.Write((uint)uint.MaxValue);
                 sw.Write((ulong)ulong.MaxValue);
 
-                Assert.Equal("Truea1234.013452342.0123456-92233720368547758081234.5429496729518446744073709551615", sw.ToString());
+                // The expected string is the concatenation of every value above with no separators, so
+                // adjacent values run together (e.g. "1234.00..." from the decimal is immediately followed
+                // by "3452342.01" from the double). The decimal segment is the full value of new decimal(1234.01):
+                // the double nearest 1234.01 is actually 1234.009999999999990905052982270717620849609375, and
+                // double -> decimal is correctly rounded, so it preserves that value rather than truncating to "1234.01".
+                Assert.Equal("Truea1234.00999999999999090505298233452342.0123456-92233720368547758081234.5429496729518446744073709551615", sw.ToString());
             }
         }
 

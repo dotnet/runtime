@@ -52,19 +52,21 @@ struct cdac_data<GC_NAMESPACE::gc_heap>
     GC_HEAP_FIELD(OomData, oom_info)
 
     /* For use in GCHeapDetails APIs */
+#ifdef BACKGROUND_GC
     GC_HEAP_FIELD(MarkArray, mark_array)
     GC_HEAP_FIELD(NextSweepObj, next_sweep_obj)
     GC_HEAP_FIELD(BackgroundMinSavedAddr, background_saved_lowest_address)
     GC_HEAP_FIELD(BackgroundMaxSavedAddr, background_saved_highest_address)
+#endif // BACKGROUND_GC
     GC_HEAP_FIELD(AllocAllocated, alloc_allocated)
     GC_HEAP_FIELD(EphemeralHeapSegment, ephemeral_heap_segment)
     GC_HEAP_FIELD(CardTable, card_table)
     GC_HEAP_FIELD(FinalizeQueue, finalize_queue)
     GC_HEAP_FIELD(GenerationTable, generation_table)
-#ifndef USE_REGIONS
+#if !defined(USE_REGIONS) && defined(BACKGROUND_GC)
     GC_HEAP_FIELD(SavedSweepEphemeralSeg, saved_sweep_ephemeral_seg)
     GC_HEAP_FIELD(SavedSweepEphemeralStart, saved_sweep_ephemeral_start)
-#endif // !USE_REGIONS
+#endif // !USE_REGIONS && BACKGROUND_GC
 
     /* For use in GCHeapAnalyzeData APIs */
 #ifdef HEAP_ANALYZE

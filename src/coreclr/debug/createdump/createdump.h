@@ -36,6 +36,7 @@ extern void trace_verbose_printf(const char* format, ...) MINIPAL_ATTR_FORMAT_PR
 
 #include <windows.h>
 #include <stdlib.h>
+#include <crtdbg.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>

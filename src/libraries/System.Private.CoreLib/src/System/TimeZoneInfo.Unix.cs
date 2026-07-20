@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
@@ -228,7 +228,7 @@ namespace System
                 HasIanaId ? Id :
                 (_equivalentZones is not null && _equivalentZones.Count > 0 ? _equivalentZones[0].Id : (GetAlternativeId(Id, out _) ?? Id));
 
-        private string? PopulateDisplayName()
+        private unsafe string? PopulateDisplayName()
         {
             if (IsUtcAlias(Id))
                 return GetUtcFullDisplayName(Id, StandardName);

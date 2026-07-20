@@ -93,7 +93,8 @@ namespace BINDER_SPACE
         inline ExecutionContext *GetExecutionContext();
         inline FailureCache *GetFailureCache();
         inline HRESULT AddToFailureCache(SString &assemblyNameOrPath,
-                                         HRESULT  hrBindResult);
+                                         HRESULT  hrBindResult,
+                                         LPCWSTR  diagnosticInfo);
         inline StringArrayList *GetAppPaths();
         inline SimpleNameToFileNameMap *GetTpaList();
         inline StringArrayList *GetPlatformResourceRoots();

@@ -9,7 +9,6 @@ namespace System.Reflection.Metadata
     public static partial class AssemblyExtensions
     {
         [System.CLSCompliantAttribute(false)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe static bool TryGetRawMetadata(this System.Reflection.Assembly assembly, out byte* blob, out int length) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true)]
@@ -88,6 +87,7 @@ namespace System.Runtime.Loader
         public System.Reflection.Assembly LoadFromStream(System.IO.Stream assembly, System.IO.Stream? assemblySymbols) { throw null; }
         protected virtual System.IntPtr LoadUnmanagedDll(string unmanagedDllName) { throw null; }
         protected System.IntPtr LoadUnmanagedDllFromPath(string unmanagedDllPath) { throw null; }
+        public static void SetAssemblyLocationOverride(System.Func<System.Reflection.Assembly, string, string> locationOverride) { }
         public void SetProfileOptimizationRoot(string directoryPath) { }
         public void StartProfileOptimization(string? profile) { }
         public override string ToString() { throw null; }

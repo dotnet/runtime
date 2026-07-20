@@ -820,7 +820,7 @@ STRINGREF* StringObject::InitEmptyStringRefPtr() {
 
     GCX_COOP();
 
-    EEStringData data(0, W(""), TRUE);
+    EEStringData data(0, W(""));
     void* pinnedStr = nullptr;
     EmptyStringRefPtr = SystemDomain::System()->DefaultDomain()->GetLoaderAllocator()->GetStringObjRefPtrFromUnicodeString(&data, &pinnedStr);
     EmptyStringIsFrozen = pinnedStr != nullptr;

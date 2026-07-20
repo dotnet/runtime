@@ -462,7 +462,8 @@ typedef
 enum SOSStackSourceType
     {
         SOS_StackSourceIP   = 0,
-        SOS_StackSourceFrame    = ( SOS_StackSourceIP + 1 )
+        SOS_StackSourceFrame    = ( SOS_StackSourceIP + 1 ),
+        SOS_StackSourceOther    = ( SOS_StackSourceFrame + 1 )
     }   SOSStackSourceType;
 
 typedef

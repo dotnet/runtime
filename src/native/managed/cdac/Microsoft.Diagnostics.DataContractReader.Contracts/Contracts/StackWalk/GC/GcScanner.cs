@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -18,12 +19,14 @@ internal class GcScanner
     private readonly Target _target;
     private readonly IExecutionManager _eman;
     private readonly IGCInfo _gcInfo;
+    private readonly FrameHelpers _frameHelpers;
 
     internal GcScanner(Target target)
     {
         _target = target;
         _eman = target.Contracts.ExecutionManager;
         _gcInfo = target.Contracts.GCInfo;
+        _frameHelpers = new FrameHelpers(target);
     }
 
     /// <summary>
@@ -43,6 +46,8 @@ internal class GcScanner
         IGCInfoHandle handle = _gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
 
         uint stackBaseRegister = _gcInfo.GetStackBaseRegister(handle);
+        uint scratchAreaSize = _gcInfo.GetSizeOfStackParameterArea(handle);
+        bool filterScratchStackSlots = !options.IsActiveFrame;
         TargetPointer? callerSP = null;
         uint offsetToUse = relOffsetOverride ?? (uint)relativeOffset.Value;
 
@@ -83,6 +88,19 @@ internal class GcScanner
                 };
 
                 TargetPointer addr = new(baseAddr.Value + (ulong)(long)slot.SpOffset);
+
+                // Mirror native IsScratchStackSlot (gcinfodecoder.cpp, post-PR #119446 unified form):
+                // for non-leaf frames, drop any stack slot whose resolved address lies in the
+                // outgoing/scratch area [SP, SP + SizeOfStackOutgoingAndScratchArea). This applies
+                // to all stack base kinds (GC_SP_REL, GC_FRAMEREG_REL, GC_CALLER_SP_REL) because
+                // the filter is address-based, not offset-based.
+                if (filterScratchStackSlots && scratchAreaSize > 0)
+                {
+                    ulong sp = context.StackPointer.Value;
+                    if (addr.Value >= sp && addr.Value < sp + scratchAreaSize)
+                        continue;
+                }
+
                 GcScanSlotLocation loc = new(reg, slot.SpOffset, true);
                 scanContext.GCEnumCallback(addr, scanFlags, loc);
             }
@@ -99,11 +117,11 @@ internal class GcScanner
             return;
 
         Data.Frame frameData = _target.ProcessedData.GetOrAdd<Data.Frame>(frameAddress);
-        FrameIterator.FrameType frameType = FrameIterator.GetFrameType(_target, frameData.Identifier);
+        FrameType frameType = _frameHelpers.GetFrameType(frameData.Identifier);
 
         switch (frameType)
         {
-            case FrameIterator.FrameType.StubDispatchFrame:
+            case FrameType.StubDispatchFrame:
             {
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 Data.StubDispatchFrame sdf = _target.ProcessedData.GetOrAdd<Data.StubDispatchFrame>(frameAddress);
@@ -115,11 +133,11 @@ internal class GcScanner
                 if (gcRefMap != TargetPointer.Null)
                     PromoteCallerStackUsingGCRefMap(fmf.TransitionBlockPtr, gcRefMap, scanContext);
                 else
-                    PromoteCallerStack(frameAddress, fmf.TransitionBlockPtr, scanContext);
+                    PromoteCallerStack(frameAddress, scanContext);
                 break;
             }
 
-            case FrameIterator.FrameType.ExternalMethodFrame:
+            case FrameType.ExternalMethodFrame:
             {
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 Data.ExternalMethodFrame emf = _target.ProcessedData.GetOrAdd<Data.ExternalMethodFrame>(frameAddress);
@@ -131,11 +149,11 @@ internal class GcScanner
                 if (gcRefMap != TargetPointer.Null)
                     PromoteCallerStackUsingGCRefMap(fmf.TransitionBlockPtr, gcRefMap, scanContext);
                 else
-                    PromoteCallerStack(frameAddress, fmf.TransitionBlockPtr, scanContext);
+                    PromoteCallerStack(frameAddress, scanContext);
                 break;
             }
 
-            case FrameIterator.FrameType.DynamicHelperFrame:
+            case FrameType.DynamicHelperFrame:
             {
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 Data.DynamicHelperFrame dhf = _target.ProcessedData.GetOrAdd<Data.DynamicHelperFrame>(frameAddress);
@@ -143,19 +161,18 @@ internal class GcScanner
                 break;
             }
 
-            case FrameIterator.FrameType.CallCountingHelperFrame:
-            case FrameIterator.FrameType.PrestubMethodFrame:
+            case FrameType.CallCountingHelperFrame:
+            case FrameType.PrestubMethodFrame:
             {
-                Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
-                PromoteCallerStack(frameAddress, fmf.TransitionBlockPtr, scanContext);
+                PromoteCallerStack(frameAddress, scanContext);
                 break;
             }
 
-            case FrameIterator.FrameType.HijackFrame:
+            case FrameType.HijackFrame:
                 // TODO(stackref): Implement HijackFrame scanning (X86 only with FEATURE_HIJACK)
                 break;
 
-            case FrameIterator.FrameType.ProtectValueClassFrame:
+            case FrameType.ProtectValueClassFrame:
                 // TODO(stackref): Implement ProtectValueClassFrame scanning
                 break;
 
@@ -175,7 +192,14 @@ internal class GcScanner
     {
         Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
         GCRefMapDecoder decoder = new(_target, gcRefMapBlob);
+        EnumerateGCRefMapTokens(ref decoder, tb, scanContext);
+    }
 
+    private void EnumerateGCRefMapTokens(
+        ref GCRefMapDecoder decoder,
+        Data.TransitionBlock tb,
+        GcScanContext scanContext)
+    {
         if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
             decoder.ReadStackPop();
 
@@ -217,17 +241,15 @@ internal class GcScanner
         const int DynamicHelperFrameFlags_ObjectArg2 = 2;
 
         Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
-        TargetPointer argRegStart = tb.ArgumentRegisters;
 
         if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg) != 0)
         {
-            scanContext.GCReportCallback(argRegStart, GcScanFlags.None);
+            scanContext.GCReportCallback(ArgSlotAddress(tb, 0), GcScanFlags.None);
         }
 
         if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg2) != 0)
         {
-            TargetPointer argAddr = new(argRegStart.Value + (uint)_target.PointerSize);
-            scanContext.GCReportCallback(argAddr, GcScanFlags.None);
+            scanContext.GCReportCallback(ArgSlotAddress(tb, 1), GcScanFlags.None);
         }
     }
 
@@ -313,171 +335,48 @@ internal class GcScanner
     /// Entry point for promoting caller stack GC references via method signature.
     /// Matches native TransitionFrame::PromoteCallerStack (frames.cpp:1494).
     /// </summary>
-    private void PromoteCallerStack(
-        TargetPointer frameAddress,
-        TargetPointer transitionBlock,
-        GcScanContext scanContext)
+    private void PromoteCallerStack(TargetPointer frameAddress, GcScanContext scanContext)
     {
         Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
-        TargetPointer methodDescPtr = fmf.MethodDescPtr;
-        if (methodDescPtr == TargetPointer.Null)
-            return;
-
-        ReadOnlySpan<byte> signature;
-        try
+        if (fmf.MethodDescPtr == TargetPointer.Null)
         {
-            signature = GetMethodSignatureBytes(methodDescPtr);
-        }
-        catch (System.Exception)
-        {
+            scanContext.RecordDeferredFrame(frameAddress);
             return;
         }
 
-        if (signature.IsEmpty)
-            return;
-
-        MethodSignature<GcTypeKind> methodSig;
-        try
+        MethodDescHandle md = _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(fmf.MethodDescPtr);
+        if (!_target.Contracts.CallingConvention.TryComputeArgGCRefMapBlob(md, out byte[] blob) || blob.Length == 0)
         {
-            unsafe
-            {
-                fixed (byte* pSig = signature)
-                {
-                    BlobReader blobReader = new(pSig, signature.Length);
-                    SignatureDecoder<GcTypeKind, object?> decoder = new(
-                        GcSignatureTypeProvider.Instance, metadataReader: null!, genericContext: null);
-                    methodSig = decoder.DecodeMethodSignature(ref blobReader);
-                }
-            }
-        }
-        catch (System.Exception)
-        {
+            scanContext.RecordDeferredFrame(frameAddress);
             return;
         }
 
-        if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
-            return;
-
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
-
-        bool hasThis = methodSig.Header.IsInstance;
-        bool hasRetBuf = methodSig.ReturnType is GcTypeKind.Other;
-        bool requiresInstArg = false;
-        bool isAsync = false;
-        bool isValueTypeThis = false;
-
-        try
-        {
-            requiresInstArg = rts.RequiresInstArg(mdh);
-            isAsync = rts.IsAsyncMethod(mdh);
-        }
-        catch
-        {
-        }
-
-        PromoteCallerStackHelper(transitionBlock, methodSig, hasThis, hasRetBuf,
-            requiresInstArg, isAsync, isValueTypeThis, scanContext);
-    }
-
-    /// <summary>
-    /// Core logic for promoting caller stack GC references.
-    /// Matches native TransitionFrame::PromoteCallerStackHelper (frames.cpp:1560).
-    /// </summary>
-    private void PromoteCallerStackHelper(
-        TargetPointer transitionBlock,
-        MethodSignature<GcTypeKind> methodSig,
-        bool hasThis,
-        bool hasRetBuf,
-        bool requiresInstArg,
-        bool isAsync,
-        bool isValueTypeThis,
-        GcScanContext scanContext)
-    {
-        Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
-
-        int numRegistersUsed = 0;
-        if (hasThis)
-            numRegistersUsed++;
-        if (hasRetBuf)
-            numRegistersUsed++;
-        if (requiresInstArg)
-            numRegistersUsed++;
-        if (isAsync)
-            numRegistersUsed++;
-
-        bool isArm64 = IsTargetArm64();
-        if (isArm64)
-            numRegistersUsed++;
-
-        if (hasThis)
-        {
-            int thisPos = isArm64 ? 1 : 0;
-            TargetPointer thisAddr = AddressFromGCRefMapPos(tb, thisPos);
-            GcScanFlags thisFlags = isValueTypeThis ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None;
-            scanContext.GCReportCallback(thisAddr, thisFlags);
-        }
-
-        int pos = numRegistersUsed;
-        foreach (GcTypeKind kind in methodSig.ParameterTypes)
-        {
-            TargetPointer slotAddress = AddressFromGCRefMapPos(tb, pos);
-
-            switch (kind)
-            {
-                case GcTypeKind.Ref:
-                    scanContext.GCReportCallback(slotAddress, GcScanFlags.None);
-                    break;
-                case GcTypeKind.Interior:
-                    scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
-                    break;
-                case GcTypeKind.Other:
-                    break;
-                case GcTypeKind.None:
-                    break;
-            }
-            pos++;
-        }
-    }
-
-    private ReadOnlySpan<byte> GetMethodSignatureBytes(TargetPointer methodDescPtr)
-    {
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
-
-        if (rts.IsStoredSigMethodDesc(mdh, out ReadOnlySpan<byte> storedSig))
-            return storedSig;
-
-        uint methodToken = rts.GetMethodToken(mdh);
-        if (methodToken == 0x06000000)
-            return default;
-
-        TargetPointer methodTablePtr = rts.GetMethodTable(mdh);
-        TypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
-        TargetPointer modulePtr = rts.GetModule(typeHandle);
-
-        ILoader loader = _target.Contracts.Loader;
-        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-
-        IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
-        MetadataReader? mdReader = ecmaMetadata.GetMetadata(moduleHandle);
-        if (mdReader is null)
-            return default;
-
-        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)(methodToken & 0x00FFFFFF));
-        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-        BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
-        return blobReader.ReadBytes(blobReader.Length);
+        Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(fmf.TransitionBlockPtr);
+        GCRefMapDecoder decoder = new(blob);
+        EnumerateGCRefMapTokens(ref decoder, tb, scanContext);
     }
 
     private TargetPointer AddressFromGCRefMapPos(Data.TransitionBlock tb, int pos)
     {
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
+            return ArgSlotAddress(tb, pos);
         return new TargetPointer(tb.FirstGCRefMapSlot.Value + (ulong)(pos * _target.PointerSize));
     }
 
-    private bool IsTargetArm64()
+    private TargetPointer ArgSlotAddress(Data.TransitionBlock tb, int argIndex)
     {
-        return _target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.Arm64;
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
+        {
+            const int x86NumArgRegs = 2;
+            if (argIndex < x86NumArgRegs)
+            {
+                int offset = (x86NumArgRegs - 1 - argIndex) * _target.PointerSize;
+                return new TargetPointer(tb.ArgumentRegisters.Value + (ulong)offset);
+            }
+            int stackOffset = (argIndex - x86NumArgRegs) * _target.PointerSize;
+            return new TargetPointer(tb.OffsetOfArgs.Value + (ulong)stackOffset);
+        }
+        return new TargetPointer(tb.ArgumentRegisters.Value + (ulong)(argIndex * _target.PointerSize));
     }
 
     private TargetPointer GetCallerSP(IPlatformAgnosticContext context, ref TargetPointer? cached)

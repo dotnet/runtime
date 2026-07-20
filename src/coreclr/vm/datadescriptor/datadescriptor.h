@@ -24,6 +24,10 @@
 
 #include "configure.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 #include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
 #include "patchpointinfo.h"
@@ -31,3 +35,7 @@
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
+
+#include "stgpool.h"
+#include "liteweightstgdb.h"
+#include "mdinternalrw.h"

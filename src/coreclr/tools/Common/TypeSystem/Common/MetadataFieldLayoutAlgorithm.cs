@@ -858,7 +858,7 @@ namespace Internal.TypeSystem
             // pointer (the Crossgen2 way) to ensure 8-alignment for longs and doubles as required by the ARM32 ISA. Please note
             // that for 16-alignment used by Vector128 this logic actually ensures that the fields are 16-misaligned
             // (they are 16-aligned after the 4-byte or 8-byte method table pointer).
-            if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && type.Context.Target.Architecture != TargetArchitecture.ARM)
+            if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && !type.Context.Target.SupportsAlign8)
             {
                 offsetBias = type.Context.Target.LayoutPointerSize;
                 cumulativeInstanceFieldPos -= offsetBias;

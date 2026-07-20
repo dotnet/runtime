@@ -19,6 +19,8 @@ namespace System.Text.Json.Serialization.Converters
             IsInternalConverterForNumberType = true;
         }
 
+        internal override bool IsIeeeFloatingPointConverter => true;
+
         public override Half Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
@@ -45,7 +47,7 @@ namespace System.Text.Json.Serialization.Converters
             WriteCore(writer, value);
         }
 
-        private static Half ReadCore(ref Utf8JsonReader reader)
+        private static unsafe Half ReadCore(ref Utf8JsonReader reader)
         {
             Half result;
 
@@ -74,7 +76,7 @@ namespace System.Text.Json.Serialization.Converters
             return result;
         }
 
-        private static void WriteCore(Utf8JsonWriter writer, Half value)
+        private static unsafe void WriteCore(Utf8JsonWriter writer, Half value)
         {
             Span<byte> buffer = stackalloc byte[MaxFormatLength];
             Format(buffer, value, out int written);
@@ -87,7 +89,7 @@ namespace System.Text.Json.Serialization.Converters
             return ReadCore(ref reader);
         }
 
-        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Half value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        internal override unsafe void WriteAsPropertyNameCore(Utf8JsonWriter writer, Half value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             Span<byte> buffer = stackalloc byte[MaxFormatLength];
             Format(buffer, value, out int written);
@@ -126,7 +128,7 @@ namespace System.Text.Json.Serialization.Converters
             return ReadCore(ref reader);
         }
 
-        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, Half value, JsonNumberHandling handling)
+        internal override unsafe void WriteNumberWithCustomHandling(Utf8JsonWriter writer, Half value, JsonNumberHandling handling)
         {
             if ((JsonNumberHandling.WriteAsString & handling) != 0)
             {
@@ -152,7 +154,10 @@ namespace System.Text.Json.Serialization.Converters
         internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
             GetSchemaForNumericType(JsonSchemaType.Number, numberHandling, isIeeeFloatingPoint: true);
 
-        private static bool TryGetFloatingPointConstant(ref Utf8JsonReader reader, out Half value)
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) =>
+            GetSupportedJsonValueTypesForNumericType(numberHandling);
+
+        private static unsafe bool TryGetFloatingPointConstant(ref Utf8JsonReader reader, out Half value)
         {
             scoped Span<byte> buffer;
 

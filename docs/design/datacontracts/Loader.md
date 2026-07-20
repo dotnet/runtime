@@ -51,13 +51,24 @@ record struct ModuleLookupTables(
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
     TargetPointer TypeRefToMethodTable,
-    TargetPointer MethodDefToILCodeVersioningState);
+    TargetPointer MethodDefToILCodeVersioningState,
+    uint TableDataOffset);
 
-readonly struct LoaderHeapBlockData
+readonly record struct LoaderHeapBlock(TargetPointer Address, TargetNUInt Size);
+
+enum LoaderAllocatorHeapType
 {
-    TargetPointer Address { get; init; }
-    TargetNUInt Size { get; init; }
-    TargetPointer NextBlock { get; init; }
+    Unknown,
+    LowFrequencyHeap,
+    HighFrequencyHeap,
+    StaticsHeap,
+    StubHeap,
+    ExecutableHeap,
+    FixupPrecodeHeap,
+    NewStubPrecodeHeap,
+    DynamicHelpersStubHeap,
+    IndcellHeap,
+    CacheEntryHeap,
 }
 ```
 
@@ -67,6 +78,7 @@ ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
 IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
 string GetAppDomainFriendlyName();
+TargetPointer GetAppDomain();
 TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
@@ -83,6 +95,7 @@ bool IsReadyToRun(ModuleHandle handle);
 string GetSimpleName(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
+bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
@@ -101,11 +114,8 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
-// Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
-TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap);
-// Returns the data for the given loader heap block (address, size, and next block pointer).
-LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block);
-IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
+IEnumerable<LoaderHeapBlock> EnumerateLoaderHeapBlocks(TargetPointer loaderHeap);
+IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
 
 DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle);
 void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits);
@@ -396,6 +406,12 @@ string ILoader.GetAppDomainFriendlyName()
     return new string(name);
 }
 
+TargetPointer GetAppDomain()
+{
+    TargetPointer appDomainPointer = target.ReadGlobalPointer("AppDomain");
+    return target.ReadPointer(appDomainPointer);
+}
+
 TargetPointer ILoader.GetModule(ModuleHandle handle)
 {
     return handle.Address;
@@ -643,6 +659,19 @@ string GetFileName(ModuleHandle handle)
     return new string(fileName);
 }
 
+bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize)
+{
+    timeStamp = 0;
+    imageSize = 0;
+
+    if (!TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out _, out _))
+        return false;
+    TargetPointer ntHeadersPtr = baseAddress + // offset to NT headers
+    timeStamp = // read from NT header
+    imageSize = // read from NT header
+    return true;
+}
+
 TargetPointer GetLoaderAllocator(ModuleHandle handle)
 {
     return target.ReadPointer(handle.Address + /* Module::LoaderAllocator offset */);
@@ -663,6 +692,7 @@ TargetPointer ILoader.GetAssemblyLoadContext(ModuleHandle handle)
 
 ModuleLookupTables GetLookupTables(ModuleHandle handle)
 {
+    uint tableDataOffset = (uint)/* ModuleLookupMap::TableData offset */;
     return new ModuleLookupTables(
         FieldDefToDescMap: target.ReadPointer(handle.Address + /* Module::FieldDefToDescMap */),
         ManifestModuleReferencesMap: target.ReadPointer(handle.Address + /* Module::ManifestModuleReferencesMap */),
@@ -671,7 +701,8 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         TypeDefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */),
         TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */),
         MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
-        Module::MethodDefToILCodeVersioningState */));
+        Module::MethodDefToILCodeVersioningState */),
+        TableDataOffset: tableDataOffset);
 }
 
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
@@ -784,39 +815,39 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer)
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::ObjectHandle offset */);
 }
 
-IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
+IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
 {
     // Read LoaderAllocator data
     LoaderAllocator la = // read LoaderAllocator object at loaderAllocatorPointer
 
     // Always-present heaps
-    Dictionary<string, TargetPointer> heaps = {
-        ["LowFrequencyHeap"] = la.LowFrequencyHeap,
-        ["HighFrequencyHeap"] = la.HighFrequencyHeap,
-        ["StaticsHeap"] = la.StaticsHeap,
-        ["StubHeap"] = la.StubHeap,
-        ["ExecutableHeap"] = la.ExecutableHeap,
+    Dictionary<LoaderAllocatorHeapType, TargetPointer> heaps = {
+        [LoaderAllocatorHeapType.LowFrequencyHeap] = la.LowFrequencyHeap,
+        [LoaderAllocatorHeapType.HighFrequencyHeap] = la.HighFrequencyHeap,
+        [LoaderAllocatorHeapType.StaticsHeap] = la.StaticsHeap,
+        [LoaderAllocatorHeapType.StubHeap] = la.StubHeap,
+        [LoaderAllocatorHeapType.ExecutableHeap] = la.ExecutableHeap,
     };
 
     // Feature-conditional heaps: only included when the data descriptor field exists
     if (LoaderAllocator type has "FixupPrecodeHeap" field)
-        heaps["FixupPrecodeHeap"] = la.FixupPrecodeHeap;
+        heaps[LoaderAllocatorHeapType.FixupPrecodeHeap] = la.FixupPrecodeHeap;
 
     if (LoaderAllocator type has "NewStubPrecodeHeap" field)
-        heaps["NewStubPrecodeHeap"] = la.NewStubPrecodeHeap;
+        heaps[LoaderAllocatorHeapType.NewStubPrecodeHeap] = la.NewStubPrecodeHeap;
 
     if (LoaderAllocator type has "DynamicHelpersStubHeap" field)
-        heaps["DynamicHelpersStubHeap"] = la.DynamicHelpersStubHeap;
+        heaps[LoaderAllocatorHeapType.DynamicHelpersStubHeap] = la.DynamicHelpersStubHeap;
 
     // VirtualCallStubManager heaps: only included when VirtualCallStubManager is non-null
     if (la.VirtualCallStubManager != null)
     {
         VirtualCallStubManager vcsMgr = // read VirtualCallStubManager object at la.VirtualCallStubManager
 
-        heaps["IndcellHeap"] = vcsMgr.IndcellHeap;
+        heaps[LoaderAllocatorHeapType.IndcellHeap] = vcsMgr.IndcellHeap;
 
         if (VirtualCallStubManager type has "CacheEntryHeap" field)
-            heaps["CacheEntryHeap"] = vcsMgr.CacheEntryHeap;
+            heaps[LoaderAllocatorHeapType.CacheEntryHeap] = vcsMgr.CacheEntryHeap;
     }
 
     return heaps;
@@ -964,21 +995,22 @@ class InstMethodHashTable
 }
 ```
 
-#### GetFirstLoaderHeapBlock, GetLoaderHeapBlockData
+#### EnumerateLoaderHeapBlocks
 
 ```csharp
-TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
+IEnumerable<LoaderHeapBlock> ILoader.EnumerateLoaderHeapBlocks(TargetPointer loaderHeap)
 {
-    return target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */);
-}
-
-LoaderHeapBlockData ILoader.GetLoaderHeapBlockData(TargetPointer block)
-{
-    return new LoaderHeapBlockData
+    TargetPointer block = target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */);
+    HashSet<TargetPointer> visited = [];
+    while (block != TargetPointer.Null)
     {
-        Address = target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */),
-        Size = target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */),
-        NextBlock = target.ReadPointer(block + /* LoaderHeapBlock::Next offset */),
-    };
+        if (!visited.Add(block))
+            throw new InvalidOperationException();
+
+        yield return new LoaderHeapBlock(
+            target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */),
+            target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */));
+        block = target.ReadPointer(block + /* LoaderHeapBlock::Next offset */);
+    }
 }
 ```

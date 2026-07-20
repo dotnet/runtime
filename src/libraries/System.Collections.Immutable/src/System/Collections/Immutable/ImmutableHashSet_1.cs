@@ -743,39 +743,40 @@ namespace System.Collections.Immutable
             switch (other)
             {
                 case ImmutableHashSet<T> otherAsImmutableHashSet:
-                    if (otherAsImmutableHashSet.Count != origin.Count)
-                    {
-                        return false;
-                    }
-
                     if (EqualityComparer<IEqualityComparer<T>>.Default.Equals(origin.EqualityComparer, otherAsImmutableHashSet.KeyComparer))
                     {
+                        if (otherAsImmutableHashSet.Count != origin.Count)
+                        {
+                            return false;
+                        }
                         return SetEqualsWithImmutableHashset(otherAsImmutableHashSet, origin);
+                    }
+
+                    if (otherAsImmutableHashSet.Count < origin.Count)
+                    {
+                        return false;
                     }
                     break;
 
                 case HashSet<T> otherAsHashset:
-                    if (otherAsHashset.Count != origin.Count)
-                    {
-                        return false;
-                    }
-
                     if (EqualityComparer<IEqualityComparer<T>>.Default.Equals(origin.EqualityComparer, otherAsHashset.Comparer))
                     {
+                        if (otherAsHashset.Count != origin.Count)
+                        {
+                            return false;
+                        }
                         return SetEqualsWithHashset(otherAsHashset, origin);
+                    }
+
+                    if (otherAsHashset.Count < origin.Count)
+                    {
+                        return false;
                     }
                     break;
 
                 case ICollection<T> otherAsICollectionGeneric:
                     // We check for < instead of != because other is not guaranteed to be a set, it could be a collection with duplicates.
                     if (otherAsICollectionGeneric.Count < origin.Count)
-                    {
-                        return false;
-                    }
-                    break;
-
-                case ICollection otherAsICollection:
-                    if (otherAsICollection.Count < origin.Count)
                     {
                         return false;
                     }
