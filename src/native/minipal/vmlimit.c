@@ -65,15 +65,21 @@ size_t minipal_get_virtual_address_space_limit(void)
 
     size_t limit = SIZE_MAX;
 
+#if defined(RLIMIT_AS) || defined(RLIMIT_DATA)
 #ifdef RLIMIT_AS
+    int addressSpace = RLIMIT_AS;
+#else
+    int addressSpace = RLIMIT_DATA;
+#endif
+
     struct rlimit addressSpaceLimit;
-    if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
+    if ((getrlimit(addressSpace, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
     {
         limit = addressSpaceLimit.rlim_cur;
     }
-#endif
+#endif // RLIMIT_AS || RLIMIT_DATA
 
-#ifndef TARGET_LINUX
+#ifdef TARGET_LINUX
     size_t vmallocTotal = get_vmalloc_total();
     if (vmallocTotal < limit)
     {
