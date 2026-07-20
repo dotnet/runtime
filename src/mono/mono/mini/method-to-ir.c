@@ -7047,7 +7047,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		g_assert (bb);
 	}
 
-	if (cfg->gsharedvt_min && cfg->method == method) {
+	if (cfg->gsharedvt_min) {
 		/*
 		 * Minimal gsharedvt (used for llvmonly, see mini_method_compile) only
 		 * supports methods whose signature and locals have no variable-length
@@ -7071,17 +7071,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 * signatures/locals and are unaffected.
 		 *
 		 * gsharedvt_min is compile-wide and mono_method_to_ir runs recursively for
-		 * inlinees, so only promote when compiling the root method (cfg->method ==
-		 * method); otherwise the cleared flag would leak into the outer method even
-		 * if the inline is aborted.
+		 * inlinees. Only the root method (cfg->method == method) is promoted;
+		 * clearing the flag for an inlinee would leak into the outer method's
+		 * compilation. For inlinees the historical bailout is preserved so a
+		 * variable-signature callee is never inlined into a minimal-gsharedvt
+		 * method (keeping the minimal-gsharedvt invariants intact).
 		 */
 		gboolean needs_full = mini_is_gsharedvt_variable_signature (sig);
 		for (int i = 0; !needs_full && i < header->num_locals; ++i) {
 			if (mini_is_gsharedvt_variable_type (header->locals [i]))
 				needs_full = TRUE;
 		}
-		if (needs_full)
-			cfg->gsharedvt_min = FALSE;
+		if (needs_full) {
+			if (cfg->method == method)
+				cfg->gsharedvt_min = FALSE;
+			else
+				GSHAREDVT_FAILURE (*cfg->cil_start);
+		}
 	}
 
 	/* we use a spare stack slot in SWITCH and NEWOBJ and others */
