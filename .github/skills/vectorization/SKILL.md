@@ -33,9 +33,11 @@ This skill distills what to actually enforce when authoring or reviewing vectori
    to the optimal instruction per target (for example `(vector & mask) == Vector128<byte>.Zero` becomes
    `ptest` on x86/x64). Only drop to `System.Runtime.Intrinsics.X86`/`Arm`/`Wasm` when a specific
    instruction measurably beats the portable form, and guard it with the class's `IsSupported`.
-4. **Read `IsHardwareAccelerated` and `Count` directly, never cache them.** Both are JIT-time constants;
-   caching defeats the constant-folding and dead-branch elimination.
-5. **Prefer operators over named methods** (`+`, `&`, `<<`) to avoid operator-precedence bugs.
+4. **Read `IsHardwareAccelerated` and `Count` directly; don't cache them to locals.** Both are JIT-time
+   constants, so caching buys nothing, and a local obscures that constant-ness — read them at each use
+   so the branches you don't take are eliminated.
+5. **Prefer operators over named methods** (`+`, `&`, `<<`) for readability, but mind precedence:
+   `a & b == c` parses as `a & (b == c)`, so parenthesize when mixing them.
 
 ## Authoring checklist
 
@@ -80,9 +82,10 @@ This skill distills what to actually enforce when authoring or reviewing vectori
 - **Guard against out-of-bounds reads with `BoundedMemory`.**
   [`BoundedMemory.Allocate<T>(count)`](/src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Creation.cs)
   places a no-access page immediately after the buffer (use `PoisonPagePlacement.Before` for
-  backwards-iterating algorithms), so any read past the end throws `AccessViolationException` during
-  testing instead of silently succeeding. Always include lengths that aren't an exact multiple of the
-  vector width.
+  backwards-iterating algorithms), so on most targets a read past the end faults with an access
+  violation instead of silently succeeding. It falls back to an unprotected allocation on Browser/WASI
+  and .NET Framework, so don't rely on the guard there. Always include lengths that aren't an exact
+  multiple of the vector width.
 
 ## Benchmarking
 

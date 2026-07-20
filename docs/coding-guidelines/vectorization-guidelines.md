@@ -17,13 +17,14 @@ dotnet/runtime.
 Mishandling the remainder is the most common source of bugs in vectorized code; a loop that reads past
 the end of a buffer produces non-deterministic results and can crash. To catch this in tests, use the
 [`BoundedMemory`](/src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Creation.cs)
-helper. It allocates a memory region immediately followed (or preceded) by a poison (`MEM_NOACCESS`)
-page, so any out-of-bounds read throws an `AccessViolationException` during testing rather than silently
-succeeding.
+helper. On most targets it allocates a memory region immediately followed (or preceded) by a poison
+(`MEM_NOACCESS`) page, so an out-of-bounds read faults with an access violation during testing rather
+than silently succeeding. (On a few targets — Browser/WASI and .NET Framework — it falls back to an
+unprotected allocation that won't fault, so don't rely on the guard being present everywhere.)
 
 `BoundedMemory.Allocate<T>(elementCount)` places the poison page immediately *after* the buffer (the
-default `PoisonPagePlacement.After`), so running the method under test against its `Span` faults
-immediately on any read past the end:
+default `PoisonPagePlacement.After`) and fills it with random data, so running the method under test
+against its `Span` faults immediately on any read past the end:
 
 ```csharp
 [Theory]
@@ -33,9 +34,8 @@ immediately on any read past the end:
 public void Sum_DoesNotReadOutOfBounds(int length)
 {
     using BoundedMemory<int> bounded = BoundedMemory.Allocate<int>(length);
-    Random.Shared.NextBytes(MemoryMarshal.AsBytes(bounded.Span));
 
-    // If Sum's remainder handling reads past the buffer, this AVs instead of
+    // If Sum's remainder handling reads past the buffer, this faults instead of
     // silently succeeding against adjacent memory.
     int actual = Sum(bounded.Span);
 
