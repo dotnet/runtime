@@ -87,7 +87,7 @@ bool emitter::IsAvx512OnlyInstruction(instruction ins)
 
 bool emitter::IsApxOnlyInstruction(instruction ins)
 {
-    insFlags flags = CodeGenInterface::instInfo[ins];
+    insFlags flags     = CodeGenInterface::instInfo[ins];
     bool     isApxOnly = (flags & Encoding_EVEX_APX_ONLY) != 0;
 
 #ifdef DEBUG
