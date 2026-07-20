@@ -190,14 +190,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_PackedSimd_LoadScalarVector128:
-        case NI_PackedSimd_LoadScalarAndSplatVector128:
-        case NI_PackedSimd_LoadScalarAndInsert:
-        case NI_PackedSimd_LoadWideningVector128:
-        {
-            break;
-        }
-
         case NI_PackedSimd_Store:
         {
             assert(sig->numArgs == 2);
