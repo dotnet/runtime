@@ -223,6 +223,10 @@ namespace System.Net.Security
         internal SslStream.JavaProxy? SslStreamProxy { get; set; }
 #endif
 
+#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
+        internal SslStream? SslStream { get; set; }
+#endif
+
         public void Dispose()
         {
             if (OwnsCertificateContext && CertificateContext != null)

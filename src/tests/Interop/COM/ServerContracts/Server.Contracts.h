@@ -455,6 +455,10 @@ IDispatchTesting : IDispatch
 
     virtual HRESULT STDMETHODCALLTYPE ExplicitGetEnumerator(
         /* [retval][out] */ IUnknown** retval) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE Sum_IntArray_SafeArray(
+        /*[in]*/ SAFEARRAY *d,
+        /*[out,retval]*/ int *pRetVal) = 0;
 };
 
 struct __declspec(uuid("83AFF8E4-C46A-45DB-9D91-2ADB5164545E"))

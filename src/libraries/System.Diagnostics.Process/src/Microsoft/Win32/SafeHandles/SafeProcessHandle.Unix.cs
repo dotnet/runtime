@@ -7,11 +7,10 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.IO.Pipes;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Security;
-using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
@@ -28,22 +27,39 @@ namespace Microsoft.Win32.SafeHandles
 
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
-
-        private SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
+        private readonly ProcessWaitState.Holder? _waitStateHolder;
+        internal SafeProcessHandle(ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
-            ProcessId = processId;
-
-            _handle = waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
+            _waitStateHolder = waitStateHolder;
+            _handle = _waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
             _handle.DangerousAddRef(ref _releaseRef);
             SetHandle(_handle.DangerousGetHandle());
         }
 
-        internal SafeProcessHandle(int processId, SafeWaitHandle handle) :
-            this(handle.DangerousGetHandle(), ownsHandle: true)
+        /// <summary>
+        /// Gets the process ID.
+        /// </summary>
+        public int ProcessId
         {
-            ProcessId = processId;
-            _handle = handle;
-            handle.DangerousAddRef(ref _releaseRef);
+            get
+            {
+                Validate();
+
+                if (_waitStateHolder is null)
+                {
+                    throw new InvalidOperationException(SR.InvalidProcessHandle);
+                }
+
+                return _waitStateHolder._state._processId;
+            }
+        }
+
+        /// <summary>
+        /// Sets a value indicating whether the process has been terminated due to timeout or cancellation.
+        /// </summary>
+        private bool Canceled
+        {
+            set => GetWaitState()._canceled = value;
         }
 
         protected override bool ReleaseHandle()
@@ -53,11 +69,40 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(_handle != null);
                 _handle.DangerousRelease();
             }
+
+            _waitStateHolder?.Dispose();
             return true;
         }
 
-        // On Unix, we don't use process descriptors yet, so we can't get PID.
-        private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
+        private static bool TryOpenCore(int processId, [NotNullWhen(true)] out SafeProcessHandle? processHandle, out int lastError)
+        {
+            int result = Interop.Sys.Kill(processId, 0);
+
+            if (result != 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                if (errorInfo.Error == Interop.Error.EPERM)
+                {
+                    ThrowOpenProcessAccessDeniedException(processId);
+                }
+
+                if (errorInfo.Error == Interop.Error.ESRCH || errorInfo.Error == Interop.Error.EINVAL)
+                {
+                    lastError = errorInfo.RawErrno;
+                    processHandle = null;
+                    return false;
+                }
+
+                throw new Win32Exception(errorInfo.RawErrno);
+            }
+
+            lastError = 0;
+            ProcessWaitState.Holder waitStateHolder = new(processId);
+            processHandle = new SafeProcessHandle(waitStateHolder);
+            return true;
+        }
+
 
         private bool SignalCore(PosixSignal signal)
         {
@@ -89,25 +134,80 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
+        private void ResumeCore() => SignalCore(PosixSignal.SIGCONT);
+
+        private ProcessExitStatus WaitForExitCore()
+        {
+            ProcessWaitState waitState = GetWaitState();
+            waitState.WaitForExit(Timeout.Infinite);
+
+            return GetExitStatus(waitState);
+        }
+
+        private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            ProcessWaitState waitState = GetWaitState();
+            if (!waitState.WaitForExit(milliseconds))
+            {
+                exitStatus = null;
+                return false;
+            }
+
+            exitStatus = GetExitStatus(waitState);
+            return true;
+        }
+
+        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
+        {
+            ProcessWaitState waitState = GetWaitState();
+
+            if (!waitState.WaitForExit(milliseconds))
+            {
+                waitState._canceled = true;
+                SignalCore(PosixSignal.SIGKILL);
+                waitState.WaitForExit(Timeout.Infinite);
+            }
+
+            return GetExitStatus(waitState);
+        }
+
+        private ManualResetEvent GetWaitHandle() => GetWaitState().EnsureExitedEvent();
+
+        private ProcessWaitState GetWaitState()
+        {
+            if (_waitStateHolder is null)
+            {
+                throw new InvalidOperationException(SR.InvalidProcessHandle);
+            }
+
+            if (!_waitStateHolder._state._isChild)
+            {
+                throw new PlatformNotSupportedException(SR.NotSupportedForNonChildProcess);
+            }
+
+            return _waitStateHolder._state;
+        }
+
+        private ProcessExitStatus GetExitStatus() => GetExitStatus(GetWaitState());
+
+        private static ProcessExitStatus GetExitStatus(ProcessWaitState waitState)
+        {
+            // GetWaitState ensures the process is a child process, so obtaining the exit status should never fail.
+            bool exited = waitState.GetExited(out ProcessExitStatus? exitStatus, refresh: false);
+            Debug.Assert(exited);
+            Debug.Assert(exitStatus is not null);
+            return exitStatus ?? throw new InvalidOperationException();
+        }
+
         private delegate SafeProcessHandle StartWithShellExecuteDelegate(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
         private static StartWithShellExecuteDelegate? s_startWithShellExecute;
 
         private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandlesSnapshot = null)
-        {
-            SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandlesSnapshot, out ProcessWaitState.Holder? waitStateHolder);
-
-            // For standalone SafeProcessHandle.Start, we dispose the wait state holder immediately.
-            // The DangerousAddRef on the SafeWaitHandle (Unix) keeps the handle alive.
-            waitStateHolder?.Dispose();
-
-            return startedProcess;
-        }
+            => StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandlesSnapshot, out _);
 
         internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
             SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder)
         {
-            waitStateHolder = null;
-
             ProcessUtils.EnsureInitialized();
 
             if (startInfo.UseShellExecute)
@@ -115,7 +215,7 @@ namespace Microsoft.Win32.SafeHandles
                 return s_startWithShellExecute!(startInfo, stdinHandle, stdoutHandle, stderrHandle, out waitStateHolder);
             }
 
-            string? filename;
+            string filename;
             string[] argv;
 
             IDictionary<string, string?> env = startInfo.Environment;
@@ -132,12 +232,8 @@ namespace Microsoft.Win32.SafeHandles
 
             bool usesTerminal = UsesTerminal(stdinHandle, stdoutHandle, stderrHandle);
 
-            filename = ProcessUtils.ResolvePath(startInfo.FileName);
+            filename = ProcessUtils.ResolveValidPath(startInfo.FileName, cwd);
             argv = ProcessUtils.ParseArgv(startInfo);
-            if (Directory.Exists(filename))
-            {
-                throw new Win32Exception(SR.DirectoryNotValidAsInput);
-            }
 
             return ForkAndExecProcess(
                 startInfo, filename, argv, env, cwd,
@@ -145,6 +241,116 @@ namespace Microsoft.Win32.SafeHandles
                 stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
                 inheritedHandles,
                 out waitStateHolder);
+        }
+
+        internal static unsafe SafeProcessHandle StartWithCallback(ProcessStartInfo startInfo, SafeFileHandle? stdinFd, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
+            Func<UnixProcessStartArguments, int> callback, out ProcessWaitState.Holder? waitStateHolder)
+        {
+            waitStateHolder = null;
+            ProcessUtils.EnsureInitialized();
+
+            string resolvedFileName = ProcessUtils.ResolveValidPath(startInfo.FileName, startInfo.WorkingDirectory);
+
+            string[] argv = ProcessUtils.ParseArgv(startInfo);
+            bool configuredTerminal = false, usesTerminal = UsesTerminal(stdinFd, stdoutHandle, stderrHandle);
+            byte** argvPtr = null, envpPtr = null;
+            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
+            scoped Utf8StringMarshaller.ManagedToUnmanagedIn resolvedPathMarshaller = default;
+            Span<byte> resolvedPathBuffer = stackalloc byte[Utf8StringMarshaller.ManagedToUnmanagedIn.BufferSize];
+
+            try
+            {
+                Interop.Sys.AllocArgvArray(argv, ref argvPtr);
+                Interop.Sys.AllocEnvpArray(startInfo.Environment, ref envpPtr);
+
+                resolvedPathMarshaller.FromManaged(resolvedFileName, resolvedPathBuffer);
+
+                nint stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
+
+                if (stdinFd is not null)
+                {
+                    stdinFd.DangerousAddRef(ref stdinRefAdded);
+                    stdinRawFd = stdinFd.DangerousGetHandle();
+                }
+
+                if (stdoutHandle is not null)
+                {
+                    stdoutHandle.DangerousAddRef(ref stdoutRefAdded);
+                    stdoutRawFd = stdoutHandle.DangerousGetHandle();
+                }
+
+                if (stderrHandle is not null)
+                {
+                    stderrHandle.DangerousAddRef(ref stderrRefAdded);
+                    stderrRawFd = stderrHandle.DangerousGetHandle();
+                }
+
+                UnixProcessStartArguments args = new(
+                    resolvedPathMarshaller.ToUnmanaged(),
+                    argvPtr,
+                    envpPtr,
+                    stdinRawFd,
+                    stdoutRawFd,
+                    stderrRawFd,
+                    startInfo);
+
+                // Lock to avoid races with OnSigChild
+                // By using a ReaderWriterLock we allow multiple processes to start concurrently.
+                ProcessUtils.s_processStartLock.EnterReadLock();
+
+                try
+                {
+                    if (usesTerminal)
+                    {
+                        ProcessUtils.ConfigureTerminalForChildProcesses(1);
+                        configuredTerminal = true;
+                    }
+
+                    int processId = callback(args);
+                    if (processId <= 0)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidProcessId, nameof(callback));
+                    }
+
+                    waitStateHolder = new ProcessWaitState.Holder(processId, isNewChild: true, usesTerminal);
+                    return new SafeProcessHandle(waitStateHolder!);
+                }
+                finally
+                {
+                    ProcessUtils.s_processStartLock.ExitReadLock();
+                }
+            }
+            catch
+            {
+                if (configuredTerminal)
+                {
+                    // We failed to launch a child that could use the terminal.
+                    ProcessUtils.s_processStartLock.EnterWriteLock();
+                    ProcessUtils.ConfigureTerminalForChildProcesses(-1);
+                    ProcessUtils.s_processStartLock.ExitWriteLock();
+                }
+
+                throw;
+            }
+            finally
+            {
+                if (stdinRefAdded)
+                {
+                    stdinFd!.DangerousRelease();
+                }
+                if (stdoutRefAdded)
+                {
+                    stdoutHandle!.DangerousRelease();
+                }
+                if (stderrRefAdded)
+                {
+                    stderrHandle!.DangerousRelease();
+                }
+
+                NativeMemory.Free(envpPtr);
+                NativeMemory.Free(argvPtr);
+                resolvedPathMarshaller.Free();
+            }
         }
 
         private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
@@ -255,7 +461,7 @@ namespace Microsoft.Win32.SafeHandles
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
-                    startInfo.StartDetached, inheritedHandles);
+                    startInfo, inheritedHandles);
 
                 if (errno == 0)
                 {
@@ -292,7 +498,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
             }
 
-            return new SafeProcessHandle(childPid, waitStateHolder!);
+            return new SafeProcessHandle(waitStateHolder!);
         }
     }
 }

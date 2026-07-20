@@ -287,5 +287,67 @@ namespace System.Linq.Tests
             var count = new[] { 0, 1, 2 }.AsQueryable().GroupJoin(new[] { 1, 2, 3 }, n1 => n1, n2 => n2, (n1, n2) => n1, EqualityComparer<int>.Default).Count();
             Assert.Equal(3, count);
         }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector()
+        {
+            var result = new[] { 0, 1, 2 }.AsQueryable().GroupJoin(new[] { 1, 2, 3 }, n1 => n1, n2 => n2).ToList();
+            Assert.Equal(3, result.Count);
+            Assert.Equal(0, result[0].Key);
+            Assert.Empty(result[0]);
+            Assert.Equal(1, result[1].Key);
+            Assert.Single(result[1]);
+            Assert.Equal(2, result[2].Key);
+            Assert.Single(result[2]);
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_OuterNull()
+        {
+            IQueryable<int> outer = null;
+            int[] inner = { 1, 2, 3 };
+
+            AssertExtensions.Throws<ArgumentNullException>("outer", () => outer.GroupJoin(inner.AsQueryable(), n1 => n1, n2 => n2));
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_InnerNull()
+        {
+            int[] outer = { 0, 1, 2 };
+            IQueryable<int> inner = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => outer.AsQueryable().GroupJoin(inner, n1 => n1, n2 => n2));
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_OuterKeySelectorNull()
+        {
+            int[] outer = { 0, 1, 2 };
+            int[] inner = { 1, 2, 3 };
+
+            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => outer.AsQueryable().GroupJoin(inner.AsQueryable(), null, n2 => n2));
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_InnerKeySelectorNull()
+        {
+            int[] outer = { 0, 1, 2 };
+            int[] inner = { 1, 2, 3 };
+
+            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => outer.AsQueryable().GroupJoin<int, int, int>(inner.AsQueryable(), n1 => n1, null));
+        }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_CustomComparer()
+        {
+            var result = new[] { "Tim", "Bob", "Robert" }.AsQueryable().GroupJoin(new[] { "miT", "Robert" }, n1 => n1, n2 => n2, new AnagramEqualityComparer()).ToList();
+            Assert.Equal(3, result.Count);
+            Assert.Equal("Tim", result[0].Key);
+            Assert.Single(result[0]);
+            Assert.Equal("Bob", result[1].Key);
+            Assert.Empty(result[1]);
+            Assert.Equal("Robert", result[2].Key);
+            Assert.Single(result[2]);
+        }
     }
 }

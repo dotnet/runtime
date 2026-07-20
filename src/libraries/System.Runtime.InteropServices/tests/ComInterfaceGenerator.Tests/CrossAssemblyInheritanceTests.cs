@@ -252,5 +252,183 @@ namespace ComInterfaceGenerator.Tests
             Assert.True(derivedFromExternalDerivedVTable.SequenceEqual(deepDerivedVTable),
                 "IDerivedFromDerivedExternalDerived should have consistent IDerivedFromExternalDerived vtable layout");
         }
+
+        [GeneratedComClass]
+        [Guid("e0c6b35f-1234-4567-8901-123456789ac0")]
+        internal partial class DerivedExternalIndexersAndPropertiesImpl : IDerivedExternalIndexersAndProperties
+        {
+            private int _setSentinel;
+            private int _value = 11;
+            private int _writeOnlyCounter;
+
+            public int this[int i]
+            {
+                get => i * 10;
+                set => _setSentinel = value;
+            }
+
+            public int this[int i, int j]
+            {
+                get => (i * 100) + j;
+                set => _setSentinel = value;
+            }
+
+            public int this[long l] => unchecked((int)(l + 1));
+
+            public int this[short s]
+            {
+                set => _setSentinel = value;
+            }
+
+            public int Value
+            {
+                get => _value;
+                set => _value = value;
+            }
+
+            public string Name => "DerivedExternalIndexersAndProperties";
+
+            public int WriteOnlyCounter
+            {
+                set => _writeOnlyCounter = value;
+            }
+
+            public int Marker => 7;
+
+            internal int LastSetSentinel => _setSentinel;
+            internal int LastWriteOnlyCounter => _writeOnlyCounter;
+        }
+
+        [Fact]
+        public void IDerivedExternalIndexersAndProperties_AccessorsDispatchAcrossBothSurfaces()
+        {
+            var implementation = new DerivedExternalIndexersAndPropertiesImpl();
+            var comWrappers = new StrategyBasedComWrappers();
+            var nativeObj = comWrappers.GetOrCreateComInterfaceForObject(implementation, CreateComInterfaceFlags.None);
+            var managedObj = comWrappers.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
+
+            var externalSurface = (IExternalIndexersAndProperties)managedObj;
+
+            // Overloaded indexers dispatch by parameter signature even though every accessor
+            // shares the get_Item / set_Item IL name.
+            Assert.Equal(50, externalSurface[5]);
+            Assert.Equal(305, externalSurface[3, 5]);
+            Assert.Equal(101, externalSurface[100L]);
+
+            externalSurface[5] = 1;
+            externalSurface[3, 5] = 2;
+            externalSurface[(short)7] = 3;
+
+            // Regular property accessors on the same external interface are reachable through
+            // the same RCW dispatch and round-trip values across the COM boundary.
+            Assert.Equal(11, externalSurface.Value);
+            externalSurface.Value = 22;
+            Assert.Equal(22, externalSurface.Value);
+
+            Assert.Equal("DerivedExternalIndexersAndProperties", externalSurface.Name);
+
+            externalSurface.WriteOnlyCounter = 99;
+
+            // The derived interface still sees both the inherited surfaces and its own Marker.
+            var derived = (IDerivedExternalIndexersAndProperties)managedObj;
+            Assert.Equal(7, derived.Marker);
+            Assert.Equal(50, derived[5]);
+            Assert.Equal(305, derived[3, 5]);
+            Assert.Equal(101, derived[100L]);
+            Assert.Equal(22, derived.Value);
+            Assert.Equal("DerivedExternalIndexersAndProperties", derived.Name);
+        }
+
+        [Fact]
+        public unsafe void IDerivedExternalIndexersAndProperties_VTableLayoutExtendsBase()
+        {
+            IIUnknownDerivedDetails baseDetails = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy
+                .GetIUnknownDerivedDetails(typeof(IExternalIndexersAndProperties).TypeHandle);
+            IIUnknownDerivedDetails derivedDetails = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy
+                .GetIUnknownDerivedDetails(typeof(IDerivedExternalIndexersAndProperties).TypeHandle);
+
+            // IExternalIndexersAndProperties contributes one slot per accessor in declaration order:
+            //   indexer get/set [int]              (2)
+            //   indexer get/set [int, int]         (2)
+            //   indexer get [long]                 (1)
+            //   indexer set [short]                (1)
+            //   property get/set Value             (2)
+            //   property get Name                  (1)
+            //   property set WriteOnlyCounter      (1) = 10 slots
+            // plus IUnknown's 3.
+            const int BaseVTableSize = 3 + 10;
+
+            var baseVTable = new ReadOnlySpan<nint>(baseDetails.ManagedVirtualMethodTable, BaseVTableSize);
+            var derivedBaseVTable = new ReadOnlySpan<nint>(derivedDetails.ManagedVirtualMethodTable, BaseVTableSize);
+
+            Assert.True(baseVTable.SequenceEqual(derivedBaseVTable),
+                "IDerivedExternalIndexersAndProperties should preserve the IExternalIndexersAndProperties vtable prefix even though all indexer accessors share the get_Item/set_Item name.");
+        }
+
+        [GeneratedComClass]
+        [Guid("e0c6b35f-1234-4567-8901-123456789ac1")]
+        internal partial class DerivedFromExternalSameNameImpl
+            : IDerivedFromExternalSameNameA, IDerivedFromExternalSameNameB
+        {
+            double IExternalSameNameA.MyMethod() => 1.5;
+            int IExternalSameNameB.MyMethod() => 33;
+        }
+
+        [Fact]
+        public void IDerivedFromExternalSameName_CanCallBothDisjointBases()
+        {
+            var implementation = new DerivedFromExternalSameNameImpl();
+            var comWrappers = new StrategyBasedComWrappers();
+            var nativeObj = comWrappers.GetOrCreateComInterfaceForObject(implementation, CreateComInterfaceFlags.None);
+            var managedObj = comWrappers.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
+
+            var a = (IExternalSameNameA)managedObj;
+            var b = (IExternalSameNameB)managedObj;
+
+            Assert.Equal(1.5, a.MyMethod());
+            Assert.Equal(33, b.MyMethod());
+        }
+
+        [GeneratedComClass]
+        [Guid("e0c6b35f-1234-4567-8901-123456789ac2")]
+        internal partial class DerivedFromExternalSameNameAOnlyImpl
+            : IDerivedFromExternalSameNameA
+        {
+            public double MyMethod() => 2.5;
+        }
+
+        [GeneratedComClass]
+        [Guid("e0c6b35f-1234-4567-8901-123456789ac3")]
+        internal partial class DerivedFromExternalSameNameBOnlyImpl
+            : IDerivedFromExternalSameNameB
+        {
+            public int MyMethod() => 77;
+        }
+
+        [Fact]
+        public void IDerivedFromExternalSameNameA_CanCallStandalone()
+        {
+            var implementation = new DerivedFromExternalSameNameAOnlyImpl();
+            var comWrappers = new StrategyBasedComWrappers();
+            var nativeObj = comWrappers.GetOrCreateComInterfaceForObject(implementation, CreateComInterfaceFlags.None);
+            var managedObj = comWrappers.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
+
+            var a = (IExternalSameNameA)managedObj;
+
+            Assert.Equal(2.5, a.MyMethod());
+        }
+
+        [Fact]
+        public void IDerivedFromExternalSameNameB_CanCallStandalone()
+        {
+            var implementation = new DerivedFromExternalSameNameBOnlyImpl();
+            var comWrappers = new StrategyBasedComWrappers();
+            var nativeObj = comWrappers.GetOrCreateComInterfaceForObject(implementation, CreateComInterfaceFlags.None);
+            var managedObj = comWrappers.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
+
+            var b = (IExternalSameNameB)managedObj;
+
+            Assert.Equal(77, b.MyMethod());
+        }
     }
 }

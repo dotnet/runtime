@@ -561,11 +561,11 @@ inline bool leafInRange(GenTree* leaf, int lower, int upper)
     {
         return false;
     }
-    if (leaf->AsIntCon()->gtIconVal < lower)
+    if (leaf->AsIntCon()->IconValue() < lower)
     {
         return false;
     }
-    if (leaf->AsIntCon()->gtIconVal > upper)
+    if (leaf->AsIntCon()->IconValue() > upper)
     {
         return false;
     }
@@ -579,7 +579,7 @@ inline bool leafInRange(GenTree* leaf, int lower, int upper, int multiple)
     {
         return false;
     }
-    if (leaf->AsIntCon()->gtIconVal % multiple)
+    if (leaf->AsIntCon()->IconValue() % multiple)
     {
         return false;
     }
@@ -694,6 +694,8 @@ public:
                                   RefPosition* refPosition,
                                   Interval*    upperVectorInterval,
                                   BasicBlock*  block);
+    // Check for an unnecessary UpperVectorSave ref position around profiler hooks
+    bool CanSkipUpperVectorSave(RefPosition* refPosition, Interval* lclVarInterval);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     // resolve along one block-block edge
@@ -986,6 +988,8 @@ public:
     bool isRegCandidate(LclVarDsc* varDsc);
 
     bool isContainableMemoryOp(GenTree* node);
+
+    void checkForDNER(unsigned lclNum, LclVarDsc* varDsc);
 
 private:
     // Determine which locals are candidates for allocation
@@ -1432,7 +1436,7 @@ private:
     FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
     FORCEINLINE regNumber    getNextFPRegWraparound(regNumber reg);
     SingleTypeRegSet         getOperandCandidates(GenTreeHWIntrinsic* intrinsicTree, HWIntrinsic intrin, size_t opNum);
-    GenTree*                 getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool embedded = false);
+    GenTree*                 getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenTreeHWIntrinsic* user = nullptr);
     GenTree*                 getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree);
     GenTree*                 getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool* destIsConsecutive);
     GenTreeHWIntrinsic*      getEmbeddedMaskOperand(const HWIntrinsic intrin);
@@ -1523,13 +1527,10 @@ private:
     {
         // Conflicting def/use
         LSRA_EVENT_DEFUSE_CONFLICT,
-        LSRA_EVENT_DEFUSE_FIXED_DELAY_USE,
-        LSRA_EVENT_DEFUSE_CASE1,
-        LSRA_EVENT_DEFUSE_CASE2,
-        LSRA_EVENT_DEFUSE_CASE3,
-        LSRA_EVENT_DEFUSE_CASE4,
-        LSRA_EVENT_DEFUSE_CASE5,
-        LSRA_EVENT_DEFUSE_CASE6,
+        LSRA_EVENT_DEFUSE_DEF_IN_FIXED_USE,
+        LSRA_EVENT_DEFUSE_DEF_IN_USE,
+        LSRA_EVENT_DEFUSE_ANY_DEF,
+        LSRA_EVENT_DEFUSE_COPY,
 
         // Spilling
         LSRA_EVENT_SPILL,
@@ -2077,6 +2078,9 @@ private:
     int  BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
     void BuildConsecutiveRegistersForDef(GenTree* treeNode, int fieldCount);
     void BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, const HWIntrinsic intrin);
+    void BuildHWIntrinsicTempRegs(GenTreeHWIntrinsic* intrinsicTree,
+                                  const HWIntrinsic   intrin,
+                                  GenTreeHWIntrinsic* embeddedOp);
     int  BuildEmbeddedOperandUses(GenTreeHWIntrinsic* embeddedOpNode, GenTree* embeddedDelayFreeOp);
     int  BuildContainedCselUses(GenTreeHWIntrinsic* containedCselOpNode,
                                 GenTree*            delayFreeOp,

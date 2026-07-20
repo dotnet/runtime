@@ -2,4 +2,18 @@
   <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
     <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
   </Target>
+
+  <!--
+    CoreCLR WBT: per-app native re-link is driven by BrowserWasmApp.CoreCLR.targets.
+    In Mono WBT, the wasm-tools workload provides this import; for CoreCLR (TestUsingWorkloads=false)
+    there is no workload, so we import it here. The targets location is supplied via
+    BROWSER_BUILD_TARGETS_DIR (BuildEnvironment.EnvVars) — payload build/wasm/ on Helix, or
+    $(BrowserProjectRoot)build/ locally.
+  -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <_CoreCLRBrowserBuildTargetsDir Condition="'$(BROWSER_BUILD_TARGETS_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(BROWSER_BUILD_TARGETS_DIR)'))))</_CoreCLRBrowserBuildTargetsDir>
+  </PropertyGroup>
+
+  <Import Project="$(_CoreCLRBrowserBuildTargetsDir)BrowserWasmApp.CoreCLR.targets"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(_CoreCLRBrowserBuildTargetsDir)' != '' and Exists('$(_CoreCLRBrowserBuildTargetsDir)BrowserWasmApp.CoreCLR.targets')" />
 </Project>

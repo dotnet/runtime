@@ -242,7 +242,8 @@ namespace System.IO
                         Interop.Sys.NotifyEvents mask = watchFilters |
                             Interop.Sys.NotifyEvents.IN_ONLYDIR |     // we only allow watches on directories
                             Interop.Sys.NotifyEvents.IN_EXCL_UNLINK | // we want to stop monitoring unlinked files
-                            (parent == null ? 0 : Interop.Sys.NotifyEvents.IN_DONT_FOLLOW); // Follow links only for the root path, not the subdirs.
+                            (parent == null ? Interop.Sys.NotifyEvents.IN_MOVE_SELF // Detect when the root directory is moved.
+                                            : Interop.Sys.NotifyEvents.IN_DONT_FOLLOW); // Follow links only for the root path, not the subdirs.
 
                         // To support multiple FileSystemWatchers on the same inotify instance, we need to use IN_MASK_ADD
                         // so we don't remove events another watcher is interested in.
@@ -513,7 +514,7 @@ namespace System.IO
                 }
             }
 
-            private bool ProcessEvent(NotifyEvent nextEvent, ref int movedFromWatchCount, ref string movedFromName, ref uint movedFromCookie, ref bool movedFromIsDir)
+            private unsafe bool ProcessEvent(NotifyEvent nextEvent, ref int movedFromWatchCount, ref string movedFromName, ref uint movedFromCookie, ref bool movedFromIsDir)
             {
                 // Subset of EventMask that are emitted conditionally based on NotifyFilters.DirectoryName/FileName.
                 const Interop.Sys.NotifyEvents FileDirEvents =
@@ -657,9 +658,17 @@ namespace System.IO
                         }
                     }
                     // IN_IGNORED: Watch was removed explicitly or automatically because the directory was deleted.
-                    if ((mask & Interop.Sys.NotifyEvents.IN_IGNORED) != 0)
+                    // IN_MOVE_SELF: A root directory was moved.
+                    if (((mask & Interop.Sys.NotifyEvents.IN_IGNORED) != 0)
+                        || (((mask & Interop.Sys.NotifyEvents.IN_MOVE_SELF) != 0) && dir.IsRootDir))
                     {
-                        RemoveWatchedDirectory(dir, ignoredFd: nextEvent.wd);
+                        int ignoredFd = (mask & Interop.Sys.NotifyEvents.IN_IGNORED) != 0 ? nextEvent.wd : -1;
+                        RemoveWatchedDirectory(dir, ignoredFd);
+
+                        if (dir.IsRootDir && !watcher.IsWatcherStopped)
+                        {
+                            watcher.QueueError(CreateWatchedDirectoryDeletedOrMovedException(watcher.BasePath));
+                        }
                         continue;
                     }
 
@@ -1248,10 +1257,7 @@ namespace System.IO
 
                     // For the Created and Deleted events, we need to always
                     // register for the created/deleted inotify events, regardless
-                    // of the supplied filters values. We explicitly don't include IN_DELETE_SELF.
-                    // The Windows implementation doesn't include notifications for the root directory,
-                    // and having this for subdirectories results in duplicate notifications, one from
-                    // the parent and one from self.
+                    // of the supplied filters values.
                     result |=
                         Interop.Sys.NotifyEvents.IN_CREATE |
                         Interop.Sys.NotifyEvents.IN_DELETE;

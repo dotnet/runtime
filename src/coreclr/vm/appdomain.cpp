@@ -1254,7 +1254,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__RUNTIME_HELPERS,
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
-        CLASS__MULTICAST_DELEGATE,
         CLASS__METHODBASEINVOKER,
         CLASS__INITHELPERS,
         CLASS__STATICSHELPERS,
@@ -1755,7 +1754,7 @@ void AppDomain::Stop()
 
 #ifndef DACCESS_COMPILE
 
-void AppDomain::AddAssembly(DomainAssembly * assem)
+void AppDomain::AddAssembly(Assembly * assem)
 {
     CONTRACTL
     {
@@ -1785,7 +1784,7 @@ void AppDomain::AddAssembly(DomainAssembly * assem)
     }
 }
 
-void AppDomain::RemoveAssembly(DomainAssembly * pAsm)
+void AppDomain::RemoveAssembly(Assembly * pAsm)
 {
     CONTRACTL
     {
@@ -2026,7 +2025,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
 
                 // Dev11 bug 236344
                 // In AppDomain::IsLoading, if the lock is taken on m_pList and then FindFileLock returns NULL,
-                // we depend on the DomainAssembly's load level being up to date. Hence we must update the load
+                // we depend on the Assembly's load level being up to date. Hence we must update the load
                 // level while the m_pList lock is held.
                 if (success)
                     m_pAssembly->SetLoadLevel(level);
@@ -2408,7 +2407,9 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pSpec,
                 PAL_CPP_THROW(Exception *, pEx);
             }
             else
+            {
                 AddExceptionToCache(pSpec, pEx);
+            }
         }
     }
     EX_END_HOOK;
@@ -2607,7 +2608,7 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     Assembly* pAssembly = pLock->GetAssembly();
     _ASSERTE(pAssembly != nullptr); // We should always be loading to at least FILE_LOAD_ALLOCATE, so the assembly should be created
 
-    // There may have been an error stored on the domain file by another thread, or from a previous load
+    // There may have been an error stored on the assembly by another thread, or from a previous load
     pAssembly->ThrowIfError(targetLevel);
 
     // There are two normal results from the above loop.
@@ -2648,7 +2649,7 @@ void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& 
             // FileLoadLock should not have an assembly yet
             _ASSERTE(pAssembly == NULL);
 
-            // Allocate DomainAssembly & Assembly
+            // Allocate Assembly
             PEAssembly *pPEAssembly = pLoadLock->GetPEAssembly();
             AssemblyBinder *pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
             LoaderAllocator *pLoaderAllocator = pAssemblyBinder->GetLoaderAllocator();
@@ -2657,16 +2658,14 @@ void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& 
 
             AllocMemTracker amTracker;
             AllocMemTracker *pamTracker = &amTracker;
-            NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator, pamTracker);
-            pLoadLock->SetAssembly(pDomainAssembly->GetAssembly());
-            pDomainAssembly->GetAssembly()->SetIsTenured();
-            if (pDomainAssembly->GetAssembly()->IsCollectible())
+            pAssembly = Assembly::Create(pPEAssembly, pamTracker, pLoaderAllocator);
+            pLoadLock->SetAssembly(pAssembly);
+            pAssembly->SetIsTenured();
+            if (pAssembly->IsCollectible())
             {
-                ((AssemblyLoaderAllocator *)pLoaderAllocator)->AddDomainAssembly(pDomainAssembly);
+                ((AssemblyLoaderAllocator *)pLoaderAllocator)->AddAssembly(pAssembly);
             }
-            pDomainAssembly.SuppressRelease();
             pamTracker->SuppressRelease();
-            pAssembly = pLoadLock->GetAssembly();
             success = TRUE;
         }
         else
@@ -2731,7 +2730,7 @@ CHECK AppDomain::CheckValidModule(Module * pModule)
     }
     CONTRACTL_END;
 
-    if (pModule->GetDomainAssembly() != NULL)
+    if (pModule->GetAssembly() != NULL)
         CHECK_OK;
 
     CHECK_OK;
@@ -3031,6 +3030,44 @@ BOOL AppDomain::IsCached(AssemblySpec *pSpec)
     return m_AssemblyCache.Contains(pSpec);
 }
 
+void AppDomain::GetParentAssemblyChain(Assembly *pStartAssembly, SString &chain, int maxDepth)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Hold the lock for the entire chain build so that all Assembly*
+    // from the cache are safe from collectible ALC unload.
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop lock(this);
+
+    MapSHash<Assembly*, Assembly*> parentMap;
+    m_AssemblyCache.GetParentAssemblyMap(parentMap);
+
+    Assembly *pWalkAssembly = pStartAssembly;
+    for (int depth = 0; depth < maxDepth && pWalkAssembly != NULL; depth++)
+    {
+        Assembly *pParent;
+        if (!parentMap.Lookup(pWalkAssembly, &pParent))
+            break;
+
+        if (pParent == pWalkAssembly)
+            break;
+
+        StackSString parentName;
+        pParent->GetDisplayName(parentName);
+#ifdef TARGET_UNIX
+        chain.Append(W("\n --> "));
+#else
+        chain.Append(W("\r\n --> "));
+#endif
+        chain.Append(parentName);
+
+        if (pParent->IsSystem())
+            break;
+
+        pWalkAssembly = pParent;
+    }
+}
+
 PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec, BOOL fThrow /*=TRUE*/)
 {
     CONTRACTL
@@ -3124,6 +3161,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
     HRESULT hrBindResult = S_OK;
     PEAssemblyHolder result;
+    StackSString bindDiagnosticInfo;
 
     bool isCached = false;
     EX_TRY
@@ -3134,7 +3172,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
             {
                 ReleaseHolder<BINDER_SPACE::Assembly> boundAssembly;
-                hrBindResult = pSpec->Bind(this, &boundAssembly);
+                hrBindResult = pSpec->Bind(this, &boundAssembly, &bindDiagnosticInfo);
 
                 if (boundAssembly)
                 {
@@ -3178,7 +3216,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
                         if (fFailure && fThrowOnFileNotFound)
                         {
-                            EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, NULL);
+                            EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, bindDiagnosticInfo, NULL);
                         }
                     }
                 }
@@ -3925,13 +3963,12 @@ AppDomain::AssemblyIterator::Next_Unlocked(
     while (m_Iterator.Next())
     {
         // Get element from the list/iterator (without adding reference to the assembly)
-        DomainAssembly * pDomainAssembly = dac_cast<PTR_DomainAssembly>(m_Iterator.GetElement());
-        if (pDomainAssembly == NULL)
+        Assembly * pAssembly = dac_cast<PTR_Assembly>(m_Iterator.GetElement());
+        if (pAssembly == NULL)
         {
             continue;
         }
 
-        Assembly* pAssembly = pDomainAssembly->GetAssembly();
         if (pAssembly->IsError())
         {
             if (m_assemblyIterationFlags & kIncludeFailedToLoad)
@@ -3992,7 +4029,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
 
             // Un-tenured collectible assemblies should not be returned. (This can only happen in a brief
             // window during collectible assembly creation. No thread should need to have a pointer
-            // to the just allocated DomainAssembly at this stage.)
+            // to the just allocated Assembly at this stage.)
             if (!pAssembly->GetModule()->IsTenured())
             {
                 continue; // reject

@@ -274,7 +274,7 @@ NoFloatingPointRetVal
 ; ------------------------------------------------------------------
 ; Hijack function for functions which return a scalar type or a struct (value type)
     NESTED_ENTRY OnHijackTripThread
-    PROLOG_SAVE_REG_PAIR   fp, lr, #-192!
+    PROLOG_SAVE_REG_PAIR   fp, lr, #-208!
     ; Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, #16
     PROLOG_SAVE_REG_PAIR   x21, x22, #32
@@ -310,11 +310,48 @@ NoFloatingPointRetVal
     EPILOG_RESTORE_REG_PAIR   x23, x24, #48
     EPILOG_RESTORE_REG_PAIR   x25, x26, #64
     EPILOG_RESTORE_REG_PAIR   x27, x28, #80
-    EPILOG_RESTORE_REG_PAIR   fp, lr,   #192!
+    ldr x16, [sp, #192]
+    EPILOG_RESTORE_REG_PAIR   fp, lr,   #208!
+    cbz     x16, OnHijackTripThreadReturn
+    DCD     0xDAC1161E  ; autib lr, x16 instruction in binary to avoid requiring PAC-enabled assemblers
+OnHijackTripThreadReturn
     EPILOG_RETURN
     NESTED_END
 
 #endif ; FEATURE_HIJACK
+
+; void* PacStripPtr(void *);
+; This function strips the pointer of PAC info that is passed as an argument.
+; We prefer to strip a pointer where it's not going to be used to branch execution to.
+; It is a no-op on non-PAC enabled machines.
+    NESTED_ENTRY PacStripPtr
+        PROLOG_SAVE_REG_PAIR fp, lr, #-16!
+        mov lr, x0
+        DCD     0xD50320FF  ; xpaclri instruction in binary to avoid requiring PAC-enabled assemblers
+        mov x0, lr
+        EPILOG_RESTORE_REG_PAIR fp, lr, #16!
+        EPILOG_RETURN
+    NESTED_END
+
+; void* PacSignPtr(void *, void *);
+; This function signs the input pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
+    LEAF_ENTRY PacSignPtr
+        mov x17, x0
+        mov x16, x1
+        DCD 0xD503215F  ; pacib1716 instruction in binary to avoid error while compiling with non-PAC enabled compilers
+        mov x0, x17
+        ret
+    LEAF_END PacSignPtr
+
+; void* PacAuthPtr(void *, void *);
+; This function authenticates the input signed-pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
+    LEAF_ENTRY PacAuthPtr
+        mov x17, x0
+        mov x16, x1
+        DCD 0xD50321DF  ; autib1716 instruction in binary to avoid error while compiling with non-PAC enabled compilers
+        mov x0, x17
+        ret
+    LEAF_END PacAuthPtr
 
 ;; ------------------------------------------------------------------
 ;; Redirection Stub for GC in fully interruptible method
@@ -604,6 +641,18 @@ Fail
 
         NESTED_END
 
+;; On Input:
+;;    x0                     contains object 'this' pointer
+;;    argument registers     populated as needed
+;;    x11                    contains the address of the indirection cell (with the flags in the low bits)
+;;
+        LEAF_ENTRY JIT_InterfaceDispatchForSlot
+
+        ldr x16, [x11]
+        br x16
+
+        LEAF_END
+
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_READYTORUN
@@ -691,21 +740,6 @@ CallHelper2
     adrp     x1, g_pGetGCStaticBase
     ldr      x1, [x1, g_pGetGCStaticBase]
     br       x1
-    LEAF_END
-
-; ------------------------------------------------------------------
-; __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
-    LEAF_ENTRY  JIT_WriteBarrier_Callable
-
-    ; Setup args for JIT_WriteBarrier. x14 = dst ; x15 = val
-    mov     x14, x0                     ; x14 = dst
-    mov     x15, x1                     ; x15 = val
-
-    ; Branch to the write barrier
-    adrp    x17, JIT_WriteBarrier_Loc
-    ldr     x17, [x17, JIT_WriteBarrier_Loc]
-    br      x17
-
     LEAF_END
 
 #ifdef PROFILING_SUPPORTED

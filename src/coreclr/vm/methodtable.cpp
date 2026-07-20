@@ -375,7 +375,7 @@ BOOL MethodTable::ValidateWithPossibleAV()
     }
 
     // generic instantiation check
-    return (HasInstantiation() || IsArray() || IsContinuation()) && (pEEClassFromMethodTable->GetClassWithPossibleAV() == pEEClass);
+    return (HasInstantiation() || IsArray() || IsContinuationWithoutMetadata()) && (pEEClassFromMethodTable->GetClassWithPossibleAV() == pEEClass);
 }
 
 
@@ -421,7 +421,7 @@ WORD MethodTable::GetNumMethods()
 PTR_MethodTable MethodTable::GetTypicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    if (IsArray() || IsContinuation())
+    if (IsArray() || IsContinuationWithoutMetadata())
         return (PTR_MethodTable)this;
 
     PTR_MethodTable methodTableMaybe = GetModule()->LookupTypeDef(GetCl()).AsMethodTable();
@@ -770,6 +770,36 @@ void MethodTable::InitializeExtraInterfaceInfo(PVOID pInfo)
 #else
 #define SELECT_TADDR_BIT(_index) (1U << (_index))
 #endif
+
+static inline unsigned GetBitVectorByteCount(unsigned bitCount)
+{
+    LIMITED_METHOD_CONTRACT;
+    return (bitCount + 7u) / 8u;
+}
+
+static inline unsigned GetBitVectorBitCount(unsigned byteCount)
+{
+    LIMITED_METHOD_CONTRACT;
+    return byteCount * 8u;
+}
+
+static inline bool IsBitVectorEntrySet(const uint8_t* pNullSlotBitvector, unsigned index)
+{
+    LIMITED_METHOD_CONTRACT;
+    return (pNullSlotBitvector[index / 8u] & static_cast<uint8_t>(1u << (index % 8u))) != 0;
+}
+
+static inline void SetBitVectorEntry(uint8_t* pNullSlotBitvector, unsigned index)
+{
+    LIMITED_METHOD_CONTRACT;
+    pNullSlotBitvector[index / 8u] |= static_cast<uint8_t>(1u << (index % 8u));
+}
+
+static inline void ClearBitVectorEntry(uint8_t* pNullSlotBitvector, unsigned index)
+{
+    LIMITED_METHOD_CONTRACT;
+    pNullSlotBitvector[index / 8u] &= static_cast<uint8_t>(~(1u << (index % 8u)));
+}
 
 //==========================================================================================
 // For the given interface in the map (specified via map index) mark the interface as declared explicitly on
@@ -1297,7 +1327,7 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(!pTargetMT->IsArray());
         PRECONDITION(!pTargetMT->IsInterface());
-        PRECONDITION(!pTargetMT->IsContinuation());
+        PRECONDITION(!pTargetMT->IsContinuationWithoutMetadata());
     }
     CONTRACTL_END
 
@@ -3087,7 +3117,7 @@ namespace
         STANDARD_VM_CONTRACT;
 
         PTR_MethodTable fieldType = pFieldDesc->GetFieldTypeHandleThrowing().GetMethodTable();
-        CorElementType corType = fieldType->GetVerifierCorElementType();
+        CorElementType corType = fieldType->GetInternalCorElementType();
 
         if (corType == ELEMENT_TYPE_VALUETYPE)
         {
@@ -3539,6 +3569,13 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         // Call the code method without touching MethodDesc if possible
         PCODE pCctorCode = pCanonMT->GetRestoredSlot(pCanonMT->GetClassConstructorSlot());
         MethodTable* instantiatingArg = pCanonMT->IsSharedByGenericInstantiations() ? this : nullptr;
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // CallClassConstructor invokes the cctor via the function pointer, so its portable entrypoint
+        // must resolve to real code if possible.
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCctorCode);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
         UnmanagedCallersOnlyCaller caller(METHOD__INITHELPERS__CALLCLASSCONSTRUCTOR);
         caller.InvokeThrowing(pCctorCode, instantiatingArg);
         STRESS_LOG1(LF_CLASSLOADER, LL_INFO100000, "RunClassInit: Returned Successfully from class constructor for type %pT\n", this);
@@ -3826,6 +3863,7 @@ void MethodTable::CheckRunClassInitThrowing()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(IsFullyLoaded());
     }
@@ -4969,9 +5007,8 @@ CorElementType MethodTable::GetInternalCorElementType()
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
-    case enum_flag_Category_PrimitiveValueType:
-        // This path should only be taken for the builtin CoreLib types
-        // and primitive valuetypes
+    case enum_flag_Category_Primitive:
+        // enum_flag_Category_ElementTypeMask maps both Category_TruePrimitive and Category_Primitive here.
         ret = GetClass()->GetInternalCorElementType();
         _ASSERTE((ret != ELEMENT_TYPE_CLASS) &&
                     (ret != ELEMENT_TYPE_VALUETYPE));
@@ -4991,48 +5028,6 @@ CorElementType MethodTable::GetInternalCorElementType()
         _ASSERTE(!"Mismatched results in MethodTable::GetInternalCorElementType");
     }
 #endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    return ret;
-}
-
-//==========================================================================================
-CorElementType MethodTable::GetVerifierCorElementType()
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-
-    // This should not touch the EEClass, at least not in the
-    // common cases of ELEMENT_TYPE_CLASS and ELEMENT_TYPE_VALUETYPE.
-    CorElementType ret;
-
-    switch (GetFlag(enum_flag_Category_ElementTypeMask))
-    {
-    case enum_flag_Category_Array:
-        ret = ELEMENT_TYPE_ARRAY;
-        break;
-
-    case enum_flag_Category_Array | enum_flag_Category_IfArrayThenSzArray:
-        ret = ELEMENT_TYPE_SZARRAY;
-        break;
-
-    case enum_flag_Category_ValueType:
-        ret = ELEMENT_TYPE_VALUETYPE;
-        break;
-
-    case enum_flag_Category_PrimitiveValueType:
-        //
-        // This is the only difference from MethodTable::GetInternalCorElementType()
-        //
-        if (IsTruePrimitive() || IsEnum())
-            ret = GetClass()->GetInternalCorElementType();
-        else
-            ret = ELEMENT_TYPE_VALUETYPE;
-        break;
-
-    default:
-        ret = ELEMENT_TYPE_CLASS;
-        break;
-    }
-
     return ret;
 }
 
@@ -5058,7 +5053,7 @@ CorElementType MethodTable::GetSignatureCorElementType()
 
     case enum_flag_Category_ValueType:
     case enum_flag_Category_Nullable:
-    case enum_flag_Category_PrimitiveValueType:
+    case enum_flag_Category_Primitive:
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
@@ -5077,11 +5072,11 @@ CorElementType MethodTable::GetSignatureCorElementType()
 #ifndef DACCESS_COMPILE
 
 //==========================================================================================
-void MethodTable::SetInternalCorElementType (CorElementType _NormType)
+void MethodTable::SetInternalCorElementType(CorElementType elemType, bool isTruePrimitive)
 {
     WRAPPER_NO_CONTRACT;
 
-    switch (_NormType)
+    switch (elemType)
     {
     case ELEMENT_TYPE_CLASS:
         _ASSERTE(!IsArray());
@@ -5089,16 +5084,14 @@ void MethodTable::SetInternalCorElementType (CorElementType _NormType)
         break;
     case ELEMENT_TYPE_VALUETYPE:
         SetFlag(enum_flag_Category_ValueType);
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ValueType);
         break;
     default:
-        SetFlag(enum_flag_Category_PrimitiveValueType);
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_PrimitiveValueType);
+        SetFlag(isTruePrimitive ? enum_flag_Category_TruePrimitive : enum_flag_Category_Primitive);
         break;
     }
 
-    GetClass()->SetInternalCorElementType(_NormType);
-    _ASSERTE(GetInternalCorElementType() == _NormType);
+    GetClass()->SetInternalCorElementType(elemType);
+    _ASSERTE(GetInternalCorElementType() == elemType);
 }
 
 #endif // !DACCESS_COMPILE
@@ -6022,39 +6015,6 @@ UINT32 MethodTable::LookupTypeID()
     return AppDomain::GetCurrentDomain()->LookupTypeID(pMT);
 }
 
-//==========================================================================================
-BOOL MethodTable::ImplementsInterfaceWithSameSlotsAsParent(MethodTable *pItfMT, MethodTable *pParentMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(!IsInterface() && !pParentMT->IsInterface());
-        PRECONDITION(pItfMT->IsInterface());
-    } CONTRACTL_END;
-
-    MethodTable *pMT = this;
-    do
-    {
-        DispatchMap::EncodedMapIterator it(pMT);
-        for (; it.IsValid(); it.Next())
-        {
-            DispatchMapEntry *pCurEntry = it.Entry();
-            if (DispatchMapTypeMatchesMethodTable(pCurEntry->GetTypeID(), pItfMT))
-            {
-                // this class and its parents up to pParentMT must have no mappings for the interface
-                return FALSE;
-            }
-        }
-
-        pMT = pMT->GetParentMethodTable();
-        _ASSERTE(pMT != NULL);
-    }
-    while (pMT != pParentMT);
-
-    return TRUE;
-}
-
 #endif // !DACCESS_COMPILE
 
 //==========================================================================================
@@ -6396,9 +6356,16 @@ BOOL MethodTable::SanityCheck()
     if (GetNumGenericArgs() != 0)
         return (pCanonMT->GetClass() == pClass);
     else
-        return (pCanonMT == this) || IsArray() || IsContinuation();
+        return (pCanonMT == this) || IsArray() || IsContinuationWithoutMetadata();
 }
 
+BOOL MethodTable::IsContinuationWithoutMetadata()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    PTR_MethodTable contClass = g_pContinuationClassIfSubTypeCreated;
+    return contClass != NULL && m_pParentMethodTable == contClass && GetClass() == g_singletonContinuationEEClass;
+}
 
 //==========================================================================================
 void MethodTable::SetCl(mdTypeDef token)
@@ -6741,6 +6708,23 @@ BOOL MethodTable::MethodDataObject::PopulateNextLevel()
 } // MethodTable::MethodDataObject::PopulateNextLevel
 
 //==========================================================================================
+void MethodTable::MethodDataObject::SetEntryDataForSlotIfNotYetSet(UINT32 slot, MethodDesc *pMD)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    MethodDataObjectEntry * pEntry = GetEntry(slot);
+
+    if (pEntry->GetDeclMethodDesc() == NULL)
+    {
+        pEntry->SetDeclMethodDesc(pMD);
+    }
+
+    if (pEntry->GetImplMethodDesc() == NULL)
+    {
+        pEntry->SetImplMethodDesc(pMD);
+    }
+}
+
 void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
 {
     LIMITED_METHOD_CONTRACT;
@@ -6768,7 +6752,75 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
     if (m_containsMethodImpl && pMT != m_pDeclMT)
         return;
 
+    NewArrayHolder<uint8_t> pSlotFlags;
+    uint8_t nonAllocatedBitvector[16];
     unsigned nVirtuals = pMT->GetNumVirtuals();
+    unsigned unprocessedNonOverriddenSlots = 0;
+
+    uint8_t* pNullSlotBitvector = NULL;
+
+    if (pMT == m_pDeclMT)
+    {
+        // We have a concept of methods which have never been overridden by a subclass or called, and in that case we don't actually
+        // need to fill in the MethodTable's vtable entry with a stub. We can detect that here on the Canonical methodtable,
+        // and setup the Decl/Impl MethodDescs for a slot even if there are MethodImpls in the inheritance chain, since the
+        // vtable entry will only be NULL if the method could not have been involved with a MethodImpl. This optimization
+        // is only really important for the scenario where we have these NULL entries, since the MethodImpl fallback
+        // case will end up using MethodTable::GetMethodDescForSlot_NoThrow to get the MethodDesc for the slot, and that is O(N)
+        // for the number of Method defined in the type hierarchy, and the usage of MethodDataObject tends to be O(V) for the number
+        // of virtual method slots on the type, so we get O(V*N) processing time when the not MethodImpl optimization case
+        // fails, which needs addressing.
+
+        // This optimization is only an improvement, if there is a type which is containsMethodImpl in the hierarchy.
+        bool containsMethodImplInHierarchy = m_containsMethodImpl;
+        MethodTable *pMTWalk = pMT;
+        while (!containsMethodImplInHierarchy && pMTWalk != NULL)
+        {
+            containsMethodImplInHierarchy = pMTWalk->GetClass()->ContainsMethodImpls();
+            pMTWalk = pMTWalk->GetParentMethodTable();
+        }
+
+        if (containsMethodImplInHierarchy)
+        {
+            MethodTable *pCanonMT = pMT->GetCanonicalMethodTable();
+
+            if (nVirtuals <= GetBitVectorBitCount(sizeof(nonAllocatedBitvector)))
+            {
+                pNullSlotBitvector = nonAllocatedBitvector;
+                memset(pNullSlotBitvector, 0, sizeof(nonAllocatedBitvector));
+            }
+            else
+            {
+                // Use a non-throwing allocation to keep this method within its NOTHROW contract.
+                // If the allocation fails, pNullSlotBitvector remains NULL and we simply fall back to the
+                // conservative (correct, but potentially slower) behavior below.
+                pSlotFlags = new (nothrow) uint8_t[GetBitVectorByteCount(nVirtuals)];
+                pNullSlotBitvector = pSlotFlags;
+                if (pNullSlotBitvector != NULL)
+                    memset(pNullSlotBitvector, 0, GetBitVectorByteCount(nVirtuals) * sizeof(*pNullSlotBitvector));
+            }
+
+            if (pNullSlotBitvector != NULL)
+            {
+                for (unsigned slot = 0; slot < nVirtuals; slot++)
+                {
+                    PCODE pCode = pCanonMT->GetSlotForVirtualVolatileLoadWithoutBarrier(slot);
+
+                    if (pCode == (PCODE)NULL)
+                    {
+                        SetBitVectorEntry(pNullSlotBitvector, slot);
+                        unprocessedNonOverriddenSlots += 1;
+                    }
+                }
+
+                if (unprocessedNonOverriddenSlots == 0)
+                {
+                    pNullSlotBitvector = NULL;
+                }
+            }
+        }
+    }
+
     unsigned nVTableLikeSlots = pMT->GetCanonicalMethodTable()->GetNumVtableSlots();
 
     MethodTable::IntroducedMethodIterator it(pMT, FALSE);
@@ -6781,12 +6833,41 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
             continue;
 
         // We want to fill all methods introduced by the actual type we're gathering
-        // data for, and the virtual methods of the parent and above
+        // data for, and the virtual methods of the parent and above unless there are MethodImpls
+        // in the hierarchy, in which cases we can only fill in entries which are known not to 
+        // participate in complex virtual behavior.
         if (pMT == m_pDeclMT)
         {
-            if (m_containsMethodImpl && slot < nVirtuals)
-                continue;
+            if (slot < nVirtuals)
+            {
+                if (pNullSlotBitvector == NULL || !IsBitVectorEntrySet(pNullSlotBitvector, slot))
+                {
+                    // We reach here if we've disabled the null-slot optimization (due to an allocation failure),
+                    // or if the slot is not a null slot. This indicates that there is an implementation for the slot, and so
+                    // the GetMethodDescForSlot_NoThrow API will operate in O(1) time (or we're in the allocation-failure case
+                    // and the performance implications are unimportant).
+                    if (m_containsMethodImpl)
+                    {
+                        // If there is a MethodImpl in the hierarchy, then we will need to skip the optimization of pre-resolving
+                        // MethodDesc resolution for this slot as MethodImpls may have caused complex virtual slot behavior.
+                        continue;
+                    }
 
+                    // Fall through to SetEntryDataForSlotIfNotYetSet logic below
+                }
+                else
+                {
+                    // We reach here if the slot is a NullSlot which indicates that no complex virtual slot behavior is associated
+                    // with this slot, and that the method has never been called. Thus we should run the SetEntryDataForSlotIfNotYetSet logic.
+                    _ASSERTE(unprocessedNonOverriddenSlots > 0);
+                    ClearBitVectorEntry(pNullSlotBitvector, slot);
+                    unprocessedNonOverriddenSlots -= 1;
+
+                    // Fall through to SetEntryDataForSlotIfNotYetSet logic below
+                }
+            }
+
+            // Filter out SetEntryDataForSlotIfNotYetSet calls for non-virtual methods when requested
             if (m_virtualsOnly && slot >= nVTableLikeSlots)
             {
                 _ASSERTE(!pMD->IsVirtual() || (pMT->IsValueType() && !pMD->IsUnboxingStub()));
@@ -6799,16 +6880,39 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
                 continue;
         }
 
-        MethodDataObjectEntry * pEntry = GetEntry(slot);
+        SetEntryDataForSlotIfNotYetSet(slot, pMD);
+    }
 
-        if (pEntry->GetDeclMethodDesc() == NULL)
+    // Walk the parent chain until we've processed all of the slots that have not been overridden or called by a subclass.
+    // NOTE: We only run this code for the top-level FillEntryDataForAncestor case where (pMT == m_pDeclMT).
+    // This check is enforced by unprocessedNonOverriddenSlots only being non-zero in that scenario.
+    while (unprocessedNonOverriddenSlots > 0)
+    {
+        _ASSERTE(pNullSlotBitvector != NULL);
+        pMT = pMT->GetParentMethodTable();
+        _ASSERTE(pMT != NULL);
+        nVirtuals = pMT->GetNumVirtuals();
+        MethodTable::IntroducedMethodIterator it(pMT, FALSE);
+        for (; it.IsValid(); it.Next())
         {
-            pEntry->SetDeclMethodDesc(pMD);
-        }
+            MethodDesc * pMD = it.GetMethodDesc();
 
-        if (pEntry->GetImplMethodDesc() == NULL)
-        {
-            pEntry->SetImplMethodDesc(pMD);
+            unsigned slot = pMD->GetSlot();
+            if (slot == MethodTable::NO_SLOT)
+                continue;
+
+            if (slot >= nVirtuals)
+                continue;
+
+            if (!IsBitVectorEntrySet(pNullSlotBitvector, slot))
+            {
+                continue;
+            }
+            _ASSERTE(unprocessedNonOverriddenSlots > 0);
+            ClearBitVectorEntry(pNullSlotBitvector, slot);
+            unprocessedNonOverriddenSlots -= 1;
+
+            SetEntryDataForSlotIfNotYetSet(slot, pMD);
         }
     }
 } // MethodTable::MethodDataObject::FillEntryDataForAncestor
@@ -7642,7 +7746,7 @@ CHECK MethodTable::CheckInstanceActivated()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsArray() || IsContinuation())
+    if (IsArray() || IsContinuationWithoutMetadata())
         CHECK_OK;
 
 
@@ -7788,14 +7892,6 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         }
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        DispatchMap * pMap = GetDispatchMap();
-        if (pMap != NULL)
-        {
-            pMap->EnumMemoryRegions(flags);
-        }
-    }
 } // MethodTable::EnumMemoryRegions
 
 #endif // DACCESS_COMPILE
@@ -7908,7 +8004,7 @@ namespace
             MethodDesc* pMD = it.GetMethodDesc();
             if (pMD->GetMemberDef() == tkMethod
                 && pMD->GetModule() == mod
-                && pMD->IsAsyncVariantMethod() == pDefMD->IsAsyncVariantMethod())
+                && pMD->MatchesAsyncVariantLookup(pDefMD->GetMatchingAsyncVariantLookup()))
             {
                 return pMD;
             }

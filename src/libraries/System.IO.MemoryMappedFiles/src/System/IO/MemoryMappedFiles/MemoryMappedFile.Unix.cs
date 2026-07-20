@@ -242,7 +242,7 @@ namespace System.IO.MemoryMappedFiles
             }
         }
 
-        private static string GenerateMapName()
+        private static unsafe string GenerateMapName()
         {
             // macOS shm_open documentation says that the sys-call can fail with ENAMETOOLONG if the name exceeds SHM_NAME_MAX characters.
             // The problem is that SHM_NAME_MAX is not defined anywhere and is not consistent amongst macOS versions (arm64 vs x64 for example).

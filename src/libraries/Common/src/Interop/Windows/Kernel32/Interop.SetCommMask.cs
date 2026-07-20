@@ -15,6 +15,7 @@ internal static partial class Interop
             internal const int ALL_EVENTS = 0x1fb;
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetCommMask(

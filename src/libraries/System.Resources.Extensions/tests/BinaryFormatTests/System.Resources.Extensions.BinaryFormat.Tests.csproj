@@ -14,6 +14,9 @@
     -->
     <NoWarn>$(NoWarn);CS1574;CS1580;CA1036;CA1051;CA1066;SYSLIB0011;SYSLIB0050;SYSLIB0051;xUnit1013;CS0649</NoWarn>
     <StringResourcesPath>$(LibrariesProjectRoot)\System.Resources.Extensions\src\Resources\Strings.resx</StringResourcesPath>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>

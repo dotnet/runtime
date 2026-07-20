@@ -52,13 +52,8 @@ internal class ARMFrameHandler(Target target, ContextHolder<ARMContext> contextH
 
         Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(framedMethodFrame.TransitionBlockPtr);
 
-        if (transitionBlock.ArgumentRegisters is not TargetPointer argumentRegistersPtr)
-        {
-            throw new InvalidOperationException("ARM TransitionBlock does not have ArgumentRegisters set");
-        }
-
         // On ARM, TransitionFrames update the argument registers
-        Data.ArgumentRegisters argumentRegisters = _target.ProcessedData.GetOrAdd<Data.ArgumentRegisters>(argumentRegistersPtr);
+        Data.ArgumentRegisters argumentRegisters = _target.ProcessedData.GetOrAdd<Data.ArgumentRegisters>(transitionBlock.ArgumentRegisters);
         UpdateFromRegisterDict(argumentRegisters.Registers);
     }
 }

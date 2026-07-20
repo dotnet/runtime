@@ -248,6 +248,10 @@ namespace Internal.TypeSystem.Ecma
                         return _tsc.GetFunctionPointerType(sig);
                     else
                         return null;
+                case SignatureTypeCode.Sentinel:
+                    // Varargs are not supported
+                    ThrowHelper.ThrowInvalidProgramException();
+                    return null; // unreached
                 default:
                     ThrowHelper.ThrowBadImageFormatException();
                     return null;
@@ -609,6 +613,18 @@ namespace Internal.TypeSystem.Ecma
                         if (_reader.RemainingBytes != 0)
                         {
                             _reader.ReadSerializedString();
+                        }
+                    }
+                    break;
+                case NativeTypeKind.IUnknown:
+                case NativeTypeKind.IDispatch:
+                case NativeTypeKind.Intf:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            // There's nobody to consume COM marshalling, so let's just parse the data
+                            // to avoid asserting later.
+                            _reader.ReadCompressedInteger();
                         }
                     }
                     break;

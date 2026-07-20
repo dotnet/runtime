@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Linker.Tests.Extensions;
 #if NET
 using System.Runtime.InteropServices;

@@ -473,12 +473,12 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public sbyte GetSByte()
         {
-            if (TryGetSByte(out sbyte value))
+            if (!TryGetSByte(out sbyte value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw new FormatException();
+            return value;
         }
 
         /// <summary>
@@ -523,12 +523,12 @@ namespace System.Text.Json
         /// </exception>
         public byte GetByte()
         {
-            if (TryGetByte(out byte value))
+            if (!TryGetByte(out byte value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw new FormatException();
+            return value;
         }
 
         /// <summary>
@@ -570,12 +570,12 @@ namespace System.Text.Json
         /// </exception>
         public short GetInt16()
         {
-            if (TryGetInt16(out short value))
+            if (!TryGetInt16(out short value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw new FormatException();
+            return value;
         }
 
         /// <summary>
@@ -622,12 +622,12 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public ushort GetUInt16()
         {
-            if (TryGetUInt16(out ushort value))
+            if (!TryGetUInt16(out ushort value))
             {
-                return value;
+                ThrowHelper.ThrowFormatException();
             }
 
-            throw new FormatException();
+            return value;
         }
 
         /// <summary>

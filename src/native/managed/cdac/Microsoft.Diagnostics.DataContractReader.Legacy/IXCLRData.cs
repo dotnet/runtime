@@ -40,6 +40,14 @@ public enum CLRDataByNameFlag : uint
     CLRDATA_BYNAME_CASE_INSENSITIVE = 1
 }
 
+[Flags]
+public enum CLRDataMethodCodeNotification : uint
+{
+    CLRDATA_METHNOTIFY_NONE      = 0x00000000,
+    CLRDATA_METHNOTIFY_GENERATED = 0x00000001,
+    CLRDATA_METHNOTIFY_DISCARDED = 0x00000002,
+}
+
 public unsafe struct EXCEPTION_RECORD64
 {
     public const int ExceptionMaximumParameters = 15;
@@ -273,30 +281,30 @@ public unsafe partial interface IXCLRDataProcess
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[] tokens,
-        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags);
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[]? tokens,
+        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags);
     [PreserveSig]
     int SetTypeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[] tokens,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[]? tokens,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags,
         uint singleFlags);
     [PreserveSig]
     int GetCodeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef*/ uint[] tokens,
-        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags);
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef*/ uint[]? tokens,
+        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags);
     [PreserveSig]
     int SetCodeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef */ uint[] tokens,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef */ uint[]? tokens,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags,
         uint singleFlags);
     [PreserveSig]
     int GetOtherNotificationFlags(uint* flags);
@@ -951,6 +959,13 @@ public enum CLRDataExceptionStateFlag : uint
     CLRDATA_EXCEPTION_DEFAULT = 0,
     CLRDATA_EXCEPTION_NESTED = 0x1,
     CLRDATA_EXCEPTION_PARTIAL = 0x2,
+}
+
+[Flags]
+public enum CLRDataExceptionSameFlag : uint
+{
+    CLRDATA_EXSAME_SECOND_CHANCE = 0,
+    CLRDATA_EXSAME_FIRST_CHANCE = 0x1,
 }
 
 [GeneratedComInterface]

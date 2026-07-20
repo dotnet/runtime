@@ -21,6 +21,8 @@ namespace Microsoft.Extensions
             = true;
 #endif
 
+        public const bool SourceGenMode = !NotSourceGenMode;
+
         public static IConfiguration GetConfigurationFromJsonString(string json)
         {
             var builder = new ConfigurationBuilder();

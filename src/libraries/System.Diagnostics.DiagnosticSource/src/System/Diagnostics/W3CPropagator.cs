@@ -13,9 +13,16 @@ namespace System.Diagnostics
     {
         internal static DistributedContextPropagator Instance { get; } = new W3CPropagator();
 
-        private const int MaxBaggageEntriesToEmit = 64;     // Suggested by W3C specs
-        private const int MaxBaggageEncodedLength = 8192;   // Suggested by W3C specs
-        private const int MaxTraceStateEncodedLength = 256; // Suggested by W3C specs
+        // W3C Baggage propagation limits: https://www.w3.org/TR/baggage/#limits
+        private const int MaxBaggageEntriesToEmit = 64;
+        private const int MaxBaggageEncodedLength = 8192;
+
+        // W3C Trace Context tracestate limits: https://www.w3.org/TR/trace-context-2/#tracestate-limits
+        private const int MaxTraceStateEncodedLength = 512;
+        private const int MaxTraceStateKeyLength = 256;
+        private const int MaxTraceStateValueLength = 256;
+        private const int MaxTraceStateEntries = 32;
+        private const int TraceParentCoreLength = 55;
 
         private const char Equal = '=';
         private const char Percent = '%';
@@ -58,6 +65,15 @@ namespace System.Diagnostics
             if (IsInvalidTraceParent(traceId))
             {
                 traceId = null;
+                traceState = null;
+                return;
+            }
+
+            if (traceId!.Length > TraceParentCoreLength)
+            {
+                // For future versions, ignore unknown extension fields and keep the W3C core parent id that Activity can consume.
+                // https://www.w3.org/TR/trace-context-2/#versioning-of-traceparent
+                traceId = traceId.Substring(0, TraceParentCoreLength);
             }
 
             getter(carrier, TraceState, out string? traceStateValue, out _);
@@ -98,11 +114,13 @@ namespace System.Diagnostics
             {
                 int entrySeparator = baggageSpan.IndexOf(Comma);
                 ReadOnlySpan<char> currentEntry = entrySeparator >= 0 ? baggageSpan.Slice(0, entrySeparator) : baggageSpan;
+                ReadOnlySpan<char> nextBaggageSpan = entrySeparator >= 0 ? baggageSpan.Slice(entrySeparator + 1) : ReadOnlySpan<char>.Empty;
 
                 int keyValueSeparator = currentEntry.IndexOf(Equal);
                 if (keyValueSeparator <= 0 || keyValueSeparator >= currentEntry.Length - 1)
                 {
-                    break; // invalid format
+                    baggageSpan = nextBaggageSpan;
+                    continue; // skip malformed entry and continue parsing
                 }
 
                 ReadOnlySpan<char> keySpan = currentEntry.Slice(0, keyValueSeparator);
@@ -114,7 +132,7 @@ namespace System.Diagnostics
                     baggageList.Add(new KeyValuePair<string, string?>(key, value));
                 }
 
-                baggageSpan = entrySeparator >= 0 ? baggageSpan.Slice(entrySeparator + 1) : ReadOnlySpan<char>.Empty;
+                baggageSpan = nextBaggageSpan;
             } while (baggageSpan.Length > 0);
 
             // reverse order for asp.net compatibility.
@@ -124,67 +142,84 @@ namespace System.Diagnostics
             return baggageList != null;
         }
 
-        // list  = list-member 0*31( OWS "," OWS list-member )
+        // https://www.w3.org/TR/trace-context-2/#tracestate-header
+        // list        = list-member 0*31( OWS "," OWS list-member )
         // list-member = (key "=" value) / OWS
-        //
-        // key = ( lcalpha / DIGIT ) 0*255 ( keychar )
-        // keychar    = lcalpha / DIGIT / "_" / "-"/ "*" / "/" / "@"
-        // lcalpha    = %x61-7A ; a-z
-        // DIGIT     = %x30-39 ; 0-9
-        //
-        // value    = 0*255(chr) nblk-chr
-        // nblk-chr = %x21-2B / %x2D-3C / %x3E-7E
-        // chr      = %x20 / nblk-chr
-
+        // key         = ( lcalpha / DIGIT ) 0*255 ( keychar )
+        // keychar     = lcalpha / DIGIT / "_" / "-"/ "*" / "/" / "@"
+        // lcalpha     = %x61-7A ; a-z
+        // DIGIT       = %x30-39 ; 0-9
+        // value       = 0*255(chr) nblk-chr
+        // nblk-chr    = %x21-2B / %x2D-3C / %x3E-7E
+        // chr         = %x20 / nblk-chr
         internal static string? ValidateTraceState(string? traceState)
         {
             if (string.IsNullOrEmpty(traceState))
             {
-                return null; // invalid format
+                return null;
             }
 
-            int processed = 0;
+            int entries = 0;
+            using ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[Math.Min(traceState.Length, MaxTraceStateEncodedLength)]);
 
-            while (processed < traceState.Length)
+            ReadOnlySpan<char> traceStateSpan = traceState;
+            while (true)
             {
-                ReadOnlySpan<char> traceStateSpan = traceState.AsSpan(processed);
                 int commaIndex = traceStateSpan.IndexOf(Comma);
                 ReadOnlySpan<char> entry = commaIndex >= 0 ? traceStateSpan.Slice(0, commaIndex) : traceStateSpan;
-                int delta = entry.Length + (commaIndex >= 0 ? 1 : 0); // +1 for the comma
+                traceStateSpan = commaIndex >= 0 ? traceStateSpan.Slice(commaIndex + 1) : ReadOnlySpan<char>.Empty;
 
-                if (processed + delta > MaxTraceStateEncodedLength)
+                if (++entries > MaxTraceStateEntries)
                 {
-                    break; // entry exceeds max length
+                    break;
+                }
+
+                entry = Trim(entry);
+                if (entry.IsEmpty)
+                {
+                    if (commaIndex < 0)
+                    {
+                        break;
+                    }
+
+                    continue;
                 }
 
                 int equalIndex = entry.IndexOf(Equal);
                 if (equalIndex <= 0 || equalIndex >= entry.Length - 1)
                 {
-                    break; // invalid format
+                    return null;
                 }
 
-                if (IsInvalidTraceStateKey(Trim(entry.Slice(0, equalIndex))) || IsInvalidTraceStateValue(TrimSpaceOnly(entry.Slice(equalIndex + 1))))
+                ReadOnlySpan<char> key = entry.Slice(0, equalIndex);
+                ReadOnlySpan<char> value = entry.Slice(equalIndex + 1);
+                if (IsInvalidTraceStateKey(key) || IsInvalidTraceStateValue(value))
                 {
-                    break; // entry exceeds max length or invalid key/value, skip the whole trace state entries.
+                    return null;
                 }
 
-                processed += delta;
+                int nextLength = vsb.Length + entry.Length + (vsb.Length > 0 ? 1 : 0);
+                if (nextLength > MaxTraceStateEncodedLength)
+                {
+                    break;
+                }
+
+                if (vsb.Length > 0)
+                {
+                    vsb.Append(Comma);
+                }
+
+                vsb.Append(key);
+                vsb.Append(Equal);
+                vsb.Append(value);
+
+                if (commaIndex < 0)
+                {
+                    break;
+                }
             }
 
-            if (processed > 0)
-            {
-                if (traceState[processed - 1] == Comma)
-                {
-                    processed--; // remove the last comma
-                }
-
-                if (processed > 0)
-                {
-                    return processed >= traceState.Length ? traceState : traceState.AsSpan(0, processed).ToString();
-                }
-            }
-
-            return null;
+            return vsb.Length > 0 ? vsb.ToString() : null;
         }
 
         internal static void InjectTraceState(string traceState, object? carrier, PropagatorSetterCallback setter)
@@ -416,15 +451,19 @@ namespace System.Diagnostics
         // Key has to start with a lowercase letter or digit
         private static bool IsInvalidTraceStateKey(ReadOnlySpan<char> key) =>
             key.IsEmpty ||
+            key.Length > MaxTraceStateKeyLength ||
             ((uint)('z' - key[0]) > (uint)('z' - 'a') && (uint)('9' - key[0]) > (uint)('9' - '0')) ||
             key.ContainsAnyExcept(s_validTraceStateKeyChars);
 
-        // value    = 0 * 255(chr) nblk-chr
-        // nblk-chr = % x21 - 2B / % x2D - 3C / % x3E - 7E
-        // chr      = % x20 / nblk-chr
-        private static readonly SearchValues<char> s_validTraceStateValueChars = SearchValues.Create("!\"#$%&'()*+-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+        // https://www.w3.org/TR/trace-context-2/#value
+        // value    = 0*255(chr) nblk-chr
+        // nblk-chr = %x21-2B / %x2D-3C / %x3E-7E
+        // chr      = %x20 / nblk-chr
+        private static readonly SearchValues<char> s_validTraceStateValueChars = SearchValues.Create(" !\"#$%&'()*+-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
 
-        private static bool IsInvalidTraceStateValue(ReadOnlySpan<char> value) => value.IsEmpty || value.ContainsAnyExcept(s_validTraceStateValueChars);
+        private static bool IsInvalidTraceStateValue(ReadOnlySpan<char> value) =>
+            value.IsEmpty || value.Length > MaxTraceStateValueLength || value[value.Length - 1] == Space ||
+            value.ContainsAnyExcept(s_validTraceStateValueChars);
 
         // baggage-string =  list-member 0*179( OWS "," OWS list-member )
         // list-member    =  key OWS "=" OWS value *( OWS ";" OWS property )
@@ -540,7 +579,7 @@ namespace System.Diagnostics
         // Example 00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01
         private static bool IsInvalidTraceParent(string? traceParent)
         {
-            if (traceParent is null || traceParent.Length < 55)
+            if (traceParent is null || traceParent.Length < TraceParentCoreLength)
             {
                 return true;
             }
@@ -553,7 +592,7 @@ namespace System.Diagnostics
             if (traceParent[0] == '0' && traceParent[1] == '0')
             {
                 // version 00 should have exactly 55 characters
-                if (traceParent.Length != 55)
+                if (traceParent.Length != TraceParentCoreLength)
                 {
                     return true; // invalid length for version 00
                 }
@@ -565,7 +604,7 @@ namespace System.Diagnostics
                 //      o Parse trace-id (from the first dash through the next 32 characters). Vendors MUST check that the 32 characters are hex, and that they are followed by a dash (-).
                 //      o Parse parent-id (from the second dash at the 35th position through the next 16 characters). Vendors MUST check that the 16 characters are hex and followed by a dash.
                 //      o Parse the sampled bit of flags (2 characters from the third dash). Vendors MUST check that the 2 characters are either the end of the string or a dash.
-                if (traceParent.Length > 55 && traceParent[55] != '-')
+                if (traceParent.Length > TraceParentCoreLength && traceParent[TraceParentCoreLength] != '-')
                 {
                     return true; // invalid format for version other than 00
                 }

@@ -86,7 +86,18 @@ namespace ILCompiler
 
         public override int GetHashCode() => _type.GetHashCode() ^ _handle.GetHashCode();
 
-        public static bool operator ==(PropertyPseudoDesc a, PropertyPseudoDesc b) => a._type == b._type && a._handle == b._handle;
+        public override string ToString() => $"{_type}.{Name}";
+
+        public static bool operator ==(PropertyPseudoDesc a, PropertyPseudoDesc b)
+        {
+            if (a is null)
+                return b is null;
+
+            if (b is null)
+                return false;
+
+            return a._type == b._type && a._handle == b._handle;
+        }
 
         public static bool operator !=(PropertyPseudoDesc a, PropertyPseudoDesc b) => !(a == b);
     }
