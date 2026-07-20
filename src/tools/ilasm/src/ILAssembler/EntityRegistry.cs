@@ -231,16 +231,20 @@ namespace ILAssembler
             // we can start writing out the content of the entities.
             builder.AddModule(0, Module.Name is null ? default : builder.GetOrAddString(Module.Name), builder.GetOrAddGuid(Guid.NewGuid()), default, default);
 
+            // Emit every recorded TypeRef row. All TypeRefs are recorded in ResolveTypeReferences
+            // (in PseudoHandle order), even when they resolved to a local TypeDef, matching native
+            // ilasm which preserves all TypeRef rows. Emitting all of them keeps the emitted TypeRef
+            // row numbers aligned with the PseudoHandle values used during parsing/signature encoding.
             foreach (TypeReferenceEntity type in GetSeenEntities(TableIndex.TypeRef))
             {
-                EntityBase resolutionScope = type.ResolutionScope;
-                // For nested TypeRefs whose outer type was resolved to a TypeDef,
-                // use the resolved handle's TypeDef handle for the resolution scope.
-                EntityHandle scopeHandle = resolutionScope switch
+                EntityHandle scopeHandle = type.ResolutionScope switch
                 {
                     FakeTypeEntity fakeScope => fakeScope.ResolutionScopeColumnHandle,
-                    TypeReferenceEntity { Handle.Kind: HandleKind.TypeDefinition } resolvedOuter => resolvedOuter.Handle,
-                    _ => resolutionScope.Handle
+                    // Nested TypeRef: reference the enclosing TypeRef's own TypeRef row (PseudoHandle),
+                    // never the TypeDef it may have resolved to. A TypeDefinition handle is not a valid
+                    // ResolutionScope coded index (see CodedIndex.ToResolutionScopeTag).
+                    TypeReferenceEntity enclosing => enclosing.PseudoHandle,
+                    EntityBase scope => scope.Handle
                 };
                 builder.AddTypeReference(
                     scopeHandle,
@@ -1176,18 +1180,18 @@ namespace ILAssembler
 
         private void ResolveTypeReferences()
         {
-            // Resolve TypeRef entities that refer to locally-defined types.
-            // For each TypeRef, if the resolution scope matches the current assembly
-            // and a matching TypeDef exists, assign the TypeDef handle to the TypeRef entity.
-            // Otherwise, record it in the TypeRef table with a real TypeRef handle.
-            // Process outermost types first so nested types can check if their parent was resolved.
+            // Record every TypeRef as a row in creation (PseudoHandle) order, even when it refers to
+            // a locally-defined type, matching native ilasm which preserves all TypeRef rows. Because
+            // PseudoHandle is the gapless 1-based index into _typeReferences, the sequential row handle
+            // RecordEntityInTable assigns equals the PseudoHandle, keeping emitted rows aligned with the
+            // handles used during parsing/signature encoding.
+            // After recording, attempt to resolve each TypeRef that refers to a local type to its
+            // TypeDef handle; that overwrites the entity's Handle and backpatches any IL tokens. Process
+            // in creation order so a nested TypeRef can observe whether its enclosing type resolved first.
             foreach (TypeReferenceEntity typeRef in _typeReferences)
             {
-                if (TryResolveTypeReferenceToDefinition(typeRef))
-                {
-                    continue;
-                }
                 RecordEntityInTable(TableIndex.TypeRef, typeRef);
+                TryResolveTypeReferenceToDefinition(typeRef);
             }
         }
 
@@ -1797,8 +1801,12 @@ namespace ILAssembler
             public string ReflectionNotation { get; set; } = string.Empty;
 
             /// <summary>
-            /// Temporary handle assigned during parsing for signature blob encoding.
-            /// The real handle is assigned during emission after TypeRef → TypeDef resolution.
+            /// The TypeRef table row handle for this entity, assigned at creation time.
+            /// Because every TypeRef is emitted as a row in this same order (see
+            /// <see cref="EntityRegistry.WriteContentTo"/>), this value equals the final emitted
+            /// TypeRef row handle. It is used for signature blob encoding during parsing and as the
+            /// ResolutionScope of nested TypeRefs, even when this TypeRef also resolves to a local
+            /// TypeDef (in which case <see cref="Handle"/> returns the resolved TypeDefinition handle).
             /// </summary>
             public TypeReferenceHandle PseudoHandle { get; set; }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -11,6 +12,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
+using Internal.IL;
 using Xunit;
 
 namespace ILAssembler.Tests
@@ -1354,6 +1356,89 @@ namespace ILAssembler.Tests
             var blobBuilder = new BlobBuilder();
             result!.Serialize(blobBuilder);
             return new PEReader(blobBuilder.ToImmutableArray());
+        }
+
+        /// <summary>
+        /// Decodes the IL of the named method and returns the 4-byte metadata token operand of the
+        /// first instruction matching <paramref name="targetOpcode"/>.
+        /// </summary>
+        private static int GetFirstTokenOperand(PEReader pe, MetadataReader reader, string methodName, ILOpcode targetOpcode)
+        {
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .First(m => reader.GetString(m.Name) == methodName);
+            Assert.True(method.RelativeVirtualAddress > 0, $"Method '{methodName}' should have a body");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            byte[] il = body.GetILBytes()!;
+
+            int offset = 0;
+            while (offset < il.Length)
+            {
+                var opcode = (ILOpcode)il[offset];
+                int operandStart = offset + 1;
+                if (opcode == ILOpcode.prefix1)
+                {
+                    opcode = (ILOpcode)(0x100 + il[offset + 1]);
+                    operandStart = offset + 2;
+                }
+
+                if (opcode == targetOpcode)
+                {
+                    return BinaryPrimitives.ReadInt32LittleEndian(il.AsSpan(operandStart));
+                }
+
+                if (opcode == ILOpcode.switch_)
+                {
+                    uint count = BinaryPrimitives.ReadUInt32LittleEndian(il.AsSpan(operandStart));
+                    offset = operandStart + 4 + checked((int)count * 4);
+                }
+                else
+                {
+                    offset += opcode.GetSize();
+                }
+            }
+
+            Assert.Fail($"Opcode '{targetOpcode}' not found in method '{methodName}'");
+            return 0;
+        }
+
+        private static void AssertTypeDefToken(MetadataReader reader, int token, string expectedName)
+        {
+            var handle = MetadataTokens.EntityHandle(token);
+            Assert.Equal(HandleKind.TypeDefinition, handle.Kind);
+            var typeDef = reader.GetTypeDefinition((TypeDefinitionHandle)handle);
+            Assert.Equal(expectedName, reader.GetString(typeDef.Name));
+        }
+
+        private static void AssertFieldDefToken(MetadataReader reader, int token, string expectedName)
+        {
+            var handle = MetadataTokens.EntityHandle(token);
+            Assert.Equal(HandleKind.FieldDefinition, handle.Kind);
+            var fieldDef = reader.GetFieldDefinition((FieldDefinitionHandle)handle);
+            Assert.Equal(expectedName, reader.GetString(fieldDef.Name));
+        }
+
+        private static TypeReference AssertTypeRefToken(MetadataReader reader, int token, string expectedName)
+        {
+            var handle = MetadataTokens.EntityHandle(token);
+            Assert.Equal(HandleKind.TypeReference, handle.Kind);
+            var typeRef = reader.GetTypeReference((TypeReferenceHandle)handle);
+            Assert.Equal(expectedName, reader.GetString(typeRef.Name));
+            return typeRef;
+        }
+
+        private static TypeReferenceHandle FindTypeRef(MetadataReader reader, string name)
+        {
+            foreach (var trHandle in reader.TypeReferences)
+            {
+                if (reader.GetString(reader.GetTypeReference(trHandle).Name) == name)
+                {
+                    return trHandle;
+                }
+            }
+
+            Assert.Fail($"Expected a TypeRef row named '{name}'");
+            return default;
         }
 
         private static ImmutableArray<Diagnostic> CompileAndGetDiagnostics(string source, Options options)
@@ -3960,16 +4045,18 @@ namespace ILAssembler.Tests
             using var pe = CompileAndGetReader(source, new Options());
             var reader = pe.GetMetadataReader();
 
-            // The [test]MyClass TypeRef should have been resolved to TypeDef,
-            // so no TypeRef for MyClass should exist.
-            foreach (var trHandle in reader.TypeReferences)
-            {
-                var tr = reader.GetTypeReference(trHandle);
-                Assert.NotEqual("MyClass", reader.GetString(tr.Name));
-            }
+            // The [test]MyClass TypeRef resolves to a local TypeDef, but its TypeRef row is still
+            // emitted (matching native ilasm). Its ResolutionScope points at the self-AssemblyRef.
+            var myClassTypeRef = reader.GetTypeReference(FindTypeRef(reader, "MyClass"));
+            Assert.Equal(HandleKind.AssemblyReference, myClassTypeRef.ResolutionScope.Kind);
 
-            // The method call should resolve to MethodDef, not MemberRef.
+            // The method call resolves to MethodDef (not MemberRef), and the IL operand is the
+            // resolved MethodDef token rather than a TypeRef/MemberRef token.
             Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+            int callToken = GetFirstTokenOperand(pe, reader, "Main", ILOpcode.call);
+            var callHandle = MetadataTokens.EntityHandle(callToken);
+            Assert.Equal(HandleKind.MethodDefinition, callHandle.Kind);
+            Assert.Equal("DoWork", reader.GetString(reader.GetMethodDefinition((MethodDefinitionHandle)callHandle).Name));
         }
 
         [Fact]
@@ -4056,12 +4143,101 @@ namespace ILAssembler.Tests
 
             Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
 
-            // TypeRef table should not contain "Target" (resolved to TypeDef)
-            foreach (var trHandle in reader.TypeReferences)
-            {
-                var tr = reader.GetTypeReference(trHandle);
-                Assert.NotEqual("Target", reader.GetString(tr.Name));
-            }
+            // The TypeRef row for "Target" is still emitted even though it resolves to a local
+            // TypeDef, and the call IL operand is the resolved MethodDef token.
+            var targetTypeRef = reader.GetTypeReference(FindTypeRef(reader, "Target"));
+            Assert.Equal(HandleKind.AssemblyReference, targetTypeRef.ResolutionScope.Kind);
+
+            int callToken = GetFirstTokenOperand(pe, reader, "Main", ILOpcode.call);
+            var callHandle = MetadataTokens.EntityHandle(callToken);
+            Assert.Equal(HandleKind.MethodDefinition, callHandle.Kind);
+            Assert.Equal("Compute", reader.GetString(reader.GetMethodDefinition((MethodDefinitionHandle)callHandle).Name));
+        }
+
+        [Fact]
+        public void ResolvedTypeRefs_StillEmittedAsRows_InPseudoHandleOrder()
+        {
+            // Even when a self-assembly TypeRef resolves to a local TypeDef, its TypeRef row is
+            // still emitted (matching native ilasm, which preserves all TypeRef rows). The rows are
+            // emitted in pseudo-handle (creation) order, so "First" precedes "Second".
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi First extends [mscorlib]System.Object
+                {
+                    .method public static void A() cil managed { ret }
+                }
+                .class public auto ansi Second extends [mscorlib]System.Object
+                {
+                    .method public static void B() cil managed { ret }
+                }
+                .class public auto ansi Caller extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        call void [test]First::A()
+                        call void [test]Second::B()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var firstTypeRef = FindTypeRef(reader, "First");
+            var secondTypeRef = FindTypeRef(reader, "Second");
+            Assert.Equal(HandleKind.AssemblyReference, reader.GetTypeReference(firstTypeRef).ResolutionScope.Kind);
+            Assert.Equal(HandleKind.AssemblyReference, reader.GetTypeReference(secondTypeRef).ResolutionScope.Kind);
+            Assert.True(MetadataTokens.GetRowNumber(firstTypeRef) < MetadataTokens.GetRowNumber(secondTypeRef),
+                "TypeRef rows should be emitted in pseudo-handle (creation) order");
+
+            // Both calls resolve to MethodDefs, and no MemberRef rows are emitted.
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+        }
+
+        [Fact]
+        public void NestedTypeRef_EnclosingLocalNestedMissing_EmitsValidResolutionScope()
+        {
+            // Reference [test]Outer/Inner where Outer is defined locally (and resolves to a local
+            // TypeDef) but the nested type Inner is NOT defined. Inner must remain a TypeRef whose
+            // ResolutionScope is Outer's *TypeRef* row (a valid ResolutionScope coded index), not
+            // Outer's resolved TypeDefinition handle (which is an invalid ResolutionScope and would
+            // throw ArgumentException at emission).
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Outer extends [mscorlib]System.Object
+                {
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        ldtoken [test]Outer/Inner
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            // Compilation must succeed (no ArgumentException from an invalid ResolutionScope).
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // Inner is not defined locally, so it stays a TypeRef scoped to Outer's TypeRef row.
+            var innerTypeRef = reader.GetTypeReference(FindTypeRef(reader, "Inner"));
+            Assert.Equal(HandleKind.TypeReference, innerTypeRef.ResolutionScope.Kind);
+            var outerTypeRef = reader.GetTypeReference((TypeReferenceHandle)innerTypeRef.ResolutionScope);
+            Assert.Equal("Outer", reader.GetString(outerTypeRef.Name));
+
+            // Outer resolves to a local TypeDef but its TypeRef row is still emitted and scoped to
+            // the self-AssemblyRef.
+            Assert.Equal(HandleKind.AssemblyReference, outerTypeRef.ResolutionScope.Kind);
+
+            // The ldtoken IL operand is Inner's TypeRef token (Inner is not a local type).
+            int token = GetFirstTokenOperand(pe, reader, "M", ILOpcode.ldtoken);
+            AssertTypeRefToken(reader, token, "Inner");
         }
 
         [Fact]
@@ -5114,13 +5290,11 @@ namespace ILAssembler.Tests
             Assert.Equal((byte)SignatureTypeCode.RequiredModifier, sigBytes[1]); // CMOD_REQD
             // After the modifier coded index, the underlying type is int32
             Assert.Equal(0x08, sigBytes[^1]);
-            // The [test]MyModifier TypeRef should have resolved to TypeDef,
-            // so no TypeRef for MyModifier should exist.
-            foreach (var trHandle in reader.TypeReferences)
-            {
-                var tr = reader.GetTypeReference(trHandle);
-                Assert.NotEqual("MyModifier", reader.GetString(tr.Name));
-            }
+            // The [test]MyModifier TypeRef resolved to a local TypeDef: its coded index in the
+            // signature carries the TypeDef tag (low 2 bits == 0). Its TypeRef row is still emitted.
+            Assert.Equal(0, sigBytes[2] & 0x03);
+            Assert.Equal(HandleKind.AssemblyReference,
+                reader.GetTypeReference(FindTypeRef(reader, "MyModifier")).ResolutionScope.Kind);
         }
 
         [Fact]
@@ -5228,20 +5402,11 @@ namespace ILAssembler.Tests
             using var pe = CompileAndGetReader(source, new Options());
             var reader = pe.GetMetadataReader();
 
-            // [test]MyStruct TypeRef should resolve to TypeDef
-            foreach (var trHandle in reader.TypeReferences)
-            {
-                var tr = reader.GetTypeReference(trHandle);
-                Assert.NotEqual("MyStruct", reader.GetString(tr.Name));
-            }
-
-            // The method IL should contain a TypeDef token for MyStruct, not a TypeRef token.
-            // Read the method body and check the unbox.any operand.
-            var method = reader.MethodDefinitions
-                .Select(h => reader.GetMethodDefinition(h))
-                .First(m => reader.GetString(m.Name) == "Unbox");
-            int rva = method.RelativeVirtualAddress;
-            Assert.True(rva > 0, "Method should have a body");
+            // The [test]MyStruct TypeRef row is still emitted, but the IL token is backpatched to
+            // the resolved TypeDef handle. Decode the unbox.any operand and assert it is the
+            // MyStruct TypeDef token.
+            int token = GetFirstTokenOperand(pe, reader, "Unbox", ILOpcode.unbox_any);
+            AssertTypeDefToken(reader, token, "MyStruct");
         }
 
         [Fact]
@@ -5268,12 +5433,9 @@ namespace ILAssembler.Tests
             using var pe = CompileAndGetReader(source, new Options());
             var reader = pe.GetMetadataReader();
 
-            // [test]MyClass TypeRef should resolve to TypeDef
-            foreach (var trHandle in reader.TypeReferences)
-            {
-                var tr = reader.GetTypeReference(trHandle);
-                Assert.NotEqual("MyClass", reader.GetString(tr.Name));
-            }
+            // The castclass IL token is backpatched to the resolved MyClass TypeDef.
+            int token = GetFirstTokenOperand(pe, reader, "Cast", ILOpcode.castclass);
+            AssertTypeDefToken(reader, token, "MyClass");
         }
 
         [Fact]
@@ -5300,19 +5462,17 @@ namespace ILAssembler.Tests
             using var pe = CompileAndGetReader(source, new Options());
             var reader = pe.GetMetadataReader();
 
-            foreach (var trHandle in reader.TypeReferences)
-            {
-                var tr = reader.GetTypeReference(trHandle);
-                Assert.NotEqual("MyType", reader.GetString(tr.Name));
-            }
+            // The ldtoken IL token is backpatched to the resolved MyType TypeDef.
+            int token = GetFirstTokenOperand(pe, reader, "GetToken", ILOpcode.ldtoken);
+            AssertTypeDefToken(reader, token, "MyType");
         }
 
         [Fact]
-        public void TypeRefInFieldMdtoken_BackpatchedAfterResolution()
+        public void FieldRefInIL_BackpatchedAfterResolution()
         {
-            // When a field instruction uses an mdtoken that resolves to a TypeRef
-            // for a local type, the token should be backpatched to TypeDef.
-            // This tests the instr_field mdtoken path.
+            // When a field instruction (ldfld/ldsfld/...) references a field of a local type via
+            // [self-assembly]Type::Field, the field MemberRef resolves to a local FieldDef and the
+            // IL token is backpatched to that FieldDef. This exercises the instr_field fieldRef path.
             string source = """
                 .assembly extern mscorlib { }
                 .assembly test { }
@@ -5322,10 +5482,10 @@ namespace ILAssembler.Tests
                 }
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
-                    .method public static void Load() cil managed
+                    .method public static int32 Load(valuetype [test]MyStruct s) cil managed
                     {
-                        ldtoken field int32 [test]MyStruct::x
-                        pop
+                        ldarga.s s
+                        ldfld int32 [test]MyStruct::x
                         ret
                     }
                 }
@@ -5334,12 +5494,11 @@ namespace ILAssembler.Tests
             using var pe = CompileAndGetReader(source, new Options());
             var reader = pe.GetMetadataReader();
 
-            // [test]MyStruct TypeRef should resolve to TypeDef
-            foreach (var trHandle in reader.TypeReferences)
-            {
-                var tr = reader.GetTypeReference(trHandle);
-                Assert.NotEqual("MyStruct", reader.GetString(tr.Name));
-            }
+            // The field resolves to a local FieldDef, so no MemberRef row is emitted and the ldfld
+            // IL token is backpatched to that FieldDef.
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.MemberRef));
+            int token = GetFirstTokenOperand(pe, reader, "Load", ILOpcode.ldfld);
+            AssertFieldDefToken(reader, token, "x");
         }
 
         [Fact]
@@ -5521,12 +5680,11 @@ namespace ILAssembler.Tests
             else rankIdx += 4;
             Assert.Equal(0x03, sigBytes[rankIdx]); // rank = 3
 
-            // [test]MyStruct TypeRef should have been resolved to TypeDef
-            foreach (var trHandle in reader.TypeReferences)
-            {
-                var tr = reader.GetTypeReference(trHandle);
-                Assert.NotEqual("MyStruct", reader.GetString(tr.Name));
-            }
+            // The [test]MyStruct element type resolved to a local TypeDef: its coded index carries
+            // the TypeDef tag (low 2 bits == 0). Its TypeRef row is still emitted.
+            Assert.Equal(0, sigBytes[5] & 0x03);
+            Assert.Equal(HandleKind.AssemblyReference,
+                reader.GetTypeReference(FindTypeRef(reader, "MyStruct")).ResolutionScope.Kind);
         }
 
         [Fact]
@@ -5761,12 +5919,10 @@ namespace ILAssembler.Tests
             using var pe = CompileAndGetReader(source, new Options());
             var reader = pe.GetMetadataReader();
 
-            // [test]MyException TypeRef should resolve to TypeDef
-            foreach (var trHandle in reader.TypeReferences)
-            {
-                var tr = reader.GetTypeReference(trHandle);
-                Assert.NotEqual("MyException", reader.GetString(tr.Name));
-            }
+            // The [test]MyException TypeRef row is still emitted, but the exception handler's
+            // CatchType is the resolved TypeDef token, not the TypeRef.
+            Assert.Equal(HandleKind.AssemblyReference,
+                reader.GetTypeReference(FindTypeRef(reader, "MyException")).ResolutionScope.Kind);
 
             // Verify the method has exception handlers and the catch type is a TypeDef
             var method = reader.MethodDefinitions

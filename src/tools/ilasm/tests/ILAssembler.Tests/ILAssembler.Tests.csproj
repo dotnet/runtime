@@ -12,4 +12,14 @@
     <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
     <ProjectReference Include="..\..\src\ILAssembler\ILAssembler.csproj" />
   </ItemGroup>
+
+  <!-- Shared IL opcode metadata used by tests to decode method bodies and validate operand tokens. -->
+  <ItemGroup>
+    <Compile Include="..\..\..\..\coreclr\tools\Common\TypeSystem\IL\ILOpcode.cs">
+      <Link>IL\ILOpcode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\coreclr\tools\Common\TypeSystem\IL\ILOpcodeHelper.cs">
+      <Link>IL\ILOpcodeHelper.cs</Link>
+    </Compile>
+  </ItemGroup>
 </Project>
