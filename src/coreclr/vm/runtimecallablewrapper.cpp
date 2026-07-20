@@ -220,12 +220,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
 
     ComWrappersNative::MarkWrapperAsComActivated(pUnk);
 
-<<<<<<< HEAD
-    pUnk.SuppressRelease();
-    return pUnk;
-=======
-    RETURN pUnk.Detach();
->>>>>>> origin/main
+    return pUnk.Detach();
 }
 
 
@@ -381,13 +376,8 @@ IUnknown *ComClassFactory::CreateInstanceInternal(IUnknown *pOuter, BOOL *pfDidC
     }
     CONTRACTL_END;
 
-<<<<<<< HEAD
-    SafeComHolder<IClassFactory> pClassFactory = GetIClassFactory();
-    return CreateInstanceFromClassFactory(pClassFactory, pOuter, pfDidContainment);
-=======
     ComHolderAnyMode<IClassFactory> pClassFactory{ GetIClassFactory() };
-    RETURN CreateInstanceFromClassFactory(pClassFactory, pOuter, pfDidContainment);
->>>>>>> origin/main
+    return CreateInstanceFromClassFactory(pClassFactory, pOuter, pfDidContainment);
 }
 
 IClassFactory *ComClassFactory::GetIClassFactory()
@@ -1722,12 +1712,7 @@ IUnknown* RCW::GetComIPFromRCW(REFIID iid)
         pRet.Free();
     }
 
-<<<<<<< HEAD
-    pRet.SuppressRelease();
-    return pRet;
-=======
-    RETURN pRet.Detach();
->>>>>>> origin/main
+    return pRet.Detach();
 }
 
 //--------------------------------------------------------------------------------
@@ -2476,11 +2461,7 @@ IUnknown *ComObject::GetComIPFromRCW(OBJECTREF *pObj, MethodTable* pIntfTable)
     pIUnk = pRCW->GetComIPFromRCW(pIntfTable);
 
     RCWPROTECT_END(pRCW);
-<<<<<<< HEAD
-    return pIUnk.Extract();
-=======
-    RETURN pIUnk.Detach();
->>>>>>> origin/main
+    return pIUnk.Detach();
 }
 
 //--------------------------------------------------------------------------

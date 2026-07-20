@@ -351,15 +351,10 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         case ELEMENT_TYPE_R8:
         case ELEMENT_TYPE_BOOLEAN:
         case ELEMENT_TYPE_CHAR:
-<<<<<<< HEAD
-        case ELEMENT_TYPE_TYPEDBYREF:
             return sigType == handleType;
-=======
-            RETURN(sigType == handleType);
->>>>>>> origin/main
 
         case ELEMENT_TYPE_TYPEDBYREF:
-            RETURN(handle == TypeHandle(g_TypedReferenceMT));
+            return handle == TypeHandle(g_TypedReferenceMT);
 
         case ELEMENT_TYPE_STRING:
             return handle == TypeHandle(g_pStringClass);

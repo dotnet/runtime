@@ -123,9 +123,6 @@ namespace
             ReleaseSRWLockExclusive(m_pLock);
         }
 
-<<<<<<< HEAD
-    return pRtlAddGrowableFunctionTable != NULL;
-=======
         FlushGateHolder(const FlushGateHolder&) = delete;
         FlushGateHolder& operator=(const FlushGateHolder&) = delete;
         FlushGateHolder(FlushGateHolder&&) = delete;
@@ -185,7 +182,7 @@ namespace
             p[j] = key;
         }
     }
->>>>>>> origin/main
+
 }
 
 /****************************************************************************/

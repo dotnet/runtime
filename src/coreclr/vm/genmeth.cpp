@@ -588,16 +588,11 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         // CrstHolder goes out of scope here
     }
 
-<<<<<<< HEAD
+    _ASSERTE(pNewMD != NULL);
     _ASSERTE(getWrappedCode == pNewMD->IsSharedByGenericInstantiations());
     _ASSERTE(methodInst.IsEmpty() || pNewMD->HasMethodInstantiation());
-    return pNewMD;
-=======
-    _ASSERTE(pNewMD != NULL);
     pNewMD->CheckRestore();
-
-    RETURN pNewMD;
->>>>>>> origin/main
+    return pNewMD;
 }
 
 // Calling this method is equivalent to

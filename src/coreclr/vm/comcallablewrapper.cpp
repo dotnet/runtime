@@ -2639,11 +2639,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
             pDisp = pRCW->GetIDispatch();
 
             RCWPROTECT_END(pRCW);
-<<<<<<< HEAD
-            return pDisp.Extract();
-=======
-            RETURN pDisp.Detach();
->>>>>>> origin/main
+            return pDisp.Detach();
         }
 
         default:

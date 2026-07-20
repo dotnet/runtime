@@ -99,12 +99,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
             // IncRef as we're returning a reference to our caller.
             stubWriterHolder.GetRW()->IncRef();
 
-<<<<<<< HEAD
-            pstub.SuppressRelease();
-            return pstub;
-=======
-            RETURN pstub.Detach();
->>>>>>> origin/main
+            return pstub.Detach();
         }
     }
 
@@ -164,12 +159,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
         COMPlusThrowOM();
     }
 
-<<<<<<< HEAD
-    pstub.SuppressRelease();
-    return pstub;
-=======
-    RETURN pstub.Detach();
->>>>>>> origin/main
+            return pstub.Detach();
 }
 
 

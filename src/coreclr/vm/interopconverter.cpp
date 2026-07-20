@@ -145,12 +145,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
     if (pUnk == NULL)
         COMPlusThrowHR(hr);
 
-<<<<<<< HEAD
-    pUnk.SuppressRelease();
-    return pUnk;
-=======
-    RETURN pUnk.Detach();
->>>>>>> origin/main
+    return pUnk.Detach();
 }
 
 

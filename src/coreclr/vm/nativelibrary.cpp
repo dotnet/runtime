@@ -800,9 +800,5 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(PInvokeMethodDesc
         errorTracker.Throw(ssLibName);
     }
 
-<<<<<<< HEAD
-    return hmod;
-=======
-    RETURN hmod.Detach();
->>>>>>> origin/main
+    return hmod.Detach();
 }
