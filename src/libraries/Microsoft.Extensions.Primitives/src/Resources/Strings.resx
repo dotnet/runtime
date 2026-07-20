@@ -123,6 +123,9 @@
   <data name="Argument_InvalidOffsetLengthStringSegment" xml:space="preserve">
     <value>Offset and length are out of bounds for this StringSegment or length is greater than the number of characters to the end of this StringSegment.</value>
   </data>
+  <data name="Argument_StringSegmentHasNoValue" xml:space="preserve">
+    <value>The StringSegment does not have a value; its underlying string is null.</value>
+  </data>
   <data name="Capacity_CannotChangeAfterWriteStarted" xml:space="preserve">
     <value>Cannot change capacity after write started.</value>
   </data>
@@ -131,5 +134,11 @@
   </data>
   <data name="Capacity_NotUsedEntirely" xml:space="preserve">
     <value>Entire reserved capacity was not used. Capacity: '{0}', written '{1}'.</value>
+  </data>
+  <data name="InvalidOperation_ConcurrentDisposableSet" xml:space="preserve">
+    <value>The change token callback registration was set concurrently, which is not supported.</value>
+  </data>
+  <data name="InvalidOperation_NullConsumerTask" xml:space="preserve">
+    <value>The change token consumer returned a null task.</value>
   </data>
 </root>

@@ -22,7 +22,7 @@
 #include "failurecache.hpp"
 #include "utils.hpp"
 #include "stringarraylist.h"
-#include "configuration.h"
+#include "hostinformation.h"
 
 #if !defined(DACCESS_COMPILE)
 #include "defaultassemblybinder.h"
@@ -37,7 +37,8 @@ extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToB
 
 STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
     PEImage** ppPEImage,
-    ProbeExtensionResult probeExtensionResult);
+    ProbeExtensionResult probeExtensionResult,
+    SString *pDiagnosticInfo = NULL);
 
 namespace BINDER_SPACE
 {
@@ -193,7 +194,8 @@ namespace BINDER_SPACE
                                                /* in */  AssemblyName        *pAssemblyName,
                                                /* in */  bool                 excludeAppPaths,
                                                /* out */ Assembly           **ppAssembly,
-                                               /* [out, optional] */ Assembly **ppExistingAssemblyOnFailure)
+                                               /* [out, optional] */ Assembly **ppExistingAssemblyOnFailure,
+                                               /* out */ SString            *pDiagnosticInfo)
     {
         HRESULT hr = S_OK;
         LONG kContextVersion = 0;
@@ -224,6 +226,11 @@ namespace BINDER_SPACE
 
     Exit:
         tracer.TraceBindResult(bindResult);
+
+        if (pDiagnosticInfo != NULL)
+        {
+            pDiagnosticInfo->Append(bindResult.GetDiagnosticInfo());
+        }
 
         if (bindResult.HaveResult())
         {
@@ -265,6 +272,9 @@ namespace BINDER_SPACE
         //   * Non-single-file app: In systemDirectory, beside coreclr.dll
         //   * Framework-dependent single-file app: In systemDirectory, beside coreclr.dll
         //   * Self-contained single-file app: Within the single-file bundle.
+        //   * Host explicitly provided directory: In the directory set via the
+        //     SYSTEM_CORELIB_DIRECTORY runtime property. Used by hosts where SPCL is not located
+        //     in the same directory as coreclr.
         //
         //   CoreLib path (sCoreLib):
         //   * Absolute path when looking for a file on disk
@@ -278,7 +288,16 @@ namespace BINDER_SPACE
         {
             pathSource = BinderTracing::PathSource::ApplicationAssemblies;
         }
-        sCoreLib.Set(systemDirectory);
+
+        // Check for a host-provided explicit directory for CoreLib. When set, this replaces
+        // the default lookup beside coreclr and the bundle extraction path fallback.
+        bool hasHostProvidedDirectory = HostInformation::GetProperty(HOST_PROPERTY_SYSTEM_CORELIB_DIRECTORY, sCoreLib)
+            && !sCoreLib.IsEmpty();
+        if (!hasHostProvidedDirectory)
+        {
+            sCoreLib.Set(systemDirectory);
+        }
+
         CombinePath(sCoreLib, sCoreLibName, sCoreLib);
 
         hr = AssemblyBinderCommon::GetAssembly(sCoreLib,
@@ -288,37 +307,17 @@ namespace BINDER_SPACE
 
         BinderTracing::PathProbed(sCoreLib, pathSource, hr);
 
-        if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+        if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
+            && !hasHostProvidedDirectory
+            && Bundle::AppIsBundle()
+            && Bundle::AppBundle->HasExtractedFiles())
         {
-            // Try to find corelib in the TPA
-            StackSString sCoreLibSimpleName(CoreLibName_W);
-            StackSString sTrustedPlatformAssemblies = Configuration::GetKnobStringValue(W("TRUSTED_PLATFORM_ASSEMBLIES"));
-            sTrustedPlatformAssemblies.Normalize();
-
-            bool found = false;
-            for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
-            {
-                SString fileName;
-                SString simpleName;
-                HRESULT pathResult = S_OK;
-                IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ true, fileName, simpleName));
-                if (pathResult == S_FALSE)
-                {
-                    break;
-                }
-
-                if (simpleName.EqualsCaseInsensitive(sCoreLibSimpleName))
-                {
-                    sCoreLib = fileName;
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
-            {
-                GO_WITH_HRESULT(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
-            }
+            // For a single-file app with extracted contents (IncludeAllContentForSelfExtract),
+            // CoreCLR is statically linked into the host executable, so systemDirectory is the
+            // directory of the host executable. The extracted CoreLib lives in the bundle
+            // extraction directory rather than beside the host. Try to find it there.
+            sCoreLib.Set(Bundle::AppBundle->ExtractionPath());
+            CombinePath(sCoreLib, sCoreLibName, sCoreLib);
 
             hr = AssemblyBinderCommon::GetAssembly(sCoreLib,
                 TRUE /* fIsInTPA */,
@@ -405,7 +404,9 @@ namespace BINDER_SPACE
         pAssemblyName->GetDisplayName(assemblyDisplayName,
                                       AssemblyName::INCLUDE_VERSION);
 
-        hr = pApplicationContext->GetFailureCache()->Lookup(assemblyDisplayName);
+        SString cachedFailureInfo;
+        hr = pApplicationContext->GetFailureCache()->Lookup(assemblyDisplayName, &cachedFailureInfo);
+        pBindResult->AppendDiagnosticInfo(cachedFailureInfo);
         if (FAILED(hr))
         {
             if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) && skipFailureCaching)
@@ -459,7 +460,7 @@ namespace BINDER_SPACE
                 }
             }
 
-            hr = pApplicationContext->AddToFailureCache(assemblyDisplayName, hr);
+            hr = pApplicationContext->AddToFailureCache(assemblyDisplayName, hr, pBindResult->GetDiagnosticInfo());
         }
 
     LogExit:
@@ -866,10 +867,13 @@ namespace BINDER_SPACE
 
                     assemblyFilePath.Append(assemblyFileName);
 
+                    SString getAssemblyDiag;
                     hr = GetAssembly(assemblyFilePath,
                                         TRUE,  // fIsInTPA
                                         &pTPAAssembly,
-                                        probeExtensionResult);
+                                        probeExtensionResult,
+                                        &getAssemblyDiag);
+                    pBindResult->AppendDiagnosticInfo(getAssemblyDiag);
 
                     BinderTracing::PathProbed(assemblyFilePath, BinderTracing::PathSource::Bundle, hr);
 
@@ -897,9 +901,13 @@ namespace BINDER_SPACE
                 _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
                 SString fileName(pTpaEntry->m_wszILFileName);
 
+                SString getAssemblyDiag;
                 hr = GetAssembly(fileName,
                                     TRUE,  // fIsInTPA
-                                    &pTPAAssembly);
+                                    &pTPAAssembly,
+                                    ProbeExtensionResult::Invalid(),
+                                    &getAssemblyDiag);
+                pBindResult->AppendDiagnosticInfo(getAssemblyDiag);
                 BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
 
                 pBindResult->SetAttemptResult(hr, pTPAAssembly);
@@ -985,7 +993,8 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinderCommon::GetAssembly(SString            &assemblyPath,
                                               BOOL               fIsInTPA,
                                               Assembly           **ppAssembly,
-                                              ProbeExtensionResult probeExtensionResult)
+                                              ProbeExtensionResult probeExtensionResult,
+                                              SString            *pDiagnosticInfo)
     {
         HRESULT hr = S_OK;
 
@@ -1001,12 +1010,24 @@ namespace BINDER_SPACE
         {
             LPCTSTR szAssemblyPath = const_cast<LPCTSTR>(assemblyPath.GetUnicode());
 
-            hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, probeExtensionResult);
+            hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, probeExtensionResult, pDiagnosticInfo);
             IF_FAIL_GO(hr);
         }
 
         // Initialize assembly object
-        IF_FAIL_GO(pAssembly->Init(pPEImage, fIsInTPA));
+        hr = pAssembly->Init(pPEImage, fIsInTPA);
+        if (FAILED(hr))
+        {
+            if (pDiagnosticInfo != NULL)
+            {
+                StackSString format;
+                format.LoadResource(IDS_BINDING_FAILED_TO_INIT_ASSEMBLY);
+                StackSString hrMsg;
+                GetHRMsg(hr, hrMsg);
+                pDiagnosticInfo->Printf(format.GetUTF8(), assemblyPath.GetUTF8(), hrMsg.GetUTF8());
+            }
+            goto Exit;
+        }
 
         // We're done
         *ppAssembly = pAssembly.Extract();

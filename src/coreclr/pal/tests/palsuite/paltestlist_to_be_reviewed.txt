@@ -4,9 +4,6 @@ They should either be fixed or deleted if they are no longer applicable.
 c_runtime/iswprint/test1/paltest_iswprint_test1
 debug_api/DebugBreak/test1/paltest_debugbreak_test1
 debug_api/OutputDebugStringA/test1/paltest_outputdebugstringa_test1
-debug_api/WriteProcessMemory/test1/paltest_writeprocessmemory_test1
-debug_api/WriteProcessMemory/test3/paltest_writeprocessmemory_test3
-debug_api/WriteProcessMemory/test4/paltest_writeprocessmemory_test4
 exception_handling/pal_except/test1/paltest_pal_except_test1
 exception_handling/pal_except/test2/paltest_pal_except_test2
 exception_handling/pal_except/test3/paltest_pal_except_test3
@@ -78,12 +75,10 @@ threading/DuplicateHandle/test9/paltest_duplicatehandle_test9
 threading/ExitThread/test2/paltest_exitthread_test2
 threading/GetCurrentProcess/test1/paltest_getcurrentprocess_test1
 threading/GetCurrentThreadId/test1/paltest_getcurrentthreadid_test1
-threading/GetExitCodeProcess/test1/paltest_getexitcodeprocess_test1
 threading/OpenEventW/test1/paltest_openeventw_test1
 threading/OpenEventW/test2/paltest_openeventw_test2
 threading/OpenEventW/test3/paltest_openeventw_test3
 threading/OpenEventW/test5/paltest_openeventw_test5
-threading/OpenProcess/test1/paltest_openprocess_test1
 threading/Sleep/test1/paltest_sleep_test1
 threading/SleepEx/test1/paltest_sleepex_test1
 threading/TerminateProcess/test1/paltest_terminateprocess_test1

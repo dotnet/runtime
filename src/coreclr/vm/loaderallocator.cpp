@@ -17,6 +17,10 @@
 #include "interpexec.h"
 #endif
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+#include "pregeneratedstringthunks.h"
+#endif
+
 //#define ENABLE_LOG_LOADER_ALLOCATOR_CLEANUP 1
 
 #define STUBMANAGER_RANGELIST(stubManager) (stubManager::g_pManager->GetRangeList())
@@ -94,6 +98,10 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     m_pUMEntryThunkCache = NULL;
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    m_registeredForPendingThunkResolution = false;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     m_nLoaderAllocator = InterlockedIncrement64((LONGLONG *)&LoaderAllocator::cLoaderAllocatorsCreated);
 
@@ -689,6 +697,10 @@ BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
             LoaderAllocator::RemoveMemoryToLoaderAllocatorAssociation(pLoaderAllocator);
         }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        UnregisterLoaderAllocatorForPendingThunkResolution(pLoaderAllocator);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
         // This will probably change for shared code unloading
         _ASSERTE(pID->GetType() == LAT_Assembly);
 
@@ -1086,11 +1098,11 @@ void LoaderAllocator::ActivateManagedTracking()
 
 // We don't actually allocate a low frequency heap for collectible types.
 // This is carefully tuned to sum up to 16 pages to reduce waste.
-#define COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE        (0 * GetOsPageSize())
-#define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (3 * GetOsPageSize())
-#define COLLECTIBLE_STUB_HEAP_SIZE                 GetOsPageSize()
-#define COLLECTIBLE_CODEHEAP_SIZE                  (10 * GetOsPageSize())
-#define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (2 * GetOsPageSize())
+#define COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE        0
+#define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (3 * minipal_getpagesize())
+#define COLLECTIBLE_STUB_HEAP_SIZE                 minipal_getpagesize()
+#define COLLECTIBLE_CODEHEAP_SIZE                  (10 * minipal_getpagesize())
+#define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (2 * minipal_getpagesize())
 
 void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
 {
@@ -1144,7 +1156,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     // Take a page from the high-frequency heap for this.
     if (pExecutableHeapMemory != NULL)
     {
-        dwExecutableHeapReserveSize = GetOsPageSize();
+        dwExecutableHeapReserveSize = minipal_getpagesize();
 
         _ASSERTE(dwExecutableHeapReserveSize < dwHighFrequencyHeapReserveSize);
         dwHighFrequencyHeapReserveSize -= dwExecutableHeapReserveSize;
@@ -2242,7 +2254,7 @@ InteropMethodTableData *LoaderAllocator::LookupComInteropData(MethodTable *pMT)
     CrstHolder holder(&m_InteropDataCrst);
 
     // Lookup
-    InteropMethodTableData *pData = (InteropMethodTableData*)m_interopDataHash.LookupValue((UPTR)pMT, (LPVOID)NULL);
+    InteropMethodTableData *pData = (InteropMethodTableData*)m_interopDataHash.LookupValueByUniqueKey((UPTR)pMT);
 
     // Not there...
     if (pData == (InteropMethodTableData*)INVALIDENTRY)
@@ -2262,7 +2274,7 @@ BOOL LoaderAllocator::InsertComInteropData(MethodTable* pMT, InteropMethodTableD
     CrstHolder holder(&m_InteropDataCrst);
 
     // Check to see that it's not already in there
-    InteropMethodTableData *pDupData = (InteropMethodTableData*)m_interopDataHash.LookupValue((UPTR)pMT, (LPVOID)NULL);
+    InteropMethodTableData *pDupData = (InteropMethodTableData*)m_interopDataHash.LookupValueByUniqueKey((UPTR)pMT);
     if (pDupData != (InteropMethodTableData*)INVALIDENTRY)
         return FALSE;
 
@@ -2517,5 +2529,22 @@ bool LoaderAllocator::InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAlloca
     GCPROTECT_END();
     return result;
 }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+
+void LoaderAllocator::AddPendingPortableEntryPointThunk(MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    AddPendingPortableEntryPointThunkUnderLock(this, pMD);
+}
+
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif

@@ -21,6 +21,9 @@
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs"
              Link="Common\System\IO\DelegateStream.cs" />
+    <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
+             Link="Common\System\IO\DelegatingStream.cs"
+             Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
              Link="Common\System\Net\Configuration.Certificates.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs"

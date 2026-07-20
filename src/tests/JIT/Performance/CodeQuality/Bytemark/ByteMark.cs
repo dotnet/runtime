@@ -74,11 +74,7 @@ internal class global
     public const long TICKS_PER_SEC = 1000;
     public const long MINIMUM_TICKS = 60; // 60 msecs
 
-#if DEBUG
     public const int MINIMUM_SECONDS = 1;
-#else
-    public const int MINIMUM_SECONDS = 1;
-#endif
 
     public const int NUMNUMARRAYS = 1000;
     public const int NUMARRAYSIZE = 8111;

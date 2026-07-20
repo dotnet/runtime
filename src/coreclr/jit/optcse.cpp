@@ -1796,13 +1796,27 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         }
     }
 
-    // Don't allow non-SIMD struct CSEs under a return; we don't fully
-    // re-morph these if we introduce a CSE store, and so may create
-    // IR that lower is not yet prepared to handle.
-    //
-    if (isReturn && varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
+    if (varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
     {
-        return false;
+        // Don't allow non-SIMD struct CSEs under a return; we don't fully
+        // re-morph these if we introduce a CSE store, and so may create
+        // IR that lower is not yet prepared to handle.
+        //
+        if (isReturn)
+        {
+            return false;
+        }
+
+        // Skip all multireg nodes. The locals we introduce cannot be
+        // enregistered in multiple registers since we do not promote them, so
+        // they would always be spilled. Also, for correctness we would need to
+        // DNER existing store destinations when replacing the CSE uses and we
+        // do not currently do that.
+        //
+        if (tree->IsMultiRegNode())
+        {
+            return false;
+        }
     }
 
     // No good if the expression contains side effects or if it was marked as DONT CSE

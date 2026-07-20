@@ -327,7 +327,7 @@ jobs:
       targetRid: linux-x64
       platform: linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: debian-13-gcc15-amd64
+      container: debian-13-gcc16-amd64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
@@ -538,6 +538,25 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Browser WebAssembly on macOS
+
+- ${{ if containsValue(parameters.platforms, 'browser_wasm_mac') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: browser
+      archType: wasm
+      targetRid: browser-wasm
+      platform: browser_wasm_mac
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      jobParameters:
+        hostedOs: osx
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # FreeBSD
 - ${{ if containsValue(parameters.platforms, 'freebsd_x64') }}:
   - template: xplat-setup.yml
@@ -551,6 +570,26 @@ jobs:
       platform: freebsd_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container: freebsd_x64
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# OpenBSD
+- ${{ if containsValue(parameters.platforms, 'openbsd_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: openbsd
+      archType: x64
+      targetRid: openbsd-x64
+      platform: openbsd_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: openbsd_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}

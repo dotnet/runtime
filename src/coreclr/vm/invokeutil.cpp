@@ -135,7 +135,7 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
     CONTRACTL_END;
 
     void *pArgDst = argDest->GetDestinationAddress();
-    CorElementType type = th.GetVerifierCorElementType();
+    CorElementType type = th.GetInternalCorElementType();
 
     switch (type) {
 #ifdef TARGET_RISCV64
@@ -500,7 +500,7 @@ void InvokeUtil::ValidField(TypeHandle th, OBJECTREF* value)
             if (th.IsEnum())
                 COMPlusThrow(kArgumentException,W("Arg_ObjObj"));
 
-            type = th.GetVerifierCorElementType();
+            type = th.GetInternalCorElementType();
             if (IsPrimitiveType(type))
             {
                 if (CanPrimitiveWiden(type, oType))

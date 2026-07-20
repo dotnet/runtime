@@ -167,7 +167,11 @@ export function onwarn(warning) {
     if (warning.code === "CIRCULAR_DEPENDENCY" && warning.ids.findIndex(id => {
         return id.includes("marshal-to-cs")
             || id.includes("marshal-to-js")
-            || id.includes("diagnostics-js");
+            || id.includes("diagnostics-js")
+            || id.includes("dotnet-gcdump")
+            || id.includes("dotnet-cpu-profiler")
+            || id.includes("dotnet-counters")
+            || id.includes("diagnostic-server-js");
     }) !== -1) {
         // ignore circular dependency warnings from marshal-to-cs <-> marshal-to-js and diagnostics
         return;

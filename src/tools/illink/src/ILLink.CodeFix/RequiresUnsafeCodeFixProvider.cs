@@ -9,8 +9,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ILLink.CodeFixProvider;
-using ILLink.RoslynAnalyzer;
-using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -21,33 +19,38 @@ using Microsoft.CodeAnalysis.Editing;
 namespace ILLink.CodeFix
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(RequiresUnsafeCodeFixProvider)), Shared]
-    public sealed class RequiresUnsafeCodeFixProvider : BaseAttributeCodeFixProvider
+    public sealed class RequiresUnsafeCodeFixProvider : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider
     {
         private const string WrapInUnsafeBlockTitle = "Wrap in unsafe block";
 
-        public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnsafe));
+        public const string UnsafeMemberOperationDiagnosticId = "CS9362";
 
-        public sealed override ImmutableArray<string> FixableDiagnosticIds => SupportedDiagnostics.Select(dd => dd.Id).ToImmutableArray();
+        public sealed override ImmutableArray<string> FixableDiagnosticIds => [UnsafeMemberOperationDiagnosticId];
 
-        private protected override LocalizableString CodeFixTitle => new LocalizableResourceString(nameof(Resources.RequiresUnsafeCodeFixTitle), Resources.ResourceManager, typeof(Resources));
-
-        private protected override string FullyQualifiedAttributeName => RequiresUnsafeAnalyzer.FullyQualifiedRequiresUnsafeAttribute;
-
-        private protected override AttributeableParentTargets AttributableParentTargets => AttributeableParentTargets.MethodOrConstructor;
+        private static LocalizableString CodeFixTitle => new LocalizableResourceString(nameof(Resources.RequiresUnsafeCodeFixTitle), Resources.ResourceManager, typeof(Resources));
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            // Register the base code fix (add RequiresUnsafe attribute)
-            await BaseRegisterCodeFixesAsync(context).ConfigureAwait(false);
-
-            // Register the "wrap in unsafe block" code fix
             var document = context.Document;
             var diagnostic = context.Diagnostics.First();
+            var codeFixTitle = CodeFixTitle.ToString();
 
             if (await document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not { } root)
                 return;
 
             SyntaxNode targetNode = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
+
+            // Register "add unsafe modifier" code fix
+            var unsafeModifierTarget = GetUnsafeModifierTarget(targetNode);
+            if (unsafeModifierTarget is not null && !HasUnsafeModifier(unsafeModifierTarget))
+            {
+                context.RegisterCodeFix(CodeAction.Create(
+                    title: codeFixTitle,
+                    createChangedDocument: ct => AddUnsafeModifierAsync(document, unsafeModifierTarget, ct),
+                    equivalenceKey: codeFixTitle), diagnostic);
+            }
+
+            // Register the "wrap in unsafe block" code fix
 
             // Find the statement containing the unsafe call
             var containingStatement = targetNode.AncestorsAndSelf().OfType<StatementSyntax>().FirstOrDefault();
@@ -126,6 +129,39 @@ namespace ILLink.CodeFix
                 || statement.Parent is LockStatementSyntax
                 || statement.Parent is FixedStatementSyntax;
         }
+
+        private static async Task<Document> AddUnsafeModifierAsync(
+            Document document,
+            SyntaxNode declaration,
+            CancellationToken cancellationToken)
+        {
+            var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
+            var modifiers = editor.Generator.GetModifiers(declaration);
+            editor.SetModifiers(declaration, modifiers.WithIsUnsafe(true));
+            return editor.GetChangedDocument();
+        }
+
+        private static SyntaxNode? GetUnsafeModifierTarget(SyntaxNode targetNode)
+            => targetNode.AncestorsAndSelf().FirstOrDefault(static node => node is MethodDeclarationSyntax
+                or ConstructorDeclarationSyntax
+                or DestructorDeclarationSyntax
+                or LocalFunctionStatementSyntax
+                or PropertyDeclarationSyntax
+                or IndexerDeclarationSyntax
+                or AccessorDeclarationSyntax);
+
+        private static bool HasUnsafeModifier(SyntaxNode declaration)
+            => declaration switch
+            {
+                MethodDeclarationSyntax method => method.Modifiers.Any(SyntaxKind.UnsafeKeyword),
+                ConstructorDeclarationSyntax constructor => constructor.Modifiers.Any(SyntaxKind.UnsafeKeyword),
+                DestructorDeclarationSyntax destructor => destructor.Modifiers.Any(SyntaxKind.UnsafeKeyword),
+                LocalFunctionStatementSyntax localFunction => localFunction.Modifiers.Any(SyntaxKind.UnsafeKeyword),
+                PropertyDeclarationSyntax property => property.Modifiers.Any(SyntaxKind.UnsafeKeyword),
+                IndexerDeclarationSyntax indexer => indexer.Modifiers.Any(SyntaxKind.UnsafeKeyword),
+                AccessorDeclarationSyntax accessor => accessor.Modifiers.Any(SyntaxKind.UnsafeKeyword),
+                _ => false
+            };
 
         private static async Task<Document> WrapStatementsInUnsafeBlockAsync(
             Document document,
@@ -479,9 +515,6 @@ namespace ILLink.CodeFix
 
             return editor.GetChangedDocument();
         }
-
-        protected override SyntaxNode[] GetAttributeArguments(ISymbol? attributableSymbol, ISymbol targetSymbol, SyntaxGenerator syntaxGenerator, Diagnostic diagnostic) =>
-            RequiresHelpers.GetAttributeArgumentsForRequires(targetSymbol, syntaxGenerator, HasPublicAccessibility(attributableSymbol));
 
         /// <summary>
         /// Checks if the arrow expression clause or its expression has preprocessor directive trivia.

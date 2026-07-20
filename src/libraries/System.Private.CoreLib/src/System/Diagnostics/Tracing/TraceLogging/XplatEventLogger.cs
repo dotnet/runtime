@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -22,7 +22,6 @@ namespace System.Diagnostics.Tracing
         private static unsafe string GetClrConfig(string configName) => new string(EventSource_GetClrConfig(configName));
 
         [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
-        [RequiresUnsafe]
         private static unsafe partial char* EventSource_GetClrConfig(string configName);
 
         private static bool initializedPersistentListener;
@@ -77,7 +76,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private static string Serialize(ReadOnlyCollection<string>? payloadName, ReadOnlyCollection<object?>? payload, string? eventMessage)
+        private static unsafe string Serialize(ReadOnlyCollection<string>? payloadName, ReadOnlyCollection<object?>? payload, string? eventMessage)
         {
             if (payloadName == null || payload == null)
                 return string.Empty;

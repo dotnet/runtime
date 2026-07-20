@@ -21,7 +21,6 @@ namespace System.Runtime.InteropServices
             public IntPtr Vtable;
         }
 
-        [RequiresUnsafe]
         protected abstract unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
         protected abstract object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
@@ -49,7 +48,6 @@ namespace System.Runtime.InteropServices
         {
             public IntPtr Vtable;
 
-            [RequiresUnsafe]
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
                 throw new PlatformNotSupportedException();
