@@ -12574,7 +12574,7 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "get_ReplacementFallback",
        "get_DecoderFallback",
        "get_MaxCharCount",
-
+       "op_Equality"
 
 
     };

@@ -3108,9 +3108,20 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
 
         // We have already generated code for gtControlExpr evaluating it into a register.
-        // We just need to emit "call reg" in this case.
+        // Move target to R12 and call through CTR.
         //
         assert(genIsValidIntReg(target->GetRegNum()));
+
+        regNumber targetReg = target->GetRegNum();
+        
+        // Move target address to R12 if it's not already there
+        if (targetReg != REG_R12)
+        {
+            GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R12, targetReg, /* canSkip */ false);
+        }
+        
+        // Move R12 to CTR for indirect call
+        GetEmitter()->emitIns_R(INS_mtctr, EA_PTRSIZE, REG_R12);
 
         // clang-format off
         genEmitCall(emitter::EC_INDIR_R,
@@ -3120,7 +3131,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     retSize
                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                     di,
-                    target->GetRegNum(),
+                    REG_R12,  // Always use R12 for indirect calls
                     call->IsFastTailCall());
         // clang-format on
     }
@@ -3163,9 +3174,18 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             }
 
             // We have now generated code loading the target address from the indirection cell into `targetAddrReg`.
-            // We just need to emit "bl targetAddrReg" (branch and link) in this case.
+            // Move to R12 and call through CTR.
             //
             assert(genIsValidIntReg(targetAddrReg));
+
+            // Move target address to R12 if it's not already there
+            if (targetAddrReg != REG_R12)
+            {
+                GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R12, targetAddrReg, /* canSkip */ false);
+            }
+            
+            // Move R12 to CTR for indirect call
+            GetEmitter()->emitIns_R(INS_mtctr, EA_PTRSIZE, REG_R12);
 
             // clang-format off
             genEmitCall(emitter::EC_INDIR_R,
@@ -3175,7 +3195,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                         di,
-                        targetAddrReg,
+                        REG_R12,  // Always use R12 for indirect calls
                         call->IsFastTailCall());
             // clang-format on
         }
@@ -4541,13 +4561,14 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     // PowerPC64 bl has a 24-bit signed offset (±32MB range). To avoid range issues,
     // always materialize the full 64-bit address and use indirect call through CTR.
     
-    if (callTargetReg == REG_NA)
+    regNumber tempReg = callTargetReg;
+    if (tempReg == REG_NA)
     {
         // Use REG_R12 as the default call target register
-        callTargetReg = REG_R12;
+        tempReg = REG_R12;
     }
 
-    regMaskTP callTargetMask = genRegMask(callTargetReg);
+    regMaskTP callTargetMask = genRegMask(tempReg);
     regMaskTP callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
     // assert that all registers in callTargetMask are in the callKillSet
@@ -4559,28 +4580,34 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // Load the helper function address from the indirection table.
         
         // Load the 64-bit address of the helper table entry
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, callTargetReg, (ssize_t)pAddr);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tempReg, (ssize_t)pAddr);
         
         // Load the actual function pointer from the helper table
-        // ld callTargetReg, 0(callTargetReg)
-        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, callTargetReg, callTargetReg, 0);
+        // ld tempReg, 0(tempReg)
+        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, tempReg, tempReg, 0);
     }
     else
     {
         // Direct call to helper - materialize the full 64-bit address
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, callTargetReg, (ssize_t)addr);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tempReg, (ssize_t)addr);
     }
     
-    // Move address to CTR for indirect call
-    GetEmitter()->emitIns_R(INS_mtctr, EA_PTRSIZE, callTargetReg);
+    // Move target address to R12 if it's not already there
+    if (tempReg != REG_R12)
+    {
+        GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R12, tempReg, /* canSkip */ false);
+    }
     
-    regSet.verifyRegUsed(callTargetReg);
+    // Move R12 to CTR for indirect call
+    GetEmitter()->emitIns_R(INS_mtctr, EA_PTRSIZE, REG_R12);
+    
+    regSet.verifyRegUsed(REG_R12);
 
     // Emit the actual call instruction (indirect through CTR)
     GetEmitter()->emitIns_Call(emitter::EC_INDIR_R, compiler->eeFindHelper(helper), INDEBUG_LDISASM_COMMA(nullptr) nullptr, argSize,
                                retSize, EA_UNKNOWN, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur, DebugInfo(), /* IL offset */
-                               callTargetReg,                        /* ireg */
+                               REG_R12,                              /* ireg - always use R12 */
                                REG_NA, 0, 0,                         /* xreg, xmul, disp */
                                false                                 /* isJump */
     );
