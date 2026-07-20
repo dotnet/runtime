@@ -12532,7 +12532,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "Read",
        "get_DefaultSeed",
        "get_IsMultiDimensionalArray",
-       "get_CtorIsPublic",
        "get_IsInvalid",
        "get_Preamble",
        "GetFileLength",
@@ -12565,6 +12564,16 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "get_IsEmpty",
        "get_Latin1CharInfo",
        "get_GenericCache",
+
+       "get_HomeTermInfoLocation",
+       "get_StringsTableOffset",
+       "get_StringOffsetsOffset",
+       "get_NumbersOffset",
+       "get_BooleansOffset",
+       "get_ASCII",
+       "get_ReplacementFallback",
+       "get_DecoderFallback",
+       "get_MaxCharCount",
 
 
 
