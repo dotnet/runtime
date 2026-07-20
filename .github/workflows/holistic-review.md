@@ -364,7 +364,7 @@ actual base-to-head range, not its head compared with the current state of `main
 
 For a re-review, use two distinct scopes:
 
-1. Read the complete current PR range `$HOLISTIC_REVIEW_CURRENT_MERGE_BASE_SHA..$HOLISTIC_REVIEW_HEAD_SHA` only to refresh the cumulative assessment. Compare it with the prior review(s) so the summary accurately reflects the current motivation, approach, risk, and overall verdict after the PR has evolved. `HOLISTIC_REVIEW_PREVIOUS_REVIEW_HISTORY` is the authoritative JSON array containing the initial workflow review and the most recent workflow review, with `{ commit, review_id }` entries. Retrieve each listed review by ID; do not try to discover history from the broader bot review list. In the new review body, add one **Assessment History** bullet for each entry. Each bullet must include a Markdown permalink in the form `[review <review_id>](${{ github.server_url }}/${{ github.repository }}/pull/${{ github.event.inputs.pr_number }}#pullrequestreview-<review_id>)`, identify its reviewed commit, and state its verdict, the current verdict, and whether the assessment is unchanged or changed. Only call an assessment unchanged when its verdict, motivation, approach, and risk assessment are all unchanged. For each changed assessment, explain how the PR patch changes identified below caused the change.
+1. Read the complete current PR range `$HOLISTIC_REVIEW_CURRENT_MERGE_BASE_SHA..$HOLISTIC_REVIEW_HEAD_SHA` only to refresh the cumulative assessment. Compare it with the prior review(s) so the summary accurately reflects the current motivation, approach, risk, and overall verdict after the PR has evolved. `HOLISTIC_REVIEW_PREVIOUS_REVIEW_HISTORY` is the authoritative JSON array containing the initial workflow review and the most recent workflow review, with `{ commit, review_id }` entries. Retrieve each listed review by ID; do not try to discover history from the broader bot review list. Use the prior reviews only to compare the current assessment. Only call an assessment unchanged when its verdict, motivation, approach, and risk assessment are all unchanged. For each changed assessment, explain how the PR patch changes identified below caused the change.
 2. Read `$HOLISTIC_REVIEW_SCOPE_DIR/range-diff.txt` as the primary commit-level explanation of added, removed, or modified PR patches. Read `$HOLISTIC_REVIEW_SCOPE_DIR/patch-diff.txt` to capture merge-conflict resolutions and other changes that `range-diff` cannot represent. These files compare cumulative patches using the historical and current merge bases recorded in `metadata.json`. Restrict all new detailed and actionable findings to changes between those previous and current PR patches. Do not use `git diff "$HOLISTIC_REVIEW_PREVIOUS_HEAD_SHA" HEAD` to determine the incremental scope: after a rebase, that tree comparison includes unrelated upstream changes. Do not introduce a finding about code that was already part of the PR at `$HOLISTIC_REVIEW_PREVIOUS_HEAD_SHA`, even if an earlier review missed it. Inline findings must point to lines in the current base-to-head diff. The refreshed assessment may explain how the cumulative PR changed, but must not turn an issue in unchanged code into a new finding.
 
 If the previous and current head commits are identical but the merge base changed, the PR was
@@ -391,17 +391,25 @@ This dispatched worker has no sub-agent or task tooling. Skip the skill's `Disco
 
 Follow the review skill for the range selected in Step 1. Consult existing PR comments and reviews as directed by the skill, but do not modify, hide, supersede, or otherwise remove prior comments or reviews.
 
-Explicitly assess whether the PR's added complexity is necessary and proportionate to its validated
-goal. Do not treat size, low-level code, or specialized algorithms as concerns by themselves when
-the problem inherently requires them and the design is well-factored, tested, and consistent with
+Explicitly assess whether the PR's added complexity is necessary and proportionate to a validated
+goal. A validated goal is supported by at least one concrete evidence source: an approved API,
+specification, or accepted design requirement; a reproducible bug or regression; representative
+benchmark or performance evidence; or customer, CI, production, or similarly concrete evidence.
+Do not treat size, low-level code, or specialized algorithms as concerns by themselves when the
+problem inherently requires them and the design is well-factored, tested, and consistent with
 established direction. Escalate only when a materially simpler approach meets the same requirements,
 the complexity is poorly encapsulated or duplicative, or the demonstrated benefit is too narrow to
 justify the maintenance burden. When the tradeoff remains unresolved, use `⚠️ Needs Human Review`
 and state the specific decision a maintainer should make.
 
-Use the review skill's exact top-level body structure. After `## Holistic Review`, immediately emit `**Motivation**:`, `**Approach**:`, and `**Summary**:` in that order. Do not add a `### Holistic Assessment` subheading, substitute a `Verdict` field, or rename those fields.
+Use the review skill's exact top-level body structure. After `## Holistic Review`, immediately emit
+`**Motivation**:`, `**Approach**:`, and `**Summary**:` in that order. Then emit `### Detailed
+Findings`. Do not restate the PR title, its description, or obvious code behavior unless the code
+has a meaningful semantic difference from the stated intent. Do not duplicate findings or
+assessments across the summary, detailed findings, or inline comments. Use only `✅`, `⚠️`, `💡`,
+and `❌` as review-content status emojis.
 
-For each actionable finding that is specific to one changed line or a contiguous changed range, invoke the `create_pull_request_review_comment` safe output before submitting the review. Use the dispatched `pull_request_number`, the changed file path, and the exact right-side line or range. Put the complete actionable explanation in that inline comment. Do not create inline comments for unchanged lines, broad/cross-cutting findings, non-actionable observations, or findings without a precise changed location; include those only in the visible `### Detailed Findings` section of the review body. Do not duplicate a finding's full explanation in both places: identify inline findings briefly in the body and link to the relevant file and line when possible.
+For each actionable finding that is specific to one changed line or a contiguous changed range, invoke the `create_pull_request_review_comment` safe output before submitting the review. Use the dispatched `pull_request_number`, the changed file path, and the exact right-side line or range. Put the complete actionable explanation in that inline comment. Do not create inline comments for unchanged lines, broad/cross-cutting findings, non-actionable observations, or findings without a precise changed location; include those only in the visible `### Detailed Findings` section of the review body. Do not duplicate a finding's full explanation in both places: identify inline findings briefly in the body and link to the relevant file and line when useful.
 
 Safe outputs are CLI-mounted by `tools.cli-proxy`. Invoke each safe output as one shell command whose executable is `safeoutputs`, passing exactly one JSON object through a single-quoted here-document:
 

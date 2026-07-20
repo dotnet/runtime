@@ -55,7 +55,7 @@ Based **only** on the code context gathered above (without the PR description or
 3. **Is this the right approach?** Would a simpler alternative be more consistent with the codebase? Could the goal be achieved with existing functionality? Are there correctness, performance, or safety concerns?
 4. **What problems do you see?** Identify bugs, edge cases, missing validation, thread-safety issues, performance regressions, API design problems, test gaps, and anything else that concerns you.
 
-Write down your independent assessment before proceeding. You must produce a holistic assessment (using the criteria from the applicable `.github/instructions/*.instructions.md` files for the diff) at this stage.
+Write down your independent assessment before proceeding. You must produce a holistic assessment (using the criteria from the applicable `.github/instructions/**/*.instructions.md` files for the diff) at this stage.
 
 ### Step 4: Incorporate PR Narrative and Reconcile
 
@@ -113,7 +113,7 @@ When the environment supports launching sub-agents with different models (e.g., 
 
 When presenting the final review (whether as a PR comment or as output to the user), use the following structure. This ensures consistency across reviews and makes the output easy to scan.
 
-> 📝 **AI-generated content disclosure:** When posting review content to GitHub (PR review comments, PR comments) under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app (e.g., `github-actions[bot]`, `copilot`) — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) at the bottom of the content indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
+> **AI-generated content disclosure:** When posting review content to GitHub (PR review comments, PR comments) under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app (e.g., `github-actions[bot]`, `copilot`) — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) at the bottom of the content indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
 
 ### Structure
 
@@ -124,13 +124,13 @@ When presenting the final review (whether as a PR comment or as output to the us
 
 **Approach**: <1-2 sentences on whether the fix/change takes the right approach>
 
-**Summary**: <✅ LGTM / ⚠️ Needs Human Review / ⚠️ Needs Changes / ❌ Reject>. <2-3 sentence summary of the overall verdict and key points. If "Needs Human Review," explicitly state which findings you are uncertain about and what a human reviewer should focus on.>
+**Summary**: <❌ Needs Changes / ⚠️ Needs Human Review / 💡 Suggestions / ✅ LGTM / ❌ Reject>. <2-3 sentence summary of the overall verdict and key points. If "Needs Human Review," explicitly state which findings are uncertain and what a human reviewer should focus on.>
 
 ---
 
 ### Detailed Findings
 
-#### ✅/⚠️/❌ <Category Name> — <Brief description>
+#### ✅/⚠️/💡/❌ <Category Name> — <Brief description>
 
 <Explanation with specifics. Reference code, line numbers, interleavings, etc.>
 
@@ -149,26 +149,39 @@ When presenting the final review (whether as a PR comment or as output to the us
 - **Detailed Findings** uses emoji-prefixed category headers:
   - ✅ for things that are correct / look good (use to confirm important aspects were verified)
   - ⚠️ for warnings or impactful suggestions (should fix, or follow-up)
-  - ❌ for errors (must fix before merge)
   - 💡 for minor suggestions or observations (nice-to-have)
+  - ❌ for errors (must fix before merge)
 - **Cross-cutting analysis** should be included when relevant: check whether related code (sibling types, callers, other platforms) is affected by the same issue or needs a similar fix.
 - **Test quality** should be assessed as its own finding when tests are part of the PR.
-- **Summary** gives a clear verdict: LGTM (no blocking issues — use only when confident), Needs Human Review (code may be correct but you have unresolved concerns or uncertainty that require human judgment), Needs Changes (with blocking issues listed), or Reject (explaining why this should be closed outright). **Never give a blanket LGTM when you are unsure.** When in doubt, use "Needs Human Review" and explain what a human should focus on.
+- **Summary** gives a clear verdict: `❌ Needs Changes`, `⚠️ Needs Human Review`,
+  `💡 Suggestions`, `✅ LGTM`, or `❌ Reject`. Use `✅ LGTM` only when confident and no
+  suggestions remain. When uncertain, use `⚠️ Needs Human Review` and explain what a human
+  should focus on.
 - Keep the review concise but thorough. Every claim should be backed by evidence from the code.
 
 ### Verdict Consistency Rules
 
 The summary verdict **must** be consistent with the findings in the body. Follow these rules:
 
-1. **The verdict must reflect your most severe finding.** If you have any ⚠️ findings, the verdict cannot be "LGTM." Use "Needs Human Review" or "Needs Changes" instead. Only use "LGTM" when all findings are ✅ or 💡 and you are confident the change is correct and complete.
+1. **The verdict must reflect your most severe finding.** If you have any `⚠️` or `❌`
+   findings, the verdict cannot be `✅ LGTM`. Use `⚠️ Needs Human Review`, `❌ Needs
+   Changes`, or `❌ Reject` instead. If the only findings are `💡`, use `💡 Suggestions`.
+   Only use `✅ LGTM` when all findings are ✅ and you are confident the change is correct and complete.
 
-2. **When uncertain, always escalate to human review.** If you are unsure whether a concern is valid, whether the approach is sufficient, or whether you have enough context to judge, the verdict must be "Needs Human Review" — not LGTM. Your job is to surface concerns for human judgment, not to give approval when uncertain. A false LGTM is far worse than an unnecessary escalation.
+2. **When uncertain, always escalate to human review.** If you are unsure whether a concern
+   is valid, whether the approach is sufficient, or whether you have enough context to
+   judge, the verdict must be `⚠️ Needs Human Review` — not `✅ LGTM`.
 
 3. **Separate code correctness from approach completeness.** A change can be correct code that is an incomplete approach. If you believe the code is right for what it does but the approach is insufficient (e.g., treats symptoms without investigating root cause, silently masks errors that should be diagnosed, fixes one instance but not others), the verdict must reflect the gap — do not let "the code itself looks fine" collapse into LGTM.
 
-4. **Classify each ⚠️ and ❌ finding as merge-blocking or advisory.** Before writing your summary, decide for each finding: "Would I be comfortable if this merged as-is?" If any answer is "no," the verdict must be "Needs Changes." If any answer is "I'm not sure," the verdict must be "Needs Human Review."
+4. **Classify each `⚠️` and `❌` finding as merge-blocking or advisory.** Before writing
+   the summary, decide for each finding whether it would be acceptable to merge as-is. If
+   any answer is no, the verdict must be `❌ Needs Changes`; if any answer is uncertain,
+   it must be `⚠️ Needs Human Review`.
 
-5. **Devil's advocate check before finalizing.** Re-read all your ⚠️ findings. For each one, ask: does this represent an unresolved concern about the approach, scope, or risk of masking deeper issues? If so, the verdict must reflect that tension. Do not default to optimism because the diff is small or the code is obviously correct at a syntactic level.
+5. **Devil's advocate check before finalizing.** Re-read every `⚠️` finding. If it
+   represents an unresolved concern about the approach, scope, or risk of masking deeper
+   issues, the verdict must reflect that tension.
 
 ---
 
@@ -183,7 +196,7 @@ review**, in addition to the process above.
 
 Load, based on the paths in the diff:
 
-- **`src/**` changed:** `.github/instructions/review-all-src.instructions.md` -- reviewer mindset, the Holistic PR Assessment criteria (Motivation, Evidence, Approach, Cost-Benefit, Scope, Risk, Codebase Fit), correctness philosophy, PR hygiene, consistency, and documentation. Use these criteria to write the Motivation, Approach, and Summary fields in your output.
+- **`src/**` changed:** `.github/instructions/review-all-src.instructions.md` -- reviewer mindset, the Holistic PR Assessment criteria (Motivation, Evidence, Approach, Cost-Benefit, Scope, Risk, Codebase Fit), correctness philosophy, PR hygiene, consistency, and documentation. Use these criteria to write the Motivation, Approach, and Summary fields in the output.
 - **`**/*.cs` changed:** `.github/instructions/review-csharp.instructions.md` -- C# error handling, thread safety, security, correctness, performance/allocation, API design, and style rules.
 - **Native files (`*.c` / `*.cpp` / `*.h` / `*.inc` / `*.S` / `*.asm`) changed:** `.github/instructions/review-native.instructions.md` -- C++ style, VM/JIT contracts, GC protection, platform defines, and interop/marshalling rules.
 - **Test files (`**/tests/**`, `src/tests/**`) changed:** `.github/instructions/review-all-tests.instructions.md` -- testing conventions and regression-test requirements.
