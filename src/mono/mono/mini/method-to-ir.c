@@ -7048,13 +7048,35 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	if (cfg->gsharedvt_min) {
-		if (mini_is_gsharedvt_variable_signature (sig))
-			GSHAREDVT_FAILURE (*cfg->cil_start);
-
-		for (int i = 0; i < header->num_locals; ++i) {
+		/*
+		 * Minimal gsharedvt (used for llvmonly, see mini_method_compile) only
+		 * supports methods whose signature and locals have no variable-length
+		 * (gsharedvt-variable) types; historically it bailed out with
+		 * GSHAREDVT_FAILURE otherwise, which skips the shared method and forces
+		 * per-instantiation concrete compilation. For value types that are only
+		 * reached through the shared/rgctx path (e.g. Nullable<T>.Box/Unbox for a
+		 * struct T, boxed through a non-generic interface) the concrete out-sig
+		 * wrapper is not AOT-generated, so boxing traps at runtime with a
+		 * "null function or function signature mismatch".
+		 *
+		 * The LLVM backend already implements the full variable calling
+		 * convention for llvmonly (all args by-ref, return via vret), keyed off
+		 * the signature in get_llvm_call_info / mono_llvm_create_vars
+		 * (LLVMArgGsharedvtVariable) - it never consults gsharedvt_min. So rather
+		 * than failing, promote this method to full gsharedvt by clearing
+		 * gsharedvt_min. This happens in the method preamble, before any body IR
+		 * is emitted, so every gsharedvt_min check below sees a consistent value.
+		 * Methods that don't depend on their variable-length arguments (the common
+		 * minimal-gsharedvt case, e.g. List<T>.get_Count) have non-variable
+		 * signatures/locals and are unaffected.
+		 */
+		gboolean needs_full = mini_is_gsharedvt_variable_signature (sig);
+		for (int i = 0; !needs_full && i < header->num_locals; ++i) {
 			if (mini_is_gsharedvt_variable_type (header->locals [i]))
-				GSHAREDVT_FAILURE (*cfg->cil_start);
+				needs_full = TRUE;
 		}
+		if (needs_full)
+			cfg->gsharedvt_min = FALSE;
 	}
 
 	/* we use a spare stack slot in SWITCH and NEWOBJ and others */
