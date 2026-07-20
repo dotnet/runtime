@@ -41,9 +41,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.Append(',');
             r2rAlreadyEmitted.Clear();
 
-            // "Must be absent" entries are fatal on targets that cannot generate code at runtime: a failing
-            // eager fixup disables all ReadyToRun code with no JIT fallback. Such targets omit them; the fixed
-            // instruction set is still honored for codegen and per-method fixup suppression.
             if (emitExplicitlyUnsupported)
             {
                 InstructionSet[] explicitlyUnsupportedInstructionSets = instructionSetSupport.ExplicitlyUnsupportedFlags.ToArray();
