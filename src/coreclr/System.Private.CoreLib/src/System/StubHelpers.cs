@@ -977,13 +977,13 @@ namespace System.StubHelpers
                 {
                     if (IsIn(dwFlags))
                     {
-                        StubHelpers.LayoutTypeConvertToUnmanaged(pManagedHome, (byte*)pNativeHome, ref _cleanupWorkList);
+                        StubHelpers.LayoutTypeConvertToUnmanaged(managed, (byte*)pNative, ref _cleanupWorkList);
                     }
                 }
                 catch
                 {
                     StubHelpers.DestroyCleanupList(ref _cleanupWorkList);
-                    Marshal.FreeCoTaskMem(pNativeHome);
+                    Marshal.FreeCoTaskMem(pNative);
                     throw;
                 }
 
