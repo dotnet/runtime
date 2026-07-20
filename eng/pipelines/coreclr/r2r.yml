@@ -1,3 +1,9 @@
 # Keep this file until the corresponding Azure DevOps pipeline is disabled or deleted.
 trigger: none
 pr: none
+
+# Define a minimal job so the YAML remains a valid pipeline definition.
+steps:
+- checkout: none
+- script: echo "Retired pipeline stub. Disable or delete the corresponding Azure DevOps pipeline definition."
+  displayName: Retired pipeline stub
