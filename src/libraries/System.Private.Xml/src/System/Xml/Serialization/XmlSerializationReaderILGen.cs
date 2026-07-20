@@ -25,6 +25,10 @@ namespace System.Xml.Serialization
         private readonly Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
         private int _nextIdNumber;
 
+        // Cached, lazily-initialized static field on the generated reader that holds the four XML
+        // whitespace characters used to split list values. See EmitXmlListSeparators.
+        private FieldBuilder? _xmlListWhitespaceField;
+
         internal Dictionary<string, EnumMapping> Enums => field ??= new Dictionary<string, EnumMapping>();
 
         private static readonly string[] s_checkTypeString = new string[] { "checkType" };
@@ -2027,6 +2031,51 @@ namespace System.Xml.Serialization
             ilg.WhileEnd();
         }
 
+        // Emits IL that evaluates the char[] separators passed to string.Split for list values and
+        // stores the result in a local, which is returned. For the default (non-legacy) behavior the
+        // four characters the XML specification defines as whitespace (#x20, #x9, #xA, #xD) are cached
+        // in a private static field on the generated reader, so the array is allocated at most once
+        // instead of on every deserialization (the previous ".ToCharArray()" emitted a fresh array per
+        // call). The lazy-init race is benign: the array is only ever read. For the legacy behavior the
+        // separator is always null (restoring String.Split's broader char.IsWhiteSpace() splitting), so
+        // this emits nothing and returns null; the caller loads null directly.
+        private LocalBuilder? EmitXmlListSeparators(bool legacyWhitespace)
+        {
+            if (legacyWhitespace)
+            {
+                return null;
+            }
+
+            _xmlListWhitespaceField ??= this.typeBuilder.DefineField(
+                "s_xmlListWhitespace",
+                typeof(char[]),
+                FieldAttributes.Private | FieldAttributes.Static);
+
+            LocalBuilder separators = ilg.DeclareOrGetLocal(typeof(char[]), "listSeparators");
+            ilg.LoadMember(_xmlListWhitespaceField);
+            ilg.Load(null);
+            ilg.If(Cmp.EqualTo);
+
+            ilg.NewArray(typeof(char), 4);
+            ilg.Stloc(separators);
+            ReadOnlySpan<char> xmlWhitespace = [' ', '\t', '\n', '\r'];
+            for (int i = 0; i < xmlWhitespace.Length; i++)
+            {
+                ilg.Ldloc(separators);
+                ilg.Ldc(i);
+                ilg.Ldc((int)xmlWhitespace[i]);
+                ilg.Stelem(typeof(char));
+            }
+            ilg.Ldloc(separators);
+            ilg.StoreMember(_xmlListWhitespaceField);
+
+            ilg.EndIf();
+
+            ilg.LoadMember(_xmlListWhitespaceField);
+            ilg.Stloc(separators);
+            return separators;
+        }
+
         private void WriteAttribute(Member member)
         {
             AttributeAccessor attribute = member.Mapping.Attribute!;
@@ -2076,11 +2125,6 @@ namespace System.Xml.Serialization
                         CodeGenerator.InstanceBindingFlags,
                         new Type[] { typeof(char[]) }
                         )!;
-                    MethodInfo String_ToCharArray = typeof(string).GetMethod(
-                        "ToCharArray",
-                        CodeGenerator.InstanceBindingFlags,
-                        Type.EmptyTypes
-                        )!;
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                         "get_Reader",
                         CodeGenerator.InstanceBindingFlags,
@@ -2095,15 +2139,15 @@ namespace System.Xml.Serialization
                     ilg.Call(XmlSerializationReader_get_Reader);
                     ilg.Call(XmlReader_get_Value);
                     ilg.Stloc(locListValues);
+                    LocalBuilder? locSeparators = EmitXmlListSeparators(legacyWhitespace);
                     ilg.Ldloc(locListValues);
-                    if (legacyWhitespace)
+                    if (locSeparators is null)
                     {
                         ilg.Load(null);
                     }
                     else
                     {
-                        ilg.Ldstr(" \t\n\r");
-                        ilg.Call(String_ToCharArray);
+                        ilg.Ldloc(locSeparators);
                     }
                     ilg.Call(String_Split);
                     ilg.Stloc(locVals);
@@ -2386,11 +2430,6 @@ namespace System.Xml.Serialization
                         CodeGenerator.InstanceBindingFlags,
                         new Type[] { typeof(char[]), typeof(StringSplitOptions) }
                         )!;
-                    MethodInfo String_ToCharArray = typeof(string).GetMethod(
-                        "ToCharArray",
-                        CodeGenerator.InstanceBindingFlags,
-                        Type.EmptyTypes
-                        )!;
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                         "get_Reader",
                         CodeGenerator.InstanceBindingFlags,
@@ -2405,15 +2444,15 @@ namespace System.Xml.Serialization
                     ilg.Call(XmlSerializationReader_get_Reader);
                     ilg.Call(XmlReader_ReadContentAsString);
                     ilg.Stloc(locListValues);
+                    LocalBuilder? locSeparators = EmitXmlListSeparators(legacyWhitespace);
                     ilg.Ldloc(locListValues);
-                    if (legacyWhitespace)
+                    if (locSeparators is null)
                     {
                         ilg.Load(null);
                     }
                     else
                     {
-                        ilg.Ldstr(" \t\n\r");
-                        ilg.Call(String_ToCharArray);
+                        ilg.Ldloc(locSeparators);
                     }
                     ilg.Ldc((int)StringSplitOptions.RemoveEmptyEntries);
                     ilg.Call(String_Split);
