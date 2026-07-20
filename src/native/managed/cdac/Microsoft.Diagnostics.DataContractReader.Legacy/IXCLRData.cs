@@ -961,6 +961,13 @@ public enum CLRDataExceptionStateFlag : uint
     CLRDATA_EXCEPTION_PARTIAL = 0x2,
 }
 
+[Flags]
+public enum CLRDataExceptionSameFlag : uint
+{
+    CLRDATA_EXSAME_SECOND_CHANCE = 0,
+    CLRDATA_EXSAME_FIRST_CHANCE = 0x1,
+}
+
 [GeneratedComInterface]
 [Guid("75DA9E4C-BD33-43C8-8F5C-96E8A5241F57")]
 public unsafe partial interface IXCLRDataExceptionState

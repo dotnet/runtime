@@ -249,7 +249,7 @@ namespace System.Text.Json.Serialization.Tests
             string wrappedJson;
             equalityComparer ??= expectedValue is IEquatable<TValue>
                 ? EqualityComparer<TValue>.Default
-                : new JsonEqualityComparer<TValue>();
+                : new JsonEqualityComparer<TValue>(Serializer.GetTypeInfo<TValue>(options));
 
             if (contexts.HasFlag(SerializedValueContext.RootValue))
             {
@@ -366,10 +366,39 @@ namespace System.Text.Json.Serialization.Tests
             public T Property { get; set; }
         }
 
+        // Creates a trim/AOT-safe equality comparer that compares values by serializing them
+        // using the resolved (polymorphism-aware) JsonTypeInfo and comparing the resulting JSON.
+        // Values of differing runtime types are never considered equal, preserving the behavior of
+        // the reflection-based structural comparer this replaced (so that, for example, a nearest-
+        // ancestor fallback regression cannot slip through when a derived type happens to serialize
+        // identically under its base contract).
+        protected IEqualityComparer<T> CreateJsonEqualityComparer<T>(JsonSerializerOptions? options = null)
+            => new JsonEqualityComparer<T>(Serializer.GetTypeInfo<T>(options), compareRuntimeType: true);
+
         private class JsonEqualityComparer<TValue> : IEqualityComparer<TValue>
         {
-            public bool Equals(TValue? x, TValue? y) => JsonSerializer.Serialize(x) == JsonSerializer.Serialize(y);
-            public int GetHashCode([DisallowNull] TValue obj) => JsonSerializer.Serialize(obj).GetHashCode();
+            private readonly JsonTypeInfo<TValue> _jsonTypeInfo;
+            private readonly bool _compareRuntimeType;
+
+            public JsonEqualityComparer(JsonTypeInfo<TValue> jsonTypeInfo, bool compareRuntimeType = false)
+            {
+                _jsonTypeInfo = jsonTypeInfo;
+                _compareRuntimeType = compareRuntimeType;
+            }
+
+            public bool Equals(TValue? x, TValue? y)
+            {
+                // Object.GetType() is trim/AOT-safe and lets us reject differing runtime types before
+                // falling back to structural (serialized JSON) comparison.
+                if (_compareRuntimeType && x is not null && y is not null && x.GetType() != y.GetType())
+                {
+                    return false;
+                }
+
+                return JsonSerializer.Serialize(x, _jsonTypeInfo) == JsonSerializer.Serialize(y, _jsonTypeInfo);
+            }
+
+            public int GetHashCode([DisallowNull] TValue obj) => JsonSerializer.Serialize(obj, _jsonTypeInfo).GetHashCode();
         }
 
         private class ListAssertionEqualityComparer<TValue> : IEqualityComparer<IList<TValue>>

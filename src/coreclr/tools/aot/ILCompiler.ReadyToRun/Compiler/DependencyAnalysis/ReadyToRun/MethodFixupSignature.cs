@@ -130,10 +130,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder(factory, relocsOnly);
             dataBuilder.AddSymbol(this);
 
-            // Optimize some of the fixups into a more compact form
+            // Optimize some of the fixups into a more compact form.
+            // The compact token forms cannot carry signature flags, so instantiating and unboxing
+            // stubs must use the full method signature.
             ReadyToRunFixupKind fixupKind = _fixupKind;
             bool optimized = false;
-            if (_method.Method.IsPrimaryMethodDesc() && !IsInstantiatingStub
+            if (_method.Method.IsPrimaryMethodDesc() && !IsInstantiatingStub && !_method.Unboxing
                 && _method.ConstrainedType == null && fixupKind == ReadyToRunFixupKind.MethodEntry)
             {
                 if (!_method.Method.HasInstantiation && !_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)

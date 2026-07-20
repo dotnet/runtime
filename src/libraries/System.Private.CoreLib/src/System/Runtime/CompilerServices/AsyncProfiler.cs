@@ -153,16 +153,26 @@ namespace System.Runtime.CompilerServices
 
         internal ref struct Info
         {
+            public ulong DispatcherId;
             public object? Context;
             public object? CurrentContinuation;
+            public IAsyncStateMachineBox? LastContinuation;
             public ref nint ContinuationTable;
             public uint ContinuationIndex;
+            public bool CurrentContinuationCompleted;
+            public bool CurrentContinuationResumes;
+            public bool ReachedLastContinuation;
         }
 
         internal static void InitInfo(ref Info info)
         {
+            info.DispatcherId = 0;
             info.Context = null;
             info.CurrentContinuation = null;
+            info.LastContinuation = null;
+            info.CurrentContinuationCompleted = false;
+            info.CurrentContinuationResumes = false;
+            info.ReachedLastContinuation = false;
             ContinuationWrapper.InitInfo(ref info);
         }
 
@@ -892,37 +902,26 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class DispatcherIds
         {
-            public static ulong GetDispatcherId(Task dispatcher) => (ulong)dispatcher.Id;
+            public static ulong GetDispatcherId(IAsyncStateMachineDispatcher dispatcher) =>
+                dispatcher.DispatcherId;
 
-            public static ulong GetDispatcherId(ref AsyncStateMachineDispatcherInfo info)
-            {
-                if (info.Dispatcher != null)
-                {
-                    return GetDispatcherId(info.Dispatcher);
-                }
-                return 0;
-            }
+            public static ulong GetDispatcherId(ref AsyncStateMachineDispatcherInfo info) =>
+                info.AsyncProfilerInfo.DispatcherId;
 
 #if !RUNTIME_ASYNC_SUPPORTED
             public static unsafe ulong CaptureParentDispatcherId()
             {
                 AsyncStateMachineDispatcherInfo* info = AsyncStateMachineDispatcherInfo.t_current;
-                if (info == null)
-                {
-                    return 0;
-                }
-
-                AsyncStateMachineDispatcher? parent = info->Dispatcher;
-                return parent is not null ? (ulong)parent.Id : 0;
+                return info != null ? info->AsyncProfilerInfo.DispatcherId : 0;
             }
 #endif
         }
 
         internal static partial class CreateAsyncContext
         {
-            public static void Create(AsyncStateMachineDispatcher dispatcher, ref Info info, ulong parentDispatcherId, ulong dispatcherId)
+            public static void Create(ref AsyncStateMachineDispatcherInfo info, IAsyncStateMachineDispatcher dispatcher)
             {
-                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
 
                 SyncPoint.Check(context);
 
@@ -932,11 +931,14 @@ namespace System.Runtime.CompilerServices
                     long currentTimestamp = Stopwatch.GetTimestamp();
                     if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(activeEventKeywords))
                     {
-                        ResumeAsyncContext.Append(dispatcher, context, currentTimestamp);
+                        ResumeAsyncContext.Append(ref info, context, currentTimestamp);
                     }
 
                     if (IsEnabled.CreateStateMachineAsyncContextEvent(activeEventKeywords))
                     {
+                        ulong parentDispatcherId = AsyncProfiler.DispatcherIds.CaptureParentDispatcherId();
+                        ulong dispatcherId = AsyncProfiler.DispatcherIds.GetDispatcherId(dispatcher);
+
                         EmitEvent(context, currentTimestamp, parentDispatcherId, dispatcherId, AsyncEventID.CreateStateMachineAsyncContext);
                     }
                 }
@@ -944,7 +946,7 @@ namespace System.Runtime.CompilerServices
                 AsyncThreadContext.Release(context);
             }
 
-            public static void Create(ulong parentDispatcherId, ulong dispatcherId)
+            public static void Create(IAsyncStateMachineDispatcher dispatcher)
             {
                 Info info = default;
                 AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
@@ -953,7 +955,25 @@ namespace System.Runtime.CompilerServices
 
                 if (IsEnabled.CreateStateMachineAsyncContextEvent(context.ActiveEventKeywords))
                 {
+                    ulong parentDispatcherId = AsyncProfiler.DispatcherIds.CaptureParentDispatcherId();
+                    ulong dispatcherId = AsyncProfiler.DispatcherIds.GetDispatcherId(dispatcher);
+
                     EmitEvent(context, Stopwatch.GetTimestamp(), parentDispatcherId, dispatcherId, AsyncEventID.CreateStateMachineAsyncContext);
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+
+            public static void Append(ref AsyncStateMachineDispatcherInfo info)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
+
+                SyncPoint.Check(context);
+
+                EventKeywords activeEventKeywords = context.ActiveEventKeywords;
+                if (IsEnabled.AnyAsyncEvents(activeEventKeywords) && IsEnabled.ResumeStateMachineAsyncCallstackEvent(activeEventKeywords))
+                {
+                    ResumeAsyncContext.Append(ref info, context, Stopwatch.GetTimestamp());
                 }
 
                 AsyncThreadContext.Release(context);
@@ -1011,21 +1031,21 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            public static void Append(AsyncStateMachineDispatcher dispatcher, AsyncThreadContext context, long currentTimestamp)
+            public static void Append(ref AsyncStateMachineDispatcherInfo info, AsyncThreadContext context, long currentTimestamp)
             {
-                if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(context.ActiveEventKeywords) && dispatcher.ContinuationChainChanged)
+                if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(context.ActiveEventKeywords) && info.ContinuationChainChanged)
                 {
-                    AsyncCallstack.EmitEvent(dispatcher, context, dispatcher.LastContinuation?.ContinuationForDiagnostics, currentTimestamp, AsyncEventID.AppendStateMachineAsyncCallstack, DispatcherIds.GetDispatcherId(dispatcher));
+                    AsyncCallstack.EmitEvent(ref info, context, info.NextContinuationForDiagnostics, currentTimestamp, AsyncEventID.AppendStateMachineAsyncCallstack, DispatcherIds.GetDispatcherId(ref info));
                 }
             }
 
-            public static void Append(AsyncStateMachineDispatcher dispatcher, IAsyncStateMachineBox enteringBox, AsyncThreadContext context, long currentTimestamp)
+            public static void Append(ref AsyncStateMachineDispatcherInfo info, IAsyncStateMachineBox enteringBox, AsyncThreadContext context, long currentTimestamp)
             {
-                if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(context.ActiveEventKeywords) && dispatcher.ReachedLastContinuation)
+                if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(context.ActiveEventKeywords) && info.AsyncProfilerInfo.ReachedLastContinuation)
                 {
-                    if (!ReferenceEquals(enteringBox, dispatcher.LastContinuation))
+                    if (!ReferenceEquals(enteringBox, info.AsyncProfilerInfo.LastContinuation))
                     {
-                        AsyncCallstack.EmitEvent(dispatcher, context, enteringBox, currentTimestamp, AsyncEventID.AppendStateMachineAsyncCallstack, DispatcherIds.GetDispatcherId(dispatcher));
+                        AsyncCallstack.EmitEvent(ref info, context, enteringBox, currentTimestamp, AsyncEventID.AppendStateMachineAsyncCallstack, DispatcherIds.GetDispatcherId(ref info));
                     }
                 }
             }
@@ -1050,25 +1070,15 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class SuspendAsyncContext
         {
-            public static void Suspend(AsyncStateMachineDispatcher dispatcher, ref Info info)
+            public static void Suspend(ref Info info)
             {
                 AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
 
                 SyncPoint.Check(context);
 
-                EventKeywords activeEventKeywords = context.ActiveEventKeywords;
-                if (IsEnabled.AnyAsyncEvents(activeEventKeywords))
+                if (IsEnabled.SuspendStateMachineAsyncContextEvent(context.ActiveEventKeywords))
                 {
-                    long currentTimestamp = Stopwatch.GetTimestamp();
-                    if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(activeEventKeywords))
-                    {
-                        ResumeAsyncContext.Append(dispatcher, context, currentTimestamp);
-                    }
-
-                    if (IsEnabled.SuspendStateMachineAsyncContextEvent(activeEventKeywords))
-                    {
-                        EmitEvent(context, currentTimestamp, AsyncEventID.SuspendStateMachineAsyncContext);
-                    }
+                    EmitEvent(context, Stopwatch.GetTimestamp(), AsyncEventID.SuspendStateMachineAsyncContext);
                 }
 
                 AsyncThreadContext.Release(context);
@@ -1083,9 +1093,9 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class CompleteAsyncContext
         {
-            public static void Complete(AsyncStateMachineDispatcher dispatcher, ref Info info)
+            public static void Complete(ref AsyncStateMachineDispatcherInfo info)
             {
-                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
 
                 SyncPoint.Check(context);
 
@@ -1095,7 +1105,7 @@ namespace System.Runtime.CompilerServices
                     long currentTimestamp = Stopwatch.GetTimestamp();
                     if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(activeEventKeywords))
                     {
-                        ResumeAsyncContext.Append(dispatcher, context, currentTimestamp);
+                        ResumeAsyncContext.Append(ref info, context, currentTimestamp);
                     }
 
                     if (IsEnabled.CompleteStateMachineAsyncContextEvent(activeEventKeywords))
@@ -1146,9 +1156,9 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class ResumeAsyncMethod
         {
-            public static void Resume(AsyncStateMachineDispatcher dispatcher, IAsyncStateMachineBox box, ref Info info)
+            public static void Resume(ref AsyncStateMachineDispatcherInfo info, IAsyncStateMachineBox box)
             {
-                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
 
                 EventKeywords activeEventKeywords = context.ActiveEventKeywords;
                 if (IsEnabled.AnyAsyncEvents(activeEventKeywords))
@@ -1156,7 +1166,7 @@ namespace System.Runtime.CompilerServices
                     long currentTimestamp = Stopwatch.GetTimestamp();
                     if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(activeEventKeywords))
                     {
-                        ResumeAsyncContext.Append(dispatcher, box, context, currentTimestamp);
+                        ResumeAsyncContext.Append(ref info, box, context, currentTimestamp);
                     }
 
                     if (IsEnabled.ResumeStateMachineAsyncMethodEvent(activeEventKeywords))
@@ -1213,7 +1223,7 @@ namespace System.Runtime.CompilerServices
 #if !RUNTIME_ASYNC_SUPPORTED
             public static void InitInfo(ref Info info)
             {
-                info.ContinuationTable = 0;
+                info.ContinuationTable = ref Unsafe.NullRef<nint>();
                 info.ContinuationIndex = 0;
             }
 #endif
@@ -1607,21 +1617,11 @@ namespace System.Runtime.CompilerServices
 
                 EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, AsyncEventID.ResumeStateMachineAsyncCallstack, 0, dispatcherId, ref state);
 
-                IAsyncStateMachineBox? last = IsTruncated(in state) ? null : ResolveAsyncStateMachineBox(state.LastContinuation);
-                if (last != null)
-                {
-                    Debug.Assert(last is Task);
-                    info.Dispatcher.LastContinuation = Unsafe.As<Task>(last);
-                }
-                else
-                {
-                    info.Dispatcher.LastContinuation = null;
-                }
-
-                info.Dispatcher.ReachedLastContinuation = false;
+                info.AsyncProfilerInfo.LastContinuation = IsTruncated(in state) ? null : ResolveAsyncStateMachineBox(state.LastContinuation);
+                info.AsyncProfilerInfo.ReachedLastContinuation = false;
             }
 
-            public static void EmitEvent(AsyncStateMachineDispatcher dispatcher, AsyncThreadContext context, object? continuation, long currentTimestamp, AsyncEventID eventID, ulong dispatcherId)
+            public static void EmitEvent(ref AsyncStateMachineDispatcherInfo info, AsyncThreadContext context, object? continuation, long currentTimestamp, AsyncEventID eventID, ulong dispatcherId)
             {
                 Debug.Assert(eventID == AsyncEventID.ResumeStateMachineAsyncCallstack || eventID == AsyncEventID.AppendStateMachineAsyncCallstack);
 
@@ -1635,23 +1635,14 @@ namespace System.Runtime.CompilerServices
 
                         EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, 0, dispatcherId, ref state);
 
-                        box = IsTruncated(in state) ? null : ResolveAsyncStateMachineBox(state.LastContinuation);
-                        if (box != null)
-                        {
-                            Debug.Assert(box is Task);
-                            dispatcher.LastContinuation = Unsafe.As<Task>(box);
-                        }
-                        else
-                        {
-                            dispatcher.LastContinuation = null;
-                        }
+                        info.AsyncProfilerInfo.LastContinuation = IsTruncated(in state) ? null : ResolveAsyncStateMachineBox(state.LastContinuation);
                     }
                     else
                     {
-                        dispatcher.LastContinuation = null;
+                        info.AsyncProfilerInfo.LastContinuation = null;
                     }
 
-                    dispatcher.ReachedLastContinuation = false;
+                    info.AsyncProfilerInfo.ReachedLastContinuation = false;
                 }
             }
 
@@ -1682,7 +1673,7 @@ namespace System.Runtime.CompilerServices
 
                 while (state.Count < maxAsyncCallstackFrames && state.Continuation != null)
                 {
-                    if (state.Continuation is AsyncStateMachineDispatcher)
+                    if (state.Continuation is IAsyncStateMachineDispatcher { IsLeaf: true })
                     {
                         state.Continuation = null;
                         break;

@@ -108,6 +108,9 @@ namespace System.IO
             => handle.GetThreadPoolValueTaskSource().QueueReadScatter(buffers, fileOffset, cancellationToken);
 
         internal static unsafe void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
+            => WriteAtOffset(handle, buffer, ref fileOffset);
+
+        internal static unsafe void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, ref long fileOffset)
         {
             while (!buffer.IsEmpty)
             {
@@ -138,6 +141,11 @@ namespace System.IO
                     }
 
                     FileStreamHelpers.CheckFileCall(bytesWritten, handle.Path);
+
+                    // Update fileOffset after each successful write so that if a subsequent write fails,
+                    // the caller can observe how many bytes were actually written.
+                    fileOffset += bytesWritten;
+
                     if (bytesWritten == buffer.Length)
                     {
                         break;
@@ -146,7 +154,6 @@ namespace System.IO
                     // The write completed successfully but for fewer bytes than requested.
                     // We need to try again for the remainder.
                     buffer = buffer.Slice(bytesWritten);
-                    fileOffset += bytesWritten;
                 }
             }
         }

@@ -47,7 +47,7 @@ public class InterpPgoTests : WasmTemplateTestsBase
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(_projectDir);
         await using var runner = new BrowserRunner(_testOutput);
-        var url = await runner.StartServerAndGetUrlAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{_projectDir}\" --forward-console");
+        var url = await runner.StartServerAndGetUrlAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{_projectDir}\"");
         url = $"{url}?test=InterpPgoTest&iterationCount={iterationCount}";
 
         _testOutput.WriteLine($"/// Spawning browser at URL {url}");
