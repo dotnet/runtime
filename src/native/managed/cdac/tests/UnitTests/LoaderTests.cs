@@ -507,6 +507,7 @@ public unsafe class LoaderTests
         var peAssemblyLayout = helpers.LayoutFields([
             new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
             new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
         ]);
         var peImageLayout = helpers.LayoutFields([
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
@@ -725,6 +726,7 @@ public unsafe class LoaderTests
         var peAssemblyLayout = helpers.LayoutFields([
             new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
             new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
         ]);
         var peImageLayout = helpers.LayoutFields([
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
@@ -1077,6 +1079,7 @@ public unsafe class LoaderTests
         var peAssemblyLayout = helpers.LayoutFields([
             new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
             new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
         ]);
         var peImageLayout = helpers.LayoutFields([
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
