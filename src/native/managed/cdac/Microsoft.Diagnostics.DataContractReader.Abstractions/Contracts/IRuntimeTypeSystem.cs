@@ -267,7 +267,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsPointer(ITypeHandle typeHandle) => throw new NotImplementedException();
     bool IsTypeDesc(ITypeHandle typeHandle) => throw new NotImplementedException();
     TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef) => throw new NotImplementedException();
-    // Returns null if the ITypeHandle is not a class/struct/generic variable
+    // Returns ITypeHandle.Null if the handle is not a class, struct, or generic variable.
     #endregion ITypeHandle inspection APIs
 
     #region MethodDesc inspection APIs
