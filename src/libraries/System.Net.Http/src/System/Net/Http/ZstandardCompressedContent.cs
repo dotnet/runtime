@@ -23,7 +23,7 @@ namespace System.Net.Http
         // Some compression levels (notably CompressionLevel.SmallestSize) would otherwise select a larger
         // window, producing payloads that a conformant server would reject. See RFC 9659, Section 3.
         private const int RfcMaxWindowLog2 = 23;
-        private static readonly ZstandardCompressionOptions s_SmallestSizeRfcOptions = new ZstandardCompressionOptions
+        private static readonly ZstandardCompressionOptions s_smallestSizeRfcOptions = new ZstandardCompressionOptions
         {
             Quality = ZstandardCompressionOptions.MaxQuality,
             WindowLog2 = RfcMaxWindowLog2
@@ -47,7 +47,7 @@ namespace System.Net.Http
             if (compressionLevel == CompressionLevel.SmallestSize)
             {
                 // use RFC-compliant options for SmallestSize to avoid producing frames that a conformant server would reject
-                _compressionOptions = s_SmallestSizeRfcOptions;
+                _compressionOptions = s_smallestSizeRfcOptions;
             }
             else
             {
