@@ -67,7 +67,7 @@ namespace trace
     inline bool enable() { return trace_enable(); }
     inline bool is_enabled() { return trace_is_enabled(); }
 
-    inline void verbose(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2)
+    inline void MINIPAL_ATTR_FORMAT_PRINTF(1, 2) verbose(const pal::char_t* format, ...)
     {
         va_list args;
         va_start(args, format);
@@ -75,7 +75,7 @@ namespace trace
         va_end(args);
     }
 
-    inline void info(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2)
+    inline void MINIPAL_ATTR_FORMAT_PRINTF(1, 2) info(const pal::char_t* format, ...)
     {
         va_list args;
         va_start(args, format);
@@ -83,7 +83,7 @@ namespace trace
         va_end(args);
     }
 
-    inline void warning(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2)
+    inline void MINIPAL_ATTR_FORMAT_PRINTF(1, 2) warning(const pal::char_t* format, ...)
     {
         va_list args;
         va_start(args, format);
@@ -91,7 +91,7 @@ namespace trace
         va_end(args);
     }
 
-    inline void error(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2)
+    inline void MINIPAL_ATTR_FORMAT_PRINTF(1, 2) error(const pal::char_t* format, ...)
     {
         va_list args;
         va_start(args, format);
@@ -99,7 +99,7 @@ namespace trace
         va_end(args);
     }
 
-    inline void println(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2)
+    inline void MINIPAL_ATTR_FORMAT_PRINTF(1, 2) println(const pal::char_t* format, ...)
     {
         va_list args;
         va_start(args, format);
