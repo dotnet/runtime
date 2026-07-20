@@ -503,6 +503,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             ConsumeTemporaryRegForOperand(node->gtGetOp1() DEBUGARG("ckfinite finiteness check"));
             break;
 
+        case GT_HWINTRINSIC:
+            CollectReferencesForHardwareIntrinsic(node->AsHWIntrinsic());
+            break;
+
         default:
             assert(!node->OperIsLocalStore());
             break;
@@ -658,6 +662,14 @@ void WasmRegAlloc::CollectReferencesForIndir(GenTreeIndir* node)
 {
     GenTree* const addr = node->Addr();
     ConsumeTemporaryRegForOperand(addr DEBUGARG("indirection address"));
+
+    if (node->OperIs(GT_STOREIND) && node->TypeIs(TYP_SIMD12))
+    {
+        // The SIMD12 store stashes the v128 value so it can re-push it for the trailing lane store.
+        regNumber internalReg = RequestInternalRegister(node, TYP_SIMD16);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -693,6 +705,50 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
         lclVar->ChangeOper(GT_PHYSREG);
         lclVar->AsPhysReg()->gtSrcReg = m_perFuncletData[m_currentFunclet]->m_spReg;
         CollectReference(lclVar);
+    }
+}
+
+// ------------------------------------------------------------------------
+// CollectReferencesForHardwareIntrinsic: Collect virtual register references for a hardware intrinsic.
+//
+// Arguments:
+//    node - The GT_HWINTRINSIC node
+//
+// Notes:
+//   This is a no-op unless a hw intrinsic needs a jump table fallback, in which case we have to consume
+//    temporary registers for its operands.
+void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* node)
+{
+    // A constant, in-range mask Swizzle is lowered to an immediate i8x16.shuffle, which reuses the
+    // source operand as both shuffle inputs. Lowering marked the source multiply-used (and contained
+    // the mask), so release its temporary register here.
+    if ((node->GetHWIntrinsicId() == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
+    {
+        ConsumeTemporaryRegForOperand(node->Op(1) DEBUGARG("i8x16.shuffle source reuse"));
+        return;
+    }
+
+    // Only intrinsics with an immediate operand can need the jump-table fallback.
+    if (!HWIntrinsicInfo::HasImmediateOperand(node->GetHWIntrinsicId()))
+    {
+        return;
+    }
+
+    GenTree* immOp = node->GetImmOp();
+
+    // Only intrinsics that have a non-constant immediate need a jump-table fallback, and mark operands
+    // MultiplyUsed during Lowering (see Lowering::LowerHWIntrinsic in lowerwasm.cpp).
+    if (immOp->IsCnsIntOrI())
+    {
+        return;
+    }
+
+    // All operands are marked multiply used, so we consume a temporary register for each operand
+    // in reverse (wasm stack) order.
+    int operandCount = static_cast<int>(node->GetOperandCount());
+    for (int i = operandCount; i >= 1; i--)
+    {
+        ConsumeTemporaryRegForOperand(node->Op(i) DEBUGARG("hardware intrinsic fallback"));
     }
 }
 
@@ -751,6 +807,16 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 
     LIR::ReadOnlyRange storeRange(store, store);
     m_compiler->GetLowering()->LowerRange(m_currentBlock, storeRange);
+
+    if (store->OperIs(GT_STOREIND) && store->TypeIs(TYP_SIMD12))
+    {
+        // genStoreIndTypeSimd12 tees the value into a v128 temporary to split the store into an 8-byte and a
+        // 4-byte lane store. The main collection walk does not revisit this freshly-introduced node, so request
+        // that internal register here. The re-materializable LCL_ADDR address needs no temporary.
+        regNumber internalReg = RequestInternalRegister(store, TYP_SIMD16);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 
     // FIXME-WASM: Should we be doing this here?
     // CollectReferencesForNode(store);

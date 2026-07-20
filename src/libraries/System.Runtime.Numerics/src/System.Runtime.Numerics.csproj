@@ -5,6 +5,9 @@
     <RootNamespace>System.Numerics</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <!-- Mono routes ulong -> float through double, which double rounds; the BigInteger -> float
+         conversion excludes its correctly-rounded fast path there. -->
+    <DefineConstants Condition="'$(RuntimeFlavor)' == 'Mono'">$(DefineConstants);MONO</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +27,7 @@
     <Compile Include="System\Number.Polyfill.cs" />
     <Compile Include="System\Numerics\NumericsHelpers.cs" />
     <Compile Include="System\Numerics\Complex.cs" />
+    <Compile Include="System\Numerics\Complex.Generic.cs" />
     <Compile Include="Properties\InternalsVisibleTo.cs" />
   </ItemGroup>
 
