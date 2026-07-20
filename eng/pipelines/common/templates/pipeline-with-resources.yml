@@ -123,6 +123,11 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
+      freebsd_arm64:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-freebsd-14-arm64@sha256:01ac33cd4bbed190503254d8d013da90fc29494273e562e38b897dd10c5d5739
+        env:
+          ROOTFS_DIR: /crossrootfs/arm64
+
       openbsd_x64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-openbsd-amd64@sha256:496173363516799f0fb86ae2a03dffaa46bb07a40764997d7fef591cc4fd21ba
         env:
