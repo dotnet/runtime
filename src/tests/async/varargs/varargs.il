@@ -47,8 +47,8 @@
     // Ordinary Task-returning method that uses __arglist. It sums the leading
     // argument together with all the vararg int32 arguments and returns the
     // result wrapped in an already-completed Task<int32>.
-    .method public hidebysig static class [System.Runtime]System.Threading.Tasks.Task`1<int32>
-            OrdinaryTaskVararg(int32 first, ...) cil managed noinlining
+    .method public hidebysig static vararg class [System.Runtime]System.Threading.Tasks.Task`1<int32>
+            OrdinaryTaskVararg(int32 first) cil managed noinlining
     {
         .maxstack 3
         .locals init (
@@ -87,8 +87,8 @@
     }
 
     // Ordinary ValueTask<int32>-returning method that uses __arglist.
-    .method public hidebysig static valuetype [System.Runtime]System.Threading.Tasks.ValueTask`1<int32>
-            OrdinaryValueTaskVararg(int32 first, ...) cil managed noinlining
+    .method public hidebysig static vararg valuetype [System.Runtime]System.Threading.Tasks.ValueTask`1<int32>
+            OrdinaryValueTaskVararg(int32 first) cil managed noinlining
     {
         .maxstack 3
         .locals init (
@@ -370,8 +370,8 @@
 .class public auto ansi abstract sealed beforefieldinit AsyncTaskVarargs
        extends [System.Runtime]System.Object
 {
-    .method public hidebysig static class [System.Runtime]System.Threading.Tasks.Task`1<int32>
-            AsyncTaskVararg(int32 first, ...) cil managed async
+    .method public hidebysig static vararg class [System.Runtime]System.Threading.Tasks.Task`1<int32>
+            AsyncTaskVararg(int32 first) cil managed async
     {
         .maxstack 8
         .locals init (
@@ -395,8 +395,8 @@
 .class public auto ansi abstract sealed beforefieldinit AsyncValueTaskVarargs
        extends [System.Runtime]System.Object
 {
-    .method public hidebysig static valuetype [System.Runtime]System.Threading.Tasks.ValueTask`1<int32>
-            AsyncValueTaskVararg(int32 first, ...) cil managed async
+    .method public hidebysig static vararg valuetype [System.Runtime]System.Threading.Tasks.ValueTask`1<int32>
+            AsyncValueTaskVararg(int32 first) cil managed async
     {
         .maxstack 8
         .locals init (
