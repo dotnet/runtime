@@ -38,8 +38,6 @@ namespace System.Numerics
         public static readonly Complex NaN = new(double.NaN, double.NaN);
         public static readonly Complex Infinity = new(double.PositiveInfinity, double.PositiveInfinity);
 
-        private const double InverseOfLog10 = 0.43429448190325; // 1 / Log(10)
-
         // Do not rename, these fields are needed for binary serialization
         private readonly double m_real; // Do not rename (binary serialization)
         private readonly double m_imaginary; // Do not rename (binary serialization)
@@ -254,19 +252,14 @@ namespace System.Numerics
 
         public static Complex Sin(Complex value)
         {
-            (double sin, double cos) = Math.SinCos(value.m_real);
-            return new Complex(sin * Math.Cosh(value.m_imaginary), cos * Math.Sinh(value.m_imaginary));
-            // There is a known limitation with this algorithm: inputs that cause sinh and cosh to overflow, but for
-            // which sin or cos are small enough that sin * cosh or cos * sinh are still representable, nonetheless
-            // produce overflow. For example, Sin((0.01, 711.0)) should produce (~3.0E306, PositiveInfinity), but
-            // instead produces (PositiveInfinity, PositiveInfinity).
+            Complex<double> result = Complex<double>.Sin(new Complex<double>(value.m_real, value.m_imaginary));
+            return new Complex(result.Real, result.Imaginary);
         }
 
         public static Complex Sinh(Complex value)
         {
-            // Use sinh(z) = -i sin(iz) to compute via sin(z).
-            Complex sin = Sin(new Complex(-value.m_imaginary, value.m_real));
-            return new Complex(sin.m_imaginary, -sin.m_real);
+            Complex<double> result = Complex<double>.Sinh(new Complex<double>(value.m_real, value.m_imaginary));
+            return new Complex(result.Real, result.Imaginary);
         }
 
         public static Complex Asin(Complex value)
@@ -277,14 +270,14 @@ namespace System.Numerics
 
         public static Complex Cos(Complex value)
         {
-            (double sin, double cos) = Math.SinCos(value.m_real);
-            return new Complex(cos * Math.Cosh(value.m_imaginary), -sin * Math.Sinh(value.m_imaginary));
+            Complex<double> result = Complex<double>.Cos(new Complex<double>(value.m_real, value.m_imaginary));
+            return new Complex(result.Real, result.Imaginary);
         }
 
         public static Complex Cosh(Complex value)
         {
-            // Use cosh(z) = cos(iz) to compute via cos(z).
-            return Cos(new Complex(-value.m_imaginary, value.m_real));
+            Complex<double> result = Complex<double>.Cosh(new Complex<double>(value.m_real, value.m_imaginary));
+            return new Complex(result.Real, result.Imaginary);
         }
 
         public static Complex Acos(Complex value)
@@ -301,15 +294,14 @@ namespace System.Numerics
 
         public static Complex Tanh(Complex value)
         {
-            // Use tanh(z) = -i tan(iz) to compute via tan(z).
-            Complex tan = Tan(new Complex(-value.m_imaginary, value.m_real));
-            return new Complex(tan.m_imaginary, -tan.m_real);
+            Complex<double> result = Complex<double>.Tanh(new Complex<double>(value.m_real, value.m_imaginary));
+            return new Complex(result.Real, result.Imaginary);
         }
 
         public static Complex Atan(Complex value)
         {
-            Complex two = new(2.0, 0.0);
-            return (ImaginaryOne / two) * (Log(One - ImaginaryOne * value) - Log(One + ImaginaryOne * value));
+            Complex<double> result = Complex<double>.Atan(new Complex<double>(value.m_real, value.m_imaginary));
+            return new Complex(result.Real, result.Imaginary);
         }
 
         public static bool IsFinite(Complex value) => double.IsFinite(value.m_real) && double.IsFinite(value.m_imaginary);
@@ -320,7 +312,8 @@ namespace System.Numerics
 
         public static Complex Log(Complex value)
         {
-            return new Complex(Math.Log(Abs(value)), Math.Atan2(value.m_imaginary, value.m_real));
+            Complex<double> result = Complex<double>.Log(new Complex<double>(value.m_real, value.m_imaginary));
+            return new Complex(result.Real, result.Imaginary);
         }
 
         public static Complex Log(Complex value, double baseValue)
@@ -330,14 +323,14 @@ namespace System.Numerics
 
         public static Complex Log10(Complex value)
         {
-            Complex tempLog = Log(value);
-            return Scale(tempLog, InverseOfLog10);
+            Complex<double> result = Complex<double>.Log10(new Complex<double>(value.m_real, value.m_imaginary));
+            return new Complex(result.Real, result.Imaginary);
         }
 
         public static Complex Exp(Complex value)
         {
-            double expReal = Math.Exp(value.m_real);
-            return FromPolarCoordinates(expReal, value.m_imaginary);
+            Complex<double> result = Complex<double>.Exp(new Complex<double>(value.m_real, value.m_imaginary));
+            return new Complex(result.Real, result.Imaginary);
         }
 
         public static Complex Sqrt(Complex value)
@@ -355,13 +348,6 @@ namespace System.Numerics
         public static Complex Pow(Complex value, double power)
         {
             return Pow(value, new Complex(power, 0));
-        }
-
-        private static Complex Scale(Complex value, double factor)
-        {
-            double realResult = factor * value.m_real;
-            double imaginaryResuilt = factor * value.m_imaginary;
-            return new Complex(realResult, imaginaryResuilt);
         }
 
         //
