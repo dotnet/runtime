@@ -13,6 +13,7 @@ using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.Arm;
 
 namespace System
 {
@@ -273,15 +274,17 @@ namespace System
             //                             +----------------+----------------+----------------+
             //     difference             |      high      |     middle     |      low       |
             //
-            // The first Math.BigMul computes the top two words. If bits discarded from
-            // the high word already prove the result inexact, the lower correction
-            // cannot affect the retained bits and the sticky bit can be set immediately.
-            // Otherwise the high half of value * low is needed to apply the subtraction
-            // and determine whether the final result is exact.
+            // If bits discarded from the high word already prove the result inexact, the
+            // lower correction cannot affect the retained bits and the sticky bit can be
+            // set immediately. On Arm64, where the high and low halves require separate
+            // instructions, defer the low half until the exactness path needs it.
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static ulong UScale(ulong value, in Scaler scaler)
             {
-                ulong high = Math.BigMul(value, scaler.PowerHigh, out ulong middle);
+                ulong middle = 0;
+                ulong high = ArmBase.Arm64.IsSupported
+                    ? ArmBase.Arm64.MultiplyHigh(value, scaler.PowerHigh)
+                    : Math.BigMul(value, scaler.PowerHigh, out middle);
                 int shift = scaler.Shift;
 
                 Debug.Assert((uint)shift < 64);
@@ -289,6 +292,11 @@ namespace System
                 if ((high >> shift << shift) != high)
                 {
                     return (high >> shift) | 1;
+                }
+
+                if (ArmBase.Arm64.IsSupported)
+                {
+                    middle = value * scaler.PowerHigh;
                 }
 
                 ulong middle2 = Math.BigMul(value, scaler.PowerLow, out _);
