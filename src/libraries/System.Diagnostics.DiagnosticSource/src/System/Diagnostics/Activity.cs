@@ -1785,8 +1785,8 @@ namespace System.Diagnostics
                         DiagNode<KeyValuePair<string, object?>>? next = Next;
                         if (next is null)
                         {
-                            Value = default;
                             _last = null;
+                            Value = default;
                         }
                         else
                         {
