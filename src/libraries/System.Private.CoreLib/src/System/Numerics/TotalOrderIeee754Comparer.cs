@@ -147,11 +147,11 @@ namespace System.Numerics
 
                         if (T.IsNegative(x))
                         {
-                            return T.IsNegative(y) ? CompareExponent(y, x) : -1;
+                            return T.IsNegative(y) ? CompareExponent(x, y) : -1;
                         }
                         else
                         {
-                            return T.IsPositive(y) ? CompareExponent(x, y) : 1;
+                            return T.IsPositive(y) ? CompareExponent(y, x) : 1;
                         }
                     }
                     else
