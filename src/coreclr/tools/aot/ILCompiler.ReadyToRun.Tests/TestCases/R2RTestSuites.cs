@@ -646,6 +646,7 @@ public class R2RTestSuites
                     ".UsesRuntimeCheckedInstructionSet(",
                     out diag),
                 diag);
+            Assert.True(R2RAssert.EagerInstructionSetSupportHasNoUnsupportedEntries(reader, out diag), diag);
         }
     }
 

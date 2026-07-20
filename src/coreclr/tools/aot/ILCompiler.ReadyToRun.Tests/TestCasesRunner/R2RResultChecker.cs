@@ -955,6 +955,47 @@ internal static class R2RAssert
     }
 
     /// <summary>
+    /// Returns true if the global eager baseline <see cref="ReadyToRunFixupKind.Check_InstructionSetSupport"/>
+    /// fixup does not assert that any instruction set must be absent at runtime ("must be absent" entries render
+    /// with a <c>-</c> suffix; supported entries use <c>+</c>). Targets that cannot generate code at runtime must
+    /// not encode these assertions, as a failing eager fixup fatally disables all ReadyToRun code with no JIT fallback.
+    /// </summary>
+    public static bool EagerInstructionSetSupportHasNoUnsupportedEntries(ReadyToRunReader reader, out string diagnostic)
+    {
+        var options = new SignatureFormattingOptions();
+        var signatures = new List<string>();
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
+        {
+            if (section.Entries is null)
+                continue;
+
+            foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+            {
+                if (entry.Signature is not null && entry.Signature.FixupKind == ReadyToRunFixupKind.Check_InstructionSetSupport)
+                    signatures.Add(entry.Signature.ToString(options));
+            }
+        }
+
+        if (signatures.Count == 0)
+        {
+            diagnostic = "Expected a global Check_InstructionSetSupport eager fixup, but none was found.";
+            return false;
+        }
+
+        var withUnsupported = signatures.Where(s => s.Contains('-')).ToList();
+        if (withUnsupported.Count > 0)
+        {
+            diagnostic =
+                "Global Check_InstructionSetSupport fixup must not assert any instruction set is absent " +
+                $"on no-JIT targets, but found: [{string.Join(", ", withUnsupported)}]";
+            return false;
+        }
+
+        diagnostic = $"Global Check_InstructionSetSupport fixup asserts only supported instruction sets: [{string.Join(", ", signatures)}]";
+        return true;
+    }
+
+    /// <summary>
     /// Returns true if the R2R image contains at least one fixup of the given kind.
     /// </summary>
     public static bool HasFixupKind(ReadyToRunReader reader, ReadyToRunFixupKind kind, out string diagnostic)
