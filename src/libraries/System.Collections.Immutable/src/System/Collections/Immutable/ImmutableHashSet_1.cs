@@ -937,7 +937,7 @@ namespace System.Collections.Immutable
             // We use '<=' as an early exit to reject smaller or equal-sized collections.
             // This is safe even for non-unique collections (ICollection<T>): if the raw count
             // is already insufficient, it cannot become a proper superset after deduplication.
-           switch (other)
+            switch (other)
             {
                 case ImmutableHashSet<T> otherAsImmutableHashSet:
                     if (otherAsImmutableHashSet.Count <= origin.Count)
