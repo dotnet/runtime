@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
@@ -2156,6 +2157,74 @@ namespace System.Net.Http.Functional.Tests
                 // forwarding proxy connection speaks HTTP/1.1, which is also what the request used here.
                 Assert.Equal(HttpVersion.Version11, capturedContext.HttpVersion);
             });
+        }
+
+        [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
+        [Fact]
+        public async Task ShouldEvictConnection_MultipleConnectionsBlockInCallback_AllStillEvaluated()
+        {
+            // The eviction callback is invoked as fire-and-forget, so a callback that blocks (or is slow) for one
+            // connection must not prevent the pool from invoking the callback for the other pooled connections.
+            var callbackConnectionIds = new ConcurrentDictionary<long, byte>();
+            var bothCallbacksEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseCallbacks = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using var handler = new SocketsHttpHandler
+            {
+                // Keep the maintenance timer on its minimum cadence (setting the eviction callback shortens it) while
+                // preventing idle/lifetime scavenging from removing either connection while we wait for both callbacks.
+                PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan,
+                PooledConnectionLifetime = Timeout.InfiniteTimeSpan,
+            };
+
+            handler.ShouldEvictConnection = (context, _) =>
+            {
+                callbackConnectionIds[context.ConnectionId] = 0;
+                if (callbackConnectionIds.Count >= 2)
+                {
+                    bothCallbacksEntered.TrySetResult();
+                }
+
+                // Block "forever". If the pool awaited the callbacks one at a time, the first connection's callback
+                // would prevent the second connection's callback from ever running.
+                return releaseCallbacks.Task;
+            };
+
+            using HttpClient client = new HttpClient(handler);
+
+            try
+            {
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                {
+                    // Force two pooled connections: hold the first request's response open until a second request has
+                    // established its own connection, so the second request can't reuse the first connection.
+                    Task<string> request1 = client.GetStringAsync(uri);
+                    await server.AcceptConnectionAsync(async connection1 =>
+                    {
+                        await connection1.ReadRequestHeaderAsync();
+
+                        Task<string> request2 = client.GetStringAsync(uri);
+                        await server.AcceptConnectionAsync(async connection2 =>
+                        {
+                            await connection2.ReadRequestHeaderAndSendResponseAsync(content: "2");
+                        });
+                        Assert.Equal("2", await request2);
+
+                        // Complete the first request so that both connections are now idle and pooled.
+                        await connection1.SendResponseAsync(content: "1");
+                        Assert.Equal("1", await request1);
+
+                        // The maintenance pass must invoke the callback for BOTH idle connections, even though the
+                        // first callback it starts never completes.
+                        await bothCallbacksEntered.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        Assert.Equal(2, callbackConnectionIds.Count);
+                    });
+                });
+            }
+            finally
+            {
+                releaseCallbacks.TrySetResult(false); // Unblock the fire-and-forget callback tasks so they complete.
+            }
         }
 
         [OuterLoop("Incurs a delay")]

@@ -930,9 +930,6 @@ namespace System.Net.Http
             return false;
         }
 
-        /// <summary>Guards against overlapping <see cref="EvaluateConnectionsForEvictionAsync"/> runs for this pool.</summary>
-        private bool _evictionEvaluationInProgress;
-
         /// <summary>
         /// Incremented at the start of each eviction evaluation pass. Connections record the generation at which they
         /// were last evaluated, so an HTTP/1.1 connection that was busy during a pass (and therefore not visible to it)
@@ -943,27 +940,29 @@ namespace System.Net.Http
         /// <summary>
         /// Invokes the user-supplied <see cref="SocketsHttpHandler.ShouldEvictConnection"/> callback for each
         /// pooled connection and marks for eviction those the callback selects. List snapshots are taken under
-        /// the pool lock; the callback itself is always awaited outside the lock.
+        /// the pool lock; the per-connection checks are started outside the lock and intentionally not awaited.
         /// </summary>
-        private async Task EvaluateConnectionsForEvictionAsync()
+        private void EvaluateConnectionsForEviction()
         {
             Debug.Assert(!HasSyncObjLock);
-
-            if (Interlocked.Exchange(ref _evictionEvaluationInProgress, true))
-            {
-                return;
-            }
 
             EvictionGeneration++;
 
             try
             {
+                // Each connection's eviction check is started but deliberately not awaited. The user callback may
+                // block or take a long time, and awaiting the checks one by one would let a single slow callback
+                // stall the evaluation of every other connection (and every subsequent eviction pass). Each
+                // connection guards against overlapping runs of its own callback, so a connection whose callback is
+                // still pending is simply skipped by later passes. A callback that completes synchronously still
+                // completes inline here, so this only changes behavior when a callback does not complete promptly.
+
                 // HTTP/1.1: the idle stack is lock-free and its enumerator returns a snapshot, so we can inspect
                 // connections without removing them. Connections currently in use (and therefore not on the stack)
                 // are evaluated by ReturnHttp11Connection when they are returned to the pool.
                 foreach (HttpConnection connection in _http11Connections)
                 {
-                    await connection.EvaluateForEvictionAsync().ConfigureAwait(false);
+                    _ = connection.EvaluateForEvictionAsync();
                 }
 
                 // HTTP/2: snapshot the available list under the lock, then evaluate outside of it.
@@ -980,7 +979,7 @@ namespace System.Net.Http
                 {
                     foreach (Http2Connection connection in http2Connections)
                     {
-                        await connection.EvaluateForEvictionAsync().ConfigureAwait(false);
+                        _ = connection.EvaluateForEvictionAsync();
                     }
                 }
 
@@ -999,7 +998,7 @@ namespace System.Net.Http
                     {
                         foreach (Http3Connection connection in http3Connections)
                         {
-                            await connection.EvaluateForEvictionAsync().ConfigureAwait(false);
+                            _ = connection.EvaluateForEvictionAsync();
                         }
                     }
                 }
@@ -1009,10 +1008,6 @@ namespace System.Net.Http
                 Debug.Fail($"Unexpected exception while evaluating connections for eviction: {e}");
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"Unexpected exception while evaluating connections for eviction: {e}");
-            }
-            finally
-            {
-                _evictionEvaluationInProgress = false;
             }
         }
 
@@ -1096,7 +1091,7 @@ namespace System.Net.Http
             // scavenge pass or by the get/return paths.
             if (_poolManager.Settings._shouldEvictConnection is not null)
             {
-                _ = EvaluateConnectionsForEvictionAsync();
+                EvaluateConnectionsForEviction();
             }
 
             List<HttpConnectionBase>? toDispose = null;
