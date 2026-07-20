@@ -16,6 +16,11 @@ namespace TestLibrary
 {
     public static class OutOfProcessTest
     {
+        private const string OutOfProcessPlanFileEnvironmentVariable = "__TestOutOfProcessPlanFile";
+        private const string OutOfProcessResultFileSuffix = ".outofprocess-result";
+        private const string OutOfProcessResultFormatVersion = "1";
+        private const string OutOfProcessResultTokenEnvironmentVariable = "__TestOutOfProcessResultToken";
+
         internal static bool runningInWindows;
         internal static string reportBase;
         internal static string testBinaryBase;
@@ -41,15 +46,28 @@ namespace TestLibrary
             }
         }
 
+        public static string OutOfProcessPlanFile =>
+            Environment.GetEnvironmentVariable(OutOfProcessPlanFileEnvironmentVariable);
+
+        public static bool IsUsingPrecomputedResults =>
+            !String.IsNullOrEmpty(Environment.GetEnvironmentVariable(OutOfProcessResultTokenEnvironmentVariable));
+
         public static bool OutOfProcessTestsSupported =>
-            !OperatingSystem.IsIOS()
-            && !OperatingSystem.IsTvOS()
-            && !OperatingSystem.IsAndroid()
-            && !OperatingSystem.IsBrowser()
-            && !OperatingSystem.IsWasi();
+            IsUsingPrecomputedResults
+            || (!OperatingSystem.IsIOS()
+                && !OperatingSystem.IsTvOS()
+                && !OperatingSystem.IsAndroid()
+                && !OperatingSystem.IsBrowser()
+                && !OperatingSystem.IsWasi());
 
         public static void RunOutOfProcessTest(string assemblyPath, string testPathPrefix)
         {
+            if (IsUsingPrecomputedResults)
+            {
+                ImportPrecomputedResult(assemblyPath, testPathPrefix);
+                return;
+            }
+
             int ret = -100;
             string baseDir = AppContext.BaseDirectory;
             string outputDir = System.IO.Path.GetFullPath(Path.Combine(reportBase, Path.GetDirectoryName(assemblyPath)));
@@ -146,6 +164,64 @@ namespace TestLibrary
 
                 Assert.True(ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, string.Join(Environment.NewLine, testOutput));
             }
+        }
+
+        private static void ImportPrecomputedResult(string assemblyPath, string testPathPrefix)
+        {
+            string resultToken = Environment.GetEnvironmentVariable(OutOfProcessResultTokenEnvironmentVariable);
+            if (String.IsNullOrEmpty(resultToken))
+            {
+                Assert.Fail($"Test Infrastructure Failure: Environment variable '{OutOfProcessResultTokenEnvironmentVariable}' is not set.");
+            }
+
+            string testAssemblyPath = assemblyPath;
+            if (testPathPrefix != null)
+            {
+                testAssemblyPath = Path.Combine(testPathPrefix, testAssemblyPath);
+            }
+
+            if (!OperatingSystem.IsWindows())
+            {
+                testAssemblyPath = testAssemblyPath.Replace("\\", "/");
+            }
+
+            string resultFile = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), testAssemblyPath)) + OutOfProcessResultFileSuffix;
+            if (!File.Exists(resultFile))
+            {
+                Assert.Fail($"Test Infrastructure Failure: Out-of-process result file '{resultFile}' was not found.");
+            }
+
+            using StreamReader resultReader = File.OpenText(resultFile);
+            string formatVersion = resultReader.ReadLine();
+            string actualResultToken = resultReader.ReadLine();
+            string exitCodeText = resultReader.ReadLine();
+            string output = resultReader.ReadToEnd();
+
+            if (!String.Equals(formatVersion, OutOfProcessResultFormatVersion, StringComparison.Ordinal))
+            {
+                Assert.Fail($"Test Infrastructure Failure: Out-of-process result file '{resultFile}' has unsupported format version '{formatVersion}'.");
+            }
+
+            if (!String.Equals(actualResultToken, resultToken, StringComparison.Ordinal))
+            {
+                Assert.Fail($"Test Infrastructure Failure: Out-of-process result file '{resultFile}' is stale or belongs to another run.");
+            }
+
+            if (!Int32.TryParse(exitCodeText, out int exitCode))
+            {
+                Assert.Fail($"Test Infrastructure Failure: Out-of-process result file '{resultFile}' contains invalid exit code '{exitCodeText}'.");
+            }
+
+            Console.WriteLine($"Out-of-process result file: {resultFile}");
+            Console.Write(output);
+            if (output.Length != 0 && output[output.Length - 1] != '\n')
+            {
+                Console.WriteLine();
+            }
+            Console.WriteLine($"Return code:      {exitCode}");
+
+            Assert.True(exitCode == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE,
+                        $"Out-of-process wrapper failed with exit code {exitCode}.{Environment.NewLine}{output}");
         }
     }
 }
