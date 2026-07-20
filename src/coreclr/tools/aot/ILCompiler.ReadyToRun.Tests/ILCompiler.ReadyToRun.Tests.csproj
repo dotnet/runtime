@@ -34,8 +34,18 @@
     </ProjectReference>
   </ItemGroup>
 
+  <PropertyGroup>
+    <WasmRuntimePackRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.browser-wasm'))</WasmRuntimePackRoot>
+    <WasmRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
+    <WasmRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
+    <WasmRuntimePackDir Condition="!Exists('$(WasmRuntimePackDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/lib/$(NetCoreAppCurrent)')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
+    <WasmRuntimePackNativeDir Condition="!Exists('$(WasmRuntimePackNativeDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/native')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
+  </PropertyGroup>
+
+
   <!-- The JITs must be built before crossgen2_inbuild so that they can be copied to the output directory -->
   <Target Name="BuildAllJitsForReadyToRunTests"
+          DependsOnTargets=""
           BeforeTargets="ResolveProjectReferences"
           Condition="'$(DesignTimeBuild)' != 'true'">
     <PropertyGroup>
@@ -73,14 +83,6 @@
   <Target Name="SetRuntimeConfigurationOptions"
           BeforeTargets="GenerateBuildRuntimeConfigurationFiles"
           Condition="'$(DesignTimeBuild)' != 'true'">
-
-    <PropertyGroup>
-      <WasmRuntimePackRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.browser-wasm'))</WasmRuntimePackRoot>
-      <WasmRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
-      <WasmRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
-      <WasmRuntimePackDir Condition="!Exists('$(WasmRuntimePackDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/lib/$(NetCoreAppCurrent)')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
-      <WasmRuntimePackNativeDir Condition="!Exists('$(WasmRuntimePackNativeDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/native')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
-    </PropertyGroup>
 
     <ItemGroup>
       <RuntimeHostConfigurationOption Include="R2RTest.Crossgen2Dir">

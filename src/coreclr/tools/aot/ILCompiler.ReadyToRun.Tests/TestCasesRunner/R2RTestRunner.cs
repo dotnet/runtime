@@ -253,11 +253,11 @@ internal sealed class R2RTestRunner
     {
         var paths = new Dictionary<string, string>();
 
+        // Tests shouldn't require a platform-specific runtime/ref pack for Roslyn compilation
+        var defaultReferences = BuildReferencePaths(useWasmReferences: false);
+        var compiler = new R2RTestCaseCompiler(defaultReferences);
         foreach (var asm in assemblies)
         {
-            // Tests shouldn't require a platform-specific runtime/ref pack for Roslyn compilation
-            var defaultReferences = BuildReferencePaths(useWasmReferences: false);
-            var compiler = new R2RTestCaseCompiler(defaultReferences);
             var sources = asm.SourceResourceNames
                 .Select(R2RTestCaseCompiler.ReadEmbeddedSource)
                 .ToList();

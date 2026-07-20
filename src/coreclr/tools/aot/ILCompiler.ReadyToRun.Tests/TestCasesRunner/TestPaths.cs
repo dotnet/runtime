@@ -37,7 +37,6 @@ internal sealed class TestPaths
     /// <summary>
     /// Path to the crossgen2 output directory (contains the self-contained crossgen2 executable and clrjit).
     /// e.g. artifacts/bin/coreclr/linux.x64.Checked/x64/crossgen2/
-    /// Falls back to Checked or Release if the configured path doesn't exist.
     /// </summary>
     public string Crossgen2Dir => GetRequiredConfig("R2RTest.Crossgen2Dir");
 
