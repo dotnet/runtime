@@ -534,6 +534,28 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.AlreadyImplementsValidateAsyncMethod.Id, diagnostics[0].Id);
     }
 
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task AlreadyImplementedAsyncExplicitInterface()
+    {
+        var (diagnostics, _) = await RunGenerator(@"
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+            {
+                System.Threading.Tasks.Task<ValidateOptionsResult> IAsyncValidateOptions<FirstModel>.ValidateAsync(string? name, FirstModel options, System.Threading.CancellationToken cancellationToken)
+                    => System.Threading.Tasks.Task.FromResult(ValidateOptionsResult.Success);
+            }
+        ");
+
+        _ = Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.AlreadyImplementsValidateAsyncMethod.Id, diagnostics[0].Id);
+    }
+
 #if NET
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task AsyncValidateMethodWithNoAwaitedWorkIsNotAsync()

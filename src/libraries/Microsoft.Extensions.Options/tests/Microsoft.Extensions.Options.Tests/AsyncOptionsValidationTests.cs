@@ -739,6 +739,33 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("seed", value!.Message);
         }
 
+        [Fact]
+        public void ValidateOnChange_DisposeMonitor_NonCooperativeValidatorDoesNotPublishAfterDispose()
+        {
+            var source = new ReloadSource();
+            var gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var validator = new ReloadTestValidator { Gate = gate.Task, IgnoreCancellation = true };
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "reloaded")
+                .ValidateOnChange();
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(source);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            SeedCache(sp, "seed");
+            var monitor = (OptionsMonitor<FakeOptions>)sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            source.Trigger();          // starts a background reload blocked on the gate, ignoring cancellation
+            monitor.Dispose();         // cancels (ignored) and bumps the generation
+            gate.SetResult(true);      // release; the completed reload must not publish after disposal
+            Thread.Sleep(200);
+
+            var cache = (OptionsCache<FakeOptions>)sp.GetRequiredService<IOptionsMonitorCache<FakeOptions>>();
+            Assert.True(cache.TryGetValue(Options.DefaultName, out FakeOptions? value));
+            Assert.Equal("seed", value!.Message);
+        }
+
         private static void SeedCache(IServiceProvider sp, string message)
         {
             var cache = (OptionsCache<FakeOptions>)sp.GetRequiredService<IOptionsMonitorCache<FakeOptions>>();
@@ -757,6 +784,7 @@ namespace Microsoft.Extensions.Options.Tests
         {
             public bool Fail { get; set; }
             public bool ThrowOwnCancellation { get; set; }
+            public bool IgnoreCancellation { get; set; }
             public Task? Gate { get; set; }
 
             public ValidateOptionsResult Validate(string? name, FakeOptions options)
@@ -767,12 +795,20 @@ namespace Microsoft.Extensions.Options.Tests
                 Task? gate = Gate;
                 if (gate is not null)
                 {
-                    var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    using (cancellationToken.Register(static s => ((TaskCompletionSource<bool>)s!).TrySetCanceled(), tcs))
+                    if (IgnoreCancellation)
                     {
-                        await Task.WhenAny(gate, tcs.Task).ConfigureAwait(false);
+                        // Simulate a validator that does not observe the cancellation token.
+                        await gate.ConfigureAwait(false);
                     }
-                    cancellationToken.ThrowIfCancellationRequested();
+                    else
+                    {
+                        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                        using (cancellationToken.Register(static s => ((TaskCompletionSource<bool>)s!).TrySetCanceled(), tcs))
+                        {
+                            await Task.WhenAny(gate, tcs.Task).ConfigureAwait(false);
+                        }
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
                 }
 
                 if (ThrowOwnCancellation)

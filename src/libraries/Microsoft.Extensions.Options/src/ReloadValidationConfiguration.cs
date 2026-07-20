@@ -20,6 +20,8 @@ namespace Microsoft.Extensions.Options
         /// <param name="onError">An optional callback invoked with the options name and the exception when revalidation of a reloaded configuration fails.</param>
         public ReloadValidationConfiguration(string name, OptionsReloadValidationBehavior behavior, Action<string?, Exception>? onError)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             Name = name;
             Behavior = behavior;
             OnError = onError;

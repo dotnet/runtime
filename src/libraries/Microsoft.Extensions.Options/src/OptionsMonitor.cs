@@ -269,12 +269,14 @@ namespace Microsoft.Extensions.Options
 
             if (_eagerStates is not null)
             {
-                // Cancel any in-flight eager revalidation so a superseded refresh does not publish after disposal.
+                // Cancel any in-flight eager revalidation and bump the generation so a refresh that ignores the
+                // cancellation token still fails the generation check and does not publish after disposal.
                 foreach (EagerReloadState state in _eagerStates.Values)
                 {
                     lock (state)
                     {
                         state.Cancel();
+                        state.Generation++;
                     }
                 }
             }
