@@ -2057,7 +2057,7 @@ namespace System.Net.Http.Functional.Tests
                 // A single pooled connection means concurrent requests queue behind it, so the connection is handed
                 // straight from one request to the next and never sits idle on the pool's idle stack where the
                 // maintenance pass could evaluate it. Eviction therefore has to be triggered from the connection-return
-                // path. Drive the maintenance timer to ~1s while disabling lifetime/idle expiry as a cause of retirement.
+                // path. Lifetime is infinite, and a 4s idle timeout drives the maintenance timer to fire roughly once a second.
                 MaxConnectionsPerServer = 1,
                 PooledConnectionLifetime = Timeout.InfiniteTimeSpan,
                 PooledConnectionIdleTimeout = TimeSpan.FromSeconds(4),
@@ -2702,9 +2702,8 @@ namespace System.Net.Http.Functional.Tests
 
             using HttpClientHandler handler = CreateHttpClientHandler();
             SocketsHttpHandler socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
-            // Drive the pool maintenance timer (which invokes the eviction callback) to fire roughly once a second,
-            // while keeping the idle timeout long enough that idle expiry can't be what removes the connection during
-            // the test. Disable lifetime entirely so only eviction can retire a connection.
+            // A 4s idle timeout drives the pool maintenance timer (which invokes the eviction callback) to fire
+            // roughly once a second. Lifetime is disabled so a connection isn't retired for age during the test.
             socketsHandler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(4);
             socketsHandler.PooledConnectionLifetime = Timeout.InfiniteTimeSpan;
             socketsHandler.ShouldEvictConnection = async (context, cancellationToken) =>
