@@ -16,10 +16,13 @@ namespace System.Net.Security.Tests
         [Fact]
         public Task ChannelBindings_Matching_Unique_Succeeds() => RunMatchingTest(ChannelBindingKind.Unique);
 
-        [Fact]
+        // The negative tests only run on Linux: macOS's Heimdal-derived GSS.framework does not
+        // reject a channel binding mismatch (the exchange completes successfully), so it cannot
+        // report GSS_S_BAD_BINDINGS the way MIT Kerberos does.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
         public Task ChannelBindings_Mismatched_Endpoint_FailsWithBadBinding() => RunMismatchTest(ChannelBindingKind.Endpoint);
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
         public Task ChannelBindings_Mismatched_Unique_FailsWithBadBinding() => RunMismatchTest(ChannelBindingKind.Unique);
 
         private async Task RunMatchingTest(ChannelBindingKind kind)
