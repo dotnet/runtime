@@ -538,7 +538,17 @@ DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPV
 #ifdef _DEBUG
             // Only in R2R mode are the module, dictionary index and dictionary slot provided as an input
             _ASSERTE(dictionaryIndexAndSlot != (DWORD)-1);
+#ifdef TARGET_WASM
+            // On wasm, R2R code lives in the function table and data in linear memory, so
+            // FindReadyToRunModule (a code-range lookup) can't resolve the signature's data address.
+            // Check that the signature lies within pModule's R2R image bounds instead.
+            ReadyToRunInfo * pR2RInfo = pModule->GetReadyToRunInfo();
+            TADDR sigAddr = dac_cast<TADDR>(signature);
+            TADDR imageBase = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase());
+            _ASSERT(sigAddr >= imageBase && sigAddr < imageBase + pR2RInfo->GetImage()->GetVirtualSize());
+#else
             _ASSERT(ReadyToRunInfo::IsNativeImageSharedBy(pModule, ExecutionManager::FindReadyToRunModule(dac_cast<TADDR>(signature))));
+#endif
 #endif
             dictionaryIndex = (dictionaryIndexAndSlot >> 16);
         }
@@ -676,10 +686,7 @@ extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
 
     if (VolatileLoadWithoutBarrier(&g_pVirtualFunctionPointerCache) == NULL)
     {
-        {
-            GCX_COOP();
-            CoreLibBinder::GetClass(CLASS__VIRTUALDISPATCHHELPERS)->CheckRunClassInitThrowing();
-        }
+        CoreLibBinder::GetClass(CLASS__VIRTUALDISPATCHHELPERS)->CheckRunClassInitThrowing();
 
         VolatileStore(&g_pVirtualFunctionPointerCache, CoreLibBinder::GetField(FIELD__VIRTUALDISPATCHHELPERS__CACHE));
 #ifdef DEBUG
@@ -802,7 +809,9 @@ EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionB
         DispatchManagedException(kNullReferenceException);
 
     NormalizeThrownObject(&oref);
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(exceptionFrame.GetContext(), READ_SSP());
     DispatchManagedException(oref, exceptionFrame.GetContext());
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
@@ -830,7 +839,9 @@ EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
 
     FC_CAN_TRIGGER_GC();
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(exceptionFrame.GetContext(), READ_SSP());
     DispatchRethrownManagedException(exceptionFrame.GetContext());
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
@@ -862,7 +873,9 @@ EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transi
 
     FC_CAN_TRIGGER_GC();
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(exceptionFrame.GetContext(), READ_SSP());
     DispatchManagedException(oref, exceptionFrame.GetContext(), NULL, ExKind::RethrowFlag);
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
@@ -1189,15 +1202,6 @@ void JIT_RareDisableHelper()
     }
 }
 
-FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
-{
-    FCALL_CONTRACT;
-
-    Thread * pThread = GetThread();
-    return pThread->GetThreadId();
-}
-FCIMPLEND
-
 /*********************************************************************/
 /* we don't use HCIMPL macros because we don't want the overhead even in debug mode */
 
@@ -1431,6 +1435,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
 
         pFrame->Push(CURRENT_THREAD);
 
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -1476,6 +1481,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
         pFrame->Pop(CURRENT_THREAD);
     }
@@ -1517,6 +1523,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
     pFrame->Push(CURRENT_THREAD);
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -1588,6 +1595,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pFrame->Pop(CURRENT_THREAD);
 
@@ -1896,17 +1904,22 @@ HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32
     _ASSERTE(pMT->IsDelegate());
 
     // Resolve method. We handle only the common "direct" delegate as that is
-    // in any case the only one we can reasonably do GDV for. For instance,
-    // open delegates are filtered out here, and many cases with inner
-    // "complicated" logic as well (e.g. static functions, multicast, unmanaged
-    // functions).
-    //
-    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    // in any case the only one we can reasonably do GDV for.
+    // We filter out multicast and unmanaged here.
+
     DELEGATEREF del = (DELEGATEREF)objRef;
-    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == (PCODE)NULL))
+    INT_PTR extraData = del->GetExtraData();
+
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    if (COMDelegate::HasSingleTarget(del) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
-        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
-        if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
+        MethodDesc* pMD = NULL;
+        if (del->GetMethodPtrAux() == (PCODE)NULL)
+        {
+            pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
+        }
+
+        if ((pMD != NULL) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
         {
             pRecordedMD = pMD;
         }
@@ -1942,17 +1955,22 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
     _ASSERTE(pMT->IsDelegate());
 
     // Resolve method. We handle only the common "direct" delegate as that is
-    // in any case the only one we can reasonably do GDV for. For instance,
-    // open delegates are filtered out here, and many cases with inner
-    // "complicated" logic as well (e.g. static functions, multicast, unmanaged
-    // functions).
-    //
-    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    // in any case the only one we can reasonably do GDV for.
+    // We filter out multicast and unmanaged here.
+
     DELEGATEREF del = (DELEGATEREF)objRef;
-    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == (PCODE)NULL))
+    INT_PTR extraData = del->GetExtraData();
+
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    if (COMDelegate::HasSingleTarget(del) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
-        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
-        if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
+        MethodDesc* pMD = NULL;
+        if (del->GetMethodPtrAux() == (PCODE)NULL)
+        {
+            pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
+        }
+
+        if ((pMD != NULL) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
         {
             pRecordedMD = pMD;
         }
@@ -2354,6 +2372,7 @@ EXTERN_C void JIT_ValidateIndirectCall();
 EXTERN_C void JIT_DispatchIndirectCall();
 
 EXTERN_C void JIT_InterfaceLookupForSlot();
+EXTERN_C void JIT_InterfaceDispatchForSlot();
 
 //========================================================================
 //

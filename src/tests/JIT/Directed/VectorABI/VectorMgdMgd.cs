@@ -116,7 +116,7 @@ public static class VectorMgdMgd
         // element type (byte).
         static T[] values;
         static T[] check;
-        private int ElementCount = (Unsafe.SizeOf<Vector128<T>>() / sizeof(byte)) * 5;
+        private int ElementCount = (sizeof(Vector128<T>) / sizeof(byte)) * 5;
         public bool isPassing = true;
         public bool isReflection = false;
 

@@ -134,9 +134,10 @@ public:
                 // globally visible.
 
                 LclVarDsc* const varDsc = m_compiler->lvaGetDesc(LclNum());
+
                 if (varDsc->lvTracked)
                 {
-                    return varDsc->lvLiveInOutOfHndlr != 0;
+                    return varDsc->IsLiveInOutOfHandler();
                 }
 
                 return m_compiler->compHndBBtabCount > 0;
@@ -192,9 +193,16 @@ public:
     bool InterferesWith(Compiler* compiler, GenTree* node, bool strict) const;
     void Clear();
 
-    bool IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree* endExclusive);
+    bool IsLirInvariantInRange(Compiler*    comp,
+                               GenTree*     node,
+                               GenTree*     endExclusive,
+                               GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY);
 
-    bool IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree* endExclusive, GenTree* ignoreNode);
+    bool IsLirInvariantInRange(Compiler*    comp,
+                               GenTree*     node,
+                               GenTree*     endExclusive,
+                               GenTree*     ignoreNode,
+                               GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY);
 
     bool IsLirRangeInvariantInRange(
         Compiler* comp, GenTree* rangeStart, GenTree* rangeEnd, GenTree* endExclusive, GenTree* ignoreNode);

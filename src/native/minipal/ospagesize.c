@@ -7,18 +7,25 @@
 // src/native/minipal/CMakeLists.txt to avoid an empty translation unit.
 
 #include <unistd.h>
+#include <stdlib.h>
+#include <stdatomic.h>
 #include "ospagesize.h"
 
-size_t minipal_getpagesize(void)
+uint32_t minipal_getpagesize(void)
 {
-    // Process-wide constant. Any thread that races to initialize the cache writes
-    // the same value, so no synchronization is required.
-    static size_t cached_page_size = 0;
-    size_t page_size = cached_page_size;
+    static atomic_uint cached_page_size = 0;
+    uint32_t page_size = atomic_load_explicit(&cached_page_size, memory_order_relaxed);
     if (page_size == 0)
     {
-        page_size = (size_t)getpagesize();
-        cached_page_size = page_size;
+        long sc = sysconf(_SC_PAGESIZE);
+        // _SC_PAGESIZE is mandatory in POSIX 2001; treat any failure as fatal
+        // rather than caching a nonsense value (e.g. (uint32_t)-1).
+        if (sc <= 0)
+        {
+            abort();
+        }
+        page_size = (uint32_t)sc;
+        atomic_store_explicit(&cached_page_size, page_size, memory_order_relaxed);
     }
     return page_size;
 }

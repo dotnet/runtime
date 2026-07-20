@@ -204,20 +204,11 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperati
                 return false;
             }
 
-            // Ensure the operation has integer type.
-            if (!varTypeIsIntegralOrI(tree))
+            // Ensure the operation has integer or float type.
+            if (!(varTypeIsIntegralOrI(tree) || varTypeIsFloating(tree)))
             {
                 return false;
             }
-
-#ifndef TARGET_64BIT
-            // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
-            // handle contained relops efficiently after decomposition.
-            if (varTypeIsLong(tree))
-            {
-                return false;
-            }
-#endif
 
             GenTree* op1 = tree->gtGetOp1();
 
@@ -636,13 +627,56 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
     }
 
-#ifdef TARGET_RISCV64
     if (select->OperIs(GT_SELECT))
     {
-        JITDUMP("Skipping if-conversion that could not be optimized to ordinary operations\n");
-        return true;
-    }
+        if (varTypeIsFloating(select))
+        {
+            JITDUMP("Abort: SELECT of type float\n");
+            return true;
+        }
+
+#ifdef TARGET_RISCV64
+        // Without Zicond, riscv64 has no native lowering for GT_SELECT - the
+        // branchy form is kept. With Zicond the SELECT is lowered to a
+        // czero.{eqz,nez}/or sequence, but only for integer-typed selects.
+        bool canCodegenSelect = m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zicond) &&
+                                varTypeIsIntegralOrI(select->TypeGet());
+        if (!canCodegenSelect)
+        {
+            JITDUMP("Skipping if-conversion that could not be optimized to ordinary operations\n");
+            return true;
+        }
+
+        // RISC-V has no flag register, so any branchless SELECT must first materialize
+        // the condition into a 0/1 register before the czero/or sequence (>=5 insns).
+        // When one arm is a no-op (read of an existing local) and the other is a small
+        // immediate, the branchy form fits in ~2 insns (branch + addi), so keep it.
+        GenTreeConditional* sel      = select->AsConditional();
+        GenTree*            selTrue  = sel->gtOp1;
+        GenTree*            selFalse = sel->gtOp2;
+
+        auto isLocalNoOp = [](GenTree* n) {
+            return n->OperIs(GT_LCL_VAR);
+        };
+        auto isSmallImm = [](GenTree* n) {
+            return n->IsIntegralConst() && emitter::isValidSimm12(n->AsIntConCommon()->IntegralValue());
+        };
+
+        if ((isLocalNoOp(selTrue) && isSmallImm(selFalse)) || (isSmallImm(selTrue) && isLocalNoOp(selFalse)))
+        {
+            JITDUMP("Skipping if-conversion: branchy form fits in ~2 insns; Zicond would need 5+\n");
+            return true;
+        }
+#elif !defined(TARGET_64BIT)
+        // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
+        // handle contained relops efficiently after decomposition.
+        if (varTypeIsLong(select))
+        {
+            JITDUMP("Abort: SELECT of type Long on 32-bit system\n");
+            return true;
+        }
 #endif
+    }
 
     // Use the SELECT as the source of the Then STORE/RETURN.
     m_thenOperation.node->AddAllEffectsFlags(select);
@@ -721,7 +755,13 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 //
 GenTree* OptIfConversionDsc::TryOptimizeSelect(GenTreeConditional* select)
 {
-    GenTree* opt = TrySelectToCnsOpCond(select);
+    GenTree* opt = m_compiler->gtFoldExprConditional(select);
+    if (!opt->OperIs(GT_SELECT))
+    {
+        return opt;
+    }
+
+    opt = TrySelectToCnsOpCond(select);
     if (opt != nullptr)
     {
         return opt;
@@ -742,6 +782,7 @@ GenTree* OptIfConversionDsc::TryOptimizeSelect(GenTreeConditional* select)
     return nullptr;
 }
 
+#ifdef TARGET_RISCV64
 struct IntConstSelectOper
 {
     genTreeOps oper;
@@ -794,6 +835,7 @@ static IntConstSelectOper MatchIntConstSelectValues(int64_t trueVal, int64_t fal
 
     return {GT_NONE};
 }
+#endif // TARGET_RISCV64
 
 //-----------------------------------------------------------------------------
 // TrySelectToCnsOpCond: Try to optimize:
@@ -814,7 +856,7 @@ GenTree* OptIfConversionDsc::TrySelectToCnsOpCond(GenTreeConditional* select)
     GenTree* trueInput  = select->gtOp1;
     GenTree* falseInput = select->gtOp2;
 
-    if (!trueInput->IsIntegralConst() || !falseInput->IsIntegralConst())
+    if (!cond->OperIsCompare() || !trueInput->IsIntegralConst() || !falseInput->IsIntegralConst())
     {
         return nullptr;
     }
@@ -822,13 +864,18 @@ GenTree* OptIfConversionDsc::TrySelectToCnsOpCond(GenTreeConditional* select)
     int64_t trueVal  = trueInput->AsIntConCommon()->IntegralValue();
     int64_t falseVal = falseInput->AsIntConCommon()->IntegralValue();
 
-    if (trueVal == 1 && falseVal == 0)
+    if ((trueVal == 1 && falseVal == 0) || (trueVal == 0 && falseVal == 1))
     {
-        return cond;
+        GenTree* retCond = (trueVal == 1) ? cond : m_compiler->gtReverseCond(cond);
+        if (retCond->TypeGet() != select->TypeGet())
+        {
+            retCond = m_compiler->gtNewCastNode(select->TypeGet(), retCond, true, select->TypeGet());
+        }
+        return retCond;
     }
-    else if (trueVal == 0 && falseVal == 1)
+    else if (trueVal == falseVal)
     {
-        return m_compiler->gtReverseCond(cond);
+        return m_compiler->gtWrapWithSideEffects(trueInput, cond);
     }
 
 #ifdef TARGET_RISCV64
@@ -929,6 +976,11 @@ GenTree* OptIfConversionDsc::TrySelectToCondOpLcl(GenTreeConditional* select)
     GenTree* cond = select->gtCond;
     GenTree* oper = select->gtOp1;
     GenTree* zero = select->gtOp2;
+
+    if (!cond->OperIsCompare())
+    {
+        return nullptr;
+    }
 
     bool isCondReversed = !zero->IsIntegralConst();
     if (isCondReversed)

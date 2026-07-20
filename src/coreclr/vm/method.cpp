@@ -829,7 +829,10 @@ BOOL MethodDesc::HasSameMethodDefAs(MethodDesc * pMD)
     if (this == pMD)
         return TRUE;
 
-    return (GetMemberDef() == pMD->GetMemberDef()) && (GetModule() == pMD->GetModule() && pMD->IsAsyncVariantMethod() == IsAsyncVariantMethod());
+    return (GetMemberDef() == pMD->GetMemberDef()) &&
+        (GetModule() == pMD->GetModule()) &&
+        (pMD->IsAsyncVariantMethod() == IsAsyncVariantMethod()) &&
+        (pMD->IsReturnDroppingThunk() == IsReturnDroppingThunk());
 }
 
 //*******************************************************************************
@@ -1955,6 +1958,9 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
     // It is not the destination of the call, which we must compute.
     MethodDesc* pStaticMD = this;
 
+    // Return dropping thunks should only be called virtually through base
+    _ASSERTE(!pStaticMD->IsReturnDroppingThunk());
+
     // Strip off the method instantiation if present
     MethodDesc* pStaticMDWithoutGenericMethodArgs = pStaticMD->StripMethodInstantiation();
 
@@ -2006,8 +2012,10 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
+        // On portable entrypoint platforms resolving the entrypoint may need to run the prestub
+        // (e.g. to publish R2R native code for the method), which can trigger a GC.
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
         PRECONDITION(HasUnmanagedCallersOnlyAttribute());
     }
     CONTRACTL_END;
@@ -2122,6 +2130,9 @@ PCODE MethodDesc::GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags /*
 
     PCODE ret = TryGetMultiCallableAddrOfCode(accessFlags);
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    _ASSERTE((ret != (PCODE)NULL) && "PortableEntryPoint logic should always cause the TryGetMultiCallableAddrOfCode to return a value");
+#else
     if (ret == (PCODE)NULL)
     {
         GCX_COOP();
@@ -2129,6 +2140,7 @@ PCODE MethodDesc::GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags /*
         // We have to allocate funcptr stub
         ret = GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(this);
     }
+#endif
 
     return ret;
 }
@@ -2208,6 +2220,12 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureCodeForUnmanagedCallersOnly())
     {
         entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+    }
+    else
+    {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(entryPoint);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     return entryPoint;
@@ -2926,6 +2944,37 @@ PCODE MethodDesc::GetPortableEntryPointIfExists()
     return GetTemporaryEntryPointIfExists();
 }
 
+// Prepare a portable entry point to be callable from R2R code. This doesn't necessarily
+// fill in the native code slot, but if it is possible to do so it will.
+// This must be called before any R2R code may call the target method.
+//
+// Currently this is implemented by calling this in GetMultiCallableAddrOfCode
+// which works because current R2R codegen doesn't actually do direct vtable dispatch
+// If/When we fix that, we'll have to figure out the best way to ensure this is called
+// for virtual dispatches as well.
+void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
+{
+    WRAPPER_NO_CONTRACT;
+
+    PortableEntryPoint *pep = PortableEntryPoint::ToPortableEntryPoint(entryPoint);
+    if (pep->HasNativeCode())
+    {
+        return;
+    }
+
+    MethodDesc* pMD = PortableEntryPoint::GetMethodDesc(entryPoint);
+    void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(pMD);
+    if (pPortableEntryPointToInterpreter != nullptr)
+    {
+        pep->TrySetInterpreterThunk(pPortableEntryPointToInterpreter);
+    }
+     else
+    {
+        _ASSERTE(!pMD->ContainsGenericVariables());
+        pMD->GetLoaderAllocator()->AddPendingPortableEntryPointThunk(pMD);
+    }
+}
+
 void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *portableEntry)
 {
     CONTRACTL
@@ -2935,23 +2984,17 @@ void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *
         MODE_ANY;
     } CONTRACTL_END;
 
-    // WASM-TODO! This only handling the R2R to interpreter case for well known signatures.
-    // Eventually we will need to handle arbitrary signatures by looking in the loaded list of R2R modules
-    // as well as recording when we couldn't find something, in case another R2R module might be loaded
-    // later which has an R2R to interpreter stub for that given signature.
-    void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
-
-    if (pPortableEntryPointToInterpreter != nullptr)
+    if (!IsDynamicMethod() && portableEntry->HasNativeCodeUnchecked())
     {
-        portableEntry->Init(pPortableEntryPointToInterpreter, this);
+        void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
+        _ASSERTE(pPortableEntryPointToInterpreter != nullptr);
+        portableEntry->Init_WithInterpreterThunk(pPortableEntryPointToInterpreter, this);
     }
     else
     {
         portableEntry->Init(this);
     }
-    // If we find actual code, we will remove this flag, but we want to prefer the interpreter entry point
-    // until then to allow helpers to work for methods that haven't tried to get an entry point yet.
-    portableEntry->SetPrefersInterpreterEntryPoint();
+    return;
 }
 
 void MethodDesc::ResetPortableEntryPoint()
@@ -3135,8 +3178,8 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
         !IsJitOptimizationLevelRequested() &&
 
-        // Tiering the async thunk methods is not supported currently
-        !IsAsyncThunkMethod() &&
+        // We tier async versions, but not task-returning wrapper thunks
+        (!IsAsyncThunkMethod() || SupportsAsyncVersionCodegen()) &&
 
         // Tiering P/Invoke methods is not supported currently
         !IsPInvoke()
@@ -3412,7 +3455,12 @@ void MethodDesc::ResetCodeEntryPointForEnC()
 
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s\n", this, m_pszDebugClassName, m_pszDebugMethodName));
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    bool oldEntrypointHadNativeCode = GetPortableEntryPointIfExists() != (PCODE)NULL && PortableEntryPoint::ToPortableEntryPoint(GetPortableEntryPoint())->HasNativeCode();
     ResetPortableEntryPoint();
+    if (oldEntrypointHadNativeCode)
+    {
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(GetPortableEntryPoint());
+    }
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: HasPrecode():%s, HasNativeCodeSlot():%s\n",
         (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));

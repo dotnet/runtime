@@ -166,6 +166,7 @@ namespace Mono.Linker.Steps
             DependencyKind.ReturnTypeMarshalSpec,
             DependencyKind.DynamicInterfaceCastableImplementation,
             DependencyKind.XmlDescriptor,
+            DependencyKind.DisablePrivateReflectionRequirement,
         };
 
         static readonly DependencyKind[] _methodReasons = new DependencyKind[] {
@@ -215,6 +216,7 @@ namespace Mono.Linker.Steps
             DependencyKind.ReturnTypeMarshalSpec,
             DependencyKind.XmlDescriptor,
             DependencyKind.UnsafeAccessorTarget,
+            DependencyKind.DisablePrivateReflectionRequirement,
         };
 #endif
 
@@ -500,6 +502,24 @@ namespace Mono.Linker.Steps
             {
                 marked = true;
                 ApplyPreserveInfo(type);
+            }
+
+            foreach (var (method, origin) in Annotations.DrainPendingReflectionVisibleMethods())
+            {
+                marked = true;
+                MarkMethodVisibleToReflection(method, DependencyInfo.AlreadyMarked, origin);
+            }
+
+            foreach (var (field, origin) in Annotations.DrainPendingReflectionVisibleFields())
+            {
+                marked = true;
+                MarkFieldVisibleToReflection(field, DependencyInfo.AlreadyMarked, origin);
+            }
+
+            foreach (var (type, origin) in Annotations.DrainPendingReflectionVisibleTypes())
+            {
+                marked = true;
+                MarkTypeVisibleToReflection(type, DependencyInfo.AlreadyMarked, origin);
             }
 
             return marked;
@@ -2007,6 +2027,11 @@ namespace Mono.Linker.Steps
                 Annotations.MarkReflectionUsed(methodDefinition);
                 Annotations.MarkIndirectlyCalledMethod(methodDefinition);
 
+                // A reflection-visible method's DeclaringType is also accessible
+                // (e.g., via MethodBase.DeclaringType). Mark it as reflection-visible.
+                if (!Annotations.IsReflectionUsed(methodDefinition.DeclaringType))
+                    MarkTypeVisibleToReflection(methodDefinition.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, methodDefinition), origin);
+
                 // On a reflectable method, perform generic data flow for the return type and all the parameter types
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
                 var methodOrigin = new MessageOrigin(methodDefinition);
@@ -2038,6 +2063,13 @@ namespace Mono.Linker.Steps
             MarkField(field, reason, origin);
             if (Context.Resolve(field) is FieldDefinition fieldDefinition)
             {
+                Annotations.MarkReflectionUsed(fieldDefinition);
+
+                // A reflection-visible field's DeclaringType is also accessible
+                // (e.g., via FieldInfo.DeclaringType). Mark it as reflection-visible.
+                if (!Annotations.IsReflectionUsed(fieldDefinition.DeclaringType))
+                    MarkTypeVisibleToReflection(fieldDefinition.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, fieldDefinition), origin);
+
                 // On a reflectable field, perform generic data flow for the field's type
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
                 var fieldOrigin = new MessageOrigin(fieldDefinition);

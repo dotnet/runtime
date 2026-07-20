@@ -401,9 +401,6 @@ unsigned Compiler::eeGetArgSize(CorInfoType corInfoType, CORINFO_CLASS_HANDLE ty
         isHfa               = (hfaType != TYP_UNDEF);
         unsigned structSize = info.compCompHnd->getClassSize(typeHnd);
 
-        // make certain the EE passes us back the right thing for refanys
-        assert(corInfoType != CORINFO_TYPE_REFANY || structSize == 2 * TARGET_POINTER_SIZE);
-
         // For each target that supports passing struct args in multiple registers
         // apply the target specific rules for them here:
 
@@ -667,16 +664,18 @@ void Compiler::eeGetStmtOffsets()
  *                  Debugging support - Local var info
  */
 
-void Compiler::eeSetLVcount(unsigned count)
+void Compiler::eeAllocateLVs(unsigned count)
 {
     assert(opts.compScopeInfo);
 
-    JITDUMP("VarLocInfo count is %d\n", count);
+    JITDUMP("Allocating %d VarLocInfo\n", count);
 
-    eeVarsCount = count;
-    if (eeVarsCount)
+    eeVarsCount    = 0;
+    eeVarsCapacity = count;
+
+    if (count > 0)
     {
-        eeVars = (VarResultInfo*)info.compCompHnd->allocateArray(eeVarsCount * sizeof(eeVars[0]));
+        eeVars = (VarResultInfo*)info.compCompHnd->allocateArray(count * sizeof(eeVars[0]));
     }
     else
     {
@@ -686,7 +685,8 @@ void Compiler::eeSetLVcount(unsigned count)
 
 void Compiler::eeSetLVinfo(unsigned                          which,
                            UNATIVE_OFFSET                    startOffs,
-                           UNATIVE_OFFSET                    length,
+                           UNATIVE_OFFSET                    endOffs,
+                           uint32_t                          callReturnValueILOffset,
                            unsigned                          varNum,
                            const CodeGenInterface::siVarLoc& varLoc)
 {
@@ -694,15 +694,15 @@ void Compiler::eeSetLVinfo(unsigned                          which,
     // This is checked in siInit()
 
     assert(opts.compScopeInfo);
-    assert(eeVarsCount > 0);
-    assert(which < eeVarsCount);
+    assert(which < eeVarsCapacity);
 
     if (eeVars != nullptr)
     {
-        eeVars[which].startOffset = startOffs;
-        eeVars[which].endOffset   = startOffs + length;
-        eeVars[which].varNumber   = varNum;
-        eeVars[which].loc         = varLoc;
+        eeVars[which].startOffset             = startOffs;
+        eeVars[which].endOffset               = endOffs;
+        eeVars[which].callReturnValueILOffset = callReturnValueILOffset;
+        eeVars[which].varNumber               = varNum;
+        eeVars[which].loc                     = varLoc;
     }
 }
 
@@ -873,7 +873,12 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         name = "typeCtx";
     }
-    if (0 <= var->varNumber && var->varNumber < lvaCount)
+
+    if (var->varNumber == (DWORD)ICorDebugInfo::CALL_RETURN_ILNUM)
+    {
+        printf("(call %03u)", var->callReturnValueILOffset);
+    }
+    else if (0 <= var->varNumber && var->varNumber < lvaCount)
     {
         printf("(");
         gtDispLclVar(var->varNumber, false);
@@ -881,7 +886,7 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     }
     else
     {
-        printf("(%10s)", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name));
+        printf("(%8s)", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name));
     }
     printf(" : From %08Xh to %08Xh, in ", var->startOffset, var->endOffset);
 
@@ -889,12 +894,20 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         case CodeGenInterface::VLT_REG:
         case CodeGenInterface::VLT_REG_BYREF:
-        case CodeGenInterface::VLT_REG_FP:
             printf("%s", getRegName(var->loc.vlReg.vlrReg));
             if (var->loc.vlType == (ICorDebugInfo::VarLocType)CodeGenInterface::VLT_REG_BYREF)
             {
                 printf(" byref");
             }
+            break;
+
+        case CodeGenInterface::VLT_REG_FP:
+#ifdef TARGET_AMD64
+            printf("%s", getRegName(static_cast<regNumber>(REG_FP_FIRST + var->loc.vlReg.vlrReg -
+                                                           ICorDebugInfo::REGNUM_FP_FIRST)));
+#else
+            printf("%s", getRegName((regNumber)(var->loc.vlReg.vlrReg + REG_FP_FIRST)));
+#endif
             break;
 
         case CodeGenInterface::VLT_STK:
@@ -907,15 +920,32 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
             {
                 printf(STR_SPBASE "'[%d] (1 slot)", var->loc.vlStk.vlsOffset);
             }
-            if (var->loc.vlType == (ICorDebugInfo::VarLocType)CodeGenInterface::VLT_REG_BYREF)
+            if (var->loc.vlType == (ICorDebugInfo::VarLocType)CodeGenInterface::VLT_STK_BYREF)
             {
                 printf(" byref");
             }
             break;
 
         case CodeGenInterface::VLT_REG_REG:
+        {
+#ifdef TARGET_AMD64
+            auto toJitRegNum = [](ICorDebugInfo::RegNum reg) -> regNumber {
+                unsigned val     = static_cast<unsigned>(reg);
+                unsigned fpFirst = static_cast<unsigned>(ICorDebugInfo::REGNUM_FP_FIRST);
+                if (val >= fpFirst)
+                {
+                    return static_cast<regNumber>(REG_FP_FIRST + val - fpFirst);
+                }
+                return static_cast<regNumber>(reg);
+            };
+
+            printf("%s-%s", getRegName(toJitRegNum(var->loc.vlRegReg.vlrrReg1)),
+                   getRegName(toJitRegNum(var->loc.vlRegReg.vlrrReg2)));
+#else
             printf("%s-%s", getRegName(var->loc.vlRegReg.vlrrReg1), getRegName(var->loc.vlRegReg.vlrrReg2));
+#endif
             break;
+        }
 
 #ifndef TARGET_AMD64
         case CodeGenInterface::VLT_REG_STK:
@@ -1388,6 +1418,30 @@ CorInfoReloc Compiler::eeGetRelocTypeHint(void* target)
     {
         // No hints
         return CorInfoReloc::NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// eeGetAddressAlignment: Get the guaranteed alignment, in bytes, of the data referenced by
+//   'address' (a relocation target such as a static, RVA, or frozen-data blob).
+//
+// Arguments:
+//   address - the relocation target to query
+//
+// Return Value:
+//   The guaranteed alignment in bytes, or 1 when it cannot be determined (e.g. when the JIT's
+//   target does not match the VM). The JIT uses this to gate alignment-sensitive relocations.
+//
+uint32_t Compiler::eeGetAddressAlignment(void* address)
+{
+    if (info.compMatchedVM)
+    {
+        return info.compCompHnd->getAddressAlignment(address);
+    }
+    else
+    {
+        // The VM does not match the JIT target, so we cannot assume any alignment.
+        return 1;
     }
 }
 

@@ -1,0 +1,28 @@
+trigger: none
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - eng/pipelines/coreclr/hardware-intrinsics-wasm.yml
+    - eng/pipelines/coreclr/templates/jit-hardware-intrinsics-wasm.yml
+    - src/coreclr/jit/*wasm*
+    - src/tests/JIT/HardwareIntrinsics/Wasm/**
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    isOfficialBuild: false
+    stages:
+    - stage: Build
+      jobs:
+      - template: /eng/pipelines/coreclr/templates/jit-hardware-intrinsics-wasm.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          testBuildArgs: '/p:EnableWasmHWIntrinsicsTests=true -tree:JIT/HardwareIntrinsics/Wasm'

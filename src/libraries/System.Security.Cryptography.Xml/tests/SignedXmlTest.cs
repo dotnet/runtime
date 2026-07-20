@@ -2037,7 +2037,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
 #if NET
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void SignedXml_EncryptedDataWithInfiniteXslTransform()
         {
             using RSA key = RSA.Create();

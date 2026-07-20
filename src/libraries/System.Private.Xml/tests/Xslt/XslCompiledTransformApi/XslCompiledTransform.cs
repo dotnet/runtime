@@ -81,8 +81,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     }
 
     //[TestCase(Name = "Load(MethodInfo, ByteArray, TypeArray) tests", Desc = "This testcase tests private Load method via Reflection. This method is used by sharepoint")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CLoadMethInfoTest : ReflectionTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -135,7 +134,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     }
 
     //[TestCase(Name = "Null argument tests", Desc = "This testcase passes NULL arguments to all XslCompiledTransform methods")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CNullArgumentTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -479,8 +478,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XslCompiledTransform.XmlResolver : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.XmlResolver : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XslCompiledTransform.XmlResolver : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CXmlResolverTest : XsltApiTestCaseBase2, IDisposable
     {
         private ITestOutputHelper _output;
@@ -672,8 +670,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CLoadTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -1012,8 +1009,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : URI, Stream", Desc = "URI,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : URI, Writer", Desc = "URI,WRITER")]
     //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : URI, TextWriter", Desc = "URI,TEXTWRITER")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CLoadXmlResolverTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -1445,8 +1441,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XslCompiledTransform.Load(Url, Resolver) : URI, Stream", Desc = "URI,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Load(Url, Resolver) : URI, Writer", Desc = "URI,WRITER")]
     //[TestCase(Name = "XslCompiledTransform.Load(Url, Resolver) : URI, TextWriter", Desc = "URI,TEXTWRITER")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CLoadUrlResolverTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -1546,8 +1541,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XslCompiledTransform.Load(Url) Integrity : URI, Stream", Desc = "URI,STREAM")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CLoadStringTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -1666,8 +1660,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XslCompiledTransform .Load(IXPathNavigable) : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CLoadXPathNavigableTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -1776,8 +1769,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XslCompiledTransform.Load(Reader) : Reader, Stream", Desc = "READER,STREAM")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CLoadReaderTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -2167,8 +2159,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CTransformTestGeneric : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -2424,8 +2415,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CTransformResolverTest : XsltApiTestCaseBase2, IDisposable
     {
         private ITestOutputHelper _output;
@@ -2638,8 +2628,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XslCompiledTransform.Transform(String, String) : Reader , String", Desc = "READER,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Transform(String, String) : URI, String", Desc = "URI,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Transform(String, String) : Navigator, String", Desc = "NAVIGATOR,STREAM")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CTransformStrStrTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -3012,8 +3001,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XslCompiledTransform.Transform(String, String, Resolver) : Reader , String", Desc = "READER,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Transform(String, String, Resolver) : URI, String", Desc = "URI,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Transform(String, String, Resolver) : Navigator, String", Desc = "NAVIGATOR,STREAM")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CTransformStrStrResolverTest : XsltApiTestCaseBase2, IDisposable
     {
         private ITestOutputHelper _output;
@@ -3118,8 +3106,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 
     //[TestCase(Name = "XslCompiledTransform.Transform(IXPathNavigable, XsltArgumentList, XmlWriter, XmlResolver)", Desc = "Constructor Tests", Param = "IXPathNavigable")]
     //[TestCase(Name = "XslCompiledTransform.Transform(XmlReader, XsltArgumentList, XmlWriter, XmlResolver)", Desc = "Constructor Tests", Param = "XmlReader")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CTransformConstructorWithFourParametersTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -3326,8 +3313,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     // This testcase is for bugs 109429, 111075 and 109644 fixed in Everett SP1
     //[TestCase(Name = "NDP1_1SP1 Bugs (URI,STREAM)", Desc = "URI,STREAM")]
     //[TestCase(Name = "NDP1_1SP1 Bugs (NAVIGATOR,TEXTWRITER)", Desc = "NAVIGATOR,TEXTWRITER")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CNDP1_1SP1Test : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -3419,8 +3405,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
     }
 
     //[TestCase(Name = "XslCompiledTransform Regression Tests for API", Desc = "XslCompiledTransform Regression Tests")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class CTransformRegressionTest : XsltApiTestCaseBase2, IDisposable
     {
         private ITestOutputHelper _output;

@@ -138,7 +138,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteStringEscapeProperty(ReadOnlySpan<char> propertyName, DateTime value, int firstEscapeIndexProp)
+        private unsafe void WriteStringEscapeProperty(ReadOnlySpan<char> propertyName, DateTime value, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < propertyName.Length);
@@ -161,7 +161,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteStringEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, DateTime value, int firstEscapeIndexProp)
+        private unsafe void WriteStringEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, DateTime value, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < utf8PropertyName.Length);
@@ -376,7 +376,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
         }
 
-        internal void WritePropertyName(DateTime value)
+        internal unsafe void WritePropertyName(DateTime value)
         {
             Span<byte> buffer = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
             JsonWriterHelper.WriteDateTimeTrimmed(buffer, value, out int bytesWritten);

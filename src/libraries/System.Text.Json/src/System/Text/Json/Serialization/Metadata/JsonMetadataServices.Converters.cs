@@ -8,6 +8,10 @@ namespace System.Text.Json.Serialization.Metadata
 {
     public static partial class JsonMetadataServices
     {
+        // When adding/removing a built-in JsonConverter property below, also update
+        // gen/JsonSourceGenerator.Parser.cs::GetSupportedJsonValueTypes so the union ambiguity
+        // diagnostic (SYSLIB1227) agrees with JsonTypeInfo.BuildUnionValueTypeMap.
+
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="bool"/> values.
         /// </summary>

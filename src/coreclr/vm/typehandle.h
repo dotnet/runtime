@@ -200,25 +200,9 @@ public:
     // This helper:
     // - Will return enums underlying type
     // - Will return underlying primitive for System.Int32 etc...
-    // - Will return underlying primitive as will be used in the calling convention
-    //      For example
-    //              struct t
-    //              {
-    //                  public int i;
-    //              }
-    //      will return ELEMENT_TYPE_I4 in x86 instead of ELEMENT_TYPE_VALUETYPE. We
-    //      call this type of value type a primitive value type
     //
-    // Internal representation is used among another things for the calling convention
-    // (jit benefits of primitive value types) or optimizing marshalling.
-    //
-    // This will NOT convert E_T_ARRAY, E_T_SZARRAY etc. to E_T_CLASS (though it probably
-    // should).  Use CorTypeInfo::IsObjRef for that.
+    // This will NOT convert E_T_ARRAY, E_T_SZARRAY etc. to E_T_CLASS. Use CorTypeInfo::IsObjRef for that.
     CorElementType GetInternalCorElementType() const;
-
-    // This helper will return the same as GetSignatureCorElementType except:
-    // - Will return enums underlying type
-    CorElementType GetVerifierCorElementType() const;
 
     //-------------------------------------------------------------------
     // CASTING
@@ -357,6 +341,8 @@ public:
 
     bool IsFloatHfa() const;
 
+    bool IsVectorT() const;
+
 #ifdef FEATURE_64BIT_ALIGNMENT
     bool RequiresAlign8() const;
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -443,7 +429,7 @@ public:
     BOOL IsString() const;
 
     // Continuation sub types
-    BOOL IsContinuation() const;
+    BOOL IsContinuationWithoutMetadata() const;
 
     // True if this type *is* a formal generic type parameter or any component of it is a formal generic type parameter
     BOOL ContainsGenericVariables(BOOL methodOnly=FALSE) const;

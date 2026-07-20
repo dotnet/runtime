@@ -14,6 +14,8 @@
 #include "dbgtransportsession.h"
 #include "dbgtransportmanager.h"
 
+#include <minipal/ospagesize.h>
+
 #ifdef __APPLE__
 #include <mach/mach.h>
 #else
@@ -299,7 +301,7 @@ ShimRemoteDataTarget::ReadVirtual(
 #ifdef __APPLE__
         // vm_read_overwrite usually requires the address be page-aligned and the size be a multiple
         // of the page size, so we always page-align ourselves and copy out the relevant slice.
-        const size_t pageSize = (size_t)sysconf(_SC_PAGESIZE);
+        const size_t pageSize = minipal_getpagesize();
         vm_address_t addressAligned = (vm_address_t)(address & ~(ULONG64)(pageSize - 1));
         ssize_t offset = (ssize_t)(address & (pageSize - 1));
         ssize_t bytesLeft = (ssize_t)cbRequestSize;
