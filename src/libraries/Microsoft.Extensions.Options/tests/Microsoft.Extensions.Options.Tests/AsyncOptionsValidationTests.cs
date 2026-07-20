@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading;
@@ -461,6 +462,64 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        public void ValidateOnChange_ThrowingChangeListener_DoesNotFaultBackgroundRefresh()
+        {
+            var unobserved = new List<Exception>();
+            void OnUnobserved(object? sender, UnobservedTaskExceptionEventArgs e)
+            {
+                lock (unobserved)
+                {
+                    unobserved.Add(e.Exception);
+                }
+            }
+
+            TaskScheduler.UnobservedTaskException += OnUnobserved;
+            try
+            {
+                var source = new ReloadSource();
+                var validator = new ReloadTestValidator();
+                var services = new ServiceCollection();
+                services.AddOptions<FakeOptions>()
+                    .Configure(o => o.Message = "reloaded")
+                    .ValidateOnChange();
+                services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+                services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(source);
+                using ServiceProvider sp = services.BuildServiceProvider();
+
+                SeedCache(sp, "seed");
+                IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+                using var listenerRan = new ManualResetEventSlim();
+                using IDisposable _ = monitor.OnChange((o, n) =>
+                {
+                    listenerRan.Set();
+                    throw new InvalidOperationException("listener boom");
+                });
+
+                source.Trigger();
+                Assert.True(listenerRan.Wait(TimeSpan.FromSeconds(30)), "The change listener did not run.");
+                Thread.Sleep(200);
+
+                // Force finalization so a faulted, unobserved fire-and-forget refresh task would raise
+                // UnobservedTaskException. With the listener guarded, the task completes without faulting.
+                for (int i = 0; i < 3; i++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+
+                lock (unobserved)
+                {
+                    Assert.DoesNotContain(unobserved, e => e.ToString().Contains("listener boom"));
+                }
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= OnUnobserved;
+            }
+        }
+
+        [Fact]
         public void ValidateOnChange_ThrowingOnErrorCallback_DoesNotFaultBackgroundRefresh()
         {
             var source = new ReloadSource();
@@ -540,6 +599,32 @@ namespace Microsoft.Extensions.Options.Tests
 
             Assert.True(listener.FailureReported.Wait(TimeSpan.FromSeconds(30)), "The reload failure was not reported to the event source.");
             // The failure is observable through the event source even though no onError callback was supplied.
+            Assert.Equal("good", monitor.CurrentValue.Message);
+        }
+
+        [Fact]
+        public void ValidateOnChange_ReloadValidatorThrowsOwnCancellation_ReportsError()
+        {
+            var source = new ReloadSource();
+            var validator = new ReloadTestValidator { ThrowOwnCancellation = true };
+            var services = new ServiceCollection();
+            using var errored = new ManualResetEventSlim();
+            Exception? reportedError = null;
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "reloaded")
+                .ValidateOnChange(OptionsReloadValidationBehavior.KeepLastGood, (name, ex) => { reportedError = ex; errored.Set(); });
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(source);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            SeedCache(sp, "good");
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            source.Trigger();
+
+            Assert.True(errored.Wait(TimeSpan.FromSeconds(30)), "A validator-originated cancellation was not reported as a failure.");
+            // A cancellation that does not originate from the monitor's own token is a genuine failure, not a supersession.
+            Assert.IsType<OperationCanceledException>(reportedError);
             Assert.Equal("good", monitor.CurrentValue.Message);
         }
 
@@ -671,6 +756,7 @@ namespace Microsoft.Extensions.Options.Tests
         private sealed class ReloadTestValidator : IValidateOptions<FakeOptions>, IAsyncValidateOptions<FakeOptions>
         {
             public bool Fail { get; set; }
+            public bool ThrowOwnCancellation { get; set; }
             public Task? Gate { get; set; }
 
             public ValidateOptionsResult Validate(string? name, FakeOptions options)
@@ -687,6 +773,13 @@ namespace Microsoft.Extensions.Options.Tests
                         await Task.WhenAny(gate, tcs.Task).ConfigureAwait(false);
                     }
                     cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                if (ThrowOwnCancellation)
+                {
+                    // Simulate a validator that cancels for its own reasons (e.g. an internal timeout) using a token
+                    // unrelated to the monitor's reload token.
+                    throw new OperationCanceledException(new CancellationToken(canceled: true));
                 }
 
                 return Fail ? ValidateOptionsResult.Fail("async validation failed") : ValidateOptionsResult.Success;

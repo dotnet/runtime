@@ -155,9 +155,11 @@ namespace Microsoft.Extensions.Options
                     published = validated;
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                // Superseded by a newer reload (or disposal); nothing to publish.
+                // Our token was canceled: superseded by a newer reload (or disposal).
+                // A cancellation that does not originate from our token (e.g. a validator's own timeout) falls
+                // through to the general handler below and is treated as a genuine reload failure.
                 return;
             }
             catch (Exception ex)
@@ -194,7 +196,17 @@ namespace Microsoft.Extensions.Options
 
             if (published is not null)
             {
-                _onChange?.Invoke(published, name);
+                try
+                {
+                    _onChange?.Invoke(published, name);
+                }
+                catch
+                {
+                    // Change listeners are user code. RefreshAsync runs as a fire-and-forget task, so a throwing
+                    // listener must be swallowed here to avoid faulting that task (an unobserved task exception).
+                    // A listener throwing is a listener bug and is not a reload failure, so it is not surfaced
+                    // through the failure channels above.
+                }
             }
         }
 
