@@ -924,6 +924,14 @@ namespace System.Text.Json.SourceGeneration
                     {
                         writer.WriteLine($"properties[{i}].IsSetNullable = false;");
                     }
+                    if (property.IsGetterObliviousAnnotation)
+                    {
+                        writer.WriteLine($"properties[{i}].IsGetNullabilityOblivious = true;");
+                    }
+                    if (property.IsSetterObliviousAnnotation)
+                    {
+                        writer.WriteLine($"properties[{i}].IsSetNullabilityOblivious = true;");
+                    }
 
                     writer.WriteLine();
                 }

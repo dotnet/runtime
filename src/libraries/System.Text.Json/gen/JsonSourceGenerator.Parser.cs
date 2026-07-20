@@ -2405,7 +2405,9 @@ namespace System.Text.Json.SourceGeneration
                     out bool canUseSetter,
                     out bool setterIsInitOnly,
                     out bool isGetterNonNullable,
-                    out bool isSetterNonNullable);
+                    out bool isSetterNonNullable,
+                    out bool isGetterOblivious,
+                    out bool isSetterOblivious);
 
                 if (isExtensionData)
                 {
@@ -2522,6 +2524,8 @@ namespace System.Text.Json.SourceGeneration
                     ConverterType = converterType,
                     IsGetterNonNullableAnnotation = isGetterNonNullable,
                     IsSetterNonNullableAnnotation = isSetterNonNullable,
+                    IsGetterObliviousAnnotation = isGetterOblivious,
+                    IsSetterObliviousAnnotation = isSetterOblivious,
                 };
             }
 
@@ -2656,7 +2660,9 @@ namespace System.Text.Json.SourceGeneration
                 out bool canUseSetter,
                 out bool isSetterInitOnly,
                 out bool isGetterNonNullable,
-                out bool isSetterNonNullable)
+                out bool isSetterNonNullable,
+                out bool isGetterOblivious,
+                out bool isSetterOblivious)
             {
                 isAccessible = false;
                 isReadOnly = false;
@@ -2666,6 +2672,8 @@ namespace System.Text.Json.SourceGeneration
                 isSetterInitOnly = false;
                 isGetterNonNullable = false;
                 isSetterNonNullable = false;
+                isGetterOblivious = false;
+                isSetterOblivious = false;
 
                 switch (memberInfo)
                 {
@@ -2707,7 +2715,7 @@ namespace System.Text.Json.SourceGeneration
                             isReadOnly = true;
                         }
 
-                        propertyInfo.ResolveNullabilityAnnotations(out isGetterNonNullable, out isSetterNonNullable);
+                        propertyInfo.ResolveNullabilityAnnotations(out isGetterNonNullable, out isSetterNonNullable, out isGetterOblivious, out isSetterOblivious);
                         break;
                     case IFieldSymbol fieldInfo:
                         isReadOnly = fieldInfo.IsReadOnly;
@@ -2727,7 +2735,7 @@ namespace System.Text.Json.SourceGeneration
                             canUseSetter = hasJsonInclude && !isReadOnly;
                         }
 
-                        fieldInfo.ResolveNullabilityAnnotations(out isGetterNonNullable, out isSetterNonNullable);
+                        fieldInfo.ResolveNullabilityAnnotations(out isGetterNonNullable, out isSetterNonNullable, out isGetterOblivious, out isSetterOblivious);
                         break;
                     default:
                         Debug.Fail("Method given an invalid symbol type.");

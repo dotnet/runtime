@@ -689,7 +689,8 @@ namespace System.Text.Json.SourceGeneration
             }
         }
 
-        public static void ResolveNullabilityAnnotations(this IFieldSymbol field, out bool isGetterNonNullable, out bool isSetterNonNullable)
+        public static void ResolveNullabilityAnnotations(this IFieldSymbol field, out bool isGetterNonNullable, out bool isSetterNonNullable,
+            out bool isGetterOblivious, out bool isSetterOblivious)
         {
             if (field.Type.IsNullableType())
             {
@@ -701,14 +702,18 @@ namespace System.Text.Json.SourceGeneration
 
                 isGetterNonNullable = IsOutputTypeNonNullable(field, field.Type);
                 isSetterNonNullable = IsInputTypeNonNullable(field, field.Type);
+                isGetterOblivious = !isGetterNonNullable && IsOutputTypeOblivious(field, field.Type);
+                isSetterOblivious = !isSetterNonNullable && IsInputTypeOblivious(field, field.Type);
             }
             else
             {
                 isGetterNonNullable = isSetterNonNullable = false;
+                isGetterOblivious = isSetterOblivious = false;
             }
         }
 
-        public static void ResolveNullabilityAnnotations(this IPropertySymbol property, out bool isGetterNonNullable, out bool isSetterNonNullable)
+        public static void ResolveNullabilityAnnotations(this IPropertySymbol property, out bool isGetterNonNullable, out bool isSetterNonNullable,
+            out bool isGetterOblivious, out bool isSetterOblivious)
         {
             if (property.Type.IsNullableType())
             {
@@ -720,10 +725,13 @@ namespace System.Text.Json.SourceGeneration
 
                 isGetterNonNullable = property.GetMethod != null && IsOutputTypeNonNullable(property, property.Type);
                 isSetterNonNullable = property.SetMethod != null && IsInputTypeNonNullable(property, property.Type);
+                isGetterOblivious = property.GetMethod != null && !isGetterNonNullable && IsOutputTypeOblivious(property, property.Type);
+                isSetterOblivious = property.SetMethod != null && !isSetterNonNullable && IsInputTypeOblivious(property, property.Type);
             }
             else
             {
                 isGetterNonNullable = isSetterNonNullable = false;
+                isGetterOblivious = isSetterOblivious = false;
             }
         }
 
@@ -789,6 +797,40 @@ namespace System.Text.Json.SourceGeneration
             return symbol.GetAttributes().Any(attr =>
                 attr.AttributeClass?.Name == attributeName &&
                 attr.AttributeClass.ContainingNamespace.ToDisplayString() == "System.Diagnostics.CodeAnalysis");
+        }
+
+        private static bool IsOutputTypeOblivious(this ISymbol symbol, ITypeSymbol returnType)
+        {
+            // A getter type is oblivious (null-oblivious) if it has no explicit nullable annotation.
+            // Overriding attributes ([MaybeNull], [NotNull]) always make the type explicitly annotated.
+            if (symbol.HasCodeAnalysisAttribute("MaybeNullAttribute") || symbol.HasCodeAnalysisAttribute("NotNullAttribute"))
+            {
+                return false;
+            }
+
+            if (returnType is ITypeParameterSymbol)
+            {
+                return false;
+            }
+
+            return returnType.NullableAnnotation is NullableAnnotation.None;
+        }
+
+        private static bool IsInputTypeOblivious(this ISymbol symbol, ITypeSymbol inputType)
+        {
+            // A setter type is oblivious (null-oblivious) if it has no explicit nullable annotation.
+            // Overriding attributes ([AllowNull], [DisallowNull]) always make the type explicitly annotated.
+            if (symbol.HasCodeAnalysisAttribute("AllowNullAttribute") || symbol.HasCodeAnalysisAttribute("DisallowNullAttribute"))
+            {
+                return false;
+            }
+
+            if (inputType is ITypeParameterSymbol)
+            {
+                return false;
+            }
+
+            return inputType.NullableAnnotation is NullableAnnotation.None;
         }
 
         // Polyfill for the closed-type reflection APIs added to Roslyn in dotnet/roslyn#84045

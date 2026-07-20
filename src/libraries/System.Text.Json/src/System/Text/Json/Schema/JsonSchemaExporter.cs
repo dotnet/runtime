@@ -447,6 +447,14 @@ namespace System.Text.Json.Schema
 
                         if (propertyInfo is not null)
                         {
+                            if (options.TreatNullObliviousAsNonNullable)
+                            {
+                                // When treating null-oblivious types as non-nullable, a property schema is only
+                                // nullable if it has an explicit nullable annotation (not just null-oblivious).
+                                return (propertyInfo.IsGetNullable && !propertyInfo.IsGetNullabilityOblivious)
+                                    || (propertyInfo.IsSetNullable && !propertyInfo.IsSetNullabilityOblivious);
+                            }
+
                             return propertyInfo.IsGetNullable || propertyInfo.IsSetNullable;
                         }
 

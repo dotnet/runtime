@@ -896,6 +896,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             propertyInfo.IsGetNullable = nullabilityInfo.ReadState is not NullabilityState.NotNull;
             propertyInfo.IsSetNullable = nullabilityInfo.WriteState is not NullabilityState.NotNull;
+            propertyInfo.IsGetNullabilityOblivious = nullabilityInfo.ReadState is NullabilityState.Unknown;
+            propertyInfo.IsSetNullabilityOblivious = nullabilityInfo.WriteState is NullabilityState.Unknown;
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]

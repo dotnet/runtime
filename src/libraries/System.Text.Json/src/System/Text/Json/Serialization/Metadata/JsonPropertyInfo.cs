@@ -301,6 +301,20 @@ namespace System.Text.Json.Serialization.Metadata
         private protected bool _isSetNullable;
 
         /// <summary>
+        /// Indicates whether the getter's nullability state is "unknown" (i.e., the member was declared
+        /// in a null-oblivious context such as a <c>#nullable disable</c> region).
+        /// Used by the schema exporter to distinguish null-oblivious properties from explicitly-nullable ones.
+        /// </summary>
+        internal bool IsGetNullabilityOblivious { get; set; }
+
+        /// <summary>
+        /// Indicates whether the setter's nullability state is "unknown" (i.e., the member was declared
+        /// in a null-oblivious context such as a <c>#nullable disable</c> region).
+        /// Used by the schema exporter to distinguish null-oblivious properties from explicitly-nullable ones.
+        /// </summary>
+        internal bool IsSetNullabilityOblivious { get; set; }
+
+        /// <summary>
         /// Specifies whether the current property is a special extension data property.
         /// </summary>
         /// <exception cref="InvalidOperationException">

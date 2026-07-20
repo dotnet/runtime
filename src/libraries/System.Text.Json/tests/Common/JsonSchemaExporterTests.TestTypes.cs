@@ -845,6 +845,40 @@ namespace System.Text.Json.Schema.Tests
                 }
                 """);
 
+            // Regression test for https://github.com/dotnet/runtime/issues/130989
+            yield return new TestData<PocoWithNullObliviousProperties>(
+                Value: new() { NullObliviousString = "str", NullObliviousStringNested = "str", NullableString = null, NonNullableString = "str", NullableValueType = null, NonNullableValueType = 0 },
+                ExpectedJsonSchema: """
+                {
+                    "type": ["object","null"],
+                    "properties": {
+                        "NullObliviousString": { "type": ["string","null"] },
+                        "NullObliviousStringNested": { "type": ["string","null"] },
+                        "NullableString": { "type": ["string","null"] },
+                        "NonNullableString": { "type": "string" },
+                        "NullableValueType": { "type": ["integer","null"] },
+                        "NonNullableValueType": { "type": "integer" }
+                    }
+                }
+                """);
+
+            yield return new TestData<PocoWithNullObliviousProperties>(
+                Value: new() { NullObliviousString = "str", NullObliviousStringNested = "str", NullableString = null, NonNullableString = "str", NullableValueType = null, NonNullableValueType = 0 },
+                ExpectedJsonSchema: """
+                {
+                    "type": ["object","null"],
+                    "properties": {
+                        "NullObliviousString": { "type": "string" },
+                        "NullObliviousStringNested": { "type": "string" },
+                        "NullableString": { "type": ["string","null"] },
+                        "NonNullableString": { "type": "string" },
+                        "NullableValueType": { "type": ["integer","null"] },
+                        "NonNullableValueType": { "type": "integer" }
+                    }
+                }
+                """,
+                Options: new() { TreatNullObliviousAsNonNullable = true });
+
             yield return new TestData<PocoWithNullableAnnotationAttributesOnConstructorParams>(
                 Value: new(allowNull: null, disallowNull: "str"),
                 ExpectedJsonSchema: """
@@ -1766,6 +1800,22 @@ namespace System.Text.Json.Schema.Tests
                     => writer.WriteNullValue();
             }
         }
+
+#nullable disable
+        public class PocoWithNullObliviousProperties
+        {
+            public string NullObliviousString { get; set; }
+            public string NullObliviousStringNested { get; set; }
+
+#nullable restore
+            public string? NullableString { get; set; }
+            public string NonNullableString { get; set; } = string.Empty;
+#nullable disable
+
+            public int? NullableValueType { get; set; }
+            public int NonNullableValueType { get; set; }
+        }
+#nullable restore
 
         private static TAttribute? GetCustomAttribute<TAttribute>(ICustomAttributeProvider? provider, bool inherit = false) where TAttribute : Attribute
             => provider?.GetCustomAttributes(typeof(TAttribute), inherit).FirstOrDefault() as TAttribute;

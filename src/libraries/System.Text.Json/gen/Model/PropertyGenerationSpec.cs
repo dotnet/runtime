@@ -108,6 +108,16 @@ namespace System.Text.Json.SourceGeneration
         public required bool IsSetterNonNullableAnnotation { get; init; }
 
         /// <summary>
+        /// Whether the property getter's nullability state is "unknown" (i.e., declared in a null-oblivious context).
+        /// </summary>
+        public required bool IsGetterObliviousAnnotation { get; init; }
+
+        /// <summary>
+        /// Whether the property setter's nullability state is "unknown" (i.e., declared in a null-oblivious context).
+        /// </summary>
+        public required bool IsSetterObliviousAnnotation { get; init; }
+
+        /// <summary>
         /// The <see cref="JsonIgnoreCondition"/> for the property.
         /// </summary>
         public required JsonIgnoreCondition? DefaultIgnoreCondition { get; init; }
