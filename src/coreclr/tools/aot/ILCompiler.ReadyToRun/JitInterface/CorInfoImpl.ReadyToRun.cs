@@ -3223,9 +3223,9 @@ namespace Internal.JitInterface
             if (((ecmaMethod.GetPInvokeMethodCallingConventions() & UnmanagedCallingConventions.IsSuppressGcTransition) != 0)
                 || _compilation.NodeFactory.Target.IsWasm)
             {
-                // Suppress GC transition pinvokes are called directly, since we can't do a gc transition at this point.
-                // On Wasm, we also call directly, as the runtime doesn't generate stubs for the pinvoke calls which can produce errors. Instead
-                // the error is produced as we fixup the method in the first place.
+                // Suppress GC transition P/Invokes are called directly, since we can't do a GC transition at this point.
+                 // On Wasm, we also call directly because the runtime doesn't generate P/Invoke import precodes/stubs; instead,
+                 // errors are reported when we fix up the method.
                 pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetPInvokeTargetNode(methodWithToken));
                 pLookup.accessType = InfoAccessType.IAT_PVALUE;
             }

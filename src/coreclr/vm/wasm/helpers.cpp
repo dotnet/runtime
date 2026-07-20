@@ -496,10 +496,10 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
     if (m_pCallerReturnAddress == INLINED_PINVOKE_FROM_R2R)
     {
-        pRD->pCurrentContext->InterpreterSP = m_pCallSiteSP;
-        pRD->pCurrentContext->InterpreterIP = GetWasmVirtualIPFromStackPointer(m_pCallSiteSP);
+        pRD->pCurrentContext->InterpreterSP = (TADDR)m_pCallSiteSP;
+        pRD->pCurrentContext->InterpreterIP = GetWasmVirtualIPFromStackPointer((TADDR)m_pCallSiteSP);
         _ASSERTE(pRD->pCurrentContext->InterpreterIP != 0); // We should be in RyuJit compiled code here
-        pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer(m_pCallSiteSP, pRD->pCurrentContext->InterpreterIP);
+        pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer((TADDR)m_pCallSiteSP, (PCODE)pRD->pCurrentContext->InterpreterIP);
     }
     else
     {
@@ -701,7 +701,7 @@ EXTERN_C void JIT_PInvokeBeginImpl(void* sp, InlinedCallFrame* pFrame)
     // has no machine registers to read the caller SP / return address from.
     ::new ((void*)pFrame) InlinedCallFrame();
     pFrame->m_pCallSiteSP          = sp;
-    pFrame->m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R; // When this is tru the UpdateRegisters function will do all work based on m_pCallerReturnAddress
+    pFrame->m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R; // When this is true, UpdateRegDisplay_Impl derives state from m_pCallSiteSP.
     pFrame->m_pCalleeSavedFP       = 0;
     pFrame->m_pThread              = pThread;
 
@@ -723,34 +723,54 @@ extern "C" __attribute__((naked)) void JIT_PInvokeBegin(void* sp, InlinedCallFra
         "return" ::"i"(JIT_PInvokeBeginImpl));
 }
 
+extern "C" VOID JIT_PInvokeEndRarePath();
+
 #ifdef DEBUG
 // Debug variant of these apis tests that sp and __stack_pointer are in sync
-EXTERN_C void* JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, InlinedCallFrame* pFrame)
+EXTERN_C void JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, InlinedCallFrame* pFrame)
 {
     _ASSERTE(sp == stack_pointer_global_value);
     Thread* pThread = (Thread*)pFrame->m_pThread;
 
-    // Transition back to cooperative GC mode and unlink the frame.
-    pThread->DisablePreemptiveGC();
-    pFrame->Pop();
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        pFrame->Pop();
+    }
 }
 
 extern "C" __attribute__((naked)) void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 {
-    asm("local.get 0\n"                /* sp */
-        "global.set __stack_pointer\n" /* __stack_pointer = sp before any native code runs */
+    asm(
+        "local.get 0\n"                /* sp */
+        "global.get __stack_pointer\n" /* __stack_pointer */
         "local.get 1\n"                /* pFrame */
+        "local.get 0\n"                /* sp */
+        "global.set __stack_pointer\n" /* __stack_pointer = sp before any native code runs, set this here, so that if the assumption around sp == __stack_pointer is wrong the assert logic will work correctly. */
         "call %0\n"
         "return" ::"i"(JIT_PInvokeEndImpl));
 }
 #else
 extern "C" void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 {
+     UNREFERENCED_PARAMETER(sp);
+     UNREFERENCED_PARAMETER(pep);
+
     Thread* pThread = (Thread*)pFrame->m_pThread;
 
-    // Transition back to cooperative GC mode and unlink the frame.
-    pThread->DisablePreemptiveGC();
-    pFrame->Pop();
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        pFrame->Pop();
+    }
 }
 #endif
 
