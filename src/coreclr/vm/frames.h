@@ -1061,6 +1061,7 @@ public:
     }
 
     void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
+    void SetContext(T_CONTEXT *pContext);
 #endif
 
     TADDR GetReturnAddressPtr_Impl()
@@ -1359,6 +1360,14 @@ public:
         trace->InitForUnmanaged(GetPInvokeCalliTarget());
         return TRUE;
     }
+
+    friend struct ::cdac_data<PInvokeCalliFrame>;
+};
+
+template <>
+struct cdac_data<PInvokeCalliFrame>
+{
+    static constexpr size_t VASigCookiePtr = offsetof(PInvokeCalliFrame, m_pVASigCookie);
 };
 
 // Some context-related forwards.

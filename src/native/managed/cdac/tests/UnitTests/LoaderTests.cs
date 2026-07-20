@@ -230,27 +230,20 @@ public unsafe class LoaderTests
         (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
 
         TargetPointer indcellHeap = new(0x8000);
-        TargetPointer firstBlock = new(0x8100);
         var heaps = new Dictionary<LoaderAllocatorHeapType, TargetPointer>
         {
             [LoaderAllocatorHeapType.IndcellHeap] = indcellHeap,
         };
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
             .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)heaps);
-        loader.Setup(l => l.GetFirstLoaderHeapBlock(indcellHeap)).Returns(firstBlock);
-        loader.Setup(l => l.GetLoaderHeapBlockData(firstBlock)).Returns(new LoaderHeapBlockData
-        {
-            Address = new TargetPointer(0x9000),
-            Size = new TargetNUInt(0x40),
-            NextBlock = TargetPointer.Null,
-        });
+        loader.Setup(l => l.EnumerateLoaderHeapBlocks(indcellHeap))
+            .Returns([new LoaderHeapBlock(new TargetPointer(0x9000), new TargetNUInt(0x40))]);
 
         delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
         int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeIndcell, callback);
 
         Assert.Equal(HResults.S_OK, hr);
-        loader.Verify(l => l.GetFirstLoaderHeapBlock(indcellHeap), Times.Once());
-        loader.Verify(l => l.GetLoaderHeapBlockData(firstBlock), Times.Once());
+        loader.Verify(l => l.EnumerateLoaderHeapBlocks(indcellHeap), Times.Once());
     }
 
     [Theory]
@@ -260,7 +253,6 @@ public unsafe class LoaderTests
         (ISOSDacInterface impl, Mock<ILoader> loader) = CreateSOSDacInterfaceForVirtCallHeapTests(arch);
 
         TargetPointer cacheEntryHeap = new(0x9000);
-        TargetPointer firstBlock = new(0x9100);
         var heaps = new Dictionary<LoaderAllocatorHeapType, TargetPointer>
         {
             [LoaderAllocatorHeapType.IndcellHeap] = new TargetPointer(0x8000),
@@ -268,20 +260,14 @@ public unsafe class LoaderTests
         };
         loader.Setup(l => l.GetLoaderAllocatorHeaps(new TargetPointer(0x100)))
             .Returns((IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)heaps);
-        loader.Setup(l => l.GetFirstLoaderHeapBlock(cacheEntryHeap)).Returns(firstBlock);
-        loader.Setup(l => l.GetLoaderHeapBlockData(firstBlock)).Returns(new LoaderHeapBlockData
-        {
-            Address = new TargetPointer(0xA000),
-            Size = new TargetNUInt(0x40),
-            NextBlock = TargetPointer.Null,
-        });
+        loader.Setup(l => l.EnumerateLoaderHeapBlocks(cacheEntryHeap))
+            .Returns([new LoaderHeapBlock(new TargetPointer(0xA000), new TargetNUInt(0x40))]);
 
         delegate* unmanaged<ulong, nuint, Interop.BOOL, void> callback = &VisitHeapNoOp;
         int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeCacheEntry, callback);
 
         Assert.Equal(HResults.S_OK, hr);
-        loader.Verify(l => l.GetFirstLoaderHeapBlock(cacheEntryHeap), Times.Once());
-        loader.Verify(l => l.GetLoaderHeapBlockData(firstBlock), Times.Once());
+        loader.Verify(l => l.EnumerateLoaderHeapBlocks(cacheEntryHeap), Times.Once());
     }
 
     [Theory]
@@ -316,7 +302,7 @@ public unsafe class LoaderTests
         int hr = impl.TraverseVirtCallStubHeap(new ClrDataAddress(0x1), VCSHeapTypeCacheEntry, callback);
 
         Assert.Equal(HResults.S_OK, hr);
-        loader.Verify(l => l.GetFirstLoaderHeapBlock(It.IsAny<TargetPointer>()), Times.Never());
+        loader.Verify(l => l.EnumerateLoaderHeapBlocks(It.IsAny<TargetPointer>()), Times.Never());
     }
 
     [Theory]
@@ -521,6 +507,7 @@ public unsafe class LoaderTests
         var peAssemblyLayout = helpers.LayoutFields([
             new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
             new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
         ]);
         var peImageLayout = helpers.LayoutFields([
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
@@ -739,6 +726,7 @@ public unsafe class LoaderTests
         var peAssemblyLayout = helpers.LayoutFields([
             new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
             new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
         ]);
         var peImageLayout = helpers.LayoutFields([
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
@@ -1091,6 +1079,7 @@ public unsafe class LoaderTests
         var peAssemblyLayout = helpers.LayoutFields([
             new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
             new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
         ]);
         var peImageLayout = helpers.LayoutFields([
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),

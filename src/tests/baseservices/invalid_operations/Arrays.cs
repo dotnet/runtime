@@ -12,7 +12,8 @@ public class Arrays
 {
     private class TestClass { }
 
-    [ActiveIssue("Function mismatch", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [ActiveIssue("Function mismatch", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [ActiveIssue("Function mismatch", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoRuntime))]
     [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void TypeMismatch_ArrayElement()
@@ -24,8 +25,9 @@ public class Arrays
         Assert.IsType<ArrayTypeMismatchException>(e.InnerException);
     }
 
+    [ActiveIssue("Function mismatch", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [ActiveIssue("Function mismatch", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoRuntime))]
     [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
-    [ActiveIssue("Function mismatch", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TypeMismatch_MultidimensionalArrayElement()
     {
@@ -36,8 +38,9 @@ public class Arrays
         Assert.IsType<ArrayTypeMismatchException>(e.InnerException);
     }
 
+    [ActiveIssue("Function mismatch", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [ActiveIssue("Function mismatch", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoRuntime))]
     [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
-    [ActiveIssue("Function mismatch", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TypeMismatch_ClassElement()
     {

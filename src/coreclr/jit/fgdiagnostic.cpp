@@ -2787,8 +2787,15 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
 //
 bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehHndlDsc)
 {
-    // You can do a BBJ_EHFINALLYRET or BBJ_EHFILTERRET into a handler region
-    if (blockPred->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET))
+    // You can do a BBJ_EHFINALLYRET into a handler region
+    if (blockPred->KindIs(BBJ_EHFINALLYRET))
+    {
+        return true;
+    }
+
+    // A filter can jump to the start of the filter handler
+    if (ehHndlDsc->HasFilter() && (ehHndlDsc->ebdHndBeg == block) && blockPred->KindIs(BBJ_EHFILTERRET) &&
+        ehHndlDsc->InFilterRegionBBRange(blockPred))
     {
         return true;
     }
@@ -2803,13 +2810,22 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     // You can jump within the same handler region
     if (m_compiler->bbInHandlerRegions(block->getHndIndex(), blockPred))
     {
-        return true;
-    }
+        if (!ehHndlDsc->HasFilter())
+        {
+            return true;
+        }
 
-    // A filter can jump to the start of the filter handler
-    if (ehHndlDsc->HasFilter())
-    {
-        return true;
+        const bool blockInFilter     = ehHndlDsc->InFilterRegionBBRange(block);
+        const bool blockPredInFilter = ehHndlDsc->InFilterRegionBBRange(blockPred);
+        if (blockInFilter == blockPredInFilter)
+        {
+            return true;
+        }
+
+        JITDUMP("Jump between filter and filter handler regions: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
+                block->bbNum);
+        assert(!"Jump between filter and filter handler regions");
+        return false;
     }
 
     JITDUMP("Jump into the middle of handler region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
@@ -3478,6 +3494,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
         {
             GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
             NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+            unsigned            simdSize    = hwintrinsic->GetSimdSize();
 
             if (hwintrinsic->OperIsMemoryLoad())
             {
@@ -3516,9 +3533,9 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                         break;
                     }
 
-                    case NI_Vector128_op_Division:
-                    case NI_Vector256_op_Division:
+                    case NI_Vector_op_Division:
                     {
+                        assert((simdSize == 16) || (simdSize == 32));
                         break;
                     }
 #endif // TARGET_XARCH

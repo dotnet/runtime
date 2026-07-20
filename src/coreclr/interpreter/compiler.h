@@ -711,6 +711,11 @@ private:
     bool m_nextAwaitIsTail = false;
     bool m_asyncVersionIsTailCalling = false;
 
+    // If true, this is a recognized await of ValueTaskReturn().AsTask(). This
+    // does not have strictly the same semantics as 'await ValueTaskReturn()'
+    // so some special treatment is needed.
+    bool m_isValueTaskAdaptedToTask = false;
+
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
     TArray<LeavesTableEntry, MemPoolAllocator> m_leavesTable;
@@ -759,6 +764,8 @@ private:
     void* GetAddrOfDataItemAtIndex(int32_t index);
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
     int32_t GetDataForHelperFtn(CorInfoHelpFunc ftn);
+
+    void CreateSynchronizedRetValVar();
 
     void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
     InterpBasicBlock* GenerateCodeForLeaveChainIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
@@ -1001,11 +1008,14 @@ private:
     bool    IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    bool    IsRuntimeAsyncCallNewobjRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    bool    IsRuntimeAsyncCallAsTaskRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    bool    IsRuntimeAsyncCallAsTaskRetInAsyncVersionExact(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallRetOrJmpInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
 
     int     ApplyRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo) { return -1; }
-    int     ApplyRuntimeAsyncCallRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyAsyncVersionPeepSkipToRet(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
     ContinuationContextHandling m_currentContinuationContextHandling = ContinuationContextHandling::None;
     CORINFO_RESOLVED_TOKEN m_resolvedAsyncCallToken;
 
@@ -1020,7 +1030,7 @@ private:
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
     void    WrapTopOfStackInAwait();
     void    EmitRet(CORINFO_METHOD_INFO* methodInfo);
-    void    EmitSuspend(CorInfoType callRetType, ContinuationContextHandling ContinuationContextHandling);
+    void    EmitSuspend(CorInfoType callRetType, ContinuationContextHandling continuationContextHandling, bool isValueTaskAdaptedToTask);
     void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);

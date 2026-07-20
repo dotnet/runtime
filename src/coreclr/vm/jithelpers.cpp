@@ -1202,15 +1202,6 @@ void JIT_RareDisableHelper()
     }
 }
 
-FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
-{
-    FCALL_CONTRACT;
-
-    Thread * pThread = GetThread();
-    return pThread->GetThreadId();
-}
-FCIMPLEND
-
 /*********************************************************************/
 /* we don't use HCIMPL macros because we don't want the overhead even in debug mode */
 
@@ -1913,17 +1904,22 @@ HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32
     _ASSERTE(pMT->IsDelegate());
 
     // Resolve method. We handle only the common "direct" delegate as that is
-    // in any case the only one we can reasonably do GDV for. For instance,
-    // open delegates are filtered out here, and many cases with inner
-    // "complicated" logic as well (e.g. static functions, multicast, unmanaged
-    // functions).
-    //
-    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    // in any case the only one we can reasonably do GDV for.
+    // We filter out multicast and unmanaged here.
+
     DELEGATEREF del = (DELEGATEREF)objRef;
-    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == (PCODE)NULL))
+    INT_PTR extraData = del->GetExtraData();
+
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    if (COMDelegate::HasSingleTarget(del) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
-        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
-        if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
+        MethodDesc* pMD = NULL;
+        if (del->GetMethodPtrAux() == (PCODE)NULL)
+        {
+            pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
+        }
+
+        if ((pMD != NULL) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
         {
             pRecordedMD = pMD;
         }
@@ -1959,17 +1955,22 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
     _ASSERTE(pMT->IsDelegate());
 
     // Resolve method. We handle only the common "direct" delegate as that is
-    // in any case the only one we can reasonably do GDV for. For instance,
-    // open delegates are filtered out here, and many cases with inner
-    // "complicated" logic as well (e.g. static functions, multicast, unmanaged
-    // functions).
-    //
-    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    // in any case the only one we can reasonably do GDV for.
+    // We filter out multicast and unmanaged here.
+
     DELEGATEREF del = (DELEGATEREF)objRef;
-    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == (PCODE)NULL))
+    INT_PTR extraData = del->GetExtraData();
+
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    if (COMDelegate::HasSingleTarget(del) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
-        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
-        if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
+        MethodDesc* pMD = NULL;
+        if (del->GetMethodPtrAux() == (PCODE)NULL)
+        {
+            pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
+        }
+
+        if ((pMD != NULL) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
         {
             pRecordedMD = pMD;
         }
