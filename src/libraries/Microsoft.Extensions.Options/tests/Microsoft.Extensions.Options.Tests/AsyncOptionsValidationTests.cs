@@ -357,10 +357,8 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("ok", value.Message);
         }
 
-        // ---- Phase 9: sync-accessor validated-value caching ----
-
         [Fact]
-        public async Task Phase9_AsyncValidatedType_SyncAccessorsReturnStartupValidatedValue()
+        public async Task AsyncValidatedOptions_SyncAccessorsReturnStartupValidatedValue()
         {
             var services = new ServiceCollection();
             services.AddOptions<FakeOptions>()
@@ -383,7 +381,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void Phase9_SyncOnlyType_SyncAccessorsBehaviorUnchanged()
+        public void SyncOnlyValidatedOptions_SyncAccessorsBehaviorUnchanged()
         {
             var services = new ServiceCollection();
             services.AddOptions<FakeOptions>()
@@ -397,10 +395,8 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("sync", scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get(null).Message);
         }
 
-        // ---- Phase 8: opt-in async reload revalidation (ValidateOnChange) ----
-
         [Fact]
-        public void Phase8_ValidReload_PublishesNewValidatedValueAndNotifies()
+        public void ValidateOnChange_ValidReload_PublishesNewValidatedValueAndNotifies()
         {
             var source = new ReloadSource();
             var validator = new ReloadTestValidator();
@@ -429,7 +425,71 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void Phase8_InvalidReload_KeepLastGood_ServesLastGoodAndReportsError()
+        public void ValidateOnChange_ThrowingChangeListener_DoesNotEvictPublishedValueOrReportError()
+        {
+            var source = new ReloadSource();
+            var validator = new ReloadTestValidator();
+            var services = new ServiceCollection();
+            bool errorReported = false;
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "reloaded")
+                .ValidateOnChange(OptionsReloadValidationBehavior.FailReads, (name, ex) => errorReported = true);
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(source);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            SeedCache(sp, "seed");
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            using var listenerRan = new ManualResetEventSlim();
+            using IDisposable _ = monitor.OnChange((o, n) =>
+            {
+                listenerRan.Set();
+                throw new InvalidOperationException("listener boom");
+            });
+
+            source.Trigger();
+
+            Assert.True(listenerRan.Wait(TimeSpan.FromSeconds(30)), "The change listener did not run.");
+            Thread.Sleep(200);
+
+            // A throwing listener runs after a successful reload; it must not be treated as a reload failure: the
+            // published value is served (not evicted by FailReads) and the error callback is not invoked.
+            Assert.Equal("reloaded", monitor.CurrentValue.Message);
+            Assert.False(errorReported);
+        }
+
+        [Fact]
+        public void ValidateOnChange_ThrowingOnErrorCallback_DoesNotFaultBackgroundRefresh()
+        {
+            var source = new ReloadSource();
+            var validator = new ReloadTestValidator { Fail = true };
+            var services = new ServiceCollection();
+            using var errored = new ManualResetEventSlim();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "reloaded")
+                .ValidateOnChange(OptionsReloadValidationBehavior.KeepLastGood, (name, ex) =>
+                {
+                    errored.Set();
+                    throw new InvalidOperationException("onError boom");
+                });
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(source);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            SeedCache(sp, "good");
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            source.Trigger();
+
+            // A throwing OnError must be swallowed by the background refresh (no unobserved task fault); the last good
+            // value keeps being served.
+            Assert.True(errored.Wait(TimeSpan.FromSeconds(30)), "The error callback was not invoked.");
+            Assert.Equal("good", monitor.CurrentValue.Message);
+        }
+
+        [Fact]
+        public void ValidateOnChange_InvalidReload_KeepLastGood_ServesLastGoodAndReportsError()
         {
             var source = new ReloadSource();
             var validator = new ReloadTestValidator { Fail = true };
@@ -459,7 +519,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void Phase8_InvalidReload_FailReads_NextReadThrows()
+        public void ValidateOnChange_InvalidReload_FailReads_NextReadThrows()
         {
             var source = new ReloadSource();
             var validator = new ReloadTestValidator { Fail = true };
@@ -483,7 +543,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void Phase8_DefaultMonitorWithoutOptIn_UsesLazyRevalidation()
+        public void ValidateOnChange_NotOptedIn_MonitorUsesLazyRevalidation()
         {
             var source = new ReloadSource();
             int configureCount = 0;
@@ -502,7 +562,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void Phase8_RapidReloads_LatestWins()
+        public void ValidateOnChange_RapidReloads_LatestWins()
         {
             var source = new ReloadSource();
             var validator = new ReloadTestValidator();
@@ -542,7 +602,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void Phase8_DisposeCancelsInFlightReload()
+        public void ValidateOnChange_DisposeMonitor_CancelsInFlightReload()
         {
             var source = new ReloadSource();
             var validator = new ReloadTestValidator();

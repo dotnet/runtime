@@ -126,6 +126,7 @@ namespace Microsoft.Extensions.Options
 
         private async Task RefreshAsync(string name, ReloadValidationConfiguration<TOptions> config, EagerReloadState state, int generation, CancellationToken cancellationToken)
         {
+            TOptions? published = null;
             try
             {
                 TOptions validated = _factory is OptionsFactory<TOptions> asyncFactory
@@ -150,13 +151,14 @@ namespace Microsoft.Extensions.Options
                         _cache.TryRemove(name);
                         _cache.TryAdd(name, validated);
                     }
-                }
 
-                _onChange?.Invoke(validated, name);
+                    published = validated;
+                }
             }
             catch (OperationCanceledException)
             {
                 // Superseded by a newer reload (or disposal); nothing to publish.
+                return;
             }
             catch (Exception ex)
             {
@@ -174,7 +176,21 @@ namespace Microsoft.Extensions.Options
                     }
                 }
 
-                config.OnError?.Invoke(name, ex);
+                try
+                {
+                    config.OnError?.Invoke(name, ex);
+                }
+                catch
+                {
+                    // The error callback is user code. We catch here to prevent an unobserved task exception.
+                }
+
+                return;
+            }
+
+            if (published is not null)
+            {
+                _onChange?.Invoke(published, name);
             }
         }
 
