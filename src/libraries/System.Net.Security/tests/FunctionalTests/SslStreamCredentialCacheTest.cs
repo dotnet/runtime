@@ -22,9 +22,15 @@ namespace System.Net.Security.Tests
         {
             foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13, true))
             {
-                yield return new object[] { protocol, false, false };
-                yield return new object[] { protocol, true, false };
-                yield return new object[] { protocol, true, true };
+                foreach (bool requireClientCertificate in new[] { false, true })
+                {
+                    yield return new object[] { protocol, false, requireClientCertificate };
+
+                    if (PlatformDetection.SupportsAlpn)
+                    {
+                        yield return new object[] { protocol, true, requireClientCertificate };
+                    }
+                }
             }
         }
 

@@ -33,7 +33,7 @@ namespace System.Net.Security.Tests
 
             TargetInvocationException exception = Assert.Throws<TargetInvocationException>(
                 () => getCertificateHash.Invoke(context, null));
-            Assert.IsAssignableFrom<CryptographicException>(exception.InnerException);
+            Assert.True(exception.InnerException is CryptographicException or ObjectDisposedException);
         }
 
         [Fact]
