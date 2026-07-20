@@ -1737,6 +1737,32 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(new[] { "one", "two", "three" }, source.Strings);
         }
 
+        /// <summary>
+        /// A dictionary whose value type is created through a parameterized constructor that populates a collection
+        /// property must bind each element's collection only once, even though dictionary elements are bound through a
+        /// separate code path from top-level and property binding.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_DictionaryValueWithCollectionConstructorParameter()
+        {
+            string json = """
+            {
+                "map": {
+                    "first": { "Instances": [ "a", "b" ] },
+                    "second": { "Instances": [ "c" ] }
+                }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            Dictionary<string, GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter> map =
+                config.GetSection("map").Get<Dictionary<string, GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter>>();
+
+            Assert.Equal(new[] { "a", "b" }, map["first"].Instances);
+            Assert.Equal(new[] { "c" }, map["second"].Instances);
+        }
+
         public static IEnumerable<object[]> Configuration_TestData()
         {
             yield return new object[]

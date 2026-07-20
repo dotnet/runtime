@@ -826,11 +826,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                                 if (_typeIndex.CanInstantiate(complexElementType))
                                 {
+                                    // A reference-type element created through a parameterized constructor must not have
+                                    // its constructor-bound properties bound again. Since the element is only constructed
+                                    // when it isn't already present, track that at run time and forward it to BindCore.
+                                    // Value-type elements are always (re)constructed through the InitializationKind.None
+                                    // path below, so they don't need a separate flag.
+                                    string? constructedExpr = null;
+                                    if (!isValueType && ShouldEmitBoundThroughConstructorParameter(complexElementType))
+                                    {
+                                        constructedExpr = GetIncrementalIdentifier(Identifier.boundThroughConstructor);
+                                        _writer.WriteLine($"bool {constructedExpr} = false;");
+                                    }
+
                                     EmitStartBlock($"if (!({conditionToUseExistingElement}))");
                                     EmitObjectInit(complexElementType, Identifier.element, InitializationKind.SimpleAssignment, Identifier.section);
+                                    if (constructedExpr is not null)
+                                    {
+                                        _writer.WriteLine($"{constructedExpr} = true;");
+                                    }
                                     EmitEndBlock();
 
-                                    EmitBindingLogic();
+                                    EmitBindingLogic(constructedExpr);
                                 }
                                 else
                                 {
@@ -839,14 +855,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     EmitEndBlock();
                                 }
 
-                                void EmitBindingLogic()
+                                void EmitBindingLogic(string? constructedExpr = null)
                                 {
                                     this.EmitBindingLogic(
                                         complexElementType,
                                         Identifier.element,
                                         Identifier.section,
                                         InitializationKind.None,
-                                        ValueDefaulting.None);
+                                        ValueDefaulting.None,
+                                        constructedExpr: constructedExpr);
 
                                     _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {Identifier.element};");
                                 }
@@ -1165,7 +1182,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string configArgExpr,
                 InitializationKind initKind,
                 ValueDefaulting valueDefaulting,
-                Action<string, string?>? writeOnSuccess = null)
+                Action<string, string?>? writeOnSuccess = null,
+                string? constructedExpr = null)
             {
                 if (!_typeIndex.HasBindableMembers(type))
                 {
@@ -1227,6 +1245,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             }
 
                             EmitObjectInit(type, instanceToBindExpr, initKind, configArgExpr);
+                        }
+                        else if (constructedExpr is not null)
+                        {
+                            // The caller instantiated the instance separately and provides a run-time flag telling
+                            // whether it was created through its constructor (e.g. dictionary element binding). The
+                            // caller only passes it for types that emit the parameter.
+                            Debug.Assert(ShouldEmitBoundThroughConstructorParameter(type));
+                            boundThroughConstructorArg = $", {Identifier.boundThroughConstructor}: {constructedExpr}";
                         }
 
                         EmitBindCoreCall();
