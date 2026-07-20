@@ -478,6 +478,29 @@ internal readonly struct Loader_1 : ILoader
             : string.Empty;
     }
 
+    bool ILoader.GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize)
+    {
+        timeStamp = 0;
+        imageSize = 0;
+
+        if (!TryGetPEImage(handle, out Data.PEImage? peImage))
+            return false;
+
+        if (peImage.LoadedImageLayout == TargetPointer.Null)
+            return false; // no loaded image layout
+
+        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+
+        if (peImageLayout.Format == (uint)ImageFormat.Webcil)
+            return false; // Webcil images do not have NT headers
+
+        TargetPointer ntHeadersPtr = FindNTHeaders(peImageLayout);
+        Data.ImageNTHeaders ntHeaders = _target.ProcessedData.GetOrAdd<Data.ImageNTHeaders>(ntHeadersPtr);
+        timeStamp = ntHeaders.FileHeader.TimeDateStamp;
+        imageSize = ntHeaders.OptionalHeader.SizeOfImage;
+        return true;
+    }
+
     TargetPointer ILoader.GetLoaderAllocator(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
@@ -691,20 +714,19 @@ internal readonly struct Loader_1 : ILoader
         return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
     }
 
-    TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
+    IEnumerable<LoaderHeapBlock> ILoader.EnumerateLoaderHeapBlocks(TargetPointer loaderHeap)
     {
-        return _target.ProcessedData.GetOrAdd<Data.LoaderHeap>(loaderHeap).FirstBlock;
-    }
-
-    LoaderHeapBlockData ILoader.GetLoaderHeapBlockData(TargetPointer block)
-    {
-        Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
-        return new LoaderHeapBlockData
+        TargetPointer block = _target.ProcessedData.GetOrAdd<Data.LoaderHeap>(loaderHeap).FirstBlock;
+        HashSet<TargetPointer> visited = [];
+        while (block != TargetPointer.Null)
         {
-            Address = blockData.VirtualAddress,
-            Size = blockData.VirtualSize,
-            NextBlock = blockData.Next,
-        };
+            if (!visited.Add(block))
+                throw new InvalidOperationException("Cycle detected while enumerating loader heap blocks.");
+
+            Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
+            yield return new LoaderHeapBlock(blockData.VirtualAddress, blockData.VirtualSize);
+            block = blockData.Next;
+        }
     }
 
     IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> ILoader.GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)

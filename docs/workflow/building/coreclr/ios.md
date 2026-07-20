@@ -107,7 +107,7 @@ open ./src/mono/sample/iOS/bin/<ios|iossimulator|tvossimulator|maccatalyst>-arm6
 To build the runtime tests for iOS with CoreCLR, run the following command from `<repo-root>`:
 
 ```bash
-./src/tests/build.sh -os <ios|iossimulator|tvossimulator|maccatalyst> arm64 <Release|Debug> -p:UseMonoRuntime=false
+./src/tests/build.sh -os <ios|iossimulator|tvossimulator|maccatalyst> -arch arm64 <Release|Debug> -p:UseMonoRuntime=false
 ```
 
 ## Debugging the runtime and the sample app

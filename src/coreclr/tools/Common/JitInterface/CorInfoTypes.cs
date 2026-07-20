@@ -64,6 +64,10 @@ namespace Internal.JitInterface
     {
     }
 
+    public struct CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_
+    {
+    }
+
     public struct CORINFO_JUST_MY_CODE_HANDLE_
     {
     }
@@ -444,6 +448,7 @@ namespace Internal.JitInterface
                                                    CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
         CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
         CORINFO_ASYNC_SAVE_CONTEXTS = 0x00000200, // Runtime async method must save and restore contexts
+        CORINFO_ASYNC_VERSION = 0x00000400, // This is an async version whose IL belongs to a non-async method
     }
 
     // These are used to detect array methods as NamedIntrinsic in JIT importer,
@@ -478,6 +483,7 @@ namespace Internal.JitInterface
         ARM64_BRANCH26,                        // Arm64: B, BL
         ARM64_PAGEBASE_REL21,                  // ADRP
         ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+        ARM64_PAGEOFFSET_12L,                  // LDR (indexed, unsigned immediate), for page offset
         // Linux arm64
         ARM64_LIN_TLSDESC_ADR_PAGE21,
         ARM64_LIN_TLSDESC_LD64_LO12,
@@ -968,6 +974,19 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* finishSuspensionWithContinuationContextMethHnd;
     }
 
+    // The well-known wasm globals referenced by JIT-generated code via
+    // WASM_GLOBAL_INDEX_LEB relocations. Each handle is the relocation target for the
+    // corresponding well-known global; the object writer resolves it to the final wasm global index.
+    public unsafe struct CORINFO_WASM_WELLKNOWN_GLOBALS
+    {
+        // Shadow stack pointer global (read at the root frame, then threaded through locals).
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* stackPointer;
+        // Image base global (__memory_base), added to static data offsets.
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* imageBase;
+        // Table base global (__table_base), added to funclet pointer offsets.
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* tableBase;
+    }
+
     // Flags passed from JIT to runtime.
     public enum CORINFO_GET_TAILCALL_HELPERS_FLAGS
     {
@@ -1171,10 +1190,15 @@ namespace Internal.JitInterface
         // [Out] results of resolveVirtualMethod.
         // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-        // - tokenLookupContext is set to the wrapped context handle to use for token lookups after devirtualization.
+        // - tokenLookupContext is set to the wrapped context handle to use for token lookups and the instantiation
+        //   parameter after devirtualization.
         // - detail describes the computation done by the jit host
+        // - resolvedTokenDevirtualizedMethod is used as the parameter to getCallInfo when targeting an R2R image.
+        // - resolvedTokenDevirtualizedUnboxedMethod is set when devirtualizedMethod is an unboxing stub. Its hMethod
+        //   is the unboxed entry point, and the resolved token is used as the parameter to getCallInfo when targeting
+        //   an R2R image.
         // - instParamLookup contains all the information necessary to pass the instantiation parameter for
-        //   the devirtualized method.
+        //   the devirtualized method or its unboxed entry point.
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public CORINFO_CONTEXT_STRUCT* tokenLookupContext;

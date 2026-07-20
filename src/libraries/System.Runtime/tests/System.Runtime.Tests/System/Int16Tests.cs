@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -454,5 +455,80 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat(short i, string format, IFormatProvider provider, string expected) =>
             NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
+
+        public static IEnumerable<object[]> TryParsePartial_TestData()
+        {
+            yield return new object[] { "123abc", NumberStyles.Integer, null, (short)123, 3 };
+            yield return new object[] { "1234xyz", NumberStyles.Integer, null, (short)1234, 4 };
+            yield return new object[] { "-32768abc", NumberStyles.Integer, null, (short)-32768, 6 };
+            yield return new object[] { "32767xyz", NumberStyles.Integer, null, (short)32767, 5 };
+            yield return new object[] { "ABCxyz", NumberStyles.HexNumber, null, (short)0xABC, 3 };
+            yield return new object[] { "7FFFxyz", NumberStyles.HexNumber, null, (short)0x7FFF, 4 };
+        }
+
+        [Theory]
+        [MemberData(nameof(TryParsePartial_TestData))]
+        public static void TryParsePartial(string value, NumberStyles style, IFormatProvider provider, short expectedValue, int expectedCharsConsumed)
+        {
+            short result;
+            int charsConsumed;
+
+            Assert.True(NumberBaseHelper<short>.TryParsePartial(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            Assert.True(NumberBaseHelper<short>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(NumberBaseHelper<short>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(expectedValue, result);
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
+
+        public static IEnumerable<object[]> TryParsePartial_Invalid_TestData()
+        {
+            yield return new object[] { "", NumberStyles.Integer, null };
+            yield return new object[] { "   ", NumberStyles.Integer, null };
+            yield return new object[] { "abc", NumberStyles.Integer, null };
+            yield return new object[] { "!!!", NumberStyles.Integer, null };
+            yield return new object[] { ".123", NumberStyles.Integer, null };
+
+            // Overflow of the leading valid digits
+            yield return new object[] { "32768abc", NumberStyles.Integer, null };
+            yield return new object[] { "-32769xyz", NumberStyles.Integer, null };
+            yield return new object[] { "99999abc", NumberStyles.Integer, null };
+
+            // Invalid hex/binary starting characters
+            yield return new object[] { "Gxyz", NumberStyles.HexNumber, null };
+            yield return new object[] { "2abc", NumberStyles.BinaryNumber, null };
+        }
+
+        [Theory]
+        [MemberData(nameof(TryParsePartial_Invalid_TestData))]
+        public static void TryParsePartial_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        {
+            short result;
+            int charsConsumed;
+
+            Assert.False(NumberBaseHelper<short>.TryParsePartial(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, charsConsumed);
+
+            Assert.False(NumberBaseHelper<short>.TryParsePartial(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, charsConsumed);
+
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.False(NumberBaseHelper<short>.TryParsePartial(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, bytesConsumed);
+        }
     }
 }

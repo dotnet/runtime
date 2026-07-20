@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
@@ -517,5 +518,162 @@ public class DebuggerTests
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.Equal(HijackKind.None, debugger.GetHijackKind(new TargetCodePointer(0x10_0080)));
+    }
+
+    // -----------------------------------------------------------------------
+    // PrepareExceptionHijack
+    // -----------------------------------------------------------------------
+
+    public static IEnumerable<object[]> HijackArches()
+    {
+        MockTarget.Architecture le64 = new() { IsLittleEndian = true, Is64Bit = true };
+        MockTarget.Architecture le32 = new() { IsLittleEndian = true, Is64Bit = false };
+        yield return [le64, "x64", "windows"];
+        yield return [le64, "x64", "unix"];
+        yield return [le64, "arm64", "unix"];
+        yield return [le32, "x86", "windows"];
+        yield return [le32, "arm", "unix"];
+    }
+
+    private static int ExceptionRecordSize(int ptrSize)
+    {
+        int unaligned = sizeof(uint) + sizeof(uint) + ptrSize + ptrSize + sizeof(uint);
+        int header = (unaligned + (ptrSize - 1)) & ~(ptrSize - 1);
+        return header + (15 * ptrSize);
+    }
+
+    private static string[] IntegerArgRegisters(string targetArch, bool isWindows) => targetArch switch
+    {
+        "x86" => [],
+        "x64" => isWindows ? ["rcx", "rdx", "r8", "r9"] : ["rdi", "rsi", "rdx", "rcx", "r8", "r9"],
+        "arm" => ["r0", "r1", "r2", "r3"],
+        "arm64" => ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"],
+        "loongarch64" or "riscv64" => ["a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7"],
+        _ => throw new NotSupportedException(targetArch),
+    };
+
+    private static TestPlaceholderTarget BuildHijackTarget(
+        MockTarget.Architecture arch,
+        string targetArch,
+        string os,
+        ulong hijackStart,
+        out ulong stackBase,
+        out ulong stackSize)
+    {
+        TargetTestHelpers helpers = new(arch);
+        var builder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.BumpAllocator allocator = builder.MemoryBuilder.CreateAllocator(0x1_0000, 0x100_0000);
+
+        TargetTestHelpers.LayoutResult debuggerLayout = GetDebuggerLayout(helpers);
+        TargetTestHelpers.LayoutResult memoryRangeLayout = GetMemoryRangeLayout(helpers);
+        builder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+        {
+            [DataType.Debugger] = new() { Fields = debuggerLayout.Fields, Size = debuggerLayout.Stride },
+            [DataType.MemoryRange] = new() { Fields = memoryRangeLayout.Fields, Size = memoryRangeLayout.Stride },
+        });
+
+        // Single hijack entry at index 0 (the unhandled-exception hijack).
+        MockMemorySpace.HeapFragment rgFrag = allocator.Allocate(memoryRangeLayout.Stride, "RgHijackFunction");
+        helpers.WritePointer(rgFrag.Data.AsSpan(memoryRangeLayout.Fields[nameof(Data.MemoryRange.StartAddress)].Offset, helpers.PointerSize), hijackStart);
+        helpers.WriteNUInt(rgFrag.Data.AsSpan(memoryRangeLayout.Fields[nameof(Data.MemoryRange.Size)].Offset, helpers.PointerSize), new TargetNUInt(0x100));
+
+        MockMemorySpace.HeapFragment debuggerFrag = allocator.Allocate(debuggerLayout.Stride, "Debugger");
+        helpers.WritePointer(
+            debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.RgHijackFunction)].Offset, helpers.PointerSize),
+            rgFrag.Address);
+
+        MockMemorySpace.HeapFragment debuggerPtrFrag = allocator.Allocate((ulong)helpers.PointerSize, "g_pDebugger");
+        helpers.WritePointer(debuggerPtrFrag.Data, debuggerFrag.Address);
+
+        // A writable region that the hijack setup uses as the target thread's stack.
+        stackSize = 0x4000;
+        MockMemorySpace.HeapFragment stackFrag = allocator.Allocate(stackSize, "Stack");
+        stackBase = stackFrag.Address;
+
+        builder.AddGlobals(
+            (Constants.Globals.Debugger, debuggerPtrFrag.Address),
+            (Constants.Globals.MaxHijackFunctions, (ulong)1));
+        builder.AddGlobalStrings(
+            (Constants.Globals.Architecture, targetArch),
+            (Constants.Globals.OperatingSystem, os));
+        builder.AddContract<IDebugger>(version: "c1");
+        builder.AddContract<IRuntimeInfo>(version: "c1");
+
+        return builder.Build();
+    }
+
+    [Theory]
+    [MemberData(nameof(HijackArches))]
+    public void PrepareExceptionHijack_EditsContextAndStack(MockTarget.Architecture arch, string targetArch, string os)
+    {
+        const ulong HijackStart = 0x55_0000;
+        const ulong OriginalIp = 0x1_2340;
+        const int Reason = 7;
+        TargetPointer userData = new(0xCAFEF00D);
+
+        Target target = BuildHijackTarget(arch, targetArch, os, HijackStart, out ulong stackBase, out ulong stackSize);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        int ptrSize = target.PointerSize;
+        ulong originalSp = stackBase + stackSize - 0x200;
+
+        IPlatformAgnosticContext seed = IPlatformAgnosticContext.GetContextForPlatform(target);
+        uint contextSize = seed.Size;
+        seed.StackPointer = new TargetPointer(originalSp);
+        seed.InstructionPointer = new TargetCodePointer(OriginalIp);
+        byte[] contextBuffer = seed.GetBytes();
+
+        int recordSize = ExceptionRecordSize(ptrSize);
+        byte[] recordBytes = new byte[recordSize];
+        for (int i = 0; i < recordSize; i++)
+            recordBytes[i] = (byte)(0x80 + (i % 0x40));
+
+        TargetPointer espContext = debugger.PrepareExceptionHijack(contextBuffer, TargetPointer.Null, recordBytes, Reason, userData);
+
+        // The saved CONTEXT lands within the stack, below the original SP.
+        Assert.True(espContext.Value >= stackBase && espContext.Value < originalSp);
+
+        // The pushed CONTEXT preserves the original IP and SP for the worker to restore.
+        byte[] savedBytes = new byte[contextSize];
+        target.ReadBuffer(espContext.Value, savedBytes);
+        IPlatformAgnosticContext saved = IPlatformAgnosticContext.GetContextForPlatform(target);
+        saved.FillFromBuffer(savedBytes);
+        Assert.Equal(OriginalIp, saved.InstructionPointer.Value);
+        Assert.Equal(originalSp, saved.StackPointer.Value);
+
+        // The committed CONTEXT jumps to the hijack worker with a descended SP.
+        IPlatformAgnosticContext final = IPlatformAgnosticContext.GetContextForPlatform(target);
+        final.FillFromBuffer(contextBuffer);
+        Assert.Equal(HijackStart, final.InstructionPointer.Value);
+        Assert.True(final.StackPointer.Value < espContext.Value);
+
+        // Worker arguments are (espContext, espRecord, reason, userData).
+        string[] argRegs = IntegerArgRegisters(targetArch, os == "windows");
+        TargetPointer espRecord;
+        if (argRegs.Length > 0)
+        {
+            Assert.True(final.TryReadRegister(argRegs[0], out TargetNUInt arg0));
+            Assert.True(final.TryReadRegister(argRegs[1], out TargetNUInt arg1));
+            Assert.True(final.TryReadRegister(argRegs[2], out TargetNUInt arg2));
+            Assert.True(final.TryReadRegister(argRegs[3], out TargetNUInt arg3));
+            Assert.Equal(espContext.Value, arg0.Value);
+            Assert.Equal((ulong)Reason, arg2.Value);
+            Assert.Equal(userData.Value, arg3.Value);
+            espRecord = new TargetPointer(arg1.Value);
+        }
+        else
+        {
+            ulong sp = final.StackPointer.Value;
+            Assert.Equal(espContext.Value, target.ReadPointer(sp).Value);
+            espRecord = target.ReadPointer(sp + (ulong)ptrSize);
+            Assert.Equal((ulong)Reason, target.ReadPointer(sp + (ulong)(2 * ptrSize)).Value);
+            Assert.Equal(userData.Value, target.ReadPointer(sp + (ulong)(3 * ptrSize)).Value);
+        }
+
+        // espRecord points at the pushed EXCEPTION_RECORD bytes.
+        Assert.True(espRecord.Value >= stackBase && espRecord.Value < espContext.Value);
+        byte[] pushedRecord = new byte[recordSize];
+        target.ReadBuffer(espRecord.Value, pushedRecord);
+        Assert.Equal(recordBytes, pushedRecord);
     }
 }

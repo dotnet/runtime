@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization,
             ObjectHandleOnStack objectTrackingInfoTable);
 
-        private static bool TryInitializeReferenceTracker(
+        private static unsafe bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization)

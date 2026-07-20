@@ -2319,6 +2319,71 @@ public static partial class DataContractJsonSerializerTests
         }
     }
 
+    public static IEnumerable<object[]> ByteOrderMarkEncodings()
+    {
+        yield return new object[] { new UnicodeEncoding(bigEndian: false, byteOrderMark: true) }; // UTF-16LE with BOM
+        yield return new object[] { new UnicodeEncoding(bigEndian: true, byteOrderMark: true) };  // UTF-16BE with BOM
+        yield return new object[] { new UTF8Encoding(encoderShouldEmitUTF8Identifier: true) };    // UTF-8 with BOM
+    }
+
+    [Theory]
+    [MemberData(nameof(ByteOrderMarkEncodings))]
+    public static void DCJS_DeserializeStreamWithByteOrderMark(Encoding encoding)
+    {
+        var serializer = new DataContractJsonSerializer(typeof(Person1));
+        var value = new Person1 { Name = "John", Age = 42 };
+        byte[] bytes = GetJsonBytesWithByteOrderMark(serializer, value, encoding);
+
+        // Auto-detected encoding (no encoding specified). This is the scenario from the bug report.
+        using (var stream = new MemoryStream(bytes))
+        {
+            var result = (Person1)serializer.ReadObject(stream);
+            Assert.Equal(value.Name, result.Name);
+            Assert.Equal(value.Age, result.Age);
+        }
+
+        // Encoding explicitly specified and matching the byte order mark.
+        using (var stream = new MemoryStream(bytes))
+        {
+            XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(stream, encoding, XmlDictionaryReaderQuotas.Max, null);
+            var result = (Person1)serializer.ReadObject(reader);
+            Assert.Equal(value.Name, result.Name);
+            Assert.Equal(value.Age, result.Age);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ByteOrderMarkEncodings))]
+    public static void DCJS_DeserializeBufferWithByteOrderMark(Encoding encoding)
+    {
+        var serializer = new DataContractJsonSerializer(typeof(Person1));
+        var value = new Person1 { Name = "John", Age = 42 };
+        byte[] bytes = GetJsonBytesWithByteOrderMark(serializer, value, encoding);
+
+        XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(bytes, 0, bytes.Length, XmlDictionaryReaderQuotas.Max);
+        var result = (Person1)serializer.ReadObject(reader);
+        Assert.Equal(value.Name, result.Name);
+        Assert.Equal(value.Age, result.Age);
+    }
+
+    private static byte[] GetJsonBytesWithByteOrderMark(DataContractJsonSerializer serializer, object value, Encoding encoding)
+    {
+        string json;
+        using (var utf8Stream = new MemoryStream())
+        {
+            serializer.WriteObject(utf8Stream, value);
+            json = Encoding.UTF8.GetString(utf8Stream.ToArray());
+        }
+
+        byte[] preamble = encoding.GetPreamble();
+        Assert.NotEmpty(preamble);
+        byte[] body = encoding.GetBytes(json);
+        byte[] bytes = new byte[preamble.Length + body.Length];
+        preamble.CopyTo(bytes, 0);
+        body.CopyTo(bytes, preamble.Length);
+        return bytes;
+    }
+
     [Fact]
     public static void DCJS_MyISerializableType()
     {
