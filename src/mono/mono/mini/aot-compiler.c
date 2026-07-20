@@ -5818,41 +5818,42 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	}
 
 	/*
-	 * Nullable<T>.Box/Unbox (defined in Nullable.Mono.cs) are private static
-	 * methods that are only ever invoked by the JIT: from the box/unbox IL
-	 * lowering (see handle_unbox_nullable / MONO_TYPE_ISNULLABLE handling in
-	 * method-to-ir.c) and from the MONO_RGCTX_INFO_NULLABLE_CLASS_BOX/UNBOX
-	 * rgctx entries. Because nothing in the normal managed call graph references
-	 * them, they are never pulled into the AOT compile set: the method-iteration
-	 * loop above treats them as generic-sharable and skips them ("already added"),
-	 * but the shared Nullable<gsharedvt>.Box/Unbox is likewise never referenced,
-	 * so it is not compiled either (unlike Equals/GetHashCode/ToString, which are
-	 * reached from normal code and do get their shared version).
+	 * Minimal gsharedvt (llvmonly only; see cfg->gsharedvt_min in mini.c) cannot
+	 * compile a method whose signature contains a variable-length gsharedvt type.
+	 * Nullable<T>.Box/Unbox (private static helpers in Nullable.Mono.cs) take/return
+	 * Nullable<T> by value, so for a variable (struct) T their shared gsharedvt
+	 * instantiation is rejected and never emitted.
 	 *
-	 * When a Nullable<T> (T a struct) is boxed through a non-generic interface
-	 * under gsharedvt in llvmonly mode, class_type_info's NULLABLE_CLASS_BOX case
-	 * compiles the concrete Nullable<T>.Box and, because the caller uses the
-	 * gsharedvt calling convention while the resolved callee is concrete, needs
-	 * the object(Nullable<T>) gsharedvt out-sig wrapper (and Nullable<T>(object)
-	 * for Unbox). That wrapper is only emitted as a side effect of AOT-compiling
-	 * the concrete Box/Unbox method (via the add_gsharedvt_wrappers call driven by
-	 * compiled method signatures). Compiling only the shared gsharedvt version is
-	 * not sufficient: at runtime mono_jit_compile_method resolves the concrete
-	 * instantiation through a static rgctx trampoline, so the box path still
-	 * requires the concrete out-sig wrapper.
+	 * The box/unbox IL lowering resolves these helpers through the rgctx at runtime
+	 * (MONO_RGCTX_INFO_NULLABLE_CLASS_BOX/UNBOX, mini-generic-sharing.c). With no
+	 * shared version available, the resolved callee is the *concrete* instantiation,
+	 * so the gsharedvt caller needs a gsharedvt->concrete out-sig wrapper
+	 * (llvmonly-runtime.c mini_llvmonly_add_method_wrappers: caller_gsharedvt &&
+	 * !callee_gsharedvt). That wrapper only exists as a side effect of AOT-compiling
+	 * the concrete method (add_gsharedvt_wrappers in compile_method).
 	 *
-	 * Add the concrete Box/Unbox for every Nullable<T> instantiation so the
-	 * required wrappers are emitted. This mirrors what already happens for
-	 * Nullable<primitive>/Nullable<enum> (whose concrete Box is compiled via other
-	 * paths); without it, boxing a Nullable<vtype> traps at runtime
-	 * ("null function or function signature mismatch") because the wrapper cannot
-	 * be JIT-compiled in aot-only mode.
+	 * Unlike ordinary generic methods, Box/Unbox are JIT-internal helpers that are
+	 * never referenced from IL, so nothing in the managed call graph collects their
+	 * concrete instantiation (Equals/GetHashCode/ToString, by contrast, are reached
+	 * from normal code and do get their shared version). Without this, neither the
+	 * concrete method nor its wrapper is emitted and boxing a Nullable<vtype> traps
+	 * at runtime with "null function or function signature mismatch". Add the
+	 * concrete Box/Unbox so the wrapper is generated.
+	 *
+	 * Only minimal gsharedvt needs this: with full gsharedvt (non-llvmonly) the
+	 * shared Box/Unbox is emitted and handles every T, so no concrete method or
+	 * wrapper is required -- hence the llvm_only guard.
 	 */
-	if (mono_class_is_nullable (klass)) {
+	if (acfg->aot_opts.llvm_only && mono_class_is_nullable (klass)) {
 		MonoMethod *box = try_get_method_nofail (klass, "Box", 1, 0);
 		if (box)
 			add_extra_method_with_depth (acfg, box, depth + 1);
-		MonoMethod *unbox = try_get_method_nofail (klass, "Unbox", 1, 0);
+		/*
+		 * Enum-backed Nullable<T> unboxes via UnboxExact (exact type check),
+		 * everything else via Unbox -- mirrors handle_unbox_nullable.
+		 */
+		const char *unbox_name = m_class_is_enumtype (mono_class_get_nullable_param_internal (klass)) ? "UnboxExact" : "Unbox";
+		MonoMethod *unbox = try_get_method_nofail (klass, unbox_name, 1, 0);
 		if (unbox)
 			add_extra_method_with_depth (acfg, unbox, depth + 1);
 	}
