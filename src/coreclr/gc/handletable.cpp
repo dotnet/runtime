@@ -136,12 +136,7 @@ HHANDLETABLE HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCoun
     // We need to allow CRST_UNSAFE_SAMELEVEL, because
     // during AD unload, we need to move some TableSegment from unloaded domain to default domain.
     // We need to take both locks for the two HandleTable's to avoid racing with concurrent gc thread.
-    if (!pTable->Lock.Init(CrstHandleTable, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD | CRST_UNSAFE_SAMELEVEL)))
-    {
-        SegmentFree(pTable->pSegmentList);
-        delete [] (uint8_t*)pTable;
-        return NULL;
-    }
+    pTable->Lock.Init(CrstHandleTable, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD | CRST_UNSAFE_SAMELEVEL));
 
     // remember how many types we are supporting
     pTable->uTypeCount = uTypeCount;

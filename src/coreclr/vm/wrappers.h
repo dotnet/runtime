@@ -55,10 +55,6 @@ private:
 template <typename TYPE>
 struct ReleaseHolderAnyModeTraits final
 {
-    static_assert(
-        HolderDetail::HasReleaseMethod<TYPE>::value,
-        "TYPE must have a Release() member");
-
     using Type = TYPE*;
     static constexpr Type Default() { return NULL; }
     static void Free(Type value)

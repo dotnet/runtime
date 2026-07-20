@@ -265,7 +265,7 @@ public:
     }
 
 protected:
-    bool InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags);
+    void InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags);
 
 #ifdef _DEBUG
     void DebugInit(CrstType crstType, CrstFlags flags);
@@ -452,14 +452,14 @@ typedef DPTR(Crst) PTR_Crst;
 class CrstStatic : public CrstBase
 {
 public:
-    bool Init(CrstType crstType, CrstFlags flags = CRST_DEFAULT)
+    void Init(CrstType crstType, CrstFlags flags = CRST_DEFAULT)
     {
         WRAPPER_NO_CONTRACT;
 
         _ASSERTE((flags & CRST_INITIALIZED) == 0);
 
         // throw away the debug-only parameter in retail
-        return InitWorker(INDEBUG_COMMA(crstType) flags);
+        InitWorker(INDEBUG_COMMA(crstType) flags);
     }
 };
 

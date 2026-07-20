@@ -1035,7 +1035,26 @@ struct cdac_data<ComCallWrapper>
     static constexpr uintptr_t ThisMask = (uintptr_t)ComCallWrapper::enum_ThisMask;
 };
 
-using CCWHolder = ReleaseHolder<ComCallWrapper>;
+struct CCWHolderTraits final
+{
+    using Type = ComCallWrapper*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        } CONTRACTL_END;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+using CCWHolder = LifetimeHolder<CCWHolderTraits>;
+
 //
 // Uncommonly used data on Simple CCW
 // Created on-demand

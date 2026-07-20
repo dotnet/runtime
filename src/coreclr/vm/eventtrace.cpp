@@ -788,12 +788,9 @@ HRESULT ETW::TypeSystemLog::PreRegistrationInit()
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (!AllLoggedTypes::s_cs.Init(
+    AllLoggedTypes::s_cs.Init(
         CrstEtwTypeLogHash,
-        CRST_UNSAFE_ANYMODE))       // This lock is taken during a GC while walking the heap
-    {
-        return E_FAIL;
-    }
+        CRST_UNSAFE_ANYMODE);
 
     return S_OK;
 }

@@ -991,24 +991,9 @@ public:
     }
 };
 
-// Detects whether a type exposes a callable Release() member. Used by the COM
-// interface holder traits, which invoke Release() to relinquish their reference.
-namespace HolderDetail
-{
-    template <typename T, typename = void>
-    struct HasReleaseMethod : std::false_type {};
-
-    template <typename T>
-    struct HasReleaseMethod<T, std::void_t<decltype(std::declval<T>().Release())>> : std::true_type {};
-}
-
 template <typename TYPE>
 struct ReleaseHolderTraits final
 {
-    static_assert(
-        HolderDetail::HasReleaseMethod<TYPE>::value,
-        "TYPE must have a Release() member");
-
     using Type = TYPE*;
     static constexpr Type Default() { return NULL; }
     static void Free(Type value)
