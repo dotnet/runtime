@@ -64,7 +64,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     private const uint WebcilMagic = 0x4C49_6257;
 
     private bool IsWebcilImage(TargetPointer baseAddress)
-        => target.Read<uint>(baseAddress) == WebcilMagic;
+        => target.ReadLittleEndian<uint>(baseAddress) == WebcilMagic;
 
     private TargetSpan GetWebcilReadOnlyMetadataAddress(ModuleHandle handle, TargetPointer webcilBase)
     {
@@ -79,11 +79,10 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 
         // IMAGE_COR20_HEADER: cb (4) + MajorRuntimeVersion (2) + MinorRuntimeVersion (2) then the
         // MetaData IMAGE_DATA_DIRECTORY (RVA @ 8, Size @ 12).
-        uint metadataRva = target.Read<uint>(cliHeader + 8);
-        uint metadataSize = target.Read<uint>(cliHeader + 12);
+        Data.ImageDataDirectory metadataDirectory = target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(cliHeader + 8);
 
-        TargetPointer metadataAddress = loader.GetILAddr(module.PEAssembly, checked((int)metadataRva));
-        return new TargetSpan(metadataAddress, metadataSize);
+        TargetPointer metadataAddress = loader.GetILAddr(module.PEAssembly, checked((int)metadataDirectory.VirtualAddress));
+        return new TargetSpan(metadataAddress, metadataDirectory.Size);
     }
 
     public MetadataReader? GetMetadata(ModuleHandle handle)
