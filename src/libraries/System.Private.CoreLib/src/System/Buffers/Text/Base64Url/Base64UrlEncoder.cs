@@ -40,7 +40,7 @@ namespace System.Buffers.Text
         public static int GetEncodedLength(int bytesLength)
         {
 #if NET
-            ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)bytesLength, MaximumEncodeLength);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)bytesLength, MaximumEncodeLength, nameof(bytesLength));
 
             (uint whole, uint remainder) = uint.DivRem((uint)bytesLength, 3);
 

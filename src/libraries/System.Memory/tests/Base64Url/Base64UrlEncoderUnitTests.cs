@@ -250,12 +250,12 @@ namespace System.Buffers.Text.Tests
             }
 
             // integer overflow
-            Assert.Throws<ArgumentOutOfRangeException>(() => Base64Url.GetEncodedLength(1610612734));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Base64Url.GetEncodedLength(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("bytesLength", () => Base64Url.GetEncodedLength(1610612734));
+            Assert.Throws<ArgumentOutOfRangeException>("bytesLength", () => Base64Url.GetEncodedLength(int.MaxValue));
 
             // negative input
-            Assert.Throws<ArgumentOutOfRangeException>(() => Base64Url.GetEncodedLength(-1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Base64Url.GetEncodedLength(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("bytesLength", () => Base64Url.GetEncodedLength(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("bytesLength", () => Base64Url.GetEncodedLength(int.MinValue));
         }
 
         [Fact]

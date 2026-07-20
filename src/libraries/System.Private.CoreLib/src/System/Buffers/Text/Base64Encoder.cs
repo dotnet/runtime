@@ -27,7 +27,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetEncodedLength(int bytesLength)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)bytesLength, MaximumEncodeLength);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)bytesLength, MaximumEncodeLength, nameof(bytesLength));
 
             return ((bytesLength + 2) / 3) * 4;
         }
