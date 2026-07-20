@@ -951,6 +951,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Decimal64 x) => Number.ILogBDecimalIeee754<Decimal64, ulong>(x._value);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static Decimal64 Lerp(Decimal64 value1, Decimal64 value2, Decimal64 amount) => MultiplyAddEstimate(value1, One - amount, value2 * amount);
+
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
         public static Decimal64 Log(Decimal64 x) => new Decimal64(Number.LogDecimalIeee754<Decimal64, ulong>(x._value));
 

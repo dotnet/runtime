@@ -960,6 +960,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Decimal32 x) => Number.ILogBDecimalIeee754<Decimal32, uint>(x._value);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static Decimal32 Lerp(Decimal32 value1, Decimal32 value2, Decimal32 amount) => MultiplyAddEstimate(value1, One - amount, value2 * amount);
+
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
         public static Decimal32 Log(Decimal32 x) => new Decimal32(Number.LogDecimalIeee754<Decimal32, uint>(x._value));
 

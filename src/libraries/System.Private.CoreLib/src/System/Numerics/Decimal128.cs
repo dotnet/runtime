@@ -937,6 +937,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Decimal128 x) => Number.ILogBDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower));
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static Decimal128 Lerp(Decimal128 value1, Decimal128 value2, Decimal128 amount) => MultiplyAddEstimate(value1, One - amount, value2 * amount);
+
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
         public static Decimal128 Log(Decimal128 x) => new Decimal128(Number.LogDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 

@@ -45,6 +45,9 @@ namespace System.Tests
             Assert.True(TSelf.IsFinite(TSelf.ScaleB(one, 1)));
             Assert.Equal(0, TSelf.ILogB(one));
 
+            Assert.Equal(two, TSelf.Lerp(one, two, one));
+            Assert.Equal(one, TSelf.Lerp(one, two, TSelf.Zero));
+
             Assert.Equal(one, TSelf.Quantize(one, one));
             Assert.True(TSelf.IsFinite(TSelf.GetQuantum(one)));
             Assert.True(TSelf.HaveSameQuantum(one, one));
