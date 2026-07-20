@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -177,6 +178,9 @@ namespace System.Runtime.Tests
                 yield return new object[] { -Decimal32.NaN, Decimal32.PositiveInfinity, 1 };
                 yield return new object[] { Decimal32.NaN, Decimal32.NaN, 0 };
                 yield return new object[] { Decimal32.NaN, -Decimal32.NaN, -1 };
+                // Same-signed NaNs are ordered by payload (implementation defined, not part of IEEE 754 totalOrder)
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0x7C00_0000), Unsafe.BitCast<uint, Decimal32>(0x7C00_0001), -1 };
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0xFC00_0000), Unsafe.BitCast<uint, Decimal32>(0xFC00_0001), 1 };
                 // Cohort members: equal value, differing quantum exponent (totalOrder orders by exponent)
                 yield return new object[] { Decimal32.Parse("1.00", CultureInfo.InvariantCulture), Decimal32.Parse("1.0", CultureInfo.InvariantCulture), -1 };
                 yield return new object[] { Decimal32.Parse("1.0", CultureInfo.InvariantCulture), Decimal32.Parse("1.00", CultureInfo.InvariantCulture), 1 };
@@ -212,6 +216,9 @@ namespace System.Runtime.Tests
                 yield return new object[] { -Decimal64.NaN, Decimal64.PositiveInfinity, 1 };
                 yield return new object[] { Decimal64.NaN, Decimal64.NaN, 0 };
                 yield return new object[] { Decimal64.NaN, -Decimal64.NaN, -1 };
+                // Same-signed NaNs are ordered by payload (implementation defined, not part of IEEE 754 totalOrder)
+                yield return new object[] { Unsafe.BitCast<ulong, Decimal64>(0x7C00_0000_0000_0000), Unsafe.BitCast<ulong, Decimal64>(0x7C00_0000_0000_0001), -1 };
+                yield return new object[] { Unsafe.BitCast<ulong, Decimal64>(0xFC00_0000_0000_0000), Unsafe.BitCast<ulong, Decimal64>(0xFC00_0000_0000_0001), 1 };
                 // Cohort members: equal value, differing quantum exponent (totalOrder orders by exponent)
                 yield return new object[] { Decimal64.Parse("1.00", CultureInfo.InvariantCulture), Decimal64.Parse("1.0", CultureInfo.InvariantCulture), -1 };
                 yield return new object[] { Decimal64.Parse("1.0", CultureInfo.InvariantCulture), Decimal64.Parse("1.00", CultureInfo.InvariantCulture), 1 };
@@ -247,6 +254,10 @@ namespace System.Runtime.Tests
                 yield return new object[] { -Decimal128.NaN, Decimal128.PositiveInfinity, 1 };
                 yield return new object[] { Decimal128.NaN, Decimal128.NaN, 0 };
                 yield return new object[] { Decimal128.NaN, -Decimal128.NaN, -1 };
+                // Same-signed NaNs are ordered by payload (implementation defined, not part of IEEE 754 totalOrder).
+                // The payload here lives entirely in the low bits, which the coefficient decode would discard.
+                yield return new object[] { Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x7C00_0000_0000_0000, 0x0000_0000_0000_0000)), Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x7C00_0000_0000_0000, 0x0000_0000_0000_0001)), -1 };
+                yield return new object[] { Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0xFC00_0000_0000_0000, 0x0000_0000_0000_0000)), Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0xFC00_0000_0000_0000, 0x0000_0000_0000_0001)), 1 };
                 // Cohort members: equal value, differing quantum exponent (totalOrder orders by exponent)
                 yield return new object[] { Decimal128.Parse("1.00", CultureInfo.InvariantCulture), Decimal128.Parse("1.0", CultureInfo.InvariantCulture), -1 };
                 yield return new object[] { Decimal128.Parse("1.0", CultureInfo.InvariantCulture), Decimal128.Parse("1.00", CultureInfo.InvariantCulture), 1 };

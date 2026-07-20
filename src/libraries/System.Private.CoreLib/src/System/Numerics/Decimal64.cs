@@ -50,6 +50,7 @@ namespace System.Numerics
         private const ulong MostSignificantBitOfSignificandMask = 0x0020_0000_0000_0000;
         private const ulong NaNMask = 0x7C00_0000_0000_0000;
         private const ulong SNaNMask = 0x7E00_0000_0000_0000;
+        private const ulong NaNPayloadMask = 0x0003_FFFF_FFFF_FFFF;
         private const ulong InfinityMask = 0x7800_0000_0000_0000;
         private const ulong MaxSignificand = 9_999_999_999_999_999;
         private const ulong MaxInternalValue = 0x77FB_86F2_6FC0_FFFF; // 9.999_999_999_999_999 * 10^384; aka 9_999_999_999_999_999 * 10^369
@@ -1268,7 +1269,7 @@ namespace System.Numerics
         static int INumberBase<Decimal64>.Radix => 10;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
-        static bool INumberBase<Decimal64>.IsCanonical(Decimal64 value) => Number.IsCanonicalDecimalIeee754<Decimal64, ulong>(value._value, nanReservedMask: 0x01FC_0000_0000_0000, nanPayloadMask: 0x0003_FFFF_FFFF_FFFF, maxNaNPayload: 999_999_999_999_999);
+        static bool INumberBase<Decimal64>.IsCanonical(Decimal64 value) => Number.IsCanonicalDecimalIeee754<Decimal64, ulong>(value._value, nanReservedMask: 0x01FC_0000_0000_0000, nanPayloadMask: NaNPayloadMask, maxNaNPayload: 999_999_999_999_999);
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
         static bool INumberBase<Decimal64>.IsComplexNumber(Decimal64 value) => false;
@@ -1764,6 +1765,8 @@ namespace System.Numerics
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NaNMask => NaNMask;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.SNaNMask => SNaNMask;
+
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NaNPayloadMask => NaNPayloadMask;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.SignMask => SignMask;
 

@@ -264,12 +264,14 @@ namespace System.Numerics
                         return xIsNegative ? -1 : 1;
                     }
 
-                    // Same-signed NaNs are ordered by their decoded significand (payload), matching the
-                    // significand comparison the generic path uses.
-                    TValue xSignificand = Number.UnpackDecimalIeee754<TDecimal, TValue>(xBits).Significand;
-                    TValue ySignificand = Number.UnpackDecimalIeee754<TDecimal, TValue>(yBits).Significand;
+                    // Same-signed NaNs are ordered by their raw payload, mirroring how the binary
+                    // formats order NaNs by their significand bits. The payload is used directly
+                    // rather than the decoded coefficient so every width (including Decimal128, whose
+                    // NaN coefficient decode is non-canonical) orders consistently.
+                    TValue xPayload = xBits & TDecimal.NaNPayloadMask;
+                    TValue yPayload = yBits & TDecimal.NaNPayloadMask;
 
-                    int payload = xSignificand.CompareTo(ySignificand);
+                    int payload = xPayload.CompareTo(yPayload);
                     return xIsNegative ? -payload : payload;
                 }
 
