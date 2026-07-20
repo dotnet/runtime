@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -105,7 +106,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(original, DecompressBrotliOrZstd(await SerializeAsync(content, async: true), encoding));
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData("br", CompressionLevel.NoCompression)]
         [InlineData("br", CompressionLevel.Fastest)]
         [InlineData("br", CompressionLevel.Optimal)]
@@ -116,6 +117,14 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("zstd", CompressionLevel.SmallestSize)]
         public async Task BrotliZstd_SerializeToStream_WithCompressionLevel_RoundTrips(string encoding, CompressionLevel compressionLevel)
         {
+            if (PlatformDetection.Is32BitProcess && compressionLevel == CompressionLevel.SmallestSize && encoding == "zstd")
+            {
+                // Zstandard smallest size requires too much working memory
+                // (800+ MB) and causes intermittent allocation errors on 32-bit
+                // processes in CI.
+                throw new SkipTestException($"Skipping {encoding} with {compressionLevel} on 32-bit process due to excessive memory requirements.");
+            }
+
             byte[] original = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("The quick brown fox jumps over the lazy dog. ", 4096)));
             HttpContent content = encoding == "br"
                 ? new BrotliCompressedContent(new ByteArrayContent(original), compressionLevel)
