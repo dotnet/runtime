@@ -4,6 +4,130 @@
 #include "jitpch.h"
 
 //------------------------------------------------------------------------
+// impGetInstParamArg: compute the hidden instantiation / generic-context argument
+//   for a call whose signature has a type arg (CORINFO_CALLCONV_PARAMTYPE).
+//
+// Arguments:
+//    pResolvedToken                 - resolved token for the call target
+//    callInfo                       - EE supplied info for the call
+//    exactContextHnd                - the exact (method or class) context for the call
+//    exactContextNeedsRuntimeLookup - whether the exact context needs a runtime lookup
+//    clsFlags                       - flags for the class that owns the called method
+//    isReadonlyCall                 - whether this is a "readonly." prefixed call
+//
+// Return Value:
+//    The IR node for the instantiation argument. This may be a null-handle constant
+//    for a "readonly." array Address call. Returns nullptr if the importer must abort
+//    the current method, in which case compDonotInline() is set and the caller should
+//    return TYP_UNDEF.
+//
+// Notes:
+//    This is the shared computation for the hidden "extra arg" described at the
+//    hasTypeArg() handling in impImportCall. It is also used by the wasm LDVIRTFTN
+//    path, which dispatches virtual calls (including the array Address accessor) that
+//    can carry a type arg but is otherwise outside the main hasTypeArg() handling.
+//
+GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                      CORINFO_CALL_INFO*      callInfo,
+                                      CORINFO_CONTEXT_HANDLE  exactContextHnd,
+                                      bool                    exactContextNeedsRuntimeLookup,
+                                      unsigned                clsFlags,
+                                      bool                    isReadonlyCall)
+{
+    GenTree* instParam = nullptr;
+    bool     runtimeLookup;
+
+    // Instantiated generic method
+    if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+    {
+        assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
+
+        CORINFO_METHOD_HANDLE exactMethodHandle =
+            (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
+
+        if (!exactContextNeedsRuntimeLookup)
+        {
+#ifdef FEATURE_READYTORUN
+            if (IsAot())
+            {
+                instParam = gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+                if (instParam == nullptr)
+                {
+                    assert(compDonotInline());
+                    return nullptr;
+                }
+            }
+            else
+#endif
+            {
+                instParam = gtNewIconEmbMethHndNode(exactMethodHandle);
+                info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(exactMethodHandle);
+            }
+        }
+        else
+        {
+            instParam = impTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
+            if (instParam == nullptr)
+            {
+                assert(compDonotInline());
+                return nullptr;
+            }
+        }
+    }
+
+    // otherwise must be an instance method in a generic struct,
+    // a static method in a generic type, or a runtime-generated array method
+    else
+    {
+        assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+        CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(exactContextHnd);
+
+        if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
+        {
+            compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
+            return nullptr;
+        }
+
+        if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall)
+        {
+            // We indicate "readonly" to the Address operation by using a null
+            // instParam.
+            instParam = gtNewIconNode(0, TYP_REF);
+        }
+        else if (!exactContextNeedsRuntimeLookup)
+        {
+#ifdef FEATURE_READYTORUN
+            if (IsAot())
+            {
+                instParam = gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
+                if (instParam == nullptr)
+                {
+                    assert(compDonotInline());
+                    return nullptr;
+                }
+            }
+            else
+#endif
+            {
+                instParam = gtNewIconEmbClsHndNode(exactClassHandle);
+                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(exactClassHandle);
+            }
+        }
+        else
+        {
+            instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
+            if (instParam == nullptr)
+            {
+                assert(compDonotInline());
+                return nullptr;
+            }
+        }
+    }
+
+    return instParam;
+}
+
+//------------------------------------------------------------------------
 // impImportCall: import a call-inspiring opcode
 //
 // Arguments:
@@ -66,7 +190,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // to see any imperative security.
     // Reverse P/Invokes need a call to CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
     // at the end, so tailcalls should be disabled.
-    // Async methods need to restore contexts, so tailcalls should be disabled.
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
         canTailCall             = false;
@@ -76,11 +199,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     {
         canTailCall             = false;
         szCanTailCallFailReason = "Caller is Reverse P/Invoke";
-    }
-    else if (compIsAsync())
-    {
-        canTailCall             = false;
-        szCanTailCallFailReason = "Caller is async method";
     }
 #if !FEATURE_FIXED_OUT_ARGS
     else if (info.compIsVarArgs)
@@ -448,9 +566,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (needsFatPointerHandling)
                 {
-                    const unsigned fptrLclNum = lvaGrabTemp(true DEBUGARG("fat pointer temp"));
-                    impStoreToTemp(fptrLclNum, fptr, CHECK_SPILL_ALL);
-                    call->AsCall()->gtControlExpr = gtNewLclvNode(fptrLclNum, genActualType(fptr->TypeGet()));
                     addFatPointerCandidate(call->AsCall());
                 }
 #ifdef FEATURE_READYTORUN
@@ -465,6 +580,36 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // Since we are jumping over some code, check that its OK to skip that code
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
                        (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
+
+#ifdef TARGET_WASM
+                // Wasm has no virtual stub dispatch, so all virtual calls (including the array
+                // Address accessor) come through LDVIRTFTN, which skips the shared hidden-arg
+                // handling below via the `goto DEVIRT`. Add the type-context arg here so the
+                // call_indirect signature matches the callee; omitting it traps at runtime.
+                if (sig->hasTypeArg())
+                {
+                    GenTree* wasmInstParam;
+                    if (lvaNextCallGenericContext != BAD_VAR_NUM)
+                    {
+                        // An explicit generic context was provided (RuntimeHelpers.SetNextCallGenericContext);
+                        // honor and consume it just like the shared hasTypeArg() handling does.
+                        wasmInstParam             = gtNewLclVarNode(lvaNextCallGenericContext);
+                        lvaNextCallGenericContext = BAD_VAR_NUM;
+                    }
+                    else
+                    {
+                        wasmInstParam = impGetInstParamArg(pResolvedToken, callInfo, exactContextHnd,
+                                                           exactContextNeedsRuntimeLookup, clsFlags, isReadonlyCall);
+                        if (wasmInstParam == nullptr)
+                        {
+                            assert(compDonotInline());
+                            return TYP_UNDEF;
+                        }
+                    }
+
+                    call->AsCall()->gtArgs.InsertInstParam(this, wasmInstParam);
+                }
+#endif // TARGET_WASM
 
                 goto DEVIRT;
             }
@@ -763,95 +908,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             assert(opcode != CEE_CALLI);
 
-            bool runtimeLookup;
-
-            // Instantiated generic method
-            if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+            instParam = impGetInstParamArg(pResolvedToken, callInfo, exactContextHnd, exactContextNeedsRuntimeLookup,
+                                           clsFlags, isReadonlyCall);
+            if (instParam == nullptr)
             {
-                assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
-
-                CORINFO_METHOD_HANDLE exactMethodHandle =
-                    (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
-
-                if (!exactContextNeedsRuntimeLookup)
-                {
-#ifdef FEATURE_READYTORUN
-                    if (IsAot())
-                    {
-                        instParam =
-                            gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
-                        if (instParam == nullptr)
-                        {
-                            assert(compDonotInline());
-                            return TYP_UNDEF;
-                        }
-                    }
-                    else
-#endif
-                    {
-                        instParam = gtNewIconEmbMethHndNode(exactMethodHandle);
-                        info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(exactMethodHandle);
-                    }
-                }
-                else
-                {
-                    instParam = impTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
-                    if (instParam == nullptr)
-                    {
-                        assert(compDonotInline());
-                        return TYP_UNDEF;
-                    }
-                }
-            }
-
-            // otherwise must be an instance method in a generic struct,
-            // a static method in a generic type, or a runtime-generated array method
-            else
-            {
-                assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-                CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(exactContextHnd);
-
-                if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
-                {
-                    compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
-                    return TYP_UNDEF;
-                }
-
-                if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall)
-                {
-                    // We indicate "readonly" to the Address operation by using a null
-                    // instParam.
-                    instParam = gtNewIconNode(0, TYP_REF);
-                }
-                else if (!exactContextNeedsRuntimeLookup)
-                {
-#ifdef FEATURE_READYTORUN
-                    if (IsAot())
-                    {
-                        instParam =
-                            gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
-                        if (instParam == nullptr)
-                        {
-                            assert(compDonotInline());
-                            return TYP_UNDEF;
-                        }
-                    }
-                    else
-#endif
-                    {
-                        instParam = gtNewIconEmbClsHndNode(exactClassHandle);
-                        info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(exactClassHandle);
-                    }
-                }
-                else
-                {
-                    instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
-                    if (instParam == nullptr)
-                    {
-                        assert(compDonotInline());
-                        return TYP_UNDEF;
-                    }
-                }
+                assert(compDonotInline());
+                return TYP_UNDEF;
             }
         }
     }
@@ -1063,8 +1125,7 @@ DEVIRT:
                 INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
                 // Is it an inline candidate?
-                impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                       compInlineContext);
+                impMarkInlineCandidate(call, exactContextHnd, callInfo, compInlineContext);
             }
 
             // append the call node.
@@ -1139,6 +1200,18 @@ DONE:
         if (isExplicitTailCall && (stackState.esStackDepth != 0))
         {
             BADCODE("Stack should be empty after tailcall");
+        }
+
+        // Async methods need to restore contexts, so in general tailcalls
+        // should be disabled. The exception is a tail await: for those the JIT
+        // directly returns the callee's continuation to the caller and no
+        // context needs to be restored, so the async call can be turned into a
+        // real tail call. Any other tail call candidate in an async method
+        // must be disqualified.
+        if (canTailCall && compIsAsync() && (!call->AsCall()->IsAsync() || !call->AsCall()->GetAsyncInfo().IsTailAwait))
+        {
+            canTailCall             = false;
+            szCanTailCallFailReason = "Caller is async method and call is not a tail await";
         }
 
         // For opportunistic tailcalls we allow implicit widening, i.e. tailcalls from int32 -> int16, since the
@@ -1279,7 +1352,7 @@ DONE:
         INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
         // Is it an inline candidate?
-        impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, compInlineContext);
+        impMarkInlineCandidate(call, exactContextHnd, callInfo, compInlineContext);
 
         // If the call is virtual, extra information for possible use during late devirt inlining.
         //
@@ -3303,26 +3376,22 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
         if (!isIntrinsic)
         {
+            // We can't guarantee that all overloads for the xplat intrinsics can be
+            // handled by the AltJit, so limit only the platform specific intrinsics
+
 #if defined(TARGET_XARCH)
-            // We can't guarantee that all overloads for the xplat intrinsics can be
-            // handled by the AltJit, so limit only the platform specific intrinsics
-            assert((LAST_NI_Vector512 + 1) == FIRST_NI_X86Base);
-
-            if (ni < LAST_NI_Vector512)
+            assert((LAST_NI_Vector + 1) == FIRST_NI_X86Base);
 #elif defined(TARGET_ARM64)
-            // We can't guarantee that all overloads for the xplat intrinsics can be
-            // handled by the AltJit, so limit only the platform specific intrinsics
-            assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
-
-            if (ni < LAST_NI_Vector128)
+            assert((LAST_NI_Vector + 1) == FIRST_NI_AdvSimd);
 #elif defined(TARGET_WASM)
-            NYI_WASM_SIMD("impHWIntrinsic");
-            if (ni < LAST_NI_Vector128)
+            assert((LAST_NI_Vector + 1) == FIRST_NI_PackedSimd);
 #else
 #error Unsupported platform
 #endif
+
+            if (ni <= LAST_NI_Vector)
             {
-                // Several of the NI_Vector64/128/256 APIs do not have
+                // Several of the NI_Vector APIs do not have
                 // all overloads as intrinsic today so they will assert
                 return nullptr;
             }
@@ -3437,6 +3506,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
         m_nextAwaitIsTail = true;
         return gtNewNothingNode();
+    }
+
+    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync)
+    {
+        JITDUMP("\nExpanding RuntimeHelpers.IsRuntimeAsync to %s early\n", compIsAsync() ? "true" : "false");
+        return compIsAsync() ? gtNewTrue() : gtNewFalse();
     }
 
     bool betterToExpand = false;
@@ -3825,6 +3900,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     retNode = gtNewIndir(resultType, lclVarAddr);
                 }
+                break;
+            }
+
+            case NI_System_Activator_CreateInstance_T:
+            {
+                isSpecial = true;
                 break;
             }
 
@@ -4244,7 +4325,21 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             // drop get_CurrentThread() call
                             impPopStack();
                             call->ReplaceWith(gtNewNothingNode(), this);
-                            retNode = gtNewHelperCallNode(CORINFO_HELP_GETCURRENTMANAGEDTHREADID, TYP_INT);
+                            GenTreeCall* tidCall = gtNewHelperCallNode(CORINFO_HELP_GETCURRENTMANAGEDTHREADID, TYP_INT);
+                            impConvertToUserCallAndMarkForInlining(tidCall);
+                            if (tidCall->IsInlineCandidate())
+                            {
+                                // The helper was converted into an inlinable user call; spill it to its own
+                                // statement and hand back a GT_RET_EXPR so the inliner can fold the property.
+                                impAppendTree(tidCall, CHECK_SPILL_ALL, impCurStmtDI, false);
+                                GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(tidCall, TYP_INT);
+                                tidCall->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+                                retNode                                          = retExpr;
+                            }
+                            else
+                            {
+                                retNode = tidCall;
+                            }
                         }
                     }
                 }
@@ -6088,9 +6183,17 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsSmall(tgtType))
             {
-                res = gtNewCastNodeL(retType, op1, /* uns */ false, retType);
-                res = gtFoldExpr(res);
-                res = gtNewCastNode(TYP_INT, res, /* uns */ false, tgtType);
+                if (intrinsic == NI_PRIMITIVE_ConvertToInteger)
+                {
+                    // Preserve saturating semantics for floating-point -> small integral conversions.
+                    res = gtNewCastNodeL(retType, op1, /* uns */ false, tgtType);
+                }
+                else
+                {
+                    res = gtNewCastNodeL(retType, op1, /* uns */ false, retType);
+                    res = gtFoldExpr(res);
+                    res = gtNewCastNode(TYP_INT, res, /* uns */ false, tgtType);
+                }
             }
             else
             {
@@ -7184,6 +7287,15 @@ void Compiler::impSetupAsyncCall(
             return;
         }
 
+        // We cannot inline if the callee returns valueTask.AsTask() in an
+        // async version. We need to preserve the continuation in this case to
+        // be able to mark it with CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK.
+        if ((prefixFlags & PREFIX_IS_ADAPTED_FROM_VALUETASK) != 0)
+        {
+            compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+            return;
+        }
+
         // For async versions of synchronous methods all async calls are in
         // tail position. Inlining is simple for these cases: we can just
         // inherit all context handling from the inlining call.
@@ -7204,8 +7316,10 @@ void Compiler::impSetupAsyncCall(
     }
     else
     {
-        if (opts.OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
-            (call->gtReturnType == info.compRetType))
+        asyncInfo.IsValueTaskAsTask = (prefixFlags & PREFIX_IS_ADAPTED_FROM_VALUETASK) != 0;
+
+        if (opts.Tier0OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
+            (call->gtReturnType == info.compRetType) && !asyncInfo.IsValueTaskAsTask)
         {
             CORINFO_METHOD_HANDLE exactCalleeHnd =
                 ((call->AsCall()->gtCallType != CT_USER_FUNC) || call->AsCall()->IsVirtual()) ? nullptr : methHnd;
@@ -7842,18 +7956,10 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
 
     for (CallArg& arg : call->gtArgs.Args())
     {
-        switch (arg.GetWellKnownArg())
+        if (!arg.IsUserArg() || (arg.GetWellKnownArg() == WellKnownArg::ThisPointer))
         {
-            case WellKnownArg::RetBuffer:
-            case WellKnownArg::ThisPointer:
-            case WellKnownArg::AsyncContinuation:
-                // Not part of signature but we still expect to see it here
-                continue;
-            case WellKnownArg::None:
-                break;
-            default:
-                assert(!"Unexpected well known arg to method GDV candidate");
-                continue;
+            // Not part of the signature
+            continue;
         }
 
         numArgs++;
@@ -7926,6 +8032,12 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                                                CORINFO_CONTEXT_HANDLE* pContextHandle)
 {
     JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
+
+    if (call->IsGenericVirtual(this))
+    {
+        JITDUMP("Generic virtual methods are not supported by guarded devirtualization, sorry.\n");
+        return;
+    }
 
     bool hasPgoData = true;
 
@@ -8347,7 +8459,7 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
         CORINFO_CALL_INFO hCallInfo = {};
         hCallInfo.hMethod           = managedCallHnd;
         hCallInfo.methodFlags       = info.compCompHnd->getMethodAttribs(hCallInfo.hMethod);
-        impMarkInlineCandidate(call, nullptr, false, &hCallInfo, compInlineContext);
+        impMarkInlineCandidate(call, nullptr, &hCallInfo, compInlineContext);
 
 #if DEBUG
         CORINFO_METHOD_HANDLE existingValue = NO_METHOD_HANDLE;
@@ -8370,7 +8482,6 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
 // Arguments:
 //    callNode -- call under scrutiny
 //    exactContextHnd -- context handle for inlining
-//    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
 //    inlinersContext -- the inliner's context
 //
@@ -8381,7 +8492,6 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
 
 void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                      bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
                                       InlineContext*         inlinersContext)
 {
@@ -8405,8 +8515,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
             InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate for GDV");
 
             // Do the actual evaluation
-            impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                         inlinersContext, &inlineResult);
+            impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, callInfo, inlinersContext, &inlineResult);
             // Ignore non-inlineable candidates
             // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
             // calls on NativeAOT, but that requires more changes elsewhere too.
@@ -8429,8 +8538,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         const uint8_t candidatesCount = call->GetInlineCandidatesCount();
         assert(candidatesCount <= 1);
         InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
-        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                     inlinersContext, &inlineResult);
+        impMarkInlineCandidateHelper(call, 0, exactContextHnd, callInfo, inlinersContext, &inlineResult);
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization
@@ -8461,7 +8569,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 //    callNode -- call under scrutiny
 //    candidateIndex -- index of the inline candidate to evaluate
 //    exactContextHnd -- context handle for inlining
-//    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
 //    inlinersContext -- the inliner's context
 //
@@ -8478,7 +8585,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
                                             uint8_t                candidateIndex,
                                             CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                            bool                   exactContextNeedsRuntimeLookup,
                                             CORINFO_CALL_INFO*     callInfo,
                                             InlineContext*         inlinersContext,
                                             InlineResult*          inlineResult)
@@ -8718,7 +8824,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     // The new value should not be null.
     assert(inlineCandidateInfo != nullptr);
-    inlineCandidateInfo->exactContextNeedsRuntimeLookup = exactContextNeedsRuntimeLookup;
 
     // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate
     // is also a tail call candidate, it can use the same return spill temp.
@@ -8827,6 +8932,10 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
+        case NI_PRIMITIVE_SaturateToInt8:
+        case NI_PRIMITIVE_SaturateToInt16:
+        case NI_PRIMITIVE_SaturateToUInt8:
+        case NI_PRIMITIVE_SaturateToUInt16:
             return true;
 
         default:
@@ -8846,6 +8955,10 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
+        case NI_PRIMITIVE_SaturateToInt8:
+        case NI_PRIMITIVE_SaturateToInt16:
+        case NI_PRIMITIVE_SaturateToUInt8:
+        case NI_PRIMITIVE_SaturateToUInt16:
             return true;
 
         case NI_System_Math_MinUnsigned:
@@ -8869,8 +8982,14 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return false;
         }
 
+        case NI_System_Math_MaxNative:
+        case NI_System_Math_MinNative:
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
+        case NI_PRIMITIVE_SaturateToInt8:
+        case NI_PRIMITIVE_SaturateToInt16:
+        case NI_PRIMITIVE_SaturateToUInt8:
+        case NI_PRIMITIVE_SaturateToUInt16:
             return true;
 
         default:
@@ -9416,6 +9535,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
     Metrics.DevirtualizedCall++;
 
     // Make the updates.
+    call->ClearFatPointerCandidate();
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
     call->gtFlags &= ~GTF_CALL_VIRT_STUB;
     call->gtCallMethHnd = derivedMethod;
@@ -9912,6 +10032,40 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             break;
         }
 
+        case NI_System_Activator_CreateInstance_T:
+        {
+            // Expect one method generic parameter; figure out which it is.
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(methodHnd, &sig);
+            assert(sig.sigInst.methInstCount == 1);
+            assert(sig.sigInst.classInstCount == 0);
+
+            CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.methInst[0];
+            assert(typeHnd != nullptr);
+
+            CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+            if (instParam != nullptr)
+            {
+                assert(instParam->GetNext() == nullptr);
+                CORINFO_METHOD_HANDLE hMethod = gtGetHelperArgMethodHandle(instParam->GetNode());
+                if (hMethod != NO_METHOD_HANDLE)
+                {
+                    result = getMethodInstantiationArgument(hMethod, 0);
+                }
+            }
+
+            if (result != NO_CLASS_HANDLE)
+            {
+                JITDUMP("Special intrinsic: return type is %s\n",
+                        result != nullptr ? eeGetClassName(result) : "unknown");
+            }
+            else
+            {
+                JITDUMP("Special intrinsic: return type undetermined or inexact, so deferring opt\n");
+            }
+            break;
+        }
+
         default:
         {
             JITDUMP("This special intrinsic not handled, sorry...\n");
@@ -10204,17 +10358,16 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->likelihood                        = 0;
         }
 
-        pInfo->methInfo                       = methInfo;
-        pInfo->ilCallerHandle                 = pParam->pThis->info.compMethodHnd;
-        pInfo->clsHandle                      = clsHandle;
-        pInfo->exactContextHandle             = pParam->exactContextHnd;
-        pInfo->retExpr                        = nullptr;
-        pInfo->preexistingSpillTemp           = BAD_VAR_NUM;
-        pInfo->clsAttr                        = clsAttr;
-        pInfo->methAttr                       = pParam->methAttr;
-        pInfo->initClassResult                = initClassResult;
-        pInfo->exactContextNeedsRuntimeLookup = false;
-        pInfo->inlinersContext                = pParam->inlinersContext;
+        pInfo->methInfo             = methInfo;
+        pInfo->ilCallerHandle       = pParam->pThis->info.compMethodHnd;
+        pInfo->clsHandle            = clsHandle;
+        pInfo->exactContextHandle   = pParam->exactContextHnd;
+        pInfo->retExpr              = nullptr;
+        pInfo->preexistingSpillTemp = BAD_VAR_NUM;
+        pInfo->clsAttr              = clsAttr;
+        pInfo->methAttr             = pParam->methAttr;
+        pInfo->initClassResult      = initClassResult;
+        pInfo->inlinersContext      = pParam->inlinersContext;
 
         // Note exactContextNeedsRuntimeLookup is reset later on,
         // over in impMarkInlineCandidate.
@@ -10649,6 +10802,15 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "AllocatorOf") == 0)
                         {
                             result = NI_System_Activator_AllocatorOf;
+                        }
+                        else if (strcmp(methodName, "CreateInstance") == 0)
+                        {
+                            CORINFO_SIG_INFO sig;
+                            eeGetMethodSig(method, &sig);
+                            if ((sig.sigInst.methInstCount == 1) && (sig.sigInst.classInstCount == 0))
+                            {
+                                result = NI_System_Activator_CreateInstance_T;
+                            }
                         }
                         else if (strcmp(methodName, "DefaultConstructorOf") == 0)
                         {
@@ -11285,6 +11447,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
                             }
+                            else if (strcmp(methodName, "IsRuntimeAsync") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync;
+                            }
                             else if (strcmp(methodName, "WriteBarrier") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier;
@@ -11707,12 +11873,24 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_Threading_Tasks_ValueTask_get_CompletedTask;
                         }
+                        else if (strcmp(methodName, ".ctor") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask__ctor;
+                        }
+                        else if (strcmp(methodName, "AsTask") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_AsTask;
+                        }
                     }
                     else if (strcmp(className, "ValueTask`1") == 0)
                     {
                         if (strcmp(methodName, ".ctor") == 0)
                         {
                             result = NI_System_Threading_Tasks_ValueTask_1__ctor;
+                        }
+                        else if (strcmp(methodName, "AsTask") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_1_AsTask;
                         }
                     }
                 }

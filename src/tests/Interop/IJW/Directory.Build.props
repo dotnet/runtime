@@ -5,8 +5,6 @@
     <!-- IJW is Windows-only -->
     <!-- Test unsupported outside of windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-    <!-- IJW is not supported on ARM64 -->
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm64'">true</CLRTestTargetUnsupported>
     <!-- Loading IJW assemblies into an unloadable context is not allowed -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- C++/CLI not supported with NativeAOT -->

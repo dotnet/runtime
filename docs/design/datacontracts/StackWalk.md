@@ -45,7 +45,6 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(
     bool isFirst = true);
 
 // Gets the thread context at the given stack dataframe.
-// `flags` lets the caller request platform-specific shaping of the returned context.
 byte[] GetRawContext(
     IStackDataFrameHandle stackDataFrameHandle,
     StackwalkFlag flags = StackwalkFlag.Default);
@@ -54,7 +53,6 @@ byte[] GetRawContext(
 enum StackwalkFlag
 {
     Default = 0,
-    X86ESPIgnoresCalleePoppedArgs = 0x1,
 }
 
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
@@ -136,6 +134,7 @@ This contract depends on the following descriptors:
 | `ReadyToRunInfo` | `ImportSections` | Pointer to array of `READYTORUN_IMPORT_SECTION` structs for GCRefMap resolution |
 | `ReadyToRunInfo` | `NumImportSections` | Count of import sections in the array |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
+| `FuncEvalFrame` | `ReturnAddress` | Return address of the frame |
 | `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
 | `DebuggerEval` | `EvalUsesHijack` | Flag used in processing FuncEvalFrame |
 | `DebuggerEval` | `MethodToken` | Metadata token of the method being evaluated |
@@ -176,7 +175,7 @@ This contract depends on the following descriptors:
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| For each FrameType `<frameType>`, `<frameType>##Identifier` | `FrameIdentifier` enum value | Identifier used to determine concrete type of Frames |
+| For each FrameType `<frameType>`, `<frameType>##Identifier` | `nuint` (`FrameIdentifier` enum value) | Identifier used to determine concrete type of Frames |
 
 Constants used:
 | Source | Name | Value | Purpose |
@@ -490,10 +489,6 @@ byte[] GetRawContext(
     StackwalkFlag flags = StackwalkFlag.Default);
 ```
 
-##### `StackwalkFlag.X86ESPIgnoresCalleePoppedArgs`
-See [comment](https://github.com/dotnet/runtime/blob/7f8276da27a20943339702df0abdfc02e21110a4/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L1016-L1063)
-
-
 `GetFrameAddress` gets the address of the current capital "F" Frame. This is only valid if the `IStackDataFrameHandle` is at a point where the context is based on a capital "F" Frame. For example, it is not valid when when the current context was created by using the stack frame unwinder.
 If the Frame is not valid, returns `TargetPointer.Null`.
 
@@ -502,7 +497,7 @@ TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 
-`GetFrameName` gets the name associated with a FrameIdentifier (pointer sized value) from the Globals stored in the contract descriptor. If no associated Frame name is found, it returns an empty string.
+`GetFrameName` gets the name associated with a `nuint` FrameIdentifier from the Globals stored in the contract descriptor. If no associated Frame name is found, it returns an empty string.
 ```csharp
 string GetFrameName(TargetPointer frameIdentifier);
 ```

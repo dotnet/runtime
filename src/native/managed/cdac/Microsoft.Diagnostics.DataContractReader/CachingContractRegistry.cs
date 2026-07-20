@@ -48,15 +48,18 @@ internal sealed class CachingContractRegistry : ContractRegistry
             return true;
         }
 
-        if (!_tryGetContractVersion(TContract.Name, out string? version))
+        Func<Target, IContract>? creator;
+        if (_tryGetContractVersion(TContract.Name, out string? version))
+        {
+            if (!_creators.TryGetValue((typeof(TContract), version), out creator))
+            {
+                failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
+                return false;
+            }
+        }
+        else if (!_creators.TryGetValue((typeof(TContract), string.Empty), out creator))
         {
             failureReason = $"Target does not support contract '{typeof(TContract).Name}'.";
-            return false;
-        }
-
-        if (!_creators.TryGetValue((typeof(TContract), version), out Func<Target, IContract>? creator))
-        {
-            failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
             return false;
         }
 

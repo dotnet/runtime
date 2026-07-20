@@ -115,7 +115,16 @@ namespace System.Runtime.CompilerServices
         {
             try
             {
-                awaiter.OnCompleted(GetStateMachineBox(ref stateMachine, ref box).MoveNextAction);
+                IAsyncStateMachineBox ibox = GetStateMachineBox(ref stateMachine, ref box);
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
+                {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        ibox = AsyncStateMachineDispatcherInfo.CreateDispatcher(ibox, flags);
+                    }
+                }
+
+                awaiter.OnCompleted(ibox.MoveNextAction);
             }
             catch (Exception e)
             {
@@ -245,13 +254,33 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Completes the box with a result.</summary>
             /// <param name="result">The result.</param>
-            public void SetResult(TResult result) =>
+            public void SetResult(TResult result)
+            {
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
+                {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncStateMachineDispatcherInfo.CompleteAsyncMethod(this, flags);
+                    }
+                }
+
                 _valueTaskSource.SetResult(result);
+            }
 
             /// <summary>Completes the box with an error.</summary>
             /// <param name="error">The exception.</param>
-            public void SetException(Exception error) =>
+            public void SetException(Exception error)
+            {
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
+                {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncStateMachineDispatcherInfo.UnwindAsyncFrame(this, flags);
+                    }
+                }
+
                 _valueTaskSource.SetException(error);
+            }
 
             /// <summary>Gets the status of the box.</summary>
             public ValueTaskSourceStatus GetStatus(short token) => _valueTaskSource.GetStatus(token);
@@ -401,6 +430,14 @@ namespace System.Runtime.CompilerServices
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext()
             {
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
+                {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncStateMachineDispatcherInfo.ResumeAsyncMethod(this, flags);
+                    }
+                }
+
                 ExecutionContext? context = Context;
 
                 if (context == ExecutionContext.DefaultFlowSuppressed)
@@ -440,16 +477,32 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
+            /// <summary>Gets the state machine as a boxed object. This should only be used for debugging purposes.</summary>
             IAsyncStateMachine IAsyncStateMachineBox.GetStateMachineObject() => StateMachine!; // likely boxes, only use for debugging
 
             bool IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
             {
-                // TODO-AsyncProfiler: Implement when pooling async builders are fully supported in AsyncProfiler.
+                if (AsyncStateMachineDispatcherInfo.IsSupported)
+                {
+                    methodId = AsyncStateMachineDiagnostics<TStateMachine>.MethodId;
+                    state = AsyncStateMachineDiagnostics<TStateMachine>.GetState(ref StateMachine);
+                    nextContinuation = ContinuationForDiagnostics;
+                    return true;
+                }
+
                 methodId = 0;
                 state = -1;
                 nextContinuation = null;
                 return false;
+            }
+
+            private object? ContinuationForDiagnostics
+            {
+                get
+                {
+                    object? continuation = _valueTaskSource.ContinuationForDiagnostics;
+                    return ReferenceEquals(continuation, this) ? null : continuation;
+                }
             }
         }
     }

@@ -209,7 +209,7 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF8: table[4],
             utf8ToStringRelaxed: table[5],
             zeroRegion: table[6],
-            isSharedArrayBuffer: table[7],
+            arrayBufferNeedsCopy: table[7],
             viewOrCopy: table[8],
             abortBackgroundTimers: table[9],
             abortPosix: table[10],

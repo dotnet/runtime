@@ -804,13 +804,13 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         // If the timestamp and size don't match, then this is the wrong file!
         // Map the file and check them.
-        HandleHolder hMDFile = WszCreateFile(pszFullPathName,
+        HandleHolder hMDFile{ WszCreateFile(pszFullPathName,
                                               GENERIC_READ,
                                               FILE_SHARE_READ,
                                               NULL,                 // default security descriptor
                                               OPEN_EXISTING,
                                               FILE_ATTRIBUTE_NORMAL,
-                                              NULL);
+                                              NULL) };
 
         if (hMDFile == INVALID_HANDLE_VALUE)
         {
@@ -828,7 +828,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         _ASSERTE(dwFileHigh == 0);
 
-        HandleHolder hMap = CreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL);
+        HandleHolder hMap{ CreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL) };
         if (hMap == NULL)
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't create mapping of file \"%s\" (GLE=%x)\n", pszFullPathName, GetLastError()));
@@ -4771,11 +4771,42 @@ void CordbNativeCode::LoadNativeInfo()
     if (m_fCodeAvailable)
     {
         RSLockHolder lockHolder(pProcess->GetProcessLock());
-        IfFailThrow(pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(GetVMNativeCodeMethodDescToken(),
-                                                                  GetAddress(),
-                                                                  m_fCodeAvailable,
-                                                                  &m_nativeVarData,
-                                                                  &m_sequencePoints));
+
+        struct CallbackData
+        {
+            CallbackAccumulator<ICorDebugInfo::NativeVarInfo> varInfos;
+            CallbackAccumulator<ICorDebugInfo::OffsetMapping> seqPoints;
+        };
+
+        CallbackData data;
+
+        ULONG32 fixedArgCount = 0;
+        IfFailThrow(pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(
+            GetVMNativeCodeMethodDescToken(),
+            GetAddress(),
+            m_fCodeAvailable,
+            &fixedArgCount,
+            [](ICorDebugInfo::NativeVarInfo *pVarInfo, void *pUserData)
+            {
+                static_cast<CallbackData *>(pUserData)->varInfos.Push(*pVarInfo);
+            },
+            [](ICorDebugInfo::OffsetMapping *pMapping, void *pUserData)
+            {
+                static_cast<CallbackData *>(pUserData)->seqPoints.Push(*pMapping);
+            },
+            &data));
+        IfFailThrow(data.varInfos.hrError);
+        IfFailThrow(data.seqPoints.hrError);
+
+        // Initialize native var data from collected entries
+        m_nativeVarData.InitVarDataList(data.varInfos.items.Ptr(), (int)fixedArgCount, (int)data.varInfos.items.Size());
+
+        // Initialize sequence points from collected entries
+        m_sequencePoints.InitSequencePoints((ULONG32)data.seqPoints.items.Size());
+        if (data.seqPoints.items.Size() > 0)
+        {
+            m_sequencePoints.CopyAndSortSequencePoints(data.seqPoints.items.Ptr());
+        }
     }
 
 } // CordbNativeCode::LoadNativeInfo

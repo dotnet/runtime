@@ -112,19 +112,25 @@ namespace System.Threading.Tasks.Tests
         // These tests use async Task methods with await instead of Task.Run blocking.
         public static bool IsRuntimeAsyncSupported => PlatformDetection.IsRuntimeAsyncSupported;
 
-        // StateMachine (StateMachineAsync_*) async-task instrumentation is opt-out on NativeAOT to avoid
-        // ~100KB of per-state-machine generic instantiation overhead. Tests that depend
-        // on StateMachine events must be gated on these properties so they are skipped on NAOT.
+        // StateMachine (StateMachineAsync_*) async-task instrumentation is the classic compiler-generated
+        // state machine (V1). It does not require runtime-async (V2), so it is supported on every runtime
+        // (CoreCLR and Mono) except NativeAOT, where it is opt-out to avoid ~100KB of per-state-machine
+        // generic instantiation overhead. Tests that depend on StateMachine events must be gated on these
+        // properties so they are skipped on NAOT.
         public static bool IsStateMachineAsyncSupported =>
-            IsRuntimeAsyncSupported && !PlatformDetection.IsNativeAot;
+            !PlatformDetection.IsNativeAot;
 
         public static bool IsStateMachineAsyncAndThreadingSupported =>
-            IsRuntimeAsyncAndThreadingSupported && !PlatformDetection.IsNativeAot;
+            IsStateMachineAsyncSupported && PlatformDetection.IsMultithreadingSupported;
 
         // Gate for tests that exercise a mixed V1 (StateMachine) + V2 (RuntimeAsync) chain: they need both
         // instrumentation paths, and V1 is disabled on NativeAOT, so require both conditions.
         public static bool IsStateMachineAsyncAndRuntimeAsyncAndThreadingSupported =>
             IsStateMachineAsyncAndThreadingSupported && IsRuntimeAsyncAndThreadingSupported;
+
+        // Alias so tests that additionally require CoreCLR can list the exclusion as an extra ConditionalFact
+        // condition alongside the shared gates.
+        public static bool IsNotMonoRuntime => PlatformDetection.IsNotMonoRuntime;
 
         private const string AsyncProfilerEventSourceName = "System.Runtime.CompilerServices.AsyncProfilerEventSource";
         private const string WrapperNameTemplate = "Continuation_Wrapper_{0}";
@@ -229,109 +235,199 @@ namespace System.Threading.Tasks.Tests
                 ? typeof(StackFrame).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(IntPtr), typeof(bool) }, null)
                 : null;
 
-        // The public 1-arg MethodBase.GetMethodFromHandle resolves the method but then deliberately
-        // throws ArgumentException when the declaring type is generic. The internal
-        // RuntimeType.GetMethodBase(RuntimeMethodHandle.GetMethodInfo()) it calls underneath has no
-        // such guard, so we invoke it directly to name StateMachine frames on generic declaring types.
-        private static readonly MethodInfo? s_runtimeMethodHandleGetMethodInfo =
-            typeof(RuntimeMethodHandle).GetMethod("GetMethodInfo", BindingFlags.Instance | BindingFlags.NonPublic);
-
-        private static readonly MethodInfo? s_runtimeTypeGetMethodBase =
-            // typeof(object) is a RuntimeType instance; its runtime type is System.RuntimeType.
-            typeof(object).GetType().GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
-                .FirstOrDefault(m => m.Name == "GetMethodBase"
-                    && m.GetParameters() is { Length: 1 } p
-                    && p[0].ParameterType.Name == "IRuntimeMethodInfo");
-
         private static string? GetMethodNameFromMethodId(AsyncCallstackType callstackType, ulong methodId)
         {
             if (methodId != 0)
             {
-                if (callstackType == AsyncCallstackType.Runtime)
+                if (s_getMethodFromNativeIPMethod is not null)
                 {
-                    if (s_getMethodFromNativeIPMethod is not null)
+                    MethodBase? method = (MethodBase?)s_getMethodFromNativeIPMethod.Invoke(null, new object[] { (IntPtr)methodId });
+                    if (callstackType == AsyncCallstackType.Runtime)
                     {
-                        MethodBase? method = (MethodBase?)s_getMethodFromNativeIPMethod.Invoke(null, new object[] { (IntPtr)methodId });
                         return method?.Name;
                     }
-
-                    if (s_stackFrameFromIPCtor is not null)
+                    else
                     {
-                        StackFrame frame = (StackFrame)s_stackFrameFromIPCtor.Invoke(new object[] { (IntPtr)methodId, false })!;
-                        DiagnosticMethodInfo? diagInfo = DiagnosticMethodInfo.Create(frame);
+                        return ExtractStateMachineMethodName(method?.DeclaringType?.Name);
+                    }
+                }
+
+                if (s_stackFrameFromIPCtor is not null)
+                {
+                    StackFrame frame = (StackFrame)s_stackFrameFromIPCtor.Invoke(new object[] { (IntPtr)methodId, false })!;
+                    DiagnosticMethodInfo? diagInfo = DiagnosticMethodInfo.Create(frame);
+                    if (callstackType == AsyncCallstackType.Runtime)
+                    {
                         return diagInfo?.Name;
                     }
-                }
-                else if (callstackType == AsyncCallstackType.StateMachine)
-                {
-                    System.RuntimeMethodHandle handle = RuntimeMethodHandle.FromIntPtr((IntPtr)methodId);
-                    MethodBase? method = null;
-                    try
+                    else
                     {
-                        method = MethodBase.GetMethodFromHandle(handle);
-                    }
-                    catch (ArgumentException)
-                    {
-                        // The 1-arg GetMethodFromHandle cannot resolve handles whose declaring
-                        // type is generic (e.g. xUnit's TestClassRunner<TTestCase>+<...>d__N);
-                        // it requires the 2-arg overload with an explicit declaring type, which
-                        // we cannot recover from a bare MethodId. Real ETW/EventPipe consumers
-                        // get the declaring type from method-metadata rundown events.
-                        //
-                        // As a test-only fallback, resolve via the internal
-                        // RuntimeType.GetMethodBase the public API uses before its generic guard,
-                        // which does name methods on generic declaring types. This mirrors what a
-                        // rundown-backed consumer would achieve.
-                        method = ResolveCompilerMethodOnGenericType(handle);
-                    }
-
-                    if (method?.DeclaringType is Type declaringType)
-                    {
-                        string methodName = declaringType.Name;
-
-                        int start = methodName.IndexOf('<');
-                        int end = methodName.IndexOf('>');
-
-                        start++;
-                        if (start > 0 && end > start)
-                        {
-                            methodName = methodName.Substring(start, end - start);
-                        }
-
-                        return methodName;
+                        return ExtractStateMachineMethodName(diagInfo?.DeclaringTypeName);
                     }
                 }
+
+                // Mono fallback (no managed IP->method API): resolve via the reverse method-id map.
+                return ResolveStateMachineMethodNameFromId(methodId);
             }
 
             return null;
         }
 
-        // Test-only fallback used when a compiler (StateMachine) MethodId handle cannot be resolved via the
-        // 1-arg MethodBase.GetMethodFromHandle because its declaring type is generic. Calls the
-        // internal RuntimeType.GetMethodBase(handle.GetMethodInfo()) the public API uses underneath,
-        // which has no generic-declaring-type guard, so it names methods on generic declaring types.
-        // Returns null if the internals are unavailable (e.g. NativeAOT) or resolution throws.
-        private static MethodBase? ResolveCompilerMethodOnGenericType(RuntimeMethodHandle handle)
-        {
-            if (s_runtimeMethodHandleGetMethodInfo is null || s_runtimeTypeGetMethodBase is null)
-            {
-                return null;
-            }
+        // Mono has no managed IP->method API, so the reflective resolvers above return null there and a
+        // frame's method id (a native code IP) can't be mapped back to a name. As a fallback we build a
+        // reverse map from method id -> async method name by scanning every compiler-generated async state
+        // machine reachable from the test class and computing the SAME id the runtime emits for a
+        // StateMachine frame, i.e. the native code of MoveNext (see AsyncStateMachineDiagnostics<T>.
+        // ResolveMethodId). This covers frame name resolution and the console dump uniformly on Mono.
+        //
+        // The IntPtr overload of GetNativeCodeInternal only exists on Mono (CoreCLR's takes an
+        // IRuntimeMethodInfo), so this reflection yields null on CoreCLR/NativeAOT and the fallback is a
+        // no-op there, leaving the robust IP->name resolution untouched.
+        private static readonly MethodInfo? s_getNativeCodeInternalMethod =
+            typeof(RuntimeMethodHandle).GetMethod(
+                "GetNativeCodeInternal",
+                BindingFlags.Static | BindingFlags.NonPublic,
+                null,
+                new[] { typeof(IntPtr) },
+                null);
 
-            try
+        // Set of (resolved name, state machine MoveNext handle) for every async state machine reachable
+        // from the test class, built once. This includes not just async methods declared on the test class
+        // but also async lambdas and local functions, whose compiler-generated state machines are nested
+        // types (under the test class or its display classes) implementing IAsyncStateMachine. Any of these
+        // can appear as a continuation frame, so all must be covered.
+        private static readonly Lazy<(string Name, IntPtr MoveNextHandle)[]> s_stateMachineMoveNextMethods =
+            new(BuildStateMachineMoveNextMethods);
+
+        // Resolved map: state machine frame method id (native code IP of MoveNext) -> async method name.
+        // Filled lazily on the first resolve miss, and eagerly by tests (SnapshotStateMachineMethodIdFor) that
+        // need to capture a method's tier-0 id before re-tiering; additive and keyed by address.
+        private static readonly ConcurrentDictionary<ulong, string> s_methodIdToName = new();
+
+        private static (string Name, IntPtr MoveNextHandle)[] BuildStateMachineMoveNextMethods()
+        {
+            var result = new List<(string, IntPtr)>();
+            CollectStateMachineMoveNextMethods(typeof(AsyncProfilerTests), result);
+            return result.ToArray();
+        }
+
+        // Recursively walks nested types looking for compiler-generated async state machines (types that
+        // implement IAsyncStateMachine) and records their MoveNext, named the same way IP->name resolution
+        // does on other runtimes (ExtractStateMachineMethodName over the state machine type name) so the
+        // fallback is indistinguishable from the primary resolver.
+        private static void CollectStateMachineMoveNextMethods(Type type, List<(string, IntPtr)> result)
+        {
+            foreach (Type nested in type.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic))
             {
-                object? methodInfo = s_runtimeMethodHandleGetMethodInfo.Invoke(handle, null);
-                if (methodInfo is null)
+                if (!nested.ContainsGenericParameters
+                    && typeof(System.Runtime.CompilerServices.IAsyncStateMachine).IsAssignableFrom(nested))
                 {
-                    return null;
+                    MethodInfo? moveNext = nested.GetMethod(
+                        "MoveNext",
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (moveNext is not null)
+                    {
+                        result.Add((ExtractStateMachineMethodName(nested.Name) ?? nested.Name, moveNext.MethodHandle.Value));
+                    }
                 }
 
-                return (MethodBase?)s_runtimeTypeGetMethodBase.Invoke(null, new object[] { methodInfo });
+                CollectStateMachineMoveNextMethods(nested, result);
             }
-            catch (Exception)
+        }
+
+        // Records the CURRENT native code start of every known state machine MoveNext into the id->name map.
+        // Used by the resolve path, which only has a raw frame address and so must consider every method.
+        // A MoveNext has no native code start until it has actually run, and a resume frame's method id is the
+        // code start of whatever version was current when the runtime first froze that id. The map is additive
+        // and keyed by address. No-op except on Mono.
+        private static void SnapshotStateMachineMethodIds()
+        {
+            if (s_getNativeCodeInternalMethod is null)
+            {
+                return;
+            }
+
+            foreach ((string methodName, IntPtr moveNextHandle) in s_stateMachineMoveNextMethods.Value)
+            {
+                object? nativeCode = s_getNativeCodeInternalMethod.Invoke(null, new object[] { moveNextHandle });
+                if (nativeCode is IntPtr ip && ip != IntPtr.Zero)
+                {
+                    s_methodIdToName.TryAdd((ulong)(nuint)ip, methodName);
+                }
+            }
+        }
+
+        // Records the CURRENT native code start of a single async method's compiler-generated state machine
+        // MoveNext (found via its [AsyncStateMachine] attribute) into the id->name map, keyed to the async
+        // method's name so it matches normal resolution. On Mono the interpreter re-tiers a method after
+        // enough calls, replacing its code start, while the resume frames keep the initial (tier-0) id frozen
+        // at first run; a test that calls a method enough to trigger re-tiering can snapshot its id up front,
+        // while the method is still at its tier-0 version, so the frozen id stays resolvable afterwards.
+        // No-op except on Mono.
+        private static void SnapshotStateMachineMethodIdFor(MethodInfo asyncMethod)
+        {
+            if (s_getNativeCodeInternalMethod is null)
+            {
+                return;
+            }
+
+            Type? stateMachineType = asyncMethod
+                .GetCustomAttribute<System.Runtime.CompilerServices.AsyncStateMachineAttribute>()?.StateMachineType;
+            MethodInfo? moveNext = stateMachineType?.GetMethod(
+                "MoveNext",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (moveNext is null)
+            {
+                return;
+            }
+
+            object? nativeCode = s_getNativeCodeInternalMethod.Invoke(null, new object[] { moveNext.MethodHandle.Value });
+            if (nativeCode is IntPtr ip && ip != IntPtr.Zero)
+            {
+                s_methodIdToName.TryAdd((ulong)(nuint)ip, asyncMethod.Name);
+            }
+        }
+
+        // Mono fallback: resolve a StateMachine frame's method id to the async method name via the reverse
+        // map. On a miss we snapshot the current native code starts and retry, filling the map lazily as
+        // methods run (a MoveNext has no code start until it has first run). No-op except on Mono.
+        private static string? ResolveStateMachineMethodNameFromId(ulong methodId)
+        {
+            if (s_getNativeCodeInternalMethod is null || methodId == 0)
             {
                 return null;
             }
+
+            if (s_methodIdToName.TryGetValue(methodId, out string? name))
+            {
+                return name;
+            }
+
+            SnapshotStateMachineMethodIds();
+
+            return s_methodIdToName.TryGetValue(methodId, out name) ? name : null;
+        }
+
+        // The compiler generates a state machine type named "<AsyncMethodName>d__N" (possibly nested
+        // and namespace-qualified). Extract the original async method name from between the angle
+        // brackets. Returns the input unchanged when it contains no angle brackets, or null when null.
+        private static string? ExtractStateMachineMethodName(string? declaringTypeName)
+        {
+            if (declaringTypeName is null)
+            {
+                return null;
+            }
+
+            int start = declaringTypeName.IndexOf('<');
+            int end = declaringTypeName.IndexOf('>');
+
+            start++;
+            if (start > 0 && end > start)
+            {
+                return declaringTypeName.Substring(start, end - start);
+            }
+
+            return declaringTypeName;
         }
 
         private static TestEventListener CreateListener(EventKeywords keywords)
@@ -1693,19 +1789,19 @@ namespace System.Threading.Tasks.Tests
             AssertTrue(stream, completes == 1, $"Expected exactly 1 CompleteAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {completes}");
         }
 
-        // StateMachine-friendly variant: StateMachine's per-MoveNext dispatcher model emits one Create per await
-        // suspension, so a method with N awaits produces N dispatchers / N Creates within the
-        // same dispatcher tree. Each dispatcher ends in exactly one Suspend (it yielded) or one
-        // Complete (it finished), so every Create is balanced by a Suspend or a Complete:
-        // creates == completes + suspends (creates >= 1).
+        // StateMachine dispatcher model with reuse: a single dispatcher spans all of a method's yields
+        // (it resumes/suspends multiple times) and is created + completed exactly once. So within a
+        // dispatcher tree every Create is balanced by exactly one Complete; Suspends are interior events.
         private static void AssertCreateBalancesSuspendAndCompleteInChain(ParsedEventStream stream, ulong dispatcherId, string chainName)
         {
             var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
             int creates = ids.Count(id => id == AsyncEventID.CreateStateMachineAsyncContext);
+            int resumes = ids.Count(id => id == AsyncEventID.ResumeStateMachineAsyncContext);
             int suspends = ids.Count(id => id == AsyncEventID.SuspendStateMachineAsyncContext);
             int completes = ids.Count(id => id == AsyncEventID.CompleteStateMachineAsyncContext);
             AssertTrue(stream, creates >= 1, $"Expected at least 1 CreateStateMachineAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {creates}");
-            AssertTrue(stream, creates == completes + suspends, $"Expected CreateStateMachineAsyncContext count == CompleteStateMachineAsyncContext + SuspendStateMachineAsyncContext count for {chainName} (DispatcherId {dispatcherId}), got {creates} creates, {completes} completes, {suspends} suspends");
+            AssertTrue(stream, creates == completes, $"Expected CreateStateMachineAsyncContext count == CompleteStateMachineAsyncContext count for {chainName} (DispatcherId {dispatcherId}), got {creates} creates, {completes} completes");
+            AssertTrue(stream, resumes == completes + suspends, $"Expected ResumeStateMachineAsyncContext count == Complete + Suspend count for {chainName} (DispatcherId {dispatcherId}), got {resumes} resumes, {completes} completes, {suspends} suspends");
         }
 
         private sealed class InlinePostSynchronizationContext : SynchronizationContext

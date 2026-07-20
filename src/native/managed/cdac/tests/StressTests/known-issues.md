@@ -6,8 +6,8 @@ enumeration and the runtime's own GC root scanning, exposed by the
 
 ## Verification verdicts
 
-When running `RunStressTests.ps1` (Checked, `DOTNET_CdacStress=0x001` =
-`ALLOC`), each verification is bucketed into one of:
+When running `RunStressTests.ps1` (Checked, `DOTNET_CdacStress=0x101` =
+`ALLOC + GCREFS`), each verification is bucketed into one of:
 
 | Verdict | Meaning |
 |---------|---------|
@@ -92,6 +92,6 @@ Each verification emits a single header line followed by, on `[FAIL]` or
 ```
 
 Frames whose counts match are omitted from the per-frame block in
-concise mode; verbose mode (`DOTNET_CdacStress=0x201`) also emits the
+concise mode; verbose mode (`DOTNET_CdacStress=0x10101`) also emits the
 matched refs.
 

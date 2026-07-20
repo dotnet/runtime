@@ -27,7 +27,8 @@
            even when this test project is built in a different configuration than CoreCLR was (e.g.
            CoreCLR built Release via 'clr -rc release', but the test built/run as Debug). Mirrors the
            CoreLib SetConfiguration pattern in eng/references.targets. -->
-      <SetConfiguration Condition="'$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
+      <SetConfiguration Condition="'$(Configuration)' == '$(CoreCLRConfiguration)'">CopyAllJitLibrariesToAotCompilerOutput=true</SetConfiguration>
+      <SetConfiguration Condition="'$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration);CopyAllJitLibrariesToAotCompilerOutput=true</SetConfiguration>
     </ProjectReference>
   </ItemGroup>
 
@@ -101,8 +102,8 @@
     <RuntimeHostConfigurationOption Include="R2RTest.TargetOS">
       <Value>$(TargetOS)</Value>
     </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.Configuration">
-      <Value>$(Configuration)</Value>
+    <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRConfiguration">
+      <Value>$(CoreCLRConfiguration)</Value>
     </RuntimeHostConfigurationOption>
   </ItemGroup>
 

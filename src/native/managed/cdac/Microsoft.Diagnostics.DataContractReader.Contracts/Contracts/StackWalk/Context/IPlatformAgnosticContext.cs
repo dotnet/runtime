@@ -29,7 +29,15 @@ public interface IPlatformAgnosticContext
     public abstract bool TryReadRegister(string fieldName, out TargetNUInt value);
     public abstract bool TrySetRegister(int number, TargetNUInt value);
     public abstract bool TryReadRegister(int number, out TargetNUInt value);
+
     public abstract void Unwind(Target target);
+
+    /// <summary>
+    /// Clears the hardware single-step (trace) flag in the context, if the architecture
+    /// supports a hardware single-step flag. Architectures that emulate single-stepping
+    /// throw <see cref="NotSupportedException"/>.
+    /// </summary>
+    public abstract void UnsetSingleStepFlag();
 
     public static IPlatformAgnosticContext GetContextForPlatform(Target target)
     {

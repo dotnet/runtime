@@ -54,6 +54,7 @@ internal static class DumpHelpers
                 (ulong address, Span<byte> buffer) => -1,
                 (uint threadId, uint contextFlags, Span<byte> buffer) =>
                     dt.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? 0 : -1,
+                (uint threadId, ReadOnlySpan<byte> context) => -1,
                 [CoreCLRContracts.Register],
                 out ContractDescriptorTarget? target))
         {
