@@ -728,6 +728,12 @@ void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* nod
         return;
     }
 
+    GenTree* addr;
+    if (node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr))
+    {
+        ConsumeTemporaryRegForOperand(addr DEBUGARG("hardware intrinsic memory address null check"));
+    }
+
     // Only intrinsics with an immediate operand can need the jump-table fallback.
     if (!HWIntrinsicInfo::HasImmediateOperand(node->GetHWIntrinsicId()))
     {
