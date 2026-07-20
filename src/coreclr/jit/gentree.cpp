@@ -18609,12 +18609,12 @@ GenTree* Compiler::gtFoldDistributiveArithmetic(GenTree* tree)
 {
     assert(tree->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB));
 
-    if (opts.OptimizationDisabled() || tree->gtOverflowEx() || !varTypeIsIntegralOrI(tree))
+    if (opts.OptimizationDisabled() || !varTypeIsIntegralOrI(tree))
     {
         return tree;
     }
 
-    if ((tree->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0)
+    if ((tree->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
     {
         return tree;
     }
@@ -18646,13 +18646,16 @@ GenTree* Compiler::gtFoldDistributiveArithmetic(GenTree* tree)
         if (op1->gtGetOp1()->OperIsAnyLocal() && GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
         {
             GenTree* newOp1 = op1->gtGetOp1();
-            GenTree* newOp2 =
-                gtFoldExpr(gtNewOperNode(tree->OperGet(), tree->TypeGet(), op1->gtGetOp2(), op2->gtGetOp2()));
+            GenTree* newOp2 = gtNewOperNode(tree->OperGet(), tree->TypeGet(), op1->gtGetOp2(), op2->gtGetOp2());
             GenTree* result = gtNewOperNode(op1->OperGet(), tree->TypeGet(), newOp1, newOp2);
             result->SetVNsFromNode(tree);
 
+            // Constant folding e.g: '(a * 4) + (a * 6)' => 'a * 10'
+            newOp2 = gtFoldExpr(newOp2);
+
             if (fgGlobalMorph)
             {
+                fgMorphTreeDone(newOp2);
                 fgMorphTreeDone(result);
             }
 
