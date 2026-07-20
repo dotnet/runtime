@@ -33,7 +33,6 @@
          wasihost corehost (libWasiHost.a) per-app through its own targets below. -->
     <WasmBuildNative>false</WasmBuildNative>
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
-    <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
   </PropertyGroup>
 
   <!-- Override the same-named target imported above so we do NOT bundle Mono's
