@@ -22,9 +22,10 @@ This skill distills what to actually enforce when authoring or reviewing vectori
 
 ## Core rules
 
-1. **Reach for the highest-level API that already does the job.** `Span<T>`/`string` methods, LINQ,
-   `TensorPrimitives`, and the tensor types already vectorize many operations. Don't hand-roll what's
-   already optimized and tested.
+1. **Reach for the highest-level API that already does the job.** `Span<T>`/`string` methods,
+   `TensorPrimitives`, and the tensor types already vectorize many operations. LINQ is often vectorized
+   too — operators such as `Sum`, `Max`, `Min`, and `Average` accelerate when the source's underlying
+   span can be extracted. Don't hand-roll what's already optimized and tested.
 2. **Start with `Vector128<T>`.** It's the common denominator accelerated on the broadest hardware, and
    you don't need `Vector256`/`Vector512` for a correct, portable implementation. Add wider widths and
    platform intrinsics only for a *measured* hot path.
