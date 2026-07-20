@@ -831,7 +831,7 @@ namespace System
             // accept values like 0 and others may require additional fixups.
             int nMaxDigits = GetFloatingPointMaxDigitsAndPrecision(fmt, ref precision, info, out bool isSignificantDigits);
 
-            if ((value != default) && (!isSignificantDigits || !Grisu3.TryRun(value, precision, ref number)))
+            if ((value != default) && (!isSignificantDigits || !UnroundedScaling.TryRun(value, precision, ref number)))
             {
                 Dragon4(value, precision, isSignificantDigits, ref number);
             }

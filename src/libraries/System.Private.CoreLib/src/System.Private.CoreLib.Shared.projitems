@@ -606,10 +606,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Nullable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\NullReferenceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.BigInteger.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Number.DiyFp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Dragon4.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Number.UnroundedScaling.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Formatting.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Number.Grisu3.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Number.Pow10Table.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberToFloatingPointBits.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Parsing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\BFloat16.cs" />
