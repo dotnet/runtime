@@ -114,7 +114,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
             else
             {
                 Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(_address);
-                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, thrownObjectHandle, threadData.FirstNestedException, legacyExceptionState);
+                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, TargetPointer.Null, thrownObjectHandle, threadData.FirstNestedException, legacyExceptionState);
             }
         }
         catch (System.Exception ex)
@@ -155,7 +155,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
             }
             else
             {
-                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL, thrownObjectHandle, TargetPointer.Null, legacyExceptionState);
+                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL, TargetPointer.Null, thrownObjectHandle, TargetPointer.Null, legacyExceptionState);
             }
         }
         catch (System.Exception ex)
