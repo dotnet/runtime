@@ -3489,6 +3489,14 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
         }
     }
 
+    // Do not propagate promoted locals if they are not DNER.
+    // This would require DNER'ing for many cases where the consumer
+    // does not support whole-local uses, such as GT_FIELD_LIST.
+    if (tree->OperIs(GT_LCL_VAR) && varTypeIsSIMD(tree) && copyVarDsc->lvPromoted && !copyVarDsc->lvDoNotEnregister)
+    {
+        return nullptr;
+    }
+
     tree->SetLclNum(copyLclNum);
 
     // Copy prop and last-use copy elision happens at the same time in morph.
