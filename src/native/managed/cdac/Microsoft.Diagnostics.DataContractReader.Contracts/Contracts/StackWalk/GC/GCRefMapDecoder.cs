@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 /// <summary>
@@ -34,8 +36,16 @@ internal enum GCRefMapToken
 /// </summary>
 internal ref struct GCRefMapDecoder
 {
-    private readonly Target _target;
+    // The decoder can source its bytes either from target memory (the R2R image,
+    // for ExternalMethodFrame / StubDispatchFrame) or from a host-side byte[]
+    // (for blobs we synthesize via ICallingConvention.TryComputeArgGCRefMapBlob).
+    // Exactly one of (_target + _currentByte) or (_blob) is non-null per instance;
+    // see UsesBlob below for the invariant that lets GetBit pick the right path
+    // without runtime null checks.
+    private readonly Target? _target;
     private TargetPointer _currentByte;
+    private readonly byte[]? _blob;
+    private int _blobIndex;
     private int _pendingByte;
     private int _pos;
 
@@ -43,6 +53,18 @@ internal ref struct GCRefMapDecoder
     {
         _target = target;
         _currentByte = blob;
+        _blob = null;
+        _blobIndex = 0;
+        _pendingByte = 0x80; // Forces first byte read
+        _pos = 0;
+    }
+
+    public GCRefMapDecoder(byte[] blob)
+    {
+        _target = null;
+        _currentByte = TargetPointer.Null;
+        _blob = blob;
+        _blobIndex = 0;
         _pendingByte = 0x80; // Forces first byte read
         _pos = 0;
     }
@@ -51,13 +73,25 @@ internal ref struct GCRefMapDecoder
 
     public readonly int CurrentPos => _pos;
 
+    [MemberNotNullWhen(true, nameof(_blob))]
+    [MemberNotNullWhen(false, nameof(_target))]
+    private readonly bool UsesBlob => _blob is not null;
+
     private int GetBit()
     {
         int x = _pendingByte;
         if ((x & 0x80) != 0)
         {
-            x = _target.Read<byte>(_currentByte);
-            _currentByte = new TargetPointer(_currentByte.Value + 1);
+            if (UsesBlob)
+            {
+                x = _blobIndex < _blob.Length ? _blob[_blobIndex] : 0;
+                _blobIndex++;
+            }
+            else
+            {
+                x = _target.Read<byte>(_currentByte);
+                _currentByte = new TargetPointer(_currentByte.Value + 1);
+            }
             x |= (x & 0x80) << 7;
         }
         _pendingByte = x >> 1;

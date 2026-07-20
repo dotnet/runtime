@@ -142,6 +142,29 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      # Release build of wasi wasm for CoreCLR (build-only — the
+      # runtime tests run in a separate job dispatched to Helix from
+      # wasi-wasm-coreclr-runtime-tests.yml below).
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-build-only.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          publishArtifactsForWorkload: true
+          condition: >-
+            or(
+              eq(variables['wasmDarcDependenciesChanged'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
+              eq(variables['isRollingBuild'], true))
+
+      # CoreCLR src/tests subset run on wasmtime via Helix
+      # (wasi_wasm queue -> ubuntu-26.04-helix-webassembly-amd64 image).
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-runtime-tests.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          alwaysRun: ${{ variables.isRollingBuild }}
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -658,6 +681,7 @@ extends:
           - freebsd_x64
           - linux_riscv64
           - linux_loongarch64
+          - openbsd_x64
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR_Bootstrapped
@@ -882,11 +906,8 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
-          - android_x64
           - browser_wasm
           - wasi_wasm
-          - ios_arm64 # tvos and ios use the same offsets so we only need to build once
-          - maccatalyst_x64
           variables:
             - name: _osParameter
               value: -os linux
@@ -924,7 +945,6 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           runtimeFlavor: mono
           platforms:
-          - tvossimulator_arm64
           - linux_x64
           - linux_arm
           - linux_arm64
@@ -977,6 +997,18 @@ extends:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          scenarios:
+            - WasmTestOnChrome
+
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm_mac
+          alwaysRun: ${{ variables.isRollingBuild }}
+          runOnlyOnChromeVersionUpdate: true
+          shouldRunSmokeOnly: 'true'
+          nameSuffix: _SmokeMac
+          extraBuildArgs: /p:AotHostArchitecture=arm64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
 
@@ -1059,6 +1091,9 @@ extends:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          # This pipeline builds the CoreCLR browser-wasm runtime (nameSuffix: CoreCLR),
+          # so stage its runtime pack for the wasm-tools workload install.
+          includeCoreClrRuntimePack: true
 
       # Wasm runtime tests
       - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
@@ -1079,48 +1114,6 @@ extends:
           condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
           publishArtifactsForWorkload: false
           publishWBT: false
-
-      #
-      # Android devices
-      # Build the whole product using Mono and run libraries tests
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: Release
-          runtimeFlavor: mono
-          platforms:
-          - android_arm
-          - android_arm64
-          variables:
-            # map dependencies variables to local variables
-            - name: librariesContainsChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-            - name: monoContainsChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_Smoke
-            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:EnableAdditionalTimezoneChecks=true
-            timeoutInMinutes: 120
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-            # extra steps, run tests
-            postBuildSteps:
-              - template: /eng/pipelines/libraries/helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-                  condition: >-
-                    or(
-                    eq(variables['librariesContainsChange'], true),
-                    eq(variables['monoContainsChange'], true),
-                    eq(variables['isRollingBuild'], true))
 
       #
       # Android arm/arm64 devices and x64 emulators
@@ -1166,58 +1159,8 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS simulators - Full AOT + AggressiveTrimming to reduce size
-      # Build the whole product using Mono and run libraries tests
-      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
-      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: Release
-          runtimeFlavor: mono
-          platforms:
-            - iossimulator_arm64
-          variables:
-            # map dependencies variables to local variables
-            - name: librariesContainsChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-            - name: monoContainsChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-            - name: illinkContainsChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_Smoke
-            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
-            timeoutInMinutes: 120
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-            # extra steps, run tests
-            postBuildSteps:
-              - template: /eng/pipelines/libraries/helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-                  extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
-                  condition: >-
-                    or(
-                    eq(variables['librariesContainsChange'], true),
-                    eq(variables['monoContainsChange'], true),
-                    eq(variables['illinkContainsChange'], true),
-                    eq(variables['isRollingBuild'], true))
-
-      #
-      # iOS simulators
+      # iOS devices
       # Build the whole product using Native AOT and run libraries tests
-      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
-      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1226,7 +1169,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1259,10 +1202,8 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS simulators
+      # iOS devices
       # Build the whole product using CoreCLR and run libraries tests
-      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
-      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1271,7 +1212,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1304,47 +1245,6 @@ extends:
                     eq(variables['coreclrContainsChange'], true),
                     eq(variables['illinkContainsChange'], true),
                     eq(variables['isRollingBuild'], true))
-
-      #
-      # MacCatalyst interp - requires AOT Compilation and Interp flags
-      # Build the whole product using Mono and run libraries tests
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: Release
-          runtimeFlavor: mono
-          platforms:
-          - maccatalyst_arm64
-          variables:
-            # map dependencies variables to local variables
-            - name: librariesContainsChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-            - name: monoContainsChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_Smoke
-            buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true
-            timeoutInMinutes: 180
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-            # extra steps, run tests
-            postBuildSteps:
-              - template: /eng/pipelines/libraries/helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-                  condition: >-
-                    or(
-                      eq(variables['librariesContainsChange'], true),
-                      eq(variables['monoContainsChange'], true),
-                      eq(variables['isRollingBuild'], true))
 
       #
       # MacCatalyst
@@ -1615,6 +1515,7 @@ extends:
           platforms:
             - windows_x64
             - linux_x64
+            - linux_musl_x64
           helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
             nameSuffix: Installer_Build_And_Test
@@ -1880,8 +1781,11 @@ extends:
             extraBuildArgs: -os browser -p:HostConfiguration=Release
             condition: >-
               or(
+                eq(variables['wasmDarcDependenciesChanged'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml

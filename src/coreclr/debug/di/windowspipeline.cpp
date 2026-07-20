@@ -177,7 +177,7 @@ BOOL WindowsNativePipeline::TerminateProcess(UINT32 exitCode)
     _ASSERTE(m_dwProcessId != 0);
 
     // Get a process handle for the process ID.
-    HandleHolder hProc = OpenProcess(PROCESS_TERMINATE, FALSE, m_dwProcessId);
+    HandleHolder hProc{ OpenProcess(PROCESS_TERMINATE, FALSE, m_dwProcessId) };
 
     if (hProc == NULL)
     {

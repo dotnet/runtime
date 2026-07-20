@@ -79,6 +79,8 @@ public class GcTransitionRegister : BaseGcTransition
     {
         Register = reg;
         IsLive = isLive;
+        IsThis = isThis;
+        Iptr = iptr;
         PushCountOrPopSize = pushCountOrPopSize;
     }
 
@@ -130,6 +132,8 @@ public class GcTransitionPointer : BaseGcTransition
         ArgOffset = argOffs;
         ArgCount = argCnt;
         Act = act;
+        IsThis = isThis;
+        Iptr = iptr;
         IsPtr = isPtr;
     }
 

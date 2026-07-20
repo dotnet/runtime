@@ -285,6 +285,73 @@ namespace System.Text.Json.Schema.Tests
                     }
                 """);
 
+            // Regression test for https://github.com/dotnet/runtime/issues/129432
+            // Nullable floating-point types under AllowNamedFloatingPointLiterals must retain the null branch.
+            yield return new TestData<double?>(
+                Value: 3.14,
+                AdditionalValues: [null, double.NaN, double.PositiveInfinity, double.NegativeInfinity],
+                ExpectedJsonSchema: """
+                    {
+                        "anyOf": [
+                            { "type": ["number", "null"] },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] }
+                        ]
+                    }
+                    """,
+                SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
+
+            yield return new TestData<float?>(
+                Value: 1.2f,
+                AdditionalValues: [null, float.NaN, float.PositiveInfinity, float.NegativeInfinity],
+                ExpectedJsonSchema: """
+                    {
+                        "anyOf": [
+                            { "type": ["number", "null"] },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] }
+                        ]
+                    }
+                    """,
+                SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
+
+#if NET
+            yield return new TestData<Half?>(
+                Value: (Half)1.5,
+                AdditionalValues: [null, Half.NaN, Half.PositiveInfinity, Half.NegativeInfinity],
+                ExpectedJsonSchema: """
+                    {
+                        "anyOf": [
+                            { "type": ["number", "null"] },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] }
+                        ]
+                    }
+                    """,
+                SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
+#endif
+
+            yield return new TestData<PocoWithNullableFloatingPoint>(
+                Value: new() { Latitude = 3.14, Longitude = 1.2f },
+                AdditionalValues: [new() { Latitude = null, Longitude = null }],
+                ExpectedJsonSchema: """
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                            "Latitude": {
+                                "anyOf": [
+                                    { "type": ["number", "null"] },
+                                    { "enum": ["NaN", "Infinity", "-Infinity"] }
+                                ]
+                            },
+                            "Longitude": {
+                                "anyOf": [
+                                    { "type": ["number", "null"] },
+                                    { "enum": ["NaN", "Infinity", "-Infinity"] }
+                                ]
+                            }
+                        }
+                    }
+                    """,
+                SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
+
             yield return new TestData<PocoWithRecursiveMembers>(
                 Value: new() { Value = 1, Next = new() { Value = 2, Next = new() { Value = 3 } } },
                 AdditionalValues: [new() { Value = 1, Next = null }],
@@ -1102,6 +1169,29 @@ namespace System.Text.Json.Schema.Tests
                     }
                 """);
 
+            yield return new TestData<ClassWithPropertyNameRequiringFragmentEncoding>(
+                Value: new ClassWithPropertyNameRequiringFragmentEncoding { Value = new() },
+                ExpectedJsonSchema: """
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                            "hello%20world": {
+                                "type": "object",
+                                "properties": {
+                                    "Value" : {"type":"integer"},
+                                    "Next": {
+                                        "type": ["object","null"],
+                                        "properties": {
+                                            "Value" : {"type":"integer"},
+                                            "Next": {"$ref":"#/properties/hello%2520world/properties/Next"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                """);
+
             yield return new TestData<ClassWithOptionalObjectParameter>(
                 Value: new(value: null),
                 AdditionalValues: [new(true), new(42), new(""), new(new object()), new(Array.Empty<int>())],
@@ -1125,6 +1215,22 @@ namespace System.Text.Json.Schema.Tests
                         }
                     }
                     """);
+
+#pragma warning disable CS0612 // Type or member is obsolete
+            yield return new TestData<MyObsoleteType>(
+                Value: new() { MyString = "str", MyObsoleteString = "str", MyObsoleteInnerType = new() },
+                ExpectedJsonSchema: """
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                          "MyString": { "type": ["string","null"] },
+                          "MyObsoleteString": { "type": ["string","null"], "deprecated": true },
+                          "MyObsoleteInnerType": { "type": ["object","null"], "deprecated": true }
+                        },
+                        "deprecated": true
+                    }
+                    """);
+#pragma warning restore CS0612 // Type or member is obsolete
 
             // Collection types
             yield return new TestData<int[]>([1, 2, 3], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"integer"}}""");
@@ -1288,6 +1394,12 @@ namespace System.Text.Json.Schema.Tests
 
             [JsonNumberHandling(JsonNumberHandling.AllowNamedFloatingPointLiterals | JsonNumberHandling.AllowReadingFromString)]
             public decimal DecimalAllowingFloatingPointLiteralsAndReadingFromString { get; set; }
+        }
+
+        public class PocoWithNullableFloatingPoint
+        {
+            public double? Latitude { get; set; }
+            public float? Longitude { get; set; }
         }
 
         public class PocoWithRecursiveMembers
@@ -1541,6 +1653,12 @@ namespace System.Text.Json.Schema.Tests
             public PocoWithRecursiveMembers Value { get; set; }
         }
 
+        public class ClassWithPropertyNameRequiringFragmentEncoding
+        {
+            [JsonPropertyName("hello%20world")]
+            public PocoWithRecursiveMembers Value { get; set; }
+        }
+
         public class ClassWithOptionalObjectParameter(object? value = null)
         {
             public object? Value { get; } = value;
@@ -1563,6 +1681,22 @@ namespace System.Text.Json.Schema.Tests
             public bool TryGetValue(TKey key, out TValue value) => _dictionary.TryGetValue(key, out value);
 #endif
             IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_dictionary).GetEnumerator();
+        }
+
+        [Obsolete]
+        public sealed class MyObsoleteType
+        {
+            public string? MyString { get; set; }
+
+            [Obsolete]
+            public string? MyObsoleteString { get; set; }
+
+            public MyInnerObsoleteType? MyObsoleteInnerType { get; set; }
+
+            [Obsolete]
+            public sealed class MyInnerObsoleteType
+            {
+            }
         }
 
         public record TestData<T>(

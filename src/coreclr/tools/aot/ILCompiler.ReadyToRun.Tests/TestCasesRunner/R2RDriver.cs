@@ -33,6 +33,7 @@ internal enum Crossgen2Option
     HotColdSplitting,
     Optimize,
     TargetArchArm,
+    StripILBodies,
 }
 
 internal static class Crossgen2OptionsExtensions
@@ -59,6 +60,7 @@ internal static class Crossgen2OptionsExtensions
         Crossgen2Option.HotColdSplitting => $"--hot-cold-splitting",
         Crossgen2Option.Optimize => $"--optimize",
         Crossgen2Option.TargetArchArm => $"--targetarch:arm",
+        Crossgen2Option.StripILBodies => $"--strip-il-bodies",
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 }

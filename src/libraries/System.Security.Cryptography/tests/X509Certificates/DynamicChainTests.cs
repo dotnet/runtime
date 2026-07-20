@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
 using System.Linq;
@@ -1043,6 +1044,322 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(ChainPolicyMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
+        public static void CertificatePolicyTest(
+           ChainPolicyTestCase testCase)
+        {
+            using (testCase)
+            {
+                TestChain4(
+                    testCase.Root,
+                    testCase.HighIntermediate,
+                    testCase.LowIntermediate,
+                    testCase.EndEntity,
+                    PlatformPolicyConstraints(testCase.ExpectedFlags),
+                    testCase.ConfigureCallback);
+            }
+        }
+
+        public static IEnumerable<object[]> ChainPolicyMemberData()
+        {
+            foreach (ChainPolicyTestCase testCase in TestCases())
+            {
+                yield return new object[] { testCase };
+            }
+
+            static IEnumerable<ChainPolicyTestCase> TestCases()
+            {
+                // Use the same keys for all chains, just to keep the total time low.
+                // There are enough cases here that keygen shows up in clock time.
+                RSA[] keys = [ RSA.Create(2048), RSA.Create(2048), RSA.Create(2048), RSA.Create(2048) ];
+
+                // These test cases only show in results by their test case number,
+                // because describing them in words would be very verbose.
+                //
+                // Skipped (unyielded) cases need to reserve their numbers so they're
+                // the same on all platforms.
+                //
+                // Ideally, new cases are added with higher values, so that test history
+                // isn't comparing apples and oranges.
+
+                int caseId = 0;
+
+                // No chain.Policy.CertificatePolicy checks, EE uses the mapped policy identifier,
+                // intermediate requires that the EE certs have a policy extension.
+                //
+                // Despite the intermediate specifying a mapping when it's forbidden (inhibit<2),
+                // Everything is reported valid, because the EE cert policy C doesn't require the mapping.
+                for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
+                {
+                    yield return ChainPolicyTestCase.Build(
+                        caseId++,
+                        keys,
+                        rootInhibitMapping,
+                        0,
+                        [ChainPolicyTestCase.PolicyB, ChainPolicyTestCase.PolicyC],
+                        [],
+                        X509ChainStatusFlags.NoError);
+                }
+
+                Debug.Assert(caseId == 3);
+
+                // No chain.Policy.CertificatePolicy checks, EE uses the mapped policy identifier,
+                // intermediate requires that the EE certs have a policy extension.
+                //
+                // The EE policy is required, and the only policy in the EE cert is the mapped one,
+                // but that is forbidden by the intermediate's inhibit=<2, so it's an
+                // Issuance-Chain-Policy violation.
+                for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
+                {
+                    // Windows seems to be the only OS capable of reporting this error.
+
+                    yield return ChainPolicyTestCase.Build(
+                        caseId++,
+                        keys,
+                        rootInhibitMapping,
+                        0,
+                        [ChainPolicyTestCase.PolicyB],
+                        [],
+                        rootInhibitMapping < 2 && OperatingSystem.IsWindows() ?
+                            X509ChainStatusFlags.NoIssuanceChainPolicy :
+                            X509ChainStatusFlags.NoError);
+                }
+
+                Debug.Assert(caseId == 6);
+
+                // No chain.Policy.CertificatePolicy checks, EE uses the mapped policy identifier,
+                // intermediate does not require that the EE certs have a policy extension.
+                //
+                // Even though the intermediate has a disallowed mapping when inhibit=<2,
+                // since the EE isn't _required_ to have a policy, nothing was required to
+                // traverse the map.
+                for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
+                {
+                    yield return ChainPolicyTestCase.Build(
+                        caseId++,
+                        keys,
+                        rootInhibitMapping,
+                        -1,
+                        [ChainPolicyTestCase.PolicyB],
+                        [],
+                        X509ChainStatusFlags.NoError);
+                }
+
+                Debug.Assert(caseId == 9);
+
+                // EE uses the mapped policy identifier,
+                // intermediate requires that the EE certs have a policy extension.
+                // Require that the EE cert is valid for only policy C (no mapping required).
+                //
+                // Despite the intermediate specifying a mapping when it's forbidden (inhibit=<2),
+                // Everything is reported valid, because the EE cert policy C doesn't require the mapping.
+                for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
+                {
+                    yield return ChainPolicyTestCase.Build(
+                        caseId++,
+                        keys,
+                        rootInhibitMapping,
+                        0,
+                        [ChainPolicyTestCase.PolicyB, ChainPolicyTestCase.PolicyC],
+                        [ChainPolicyTestCase.PolicyC],
+                        X509ChainStatusFlags.NoError);
+                }
+
+                Debug.Assert(caseId == 12);
+
+                // EE uses the mapped policy identifier,
+                // intermediate does not require that the EE certs have a policy extension.
+                // Require that the EE cert is valid for only policy C (no mapping required).
+                //
+                // Despite the intermediate specifying a mapping when it's forbidden (inhibit=<2),
+                // Everything is reported valid, because the EE cert policy C doesn't require the mapping.
+                for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
+                {
+                    yield return ChainPolicyTestCase.Build(
+                        caseId++,
+                        keys,
+                        rootInhibitMapping,
+                        -1,
+                        [ChainPolicyTestCase.PolicyB, ChainPolicyTestCase.PolicyC],
+                        [ChainPolicyTestCase.PolicyC],
+                        X509ChainStatusFlags.NoError);
+                }
+
+                Debug.Assert(caseId == 15);
+
+                // EE uses the mapped policy identifier,
+                // intermediate requires that the EE certs have a policy extension.
+                // Require that the EE cert is valid for only policy A (which it calls C).
+                //
+                // Since this requires traversing the mapping, it's NotValidForUsage whenever
+                // the mapping was disallowed (inhibit<2).
+                for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
+                {
+                    yield return ChainPolicyTestCase.Build(
+                        caseId++,
+                        keys,
+                        rootInhibitMapping,
+                        0,
+                        [ChainPolicyTestCase.PolicyB, ChainPolicyTestCase.PolicyC],
+                        [ChainPolicyTestCase.PolicyA],
+                        rootInhibitMapping < 2 ?
+                            X509ChainStatusFlags.NotValidForUsage :
+                            X509ChainStatusFlags.NoError);
+                }
+
+                Debug.Assert(caseId == 18);
+
+                foreach (RSA key in keys)
+                {
+                    key.Dispose();
+                }
+            }
+        }
+
+        public sealed class ChainPolicyTestCase : IDisposable
+        {
+            internal const string PolicyA = "0.1.2.3";
+            internal const string PolicyB = "1.2.3.4";
+            internal const string PolicyC = "2.3.4.5";
+
+            private int _number;
+            private string[] _eePoliciesToCheck;
+
+            internal X509ChainStatusFlags ExpectedFlags { get; private set; }
+            internal X509Certificate2 Root { get; private set; }
+            internal X509Certificate2 HighIntermediate { get; private set; }
+            internal X509Certificate2 LowIntermediate { get; private set; }
+            internal X509Certificate2 EndEntity { get; private set; }
+
+            private ChainPolicyTestCase()
+            {
+            }
+
+            public Action<X509ChainPolicy> ConfigureCallback
+            {
+                get
+                {
+                    if (_eePoliciesToCheck.Length == 0)
+                    {
+                        return null;
+                    }
+
+                    return policy =>
+                    {
+                        foreach (string policyOid in _eePoliciesToCheck)
+                        {
+                            policy.CertificatePolicy.Add(new Oid(policyOid, null));
+                        }
+                    };
+                }
+            }
+
+            public void Dispose()
+            {
+                Root?.Dispose();
+                HighIntermediate?.Dispose();
+                LowIntermediate?.Dispose();
+                EndEntity?.Dispose();
+            }
+
+            internal static ChainPolicyTestCase Build(
+                int number,
+                RSA[] keys,
+                int rootInhibitMapping,
+                int intermediateRequireExplicit,
+                string[] eePolicies,
+                string[] eePoliciesToCheck,
+                X509ChainStatusFlags expectedFlags)
+            {
+                X509Extension[] rootExtensions = new[]
+                {
+                    BasicConstraintsCA,
+                    MaybePolicyConstraints(inhibitPolicyMappingSkipCerts: rootInhibitMapping),
+                };
+
+                X509Extension[] highImedExtensions = new[]
+                {
+                    BasicConstraintsCA,
+                    // The "any" policy.
+                    BuildPolicyByIdentifiers("2.5.29.32.0"),
+                };
+
+                X509Extension[] lowImedExtensions = new[]
+                {
+                    BasicConstraintsCA,
+                    MaybePolicyConstraints(requireExplicitPolicySkipCerts: intermediateRequireExplicit),
+                    BuildPolicyByIdentifiers(PolicyA, PolicyC),
+                    BuildPolicyMappings((PolicyA, PolicyB)),
+                };
+
+                X509Extension[] endEntityExtensions = new[]
+                {
+                    BasicConstraintsEndEntity,
+                    MaybePolicies(eePolicies),
+                };
+
+                X509Certificate2[] certs = new X509Certificate2[4];
+
+                TestDataGenerator.MakeTestChain(
+                    keys,
+                    certs,
+                    endEntityExtensions,
+                    [lowImedExtensions, highImedExtensions],
+                    rootExtensions,
+                    $"{nameof(ChainPolicyTestCase)}-{number}");
+
+                return new ChainPolicyTestCase
+                {
+                    _number = number,
+                    EndEntity = certs[0],
+                    LowIntermediate = certs[1],
+                    HighIntermediate = certs[2],
+                    Root = certs[3],
+                    _eePoliciesToCheck = eePoliciesToCheck,
+                    ExpectedFlags = expectedFlags,
+                };
+
+                static X509Extension MaybePolicies(string[] policyOids)
+                {
+                    if (policyOids.Length == 0)
+                    {
+                        return null;
+                    }
+
+                    return BuildPolicyByIdentifiers(policyOids);
+                }
+
+                static X509Extension MaybePolicyConstraints(
+                    int requireExplicitPolicySkipCerts = -1,
+                    int inhibitPolicyMappingSkipCerts = -1)
+                {
+                    if (inhibitPolicyMappingSkipCerts >= 0 && requireExplicitPolicySkipCerts >= 0)
+                    {
+                        return BuildPolicyConstraints(inhibitPolicyMappingSkipCerts, requireExplicitPolicySkipCerts);
+                    }
+
+                    if (inhibitPolicyMappingSkipCerts >= 0)
+                    {
+                        return BuildPolicyConstraints(inhibitPolicyMappingSkipCerts: inhibitPolicyMappingSkipCerts);
+                    }
+
+                    if (requireExplicitPolicySkipCerts >= 0)
+                    {
+                        return BuildPolicyConstraints(requireExplicitPolicySkipCerts: requireExplicitPolicySkipCerts);
+                    }
+
+                    return null;
+                }
+            }
+
+            public override string ToString()
+            {
+                return $"CaseID {_number}";
+            }
+        }
+
         public enum BuildChainWithNotSignatureValidTest : int
         {
             TrustedRoot,
@@ -1349,11 +1666,43 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return new X509Extension("2.5.29.33", writer.Encode(), critical: true);
         }
 
+        private static void TestChain4(
+            X509Certificate2 rootCertificate,
+            X509Certificate2 highIntermediateCertificate,
+            X509Certificate2 lowIntermediateCertificate,
+            X509Certificate2 endEntityCertificate,
+            X509ChainStatusFlags expectedFlags = X509ChainStatusFlags.NoError,
+            Action<X509ChainPolicy> configurePolicy = null)
+        {
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCertificate.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(rootCertificate);
+                chain.ChainPolicy.ExtraStore.Add(highIntermediateCertificate);
+                chain.ChainPolicy.ExtraStore.Add(lowIntermediateCertificate);
+                configurePolicy?.Invoke(chain.ChainPolicy);
+
+                bool result = chain.Build(endEntityCertificate);
+                bool expected = expectedFlags == X509ChainStatusFlags.NoError;
+                X509ChainStatusFlags actualFlags = chain.AllStatusFlags();
+                int depth = chain.ChainElements?.Count ?? 0;
+                Assert.True(result == expected, $"chain.Build returned {result} with flags ({actualFlags}) and depth {depth} when ({expectedFlags}) with depth 4 was expected");
+
+                Assert.True(
+                    actualFlags.HasFlag(expectedFlags),
+                    $"Expected Flags: \"{expectedFlags}\"; Actual Flags: \"{actualFlags}\"");
+            }
+        }
+
         private static void TestChain3(
             X509Certificate2 rootCertificate,
             X509Certificate2 intermediateCertificate,
             X509Certificate2 endEntityCertificate,
-            X509ChainStatusFlags expectedFlags = X509ChainStatusFlags.NoError)
+            X509ChainStatusFlags expectedFlags = X509ChainStatusFlags.NoError,
+            Action<X509ChainPolicy> configurePolicy = null)
         {
             using (ChainHolder chainHolder = new ChainHolder())
             {
@@ -1363,10 +1712,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                 chain.ChainPolicy.CustomTrustStore.Add(rootCertificate);
                 chain.ChainPolicy.ExtraStore.Add(intermediateCertificate);
+                configurePolicy?.Invoke(chain.ChainPolicy);
 
                 bool result = chain.Build(endEntityCertificate);
+                bool expected = expectedFlags == X509ChainStatusFlags.NoError;
                 X509ChainStatusFlags actualFlags = chain.AllStatusFlags();
-                Assert.True(result == (expectedFlags == X509ChainStatusFlags.NoError), $"chain.Build ({actualFlags})");
+                int depth = chain.ChainElements?.Count ?? 0;
+                Assert.True(result == expected, $"chain.Build returned {result} with flags ({actualFlags}) and depth {depth} when ({expectedFlags}) with depth 3 was expected");
 
                 Assert.True(
                     actualFlags.HasFlag(expectedFlags),

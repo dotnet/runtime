@@ -16,14 +16,14 @@ public struct X86Context : IPlatformContext
     [Flags]
     public enum ContextFlagsValues : uint
     {
-        CONTEXT_i386 = 0x00100000,
+        CONTEXT_i386 = 0x00010000,
         CONTEXT_CONTROL = CONTEXT_i386 | 0x1,
         CONTEXT_INTEGER = CONTEXT_i386 | 0x2,
         CONTEXT_SEGMENTS = CONTEXT_i386 | 0x4,
         CONTEXT_FLOATING_POINT = CONTEXT_i386 | 0x8,
         CONTEXT_DEBUG_REGISTERS = CONTEXT_i386 | 0x10,
         CONTEXT_EXTENDED_REGISTERS = CONTEXT_i386 | 0x20,
-        CONTEXT_FULL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
+        CONTEXT_FULL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS,
         CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS,
         CONTEXT_XSTATE = CONTEXT_i386 | 0x40,
 
@@ -52,7 +52,7 @@ public struct X86Context : IPlatformContext
         readonly get => new(Esp);
         set => Esp = (uint)value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Eip);
         set => Eip = (uint)value.Value;
@@ -70,6 +70,9 @@ public struct X86Context : IPlatformContext
         X86Unwinder unwinder = new(target);
         unwinder.Unwind(ref this);
     }
+
+    // Clears the x86 hardware trace flag (EFLAGS.TF, bit 0x100).
+    public void UnsetSingleStepFlag() => EFlags &= ~0x100u;
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {

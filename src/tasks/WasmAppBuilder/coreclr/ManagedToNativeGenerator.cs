@@ -35,6 +35,10 @@ public class ManagedToNativeGenerator : Task
 
     public bool IsLibraryMode { get; set; }
 
+    public string TargetOS { get; set; } = "browser";
+
+    private static readonly string[] s_knownTargetOSes = new[] { "browser", "wasi" };
+
     [Output]
     public string[]? FileWrites { get; private set; }
 
@@ -49,6 +53,19 @@ public class ManagedToNativeGenerator : Task
         if (PInvokeModules!.Length == 0)
         {
             Log.LogError($"{nameof(ManagedToNativeGenerator)}.{nameof(PInvokeModules)} cannot be empty");
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(TargetOS))
+        {
+            Log.LogError($"{nameof(ManagedToNativeGenerator)}.{nameof(TargetOS)} cannot be empty; expected one of: {string.Join(", ", s_knownTargetOSes)}");
+            return false;
+        }
+
+        TargetOS = TargetOS.Trim().ToLowerInvariant();
+        if (Array.IndexOf(s_knownTargetOSes, TargetOS) < 0)
+        {
+            Log.LogError($"{nameof(ManagedToNativeGenerator)}.{nameof(TargetOS)} '{TargetOS}' is not recognized; expected one of: {string.Join(", ", s_knownTargetOSes)}");
             return false;
         }
 
@@ -69,7 +86,7 @@ public class ManagedToNativeGenerator : Task
     {
         Dictionary<string, string> _symbolNameFixups = new();
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
-        var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode);
+        var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode, TargetOS);
         var internalCallCollector = new InternalCallSignatureCollector(log);
 
         var resolver = new PathAssemblyResolver(managedAssemblies);

@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Threading;
 
 using ErrorCode = Interop.NCrypt.ErrorCode;
 
@@ -57,7 +58,8 @@ namespace Microsoft.Win32.SafeHandles
             Holder
         }
 
-        private OwnershipState _ownershipState;
+        private volatile OwnershipState _ownershipState;
+        private Lock? _ownershipLock;
 
         /// <summary>
         ///     If the handle is a Duplicate, this points at the safe handle which actually owns the native handle.
@@ -208,21 +210,30 @@ namespace Microsoft.Win32.SafeHandles
         /// </remarks>
         internal T Duplicate<T>() where T : SafeNCryptHandle, new()
         {
-#if DEBUG
-            Debug.Assert(IsValidOpenState);
-#endif
-            Debug.Assert(_ownershipState != OwnershipState.Holder);
             Debug.Assert(typeof(T) == this.GetType());
 
             if (_ownershipState == OwnershipState.Owner)
             {
-                return DuplicateOwnerHandle<T>();
+                // Only the first duplication mutates the source handle. Publish that transition once so
+                // concurrent callers cannot create independent holders for the same native handle.
+                lock (LazyInitializer.EnsureInitialized(ref _ownershipLock))
+                {
+#if DEBUG
+                    Debug.Assert(IsValidOpenState);
+#endif
+                    if (_ownershipState == OwnershipState.Owner)
+                    {
+                        return DuplicateOwnerHandle<T>();
+                    }
+                }
             }
-            else
-            {
-                // If we're not an owner handle, and we're being duplicated then we must be a duplicate handle.
-                return DuplicateDuplicatedHandle<T>();
-            }
+
+#if DEBUG
+            Debug.Assert(IsValidOpenState);
+#endif
+            Debug.Assert(_ownershipState == OwnershipState.Duplicate);
+
+            return DuplicateDuplicatedHandle<T>();
         }
 
         /// <summary>

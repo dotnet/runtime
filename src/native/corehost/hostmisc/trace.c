@@ -72,7 +72,7 @@ static void trace_lock_release(void)
 }
 
 // Reads DOTNET_HOST_<name>, falling back to COREHOST_<name> for compat.
-// Returns a heap-allocated NUL-terminated value, or NULL if neither variable
+// Returns a heap-allocated null-terminated value, or NULL if neither variable
 // is set. Caller must free() the returned pointer.
 static pal_char_t* get_host_env_var(const pal_char_t* name)
 {

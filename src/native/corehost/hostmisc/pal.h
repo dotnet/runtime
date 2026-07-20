@@ -112,25 +112,37 @@ typedef char pal_char_t;
 
 #endif // _WIN32
 
+#include "configure.h"
+
+// Wide-stringify the value of a macro: _STRINGIFY(FOO) -> _X("<expanded value of FOO>").
+#define _STRINGIFY(s) _X(s)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // pal_char_t-based C-callable APIs.
 
-// Returns a heap-allocated, NUL-terminated copy of the current process's
+// Returns a heap-allocated, null-terminated copy of the current process's
 // executable path, or NULL on failure. Caller must free() the returned pointer.
 pal_char_t* pal_get_own_executable_path(void);
 
 bool pal_directory_exists(const pal_char_t* path);
 
-// Returns a heap-allocated, NUL-terminated copy of the named environment
+// Returns true if the file or directory exists. Equivalent to pal::file_exists.
+bool pal_file_exists(const pal_char_t* path);
+
+// Returns a heap-allocated, null-terminated copy of the given string, or
+// NULL on allocation failure. Caller should free() the returned pointer.
+pal_char_t* pal_strdup(const pal_char_t* str);
+
+// Returns a heap-allocated, null-terminated copy of the named environment
 // variable's value, or NULL if the variable is unset or set to the empty
 // string. Caller must free() the returned pointer.
 pal_char_t* pal_getenv(const pal_char_t* name);
 
 // Duplicate the first `len` pal_char_t characters of `src` into a
-// heap-allocated, NUL-terminated buffer. Returns NULL on allocation failure.
+// heap-allocated, null-terminated buffer. Returns NULL on allocation failure.
 static inline pal_char_t* pal_strndup(const pal_char_t* src, size_t len)
 {
     pal_char_t* buf = (pal_char_t*)malloc((len + 1) * sizeof(pal_char_t));
@@ -142,8 +154,110 @@ static inline pal_char_t* pal_strndup(const pal_char_t* src, size_t len)
     return buf;
 }
 
+// Canonicalize a path and verify it exists. Returns a heap-allocated,
+// null-terminated canonical path, or NULL on failure. Caller should free()
+// the returned pointer. When skip_error_logging is true, failure-path
+// trace messages are suppressed (used when probing for optional files).
+pal_char_t* pal_fullpath(const pal_char_t* path, bool skip_error_logging);
+
+// Describes whether the current process is running under an OS compatibility
+// layer rather than natively on the host architecture.
+typedef enum
+{
+    pal_process_emulation_none = 0,
+    // 32-bit (x86) process running on a 64-bit Windows OS (WOW64)
+    pal_process_emulation_wow64,
+    // x64 process running under emulation on a non-x64 host: Windows
+    // x64-on-arm64, or macOS x64-on-arm64 via Rosetta.
+    pal_process_emulation_x64,
+} pal_process_emulation_t;
+
+// Returns how the OS is emulating the current process, or
+// pal_process_emulation_none when it runs natively.
+pal_process_emulation_t pal_get_process_emulation(void);
+
+// Callback for pal_readdir_onlydirectories. Receives each directory entry
+// name (just the leaf name, not a full path) and the caller-supplied context.
+// Return true to continue enumeration, false to stop early.
+typedef bool (*pal_readdir_callback_t)(const pal_char_t* entry_name, void* ctx);
+
+// Enumerate immediate subdirectories of path, invoking callback for each.
+// Skips "." and "..". Returns true on full enumeration or callback-requested
+// stop; returns false if the directory could not be opened.
+bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t callback, void* ctx);
+
+// Returns the directory containing the globally-registered .NET install for
+// the current architecture, or NULL if no such registration exists. Caller
+// should free() the returned pointer.
+// Honors the test-only env var _DOTNET_TEST_GLOBALLY_REGISTERED_PATH and
+// (on Windows) _DOTNET_TEST_REGISTRY_PATH.
+pal_char_t* pal_get_dotnet_self_registered_dir(void);
+
+// Returns the default install directory of .NET for the current architecture,
+// or NULL on failure. Caller should free() the returned pointer.
+// Honors the test-only env var _DOTNET_TEST_DEFAULT_INSTALL_PATH.
+pal_char_t* pal_get_default_installation_dir(void);
+
+// Returns a display string identifying the location consulted to discover the
+// globally-registered install dir for the current architecture (registry path
+// on Windows, file path on Unix). Caller should free() the returned pointer.
+pal_char_t* pal_get_dotnet_self_registered_config_location(void);
+
+// Handle to a loaded dynamic library.
+#if defined(_WIN32)
+typedef HMODULE pal_dll_t;
+#else
+typedef void* pal_dll_t;
+#endif
+
+// Find a library named library_name that is already loaded into the current
+// process (without loading it if it is not). symbol_name is used to obtain an
+// address inside the library so that its on-disk path can be resolved. On
+// success returns true, sets *dll to the library handle, and sets *out_path to
+// a heap-allocated path (caller must free()). Returns false if the library is
+// not already loaded.
+bool pal_get_loaded_library(const pal_char_t* library_name, const char* symbol_name, /*out*/ pal_dll_t* dll, /*out*/ pal_char_t** out_path);
+
 #ifdef __cplusplus
 }
+#endif
+
+#if defined(TARGET_WINDOWS)
+#define LIB_PREFIX ""
+#define LIB_FILE_EXT ".dll"
+#elif defined(TARGET_OSX)
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".dylib"
+#else
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".so"
+#endif
+
+#define LIB_NAME(NAME) LIB_PREFIX NAME
+#define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
+#define LIB_FILE_NAME_X(NAME) _STRINGIFY(LIB_FILE_NAME(NAME))
+
+#define CORELIB_NAME _X("System.Private.CoreLib.dll")
+#define LIBCORECLR_NAME LIB_FILE_NAME_X("coreclr")
+#define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
+#define LIBHOSTPOLICY_NAME LIB_FILE_NAME_X("hostpolicy")
+
+// When running on a platform that is not supported in RID fallback graph (because it was unknown
+// at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
+// consuming the native assets.
+//
+// For Windows and OSX, we will maintain the last highest RID-Platform we are known to support for them as the
+// degree of compat across their respective releases is usually high.
+//
+// We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Platform.
+#if defined(TARGET_WINDOWS)
+    #define HOST_RID_PLATFORM "win"
+#elif defined(TARGET_OSX)
+    #define HOST_RID_PLATFORM "osx"
+#elif defined(TARGET_ANDROID)
+    #define HOST_RID_PLATFORM "linux-bionic"
+#else
+    #define HOST_RID_PLATFORM FALLBACK_HOST_OS
 #endif
 
 // ============================================================================
@@ -184,50 +298,8 @@ static inline pal_char_t* pal_strndup(const pal_char_t* src, size_t len)
 
 #endif
 
-#include "configure.h"
-
-// When running on a platform that is not supported in RID fallback graph (because it was unknown
-// at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
-// consuming the native assets.
-//
-// For Windows and OSX, we will maintain the last highest RID-Platform we are known to support for them as the
-// degree of compat across their respective releases is usually high.
-//
-// We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Platform.
-#if defined(TARGET_WINDOWS)
-#define LIB_PREFIX ""
-#define LIB_FILE_EXT ".dll"
-#elif defined(TARGET_OSX)
-#define LIB_PREFIX "lib"
-#define LIB_FILE_EXT ".dylib"
-#else
-#define LIB_PREFIX "lib"
-#define LIB_FILE_EXT ".so"
-#endif
-
-#define _STRINGIFY(s) _X(s)
-
-#define LIB_NAME(NAME) LIB_PREFIX NAME
-#define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
-#define LIB_FILE_NAME_X(NAME) _STRINGIFY(LIB_FILE_NAME(NAME))
-
-#define CORELIB_NAME _X("System.Private.CoreLib.dll")
-#define LIBCORECLR_NAME LIB_FILE_NAME_X("coreclr")
-#define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
-#define LIBHOSTPOLICY_NAME LIB_FILE_NAME_X("hostpolicy")
-
 #if !defined(PATH_MAX) && !defined(_WIN32)
 #define PATH_MAX    4096
-#endif
-
-#if defined(TARGET_WINDOWS)
-    #define HOST_RID_PLATFORM "win"
-#elif defined(TARGET_OSX)
-    #define HOST_RID_PLATFORM "osx"
-#elif defined(TARGET_ANDROID)
-    #define HOST_RID_PLATFORM "linux-bionic"
-#else
-    #define HOST_RID_PLATFORM FALLBACK_HOST_OS
 #endif
 
 namespace pal
