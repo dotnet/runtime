@@ -1686,12 +1686,12 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         /// <summary>
-        /// When a constructor parameter name differs only by case from a matching collection property,
-        /// the binder must bind the collection once (through the constructor) and must not bind it again
-        /// through the property, which would otherwise duplicate the collection items.
+        /// When a constructor parameter populates a matching collection property, the binder must bind the collection
+        /// once (through the constructor) and must not bind it again through the property, which would otherwise
+        /// duplicate the collection items. This must hold whether the parameter name matches the property name exactly
+        /// or differs only by case. This test checks the different case scenario, the next one the same name scenario.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/83803", typeof(TestHelpers), nameof(TestHelpers.SourceGenMode))]
         public void CanBindOnParametersAndProperties_GetterOnlyCollectionWithCaseMismatchedConstructorParameter()
         {
             string json = """
@@ -1707,6 +1707,34 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(expected, config.Get<SettableCollectionWithCaseMismatchedCtorParameter>().Instances);
             Assert.Equal(expected, config.Get<GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter>().Instances);
             Assert.Equal(expected, config.Get<ParamsCollectionCtor>().Instances);
+        }
+
+        /// <summary>
+        /// A type whose constructor parameters have the same name as the matching collection properties (as in the
+        /// canonical record/primary-constructor pattern) must also bind each collection only once.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_CollectionsWithSameCasedConstructorParameters()
+        {
+            string json = """
+            {
+                "source": {
+                    "name": "DemoService",
+                    "addresses": [ "127.0.0.1" ],
+                    "ints": [ 1, 2, 3, 4, 5 ],
+                    "strings": [ "one", "two", "three" ]
+                }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            SourceWithCollectionCtorParameters source = config.GetSection("source").Get<SourceWithCollectionCtorParameters>();
+
+            Assert.Equal("DemoService", source.Name);
+            Assert.Equal(new[] { "127.0.0.1" }, source.Addresses);
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Ints);
+            Assert.Equal(new[] { "one", "two", "three" }, source.Strings);
         }
 
         public static IEnumerable<object[]> Configuration_TestData()

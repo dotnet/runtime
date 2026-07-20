@@ -266,6 +266,22 @@ namespace Microsoft.Extensions
             public List<string> Instances { get; }
         }
 
+        public sealed class SourceWithCollectionCtorParameters
+        {
+            public SourceWithCollectionCtorParameters(string Name, IEnumerable<string> Addresses, IList<int> Ints, string[] Strings)
+            {
+                this.Name = Name;
+                this.Addresses = Addresses;
+                this.Ints = Ints;
+                this.Strings = Strings;
+            }
+
+            public string Name { get; }
+            public IEnumerable<string> Addresses { get; }
+            public IList<int> Ints { get; }
+            public string[] Strings { get; }
+        }
+
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
         public class ContainerWithNestedImmutableObject
