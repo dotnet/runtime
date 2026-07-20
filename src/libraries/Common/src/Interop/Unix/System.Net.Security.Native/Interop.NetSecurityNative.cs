@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
@@ -143,26 +142,21 @@ internal static partial class Interop
             out uint retFlags,
             out bool isNtlmUsed)
         {
-            // Skip the SecChannelBindings header to get to the application-specific data.
-            int cbtAppDataOffset = sizeof(SecChannelBindings);
-            Debug.Assert(cbtAppDataOffset <= channelBinding.Size);
-            int cbtAppDataSize = channelBinding.Size - cbtAppDataOffset;
-            if (cbtAppDataSize < 0)
-            {
-                // Malformed channel binding; fail rather than passing a negative size to interop.
-                minorStatus = Status.GSS_S_COMPLETE;
-                retFlags = 0;
-                isNtlmUsed = false;
-                return Status.GSS_S_BAD_BINDINGS;
-            }
-
             // Ref-count the channel binding handle so it cannot be released while the native
             // call, which receives a raw pointer into the application-specific data, is in flight.
             bool refAdded = false;
             try
             {
                 channelBinding.DangerousAddRef(ref refAdded);
-                IntPtr cbtAppData = channelBinding.DangerousGetHandle() + cbtAppDataOffset;
+                if (!TryGetChannelBindingApplicationData(channelBinding, out IntPtr cbtAppData, out int cbtAppDataSize))
+                {
+                    // Invalid or malformed channel binding; fail rather than passing a bogus pointer to interop.
+                    minorStatus = Status.GSS_S_COMPLETE;
+                    retFlags = 0;
+                    isNtlmUsed = false;
+                    return Status.GSS_S_BAD_BINDINGS;
+                }
+
                 return InitSecContext(
                     out minorStatus,
                     initiatorCredHandle,
@@ -185,6 +179,36 @@ internal static partial class Interop
                     channelBinding.DangerousRelease();
                 }
             }
+        }
+
+        // Resolves the application-specific data inside a SecChannelBindings buffer, honoring the
+        // ApplicationDataOffset/ApplicationDataLength fields rather than assuming the data starts
+        // immediately after the header. Returns false for invalid handles or out-of-bounds ranges.
+        // The caller must hold a ref on the handle (DangerousAddRef) while using the returned pointer.
+        private static unsafe bool TryGetChannelBindingApplicationData(ChannelBinding channelBinding, out IntPtr applicationData, out int applicationDataSize)
+        {
+            applicationData = IntPtr.Zero;
+            applicationDataSize = 0;
+
+            int size = channelBinding.Size;
+            if (channelBinding.IsInvalid || size < sizeof(SecChannelBindings))
+            {
+                return false;
+            }
+
+            SecChannelBindings* bindings = (SecChannelBindings*)channelBinding.DangerousGetHandle();
+            int offset = bindings->ApplicationDataOffset;
+            int length = bindings->ApplicationDataLength;
+
+            // The application data must lie entirely within the buffer, after the fixed header.
+            if (offset < sizeof(SecChannelBindings) || length < 0 || (long)offset + length > size)
+            {
+                return false;
+            }
+
+            applicationData = (IntPtr)((byte*)bindings + offset);
+            applicationDataSize = length;
+            return true;
         }
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_AcceptSecContext")]
@@ -225,26 +249,21 @@ internal static partial class Interop
                     out isNtlmUsed);
             }
 
-            // Skip the SecChannelBindings header to get to the application-specific data.
-            int cbtAppDataOffset = sizeof(SecChannelBindings);
-            Debug.Assert(cbtAppDataOffset <= channelBinding.Size);
-            int cbtAppDataSize = channelBinding.Size - cbtAppDataOffset;
-            if (cbtAppDataSize < 0)
-            {
-                // Malformed channel binding; fail rather than passing a negative size to interop.
-                minorStatus = Status.GSS_S_COMPLETE;
-                retFlags = 0;
-                isNtlmUsed = false;
-                return Status.GSS_S_BAD_BINDINGS;
-            }
-
             // Ref-count the channel binding handle so it cannot be released while the native
             // call, which receives a raw pointer into the application-specific data, is in flight.
             bool refAdded = false;
             try
             {
                 channelBinding.DangerousAddRef(ref refAdded);
-                IntPtr cbtAppData = channelBinding.DangerousGetHandle() + cbtAppDataOffset;
+                if (!TryGetChannelBindingApplicationData(channelBinding, out IntPtr cbtAppData, out int cbtAppDataSize))
+                {
+                    // Invalid or malformed channel binding; fail rather than passing a bogus pointer to interop.
+                    minorStatus = Status.GSS_S_COMPLETE;
+                    retFlags = 0;
+                    isNtlmUsed = false;
+                    return Status.GSS_S_BAD_BINDINGS;
+                }
+
                 return AcceptSecContext(
                     out minorStatus,
                     acceptorCredHandle,
