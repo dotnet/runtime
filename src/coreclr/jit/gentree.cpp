@@ -11754,7 +11754,7 @@ void Compiler::gtUpdateStmtSideEffects(Statement* stmt)
             // Attempt to clear stale SIDEEFF bits
             // if this node does indeed need GTF_ORDER_SIDEEFF, then the bit will later be propagated up and re-set
             // during the child's post-order visit
-            if (!tree->OperSupportsOrderingSideEffect())
+            if (((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !tree->OperSupportsOrderingSideEffect())
             {
                 tree->gtFlags &= ~GTF_ORDER_SIDEEFF;
             }
