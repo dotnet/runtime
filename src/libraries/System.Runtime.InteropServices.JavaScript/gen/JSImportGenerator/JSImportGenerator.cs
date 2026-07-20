@@ -93,6 +93,10 @@ namespace Microsoft.Interop.JavaScript
                 .AddAttributeLists(stub.SignatureContext.AdditionalAttributes.ToArray())
                 .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
                     Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))))
+                .AddAttributeLists(AttributeList(SingletonSeparatedList(
+                    Attribute(IdentifierName(Constants.SupportedOSPlatformAttribute))
+                        .AddArgumentListArguments(AttributeArgument(LiteralExpression(
+                            SyntaxKind.StringLiteralExpression, Literal(Constants.BrowserPlatform)))))))
                 .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
                 .WithParameterList(ParameterList(SeparatedList(stub.SignatureContext.StubParameters)))
                 .WithBody(stubCode);
