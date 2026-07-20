@@ -507,7 +507,7 @@ void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback ca
 
         installed = InstallSignalHandler(SIGCONT, SA_RESTART);
         assert(installed);
-        installed = InstallSignalHandler(SIGCHLD, SA_RESTART);
+        installed = InstallSignalHandler(SIGCHLD, SA_RESTART | SA_NOCLDSTOP);
         assert(installed);
         installed = InstallSignalHandler(SIGWINCH, SA_RESTART);
         assert(installed);
@@ -526,7 +526,7 @@ void SystemNative_RegisterForSigChld(SigChldCallback callback)
     {
         g_sigChldCallback = callback;
 
-        installed = InstallSignalHandler(SIGCHLD, SA_RESTART);
+        installed = InstallSignalHandler(SIGCHLD, SA_RESTART | SA_NOCLDSTOP);
         assert(installed);
     }
     pthread_mutex_unlock(&lock);

@@ -718,6 +718,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64SveSm4,            W("EnableArm64Sv
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zba,             W("EnableRiscV64Zba"),          1, "Allows RiscV64 Zba hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbb,             W("EnableRiscV64Zbb"),          1, "Allows RiscV64 Zbb hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbs,             W("EnableRiscV64Zbs"),          1, "Allows RiscV64 Zbs hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zicond,          W("EnableRiscV64Zicond"),       1, "Allows RiscV64 Zicond hardware intrinsics to be disabled")
 #elif defined(TARGET_LOONGARCH64)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableLoongArch64LAM_BH,      W("EnableLoongArch64LAM_BH"),   1, "Allows LoongArch64 LAM_BH+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableLoongArch64LAM_CAS,     W("EnableLoongArch64LAM_CAS"),  1, "Allows LoongArch64 LAM_CAS+ hardware intrinsics to be disabled")

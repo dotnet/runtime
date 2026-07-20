@@ -13,8 +13,6 @@
 #include "gcinfoencoder.h"
 
 static const int LINEAR_MEMORY_INDEX = 0;
-// stackPointer is the 0th global in our generated Wasm modules
-static const int STACK_POINTER_GLOBAL = 0;
 
 #ifdef TARGET_64BIT
 static const instruction INS_I_load  = INS_i64_load;
@@ -165,7 +163,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     if (!m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg)->lvIsParam)
     {
         initialSPLclIndex = spLclIndex;
-        GetEmitter()->emitIns_I(INS_global_get, EA_PTRSIZE, STACK_POINTER_GLOBAL);
+        GetEmitter()->emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+                                (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->stackPointer);
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, initialSPLclIndex);
     }
     else
@@ -1873,8 +1872,12 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
     if ((type == TYP_INT) || (type == TYP_LONG))
     {
         icon = treeNode->AsIntConCommon();
-        if (icon->ImmedValNeedsReloc(m_compiler))
+        if (icon->IsIconHandle())
         {
+            // Wasm has no absolute-address literals; every handle is materialized as a module-base-
+            // relative constant and relocated. compReloc is always on for a real AOT compile, so a
+            // handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
+            assert(icon->ImmedValNeedsReloc(m_compiler) || m_compiler->RunningSuperPmiReplay());
             GetEmitter()->emitAddressConstant((void*)icon->IntegralValue());
             WasmProduceReg(treeNode);
             return;
@@ -1892,7 +1895,11 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
             case TYP_INT:
             {
                 ins = INS_i32_const;
-                assert(FitsIn<INT32>(bits));
+                // Wasm integers are sign-agnostic: any 32-bit pattern is a valid i32.const,
+                // reduced to its signed value for a canonical SLEB128 encoding. Truncating
+                // through uint32_t keeps the low-32-bit reduction well-defined.
+                assert(FitsIn<INT32>(bits) || FitsIn<UINT32>(bits));
+                bits = static_cast<int32_t>(static_cast<uint32_t>(bits));
                 break;
             }
             case TYP_LONG:
@@ -2590,8 +2597,15 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
         NYI_WASM_SIMD("SIMD16 local field load");
     }
 
-    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-    GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(tree), tree->GetLclNum(), tree->GetLclOffs());
+    if (type == TYP_SIMD12)
+    {
+        genLoadLclTypeSimd12(tree);
+    }
+    else
+    {
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+        GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(tree), tree->GetLclNum(), tree->GetLclOffs());
+    }
     WasmProduceReg(tree);
 }
 
@@ -2614,8 +2628,15 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     {
         var_types type = varDsc->GetRegisterType(tree);
 
-        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-        GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
+        if (type == TYP_SIMD12)
+        {
+            genLoadLclTypeSimd12(tree);
+        }
+        else
+        {
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+            GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
+        }
         WasmProduceReg(tree);
     }
     else
@@ -2689,6 +2710,94 @@ void CodeGen::genCodeForFrameSize(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// genLoadLclTypeSimd12: Load a TYP_SIMD12 (i.e. Vector3) local into a v128.
+//
+// Arguments:
+//    tree - the GT_LCL_FLD or GT_LCL_VAR node
+//
+// Notes:
+//    Vector3 has no native wasm valtype, so it lives as a v128 with the low 12 bytes
+//    populated. The frame address is pushed twice: v128.load64_zero fills lanes 0-1
+//    (zeroing the rest) and v128.load32_lane fills lane 2 from bytes 8-11.
+//
+void CodeGen::genLoadLclTypeSimd12(GenTreeLclVarCommon* tree)
+{
+    bool fpBased;
+    int  frameOffset = m_compiler->lvaFrameAddress(tree->GetLclNum(), &fpBased) + (int)tree->GetLclOffs();
+    noway_assert(frameOffset >= 0); // WASM address modes are unsigned.
+    assert(fpBased);
+    unsigned fpIndex = GetFramePointerRegIndex();
+    emitter* emit    = GetEmitter();
+
+    emit->emitIns_I(INS_local_get, EA_PTRSIZE, fpIndex);
+    emit->emitIns_I(INS_local_get, EA_PTRSIZE, fpIndex);
+    emit->emitIns_I(INS_v128_load64_zero, EA_8BYTE, frameOffset);
+    emit->emitIns_MemargLane(INS_v128_load32_lane, EA_4BYTE, frameOffset + 8, 2);
+}
+
+//------------------------------------------------------------------------
+// genLoadIndTypeSimd12: Load a TYP_SIMD12 (i.e. Vector3) value through an indirection.
+//
+// Arguments:
+//    tree - the GT_IND node
+//
+// Notes:
+//    The address is left on the value stack by prior codegen and is multiply-used, so the
+//    trailing v128.load32_lane can re-push it for the upper 4 bytes.
+//
+void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* tree)
+{
+    emitter* emit = GetEmitter();
+
+    emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetMultiUseOperandReg(tree->Addr())));
+    emit->emitIns_I(INS_v128_load64_zero, EA_8BYTE, 0);
+    emit->emitIns_MemargLane(INS_v128_load32_lane, EA_4BYTE, 8, 2);
+}
+
+//------------------------------------------------------------------------
+// genStoreIndTypeSimd12: Store a TYP_SIMD12 (i.e. Vector3) value through an indirection.
+//
+// Arguments:
+//    tree - the GT_STOREIND node
+//
+// Notes:
+//    On entry the value stack holds [addr, value]. The value is teed into an internal v128
+//    local so it survives the low-8 store; the address is then re-materialized to store the
+//    upper 4 bytes via a lane store - re-emitting the frame pointer for a LCL_ADDR, or
+//    re-pushing the multiply-used address register otherwise.
+//
+void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* tree)
+{
+    emitter* emit = GetEmitter();
+    GenTree* addr = tree->Addr();
+
+    InternalRegs* regs = internalRegisters.GetAll(tree);
+    assert(regs->Count() == 1);
+    regNumber valReg = regs->Extract();
+
+    emit->emitIns_I(INS_local_tee, EA_16BYTE, WasmRegToIndex(valReg)); // [addr, value]
+    emit->emitIns_MemargLane(INS_v128_store64_lane, EA_8BYTE, 0, 0);   // []
+
+    if (addr->OperIs(GT_LCL_ADDR))
+    {
+        bool fpBased;
+        int  frameOffset = m_compiler->lvaFrameAddress(addr->AsLclVarCommon()->GetLclNum(), &fpBased) +
+                          (int)addr->AsLclVarCommon()->GetLclOffs();
+        noway_assert(frameOffset >= 0); // WASM address modes are unsigned.
+        assert(fpBased);
+        emit->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());         // [fp]
+        emit->emitIns_I(INS_local_get, EA_16BYTE, WasmRegToIndex(valReg));             // [fp, value]
+        emit->emitIns_MemargLane(INS_v128_store32_lane, EA_4BYTE, frameOffset + 8, 2); // []
+    }
+    else
+    {
+        emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetMultiUseOperandReg(addr))); // [addr]
+        emit->emitIns_I(INS_local_get, EA_16BYTE, WasmRegToIndex(valReg));                       // [addr, value]
+        emit->emitIns_MemargLane(INS_v128_store32_lane, EA_4BYTE, 8, 2);                         // []
+    }
+}
+
+//------------------------------------------------------------------------
 // genCodeForIndir: Produce code for a GT_IND node.
 //
 // Arguments:
@@ -2698,8 +2807,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_IND));
 
-    var_types   type = tree->TypeGet();
-    instruction ins  = ins_Load(type);
+    var_types type = tree->TypeGet();
 
     genConsumeAddress(tree->Addr());
 
@@ -2711,7 +2819,14 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     // TODO-WASM: Memory barriers
 
-    GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+    if (type == TYP_SIMD12)
+    {
+        genLoadIndTypeSimd12(tree);
+    }
+    else
+    {
+        GetEmitter()->emitIns_I(ins_Load(type), emitActualTypeSize(type), 0);
+    }
 
     WasmProduceReg(tree);
 }
@@ -2755,11 +2870,22 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             // module. Bail until SIMD16 store is properly supported.
             NYI_WASM_SIMD("SIMD16 store indirect");
         }
-        instruction ins = ins_Store(type);
 
         // TODO-WASM: Memory barriers
 
-        GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+        if (type == TYP_SIMD8)
+        {
+            // stack: [addr, value] -> store the low 8 bytes.
+            GetEmitter()->emitIns_MemargLane(INS_v128_store64_lane, EA_8BYTE, 0, 0);
+        }
+        else if (type == TYP_SIMD12)
+        {
+            genStoreIndTypeSimd12(tree);
+        }
+        else
+        {
+            GetEmitter()->emitIns_I(ins_Store(type), emitActualTypeSize(type), 0);
+        }
     }
 
     genUpdateLife(tree);
@@ -2906,6 +3032,20 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(typeStack.Data(), typeStack.Height());
+
+    // R2R keeps its shadow SP in a local and leaves the __stack_pointer global stale; the PInvoke
+    // prolog (JIT_PInvokeBegin) normally publishes the current SP to __stack_pointer before native
+    // code runs, but that prolog/epilog is skipped for SuppressGCTransition calls (see Lowering).
+    // Without a publish, the native SuppressGCTransition callee allocates its shadow frame from the
+    // stale global (our caller's SP, above our frame) and overlaps/clobbers our address-taken locals.
+    // Publish our shadow SP here so the callee allocates below our frame. This is a net-zero operation
+    // on the Wasm operand stack, so it is safe to emit with the call arguments already pushed.
+    if (call->IsUnmanaged() && call->IsSuppressGCTransition())
+    {
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+        GetEmitter()->emitIns_I(INS_global_set, EA_HANDLE_CNS_RELOC,
+                                (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->stackPointer);
+    }
 
     // A non-null target expression always indicates an indirect call on Wasm,
     // as currently the only possible result of the target expression would be a
@@ -3749,7 +3889,9 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
 #ifdef PROFILING_SUPPORTED
 void CodeGen::genProfilingLeaveCallback(unsigned helper)
 {
-    NYI_WASM("genProfilingLeaveCallback");
+    // Profiler ELT hooks are not yet implemented on WASM. The matching enter callback in
+    // genFnProlog is already skipped (#if !TARGET_WASM), so emit nothing here rather than
+    // asserting; this keeps WASM consistently free of ELT hooks. See #130953.
 }
 #endif
 

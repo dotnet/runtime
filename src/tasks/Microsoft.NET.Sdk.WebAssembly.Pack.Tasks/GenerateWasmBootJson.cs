@@ -101,8 +101,6 @@ public class GenerateWasmBootJson : Task
 
     public bool AsyncFlushOnExit { get; set; }
 
-    public bool ForwardConsole { get; set; }
-
     public override bool Execute()
     {
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
@@ -140,7 +138,6 @@ public class GenerateWasmBootJson : Task
             if (AppendElementOnExit) result.appendElementOnExit = true;
             if (LogExitCode) result.logExitCode = true;
             if (AsyncFlushOnExit) result.asyncFlushOnExit = true;
-            if (ForwardConsole) result.forwardConsole = true;
         }
 
         if (IsTargeting80OrLater())

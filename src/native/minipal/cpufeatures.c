@@ -761,6 +761,16 @@ int minipal_getcpufeatures(void)
         {
             result |= RiscV64IntrinsicConstants_Zbs;
         }
+
+#ifndef RISCV_HWPROBE_EXT_ZICOND
+// Alpine 3.21's linux-headers package was built on 6.6 LTS kernel, which doesn't define this extension
+#define RISCV_HWPROBE_EXT_ZICOND (1ULL << 35)
+#endif
+
+        if (pairs[0].value & RISCV_HWPROBE_EXT_ZICOND)
+        {
+            result |= RiscV64IntrinsicConstants_Zicond;
+        }
     }
 
 #endif // HAVE_HWPROBE_H
@@ -772,6 +782,8 @@ int minipal_getcpufeatures(void)
 #if defined(HOST_LOONGARCH64)
 #define LAM_BH 0x8000000    // LAM_BH
 #define LAM_CAS 0x10000000  // LAMCAS
+    // CPUCFG.<world>.<LAM_BH>[27]
+    // CPUCFG.<world>.<LAM_CAS>[28]
     uint32_t cpucfg = 0;
     uint32_t world = 0x2;
     asm volatile("cpucfg %0, %1\n\t"
