@@ -5818,18 +5818,35 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	}
 
 	/*
-	 * Nullable<T>.Box/Unbox are runtime-synthesized methods (not part of the
-	 * type's regular method list) that are requested by the
-	 * MONO_RGCTX_INFO_NULLABLE_CLASS_BOX/UNBOX rgctx entries when a Nullable<T>
-	 * is boxed/unboxed through a non-generic interface under gsharedvt sharing.
-	 * In llvmonly mode the caller uses the gsharedvt calling convention and needs
-	 * the object(Nullable<T>) / Nullable<T>(object) gsharedvt out-sig wrappers.
-	 * Those wrappers are only emitted when the Box/Unbox methods themselves are
-	 * AOT-compiled (see the add_gsharedvt_wrappers call driven by compiled method
-	 * signatures). Since the method-iteration loop above never sees these synthetic
-	 * methods, add them explicitly here for every Nullable<T> instantiation,
-	 * otherwise boxing a Nullable<vtype> traps ("function signature mismatch")
-	 * at runtime because JIT compilation is unavailable in aot-only mode.
+	 * Nullable<T>.Box/Unbox (defined in Nullable.Mono.cs) are private static
+	 * methods that are only ever invoked by the JIT: from the box/unbox IL
+	 * lowering (see handle_unbox_nullable / MONO_TYPE_ISNULLABLE handling in
+	 * method-to-ir.c) and from the MONO_RGCTX_INFO_NULLABLE_CLASS_BOX/UNBOX
+	 * rgctx entries. Because nothing in the normal managed call graph references
+	 * them, they are never pulled into the AOT compile set: the method-iteration
+	 * loop above treats them as generic-sharable and skips them ("already added"),
+	 * but the shared Nullable<gsharedvt>.Box/Unbox is likewise never referenced,
+	 * so it is not compiled either (unlike Equals/GetHashCode/ToString, which are
+	 * reached from normal code and do get their shared version).
+	 *
+	 * When a Nullable<T> (T a struct) is boxed through a non-generic interface
+	 * under gsharedvt in llvmonly mode, class_type_info's NULLABLE_CLASS_BOX case
+	 * compiles the concrete Nullable<T>.Box and, because the caller uses the
+	 * gsharedvt calling convention while the resolved callee is concrete, needs
+	 * the object(Nullable<T>) gsharedvt out-sig wrapper (and Nullable<T>(object)
+	 * for Unbox). That wrapper is only emitted as a side effect of AOT-compiling
+	 * the concrete Box/Unbox method (via the add_gsharedvt_wrappers call driven by
+	 * compiled method signatures). Compiling only the shared gsharedvt version is
+	 * not sufficient: at runtime mono_jit_compile_method resolves the concrete
+	 * instantiation through a static rgctx trampoline, so the box path still
+	 * requires the concrete out-sig wrapper.
+	 *
+	 * Add the concrete Box/Unbox for every Nullable<T> instantiation so the
+	 * required wrappers are emitted. This mirrors what already happens for
+	 * Nullable<primitive>/Nullable<enum> (whose concrete Box is compiled via other
+	 * paths); without it, boxing a Nullable<vtype> traps at runtime
+	 * ("null function or function signature mismatch") because the wrapper cannot
+	 * be JIT-compiled in aot-only mode.
 	 */
 	if (mono_class_is_nullable (klass)) {
 		MonoMethod *box = try_get_method_nofail (klass, "Box", 1, 0);
