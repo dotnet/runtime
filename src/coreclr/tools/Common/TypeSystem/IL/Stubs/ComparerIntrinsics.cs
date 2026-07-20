@@ -363,9 +363,11 @@ namespace Internal.IL.Stubs
             if (type.HasInstantiation)
                 return false;
 
-            // The type's layout must be tightly packed (no padding gaps and no overlapping fields) so
-            // that a byte-wise compare never inspects bytes the field-wise Equals ignores. This is
-            // checked at every level of the recursion, matching the CoreCLR VM.
+            // Unmanaged (so a byte-wise compare is meaningful) and tightly packed (no padding anywhere the
+            // compare would inspect) -- matching the CoreCLR VM, which checks these separately.
+            if (type.ContainsGCPointers)
+                return false;
+
             if (!IsTightlyPacked(type))
                 return false;
 
@@ -385,13 +387,10 @@ namespace Internal.IL.Stubs
 
         private static bool IsTightlyPacked(MetadataType type)
         {
-            // Mirrors the CoreCLR VM's MethodTable::IsNotTightlyPacked (negated): a byte-wise compare
-            // equals comparing every field only if there is no padding anywhere. That needs the declared
-            // fields to exactly cover the instance size (no gaps, no overlap) and every nested value-type
-            // field to itself be tightly packed. The nested check makes this transitive.
-            if (type.ContainsGCPointers)
-                return false;
-
+            // Mirrors the CoreCLR VM's MethodTable::IsTightlyPacked: a byte-wise compare equals comparing
+            // every field only if there is no padding anywhere. That needs the declared fields to exactly
+            // cover the instance size (no gaps, no overlap) and every nested value-type field to itself be
+            // tightly packed. The nested check makes this transitive.
             if (type.IsInlineArray)
                 return false;
 
@@ -412,9 +411,10 @@ namespace Internal.IL.Stubs
                     return false;
 
                 TypeDesc fieldType = field.FieldType;
-                if (!fieldType.IsPrimitive && !fieldType.IsEnum && !fieldType.IsPointer && !fieldType.IsFunctionPointer)
+                if (fieldType.IsValueType && !fieldType.IsPrimitive && !fieldType.IsEnum)
                 {
-                    // Not a leaf field, so (having excluded GC pointers above) it is a nested value type.
+                    // Nested value type: recurse for transitive packing. Primitives, pointers, and
+                    // references are leaves whose element size already accounts for their footprint.
                     if (fieldType is not MetadataType nestedType || !IsTightlyPacked(nestedType))
                         return false;
                 }
@@ -483,8 +483,8 @@ namespace Internal.IL.Stubs
         private static bool ScanFieldwiseEqualsBodyCore(MethodIL methodIL, MetadataType type)
         {
             // Verifies the body is a plain field-wise equality: every instance field is compared exactly once
-            // (via `==`, its own `Equals`, or `EqualityComparer<F>.Default.Equals` for records) and the results
-            // are ANDed together, which is equivalent to a bitwise (memcmp) comparison.
+            // (via `==`, its own `Equals`, or `EqualityComparer<F>.Default.Equals`) and the results are ANDed
+            // together, which is equivalent to a bitwise (memcmp) comparison.
             int instanceFieldCount = 0;
             foreach (FieldDesc field in type.GetFields())
             {
@@ -506,25 +506,24 @@ namespace Internal.IL.Stubs
                 if (!reader.HasNext)
                     return false;
 
-                // Optional records lead-in: `call EqualityComparer<F>::get_Default` before the operands.
+                // Optional EqualityComparer<F>.Default lead-in: `call EqualityComparer<F>::get_Default`
+                // before the operands.
                 MethodDesc getDefault = null;
-                bool records = false;
                 if (reader.PeekILOpcode() == ILOpcode.call)
                 {
                     reader.ReadILOpcode();
                     getDefault = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
-                    records = true;
                 }
 
-                // Left operand: `ldarg.0; ldfld/ldflda F`. Records and inline `==` load by value; the
-                // `.Equals` call form loads the left side by address.
+                // Left operand: `ldarg.0; ldfld/ldflda F`. The EqualityComparer and inline `==` forms load by
+                // value; the `.Equals` call form loads the left side by address.
                 if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.ldarg_0)
                     return false;
 
                 ILOpcode leftLoad = reader.ReadILOpcode();
                 if (leftLoad != ILOpcode.ldfld && leftLoad != ILOpcode.ldflda)
                     return false;
-                if (records && leftLoad != ILOpcode.ldfld)
+                if (getDefault != null && leftLoad != ILOpcode.ldfld)
                     return false;
                 FieldDesc leftField = methodIL.GetObject(reader.ReadILToken()) as FieldDesc;
 
@@ -541,7 +540,7 @@ namespace Internal.IL.Stubs
                 if (!comparedFields.Add(leftField))
                     return false;
 
-                if (!records && leftLoad == ILOpcode.ldfld)
+                if (getDefault == null && leftLoad == ILOpcode.ldfld)
                 {
                     // Inline `==`: only integer-like primitives are memcmp-equivalent.
                     if (!IsBitwiseComparablePrimitive(leftField.FieldType))
@@ -573,7 +572,7 @@ namespace Internal.IL.Stubs
                     continue;
                 }
 
-                if (records)
+                if (getDefault != null)
                 {
                     // `callvirt EqualityComparer<F>::Equals(!0, !0)`.
                     if (reader.ReadILOpcode() != ILOpcode.callvirt)
@@ -652,9 +651,9 @@ namespace Internal.IL.Stubs
 
         private static bool IsEqualityComparerDefaultEquals(MethodDesc getDefault, MethodDesc equals, TypeDesc fieldType)
         {
-            // Records compare each field with EqualityComparer<F>.Default.Equals(this.F, other.F). That is
-            // a memcmp only when F is itself bitwise-equatable: a bit-comparable primitive, or a nested
-            // value type whose own IEquatable<F>.Equals is field-wise.
+            // A field compared with EqualityComparer<F>.Default.Equals(this.F, other.F). That is a memcmp
+            // only when F is itself bitwise-equatable: a bit-comparable primitive, or a nested value type
+            // whose own IEquatable<F>.Equals is field-wise.
             if (!IsEqualityComparerMethod(getDefault, fieldType, "get_Default"u8, isStatic: true) ||
                 !IsEqualityComparerMethod(equals, fieldType, "Equals"u8, isStatic: false))
             {
@@ -674,10 +673,11 @@ namespace Internal.IL.Stubs
             if (method == null || method.Signature.IsStatic != isStatic || method.Name != name)
                 return false;
 
-            MetadataType equalityComparer = fieldType.Context.SystemModule.GetType("System.Collections.Generic"u8, "EqualityComparer`1"u8, throwIfNotFound: false);
             TypeDesc owningType = method.OwningType;
-            return equalityComparer != null
-                && owningType.GetTypeDefinition() == equalityComparer
+            return owningType.GetTypeDefinition() is MetadataType definition
+                && definition.Module == fieldType.Context.SystemModule
+                && definition.Name == "EqualityComparer`1"u8
+                && definition.Namespace == "System.Collections.Generic"u8
                 && owningType.Instantiation.Length == 1
                 && owningType.Instantiation[0] == fieldType;
         }

@@ -1785,7 +1785,7 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
     }
 
     if (mt->ContainsGCPointers()
-        || mt->IsNotTightlyPacked())
+        || !mt->IsTightlyPacked())
     {
         mt->SetHasCheckedCanCompareBitsOrUseFastGetHashCode();
         return FALSE;

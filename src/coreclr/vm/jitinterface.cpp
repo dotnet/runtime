@@ -7402,7 +7402,8 @@ namespace
     }
 
     // Forward declaration: the field-wise scanner recurses into nested value-type fields.
-    bool IsFieldwiseEqualsBitwiseEquivalent(MethodTable* valueTypeMT, MethodDesc* pEqualsMD);
+    // 'scannedMethods' collects every Equals body relied on so the caller can register a ReJIT dependency.
+    bool IsFieldwiseEqualsBitwiseEquivalent(MethodTable* valueTypeMT, MethodDesc* pEqualsMD, StackSArray<MethodDesc*>& scannedMethods);
 
     // Integer-like primitives whose '==' and Equals are both a bit-for-bit compare. Float/double are
     // excluded: neither form is a memcmp (for '==' NaN != NaN and +0.0 == -0.0; Equals treats all NaNs
@@ -7469,7 +7470,7 @@ namespace
 
     // Accepts a nested value-type field compared through its own IEquatable<F>.Equals, but only when
     // that Equals is itself a provable field-wise compare (its layout is covered by the recursion).
-    bool IsNestedFieldwiseEquatable(MethodDesc* pCallee, FieldDesc* pField)
+    bool IsNestedFieldwiseEquatable(MethodDesc* pCallee, FieldDesc* pField, StackSArray<MethodDesc*>& scannedMethods)
     {
         STANDARD_VM_CONTRACT;
 
@@ -7484,11 +7485,11 @@ namespace
         if (pNestedEquals == NULL || pNestedEquals != UnwrapStub(pCallee))
             return false;
 
-        return IsFieldwiseEqualsBitwiseEquivalent(pNestedMT, pNestedEquals);
+        return IsFieldwiseEqualsBitwiseEquivalent(pNestedMT, pNestedEquals, scannedMethods);
     }
 
-    // True if 'pMD' is 'EqualityComparer<fieldTh>::name' with the expected static-ness. Records call
-    // through this base type: 'get_Default' (static) and the abstract 'Equals' (instance).
+    // True if 'pMD' is 'EqualityComparer<fieldTh>::name' with the expected static-ness. The lead-in reaches
+    // Default through this base type: 'get_Default' (static) and the abstract 'Equals' (instance).
     bool IsEqualityComparerMethod(MethodDesc* pMD, TypeHandle fieldTh, const char* name, bool isStatic)
     {
         STANDARD_VM_CONTRACT;
@@ -7507,10 +7508,10 @@ namespace
         return (pMD->IsStatic() != FALSE) == isStatic && strcmp(pMD->GetName(), name) == 0;
     }
 
-    // Accepts a field compared via 'EqualityComparer<F>.Default.Equals(this.F, other.F)' (what Roslyn
-    // emits for record structs), but only when Default.Equals is itself a memcmp: F must be a
-    // bit-comparable primitive or a nested value type that is itself provably field-wise.
-    bool IsEqualityComparerDefaultEquals(MethodDesc* pGetDefault, MethodDesc* pEquals, FieldDesc* pField)
+    // Accepts a field compared via 'EqualityComparer<F>.Default.Equals(this.F, other.F)', but only when
+    // Default.Equals is itself a memcmp: F must be a bit-comparable primitive or a nested value type that
+    // is itself provably field-wise.
+    bool IsEqualityComparerDefaultEquals(MethodDesc* pGetDefault, MethodDesc* pEquals, FieldDesc* pField, StackSArray<MethodDesc*>& scannedMethods)
     {
         STANDARD_VM_CONTRACT;
 
@@ -7529,7 +7530,7 @@ namespace
 
         MethodTable* pNestedMT = fieldTh.GetMethodTable();
         MethodDesc* pNestedEquals = GetIEquatableEqualsImpl(pNestedMT);
-        return pNestedEquals != NULL && IsFieldwiseEqualsBitwiseEquivalent(pNestedMT, pNestedEquals);
+        return pNestedEquals != NULL && IsFieldwiseEqualsBitwiseEquivalent(pNestedMT, pNestedEquals, scannedMethods);
     }
 
     // Returns true only if 'pEqualsMD' compares every instance field of 'valueTypeMT' exactly once and
@@ -7538,17 +7539,17 @@ namespace
     //
     // The C# compiler lowers 'this.f0 == other.f0 && ...' to per-field units sharing one 'return false'
     // tail. Operands are always arg0/arg1. A primitive is compared inline; a nested value type through
-    // its own IEquatable<F>.Equals; a record struct field through EqualityComparer<F>.Default.Equals.
-    // Every call-form callee must itself be field-wise (checked recursively):
+    // its own IEquatable<F>.Equals; a field may also go through EqualityComparer<F>.Default.Equals. Every
+    // call-form callee must itself be field-wise (checked recursively):
     //
     //   primitive, non-final:  ldarg.0; ldfld  F; ldarg.1; ldfld F; bne.un.s FALSE
     //   primitive, final:      ldarg.0; ldfld  F; ldarg.1; ldfld F; ceq; ret
     //   nested,    non-final:  ldarg.0; ldflda F; ldarg.1; ldfld F; call F::Equals; brfalse.s FALSE
     //   nested,    final:      ldarg.0; ldflda F; ldarg.1; ldfld F; call F::Equals; ret
-    //   record,    non-final:  call EqualityComparer<F>::get_Default; ldarg.0; ldfld F; ldarg.1; ldfld F; callvirt Equals; brfalse.s FALSE
-    //   record,    final:      call EqualityComparer<F>::get_Default; ldarg.0; ldfld F; ldarg.1; ldfld F; callvirt Equals; ret
+    //   eqcmp,     non-final:  call EqualityComparer<F>::get_Default; ldarg.0; ldfld F; ldarg.1; ldfld F; callvirt Equals; brfalse.s FALSE
+    //   eqcmp,     final:      call EqualityComparer<F>::get_Default; ldarg.0; ldfld F; ldarg.1; ldfld F; callvirt Equals; ret
     //   shared tail:           FALSE: ldc.i4.0; ret
-    bool ScanFieldwiseEqualsBody(MethodDesc* pEqualsMD, MethodTable* valueTypeMT)
+    bool ScanFieldwiseEqualsBody(MethodDesc* pEqualsMD, MethodTable* valueTypeMT, StackSArray<MethodDesc*>& scannedMethods)
     {
         STANDARD_VM_CONTRACT;
 
@@ -7581,24 +7582,23 @@ namespace
 
         while (!sawFinalUnit)
         {
-            // Optional records lead-in: 'call EqualityComparer<F>::get_Default' before the operands.
+            // Optional EqualityComparer<F>.Default lead-in: 'call EqualityComparer<F>::get_Default' before
+            // the operands.
             mdToken getDefaultTok = mdTokenNil;
-            bool records = false;
             if (ip + 5 <= codeSize && pIL[ip] == CEE_CALL)
             {
                 getDefaultTok = ReadILToken(pIL + ip + 1);
-                records = true;
                 ip += 5;
             }
 
-            // Left operand: ldarg.0; ldfld/ldflda F. Records and inline '==' load by value; the
-            // '.Equals' call form loads by address.
+            // Left operand: ldarg.0; ldfld/ldflda F. The EqualityComparer and inline '==' forms load by
+            // value; the '.Equals' call form loads by address.
             if (ip + 6 > codeSize || pIL[ip] != CEE_LDARG_0)
                 return false;
             BYTE leftLoad = pIL[ip + 1];
             if (leftLoad != CEE_LDFLD && leftLoad != CEE_LDFLDA)
                 return false;
-            if (records && leftLoad != CEE_LDFLD)
+            if (getDefaultTok != mdTokenNil && leftLoad != CEE_LDFLD)
                 return false;
             mdToken leftFieldTok = ReadILToken(pIL + ip + 2);
             ip += 6;
@@ -7631,7 +7631,7 @@ namespace
                 return false;
             compared[numCompared++] = pField;
 
-            if (!records && leftLoad == CEE_LDFLD)
+            if (getDefaultTok == mdTokenNil && leftLoad == CEE_LDFLD)
             {
                 // Inline '==': only integer-like primitives (and enums) are memcmp-equivalent.
                 if (!IsBitwiseComparableField(pField))
@@ -7660,14 +7660,14 @@ namespace
                 continue;
             }
 
-            if (records)
+            if (getDefaultTok != mdTokenNil)
             {
                 // callvirt EqualityComparer<F>::Equals(!0, !0).
                 if (ip + 5 > codeSize || pIL[ip] != CEE_CALLVIRT)
                     return false;
                 MethodDesc* pGetDefault = TryResolveMethodToken(pModule, getDefaultTok);
                 MethodDesc* pEquals = TryResolveMethodToken(pModule, ReadILToken(pIL + ip + 1));
-                if (!IsEqualityComparerDefaultEquals(pGetDefault, pEquals, pField))
+                if (!IsEqualityComparerDefaultEquals(pGetDefault, pEquals, pField, scannedMethods))
                     return false;
             }
             else
@@ -7676,7 +7676,7 @@ namespace
                 if (ip + 5 > codeSize || pIL[ip] != CEE_CALL)
                     return false;
                 MethodDesc* pCallee = TryResolveMethodToken(pModule, ReadILToken(pIL + ip + 1));
-                if (!IsPrimitiveEqualsCall(pCallee, pField) && !IsNestedFieldwiseEquatable(pCallee, pField))
+                if (!IsPrimitiveEqualsCall(pCallee, pField) && !IsNestedFieldwiseEquatable(pCallee, pField, scannedMethods))
                     return false;
             }
             ip += 5;
@@ -7722,8 +7722,9 @@ namespace
     }
 
     // Determines whether 'valueTypeMT's IEquatable<T>.Equals implementation is a plain field-wise
-    // comparison that is equivalent to memcmp. 'pEqualsMD' is that Equals method.
-    bool IsFieldwiseEqualsBitwiseEquivalent(MethodTable* valueTypeMT, MethodDesc* pEqualsMD)
+    // comparison that is equivalent to memcmp. 'pEqualsMD' is that Equals method. Every Equals body the
+    // decision relies on is appended to 'scannedMethods' so the caller can register a ReJIT dependency.
+    bool IsFieldwiseEqualsBitwiseEquivalent(MethodTable* valueTypeMT, MethodDesc* pEqualsMD, StackSArray<MethodDesc*>& scannedMethods)
     {
         STANDARD_VM_CONTRACT;
 
@@ -7734,11 +7735,17 @@ namespace
             return false;
         }
 
+        // EnC can replace the Equals IL after the fold, so don't trust the scan for an editable module.
+        if (pEqualsMD->GetModule()->IsEditAndContinueEnabled())
+        {
+            return false;
+        }
+
         // First-pass restrictions that keep the scan simple and unquestionably safe: the type must be
         // unmanaged (so a byte-wise compare is meaningful), tightly packed (no padding anywhere -- the
         // flag is transitive -- else memcmp inspects bytes Equals ignores), and not an inline array.
         if (valueTypeMT->ContainsGCPointers() ||
-            valueTypeMT->IsNotTightlyPacked() ||
+            !valueTypeMT->IsTightlyPacked() ||
             valueTypeMT->GetClass()->IsInlineArray())
         {
             return false;
@@ -7776,11 +7783,18 @@ namespace
             }
         }
 
-        return ScanFieldwiseEqualsBody(pScanMD, valueTypeMT);
+        if (!ScanFieldwiseEqualsBody(pScanMD, valueTypeMT, scannedMethods))
+            return false;
+
+        // Record every body the fold relied on (the forwarder and the scanned op_Equality).
+        scannedMethods.Append(pEqualsMD);
+        if (pScanMD != pEqualsMD)
+            scannedMethods.Append(pScanMD);
+        return true;
     }
 }
 
-bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
+bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable, StackSArray<MethodDesc*>& scannedMethods)
 {
     STANDARD_VM_CONTRACT;
 
@@ -7811,7 +7825,7 @@ bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
                 iequatableOfSelf, CoreLibBinder::GetMethod(METHOD__IEQUATABLEGENERIC__EQUALS), FALSE /* throwOnConflict */));
             if (pEqualsMD != NULL)
             {
-                result = IsFieldwiseEqualsBitwiseEquivalent(methodTable, pEqualsMD);
+                result = IsFieldwiseEqualsBitwiseEquivalent(methodTable, pEqualsMD, scannedMethods);
             }
         }
     }
@@ -7825,10 +7839,15 @@ bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
     return result;
 }
 
+#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
+static void TrackInliningForRejit(MethodDesc* pCaller, MethodDesc* pCallee);
+#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
+
 static bool getILIntrinsicImplementationForRuntimeHelpers(
     MethodInfoWorkerContext& cxt,
     CORINFO_METHOD_INFO* methInfo,
-    SigPointer* localSig)
+    SigPointer* localSig,
+    MethodDesc* pMethodBeingCompiled)
 {
     STANDARD_VM_CONTRACT;
 
@@ -7860,10 +7879,23 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
         // isn't field-wise (one side is the raw primitive arg), so they're matched by element type.
         // Everything else -- including Guid, Rune, Int128, and UInt128 -- is proven by IsBitwiseEquatable,
         // which scans the type's IEquatable<T>.Equals for a field-wise shape.
+        StackSArray<MethodDesc*> scannedMethods;
         if (IsBitwiseComparablePrimitive(methodTable->GetInternalCorElementType())
-            || IsBitwiseEquatable(typeHandle, methodTable))
+            || IsBitwiseEquatable(typeHandle, methodTable, scannedMethods))
         {
             methInfo->ILCode = const_cast<BYTE*>(returnTrue);
+
+#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
+            // The fold "inlined" each scanned Equals body, so a profiler ReJIT of one must rejit the
+            // method the fold is baked into. No bodies are recorded for the primitive/element-type path.
+            if (pMethodBeingCompiled != NULL)
+            {
+                for (COUNT_T i = 0; i < scannedMethods.GetCount(); i++)
+                {
+                    TrackInliningForRejit(pMethodBeingCompiled, scannedMethods[i]);
+                }
+            }
+#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
         }
         else
         {
@@ -8068,7 +8100,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
             }
             else if (CoreLibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
             {
-                fILIntrinsic = getILIntrinsicImplementationForRuntimeHelpers(cxt, methInfo, &localSig);
+                fILIntrinsic = getILIntrinsicImplementationForRuntimeHelpers(cxt, methInfo, &localSig, m_pMethodBeingCompiled);
             }
             else if (CoreLibBinder::IsClass(pMT, CLASS__ACTIVATOR))
             {
@@ -8548,6 +8580,49 @@ void CEEInfo::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
     // do nothing
 }
 
+#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
+// Records that 'pCaller' incorporated 'pCallee's IL -- a real inline, or the field-wise Equals scan that
+// folds RuntimeHelpers.IsBitwiseEquatable -- so that a profiler ReJIT of 'pCallee' also rejits 'pCaller'.
+static void TrackInliningForRejit(MethodDesc* pCaller, MethodDesc* pCallee)
+{
+    STANDARD_VM_CONTRACT;
+
+    pCallee->GetModule()->AddInlining(pCaller, pCallee);
+
+    if (CORProfilerEnableRejit())
+    {
+        ModuleID modId = 0;
+        mdMethodDef methodDef = mdMethodDefNil;
+        BOOL shouldCallReJIT = FALSE;
+
+        {
+            // If ReJIT is enabled, there is a chance that a race happened where the profiler
+            // requested a ReJIT on a method, but before the ReJIT occurred an inlining happened.
+            // If we end up reporting an inlining on a method with non-default IL it means the race
+            // happened and we need to manually request ReJIT for it since it was missed.
+            CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
+            ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
+            if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
+            {
+                shouldCallReJIT = TRUE;
+                modId = reinterpret_cast<ModuleID>(pCaller->GetModule());
+                methodDef = pCaller->GetMemberDef();
+                // Do Not call RequestReJIT inside this scope, calling RequestReJIT while holding the CodeVersionManager lock
+                // will cause deadlocks with other threads calling RequestReJIT since it tries to obtain the CodeVersionManager lock
+            }
+        }
+
+        if (shouldCallReJIT)
+        {
+            _ASSERTE(modId != 0);
+            _ASSERTE(methodDef != mdMethodDefNil);
+            ReJitManager::RequestReJIT(1, &modId, &methodDef, static_cast<COR_PRF_REJIT_FLAGS>(0));
+        }
+    }
+}
+#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
+
 void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                                       CORINFO_METHOD_HANDLE inlineeHnd,
                                       CorInfoInline inlineResult,
@@ -8673,41 +8748,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     {
         // We don't want to track the chain of methods, so intentionally use m_pMethodBeingCompiled
         // to just track the methods that pCallee is eventually inlined in
-        MethodDesc *pCallee = GetMethod(inlineeHnd);
-        MethodDesc *pCaller = m_pMethodBeingCompiled;
-        pCallee->GetModule()->AddInlining(pCaller, pCallee);
-
-        if (CORProfilerEnableRejit())
-        {
-            ModuleID modId = 0;
-            mdMethodDef methodDef = mdMethodDefNil;
-            BOOL shouldCallReJIT = FALSE;
-
-            {
-                // If ReJIT is enabled, there is a chance that a race happened where the profiler
-                // requested a ReJIT on a method, but before the ReJIT occurred an inlining happened.
-                // If we end up reporting an inlining on a method with non-default IL it means the race
-                // happened and we need to manually request ReJIT for it since it was missed.
-                CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
-                CodeVersionManager::LockHolder codeVersioningLockHolder;
-                ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
-                if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
-                {
-                    shouldCallReJIT = TRUE;
-                    modId = reinterpret_cast<ModuleID>(pCaller->GetModule());
-                    methodDef = pCaller->GetMemberDef();
-                    // Do Not call RequestReJIT inside this scope, calling RequestReJIT while holding the CodeVersionManager lock
-                    // will cause deadlocks with other threads calling RequestReJIT since it tries to obtain the CodeVersionManager lock
-                }
-            }
-
-            if (shouldCallReJIT)
-            {
-                _ASSERTE(modId != 0);
-                _ASSERTE(methodDef != mdMethodDefNil);
-                ReJitManager::RequestReJIT(1, &modId, &methodDef, static_cast<COR_PRF_REJIT_FLAGS>(0));
-            }
-        }
+        TrackInliningForRejit(m_pMethodBeingCompiled, GetMethod(inlineeHnd));
     }
 #endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
 

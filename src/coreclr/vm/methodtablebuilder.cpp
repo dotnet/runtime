@@ -1880,7 +1880,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
             for (DWORD i = 0; i < bmtEnumFields->dwNumInstanceFields; i++)
             {
                 MethodTable* pFieldMT = pByValueClassCache[i];
-                if (pFieldMT != NULL && pFieldMT->IsNotTightlyPacked())
+                if (pFieldMT != NULL && !pFieldMT->IsTightlyPacked())
                 {
                     fIsNotTightlyPacked = true;
                     break;
