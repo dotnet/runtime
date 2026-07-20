@@ -7429,6 +7429,34 @@ public:
 
         unsigned Data() const { return acdData; }
 
+        // Region-kind flag bits packed into acdData by bbThrowIndex.
+        static const unsigned AcdHandlerFlag = 0x40000000;
+        static const unsigned AcdFilterFlag  = 0x80000000;
+
+        // The EH region kind that keys this helper.
+        AcdKeyDesignator Designator() const
+        {
+            if (acdData == 0)
+            {
+                return AcdKeyDesignator::KD_NONE;
+            }
+            if ((acdData & AcdFilterFlag) != 0)
+            {
+                return AcdKeyDesignator::KD_FLT;
+            }
+            if ((acdData & AcdHandlerFlag) != 0)
+            {
+                return AcdKeyDesignator::KD_HND;
+            }
+            return AcdKeyDesignator::KD_TRY;
+        }
+
+        // The 0-based EH region index this helper is keyed to (not valid for KD_NONE).
+        unsigned RegionIndex() const
+        {
+            return (acdData & ~(AcdHandlerFlag | AcdFilterFlag)) - 1;
+        }
+
     private:
 
         SpecialCodeKind acdKind;
@@ -10771,6 +10799,7 @@ private:
     }
 #endif // DEBUG
 
+public:
     bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
@@ -10814,6 +10843,7 @@ private:
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
+private:
 #ifdef DEBUG
     //------------------------------------------------------------------------
     // canUseEvexEncodingDebugOnly - Answer the question: Is Evex encoding supported on this target.

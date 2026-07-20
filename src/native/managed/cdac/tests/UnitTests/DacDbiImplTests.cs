@@ -37,6 +37,17 @@ public unsafe class DacDbiImplTests
         return (dacDbi, target);
     }
 
+    [Fact]
+    public void DacSetTargetConsistencyChecks_Standalone_ReturnsSuccess()
+    {
+        MockTarget.Architecture architecture = new() { IsLittleEndian = true, Is64Bit = true };
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(architecture).Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null);
+
+        Assert.Equal(System.HResults.S_OK, dacDbi.DacSetTargetConsistencyChecks(Interop.BOOL.TRUE));
+        Assert.Equal(System.HResults.S_OK, dacDbi.DacSetTargetConsistencyChecks(Interop.BOOL.FALSE));
+    }
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void SetCompilerFlags_BothFlagsSet_EncCapable(MockTarget.Architecture arch)
