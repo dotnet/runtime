@@ -1,19 +1,22 @@
-name: Holistic Review Orchestrator
+name: Holistic Review Completed
 
 on:
-  schedule:
-    - cron: '*/10 * * * *'
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      pr_numbers:
-        description: 'Comma-separated open pull request numbers to consider, including drafts and retry-limited review targets; an unchanged head with a durable review is not reviewed again'
-        required: false
+      pr_number:
+        description: 'Pull request number reviewed by the worker.'
+        required: true
         type: string
-permissions: {}
+      head_sha:
+        description: 'Pull request head commit assessed by the worker.'
+        required: true
+        type: string
+      outcome:
+        description: 'One of: review-submitted or assessment-unchanged.'
+        required: true
+        type: string
 
-concurrency:
-  group: holistic-review-orchestrator
-  cancel-in-progress: false
+permissions: {}
 
 jobs:
   get-state-issue:
@@ -24,66 +27,63 @@ jobs:
       state_issue_number: ${{ steps.get.outputs.state_issue_number }}
     permissions:
       contents: read
-      issues: write
+      issues: read
       pull-requests: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Get pull request state issue
         id: get
         env:
-          CREATE_STATE_ISSUE: 'true'
+          CREATE_STATE_ISSUE: 'false'
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: bash .github/workflows/scripts/holistic-review/orchestrator-get-state-issue.sh
-  dispatch:
+  reconcile-state:
     needs: get-state-issue
-    if: ${{ !github.event.repository.fork }}
+    if: ${{ needs.get-state-issue.outputs.state_issue_number != '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     outputs:
-      state_updates: ${{ steps.dispatch.outputs.state_updates }}
+      state_updates: ${{ steps.reconcile.outputs.state_updates }}
     permissions:
-      actions: read
       contents: read
-      issues: write
-      pull-requests: write
+      issues: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - name: Dispatch reviews for new pull request heads
-        id: dispatch
+      - name: Reconcile completed review
+        id: reconcile
         env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GH_TOKEN: ${{ github.token }}
-          MAX_DISPATCH: '20'
-          MAX_REVIEW_ATTEMPTS: '5'
-          PR_NUMBERS: ${{ github.event.inputs.pr_numbers }}
+          # Reusable workflows retain the worker's event context. Bind state to that
+          # context rather than trusting the agent-controlled callback payload.
+          PR_NUMBER: ${{ github.event.inputs.pr_number }}
+          HEAD_SHA: ${{ github.event.inputs.pr_head_sha }}
+          OUTCOME: ${{ inputs.outcome }}
           STATE_ISSUE_NUMBER: ${{ needs.get-state-issue.outputs.state_issue_number }}
         shell: bash
-        run: bash .github/workflows/scripts/holistic-review/orchestrator-dispatch.sh
+        run: bash .github/workflows/scripts/holistic-review/orchestrator-reconcile-state.sh
   upsert-state:
-    needs: [get-state-issue, dispatch]
-    if: ${{ always() && needs.get-state-issue.result == 'success' && needs.dispatch.result == 'success' && needs.dispatch.outputs.state_updates != '{"include":[]}' }}
+    needs: [get-state-issue, reconcile-state]
+    if: ${{ always() && needs.get-state-issue.result == 'success' && needs.get-state-issue.outputs.state_issue_number != '' && needs.reconcile-state.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      actions: write
       contents: read
       issues: write
       pull-requests: read
     strategy:
       fail-fast: false
       max-parallel: 1
-      matrix: ${{ fromJSON(needs.dispatch.outputs.state_updates || '{"include":[]}') }}
+      matrix: ${{ fromJSON(needs.reconcile-state.outputs.state_updates || '{"include":[]}') }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Upsert pull request state comment
         env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GH_TOKEN: ${{ github.token }}
           STATE_ISSUE_NUMBER: ${{ needs.get-state-issue.outputs.state_issue_number }}
           PR_NUMBER: ${{ matrix.pr_number }}
           PR_TITLE: ${{ matrix.title }}
           STATE_JSON: ${{ toJSON(matrix.state) }}
-          WORKER_DISPATCH: ${{ toJSON(matrix.worker_dispatch) }}
         shell: bash
         run: bash .github/workflows/scripts/holistic-review/orchestrator-upsert-state.sh

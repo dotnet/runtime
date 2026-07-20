@@ -222,8 +222,9 @@ pre-agent-steps:
         echo "HOLISTIC_REVIEW_PREVIOUS_MERGE_BASE_SHA=$previous_base_sha"
         echo "HOLISTIC_REVIEW_SCOPE_DIR=$scope_dir"
       } >> "$GITHUB_ENV"
-
 safe-outputs:
+  noop:
+    report-as-issue: false
   create-pull-request-review-comment:
     max: 10
     side: RIGHT
@@ -232,6 +233,9 @@ safe-outputs:
     max: 1
     target: ${{ github.event.inputs.pr_number }}
     allowed-events: [COMMENT]
+  call-workflow:
+    workflows: [holistic-review-completed]
+    max: 1
 
 timeout-minutes: 30
 
@@ -341,7 +345,6 @@ to launch another process or modify the workspace. Do not use write/edit tools o
 spawn child processes. In particular, do not configure or invoke Git aliases, hooks, pagers,
 external helpers, external diff or merge tools, credential helpers, or SSH commands; GitHub CLI
 extensions, aliases, configuration, or pagers; or an external compression program for `sort`.
-
 ## Step 1: Determine the Review Scope
 
 Before the agent started, a trusted deterministic step computed the initial or incremental
@@ -374,12 +377,11 @@ not rediscover findings in portions of the PR patch that remained unchanged.
 
 These re-review scope rules override any broader review-scope guidance in the review skill.
 
-If `HOLISTIC_REVIEW_HAS_CHANGES` is `false`, do not inspect the source patch for new
-findings and do not exit. Still submit a new `COMMENT` review. Its Holistic Review must state
-that the PR patch has not changed since the prior review (or that an initial PR has no
-base-to-head changes), include the required Assessment History for a re-review, and contain
-no actionable findings. This ensures every successful worker review is recorded without
-altering prior reviews.
+If `HOLISTIC_REVIEW_HAS_CHANGES` is `false`, do not inspect the source patch for new findings.
+For an initial review, submit a `COMMENT` review explaining that the PR has no base-to-head
+changes. For a re-review, compare the resulting assessment with the most recent previous review
+as described in Step 3; if it is unchanged, record the no-op result instead of posting a duplicate
+review.
 
 ## Step 2: Load Review Guidelines
 
@@ -391,10 +393,10 @@ This dispatched worker has no sub-agent or task tooling. Skip the skill's `Disco
 
 Follow the review skill for the range selected in Step 1. Consult existing PR comments and reviews as directed by the skill, but do not modify, hide, supersede, or otherwise remove prior comments or reviews.
 
-Explicitly assess whether the PR's added complexity is necessary and proportionate to a validated
-goal. A validated goal is supported by at least one concrete evidence source: an approved API,
-specification, or accepted design requirement; a reproducible bug or regression; representative
-benchmark or performance evidence; or customer, CI, production, or similarly concrete evidence.
+Explicitly assess whether the PR's added complexity is necessary and proportionate to the stated
+problem, supported by at least one concrete evidence source: an approved API, specification, or
+accepted design requirement; a reproducible bug or regression; representative benchmark or
+performance evidence; or customer, CI, production, or similarly concrete evidence.
 Do not treat size, low-level code, or specialized algorithms as concerns by themselves when the
 problem inherently requires them and the design is well-factored, tested, and consistent with
 established direction. Escalate only when a materially simpler approach meets the same requirements,
@@ -402,12 +404,38 @@ the complexity is poorly encapsulated or duplicative, or the demonstrated benefi
 justify the maintenance burden. When the tradeoff remains unresolved, use `⚠️ Needs Human Review`
 and state the specific decision a maintainer should make.
 
-Use the review skill's exact top-level body structure. After `## Holistic Review`, immediately emit
-`**Motivation**:`, `**Approach**:`, and `**Summary**:` in that order. Then emit `### Detailed
-Findings`. Do not restate the PR title, its description, or obvious code behavior unless the code
-has a meaningful semantic difference from the stated intent. Do not duplicate findings or
-assessments across the summary, detailed findings, or inline comments. Use only `✅`, `⚠️`, `💡`,
-and `❌` as review-content status emojis.
+Use the review skill's top-level body structure. After `## Holistic Review`, include
+`**Motivation**:`, `**Approach**:`, and `**Summary**:` only when each adds non-obvious assessment
+beyond the PR title, description, and code changes; omit Motivation and/or Summary when they would
+merely restate the obvious. When present, keep those fields in that order. Then emit
+`### Detailed Findings`. Do not duplicate findings or assessments across the optional top-level
+fields, detailed findings, or inline comments. Use only `✅`, `⚠️`, `💡`, and `❌` as
+review-content status emojis.
+
+For an incremental review, compare the complete current assessment with the most recent previous
+review. The assessment is unchanged only when its emitted top-level fields, findings, and action
+items are all unchanged; an updated commit or wording that restates the same assessment does not
+make it different. When the assessment is unchanged:
+
+1. Do not create inline comments or submit a new pull request review.
+2. Invoke `call_workflow` exactly once to record the completion:
+
+   ```bash
+   safeoutputs call_workflow . <<'EOF'
+   {"workflow_name":"holistic-review-completed","pr_number":"${{ github.event.inputs.pr_number }}","head_sha":"${{ github.event.inputs.pr_head_sha }}","outcome":"assessment-unchanged"}
+   EOF
+   ```
+
+For every review that you submit, invoke `call_workflow` exactly once after invoking
+`submit_pull_request_review`, with `outcome` set to `review-submitted`:
+
+```bash
+safeoutputs call_workflow . <<'EOF'
+{"workflow_name":"holistic-review-completed","pr_number":"${{ github.event.inputs.pr_number }}","head_sha":"${{ github.event.inputs.pr_head_sha }}","outcome":"review-submitted"}
+EOF
+```
+
+Do not invoke `call_workflow` for an incomplete review.
 
 For each actionable finding that is specific to one changed line or a contiguous changed range, invoke the `create_pull_request_review_comment` safe output before submitting the review. Use the dispatched `pull_request_number`, the changed file path, and the exact right-side line or range. Put the complete actionable explanation in that inline comment. Do not create inline comments for unchanged lines, broad/cross-cutting findings, non-actionable observations, or findings without a precise changed location; include those only in the visible `### Detailed Findings` section of the review body. Do not duplicate a finding's full explanation in both places: identify inline findings briefly in the body and link to the relevant file and line when useful.
 
@@ -419,20 +447,19 @@ safeoutputs create_pull_request_review_comment . <<'EOF'
 EOF
 ```
 
-Replace the example values with the dispatched PR and finding. Do not pipe from `printf`, use flag-form arguments, chain another command, inspect CLI help, or use `report_incomplete`/`noop` as a substitute for the required review. Those forms can be rejected by the read-only shell policy even though the safe output itself is allowed.
+Replace the example values with the dispatched PR and finding. Do not pipe from `printf`, use flag-form arguments, chain another command, or inspect CLI help. Use `report_incomplete` only when the review cannot be completed.
 
 When complete, submit the review with the same single-command JSON-input form:
 
 ```bash
 safeoutputs submit_pull_request_review . <<'EOF'
-{"pull_request_number": 123, "event": "COMMENT", "body": "## Holistic Review\n\n**Motivation**: ...\n\n**Approach**: ...\n\n**Summary**: ..."}
+{"pull_request_number": 123, "event": "COMMENT", "body": "## Holistic Review\n\n### Detailed Findings\n\n..."}
 EOF
 ```
 
-Set `pull_request_number` to `${{ github.event.inputs.pr_number }}` and include the complete review body as a valid JSON string. If the command is rejected, correct the JSON or invocation and retry this exact form once. Always submit a `COMMENT` event, including for an LGTM verdict. Never submit `REQUEST_CHANGES`. Inline comments created above are automatically included in this review. End every review with this disclosure, replacing the generic Copilot disclosure in the review skill:
+Set `pull_request_number` to `${{ github.event.inputs.pr_number }}` and include the complete review body as a valid JSON string. If the command is rejected, correct the JSON or invocation and retry this exact form once. Except for the unchanged incremental-assessment case above, always submit a `COMMENT` event, including for an LGTM verdict. Never submit `REQUEST_CHANGES`. Inline comments created above are automatically included in this review. End every submitted review with this disclosure, replacing the generic Copilot disclosure in the review skill:
 
 > [!NOTE]
 > This review was generated by this repository's [Holistic Review](${{ github.server_url }}/${{ github.repository }}/blob/main/.github/workflows/holistic-review.md) agentic workflow to complement the built-in Copilot review.
 
-The deterministic orchestrator separately records each completed worker's reviewed commit.
-Do not add workflow provenance markers to the review body.
+The orchestrator uses this callback to update the review state issue.

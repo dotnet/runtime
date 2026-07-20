@@ -120,11 +120,11 @@ When presenting the final review (whether as a PR comment or as output to the us
 ```
 ## Holistic Review
 
-**Motivation**: <1-2 sentences on whether the PR is justified and the problem is real>
+**Motivation**: <1-2 sentences on whether the PR is justified and the problem is real, when this adds non-obvious context>
 
-**Approach**: <1-2 sentences on whether the fix/change takes the right approach>
+**Approach**: <1-2 sentences on whether the fix/change takes the right approach, when this adds non-obvious context>
 
-**Summary**: <❌ Needs Changes / ⚠️ Needs Human Review / 💡 Suggestions / ✅ LGTM / ❌ Reject>. <2-3 sentence summary of the overall verdict and key points. If "Needs Human Review," explicitly state which findings are uncertain and what a human reviewer should focus on.>
+**Summary**: <❌ Needs Changes / ⚠️ Needs Human Review / 💡 Suggestions / ✅ LGTM / ❌ Reject>. <2-3 sentence summary of the overall verdict and key points, when it adds non-obvious context. If "Needs Human Review," explicitly state which findings are uncertain and what a human reviewer should focus on.>
 
 ---
 
@@ -142,10 +142,12 @@ When presenting the final review (whether as a PR comment or as output to the us
 
 ### Guidelines
 
-- Begin the review body with `## Holistic Review`, immediately followed by the
-  `**Motivation**:`, `**Approach**:`, and `**Summary**:` fields in that order. Do not
-  add a `### Holistic Assessment` subheading, substitute a `Verdict` field, or rename
-  those fields.
+- Begin the review body with `## Holistic Review`. Include `**Motivation**:`,
+  `**Approach**:`, and `**Summary**:` only when each adds non-obvious assessment beyond
+  the PR title, description, and code changes; omit any field that would merely restate
+  the obvious. When present, keep those fields in that order. Do not add a
+  `### Holistic Assessment` subheading, substitute a `Verdict` field, or rename those
+  fields.
 - **Detailed Findings** uses emoji-prefixed category headers:
   - ✅ for things that are correct / look good (use to confirm important aspects were verified)
   - ⚠️ for warnings or impactful suggestions (should fix, or follow-up)
@@ -153,9 +155,10 @@ When presenting the final review (whether as a PR comment or as output to the us
   - ❌ for errors (must fix before merge)
 - **Cross-cutting analysis** should be included when relevant: check whether related code (sibling types, callers, other platforms) is affected by the same issue or needs a similar fix.
 - **Test quality** should be assessed as its own finding when tests are part of the PR.
-- **Summary** gives a clear verdict: `❌ Needs Changes`, `⚠️ Needs Human Review`,
-  `💡 Suggestions`, `✅ LGTM`, or `❌ Reject`. Use `✅ LGTM` only when confident and no
-  suggestions remain. When uncertain, use `⚠️ Needs Human Review` and explain what a human
+- When included, **Summary** gives a clear verdict: `❌ Needs Changes`, `⚠️ Needs Human
+  Review`, `💡 Suggestions`, `✅ LGTM`, or `❌ Reject`. Use `✅ LGTM` only when confident
+  and no suggestions remain. When Summary is omitted, make the verdict clear through the
+  detailed findings. When uncertain, use `⚠️ Needs Human Review` and explain what a human
   should focus on.
 - Keep the review concise but thorough. Every claim should be backed by evidence from the code.
 
