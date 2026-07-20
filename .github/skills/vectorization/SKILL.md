@@ -1,6 +1,13 @@
 ---
 name: vectorization
-description: Guidance for writing and reviewing SIMD / hardware-intrinsics code in dotnet/runtime. USE FOR: vectorizing a scalar algorithm, writing or reviewing code that uses Vector128/Vector256/Vector512, Vector<T>, or the platform intrinsics in System.Runtime.Intrinsics.X86/Arm/Wasm, and validating remainder handling, load/store safety, and hardware-acceleration fallbacks. DO NOT USE FOR general performance work unrelated to SIMD (use performance-benchmark), or non-vectorized code review (use code-review).
+description: >
+  Guidance for writing and reviewing SIMD / hardware-intrinsics code in
+  dotnet/runtime. USE FOR: vectorizing a scalar algorithm, writing or reviewing
+  code that uses Vector128/Vector256/Vector512, Vector<T>, or the platform
+  intrinsics in System.Runtime.Intrinsics.X86/Arm/Wasm, and validating remainder
+  handling, load/store safety, and hardware-acceleration fallbacks. DO NOT USE
+  FOR: general performance work unrelated to SIMD (use performance-benchmark),
+  or non-vectorized code review (use code-review).
 ---
 
 # SIMD and vectorization in dotnet/runtime
