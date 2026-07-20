@@ -13,7 +13,7 @@ namespace System.Numerics
         : IComparable,
           IComparable<Decimal64>,
           IEquatable<Decimal64>,
-          IFloatingPoint<Decimal64>,
+          IDecimalFloatingPointIeee754<Decimal64>,
           ISpanFormattable,
           ISpanParsable<Decimal64>,
           IMinMaxValue<Decimal64>,
@@ -866,6 +866,173 @@ namespace System.Numerics
             return false;
         }
 
+        //
+        // IFloatingPointIeee754
+        //
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        public static Decimal64 Acos(Decimal64 x) => new Decimal64(Number.AcosDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static Decimal64 AcosPi(Decimal64 x) => new Decimal64(Number.AcosPiDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        public static Decimal64 Acosh(Decimal64 x) => new Decimal64(Number.AcoshDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        public static Decimal64 Asin(Decimal64 x) => new Decimal64(Number.AsinDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static Decimal64 AsinPi(Decimal64 x) => new Decimal64(Number.AsinPiDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        public static Decimal64 Asinh(Decimal64 x) => new Decimal64(Number.AsinhDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        public static Decimal64 Atan(Decimal64 x) => new Decimal64(Number.AtanDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        public static Decimal64 Atan2(Decimal64 y, Decimal64 x) => new Decimal64(Number.Atan2DecimalIeee754<Decimal64, ulong>(y._value, x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static Decimal64 Atan2Pi(Decimal64 y, Decimal64 x) => new Decimal64(Number.Atan2PiDecimalIeee754<Decimal64, ulong>(y._value, x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static Decimal64 AtanPi(Decimal64 x) => new Decimal64(Number.AtanPiDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        public static Decimal64 Atanh(Decimal64 x) => new Decimal64(Number.AtanhDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
+        public static Decimal64 BitDecrement(Decimal64 x) => new Decimal64(Number.BitDecrementDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
+        public static Decimal64 BitIncrement(Decimal64 x) => new Decimal64(Number.BitIncrementDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        public static Decimal64 Cbrt(Decimal64 x) => new Decimal64(Number.CbrtDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        public static Decimal64 Cos(Decimal64 x) => new Decimal64(Number.CosDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static Decimal64 CosPi(Decimal64 x) => new Decimal64(Number.CosPiDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        public static Decimal64 Cosh(Decimal64 x) => new Decimal64(Number.CoshDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
+        public static Decimal64 Exp(Decimal64 x) => new Decimal64(Number.ExpDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static Decimal64 Exp10(Decimal64 x) => new Decimal64(Number.Exp10DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static Decimal64 Exp10M1(Decimal64 x) => new Decimal64(Number.Exp10M1DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static Decimal64 Exp2(Decimal64 x) => new Decimal64(Number.Exp2DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static Decimal64 Exp2M1(Decimal64 x) => new Decimal64(Number.Exp2M1DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static Decimal64 ExpM1(Decimal64 x) => new Decimal64(Number.ExpM1DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        public static Decimal64 FusedMultiplyAdd(Decimal64 left, Decimal64 right, Decimal64 addend) => new Decimal64(Number.FusedMultiplyAddDecimalIeee754<Decimal64, ulong>(left._value, right._value, addend._value));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static Decimal64 Hypot(Decimal64 x, Decimal64 y) => new Decimal64(Number.HypotDecimalIeee754<Decimal64, ulong>(x._value, y._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
+        public static Decimal64 Ieee754Remainder(Decimal64 left, Decimal64 right) => new Decimal64(Number.Ieee754RemainderDecimalIeee754<Decimal64, ulong>(left._value, right._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(Decimal64 x) => Number.ILogBDecimalIeee754<Decimal64, ulong>(x._value);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        public static Decimal64 Log(Decimal64 x) => new Decimal64(Number.LogDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
+        public static Decimal64 Log(Decimal64 x, Decimal64 newBase) => new Decimal64(Number.LogDecimalIeee754<Decimal64, ulong>(x._value, newBase._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        public static Decimal64 Log10(Decimal64 x) => new Decimal64(Number.Log10DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static Decimal64 Log10P1(Decimal64 x) => new Decimal64(Number.Log10P1DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2(TSelf)" />
+        public static Decimal64 Log2(Decimal64 x) => new Decimal64(Number.Log2DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static Decimal64 Log2P1(Decimal64 x) => new Decimal64(Number.Log2P1DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static Decimal64 LogP1(Decimal64 x) => new Decimal64(Number.LogP1DecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        public static Decimal64 Pow(Decimal64 x, Decimal64 y) => new Decimal64(Number.PowDecimalIeee754<Decimal64, ulong>(x._value, y._value));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
+        public static Decimal64 RootN(Decimal64 x, int n) => new Decimal64(Number.RootNDecimalIeee754<Decimal64, ulong>(x._value, n));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
+        public static Decimal64 ScaleB(Decimal64 x, int n) => new Decimal64(Number.ScaleBDecimalIeee754<Decimal64, ulong>(x._value, n));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        public static Decimal64 Sin(Decimal64 x) => new Decimal64(Number.SinDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (Decimal64 Sin, Decimal64 Cos) SinCos(Decimal64 x)
+        {
+            (ulong sin, ulong cos) = Number.SinCosDecimalIeee754<Decimal64, ulong>(x._value);
+            return (new Decimal64(sin), new Decimal64(cos));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
+        public static (Decimal64 SinPi, Decimal64 CosPi) SinCosPi(Decimal64 x)
+        {
+            (ulong sin, ulong cos) = Number.SinCosPiDecimalIeee754<Decimal64, ulong>(x._value);
+            return (new Decimal64(sin), new Decimal64(cos));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static Decimal64 SinPi(Decimal64 x) => new Decimal64(Number.SinPiDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        public static Decimal64 Sinh(Decimal64 x) => new Decimal64(Number.SinhDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        public static Decimal64 Sqrt(Decimal64 x) => new Decimal64(Number.SqrtDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        public static Decimal64 Tan(Decimal64 x) => new Decimal64(Number.TanDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static Decimal64 TanPi(Decimal64 x) => new Decimal64(Number.TanPiDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        public static Decimal64 Tanh(Decimal64 x) => new Decimal64(Number.TanhDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
+        /// <param name="x">The value whose quantum is adjusted.</param>
+        /// <param name="y">The value that provides the target quantum.</param>
+        /// <returns><paramref name="x" /> expressed with the quantum of <paramref name="y" />, or NaN when the value cannot be represented at that quantum.</returns>
+        public static Decimal64 Quantize(Decimal64 x, Decimal64 y) => new Decimal64(Number.QuantizeDecimalIeee754<Decimal64, ulong>(x._value, y._value));
+
+        /// <summary>Computes the quantum of a value: one unit in the last place sharing its exponent.</summary>
+        /// <param name="x">The value whose quantum is returned.</param>
+        /// <returns>The quantum of <paramref name="x" />.</returns>
+        public static Decimal64 Quantum(Decimal64 x) => new Decimal64(Number.QuantumDecimalIeee754<Decimal64, ulong>(x._value));
+
+        /// <summary>Determines whether two values have the same quantum (exponent).</summary>
+        /// <param name="x">The first value to compare.</param>
+        /// <param name="y">The second value to compare.</param>
+        /// <returns><c>true</c> if <paramref name="x" /> and <paramref name="y" /> have the same quantum; otherwise, <c>false</c>.</returns>
+        public static bool SameQuantum(Decimal64 x, Decimal64 y) => Number.SameQuantumDecimalIeee754<Decimal64, ulong>(x._value, y._value);
+
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
         /// <returns>The absolute of <paramref name="value" />.</returns>
@@ -1527,6 +1694,10 @@ namespace System.Numerics
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MaxExponent => MaxExponent;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MinExponent => MinExponent;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MaxAdjustedExponent => MaxExponent - Precision + 1;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MinAdjustedExponent => MinExponent - Precision + 1;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.PositiveInfinity => PositiveInfinityValue;
 

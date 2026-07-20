@@ -13,7 +13,7 @@ namespace System.Numerics
         : IComparable,
           IComparable<Decimal128>,
           IEquatable<Decimal128>,
-          IFloatingPoint<Decimal128>,
+          IDecimalFloatingPointIeee754<Decimal128>,
           ISpanFormattable,
           ISpanParsable<Decimal128>,
           IMinMaxValue<Decimal128>,
@@ -34,7 +34,7 @@ namespace System.Numerics
         private const int Precision = 34;
         private const int ExponentBias = 6176;
         private static UInt128 PositiveInfinityValue => new UInt128(upper: 0x7800_0000_0000_0000, lower: 0);
-        private static UInt128 NegativeInfinityValue => new UInt128(upper: 0xf800_0000_0000_0000, lower: 0);
+        private static UInt128 NegativeInfinityValue => new UInt128(upper: 0xF800_0000_0000_0000, lower: 0);
         // Canonical ±0 use the IEEE 754 preferred representation for integer values,
         // which stores zero with the biased exponent rather than the minimum exponent.
         private static UInt128 ZeroValue => new UInt128(0x3040_0000_0000_0000, 0);
@@ -852,6 +852,173 @@ namespace System.Numerics
             return false;
         }
 
+        //
+        // IFloatingPointIeee754
+        //
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        public static Decimal128 Acos(Decimal128 x) => new Decimal128(Number.AcosDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static Decimal128 AcosPi(Decimal128 x) => new Decimal128(Number.AcosPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        public static Decimal128 Acosh(Decimal128 x) => new Decimal128(Number.AcoshDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        public static Decimal128 Asin(Decimal128 x) => new Decimal128(Number.AsinDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static Decimal128 AsinPi(Decimal128 x) => new Decimal128(Number.AsinPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        public static Decimal128 Asinh(Decimal128 x) => new Decimal128(Number.AsinhDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        public static Decimal128 Atan(Decimal128 x) => new Decimal128(Number.AtanDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        public static Decimal128 Atan2(Decimal128 y, Decimal128 x) => new Decimal128(Number.Atan2DecimalIeee754<Decimal128, UInt128>(new UInt128(y._upper, y._lower), new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static Decimal128 Atan2Pi(Decimal128 y, Decimal128 x) => new Decimal128(Number.Atan2PiDecimalIeee754<Decimal128, UInt128>(new UInt128(y._upper, y._lower), new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static Decimal128 AtanPi(Decimal128 x) => new Decimal128(Number.AtanPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        public static Decimal128 Atanh(Decimal128 x) => new Decimal128(Number.AtanhDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
+        public static Decimal128 BitDecrement(Decimal128 x) => new Decimal128(Number.BitDecrementDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
+        public static Decimal128 BitIncrement(Decimal128 x) => new Decimal128(Number.BitIncrementDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        public static Decimal128 Cbrt(Decimal128 x) => new Decimal128(Number.CbrtDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        public static Decimal128 Cos(Decimal128 x) => new Decimal128(Number.CosDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static Decimal128 CosPi(Decimal128 x) => new Decimal128(Number.CosPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        public static Decimal128 Cosh(Decimal128 x) => new Decimal128(Number.CoshDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
+        public static Decimal128 Exp(Decimal128 x) => new Decimal128(Number.ExpDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static Decimal128 Exp10(Decimal128 x) => new Decimal128(Number.Exp10DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static Decimal128 Exp10M1(Decimal128 x) => new Decimal128(Number.Exp10M1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static Decimal128 Exp2(Decimal128 x) => new Decimal128(Number.Exp2DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static Decimal128 Exp2M1(Decimal128 x) => new Decimal128(Number.Exp2M1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static Decimal128 ExpM1(Decimal128 x) => new Decimal128(Number.ExpM1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        public static Decimal128 FusedMultiplyAdd(Decimal128 left, Decimal128 right, Decimal128 addend) => new Decimal128(Number.FusedMultiplyAddDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower), new UInt128(addend._upper, addend._lower)));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static Decimal128 Hypot(Decimal128 x, Decimal128 y) => new Decimal128(Number.HypotDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
+        public static Decimal128 Ieee754Remainder(Decimal128 left, Decimal128 right) => new Decimal128(Number.Ieee754RemainderDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(Decimal128 x) => Number.ILogBDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        public static Decimal128 Log(Decimal128 x) => new Decimal128(Number.LogDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
+        public static Decimal128 Log(Decimal128 x, Decimal128 newBase) => new Decimal128(Number.LogDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(newBase._upper, newBase._lower)));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        public static Decimal128 Log10(Decimal128 x) => new Decimal128(Number.Log10DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static Decimal128 Log10P1(Decimal128 x) => new Decimal128(Number.Log10P1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2(TSelf)" />
+        public static Decimal128 Log2(Decimal128 x) => new Decimal128(Number.Log2DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static Decimal128 Log2P1(Decimal128 x) => new Decimal128(Number.Log2P1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static Decimal128 LogP1(Decimal128 x) => new Decimal128(Number.LogP1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        public static Decimal128 Pow(Decimal128 x, Decimal128 y) => new Decimal128(Number.PowDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
+        public static Decimal128 RootN(Decimal128 x, int n) => new Decimal128(Number.RootNDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), n));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
+        public static Decimal128 ScaleB(Decimal128 x, int n) => new Decimal128(Number.ScaleBDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), n));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        public static Decimal128 Sin(Decimal128 x) => new Decimal128(Number.SinDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (Decimal128 Sin, Decimal128 Cos) SinCos(Decimal128 x)
+        {
+            (UInt128 sin, UInt128 cos) = Number.SinCosDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower));
+            return (new Decimal128(sin), new Decimal128(cos));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
+        public static (Decimal128 SinPi, Decimal128 CosPi) SinCosPi(Decimal128 x)
+        {
+            (UInt128 sin, UInt128 cos) = Number.SinCosPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower));
+            return (new Decimal128(sin), new Decimal128(cos));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static Decimal128 SinPi(Decimal128 x) => new Decimal128(Number.SinPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        public static Decimal128 Sinh(Decimal128 x) => new Decimal128(Number.SinhDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        public static Decimal128 Sqrt(Decimal128 x) => new Decimal128(Number.SqrtDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        public static Decimal128 Tan(Decimal128 x) => new Decimal128(Number.TanDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static Decimal128 TanPi(Decimal128 x) => new Decimal128(Number.TanPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        public static Decimal128 Tanh(Decimal128 x) => new Decimal128(Number.TanhDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
+        /// <param name="x">The value whose quantum is adjusted.</param>
+        /// <param name="y">The value that provides the target quantum.</param>
+        /// <returns><paramref name="x" /> expressed with the quantum of <paramref name="y" />, or NaN when the value cannot be represented at that quantum.</returns>
+        public static Decimal128 Quantize(Decimal128 x, Decimal128 y) => new Decimal128(Number.QuantizeDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <summary>Computes the quantum of a value: one unit in the last place sharing its exponent.</summary>
+        /// <param name="x">The value whose quantum is returned.</param>
+        /// <returns>The quantum of <paramref name="x" />.</returns>
+        public static Decimal128 Quantum(Decimal128 x) => new Decimal128(Number.QuantumDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <summary>Determines whether two values have the same quantum (exponent).</summary>
+        /// <param name="x">The first value to compare.</param>
+        /// <param name="y">The second value to compare.</param>
+        /// <returns><c>true</c> if <paramref name="x" /> and <paramref name="y" /> have the same quantum; otherwise, <c>false</c>.</returns>
+        public static bool SameQuantum(Decimal128 x, Decimal128 y) => Number.SameQuantumDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower));
+
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
         /// <returns>The absolute of <paramref name="value" />.</returns>
@@ -1555,6 +1722,10 @@ namespace System.Numerics
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MaxExponent => MaxExponent;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MinExponent => MinExponent;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MaxAdjustedExponent => MaxExponent - Precision + 1;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MinAdjustedExponent => MinExponent - Precision + 1;
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.PositiveInfinity => PositiveInfinityValue;
 

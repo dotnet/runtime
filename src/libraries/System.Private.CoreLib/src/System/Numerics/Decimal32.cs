@@ -15,7 +15,7 @@ namespace System.Numerics
         : IComparable,
           IComparable<Decimal32>,
           IEquatable<Decimal32>,
-          IFloatingPoint<Decimal32>,
+          IDecimalFloatingPointIeee754<Decimal32>,
           ISpanFormattable,
           ISpanParsable<Decimal32>,
           IMinMaxValue<Decimal32>,
@@ -875,6 +875,173 @@ namespace System.Numerics
             return false;
         }
 
+        //
+        // IFloatingPointIeee754
+        //
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        public static Decimal32 Acos(Decimal32 x) => new Decimal32(Number.AcosDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static Decimal32 AcosPi(Decimal32 x) => new Decimal32(Number.AcosPiDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        public static Decimal32 Acosh(Decimal32 x) => new Decimal32(Number.AcoshDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        public static Decimal32 Asin(Decimal32 x) => new Decimal32(Number.AsinDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static Decimal32 AsinPi(Decimal32 x) => new Decimal32(Number.AsinPiDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        public static Decimal32 Asinh(Decimal32 x) => new Decimal32(Number.AsinhDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        public static Decimal32 Atan(Decimal32 x) => new Decimal32(Number.AtanDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        public static Decimal32 Atan2(Decimal32 y, Decimal32 x) => new Decimal32(Number.Atan2DecimalIeee754<Decimal32, uint>(y._value, x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static Decimal32 Atan2Pi(Decimal32 y, Decimal32 x) => new Decimal32(Number.Atan2PiDecimalIeee754<Decimal32, uint>(y._value, x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static Decimal32 AtanPi(Decimal32 x) => new Decimal32(Number.AtanPiDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        public static Decimal32 Atanh(Decimal32 x) => new Decimal32(Number.AtanhDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
+        public static Decimal32 BitDecrement(Decimal32 x) => new Decimal32(Number.BitDecrementDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
+        public static Decimal32 BitIncrement(Decimal32 x) => new Decimal32(Number.BitIncrementDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        public static Decimal32 Cbrt(Decimal32 x) => new Decimal32(Number.CbrtDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        public static Decimal32 Cos(Decimal32 x) => new Decimal32(Number.CosDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static Decimal32 CosPi(Decimal32 x) => new Decimal32(Number.CosPiDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        public static Decimal32 Cosh(Decimal32 x) => new Decimal32(Number.CoshDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
+        public static Decimal32 Exp(Decimal32 x) => new Decimal32(Number.ExpDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static Decimal32 Exp10(Decimal32 x) => new Decimal32(Number.Exp10DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static Decimal32 Exp10M1(Decimal32 x) => new Decimal32(Number.Exp10M1DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static Decimal32 Exp2(Decimal32 x) => new Decimal32(Number.Exp2DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static Decimal32 Exp2M1(Decimal32 x) => new Decimal32(Number.Exp2M1DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static Decimal32 ExpM1(Decimal32 x) => new Decimal32(Number.ExpM1DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        public static Decimal32 FusedMultiplyAdd(Decimal32 left, Decimal32 right, Decimal32 addend) => new Decimal32(Number.FusedMultiplyAddDecimalIeee754<Decimal32, uint>(left._value, right._value, addend._value));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static Decimal32 Hypot(Decimal32 x, Decimal32 y) => new Decimal32(Number.HypotDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
+        public static Decimal32 Ieee754Remainder(Decimal32 left, Decimal32 right) => new Decimal32(Number.Ieee754RemainderDecimalIeee754<Decimal32, uint>(left._value, right._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(Decimal32 x) => Number.ILogBDecimalIeee754<Decimal32, uint>(x._value);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        public static Decimal32 Log(Decimal32 x) => new Decimal32(Number.LogDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
+        public static Decimal32 Log(Decimal32 x, Decimal32 newBase) => new Decimal32(Number.LogDecimalIeee754<Decimal32, uint>(x._value, newBase._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        public static Decimal32 Log10(Decimal32 x) => new Decimal32(Number.Log10DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static Decimal32 Log10P1(Decimal32 x) => new Decimal32(Number.Log10P1DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2(TSelf)" />
+        public static Decimal32 Log2(Decimal32 x) => new Decimal32(Number.Log2DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static Decimal32 Log2P1(Decimal32 x) => new Decimal32(Number.Log2P1DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static Decimal32 LogP1(Decimal32 x) => new Decimal32(Number.LogP1DecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        public static Decimal32 Pow(Decimal32 x, Decimal32 y) => new Decimal32(Number.PowDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
+        public static Decimal32 RootN(Decimal32 x, int n) => new Decimal32(Number.RootNDecimalIeee754<Decimal32, uint>(x._value, n));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
+        public static Decimal32 ScaleB(Decimal32 x, int n) => new Decimal32(Number.ScaleBDecimalIeee754<Decimal32, uint>(x._value, n));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        public static Decimal32 Sin(Decimal32 x) => new Decimal32(Number.SinDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (Decimal32 Sin, Decimal32 Cos) SinCos(Decimal32 x)
+        {
+            (uint sin, uint cos) = Number.SinCosDecimalIeee754<Decimal32, uint>(x._value);
+            return (new Decimal32(sin), new Decimal32(cos));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
+        public static (Decimal32 SinPi, Decimal32 CosPi) SinCosPi(Decimal32 x)
+        {
+            (uint sin, uint cos) = Number.SinCosPiDecimalIeee754<Decimal32, uint>(x._value);
+            return (new Decimal32(sin), new Decimal32(cos));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static Decimal32 SinPi(Decimal32 x) => new Decimal32(Number.SinPiDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        public static Decimal32 Sinh(Decimal32 x) => new Decimal32(Number.SinhDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        public static Decimal32 Sqrt(Decimal32 x) => new Decimal32(Number.SqrtDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        public static Decimal32 Tan(Decimal32 x) => new Decimal32(Number.TanDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static Decimal32 TanPi(Decimal32 x) => new Decimal32(Number.TanPiDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        public static Decimal32 Tanh(Decimal32 x) => new Decimal32(Number.TanhDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
+        /// <param name="x">The value whose quantum is adjusted.</param>
+        /// <param name="y">The value that provides the target quantum.</param>
+        /// <returns><paramref name="x" /> expressed with the quantum of <paramref name="y" />, or NaN when the value cannot be represented at that quantum.</returns>
+        public static Decimal32 Quantize(Decimal32 x, Decimal32 y) => new Decimal32(Number.QuantizeDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <summary>Computes the quantum of a value: one unit in the last place sharing its exponent.</summary>
+        /// <param name="x">The value whose quantum is returned.</param>
+        /// <returns>The quantum of <paramref name="x" />.</returns>
+        public static Decimal32 Quantum(Decimal32 x) => new Decimal32(Number.QuantumDecimalIeee754<Decimal32, uint>(x._value));
+
+        /// <summary>Determines whether two values have the same quantum (exponent).</summary>
+        /// <param name="x">The first value to compare.</param>
+        /// <param name="y">The second value to compare.</param>
+        /// <returns><c>true</c> if <paramref name="x" /> and <paramref name="y" /> have the same quantum; otherwise, <c>false</c>.</returns>
+        public static bool SameQuantum(Decimal32 x, Decimal32 y) => Number.SameQuantumDecimalIeee754<Decimal32, uint>(x._value, y._value);
+
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
         /// <returns>The absolute of <paramref name="value" />.</returns>
@@ -1535,6 +1702,10 @@ namespace System.Numerics
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MaxExponent => MaxExponent;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MinExponent => MinExponent;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MaxAdjustedExponent => MaxExponent - Precision + 1;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MinAdjustedExponent => MinExponent - Precision + 1;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.PositiveInfinity => PositiveInfinityValue;
 

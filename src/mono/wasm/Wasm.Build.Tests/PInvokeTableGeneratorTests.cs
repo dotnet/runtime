@@ -408,6 +408,9 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, m => m.Contains("iares[0]=32"));
             Assert.Contains(result.TestOutput, m => m.Contains("iares[1]=2"));
             Assert.Contains("fares.elements[1]=2", result.TestOutput);
+            // https://github.com/dotnet/runtime/issues/112262: 64-bit enum pinvoke args
+            Assert.Contains("eu (eu)=18374966859414961921", result.TestOutput);
+            Assert.Contains("ei (ei)=-2", result.TestOutput);
         }
 
         [Theory]
@@ -421,6 +424,23 @@ namespace Wasm.Build.Tests
         [TestCategory("native-mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
+
+        [Theory]
+        [BuildAndRun(aot: false)]
+        [TestCategory("native-mono")]
+        public void UnsupportedOSPlatformPInvokeIsSkipped(Configuration config, bool aot)
+        {
+            // https://github.com/dotnet/runtime/issues/110870: a Windows-only pinvoke with
+            // non-blittable parameters must be skipped (not analyzed) when building for the
+            // browser, so it must not emit WASM0060/WASM0062/WASM0001.
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "osplatform_pinvoke",
+                extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnsupportedOSPlatform.cs"));
+            (_, string output) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false, AOT: aot), isNativeBuild: true);
+            Assert.DoesNotContain("WASM0001", output);
+            Assert.DoesNotContain("WASM0060", output);
+            Assert.DoesNotContain("WASM0062", output);
+        }
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]

@@ -662,6 +662,14 @@ void WasmRegAlloc::CollectReferencesForIndir(GenTreeIndir* node)
 {
     GenTree* const addr = node->Addr();
     ConsumeTemporaryRegForOperand(addr DEBUGARG("indirection address"));
+
+    if (node->OperIs(GT_STOREIND) && node->TypeIs(TYP_SIMD12))
+    {
+        // The SIMD12 store stashes the v128 value so it can re-push it for the trailing lane store.
+        regNumber internalReg = RequestInternalRegister(node, TYP_SIMD16);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -799,6 +807,16 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 
     LIR::ReadOnlyRange storeRange(store, store);
     m_compiler->GetLowering()->LowerRange(m_currentBlock, storeRange);
+
+    if (store->OperIs(GT_STOREIND) && store->TypeIs(TYP_SIMD12))
+    {
+        // genStoreIndTypeSimd12 tees the value into a v128 temporary to split the store into an 8-byte and a
+        // 4-byte lane store. The main collection walk does not revisit this freshly-introduced node, so request
+        // that internal register here. The re-materializable LCL_ADDR address needs no temporary.
+        regNumber internalReg = RequestInternalRegister(store, TYP_SIMD16);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 
     // FIXME-WASM: Should we be doing this here?
     // CollectReferencesForNode(store);

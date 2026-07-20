@@ -43,7 +43,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 if ((info.id == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
                 {
                     // A constant, fully in-range mask was lowered to an immediate i8x16.shuffle.
-                    // genConsumeMultiOpOperands left the source on the value stack once (the mask
+                    // prior codegen left the source on the value stack once (the mask
                     // operand is contained, so no v128.const was materialized). i8x16.shuffle
                     // selects from two vectors, so push the source a second time and encode the
                     // mask as the 16-byte shuffle immediate.
