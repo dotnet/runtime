@@ -10295,10 +10295,10 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             }
 
             LOG((LF_CORDB,LL_INFO10000,"\tBP Add: BPTOK:"
-                "0x%p, tok=0x%08x, offset=0x%p, isIL=%d dm=0x%p m=0x%p\n",
+                "0x%p, tok=0x%08x, offset=0x%x, isIL=%d dm=0x%p m=0x%p\n",
                  pDebuggerBP,
                  pEvent->BreakpointData.funcMetadataToken,
-                 (void*)pEvent->BreakpointData.offset,
+                 pEvent->BreakpointData.offset,
                  pEvent->BreakpointData.isIL,
                  pDebuggerModule,
                  pModule));

@@ -13135,7 +13135,7 @@ void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG
     {
         printf("\nfgMorphTree (after %d):\n", morphNum);
         gtDispTree(tree);
-        fflush(stdout); // flush
+        fflush(jitstdout()); // flush
     }
 #endif
 
