@@ -4628,7 +4628,7 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
         }
         if (IsExtendedGPReg(reg))
         {
-            // Seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
+            // Separate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
             assert(TakesRex2Prefix(id) || TakesEvexPrefix(id));
             if (hasRex2Prefix(*code))
             {
@@ -4688,7 +4688,7 @@ inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emi
         }
         if (IsExtendedGPReg(reg))
         {
-            // Seperate the encoding for REX2.R3/R4, REX2.R3 will be handled in `AddRexRPrefix`.
+            // Separate the encoding for REX2.R3/R4, REX2.R3 will be handled in `AddRexRPrefix`.
             assert(TakesRex2Prefix(id) || TakesEvexPrefix(id));
             if (hasRex2Prefix(*code))
             {
