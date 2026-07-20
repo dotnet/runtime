@@ -12554,6 +12554,18 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "get_CompletedTask",
        "get_UTF8NoBOM",
        "get_EncoderFallback",
+       "get_EnvVarTermInfoLocation"
+       "get_TerminalFormatStringsInstance"
+       "get_ReflectedType",
+       "get_RuntimeType",
+       "get_IsGenericParameter",
+       "get_BindingFlags",
+       "get_Signature", 
+       "get_Arguments",
+       "get_IsEmpty",
+       "get_Latin1CharInfo",
+       "get_GenericCache",
+
 
 
     };
