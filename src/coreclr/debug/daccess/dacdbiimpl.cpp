@@ -3929,8 +3929,6 @@ namespace
         PoolData() : Data(NULL), Size(0) {}
     };
 
-    // Coalesce the data of a StgPool's segment chain. StgPool derives from StgPoolSeg,
-    // so the head pool and every extension segment are walked through StgPoolSeg.
     void ReadStoragePool(TADDR poolAddress, PoolData & result)
     {
         TADDR segData[MaxPoolSegments];
@@ -3938,7 +3936,8 @@ namespace
         ULONG32 segCount = 0;
         ULONG64 totalSize = 0;
 
-        StgPoolSeg * pSeg = dac_cast<DPTR(StgPoolSeg)>(poolAddress);
+        StgPool * pPool = dac_cast<DPTR(StgPool)>(poolAddress);
+        StgPoolSeg * pSeg = pPool;
         for (ULONG32 iteration = 0; ; iteration++)
         {
             ULONG32 dataSize = pSeg->GetDataSize();
