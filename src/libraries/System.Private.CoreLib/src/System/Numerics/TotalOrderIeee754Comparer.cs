@@ -254,7 +254,8 @@ namespace System.Numerics
 
             if (xIsNaN || yIsNaN)
             {
-                // totalOrder places NaNs at the extremes ordered by sign: -qNaN < -sNaN < finite < +sNaN < +qNaN.
+                // totalOrder places NaNs at the extremes ordered by sign:
+                // -qNaN < -sNaN < -infinite < -finite < -0 < +0 < +finite < +infinite < +sNaN < +qNaN.
                 bool xIsNegative = TDecimal.IsNegative(xBits);
 
                 if (xIsNaN && yIsNaN)
@@ -264,12 +265,13 @@ namespace System.Numerics
                         return xIsNegative ? -1 : 1;
                     }
 
-                    // Same-signed NaNs follow totalOrder's +sNaN < +qNaN ordering, then break ties on
-                    // the raw payload. The binary formats get this for free because their quiet bit is
-                    // the significand's most significant bit; the decimal signaling bit sits above the
-                    // payload but is set for signaling (not quiet), so it is folded in inverted to rank
-                    // quiet above signaling. Using the raw payload rather than the decoded coefficient
-                    // keeps every width consistent (including Decimal128, whose NaN decode is non-canonical).
+                    // totalOrder only fixes the sign and the signaling-before-quiet ordering for NaNs;
+                    // the payload order is implementation-defined, so there is no need to canonicalize.
+                    // The raw payload bits are compared directly (including non-canonical payloads), which
+                    // is cheaper and more deterministic than decoding the coefficient and stays consistent
+                    // across every width (notably Decimal128, whose NaN coefficient decode is non-canonical).
+                    // The signaling bit sits just above the payload but is set for signaling rather than
+                    // quiet, so it is folded in inverted to rank quiet above signaling with a single compare.
                     TValue signalingMask = TDecimal.SNaNMask ^ TDecimal.NaNMask;
                     TValue xKey = (xBits & TDecimal.NaNPayloadMask) | ((xBits & signalingMask) ^ signalingMask);
                     TValue yKey = (yBits & TDecimal.NaNPayloadMask) | ((yBits & signalingMask) ^ signalingMask);
