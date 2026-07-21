@@ -14,59 +14,60 @@ using Xunit.Abstractions;
 namespace System.Net.Tests
 {
     [ConditionalClass(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
-    public class FtpWebRequestAuthenticationTest
+    public class FtpWebRequestStreamDisposalTest : IDisposable
     {
         private readonly ITestOutputHelper _output;
-        private const string FtpServerUrl = "apacheweb.linux.contoso.com";
-        private const string FtpUsername = "ftpuser";
-        private const string FtpPassword = "PLACEHOLDER_FTP_PASSWORD";
+        private readonly RemoteCertificateValidationCallback? _previousCallback;
 
-        public FtpWebRequestAuthenticationTest(ITestOutputHelper output)
+        public FtpWebRequestStreamDisposalTest(ITestOutputHelper output)
         {
             _output = output;
 
-            // Set up certificate validation callback to accept self-signed certificates in test environment
+            // Save and replace the global certificate validation callback to accept self-signed certificates
+            // in the controlled test environment. We restore it in Dispose().
 #pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
-            ServicePointManager.ServerCertificateValidationCallback = ValidateServerCertificate;
+            _previousCallback = ServicePointManager.ServerCertificateValidationCallback;
+            ServicePointManager.ServerCertificateValidationCallback = AcceptAnyCertificate;
 #pragma warning restore SYSLIB0014
         }
 
-        private static bool ValidateServerCertificate(
+        public void Dispose()
+        {
+#pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
+            ServicePointManager.ServerCertificateValidationCallback = _previousCallback;
+#pragma warning restore SYSLIB0014
+        }
+
+        private static bool AcceptAnyCertificate(
             object sender,
             X509Certificate? certificate,
             X509Chain? chain,
-            SslPolicyErrors sslPolicyErrors)
-        {
-            // In the enterprise test environment, accept self-signed certificates
-            // This is safe because we're in a controlled test environment
-            return true;
-        }
+            SslPolicyErrors sslPolicyErrors) => true;
+
+        private static string GetFtpUrl(string fileName) =>
+            $"ftp://{EnterpriseTestConfiguration.FtpServer}/ftp/{fileName}";
 
         [ConditionalTheory(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
-        [InlineData(false)] // Test without SSL
-        [InlineData(true)]  // Test with SSL
+        [InlineData(false)]
+        [InlineData(true)]
 #pragma warning disable SYSLIB0014 // WebRequest, FtpWebRequest, and related types are obsolete
         public void FtpUpload_StreamDisposal(bool useSsl)
         {
             string fileName = $"test_{Guid.NewGuid()}.txt";
-            string url = $"ftp://{FtpUsername}:{FtpPassword}@{FtpServerUrl}/ftp/{fileName}";
+            string url = GetFtpUrl(fileName);
             byte[] data = Encoding.UTF8.GetBytes($"Test data for stream disposal (SSL={useSsl})");
 
-            _output.WriteLine($"Testing FTP upload stream disposal with SSL={useSsl} to: {url}");
+            _output.WriteLine($"Testing FTP upload stream disposal with SSL={useSsl}");
 
-            // This test validates that stream disposal doesn't cause protocol violations
-            // Issue dotnet/runtime#123135 reported this problem specifically with SSL enabled
             FtpWebRequest request = (FtpWebRequest)WebRequest.Create(url);
             request.Method = WebRequestMethods.Ftp.UploadFile;
             request.EnableSsl = useSsl;
-            request.Credentials = new NetworkCredential(FtpUsername, FtpPassword);
+            request.Credentials = EnterpriseTestConfiguration.FtpNetworkCredentials;
 
-            // The exception "The underlying connection was closed: The server committed a protocol violation"
-            // used to occur when the request stream was disposed (specifically with SSL)
             using (var stream = request.GetRequestStream())
             {
                 stream.Write(data, 0, data.Length);
-            } // Stream disposal should not throw
+            }
 
             using (FtpWebResponse response = (FtpWebResponse)request.GetResponse())
             {
@@ -80,7 +81,7 @@ namespace System.Net.Tests
                 FtpWebRequest deleteRequest = (FtpWebRequest)WebRequest.Create(url);
                 deleteRequest.Method = WebRequestMethods.Ftp.DeleteFile;
                 deleteRequest.EnableSsl = useSsl;
-                deleteRequest.Credentials = new NetworkCredential(FtpUsername, FtpPassword);
+                deleteRequest.Credentials = EnterpriseTestConfiguration.FtpNetworkCredentials;
                 using (FtpWebResponse deleteResponse = (FtpWebResponse)deleteRequest.GetResponse())
                 {
                     _output.WriteLine($"Delete response: {deleteResponse.StatusCode}");
@@ -93,21 +94,21 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
-        [InlineData(false)] // Test without SSL
-        [InlineData(true)]  // Test with SSL
+        [InlineData(false)]
+        [InlineData(true)]
         public async Task FtpDownload_StreamDisposal(bool useSsl)
         {
             string fileName = $"test_{Guid.NewGuid()}.txt";
-            string url = $"ftp://{FtpUsername}:{FtpPassword}@{FtpServerUrl}/ftp/{fileName}";
+            string url = GetFtpUrl(fileName);
             byte[] uploadData = Encoding.UTF8.GetBytes($"Test data for download disposal (SSL={useSsl})");
 
-            _output.WriteLine($"Testing FTP download stream disposal with SSL={useSsl} from: {url}");
+            _output.WriteLine($"Testing FTP download stream disposal with SSL={useSsl}");
 
             // First upload a file
             FtpWebRequest uploadRequest = (FtpWebRequest)WebRequest.Create(url);
             uploadRequest.Method = WebRequestMethods.Ftp.UploadFile;
             uploadRequest.EnableSsl = useSsl;
-            uploadRequest.Credentials = new NetworkCredential(FtpUsername, FtpPassword);
+            uploadRequest.Credentials = EnterpriseTestConfiguration.FtpNetworkCredentials;
 
             using (Stream requestStream = await uploadRequest.GetRequestStreamAsync())
             {
@@ -123,7 +124,7 @@ namespace System.Net.Tests
             FtpWebRequest downloadRequest = (FtpWebRequest)WebRequest.Create(url);
             downloadRequest.Method = WebRequestMethods.Ftp.DownloadFile;
             downloadRequest.EnableSsl = useSsl;
-            downloadRequest.Credentials = new NetworkCredential(FtpUsername, FtpPassword);
+            downloadRequest.Credentials = EnterpriseTestConfiguration.FtpNetworkCredentials;
 
             using (FtpWebResponse response = (FtpWebResponse)await downloadRequest.GetResponseAsync())
             using (Stream responseStream = response.GetResponseStream())
@@ -139,7 +140,7 @@ namespace System.Net.Tests
                 Assert.Equal(FtpStatusCode.ClosingData, response.StatusCode);
                 Assert.Equal(uploadData.Length, downloadedData.Length);
                 Assert.Equal(Encoding.UTF8.GetString(uploadData), downloadedText);
-            } // Stream disposal should not throw
+            }
 
             // Cleanup - delete the uploaded file
             try
@@ -147,7 +148,7 @@ namespace System.Net.Tests
                 FtpWebRequest deleteRequest = (FtpWebRequest)WebRequest.Create(url);
                 deleteRequest.Method = WebRequestMethods.Ftp.DeleteFile;
                 deleteRequest.EnableSsl = useSsl;
-                deleteRequest.Credentials = new NetworkCredential(FtpUsername, FtpPassword);
+                deleteRequest.Credentials = EnterpriseTestConfiguration.FtpNetworkCredentials;
                 using (FtpWebResponse deleteResponse = (FtpWebResponse)await deleteRequest.GetResponseAsync())
                 {
                     _output.WriteLine($"Delete response: {deleteResponse.StatusCode}");

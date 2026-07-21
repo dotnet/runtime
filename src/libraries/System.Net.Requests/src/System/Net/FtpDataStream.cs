@@ -77,20 +77,30 @@ namespace System.Net
             {
                 try
                 {
+                    Exception? sslCloseException = null;
+
                     // If we have an SslStream wrapping the NetworkStream, close it first to perform SSL/TLS shutdown.
                     // Since leaveInnerStreamOpen=true, the SslStream won't close the NetworkStream.
                     // We then explicitly close the NetworkStream with the appropriate timeout.
                     if (_stream != _originalStream)
                     {
-                        if ((closeState & CloseExState.Abort) == 0)
+                        try
                         {
-                            // For normal close, perform graceful SSL/TLS shutdown
-                            _stream.Close();
+                            if ((closeState & CloseExState.Abort) == 0)
+                            {
+                                // For normal close, perform graceful SSL/TLS shutdown
+                                _stream.Close();
+                            }
+                            else
+                            {
+                                // For abort, just dispose without graceful SSL shutdown
+                                _stream.Dispose();
+                            }
                         }
-                        else
+                        catch (Exception e)
                         {
-                            // For abort, just dispose without graceful SSL shutdown
-                            _stream.Dispose();
+                            // Save the exception but still close the underlying NetworkStream
+                            sslCloseException = e;
                         }
                     }
 
@@ -99,6 +109,9 @@ namespace System.Net
                         _originalStream.Close(DefaultCloseTimeout);
                     else
                         _originalStream.Close(0);
+
+                    if (sslCloseException is not null)
+                        ExceptionDispatchInfo.Throw(sslCloseException);
                 }
                 finally
                 {
