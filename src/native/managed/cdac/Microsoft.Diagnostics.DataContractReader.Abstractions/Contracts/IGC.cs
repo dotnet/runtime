@@ -36,8 +36,7 @@ public record struct HandleData(
     TargetPointer Secondary,
     uint Type,
     bool StrongReference,
-    uint RefCount,
-    bool IsPegged);
+    uint RefCount);
 
 public readonly struct GCHeapData
 {
