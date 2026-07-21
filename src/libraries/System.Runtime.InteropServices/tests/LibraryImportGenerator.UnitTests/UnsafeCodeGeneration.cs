@@ -98,6 +98,59 @@ namespace LibraryImportGenerator.UnitTests
             }.RunAsync();
         }
 
+        [Fact]
+        public async Task UserDeclaredUnsafeOnForwarderMethodIsPreserved()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class C
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static unsafe partial void Method();
+                }
+                """;
+            await new UnsafeShapeTest(compilation =>
+            {
+                MethodDeclarationSyntax stub = GetGeneratedStubSyntax(compilation, "C", "Method");
+                // A forwarder is a bodyless `extern` stub; the user's `unsafe` modifier is copied verbatim onto it.
+                Assert.Null(stub.Body);
+                Assert.True(stub.Modifiers.Any(SyntaxKind.ExternKeyword));
+                Assert.True(stub.Modifiers.Any(SyntaxKind.UnsafeKeyword));
+                AssertNoUnsafeModifierOnContainingTypes(stub);
+            })
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task UserDeclaredUnsafeOnWrapperMethodIsPreserved()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class C
+                {
+                    [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Utf16)]
+                    public static unsafe partial void Method(string s, int* i);
+                }
+                """;
+            await new UnsafeShapeTest(compilation =>
+            {
+                MethodDeclarationSyntax stub = GetGeneratedStubSyntax(compilation, "C", "Method");
+                // The user's `unsafe` modifier (required for the `int*` parameter) is copied verbatim onto the stub.
+                Assert.True(stub.Modifiers.Any(SyntaxKind.UnsafeKeyword));
+                AssertNoUnsafeModifierOnContainingTypes(stub);
+                // The body is still wrapped in an explicit `unsafe` block, independent of the method modifier.
+                StatementSyntax onlyStatement = Assert.Single(stub.Body!.Statements);
+                Assert.IsType<UnsafeStatementSyntax>(onlyStatement);
+            })
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            }.RunAsync();
+        }
+
         private static MethodDeclarationSyntax GetGeneratedStubSyntax(Compilation compilation, string typeName, string methodName)
         {
             INamedTypeSymbol type = compilation.GetTypeByMetadataName(typeName)!;
