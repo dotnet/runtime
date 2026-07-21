@@ -529,6 +529,14 @@ namespace System
         // Converts a character to upper-case for invariant culture.
         public static char ToUpperInvariant(char c) => TextInfo.ToUpperInvariant(c);
 
+        /// <summary>
+        /// Converts a character to uppercase using the casing rules used by
+        /// <see cref="StringComparison.OrdinalIgnoreCase"/> comparisons.
+        /// </summary>
+        /// <param name="c">The character to convert.</param>
+        /// <returns>The uppercase equivalent of <paramref name="c"/>.</returns>
+        public static char ToUpperOrdinal(char c) => TextInfo.ToUpperOrdinal(c);
+
         /*===================================ToLower====================================
         **
         ==============================================================================*/
@@ -557,6 +565,13 @@ namespace System
 
         // Converts a character to lower-case for invariant culture.
         public static char ToLowerInvariant(char c) => TextInfo.ToLowerInvariant(c);
+
+        /// <summary>
+        /// Converts a character to lowercase using ordinal (simple, one-to-one) casing rules.
+        /// </summary>
+        /// <param name="c">The character to convert.</param>
+        /// <returns>The lowercase equivalent of <paramref name="c"/>.</returns>
+        public static char ToLowerOrdinal(char c) => TextInfo.ToLowerOrdinal(c);
 
         //
         // IConvertible implementation
@@ -1959,7 +1974,7 @@ namespace System
 
         static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
-        static bool INumberBase<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
+        static bool INumberBase<char>.TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
         {
             if (TryParse(s, out result))
             {
@@ -1971,7 +1986,7 @@ namespace System
             return false;
         }
 
-        static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
+        static bool INumberBase<char>.TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
         {
             if (TryParse(s, out result))
             {
@@ -1983,7 +1998,7 @@ namespace System
             return false;
         }
 
-        static bool INumberBase<char>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out char result, out int bytesConsumed)
+        static bool INumberBase<char>.TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out char result, out int bytesConsumed)
         {
             if (Rune.DecodeFromUtf8(utf8Text, out Rune rune, out bytesConsumed) != Buffers.OperationStatus.Done ||
                 bytesConsumed != utf8Text.Length ||

@@ -73,6 +73,13 @@ public enum DataType
     FnPtrTypeDesc,
     FieldDesc,
     DynamicMetadata,
+    MDInternalRW,
+    CLiteWeightStgdbRW,
+    CMiniMdRW,
+    CMiniMdSchema,
+    TableRW,
+    StgPool,
+    StgPoolSeg,
     StressLog,
     StressLogModuleDesc,
     StressLogHeader,
@@ -193,6 +200,7 @@ public enum DataType
     InternalComInterfaceDispatch,
     AuxiliarySymbolInfo,
     VASigCookie,
+    Signature,
     CodeRangeMapRangeList,
 
     /* GC Data Types */

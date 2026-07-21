@@ -92,8 +92,31 @@ public class R2RTestSuites
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             Assert.True(webcilReader.IsWasmWrapped);
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
-            Assert.True(R2RAssert.GetAllMethods(reader).Exists(method =>
+
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal)));
+            // Reads static data, so the JIT materializes the image base via a well-known-global global.get.
+            Assert.True(methods.Exists(method =>
+                method.SignatureString.Contains("SumStaticData", StringComparison.Ordinal)));
+            // Has a try/finally, so the JIT materializes the table base via a well-known-global global.get.
+            Assert.True(methods.Exists(method =>
+                method.SignatureString.Contains("SumWithFinally", StringComparison.Ordinal)));
+
+            // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
+            // relocations that the R2R object writer must self-resolve back to the fixed global
+            // indices. Verify the emitted code contains a correctly self-resolved 'global.get' for the
+            // image base (1, materialized by static-data reads in SumStaticData) and the table base
+            // (2, materialized by the try/finally funclet path in SumWithFinally). Each pattern encodes
+            // the exact resolved index, so a regression in self-resolution changes it (or makes
+            // crossgen2 throw while emitting the method). The stack-pointer well-known global is passed to
+            // managed methods as a parameter in R2R, so it is not referenced via 'global.get' here.
+            const int ImageBaseGlobal = 1;
+            const int TableBaseGlobal = 2;
+            Assert.True(R2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, ImageBaseGlobal),
+                "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
+            Assert.True(R2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
+                "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
         }
     }
 
@@ -166,7 +189,8 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    // JitStressProcedureSplitting is only available in Debug/Checked JIT builds.
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotReleaseCoreCLR))]
     public void ArmThumbBitHotColdRuntimeFunctions()
     {
         var hotColdSplitting = new CompiledAssembly
@@ -401,6 +425,93 @@ public class R2RTestSuites
         }
     }
 
+    /// <summary>
+    /// Regression test for an ARM32 alignment fault (SIGBUS / BUS_ADRALN) when loading a composite
+    /// Ready-to-Run image. The manifest metadata root (STORAGESIGNATURE/STORAGEHEADER/STORAGESTREAM)
+    /// and the component assembly table (READYTORUN_COMPONENT_ASSEMBLIES_ENTRY) are packed arrays of
+    /// DWORD fields that the runtime reads in place, so their sections must start on a 4-byte
+    /// boundary. When they landed on an unaligned RVA the runtime faulted on ARM32 (which does not
+    /// permit unaligned multi-word loads) during coreclr_initialize; x64/arm64 tolerated it.
+    /// </summary>
+    [Fact]
+    public void CompositeManifestSectionsAreAligned()
+    {
+        var compositeLib = new CompiledAssembly
+        {
+            AssemblyName = "CompositeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+        };
+        var compositeMain = new CompiledAssembly
+        {
+            AssemblyName = nameof(CompositeManifestSectionsAreAligned),
+            SourceResourceNames = ["CrossModuleInlining/CompositeBasic.cs"],
+            References = [compositeLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeManifestSectionsAreAligned),
+            [
+                new(nameof(CompositeManifestSectionsAreAligned),
+                [
+                    new CrossgenAssembly(compositeLib),
+                    new CrossgenAssembly(compositeMain),
+                ])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.CompositeManifestSectionsAreAligned(reader, out diag), diag);
+        }
+    }
+
+    /// <summary>
+    /// Complements <see cref="CompositeManifestSectionsAreAligned"/> using the same trigger as the
+    /// MVID-table test: --pdb emits an odd-sized debug directory section that shifts the manifest
+    /// sections off a 4-byte boundary without the fix. Windows-only because it relies on Windows PDB
+    /// generation.
+    /// </summary>
+    [ConditionalFact(nameof(IsWindows))]
+    public void CompositeManifestSectionsArePaddedWhenPdbPresent()
+    {
+        var compositeLib = new CompiledAssembly
+        {
+            AssemblyName = "CompositeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+        };
+        var compositeMain = new CompiledAssembly
+        {
+            AssemblyName = nameof(CompositeManifestSectionsArePaddedWhenPdbPresent),
+            SourceResourceNames = ["CrossModuleInlining/CompositeBasic.cs"],
+            References = [compositeLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeManifestSectionsArePaddedWhenPdbPresent),
+            [
+                new(nameof(CompositeManifestSectionsArePaddedWhenPdbPresent),
+                [
+                    new CrossgenAssembly(compositeLib),
+                    new CrossgenAssembly(compositeMain),
+                ])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs = ["--pdb"],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.CompositeManifestSectionsAreAligned(reader, out diag), diag);
+        }
+    }
+
     [Fact]
     public void RuntimeAsyncMethodEmission()
     {
@@ -436,6 +547,8 @@ public class R2RTestSuites
     /// <summary>
     /// #129813 / PR #129884: crossgen2 --strip-il-bodies must preserve the IL of non-async
     /// Task/ValueTask-returning methods, which is needed to compile the runtime-async variant.
+    /// It must also strip a non-async Task-returning method whose async variant has already been
+    /// compiled, since the IL is no longer needed at runtime.
     /// </summary>
     [Fact]
     public void RuntimeAsyncStripILBodiesPreservesTaskReturningIL()
@@ -485,6 +598,9 @@ public class R2RTestSuites
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "AsyncValueTaskMethod", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncTaskMethod", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncValueTaskMethod", out diag), diag);
+
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "SyncTaskWithCompiledAsyncVariant", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "SyncTaskWithCompiledAsyncVariant", out diag), diag);
         }
     }
 

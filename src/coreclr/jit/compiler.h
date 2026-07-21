@@ -3636,6 +3636,9 @@ public:
                                  var_types   simdBaseType,
                                  unsigned    simdSize);
 
+    GenTree* gtNewSimdNarrowWithSaturationNode(
+        var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+
     GenTree* gtNewSimdConcatNode(var_types type,
                                  GenTree*  op1,
                                  GenTree*  op2,
@@ -3676,6 +3679,15 @@ public:
                                   var_types   simdBaseType,
                                   unsigned    simdSize,
                                   bool        isShuffleNative);
+
+#if defined(TARGET_WASM)
+    GenTree* gtNewSimdWasmTwoSourceShuffleNode(var_types       type,
+                                               GenTree*        op1,
+                                               GenTree*        op2,
+                                               const uint32_t* selectors,
+                                               var_types       simdBaseType,
+                                               unsigned        simdSize);
+#endif // TARGET_WASM
 
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
@@ -5010,6 +5022,7 @@ private:
         PREFIX_IS_TASK_AWAIT = 0x00000080,
         PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
         PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT = 0x00000200,
+        PREFIX_IS_ADAPTED_FROM_VALUETASK = 0x00000400,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -5499,6 +5512,9 @@ public:
     bool impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed);
 
     const BYTE* impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal, IL_OFFSET* awaitOffset);
+    bool impMatchAsyncVersionTailCall(const BYTE* codeAddr, const BYTE* codeEndp, int*        prefixFlags, int*        numBytesMatched);
+    bool impMatchStlocLdloca(const BYTE** codeAddr, const BYTE* codeEndp, unsigned* lclNum);
+
     bool impCheckOptimizeAwait(IL_OFFSET awaitOffset);
 
     GenTree* impCastClassOrIsInstToTree(
@@ -6943,7 +6959,7 @@ public:
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks::CHECK_NONE);
-    bool fgDebugCheckProfileWeights(ProfileChecks checks);
+    bool fgDebugCheckProfileWeights(ProfileChecks checks, bool dump = false);
     bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
 
@@ -7401,6 +7417,34 @@ public:
 
         unsigned Data() const { return acdData; }
 
+        // Region-kind flag bits packed into acdData by bbThrowIndex.
+        static const unsigned AcdHandlerFlag = 0x40000000;
+        static const unsigned AcdFilterFlag  = 0x80000000;
+
+        // The EH region kind that keys this helper.
+        AcdKeyDesignator Designator() const
+        {
+            if (acdData == 0)
+            {
+                return AcdKeyDesignator::KD_NONE;
+            }
+            if ((acdData & AcdFilterFlag) != 0)
+            {
+                return AcdKeyDesignator::KD_FLT;
+            }
+            if ((acdData & AcdHandlerFlag) != 0)
+            {
+                return AcdKeyDesignator::KD_HND;
+            }
+            return AcdKeyDesignator::KD_TRY;
+        }
+
+        // The 0-based EH region index this helper is keyed to (not valid for KD_NONE).
+        unsigned RegionIndex() const
+        {
+            return (acdData & ~(AcdHandlerFlag | AcdFilterFlag)) - 1;
+        }
+
     private:
 
         SpecialCodeKind acdKind;
@@ -7801,15 +7845,12 @@ protected:
     CSEdsc* optCSEfindDsc(unsigned index);
     bool optUnmarkCSE(GenTree* tree);
 
-    // user defined callback data for the tree walk function optCSE_MaskHelper()
+    // Data for the tree walk that computes the mask of CSE definitions and uses
     struct optCSE_MaskData
     {
         EXPSET_TP CSE_defMask;
         EXPSET_TP CSE_useMask;
     };
-
-    // Treewalk helper for optCSE_DefMask and optCSE_UseMask
-    static fgWalkPreFn optCSE_MaskHelper;
 
     // This function walks all the node for an given tree
     // and return the mask of CSE definitions and uses for the tree
@@ -9512,6 +9553,13 @@ public:
 
     CORINFO_ASYNC_INFO* eeGetAsyncInfo();
 
+#if defined(TARGET_WASM)
+    CORINFO_WASM_WELLKNOWN_GLOBALS wasmWellKnownGlobals;
+    bool                           wasmWellKnownGlobalsInitialized = false;
+
+    CORINFO_WASM_WELLKNOWN_GLOBALS* eeGetWasmWellKnownGlobals();
+#endif // defined(TARGET_WASM)
+
     // Gets the offset of a SDArray's first element
     static unsigned eeGetArrayDataOffset();
 
@@ -10164,9 +10212,6 @@ private:
         return sizeBytes;
     }
 
-    // Get the number of elements of baseType of SIMD vector given by its size and baseType
-    static int getSIMDVectorLength(unsigned simdSize, var_types baseType);
-
     // Get the number of elements of baseType of SIMD vector given by its type handle
     int getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd);
 
@@ -10174,6 +10219,9 @@ private:
     int getSIMDTypeAlignment(var_types simdType);
 
 public:
+    // Get the number of elements of baseType of SIMD vector given by its size and baseType
+    static int getSIMDVectorLength(unsigned simdSize, var_types baseType);
+
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
     uint32_t getVectorTByteLength()
@@ -10625,12 +10673,36 @@ public:
         return threshold;
     }
 
-    // Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many
-    // structs will fit the criteria.
-    bool structSizeMightRepresentSIMDType(size_t structSize)
+    //---------------------------------------------------------------------------------------------
+    // structMightRepresentSIMDType: Can this class handle be a SIMD type?
+    //
+    // Returns:
+    //   false if it is not possible for this class handle to be a SIMD type, otherwise true.
+    //
+    // Notes:
+    //   SIMD types are currently all value classes annotated with the [Intrinsic] attribute.
+    //   This is a first stage filter, caller should verify exact SIMD types by name.
+    bool structMightRepresentSIMDType(CORINFO_CLASS_HANDLE clsHnd)
     {
+        uint32_t structFlags   = info.compCompHnd->getClassAttribs(clsHnd);
+        uint32_t filteredFlags = structFlags & (CORINFO_FLG_VALUECLASS | CORINFO_FLG_CONTAINS_GC_PTR |
+                                                CORINFO_FLG_BYREF_LIKE | CORINFO_FLG_INTRINSIC_TYPE);
+        uint32_t desiredFlags  = (CORINFO_FLG_VALUECLASS | CORINFO_FLG_INTRINSIC_TYPE);
+
+        if (filteredFlags != desiredFlags)
+        {
+            return false;
+        }
+
+        unsigned structSize = info.compCompHnd->getClassSize(clsHnd);
 #ifdef FEATURE_SIMD
-        return (structSize >= getMinVectorByteLength()) && (structSize <= getMaxVectorByteLength());
+#ifdef TARGET_ARM64
+        const uint32_t max =
+            compOpportunisticallyDependsOn(InstructionSet_VectorT) ? MAX_SVE_REGSIZE_BYTES : FP_REGSIZE_BYTES;
+#else
+        const uint32_t max = getMaxVectorByteLength();
+#endif // TARGET_ARM64
+        return (structSize >= getMinVectorByteLength()) && (structSize <= max);
 #else
         return false;
 #endif // FEATURE_SIMD
@@ -10712,6 +10784,7 @@ private:
     }
 #endif // DEBUG
 
+public:
     bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
@@ -10755,6 +10828,7 @@ private:
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
+private:
 #ifdef DEBUG
     //------------------------------------------------------------------------
     // canUseEvexEncodingDebugOnly - Answer the question: Is Evex encoding supported on this target.

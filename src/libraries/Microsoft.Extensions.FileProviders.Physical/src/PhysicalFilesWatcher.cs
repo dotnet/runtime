@@ -628,6 +628,20 @@ namespace Microsoft.Extensions.FileProviders.Physical
                             }
                         }
                     }
+                    else if (!Directory.Exists(_root))
+                    {
+                        // The watcher still reports EnableRaisingEvents == true, but _root has been
+                        // deleted out from under it. When the watched directory is deleted, the OS
+                        // watch is torn down (on Linux the inotify watch is bound to the deleted
+                        // directory's inode, so recreating the directory will not resurrect it), yet
+                        // EnableRaisingEvents is only reset once OnError runs TryDisableFileSystemWatcher.
+                        // If a token is (re)registered before that happens, we would otherwise leave a
+                        // dead watcher in place and never observe the root being recreated. Tear down
+                        // the stale watch and fall back to watching for the root to reappear.
+                        _fileWatcher.EnableRaisingEvents = false;
+                        needsRootWatcher = true;
+                        _rootWasUnavailable = true;
+                    }
                 }
             }
 
