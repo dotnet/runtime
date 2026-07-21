@@ -216,7 +216,10 @@ namespace Internal.JitInterface
                 pos++;
             }
 
-            if ((pos + 1 < sig.Length) && (sig[pos] == 'i') && (sig[pos + 1] == 'a'))
+            // A generic context precedes the async marker in the Wasm ABI; it is encoded with the
+            // hidden-pointer char (matching the encode side), i32 on wasm32 and i64 on wasm64.
+            char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
+            if ((pos + 1 < sig.Length) && (sig[pos] == hiddenParamChar) && (sig[pos + 1] == 'a'))
             {
                 hasGenericContextBeforeAsync = true;
                 parameters.Add(RaiseSigChar(sig[pos], context));

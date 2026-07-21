@@ -9,6 +9,7 @@ function libCoreRunFactory() {
         "$FS",
         "corerun_shutdown",
         "__stack_pointer",
+        "__async_continuation",
         "$UTF8ToString"
     ];
     if (LibraryManager.library.$NODEFS) {
@@ -31,18 +32,11 @@ function libCoreRunFactory() {
                 }
 
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
-
-                // Shared i32 global holding the runtime-async continuation return value.
-                CORERUN.sharedAsyncContinuation = new WebAssembly.Global({ value: "i32", mutable: true }, 0);
             },
         },
         $CORERUN__postset: "CORERUN.selfInitialize()",
         $CORERUN__deps: commonDeps,
         BrowserHost_ShutdownDotnet: (exitCode) => _corerun_shutdown(exitCode),
-        // C-callable accessors for the shared asyncContinuation global, used by interp <-> R2R
-        // boundary code where the C++ side can't emit `global.get`/`global.set`.
-        RuntimeAsync_LoadAsyncContinuation: () => CORERUN.sharedAsyncContinuation.value,
-        RuntimeAsync_StoreAsyncContinuation: (value) => { CORERUN.sharedAsyncContinuation.value = value >>> 0; },
         BrowserHost_ExternalAssemblyProbe: (pathPtr, outDataStartPtr, outSize) => {
             function asUint8Array(bufferSource) {
                 if (bufferSource instanceof ArrayBuffer) {
@@ -234,6 +228,9 @@ function libCoreRunFactory() {
                 if (typeof (wasmExports.__coreclr_wasm_rtlrestorecontext_tag) === "undefined") {
                     throw new Error("__coreclr_wasm_rtlrestorecontext_tag was not preserved by the linker or optimizer");
                 }
+                if (typeof (wasmExports.__async_continuation) === "undefined") {
+                    throw new Error("__async_continuation was not preserved by the linker or optimizer");
+                }
                 payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
                 wasmInstance = new WebAssembly.Instance(wasmModule, {
                     webcil: {
@@ -243,8 +240,8 @@ function libCoreRunFactory() {
                         table: wasmTable,
                         tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
                         imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr),
-                        // Runtime-async continuation return slot, shared across all webcils.
-                        asyncContinuation: CORERUN.sharedAsyncContinuation
+                        // Runtime-async continuation return value, shared with the runtime module.
+                        asyncContinuation: wasmExports.__async_continuation
                     }
                 });
             } catch (e) {
