@@ -266,14 +266,21 @@ PAL_SetLogManagedCallstackForSignalCallback(
 /// Callback invoked from the fatal-signal path to write an in-proc crash
 /// report. The callback runs inside the signal handler and must therefore
 /// be async-signal-safe. siginfo is opaque (siginfo_t*) and context is the
-/// raw ucontext_t pointer received by the PAL signal handler.
+/// raw ucontext_t pointer received by the PAL signal handler. serialize
+/// mirrors createdump behavior: when true, callback implementations may
+/// serialize concurrent reporters because the caller expects process teardown;
+/// when false, callbacks should not block other threads indefinitely.
+/// signalChainAfterReport indicates that signal chaining continues after the
+/// callback returns. If callback implementations synchronize concurrent callers,
+/// this indicates that slower threads should be released after report
+/// generation has finished.
 ///
 /// Registration is opt-in: if no callback is installed the PAL falls back
 /// to its default crash-dump path (createdump where available). The PAL
 /// itself has no source-level dependency on the in-proc reporter library;
 /// it only knows about this callback ABI.
 /// </summary>
-typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context, bool serialize);
+typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context, bool serialize, bool signalChainAfterReport);
 
 PALIMPORT
 VOID

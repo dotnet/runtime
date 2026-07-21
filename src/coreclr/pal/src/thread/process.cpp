@@ -1816,11 +1816,12 @@ Parameters:
   siginfo - POSIX signal info or nullptr
   context - signal context or nullptr
   serialize - allow only one thread to generate core dump
+  signalChainAfterReport - continue chained signal handlers after report
 
 (no return value)
 --*/
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize, bool signalChainAfterReport)
 {
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
@@ -1830,7 +1831,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
     PINPROCCRASHREPORT_CALLBACK callback = g_inProcCrashReportCallback;
     if (callback != nullptr)
     {
-        callback(signal, siginfo, context, serialize);
+        callback(signal, siginfo, context, serialize, signalChainAfterReport);
         minipal_log_write_fatal("Aborting process.\n");
         return;
     }
@@ -1929,7 +1930,7 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, true);
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, true, false);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.

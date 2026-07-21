@@ -18,7 +18,7 @@
 
 #include <fcntl.h>
 #include <errno.h>
-#include <poll.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <new>
 #include <unistd.h>
@@ -132,8 +132,7 @@ static void CacheSysctlString(const char* sysctlName, char* buffer, size_t buffe
 // ``(in <name>) `` so the frame stays self-describing — overflow is lossless,
 // just less compact for that frame.
 //
-// Single-instance because CreateReport is one-shot per process (guarded by
-// the ``s_generatingThreadId`` InterlockedCompareExchange64 in CreateReport).
+// Single-instance because CreateReport is one-shot per process.
 
 static constexpr int MAX_MODULES_IN_TABLE = 256;
 
@@ -356,7 +355,8 @@ public:
     void CreateReport(
         int signal,
         void* context,
-        bool serialize);
+        bool serialize,
+        bool signalChainAfterReport);
 
     void SetCrashKind(InProcCrashReportCrashKind crashKind);
     void BeginStackOverflowTrace(uint64_t crashingTid, uint32_t totalFrameCount);
@@ -368,6 +368,18 @@ public:
 
 private:
     InProcCrashReporter() = default;
+    ~InProcCrashReporter()
+    {
+        if (m_signalChainingReleasePipeReadFd >= 0)
+        {
+            close(m_signalChainingReleasePipeReadFd);
+        }
+
+        if (m_signalChainingReleasePipeWriteFd >= 0)
+        {
+            close(m_signalChainingReleasePipeWriteFd);
+        }
+    }
     InProcCrashReporter(const InProcCrashReporter&) = delete;
     InProcCrashReporter& operator=(const InProcCrashReporter&) = delete;
 
@@ -406,6 +418,9 @@ private:
     volatile LONG m_crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
     uint32_t m_frameLimitPerThread = 0;
     InProcCrashReportLifecycle m_lifecycle;
+    int m_signalChainingReleasePipeReadFd = -1;
+    int m_signalChainingReleasePipeWriteFd = -1;
+    volatile LONG m_signalChainingReleasePipeClosed = 0;
     char m_reportFilePath[CRASHREPORT_PATH_BUFFER_SIZE];
     char m_processName[CRASHREPORT_STRING_BUFFER_SIZE];
     char m_stringScratch[CRASHREPORT_STRING_BUFFER_SIZE];
@@ -573,30 +588,47 @@ void
 InProcCrashReporter::CreateReport(
     int signal,
     void* context,
-    bool serialize)
+    bool serialize,
+    bool signalChainAfterReport)
 {
     static LONGLONG s_generatingThreadId = 0;
 
-    if (serialize)
+    if (!serialize)
     {
-        // INFTIM is not defined when including pal.h; -1 is the equivalent poll() "wait forever" timeout.
-        const int PollWaitForever = -1;
+        minipal_log_write_fatal("The in-proc crash reporter does not support recurrent invocations, so it is disabled for paths that may continue execution after signal handling, such as SIGTERM.\n");
+        return;
+    }
 
-        LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
-        LONGLONG previousThreadId = InterlockedCompareExchange64(&s_generatingThreadId, currentThreadId, 0);
-        if (previousThreadId != 0)
+    LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
+    LONGLONG previousThreadId = InterlockedCompareExchange64(&s_generatingThreadId, currentThreadId, 0);
+    if (previousThreadId != 0)
+    {
+        if (previousThreadId == currentThreadId)
         {
-            if (previousThreadId == currentThreadId)
+            return;
+        }
+
+        assert(m_signalChainingReleasePipeReadFd >= 0);
+        while (true)
+        {
+            char ignored;
+            ssize_t readResult = read(m_signalChainingReleasePipeReadFd, &ignored, sizeof(ignored));
+            if (readResult >= 0)
             {
+                // EOF (0) means the winner closed the write-end; >0 means a byte was delivered.
                 return;
             }
 
-            while (true)
+            if (errno == EINTR)
             {
-                poll(nullptr, 0, PollWaitForever);
+                // Interrupted by a signal before data/EOF, retry until the winner releases us.
+                continue;
             }
+
+            return;
         }
     }
+
     CrashReportWatchdogScope watchdogScope;
 
     m_reportFilePath[0] = '\0';
@@ -631,6 +663,13 @@ InProcCrashReporter::CreateReport(
     EmitThreads(crashKind, context);
     EndJsonReport(signal, jsonEnabled, fd);
     EndConsoleReport();
+
+    if (signalChainAfterReport &&
+        InterlockedCompareExchange(&m_signalChainingReleasePipeClosed, 1, 0) == 0 &&
+        m_signalChainingReleasePipeWriteFd >= 0)
+    {
+        close(m_signalChainingReleasePipeWriteFd);
+    }
 }
 
 void
@@ -695,6 +734,13 @@ InProcCrashReporter::InitializeInstance(
     }
 
     reporter->Initialize(settings);
+    if (reporter->m_signalChainingReleasePipeReadFd < 0 || reporter->m_signalChainingReleasePipeWriteFd < 0)
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to initialize signal chaining release pipe");
+        delete reporter;
+        return false;
+    }
+
     if (InterlockedCompareExchangePointer(&s_reporter, reporter, nullptr) != nullptr)
     {
         delete reporter;
@@ -769,6 +815,28 @@ InProcCrashReporter::Initialize(
         m_lifecycle.Initialize(settings.reportRootPath, settings.maxFileCount);
     }
 
+    int releasePipe[2];
+#if HAVE_PIPE2
+    if (pipe2(releasePipe, O_CLOEXEC) == 0)
+#else
+    if (pipe(releasePipe) == 0)
+#endif
+    {
+#if !HAVE_PIPE2
+        if (fcntl(releasePipe[0], F_SETFD, FD_CLOEXEC) == -1 ||
+            fcntl(releasePipe[1], F_SETFD, FD_CLOEXEC) == -1)
+        {
+            close(releasePipe[0]);
+            close(releasePipe[1]);
+        }
+        else
+#endif
+        {
+            m_signalChainingReleasePipeReadFd = releasePipe[0];
+            m_signalChainingReleasePipeWriteFd = releasePipe[1];
+        }
+    }
+
 #if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
     // Cache sysctl values at Initialize because sysctl/sysctlbyname is not on POSIX's
     // async-signal-safe list; CreateReport reads these from the signal-handler path.
@@ -822,7 +890,7 @@ InProcCrashReporter::EndStackOverflowTrace()
 }
 
 void
-InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool serialize)
+InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool serialize, bool signalChainAfterReport)
 {
     (void)siginfo;
 
@@ -834,7 +902,7 @@ InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool
 
     // Preserve the interrupted context's errno before the crash reporter uses syscalls.
     int savedErrno = errno;
-    reporter->CreateReport(signal, context, serialize);
+    reporter->CreateReport(signal, context, serialize, signalChainAfterReport);
     errno = savedErrno;
 }
 

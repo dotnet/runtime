@@ -132,10 +132,11 @@ Parameters:
   siginfo - POSIX signal info or nullptr
   context - signal context or nullptr
   serialize - allow only one thread to generate core dump
+  signalChainAfterReport - continue chained signal handlers after report
 
 (no return value)
 --*/
-VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize);
+VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize, bool signalChainAfterReport);
 
 /*++
 Function:
@@ -156,4 +157,3 @@ VOID PROCLogManagedCallstackForSignal(int signal);
 #endif // __cplusplus
 
 #endif //PAL_PROCESS_H_
-
