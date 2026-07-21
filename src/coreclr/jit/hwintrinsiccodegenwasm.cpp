@@ -52,7 +52,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GenTree*  src    = node->Op(1);
                     regNumber srcReg = GetMultiUseOperandReg(src);
                     GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(src), WasmRegToIndex(srcReg));
-                    GetEmitter()->emitIns_V128Imm(INS_i8x16_shuffle, info.GetImmediateVecOperand().u8);
+                    GetEmitter()->emitIns_V128Imm(INS_i8x16_shuffle, node->Op(2)->AsVecCon()->gtSimdVal.u8);
                 }
                 else
                 {

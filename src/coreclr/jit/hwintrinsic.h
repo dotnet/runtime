@@ -1334,6 +1334,7 @@ struct HWIntrinsicInfo
             case NI_PackedSimd_Shuffle:
             {
                 // (v128, v128, shuffle_mask)
+                *imm1Pos = 3;
                 break;
             }
             default:
