@@ -425,7 +425,6 @@ namespace System.Numerics
 
             try
             {
-
                 if (BitConverter.IsLittleEndian)
                 {
                     value.WriteLittleEndian(bytes);

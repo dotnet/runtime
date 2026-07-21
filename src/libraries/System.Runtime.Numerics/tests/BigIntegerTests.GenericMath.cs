@@ -372,6 +372,24 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void ReverseBitsTest()
+        {
+            Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0));
+            Assert.Equal((BigInteger)(-1), BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)(-1)));
+            Assert.Equal((BigInteger)unchecked((int)0x80000000), BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0x00000001));
+            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)unchecked((int)0x80000000)));
+            Assert.Equal(new BigInteger([0x01, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]),
+                BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)unchecked((long)0x80000000_00000000)));
+            Assert.Equal((BigInteger)unchecked((long)0x80000000_00000000),
+                BinaryIntegerHelper<BigInteger>.ReverseBits(new BigInteger([0x01, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF])));
+            Assert.Equal((BigInteger)unchecked((int)0xFBD9EAC8), BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0x13579BDF));
+            Assert.Equal((BigInteger)0x13579BDF, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)unchecked((int)0xFBD9EAC8)));
+            Assert.Equal((BigInteger)0x13579BDF_00000000, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0xFBD9EAC8u));
+            Assert.Equal((BigInteger)0xFBD9EAC8u, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0x13579BDF_00000000));
+            Assert.Equal((BigInteger)0xFFFFFFFF_00000000ul, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0xFFFFFFFF_00000000ul));
+        }
+
+        [Fact]
         public static void RotateLeftTest()
         {
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateLeft(Zero, 1));
