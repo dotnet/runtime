@@ -486,18 +486,23 @@ namespace System.Net.Security
         // Calls crypto on received data. No IO inside.
         private ProtocolToken ProcessTlsFrame(int frameSize)
         {
+            Debug.Assert(frameSize > 0);
+
             int chunkSize = frameSize;
 
             ReadOnlySpan<byte> availableData = _buffer.EncryptedReadOnlySpan;
 
             // Often more TLS messages fit into same packet. Get as many complete frames as we can.
-            while (_buffer.EncryptedLength - chunkSize > TlsFrameHelper.HeaderSize)
+            while (availableData.Length - chunkSize > TlsFrameHelper.HeaderSize)
             {
                 TlsFrameHeader nextHeader = default;
 
+                // we should always have at least TlsFrameHelper.HeaderSize bytes left, so
+                // if TryGetFrameHeader fails, it means the frame is malformed and we should not continue processing.
                 if (!TlsFrameHelper.TryGetFrameHeader(availableData.Slice(chunkSize), ref nextHeader))
                 {
-                    break;
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "invalid TLS frame size");
+                    throw new AuthenticationException(SR.net_frame_read_size);
                 }
 
                 frameSize = nextHeader.Length;
@@ -510,6 +515,7 @@ namespace System.Net.Security
                     break;
                 }
 
+                Debug.Assert(frameSize > 0);
                 chunkSize += frameSize;
             }
 
@@ -1016,11 +1022,6 @@ namespace System.Net.Security
             }
 
             if (!TlsFrameHelper.TryGetFrameHeader(buffer, ref _lastFrame.Header))
-            {
-                throw new IOException(SR.net_ssl_io_frame);
-            }
-
-            if (_lastFrame.Header.Length < 0)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "invalid TLS frame size");
                 throw new AuthenticationException(SR.net_frame_read_size);
