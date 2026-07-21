@@ -1590,30 +1590,50 @@ namespace System.Net.Http
         {
             ReadOnlySpan<byte> buffer = _readBuffer.ActiveReadOnlySpan;
 
-            int lineFeedIndex = buffer.IndexOf((byte)'\n');
-            if (lineFeedIndex < 0)
+            // Unlike the status line and headers, the chunked encoding grammar (RFC 9112 7.1)
+            // requires that each line be terminated by a CRLF. Interpreting a lone LF as a line
+            // terminator, or allowing a bare CR within the line, is not permitted here.
+            int index = buffer.IndexOfAny((byte)'\r', (byte)'\n');
+            if (index < 0)
             {
+                // We haven't found a CR or LF yet, so we don't have a complete line.
                 if (buffer.Length < MaxChunkBytesAllowed)
                 {
                     line = default;
                     return false;
                 }
             }
+            else if (buffer[index] == '\n')
+            {
+                // We found an LF that is not preceded by a CR.
+                throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response_chunk_line_ending);
+            }
             else
             {
-                int bytesConsumed = lineFeedIndex + 1;
-                if (bytesConsumed <= MaxChunkBytesAllowed)
+                // We found a CR. It must be immediately followed by an LF.
+                int lineFeedIndex = index + 1;
+                if (lineFeedIndex < buffer.Length)
                 {
-                    _readBuffer.Discard(bytesConsumed);
+                    if (buffer[lineFeedIndex] != '\n')
+                    {
+                        // We found a bare CR that is not part of a CRLF sequence.
+                        throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response_chunk_line_ending);
+                    }
 
-                    int carriageReturnIndex = lineFeedIndex - 1;
+                    int bytesConsumed = lineFeedIndex + 1;
+                    if (bytesConsumed <= MaxChunkBytesAllowed)
+                    {
+                        _readBuffer.Discard(bytesConsumed);
 
-                    int length = (uint)carriageReturnIndex < (uint)buffer.Length && buffer[carriageReturnIndex] == '\r'
-                        ? carriageReturnIndex
-                        : lineFeedIndex;
-
-                    line = buffer.Slice(0, length);
-                    return true;
+                        line = buffer.Slice(0, index);
+                        return true;
+                    }
+                }
+                else if (buffer.Length < MaxChunkBytesAllowed)
+                {
+                    // We have the CR but haven't received the following byte yet.
+                    line = default;
+                    return false;
                 }
             }
 

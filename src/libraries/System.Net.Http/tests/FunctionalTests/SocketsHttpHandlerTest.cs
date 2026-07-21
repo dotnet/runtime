@@ -1427,6 +1427,63 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "SocketsHttpHandler is not supported on Browser/WASI")]
+    public sealed class SocketsHttpHandler_ChunkedEncodingParsing_Test : HttpClientHandlerTestBase
+    {
+        public SocketsHttpHandler_ChunkedEncodingParsing_Test(ITestOutputHelper output) : base(output) { }
+
+        protected override Version UseVersion => HttpVersion.Version11;
+
+        [Theory]
+        [InlineData("4\r\ndata\r\n0\r\n\r\n")]
+        [InlineData("4;chunkextension\r\ndata\r\n0\r\n\r\n")]
+        [InlineData("4\r\ndata\r\n0\r\ntrailer: value\r\n\r\n")]
+        public async Task GetAsync_ValidChunkedResponse_Succeeds(string chunkedBody)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async url =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpResponseMessage response = await client.GetAsync(url);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal("data", await response.Content.ReadAsStringAsync());
+            }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                "HTTP/1.1 200 OK\r\n" +
+                "Connection: close\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                chunkedBody));
+        }
+
+        [Theory]
+        // The chunked encoding grammar (RFC 9112) requires CRLF line endings. Unlike the status
+        // line and headers, a lone LF terminator or a bare CR within the line is not permitted.
+        [InlineData("4\ndata\r\n0\r\n\r\n")]              // Lone LF terminating the chunk size line
+        [InlineData("4\r\ndata\n0\r\n\r\n")]              // Lone LF terminating the chunk data
+        [InlineData("4\r\ndata\r\n0\n\r\n")]              // Lone LF terminating the last chunk size line
+        [InlineData("4\rdata\r\n0\r\n\r\n")]              // Bare CR in the chunk size line
+        [InlineData("4;chunk\rextension\r\ndata\r\n0\r\n\r\n")] // Bare CR in the chunk extension
+        public async Task GetAsync_InvalidChunkLineEnding_ThrowsHttpRequestException(string chunkedBody)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async url =>
+            {
+                using HttpClient client = CreateHttpClient();
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
+            }, async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Connection: close\r\n" +
+                        "Transfer-Encoding: chunked\r\n" +
+                        "\r\n" +
+                        chunkedBody);
+                }
+                catch { }
+            });
+        }
+    }
+
     [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
