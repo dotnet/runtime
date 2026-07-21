@@ -135,6 +135,30 @@ namespace Wasm.Build.Tests
                         isNativeBuild: true);
 
         [Theory]
+        [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("native-mono")]
+        public async Task GSharedVtConcreteMethodDependencies(Configuration config, bool aot)
+            => await TestMain("gsharedvt_concrete_method_dependencies", """
+                using System;
+                using System.Collections;
+                using System.Collections.Generic;
+
+                public static class Program
+                {
+                    public static int Main()
+                    {
+                        Queue queue = new(new List<Int128?> { 42, null });
+                        bool passed = queue.Count == 2 &&
+                            Equals(queue.Dequeue(), (Int128)42) &&
+                            queue.Dequeue() is null;
+
+                        Console.WriteLine(passed ? "PASS" : "FAIL");
+                        return passed ? 42 : 1;
+                    }
+                }
+                """, config, aot, expectedOutput: "PASS");
+
+        [Theory]
         [BuildAndRun]
         public async Task PropertiesFromRuntimeConfigJson(Configuration config, bool aot)
             => await TestMain("runtime_config_json",

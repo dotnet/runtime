@@ -929,6 +929,19 @@ get_method_nofail (MonoClass *klass, const char *method_name, int num_params, in
 	return method;
 }
 
+static MonoMethod*
+class_get_rgctx_method_dependency (MonoClass *klass, MonoRgctxInfoType info_type, MonoError *error)
+{
+	if (!mono_class_is_nullable (klass))
+		return NULL;
+
+	if (info_type == MONO_RGCTX_INFO_NULLABLE_CLASS_BOX)
+		return mono_class_get_method_from_name_checked (klass, "Box", 1, 0, error);
+	if (info_type == MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX)
+		return mono_class_get_method_from_name_checked (klass, "Unbox", 1, 0, error);
+	return NULL;
+}
+
 static gpointer
 class_type_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoRgctxInfoType info_type, MonoError *error)
 {
@@ -1059,11 +1072,7 @@ class_type_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoRgctxInfo
 			/* This can happen since all the entries in MonoGSharedVtMethodInfo are inflated, even those which are not used */
 			return NULL;
 
-		if (info_type == MONO_RGCTX_INFO_NULLABLE_CLASS_BOX)
-			method = mono_class_get_method_from_name_checked (klass, "Box", 1, 0, error);
-		else
-			method = mono_class_get_method_from_name_checked (klass, "Unbox", 1, 0, error);
-
+		method = class_get_rgctx_method_dependency (klass, info_type, error);
 		return_val_if_nok (error, NULL);
 
 		addr = mono_jit_compile_method (method, error);
@@ -1107,6 +1116,41 @@ class_type_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoRgctxInfo
 	}
 	/* Not reached */
 	return NULL;
+}
+
+MonoMethod*
+mini_rgctx_info_get_method_dependency (MonoRuntimeGenericContextInfoTemplate *oti,
+										MonoGenericContext *context, MonoClass *klass, MonoError *error)
+{
+	error_init (error);
+
+	if (!oti->data)
+		return NULL;
+
+	if (oti->info_type == MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER) {
+		return (MonoMethod *)inflate_info (NULL, oti, context, klass, TRUE);
+	}
+
+	if (oti->info_type == MONO_RGCTX_INFO_NULLABLE_CLASS_BOX || oti->info_type == MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX) {
+		MonoType *inflated_type = mono_class_inflate_generic_type_checked ((MonoType *)oti->data, context, error);
+		return_val_if_nok (error, NULL);
+
+		MonoClass *inflated_class = mono_class_from_mono_type_internal (inflated_type);
+		mono_metadata_free_type (inflated_type);
+		if (!inflated_class)
+			return NULL;
+		return class_get_rgctx_method_dependency (inflated_class, oti->info_type, error);
+	}
+
+	return NULL;
+}
+
+gboolean
+mini_rgctx_info_is_method_dependency (MonoRgctxInfoType info_type)
+{
+	return info_type == MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER ||
+		info_type == MONO_RGCTX_INFO_NULLABLE_CLASS_BOX ||
+		info_type == MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX;
 }
 
 static gboolean

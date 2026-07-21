@@ -2882,6 +2882,9 @@ MonoMethod* mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig);
 MonoMethod* mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig);
 MonoMethodSignature* mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_ret, int param_count);
 gboolean mini_gsharedvt_runtime_invoke_supported (MonoMethodSignature *sig);
+gboolean mini_rgctx_info_is_method_dependency (MonoRgctxInfoType info_type);
+MonoMethod* mini_rgctx_info_get_method_dependency (MonoRuntimeGenericContextInfoTemplate *oti,
+													MonoGenericContext *context, MonoClass *klass, MonoError *error);
 gpointer mini_instantiate_gshared_info (MonoRuntimeGenericContextInfoTemplate *oti,
 										MonoGenericContext *context, MonoClass *klass);
 
