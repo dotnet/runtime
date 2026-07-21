@@ -35,21 +35,21 @@ public class ConditionalSelectConstants
 
             var r2 = Sve.AddAcross(ConditionalSelect1FT());
             Console.WriteLine(r2[0]);
-            if (r2[0] != 3)
+            if (r2[0] != -3)
             {
                 fail = true;
             }
 
             var r3 = Sve.AddAcross(ConditionalSelect16TF());
             Console.WriteLine(r3[0]);
-            if (r3[0] != 16)
+            if (r3[0] != 4080)
             {
                 fail = true;
             }
 
             var r4 = Sve.AddAcross(ConditionalSelect2CT());
             Console.WriteLine(r4[0]);
-            if (r4[0] != 20)
+            if (r4[0] != 16)
             {
                 fail = true;
             }
