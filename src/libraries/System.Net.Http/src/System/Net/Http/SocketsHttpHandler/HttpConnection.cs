@@ -1637,6 +1637,8 @@ namespace System.Net.Http
                 }
             }
 
+            // We either didn't find a line terminator within the allowed number of bytes, or the
+            // line (including its CRLF) is longer than we're willing to buffer.
             throw new HttpRequestException(SR.net_http_chunk_too_large);
         }
 
