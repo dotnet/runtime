@@ -26,10 +26,18 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         uint* bytesNeeded,
         uint* entries)
     {
-        if (bytesNeeded is not null)
-            *bytesNeeded = 0;
-        if (entries is not null)
-            *entries = 0;
+        if (bytesNeeded is null || entries is null)
+        {
+            if (bytesNeeded is not null)
+                *bytesNeeded = 0;
+            if (entries is not null)
+                *entries = 0;
+
+            return HResults.E_POINTER;
+        }
+
+        *bytesNeeded = 0;
+        *entries = 0;
 
         return HResults.E_NOTIMPL;
     }

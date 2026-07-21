@@ -5,16 +5,19 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class FunctionTableAccessTests
 {
-    [Fact]
-    public void QueryInterfaceFromIXCLRDataProcess_ReturnsProcess3()
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void QueryInterfaceFromIXCLRDataProcess_ReturnsProcess3(MockTarget.Architecture arch)
     {
-        SOSDacImpl impl = new(target: null!, legacyObj: null);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch).Build();
+        SOSDacImpl impl = new(target, legacyObj: null);
         void* process = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
 
         try
@@ -37,9 +40,17 @@ public unsafe class FunctionTableAccessTests
                         Assert.Equal(HResults.S_OK, Marshal.QueryInterface(process3, in baseIid, out nint baseInterface));
                         try
                         {
-                            Assert.Equal(HResults.S_OK, Marshal.QueryInterface(baseInterface, in iidIUnknown, out nint baseIdentity));
-                            Assert.Equal(identity, baseIdentity);
-                            Marshal.Release(baseIdentity);
+                            nint baseIdentity = nint.Zero;
+                            try
+                            {
+                                Assert.Equal(HResults.S_OK, Marshal.QueryInterface(baseInterface, in iidIUnknown, out baseIdentity));
+                                Assert.Equal(identity, baseIdentity);
+                            }
+                            finally
+                            {
+                                if (baseIdentity != nint.Zero)
+                                    Marshal.Release(baseIdentity);
+                            }
                         }
                         finally
                         {
@@ -67,6 +78,32 @@ public unsafe class FunctionTableAccessTests
                 Assert.Equal(HResults.E_NOTIMPL, hr);
                 Assert.Equal(0u, bytesNeeded);
                 Assert.Equal(0u, entries);
+
+                entries = uint.MaxValue;
+                hr = process3Interface.GetFunctionTable(
+                    new ClrDataAddress(0),
+                    0,
+                    null,
+                    null,
+                    &entries);
+
+                Assert.Equal(HResults.E_POINTER, hr);
+                Assert.Equal(0u, entries);
+
+                bytesNeeded = uint.MaxValue;
+                hr = process3Interface.GetFunctionTable(
+                    new ClrDataAddress(0),
+                    0,
+                    null,
+                    &bytesNeeded,
+                    null);
+
+                Assert.Equal(HResults.E_POINTER, hr);
+                Assert.Equal(0u, bytesNeeded);
+
+                Assert.Equal(
+                    HResults.E_POINTER,
+                    process3Interface.GetFunctionTable(new ClrDataAddress(0), 0, null, null, null));
             }
             finally
             {

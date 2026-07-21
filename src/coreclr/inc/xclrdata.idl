@@ -906,8 +906,6 @@ interface IXCLRDataProcess3 : IXCLRDataProcess2
      * Target memory is an immutable snapshot between IXCLRDataProcess::Flush
      * calls, so repeated calls before Flush are idempotent. The caller must call
      * Flush after changing the data target.
-     *
-     * The current cDAC implementation returns E_NOTIMPL.
      */
     HRESULT GetFunctionTable([in] CLRDATA_ADDRESS tableAddress,
                              [in] ULONG32 bufferSize,
