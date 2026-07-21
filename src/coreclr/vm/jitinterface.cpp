@@ -12586,6 +12586,26 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "GetCharsFast",
        "AddKey",
        "Copy",
+       "GetByteCount",
+       "GetByteCountCommon",
+       "GetByteCountFast",
+       "IndexOfValueType",
+       "GetCharCountFast",
+       "GetCharsCommon",
+       "GetCharsFast",
+       "GetBytes",
+       "GetBytesFast",
+       "CtorOpened",
+       "ChkCastClass",
+       "get_Length",
+       "GetBytesCommon",
+       "IsNullToken",
+       "Empty",
+       "CtorClosed",
+       "get_Item",
+       "GetFastModMultiplier",
+       "IndexOfValueType",
+       "SetDefaultFallbacks"
 
 
 
