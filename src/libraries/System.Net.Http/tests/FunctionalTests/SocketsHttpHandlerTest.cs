@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -5105,6 +5106,192 @@ namespace System.Net.Http.Functional.Tests
                 },
                 new LoopbackServer.Options { UseSsl = true });
         }
+    }
+
+    public abstract class SocketsHttpHandler_ConnectionPoolPartitioning_Test : HttpClientHandlerTestBase
+    {
+        public SocketsHttpHandler_ConnectionPoolPartitioning_Test(ITestOutputHelper output) : base(output) { }
+
+        private string AuthorityHeaderName => UseVersion == HttpVersion.Version11 ? "Host" : ":authority";
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DoNotPartitionConnectionPoolBySni_SharesConnectionAcrossSslHostNames(bool doNotPartitionBySni)
+        {
+            var sniValues = new List<string>();
+            var options = new GenericLoopbackOptions { UseSsl = true };
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    ConfigureSniCallback(handler, sniValues);
+
+                    using HttpClient client = CreateHttpClient(handler);
+
+                    // Both requests target the same URI (same scheme/host/port) but set a different Host header,
+                    // which by default partitions the connection pool by the Host header (used as SNI / SslHostName).
+                    HttpRequestMessage request1 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                    request1.Headers.Host = "host1.test";
+
+                    HttpRequestMessage request2 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                    request2.Headers.Host = "host2.test";
+
+                    if (doNotPartitionBySni)
+                    {
+                        ExperimentalDangerousDoNotPartitionConnectionPoolBySni(request1);
+                        ExperimentalDangerousDoNotPartitionConnectionPoolBySni(request2);
+                    }
+
+                    using (HttpResponseMessage response1 = await client.SendAsync(request1))
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
+                    }
+
+                    using (HttpResponseMessage response2 = await client.SendAsync(request2))
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+                    }
+
+                    if (doNotPartitionBySni)
+                    {
+                        // A single TLS handshake should have occurred and been reused for both requests.
+                        Assert.Equal(new[] { "host1.test" }, sniValues);
+                    }
+                    else
+                    {
+                        // Each request established its own TLS session with its own SNI value.
+                        Assert.Equal(new[] { "host1.test", "host2.test" }, sniValues);
+                    }
+                },
+                async server =>
+                {
+                    if (server is Http2LoopbackServer http2Server)
+                    {
+                        http2Server.AllowMultipleConnections = true;
+                    }
+
+                    await using GenericLoopbackConnection connection1 = await server.EstablishGenericConnectionAsync();
+                    HttpRequestData firstRequest = await connection1.ReadRequestDataAsync(readBody: false);
+                    await connection1.SendResponseAsync();
+
+                    Assert.Equal("host1.test", firstRequest.GetSingleHeaderValue(AuthorityHeaderName));
+
+                    if (doNotPartitionBySni)
+                    {
+                        // Second request should reuse the existing connection because partitioning by SNI is disabled.
+                        HttpRequestData secondRequest = await connection1.ReadRequestDataAsync(readBody: false);
+                        await connection1.SendResponseAsync();
+                        Assert.Equal("host2.test", secondRequest.GetSingleHeaderValue(AuthorityHeaderName));
+                    }
+                    else
+                    {
+                        // Without the opt-in, the second request goes to a separate pool and opens a new connection.
+                        await using GenericLoopbackConnection connection2 = await server.EstablishGenericConnectionAsync();
+                        HttpRequestData secondRequest = await connection2.ReadRequestDataAsync(readBody: false);
+                        await connection2.SendResponseAsync();
+                        Assert.Equal("host2.test", secondRequest.GetSingleHeaderValue(AuthorityHeaderName));
+                    }
+                },
+                options: options);
+        }
+
+        [Fact]
+        public async Task DoNotPartitionConnectionPoolBySni_DoesNotShareConnectionWithRequestsThatDidNotOptIn()
+        {
+            // A request opted into the unpartitioned pool (sslHostName = null) and a request that did not opt in
+            // (sslHostName = "host1.test") have different connection pool keys even for the same host, so they
+            // must not share a connection.
+            var sniValues = new List<string>();
+            var options = new GenericLoopbackOptions { UseSsl = true };
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    ConfigureSniCallback(handler, sniValues);
+
+                    using HttpClient client = CreateHttpClient(handler);
+
+                    HttpRequestMessage request1 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                    request1.Headers.Host = "host1.test";
+                    ExperimentalDangerousDoNotPartitionConnectionPoolBySni(request1);
+
+                    HttpRequestMessage request2 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                    request2.Headers.Host = "host1.test";
+
+                    using (HttpResponseMessage response1 = await client.SendAsync(request1))
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
+                    }
+
+                    using (HttpResponseMessage response2 = await client.SendAsync(request2))
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+                    }
+
+                    // Two separate TLS handshakes were performed - one per connection.
+                    Assert.Equal(new[] { "host1.test", "host1.test" }, sniValues);
+                },
+                async server =>
+                {
+                    if (server is Http2LoopbackServer http2Server)
+                    {
+                        http2Server.AllowMultipleConnections = true;
+                    }
+
+                    await using GenericLoopbackConnection connection1 = await server.EstablishGenericConnectionAsync();
+                    HttpRequestData firstRequest = await connection1.ReadRequestDataAsync(readBody: false);
+                    await connection1.SendResponseAsync();
+                    Assert.Equal("host1.test", firstRequest.GetSingleHeaderValue(AuthorityHeaderName));
+
+                    await using GenericLoopbackConnection connection2 = await server.EstablishGenericConnectionAsync();
+                    HttpRequestData secondRequest = await connection2.ReadRequestDataAsync(readBody: false);
+                    await connection2.SendResponseAsync();
+                    Assert.Equal("host1.test", secondRequest.GetSingleHeaderValue(AuthorityHeaderName));
+                },
+                options: options);
+        }
+
+        private static void ConfigureSniCallback(HttpClientHandler handler, List<string> sniValues)
+        {
+            GetUnderlyingSocketsHttpHandler(handler).SslOptions.RemoteCertificateValidationCallback = (sender, _, _, _) =>
+            {
+                string sni = sender switch
+                {
+                    SslStream s => s.TargetHostName,
+                    QuicConnection q => q.TargetHostName,
+                    _ => null
+                };
+                sniValues.Add(sni);
+                return true;
+            };
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method)]
+        private static extern void ExperimentalDangerousDoNotPartitionConnectionPoolBySni(HttpRequestMessage request);
+    }
+
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+    public sealed class SocketsHttpHandler_ConnectionPoolPartitioning_Http11_Test : SocketsHttpHandler_ConnectionPoolPartitioning_Test
+    {
+        public SocketsHttpHandler_ConnectionPoolPartitioning_Http11_Test(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version11;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    public sealed class SocketsHttpHandler_ConnectionPoolPartitioning_Http2_Test : SocketsHttpHandler_ConnectionPoolPartitioning_Test
+    {
+        public SocketsHttpHandler_ConnectionPoolPartitioning_Http2_Test(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+    }
+
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
+    public sealed class SocketsHttpHandler_ConnectionPoolPartitioning_Http3_Test : SocketsHttpHandler_ConnectionPoolPartitioning_Test
+    {
+        public SocketsHttpHandler_ConnectionPoolPartitioning_Http3_Test(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
     }
 
     [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
