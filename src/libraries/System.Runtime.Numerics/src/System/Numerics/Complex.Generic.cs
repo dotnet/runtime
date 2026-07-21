@@ -164,120 +164,147 @@ namespace System.Numerics
 
         public static Complex<T> operator *(Complex<T> left, Complex<T> right)
         {
-            // Multiplication:  (a + bi)(c + di) = (ac - bd) + (bc + ad)i
-            T result_realpart = (left.m_real * right.m_real) - (left.m_imaginary * right.m_imaginary);
-            T result_imaginarypart = (left.m_imaginary * right.m_real) + (left.m_real * right.m_imaginary);
-            return new Complex<T>(result_realpart, result_imaginarypart);
-        }
-
-        public static Complex<T> operator *(Complex<T> left, T right)
-        {
-            if (!T.IsFinite(left.m_real))
-            {
-                if (!T.IsFinite(left.m_imaginary))
-                {
-                    return new Complex<T>(T.NaN, T.NaN);
-                }
-
-                return new Complex<T>(left.m_real * right, T.NaN);
-            }
-
-            if (!T.IsFinite(left.m_imaginary))
-            {
-                return new Complex<T>(T.NaN, left.m_imaginary * right);
-            }
-
-            return new Complex<T>(left.m_real * right, left.m_imaginary * right);
-        }
-
-        public static Complex<T> operator *(T left, Complex<T> right)
-        {
-            if (!T.IsFinite(right.m_real))
-            {
-                if (!T.IsFinite(right.m_imaginary))
-                {
-                    return new Complex<T>(T.NaN, T.NaN);
-                }
-
-                return new Complex<T>(left * right.m_real, T.NaN);
-            }
-
-            if (!T.IsFinite(right.m_imaginary))
-            {
-                return new Complex<T>(T.NaN, left * right.m_imaginary);
-            }
-
-            return new Complex<T>(left * right.m_real, left * right.m_imaginary);
-        }
-
-        public static Complex<T> operator /(Complex<T> left, Complex<T> right)
-        {
-            // Division : Smith's formula.
             T a = left.m_real;
             T b = left.m_imaginary;
             T c = right.m_real;
             T d = right.m_imaginary;
 
-            // Computing c * c + d * d will overflow even in cases where the actual result of the division does not overflow.
+            // Multiplication:  (a + bi)(c + di) = (ac - bd) + (bc + ad)i
+            T x = (a * c) - (b * d);
+            T y = (b * c) + (a * d);
+
+            if (T.IsNaN(x) && T.IsNaN(y))
+            {
+                // C23 Annex G.5.1: recover a directed infinity that overflowed into a
+                // spurious NaN from the arithmetic above.
+                bool recalc = false;
+
+                if (T.IsInfinity(a) || T.IsInfinity(b))
+                {
+                    // left is infinite; box its components to a signed 1/0
+                    a = T.CopySign(T.IsInfinity(a) ? T.One : T.Zero, a);
+                    b = T.CopySign(T.IsInfinity(b) ? T.One : T.Zero, b);
+                    if (T.IsNaN(c)) c = T.CopySign(T.Zero, c);
+                    if (T.IsNaN(d)) d = T.CopySign(T.Zero, d);
+                    recalc = true;
+                }
+
+                if (T.IsInfinity(c) || T.IsInfinity(d))
+                {
+                    // right is infinite; box its components to a signed 1/0
+                    c = T.CopySign(T.IsInfinity(c) ? T.One : T.Zero, c);
+                    d = T.CopySign(T.IsInfinity(d) ? T.One : T.Zero, d);
+                    if (T.IsNaN(a)) a = T.CopySign(T.Zero, a);
+                    if (T.IsNaN(b)) b = T.CopySign(T.Zero, b);
+                    recalc = true;
+                }
+
+                if (!recalc && (T.IsInfinity(a * c) || T.IsInfinity(b * d) || T.IsInfinity(a * d) || T.IsInfinity(b * c)))
+                {
+                    // neither operand is infinite, but a product overflowed with a NaN
+                    // operand; treat the NaN as a signed zero and recover.
+                    if (T.IsNaN(a)) a = T.CopySign(T.Zero, a);
+                    if (T.IsNaN(b)) b = T.CopySign(T.Zero, b);
+                    if (T.IsNaN(c)) c = T.CopySign(T.Zero, c);
+                    if (T.IsNaN(d)) d = T.CopySign(T.Zero, d);
+                    recalc = true;
+                }
+
+                if (recalc)
+                {
+                    T inf = T.PositiveInfinity;
+                    x = inf * ((a * c) - (b * d));
+                    y = inf * ((b * c) + (a * d));
+                }
+            }
+
+            return new Complex<T>(x, y);
+        }
+
+        public static Complex<T> operator *(Complex<T> left, T right)
+        {
+            // Promote to (right + 0i) so Annex G special-value behavior stays consistent
+            // with the Complex/Complex operator.
+            return left * new Complex<T>(right, T.Zero);
+        }
+
+        public static Complex<T> operator *(T left, Complex<T> right)
+        {
+            return new Complex<T>(left, T.Zero) * right;
+        }
+
+        public static Complex<T> operator /(Complex<T> left, Complex<T> right)
+        {
+            // Division: Smith's formula (Smith 1962), with the C23 Annex G.5.1 recovery
+            // layered on top to restore directed infinities/zeros that Smith's formula
+            // loses to a spurious NaN. Smith avoids the c*c + d*d overflow and stays
+            // accurate for large-magnitude dividends where the pure Annex G reference
+            // algorithm would overflow.
+            T a = left.m_real;
+            T b = left.m_imaginary;
+            T c = right.m_real;
+            T d = right.m_imaginary;
+
+            T x, y;
+
             if (T.Abs(d) < T.Abs(c))
             {
                 T doc = d / c;
-                return new Complex<T>((a + b * doc) / (c + d * doc), (b - a * doc) / (c + d * doc));
+                T denominator = c + (d * doc);
+                x = (a + (b * doc)) / denominator;
+                y = (b - (a * doc)) / denominator;
             }
             else
             {
                 T cod = c / d;
-                return new Complex<T>((b + a * cod) / (d + c * cod), (-a + b * cod) / (d + c * cod));
+                T denominator = d + (c * cod);
+                x = (b + (a * cod)) / denominator;
+                y = (-a + (b * cod)) / denominator;
             }
+
+            if (T.IsNaN(x) && T.IsNaN(y))
+            {
+                if ((c == T.Zero) && (d == T.Zero) && (!T.IsNaN(a) || !T.IsNaN(b)))
+                {
+                    // Divisor is zero and the dividend is not fully NaN: directed infinity.
+                    T inf = T.CopySign(T.PositiveInfinity, c);
+                    x = inf * a;
+                    y = inf * b;
+                }
+                else if ((T.IsInfinity(a) || T.IsInfinity(b)) && T.IsFinite(c) && T.IsFinite(d))
+                {
+                    // Infinite dividend, finite divisor: infinity.
+                    a = T.CopySign(T.IsInfinity(a) ? T.One : T.Zero, a);
+                    b = T.CopySign(T.IsInfinity(b) ? T.One : T.Zero, b);
+                    T inf = T.PositiveInfinity;
+                    x = inf * ((a * c) + (b * d));
+                    y = inf * ((b * c) - (a * d));
+                }
+                else if ((T.IsInfinity(c) || T.IsInfinity(d)) && T.IsFinite(a) && T.IsFinite(b))
+                {
+                    // Finite dividend, infinite divisor: zero.
+                    c = T.CopySign(T.IsInfinity(c) ? T.One : T.Zero, c);
+                    d = T.CopySign(T.IsInfinity(d) ? T.One : T.Zero, d);
+                    x = T.Zero * ((a * c) + (b * d));
+                    y = T.Zero * ((b * c) - (a * d));
+                }
+            }
+
+            return new Complex<T>(x, y);
         }
 
         public static Complex<T> operator /(Complex<T> left, T right)
         {
-            // IEEE prohibit optimizations which are value changing
-            // so we make sure that behaviour for the simplified version exactly match
-            // full version.
-            if (right == T.Zero)
-            {
-                return new Complex<T>(T.NaN, T.NaN);
-            }
-
-            if (!T.IsFinite(left.m_real))
-            {
-                if (!T.IsFinite(left.m_imaginary))
-                {
-                    return new Complex<T>(T.NaN, T.NaN);
-                }
-
-                return new Complex<T>(left.m_real / right, T.NaN);
-            }
-
-            if (!T.IsFinite(left.m_imaginary))
-            {
-                return new Complex<T>(T.NaN, left.m_imaginary / right);
-            }
-
-            // Here the actual optimized version of code.
-            return new Complex<T>(left.m_real / right, left.m_imaginary / right);
+            // Promote to (right + 0i) so Annex G special-value behavior stays consistent
+            // with the Complex/Complex operator.
+            return left / new Complex<T>(right, T.Zero);
         }
 
         public static Complex<T> operator /(T left, Complex<T> right)
         {
-            // Division : Smith's formula.
-            T a = left;
-            T c = right.m_real;
-            T d = right.m_imaginary;
-
-            // Computing c * c + d * d will overflow even in cases where the actual result of the division does not overflow.
-            if (T.Abs(d) < T.Abs(c))
-            {
-                T doc = d / c;
-                return new Complex<T>(a / (c + d * doc), (-a * doc) / (c + d * doc));
-            }
-            else
-            {
-                T cod = c / d;
-                return new Complex<T>(a * cod / (d + c * cod), -a / (d + c * cod));
-            }
+            // Promote to a full complex dividend so the C23 Annex G.5.1 recovery in the
+            // Complex/Complex operator applies for a zero or infinite divisor.
+            return new Complex<T>(left, T.Zero) / right;
         }
 
         public static T Abs(Complex<T> value)
@@ -989,6 +1016,14 @@ namespace System.Numerics
             if (value == Zero)
             {
                 return Zero;
+            }
+
+            if (!IsFinite(value) || !IsFinite(power) || !T.IsFinite(Abs(value)))
+            {
+                // C23: cpow(z, w) special values are those of cexp(w * clog(z)). The polar
+                // core below loses them, so defer to the conformant Exp/Log for any input
+                // that is non-finite or whose magnitude overflows.
+                return Exp(power * Log(value));
             }
 
             T valueReal = value.m_real;

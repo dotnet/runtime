@@ -17,7 +17,7 @@ namespace System.Numerics.Tests
         private const double PositiveInfinity = double.PositiveInfinity;
         private const double NegativeInfinity = double.NegativeInfinity;
 
-        private static void AssertSame<T>(T actual, double expected, string context)
+        private static void AssertSame<T>(T actual, double expected, string context, bool exactZeroSign = true)
             where T : IFloatingPointIeee754<T>, IMinMaxValue<T>
         {
             if (double.IsNaN(expected))
@@ -27,16 +27,207 @@ namespace System.Numerics.Tests
             }
 
             T e = T.CreateTruncating(expected);
-            Assert.True((actual == e) && (T.IsNegative(actual) == T.IsNegative(e)), $"{context}: expected {e}, got {actual}");
+
+            // Annex G leaves the sign of a zero result of complex division unspecified, so
+            // callers that exercise divide relax the sign check for a zero expected value.
+            bool signOk = (T.IsNegative(actual) == T.IsNegative(e)) || (!exactZeroSign && (e == T.Zero));
+            Assert.True((actual == e) && signOk, $"{context}: expected {e}, got {actual}");
         }
 
-        private static void Verify<T>(Func<Complex<T>, Complex<T>> op, string name, double real, double imaginary, double expectedReal, double expectedImaginary)
+        private static void Verify<T>(Func<Complex<T>, Complex<T>> op, string name, double real, double imaginary, double expectedReal, double expectedImaginary, bool exactZeroSign = true)
             where T : IFloatingPointIeee754<T>, IMinMaxValue<T>
         {
             Complex<T> actual = op(new Complex<T>(T.CreateTruncating(real), T.CreateTruncating(imaginary)));
             string context = $"{name}<{typeof(T).Name}>({real}, {imaginary}).";
-            AssertSame(actual.Real, expectedReal, context + "Real");
-            AssertSame(actual.Imaginary, expectedImaginary, context + "Imaginary");
+            AssertSame(actual.Real, expectedReal, context + "Real", exactZeroSign);
+            AssertSame(actual.Imaginary, expectedImaginary, context + "Imaginary", exactZeroSign);
+        }
+
+        private static void Verify<T>(Func<Complex<T>, Complex<T>, Complex<T>> op, string name, double leftReal, double leftImaginary, double rightReal, double rightImaginary, double expectedReal, double expectedImaginary, bool exactZeroSign)
+            where T : IFloatingPointIeee754<T>, IMinMaxValue<T>
+        {
+            Complex<T> left = new Complex<T>(T.CreateTruncating(leftReal), T.CreateTruncating(leftImaginary));
+            Complex<T> right = new Complex<T>(T.CreateTruncating(rightReal), T.CreateTruncating(rightImaginary));
+            Complex<T> actual = op(left, right);
+            string context = $"{name}<{typeof(T).Name}>(({leftReal}, {leftImaginary}), ({rightReal}, {rightImaginary})).";
+            AssertSame(actual.Real, expectedReal, context + "Real", exactZeroSign);
+            AssertSame(actual.Imaginary, expectedImaginary, context + "Imaginary", exactZeroSign);
+        }
+
+        // Every special-value combination is drawn from this grid; each entry (and every
+        // arithmetic result over it) is exactly representable in double, float, and Half.
+        private static readonly double[] s_specialGrid = { NegativeInfinity, -1.0, -0.0, 0.0, 1.0, PositiveInfinity, NaN };
+
+        // C23 Annex G.5.1 reference multiply. Complex<T>'s operator * matches this bit-for-bit.
+        private static (double, double) ReferenceMultiply(double a, double b, double c, double d)
+        {
+            double x = (a * c) - (b * d);
+            double y = (a * d) + (b * c);
+
+            if (double.IsNaN(x) && double.IsNaN(y))
+            {
+                bool recalc = false;
+
+                if (double.IsInfinity(a) || double.IsInfinity(b))
+                {
+                    a = double.CopySign(double.IsInfinity(a) ? 1.0 : 0.0, a);
+                    b = double.CopySign(double.IsInfinity(b) ? 1.0 : 0.0, b);
+                    if (double.IsNaN(c)) c = double.CopySign(0.0, c);
+                    if (double.IsNaN(d)) d = double.CopySign(0.0, d);
+                    recalc = true;
+                }
+                if (double.IsInfinity(c) || double.IsInfinity(d))
+                {
+                    c = double.CopySign(double.IsInfinity(c) ? 1.0 : 0.0, c);
+                    d = double.CopySign(double.IsInfinity(d) ? 1.0 : 0.0, d);
+                    if (double.IsNaN(a)) a = double.CopySign(0.0, a);
+                    if (double.IsNaN(b)) b = double.CopySign(0.0, b);
+                    recalc = true;
+                }
+                if (!recalc && (double.IsInfinity(a * c) || double.IsInfinity(b * d) || double.IsInfinity(a * d) || double.IsInfinity(b * c)))
+                {
+                    if (double.IsNaN(a)) a = double.CopySign(0.0, a);
+                    if (double.IsNaN(b)) b = double.CopySign(0.0, b);
+                    if (double.IsNaN(c)) c = double.CopySign(0.0, c);
+                    if (double.IsNaN(d)) d = double.CopySign(0.0, d);
+                    recalc = true;
+                }
+                if (recalc)
+                {
+                    x = double.PositiveInfinity * ((a * c) - (b * d));
+                    y = double.PositiveInfinity * ((a * d) + (b * c));
+                }
+            }
+
+            return (x, y);
+        }
+
+        // C23 Annex G.5.1 reference divide (fmax/scalbn form). Complex<T>'s operator / uses
+        // Smith's formula, so it agrees on every value except the (unspecified) sign of a zero.
+        private static (double, double) ReferenceDivide(double a, double b, double c, double d)
+        {
+            int ilogbw = 0;
+            double fabsC = Math.Abs(c);
+            double fabsD = Math.Abs(d);
+            double fmax = double.IsNaN(fabsC) ? fabsD : (double.IsNaN(fabsD) ? fabsC : Math.Max(fabsC, fabsD));
+            double logbw = Logb(fmax);
+
+            if (double.IsFinite(logbw))
+            {
+                ilogbw = (int)logbw;
+                c = Math.ScaleB(c, -ilogbw);
+                d = Math.ScaleB(d, -ilogbw);
+            }
+
+            double denom = (c * c) + (d * d);
+            double x = Math.ScaleB(((a * c) + (b * d)) / denom, -ilogbw);
+            double y = Math.ScaleB(((b * c) - (a * d)) / denom, -ilogbw);
+
+            if (double.IsNaN(x) && double.IsNaN(y))
+            {
+                if ((denom == 0.0) && (!double.IsNaN(a) || !double.IsNaN(b)))
+                {
+                    x = double.CopySign(double.PositiveInfinity, c) * a;
+                    y = double.CopySign(double.PositiveInfinity, c) * b;
+                }
+                else if ((double.IsInfinity(a) || double.IsInfinity(b)) && double.IsFinite(c) && double.IsFinite(d))
+                {
+                    a = double.CopySign(double.IsInfinity(a) ? 1.0 : 0.0, a);
+                    b = double.CopySign(double.IsInfinity(b) ? 1.0 : 0.0, b);
+                    x = double.PositiveInfinity * ((a * c) + (b * d));
+                    y = double.PositiveInfinity * ((b * c) - (a * d));
+                }
+                else if (double.IsInfinity(logbw) && (logbw > 0.0) && double.IsFinite(a) && double.IsFinite(b))
+                {
+                    c = double.CopySign(double.IsInfinity(c) ? 1.0 : 0.0, c);
+                    d = double.CopySign(double.IsInfinity(d) ? 1.0 : 0.0, d);
+                    x = 0.0 * ((a * c) + (b * d));
+                    y = 0.0 * ((b * c) - (a * d));
+                }
+            }
+
+            return (x, y);
+        }
+
+        private static double Logb(double value)
+        {
+            if (value == 0.0) return double.NegativeInfinity;
+            if (double.IsInfinity(value)) return double.PositiveInfinity;
+            if (double.IsNaN(value)) return double.NaN;
+            return Math.Floor(Math.Log2(Math.Abs(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(Multiply_SpecialValues))]
+        public static void Multiply(double leftReal, double leftImaginary, double rightReal, double rightImaginary, double expectedReal, double expectedImaginary)
+        {
+            Verify<double>(static (x, y) => x * y, "Multiply", leftReal, leftImaginary, rightReal, rightImaginary, expectedReal, expectedImaginary, exactZeroSign: true);
+            Verify<float>(static (x, y) => x * y, "Multiply", leftReal, leftImaginary, rightReal, rightImaginary, expectedReal, expectedImaginary, exactZeroSign: true);
+            Verify<Half>(static (x, y) => x * y, "Multiply", leftReal, leftImaginary, rightReal, rightImaginary, expectedReal, expectedImaginary, exactZeroSign: true);
+        }
+
+        [Theory]
+        [MemberData(nameof(Divide_SpecialValues))]
+        public static void Divide(double leftReal, double leftImaginary, double rightReal, double rightImaginary, double expectedReal, double expectedImaginary)
+        {
+            Verify<double>(static (x, y) => x / y, "Divide", leftReal, leftImaginary, rightReal, rightImaginary, expectedReal, expectedImaginary, exactZeroSign: false);
+            Verify<float>(static (x, y) => x / y, "Divide", leftReal, leftImaginary, rightReal, rightImaginary, expectedReal, expectedImaginary, exactZeroSign: false);
+            Verify<Half>(static (x, y) => x / y, "Divide", leftReal, leftImaginary, rightReal, rightImaginary, expectedReal, expectedImaginary, exactZeroSign: false);
+        }
+
+        [Theory]
+        [MemberData(nameof(Reciprocal_SpecialValues))]
+        public static void Reciprocal(double real, double imaginary, double expectedReal, double expectedImaginary)
+        {
+            Verify<double>(Complex<double>.Reciprocal, "Reciprocal", real, imaginary, expectedReal, expectedImaginary, exactZeroSign: false);
+            Verify<float>(Complex<float>.Reciprocal, "Reciprocal", real, imaginary, expectedReal, expectedImaginary, exactZeroSign: false);
+            Verify<Half>(Complex<Half>.Reciprocal, "Reciprocal", real, imaginary, expectedReal, expectedImaginary, exactZeroSign: false);
+        }
+
+        public static IEnumerable<object[]> Multiply_SpecialValues()
+        {
+            foreach (double a in s_specialGrid)
+            foreach (double b in s_specialGrid)
+            foreach (double c in s_specialGrid)
+            foreach (double d in s_specialGrid)
+            {
+                (double expectedReal, double expectedImaginary) = ReferenceMultiply(a, b, c, d);
+                yield return new object[] { a, b, c, d, expectedReal, expectedImaginary };
+            }
+        }
+
+        public static IEnumerable<object[]> Divide_SpecialValues()
+        {
+            foreach (double a in s_specialGrid)
+            foreach (double b in s_specialGrid)
+            foreach (double c in s_specialGrid)
+            foreach (double d in s_specialGrid)
+            {
+                (double expectedReal, double expectedImaginary) = ReferenceDivide(a, b, c, d);
+                yield return new object[] { a, b, c, d, expectedReal, expectedImaginary };
+            }
+        }
+
+        public static IEnumerable<object[]> Reciprocal_SpecialValues()
+        {
+            foreach (double c in s_specialGrid)
+            foreach (double d in s_specialGrid)
+            {
+                double expectedReal, expectedImaginary;
+
+                if ((c == 0.0) && (d == 0.0))
+                {
+                    // Reciprocal special-cases an exact zero to Zero instead of a directed infinity.
+                    expectedReal = 0.0;
+                    expectedImaginary = 0.0;
+                }
+                else
+                {
+                    (expectedReal, expectedImaginary) = ReferenceDivide(1.0, 0.0, c, d);
+                }
+
+                yield return new object[] { c, d, expectedReal, expectedImaginary };
+            }
         }
 
         [Theory]

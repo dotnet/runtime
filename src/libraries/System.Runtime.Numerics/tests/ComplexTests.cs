@@ -965,6 +965,14 @@ namespace System.Numerics.Tests
             var dividend = new Complex(realLeft, imaginaryLeft);
             var divisor = new Complex(realRight, imaginaryRight);
 
+            if (realRight == 0.0 && imaginaryRight == 0.0)
+            {
+                // Dividing by a zero divisor yields a directed infinity under C23 Annex G,
+                // not the NaN the magnitude-based oracle below would compute. Covered
+                // exhaustively by ComplexGenericSpecialValueTests.
+                return;
+            }
+
             Complex expected = dividend * Complex.Conjugate(divisor);
             double expectedReal = expected.Real;
             double expectedImaginary = expected.Imaginary;
@@ -1427,6 +1435,14 @@ namespace System.Numerics.Tests
             double expectedReal = realLeft * realRight - imaginaryLeft * imaginaryRight;
             double expectedImaginary = realLeft * imaginaryRight + imaginaryLeft * realRight;
 
+            if (double.IsNaN(expectedReal) && double.IsNaN(expectedImaginary))
+            {
+                // The naive product formula yields (NaN, NaN), but the operator applies the
+                // C23 Annex G.5.1 infinity recovery. Those special-value results are verified
+                // exhaustively across double/float/Half by ComplexGenericSpecialValueTests.
+                return;
+            }
+
             // Operator
             Complex result = left * right;
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
@@ -1602,6 +1618,14 @@ namespace System.Numerics.Tests
         {
             var complex = new Complex(real, imaginary);
             var result = Complex.Reciprocal(complex);
+
+            if (double.IsInfinity(real) || double.IsInfinity(imaginary))
+            {
+                // 1 / (complex infinity) is a signed zero under C23 Annex G, not the NaN the
+                // magnitude-based oracle below would compute for mixed infinity/NaN inputs.
+                // The exact signed-zero results are verified by ComplexGenericSpecialValueTests.
+                return;
+            }
 
             Complex expected = Complex.Zero;
             if (Complex.Zero != complex &&
