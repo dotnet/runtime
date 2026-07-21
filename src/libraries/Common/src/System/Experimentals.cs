@@ -36,6 +36,9 @@ namespace System
         // Low-level TLS engine (TlsContext / TlsSession) is experimental.
         internal const string LowLevelTlsDiagId = "SYSLIB5007";
 
+        // SocketsHttpHandler connection eviction control and HttpRequestMessage.ConnectionId APIs are experimental.
+        internal const string SocketsHttpHandlerExperimentalDiagId = "SYSLIB5008";
+
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
     }

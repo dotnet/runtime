@@ -181,6 +181,17 @@ else()
   # Compile unwinding only for the current compilation target architecture
   add_definitions(-D_LIBUNWIND_IS_NATIVE_ONLY)
 
+  include(CheckSymbolExists)
+  check_symbol_exists(getauxval "sys/auxv.h" HAVE_GETAUXVAL)
+  if (HAVE_GETAUXVAL)
+    add_definitions(-D_LIBUNWIND_HAVE_GETAUXVAL)
+  endif()
+
+  check_symbol_exists(elf_aux_info "sys/auxv.h" HAVE_ELF_AUX_INFO)
+  if (HAVE_ELF_AUX_INFO)
+    add_definitions(-D_LIBUNWIND_HAVE_ELF_AUX_INFO)
+  endif()
+
   if(CLR_CMAKE_TARGET_HAIKU)
     add_definitions(-DPT_GNU_EH_FRAME=PT_EH_FRAME)
   endif()

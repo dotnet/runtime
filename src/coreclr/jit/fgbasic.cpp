@@ -1170,6 +1170,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 foldableIntrinsic = true;
                                 break;
 
+                            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync:
+                                // RuntimeHelpers.IsRuntimeAsync is always folded into a const
+                                pushedStack.PushConstant();
+                                foldableIntrinsic = true;
+                                break;
+
                             // These are foldable if the first argument is a constant
                             case NI_PRIMITIVE_LeadingZeroCount:
                             case NI_PRIMITIVE_Log2:

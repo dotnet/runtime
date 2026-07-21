@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
-                return _parameterCache != null;
+                return _parameterCache is not null;
             }
         }
 

@@ -2076,7 +2076,8 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         pCode->EmitLoadThis();
         pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__HELPER_OBJECT)));
         pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitLDELEM_REF();
+        pCode->EmitLDELEMA(pCode->GetToken(CoreLibBinder::GetClass(CLASS__DELEGATEWRAPPER)));
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATEWRAPPER__VALUE)));
 
         // Load the arguments
         for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
@@ -2636,7 +2637,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // Delegate invoke arg count == 1 + target method arg count - 1, 4, 5
     //
     // 1        - CtorClosed (or CtorRTClosed for value-type instance targets needing runtime lookup)
-    // 2, 6     - CtorOpened
+    // 2, 6     - CtorOpen
     // 3        - CtorVirtualDispatch
     // 4        - CtorClosedStatic
     // 5        - Retbuf static closed form (not differentiated on this fast path; see TODO below)
@@ -2665,17 +2666,17 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
         {
             // case 3
             if (isCollectible)
-                pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_COLLECTIBLE_VIRTUAL_DISPATCH);
+                pRealCtor = CoreLibBinder::GetMethod(METHOD__DELEGATE__CTOR_COLLECTIBLE_VIRTUAL_DISPATCH);
             else
-                pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_VIRTUAL_DISPATCH);
+                pRealCtor = CoreLibBinder::GetMethod(METHOD__DELEGATE__CTOR_VIRTUAL_DISPATCH);
         }
         else
         {
             // case 2, 6
             if (isCollectible)
-                pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_COLLECTIBLE_OPENED);
+                pRealCtor = CoreLibBinder::GetMethod(METHOD__DELEGATE__CTOR_COLLECTIBLE_OPEN);
             else
-                pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_OPENED);
+                pRealCtor = CoreLibBinder::GetMethod(METHOD__DELEGATE__CTOR_OPEN);
         }
 
         pCtorData->pArg3 = (void*)SetupShuffleThunk(pDelMT, pTargetMethod);
@@ -2703,21 +2704,21 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
                     pTargetMethod->GetMethodTable()->IsValueType() && !pTargetMethod->IsUnboxingStub();
 
         if (needsRuntimeInfo)
-            pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_RT_CLOSED);
+            pRealCtor = CoreLibBinder::GetMethod(METHOD__DELEGATE__CTOR_RT_CLOSED);
         else
         {
             if (!isStatic)
-                pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_CLOSED);
+                pRealCtor = CoreLibBinder::GetMethod(METHOD__DELEGATE__CTOR_CLOSED);
             else
             {
                 if (isCollectible)
                 {
-                    pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_COLLECTIBLE_CLOSED_STATIC);
+                    pRealCtor = CoreLibBinder::GetMethod(METHOD__DELEGATE__CTOR_COLLECTIBLE_CLOSED_STATIC);
                     pCtorData->pArg3 = pTargetMethodLoaderAllocator->GetLoaderAllocatorObjectHandle();
                 }
                 else
                 {
-                    pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_CLOSED_STATIC);
+                    pRealCtor = CoreLibBinder::GetMethod(METHOD__DELEGATE__CTOR_CLOSED_STATIC);
                 }
             }
         }

@@ -241,8 +241,7 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            RandomAccess.WriteAtOffset(_fileHandle, buffer, _filePosition);
-            _filePosition += buffer.Length;
+            RandomAccess.WriteAtOffset(_fileHandle, buffer, ref _filePosition);
         }
 
         public sealed override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
