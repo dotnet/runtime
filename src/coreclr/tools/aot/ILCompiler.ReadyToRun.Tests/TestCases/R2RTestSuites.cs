@@ -102,6 +102,12 @@ public class R2RTestSuites
             // Has a try/finally, so the JIT materializes the table base via a well-known-global global.get.
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("SumWithFinally", StringComparison.Ordinal)));
+            // Has a catch clause, so the JIT emits a try_table catch_ref that references the
+            // imported restore-context exception tag.
+            Assert.True(methods.Exists(method =>
+                method.SignatureString.Contains("CatchException", StringComparison.Ordinal)));
+
+            Assert.True(R2RAssert.WasmIndexSpacesHaveExpectedEntries(webcilReader, out string indexDiagnostic), indexDiagnostic);
 
             // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
             // relocations that the R2R object writer must self-resolve back to the fixed global

@@ -104,7 +104,7 @@ namespace ILCompiler.ObjectWriter
         public override int Encode(Span<byte> buffer)
         {
             int pos = 0;
-            buffer[pos++] = (byte)0x70; // element type: funcref 
+            buffer[pos++] = (byte)0x70; // element type: funcref
             buffer[pos++] = (byte)0; // table limits: flags (0 = min-only, 1 = min+max)
             pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), 1); // Requires 1 table entry
             return pos;
@@ -120,7 +120,7 @@ namespace ILCompiler.ObjectWriter
         HasMin = 0x00,
         HasMinAndMax = 0x01
     }
-  
+
     public class WasmMemoryImportType : WasmImportType
     {
         WasmLimitType _limitType;
@@ -193,7 +193,7 @@ namespace ILCompiler.ObjectWriter
     {
         public readonly string Module;
         public readonly string Name;
-        public  WasmExternalKind Kind => Import.Kind;
+        public WasmExternalKind Kind => Import.Kind;
         public readonly int? Index;
         public readonly WasmImportType Import;
 
