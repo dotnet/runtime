@@ -355,6 +355,11 @@ namespace System.CommandLine
                 targetArchitecture);
         }
 
+        // Produces an InstructionSetSupport where the instruction sets are fixed at compile time: every
+        // specifiable instruction set that is not already supported is marked explicitly unsupported, and the
+        // supported sets are also treated as optimistic. This is used for targets without runtime code generation
+        // (for example Apple mobile and WASM), where the pre-compiled code must hard code its ISA usage because
+        // there is no JIT to recover from an instruction set mismatch.
         public static InstructionSetSupport GetFixedInstructionSetSupport(InstructionSetSupport instructionSetSupport)
         {
             InstructionSetFlags unsupportedInstructionSets = instructionSetSupport.ExplicitlyUnsupportedFlags;

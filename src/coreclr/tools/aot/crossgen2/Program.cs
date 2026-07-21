@@ -78,23 +78,20 @@ namespace ILCompiler
 
             (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
-            bool targetAllowsRuntimeCodeGeneration = ReadyToRunCompilerContext.GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
+            bool targetAllowsRuntimeCodeGeneration = GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
 
             // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
             // they mismatch in required ISAs or computed layouts of structs. On targets that allow
             // runtime code generation we keep Vector<T> usage optimistic so we never hard code a
-            // dependency that could invalidate the entire image. Fixed-instruction-set targets (Apple
-            // mobile, WASM) have no runtime code generation, so an ISA mismatch cannot invalidate the
-            // image; there we make Vector<T> non-optimistic and hard code the ISA support so the
-            // pre-compiled code uses it directly instead of falling back to the interpreter.
+            // dependency that could invalidate the entire image. On targets that do not allow
+            // runtime code generation, we do not want an ISA mismatch to invalidate any code
+            // in the image. There we make Vector<T> non-optimistic and hard code the ISA support
+            // to avoid falling back to the interpreter.
             bool isVectorTOptimistic = targetAllowsRuntimeCodeGeneration;
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
             if (!targetAllowsRuntimeCodeGeneration)
             {
-                // These platforms do not support jitted code, so we want to ensure that we don't
-                // need to fall back to the interpreter for any hardware-intrinsic optimizations.
-                // Disable optimistic instruction sets by default.
                 allowOptimistic = false;
             }
 
@@ -708,6 +705,18 @@ namespace ILCompiler
                 if (((ReadyToRunCodegenCompilation)compilation).DeterminismCheckFailed)
                     throw new Exception("Determinism Check Failed");
             }
+        }
+
+        private static bool GetTargetAllowsRuntimeCodeGeneration(TargetOS operatingSystem, TargetArchitecture architecture)
+        {
+#if FEATURE_DYNAMIC_CODE_COMPILED
+            return operatingSystem is not (TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator or TargetOS.Browser or TargetOS.Wasi)
+                && architecture is not TargetArchitecture.Wasm32;
+#else
+            _ = operatingSystem;
+            _ = architecture;
+            return false;
+#endif
         }
 
         private void CheckManagedCppInputFiles(IEnumerable<string> inputPaths)
