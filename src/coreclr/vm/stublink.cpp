@@ -783,7 +783,7 @@ void StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
         pStubRW->SetInstantiatedMethodDesc(m_pTargetMethod);
 
           LOG((LF_CORDB, LL_INFO100, "SL::ES: InstantiatedMethod fd:%p\n",
-            pStub->GetInstantiatedMethodDesc()));
+            (void*)pStub->GetInstantiatedMethodDesc()));
     }
 
     if (!m_fDataOnly)

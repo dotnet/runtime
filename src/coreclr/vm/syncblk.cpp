@@ -1300,7 +1300,7 @@ void DumpSyncBlockCache()
             descrip = buffer;
         }
         if (dumpSBStyle < 2)
-            LogSpewAlways("[%4.4d]: %p %s\n", nb, oref, descrip);
+            LogSpewAlways("[%4.4d]: %p %s\n", nb, (void*)oref, descrip);
         else if (dumpSBStyle == 2)
             LogSpewAlways("[%4.4d]: %s\n", nb, descrip);
     }

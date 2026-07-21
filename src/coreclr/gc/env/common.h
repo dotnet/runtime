@@ -13,6 +13,9 @@
 #endif // _CRT_SECURE_NO_WARNINGS
 
 #include <stdint.h>
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
 #include <inttypes.h>
 #include <stddef.h>
 #include <stdio.h>
