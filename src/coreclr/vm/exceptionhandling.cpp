@@ -4125,6 +4125,9 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
     {
         CLR_BOOL isPropagatingToNativeCode = FALSE;
         EECodeInfo codeInfo(preUnwindControlPC);
+        // If we are unwinding from a funclet, we don't care about the reverse pinvoke frame of the parent method
+        // that we would get from the GC info. It applies to the parent method only. The funclet itself cannot be
+        // invoked via a reverse pinvoke.
         if (!doingFuncletUnwind)
         {
 #ifdef USE_GC_INFO_DECODER

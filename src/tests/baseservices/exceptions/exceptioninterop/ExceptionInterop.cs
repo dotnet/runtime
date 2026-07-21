@@ -260,7 +260,7 @@ public unsafe static class ExceptionInterop
         }
 
         Assert.Equal(1, s_nativeExceptionFromCatchCount);
-        Assert.NotNull(exception);
+        Assert.IsType<SEHException>(exception);
     }
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))]
