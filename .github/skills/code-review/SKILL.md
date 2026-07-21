@@ -46,8 +46,8 @@ Before analyzing anything, collect as much relevant **code** context as you can.
 - If the environment lacks sub-agent tooling or no matching agent exists, continue the review
   yourself. Area agents are additions to, not replacements for, the regular review.
 - Some specialist skills are triggered by diff **content**, not path. In particular, if the diff
-  contains `Vector128`/`Vector256`/`Vector512`, `Vector<T>`, or any `System.Runtime.Intrinsics.*`
-  type, also apply the `vectorization` skill's review checklist (correctness vs. the scalar
+  contains `Vector64`/`Vector128`/`Vector256`/`Vector512`, `Vector<T>`, or any `System.Runtime.Intrinsics.*`
+  namespace usage, also apply the `vectorization` skill's review checklist (correctness vs. the scalar
   contract, remainder handling, memory safety, cross-platform consistency, and `BoundedMemory`
   test coverage). This holds regardless of which folder the change lives in.
 
