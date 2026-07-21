@@ -13,6 +13,8 @@ Given a `TargetPointer` address, the `RuntimeTypeSystem` contract provides an `I
 // An opaque canonical identity for a runtime type. Handles are produced and
 // interned by RuntimeTypeSystem; consumers must not fabricate implementations.
 // A null reference represents the absence of a type.
+// Canonical identity is scoped to a target cache epoch: after Target.Flush,
+// resolving the same target address may return a different object reference.
 interface ITypeHandle
 {
     TargetPointer Address { get; }

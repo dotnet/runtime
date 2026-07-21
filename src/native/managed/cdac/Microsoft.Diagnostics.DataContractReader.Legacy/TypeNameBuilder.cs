@@ -122,7 +122,8 @@ public struct TypeNameBuilder
             uint rowId = EcmaMetadataUtils.GetRowId(runtimeTypeSystem.GetMethodToken(method));
             if (rowId != 0)
             {
-                Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th!));
+                ITypeHandle methodType = th ?? throw new InvalidOperationException("Metadata-backed method has no declaring type.");
+                Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(methodType));
                 MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
                 MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)rowId));
                 stringBuilder.Append(reader.GetString(methodDef.Name));
