@@ -532,9 +532,11 @@ namespace System.Numerics.Tests
             Complex acosComplex = Complex.Acos(cosComplex);
 
             // When Cos overflows to a non-finite intermediate the round-trip is not recoverable;
-            // Acos then follows the Annex G special-value rules rather than returning the input.
+            // Acos then follows the Annex G special-value rules, which still propagate non-finiteness.
             if (!Complex.IsFinite(cosComplex))
             {
+                Assert.False(Complex.IsFinite(acosComplex),
+                    string.Format("Acos(Cos({0}) = {1}) = {2} should be non-finite", complex, cosComplex, acosComplex));
                 return;
             }
 
