@@ -1069,7 +1069,9 @@ namespace System.Numerics
                 return Zero;
             }
 
-            if (!IsFinite(value) || !IsFinite(power) || !T.IsFinite(Abs(value)))
+            T rho = Abs(value);
+
+            if (!IsFinite(value) || !IsFinite(power) || !T.IsFinite(rho))
             {
                 // C23: cpow(z, w) special values are those of cexp(w * clog(z)). The polar
                 // core below loses them, so defer to the conformant Exp/Log for any input
@@ -1077,12 +1079,11 @@ namespace System.Numerics
                 return Exp(power * Log(value));
             }
 
-            T valueReal = value.m_real;
             T valueImaginary = value.m_imaginary;
+            T valueReal = value.m_real;
             T powerReal = power.m_real;
             T powerImaginary = power.m_imaginary;
 
-            T rho = Abs(value);
             T theta = T.Atan2(valueImaginary, valueReal);
             T newRho = powerReal * theta + powerImaginary * T.Log(rho);
 
