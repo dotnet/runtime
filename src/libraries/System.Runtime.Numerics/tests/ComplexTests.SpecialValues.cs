@@ -72,14 +72,17 @@ namespace System.Numerics.Tests
                 {
                     a = double.CopySign(double.IsInfinity(a) ? 1.0 : 0.0, a);
                     b = double.CopySign(double.IsInfinity(b) ? 1.0 : 0.0, b);
+
                     if (double.IsNaN(c))
                     {
                         c = double.CopySign(0.0, c);
                     }
+
                     if (double.IsNaN(d))
                     {
                         d = double.CopySign(0.0, d);
                     }
+
                     recalc = true;
                 }
 
@@ -87,14 +90,17 @@ namespace System.Numerics.Tests
                 {
                     c = double.CopySign(double.IsInfinity(c) ? 1.0 : 0.0, c);
                     d = double.CopySign(double.IsInfinity(d) ? 1.0 : 0.0, d);
+
                     if (double.IsNaN(a))
                     {
                         a = double.CopySign(0.0, a);
                     }
+
                     if (double.IsNaN(b))
                     {
                         b = double.CopySign(0.0, b);
                     }
+
                     recalc = true;
                 }
 
@@ -104,18 +110,22 @@ namespace System.Numerics.Tests
                     {
                         a = double.CopySign(0.0, a);
                     }
+
                     if (double.IsNaN(b))
                     {
                         b = double.CopySign(0.0, b);
                     }
+
                     if (double.IsNaN(c))
                     {
                         c = double.CopySign(0.0, c);
                     }
+
                     if (double.IsNaN(d))
                     {
                         d = double.CopySign(0.0, d);
                     }
+
                     recalc = true;
                 }
 
@@ -182,14 +192,17 @@ namespace System.Numerics.Tests
             {
                 return double.NegativeInfinity;
             }
+
             if (double.IsInfinity(value))
             {
                 return double.PositiveInfinity;
             }
+
             if (double.IsNaN(value))
             {
                 return double.NaN;
             }
+
             return Math.Floor(Math.Log2(Math.Abs(value)));
         }
 

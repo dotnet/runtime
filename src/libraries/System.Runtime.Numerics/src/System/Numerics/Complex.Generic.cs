@@ -184,14 +184,17 @@ namespace System.Numerics
                     // left is infinite; normalize its parts to a signed 1/0
                     a = T.CopySign(T.IsInfinity(a) ? T.One : T.Zero, a);
                     b = T.CopySign(T.IsInfinity(b) ? T.One : T.Zero, b);
+
                     if (T.IsNaN(c))
                     {
                         c = T.CopySign(T.Zero, c);
                     }
+
                     if (T.IsNaN(d))
                     {
                         d = T.CopySign(T.Zero, d);
                     }
+
                     recalc = true;
                 }
 
@@ -200,14 +203,17 @@ namespace System.Numerics
                     // right is infinite; normalize its parts to a signed 1/0
                     c = T.CopySign(T.IsInfinity(c) ? T.One : T.Zero, c);
                     d = T.CopySign(T.IsInfinity(d) ? T.One : T.Zero, d);
+
                     if (T.IsNaN(a))
                     {
                         a = T.CopySign(T.Zero, a);
                     }
+
                     if (T.IsNaN(b))
                     {
                         b = T.CopySign(T.Zero, b);
                     }
+
                     recalc = true;
                 }
 
@@ -219,18 +225,22 @@ namespace System.Numerics
                     {
                         a = T.CopySign(T.Zero, a);
                     }
+
                     if (T.IsNaN(b))
                     {
                         b = T.CopySign(T.Zero, b);
                     }
+
                     if (T.IsNaN(c))
                     {
                         c = T.CopySign(T.Zero, c);
                     }
+
                     if (T.IsNaN(d))
                     {
                         d = T.CopySign(T.Zero, d);
                     }
+
                     recalc = true;
                 }
 
@@ -498,6 +508,7 @@ namespace System.Numerics
             {
                 u = -u;
             }
+
             if (value.Imaginary < T.Zero)
             {
                 v = -v;
@@ -621,6 +632,7 @@ namespace System.Numerics
             {
                 u = T.Pi - u;
             }
+
             if (value.Imaginary > T.Zero)
             {
                 v = -v;
