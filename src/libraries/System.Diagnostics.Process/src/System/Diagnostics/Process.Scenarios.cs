@@ -61,7 +61,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The name of the application or document to start.</param>
         /// <param name="arguments">
-        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty list
+        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty sequence
         /// to start the process without additional arguments.
         /// </param>
         /// <returns>The process ID of the started process.</returns>
@@ -118,7 +118,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The name of the application or document to start.</param>
         /// <param name="arguments">
-        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty list
+        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty sequence
         /// to start the process without additional arguments.
         /// </param>
         /// <param name="silent">
@@ -181,7 +181,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The name of the application or document to start.</param>
         /// <param name="arguments">
-        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty list
+        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty sequence
         /// to start the process without additional arguments.
         /// </param>
         /// <param name="silent">
@@ -275,7 +275,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The name of the application or document to start.</param>
         /// <param name="arguments">
-        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty list
+        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty sequence
         /// to start the process without additional arguments.
         /// </param>
         /// <param name="timeout">
@@ -342,7 +342,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The name of the application or document to start.</param>
         /// <param name="arguments">
-        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty list
+        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty sequence
         /// to start the process without additional arguments.
         /// </param>
         /// <param name="cancellationToken">
@@ -362,7 +362,7 @@ namespace System.Diagnostics
         {
             ArgumentException.ThrowIfNullOrEmpty(fileName);
 
-            return arguments is not null ? new(fileName, arguments) : new(fileName);
+            return arguments is not null ? new ProcessStartInfo(fileName, arguments) : new ProcessStartInfo(fileName);
         }
 
         private static ProcessStartInfo CreateStartInfoForCapture(string fileName, IEnumerable<string>? arguments)
