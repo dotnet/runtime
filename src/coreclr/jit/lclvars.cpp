@@ -6375,7 +6375,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif
 
+#ifndef TARGET_POWERPC64
     stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
+#endif
 #endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
     // (2) Account for the remainder of the frame
@@ -7143,8 +7145,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif
 
 #if defined(TARGET_POWERPC64)
-    noway_assert(compLclFrameSize + originalFrameSize ==
-		 (unsigned)(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+    noway_assert(compLclFrameSize + originalFrameSize == (unsigned)stkOffs);
 #else
     noway_assert(compLclFrameSize + originalFrameSize ==
                  (unsigned)-(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
@@ -7639,7 +7640,11 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
 
             spillTempSize += size;
             lvaIncrementFrameSize(size);
+#ifdef TARGET_POWERPC64
+            stkOffs += size;
+#else
             stkOffs -= size;
+#endif
             temp->tdSetTempOffs(stkOffs);
         }
 #ifdef TARGET_ARM
@@ -7652,7 +7657,11 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
         unsigned size = lvaGetMaxSpillTempSize();
 
         lvaIncrementFrameSize(size);
+#ifdef TARGET_POWERPC64
+        stkOffs += size;
+#else
         stkOffs -= size;
+#endif
     }
 
     return stkOffs;
