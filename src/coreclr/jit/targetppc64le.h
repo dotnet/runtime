@@ -27,7 +27,7 @@
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
   #define FEATURE_STRUCT_CLASSIFIER     0  // Uses a classifier function to determine is structs are passed/returned in more than one register
 
-  #define MAX_PASS_SINGLEREG_BYTES     16  // Maximum size of a struct passed in a single register (16-byte vector).
+  #define MAX_PASS_SINGLEREG_BYTES     8  // Maximum size of a struct passed in a single register (16-byte vector).
   #define MAX_PASS_MULTIREG_BYTES      64  // Maximum size of a struct that could be passed in more than one register (max is 4 16-byte vectors using an HVA)
   #define MAX_RET_MULTIREG_BYTES       16  // Maximum size of a struct that could be returned in more than one register (16 bytes in r3-r4 for non-HFA structs)
   #define MAX_ARG_REG_COUNT             8  // Maximum registers used to pass a single argument in multiple registers (r3-r10 for structs).
@@ -211,14 +211,14 @@
   #define REG_PREV(reg)           ((regNumber)((unsigned)(reg) - 1))
 
   // The following registers are used in emitting Enter/Leave/Tailcall profiler callbacks
-  #define REG_PROFILER_ENTER_ARG_FUNC_ID    REG_R11
-  #define RBM_PROFILER_ENTER_ARG_FUNC_ID    RBM_R11
-  #define REG_PROFILER_ENTER_ARG_CALLER_SP  REG_R12
-  #define RBM_PROFILER_ENTER_ARG_CALLER_SP  RBM_R12
-  #define REG_PROFILER_LEAVE_ARG_FUNC_ID    REG_R11
-  #define RBM_PROFILER_LEAVE_ARG_FUNC_ID    RBM_R11
-  #define REG_PROFILER_LEAVE_ARG_CALLER_SP  REG_R12
-  #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_R13
+  #define REG_PROFILER_ENTER_ARG_FUNC_ID    REG_R3
+  #define RBM_PROFILER_ENTER_ARG_FUNC_ID    RBM_R3
+  #define REG_PROFILER_ENTER_ARG_CALLER_SP  REG_R31
+  #define RBM_PROFILER_ENTER_ARG_CALLER_SP  RBM_R31
+  #define REG_PROFILER_LEAVE_ARG_FUNC_ID    REG_R3
+  #define RBM_PROFILER_LEAVE_ARG_FUNC_ID    RBM_R3
+  #define REG_PROFILER_LEAVE_ARG_CALLER_SP  REG_R31
+  #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_R31
 
 
 
