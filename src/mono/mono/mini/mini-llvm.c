@@ -7627,21 +7627,23 @@ MONO_RESTORE_WARNING
 		case OP_RMINNUM:
 		case OP_RMAXNUM: {
 			/*
-			 * IEEE 754-2008 minNum/maxNum (NaN-suppressing). Maps directly to
-			 * llvm.minnum/maxnum, which is what `float.MinNumber` /
-			 * `double.MinNumber` (and the Max variants, surfaced via
-			 * INumber<TSelf> on the primitive Single/Double/Half types) specify.
-			 * On AArch64 this lowers to a single fminnm/fmaxnm instruction.
+			 * IEEE 754-2019 minimumNumber/maximumNumber (NaN-suppressing and
+			 * sign-of-zero aware). Maps directly to llvm.minimumnum/maximumnum,
+			 * which is what `float.MinNumber` / `double.MinNumber` (and the Max
+			 * variants, surfaced via INumber<TSelf> on the primitive
+			 * Single/Double/Half types) specify. On AArch64 this lowers to a
+			 * single fminnm/fmaxnm instruction. We avoid llvm.minnum/maxnum
+			 * because those leave the sign of zero unspecified.
 			 */
 			gboolean is_r4 = ins->opcode == OP_RMINNUM || ins->opcode == OP_RMAXNUM;
 			LLVMTypeRef t = is_r4 ? LLVMFloatType () : LLVMDoubleType ();
 			LLVMValueRef args [2] = { convert (ctx, lhs, t), convert (ctx, rhs, t) };
 			IntrinsicId iid;
 			switch (ins->opcode) {
-			case OP_FMAXNUM: iid = INTRINS_MAXNUM; break;
-			case OP_FMINNUM: iid = INTRINS_MINNUM; break;
-			case OP_RMAXNUM: iid = INTRINS_MAXNUMF; break;
-			case OP_RMINNUM: iid = INTRINS_MINNUMF; break;
+			case OP_FMAXNUM: iid = INTRINS_MAXIMUMNUM; break;
+			case OP_FMINNUM: iid = INTRINS_MINIMUMNUM; break;
+			case OP_RMAXNUM: iid = INTRINS_MAXIMUMNUMF; break;
+			case OP_RMINNUM: iid = INTRINS_MINIMUMNUMF; break;
 			default: g_assert_not_reached (); break;
 			}
 			values [ins->dreg] = call_intrins (ctx, iid, args, dname);

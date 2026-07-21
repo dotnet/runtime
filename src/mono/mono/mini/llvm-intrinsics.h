@@ -98,18 +98,21 @@ INTRINS_OVR(TRUNCF, trunc, Generic, LLVMFloatType ())
 INTRINS_OVR(COPYSIGN, copysign, Generic, LLVMDoubleType ())
 INTRINS_OVR(COPYSIGNF, copysign, Generic, LLVMFloatType ())
 	/*
-	 * IEEE 754-2008 minNum/maxNum (NaN-suppressing). When exactly one operand
-	 * is NaN they return the other; when both are NaN they return NaN. This is
-	 * what `float.MinNumber` / `double.MinNumber` (and the Max variants,
-	 * surfaced via INumber<TSelf> on the primitive Single/Double/Half types)
-	 * are documented to do, and on AArch64 these lower to single fminnm/fmaxnm
-	 * instructions. Use llvm.minimum/maximum (see above) for the NaN-propagating
-	 * Math.Min/Math.Max instead.
+	 * IEEE 754-2019 minimumNumber/maximumNumber (NaN-suppressing and sign-of-zero
+	 * aware). When exactly one operand is NaN they return the other; when both are
+	 * NaN they return NaN; and they treat -0 as less than +0. This is what
+	 * `float.MinNumber` / `double.MinNumber` (and the Max variants, surfaced via
+	 * INumber<TSelf> on the primitive Single/Double/Half types) are documented to
+	 * do, and on AArch64 these lower to single fminnm/fmaxnm instructions. We avoid
+	 * llvm.minnum/maxnum (IEEE 754-2008 minNum/maxNum) because those leave the
+	 * sign of zero unspecified -- e.g. minnum(+0, -0) may return +0 on x86.
+	 * Use llvm.minimum/maximum (see above) for the NaN-propagating Math.Min/Math.Max
+	 * instead.
 	 */
-INTRINS_OVR(MINNUM, minnum, Generic, LLVMDoubleType ())
-INTRINS_OVR(MINNUMF, minnum, Generic, LLVMFloatType ())
-INTRINS_OVR(MAXNUM, maxnum, Generic, LLVMDoubleType ())
-INTRINS_OVR(MAXNUMF, maxnum, Generic, LLVMFloatType ())
+INTRINS_OVR(MINIMUMNUM, minimumnum, Generic, LLVMDoubleType ())
+INTRINS_OVR(MINIMUMNUMF, minimumnum, Generic, LLVMFloatType ())
+INTRINS_OVR(MAXIMUMNUM, maximumnum, Generic, LLVMDoubleType ())
+INTRINS_OVR(MAXIMUMNUMF, maximumnum, Generic, LLVMFloatType ())
 INTRINS_OVR(EXPECT_I8, expect, Generic, LLVMInt8Type ())
 INTRINS_OVR(EXPECT_I1, expect, Generic, LLVMInt1Type ())
 INTRINS_OVR(CTPOP_I32, ctpop, Generic, LLVMInt32Type ())
