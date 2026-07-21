@@ -1039,7 +1039,6 @@ public unsafe partial interface IDacDbiInterface
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
 
     [PreserveSig]
-    [PreserveSig]
     int GetTargetContextSize(uint contextFlags, uint* pSize);
 
     [PreserveSig]
@@ -1065,9 +1064,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int CopyContext(ContextBuffer destinationContext, ContextBuffer sourceContext, uint flags);
-
-    [PreserveSig]
-    int GetTargetInfo(TargetInfo* pTargetInfo);
 }
 
 public enum TargetArchitecture

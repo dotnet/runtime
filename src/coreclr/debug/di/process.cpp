@@ -1463,7 +1463,7 @@ ULONG32 CordbProcess::GetTargetContextSize()
     if (m_ctxSize == 0)
     {
         ULONG32 size = 0;
-        IfFailThrow(GetDAC()->GetTargetContextSize(DT_CONTEXT_ALL, &size));
+        IfFailThrow(GetDAC()->GetTargetContextSize(0x00000020L, &size)); // CONTEXT_EXTENDED_REGISTERS
         m_ctxSize = size;
     }
     return m_ctxSize;
@@ -5836,7 +5836,7 @@ HRESULT CordbProcess::SafeReadThreadContext(CORDB_ADDRESS remoteContextAddr, Con
 
         // At a minimum we have room for a whole context up to the extended registers.
         ULONG32 minContextSize;
-        IfFailThrow(GetDAC()->GetTargetContextSize(DT_CONTEXT_FULL, &minContextSize));
+        IfFailThrow(GetDAC()->GetTargetContextSize(0, &minContextSize));
 
         // Read the minimum part.
         TargetBuffer tbMin = tbFull.SubBuffer(0, minContextSize);
@@ -5885,7 +5885,7 @@ HRESULT CordbProcess::SafeWriteThreadContext(CORDB_ADDRESS remoteContextAddr, Co
         BOOL hasExtendedRegisters = FALSE;
         IfFailThrow(GetDAC()->ContextHasExtendedRegisters(contextBuffer, &hasExtendedRegisters));
         IfFailThrow(GetDAC()->GetTargetContextSize(
-            hasExtendedRegisters ? DT_CONTEXT_ALL : DT_CONTEXT_FULL,
+            hasExtendedRegisters ? 0x00000020L : 0, // CONTEXT_EXTENDED_REGISTERS
             &sizeToWrite));
 
         CORDB_ADDRESS pRemoteContext = remoteContextAddr;

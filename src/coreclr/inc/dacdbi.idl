@@ -484,6 +484,4 @@ interface IDacDbiInterface : IUnknown
     // pulls exactly the requested chunks from the source; flags == 0 preserves
     // the destination's existing ContextFlags.
     HRESULT CopyContext([in] ContextBuffer destinationContext, [in] ContextBuffer sourceContext, [in] ULONG32 flags);
-    // Returns the target's processor architecture and OS family.
-    HRESULT GetTargetInfo([out] struct TargetInfo * pTargetInfo);
 };

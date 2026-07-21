@@ -8021,44 +8021,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_Met
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetInfo(OUT TargetInfo * pTargetInfo)
-{
-    DD_ENTER_MAY_THROW;
-
-    if (pTargetInfo == NULL)
-        return E_INVALIDARG;
-
-#if defined(TARGET_X86)
-    pTargetInfo->arch = kArchX86;
-#elif defined(TARGET_AMD64)
-    pTargetInfo->arch = kArchAMD64;
-#elif defined(TARGET_ARM)
-    pTargetInfo->arch = kArchArm;
-#elif defined(TARGET_ARM64)
-    pTargetInfo->arch = kArchArm64;
-#elif defined(TARGET_LOONGARCH64)
-    pTargetInfo->arch = kArchLoongArch64;
-#elif defined(TARGET_RISCV64)
-    pTargetInfo->arch = kArchRiscV64;
-#elif defined(TARGET_WASM)
-    pTargetInfo->arch = kArchWasm;
-#else
-    pTargetInfo->arch = kArchUnknown;
-#endif
-
-#if defined(TARGET_UNIX)
-    pTargetInfo->os = kOSUnix;
-#elif defined(TARGET_WINDOWS)
-    pTargetInfo->os = kOSWindows;
-#else
-    pTargetInfo->os = kOSUnknown;
-#endif
-
-    pTargetInfo->pointerSize = sizeof(TADDR);
-
-    return S_OK;
-}
-
 DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers)
     : mDac(dac), mWalkStacks(walkStacks), mHandleMask(handleMask), mStackWalker(NULL),
       mResolvePointers(resolvePointers), mHandleWalker(NULL)

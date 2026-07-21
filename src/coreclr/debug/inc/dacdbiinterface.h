@@ -2280,9 +2280,6 @@ public:
         ULONG32               pointerSize;
     };
 
-    // Returns the target's processor architecture and OS family.
-    virtual HRESULT STDMETHODCALLTYPE GetTargetInfo(OUT TargetInfo * pTargetInfo) = 0;
-
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL
 
