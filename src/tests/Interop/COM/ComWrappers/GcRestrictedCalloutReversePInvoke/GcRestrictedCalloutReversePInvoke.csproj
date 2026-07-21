@@ -2,8 +2,8 @@
   <PropertyGroup>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Test interacts with GC collections, also needed for CLRTestTargetUnsupported below -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <!-- Native dependencies are not available in these mobile test legs. -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
