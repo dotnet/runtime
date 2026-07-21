@@ -9222,6 +9222,19 @@ void Lowering::FindInducedParameterRegisterLocals()
                 continue;
             }
 
+#ifdef TARGET_WASM
+            // On wasm, a scalar and its containing vector are distinct value-stack types: unlike
+            // x64/arm64 (where the scalar overlaps the low bytes of the vector register), a scalar
+            // field cannot be read from a SIMD register local by simply retyping the local access.
+            // Skip mapping a scalar field to a SIMD register segment so the access falls back to the
+            // (unenregisterable / memory-homed) parameter and a normal scalar load is emitted; an
+            // explicit extract would be needed otherwise.
+            if (varTypeIsSIMD(segment.GetRegisterType()) && !varTypeIsSIMD(fld))
+            {
+                continue;
+            }
+#endif // TARGET_WASM
+
             // Found a register segment this field is contained in
             regSegment = &segment;
             break;
