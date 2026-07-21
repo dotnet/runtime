@@ -231,6 +231,42 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
+        [MemberData(nameof(Abs_SpecialValues))]
+        public static void Abs(double real, double imaginary, double expected)
+        {
+            AssertSame(Complex<double>.Abs(new Complex<double>(real, imaginary)), expected, $"Abs<Double>({real}, {imaginary})");
+            AssertSame(Complex<float>.Abs(new Complex<float>((float)real, (float)imaginary)), expected, $"Abs<Single>({real}, {imaginary})");
+            AssertSame(Complex<Half>.Abs(new Complex<Half>((Half)real, (Half)imaginary)), expected, $"Abs<Half>({real}, {imaginary})");
+        }
+
+        public static IEnumerable<object[]> Abs_SpecialValues()
+        {
+            foreach (double real in s_specialGrid)
+            foreach (double imaginary in s_specialGrid)
+            {
+                // Finite-finite magnitudes (e.g. hypot(1, 1) = sqrt(2)) are ordinary accuracy,
+                // not special-value conformance, and are not exact across double/float/Half.
+                if (double.IsFinite(real) && double.IsFinite(imaginary))
+                {
+                    continue;
+                }
+
+                yield return new object[] { real, imaginary, ReferenceAbs(real, imaginary) };
+            }
+        }
+
+        // C23 Annex G.6 cabs: an infinite component yields +inf even when the other is NaN;
+        // otherwise a NaN component yields NaN.
+        private static double ReferenceAbs(double real, double imaginary)
+        {
+            if (double.IsInfinity(real) || double.IsInfinity(imaginary))
+            {
+                return double.PositiveInfinity;
+            }
+            return double.NaN;
+        }
+
+        [Theory]
         [MemberData(nameof(Sqrt_SpecialValues))]
         public static void Sqrt(double real, double imaginary, double expectedReal, double expectedImaginary)
         {

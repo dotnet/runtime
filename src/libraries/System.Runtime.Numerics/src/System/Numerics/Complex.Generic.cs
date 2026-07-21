@@ -181,7 +181,7 @@ namespace System.Numerics
 
                 if (T.IsInfinity(a) || T.IsInfinity(b))
                 {
-                    // left is infinite; box its components to a signed 1/0
+                    // left is infinite; normalize its parts to a signed 1/0
                     a = T.CopySign(T.IsInfinity(a) ? T.One : T.Zero, a);
                     b = T.CopySign(T.IsInfinity(b) ? T.One : T.Zero, b);
                     if (T.IsNaN(c)) c = T.CopySign(T.Zero, c);
@@ -191,7 +191,7 @@ namespace System.Numerics
 
                 if (T.IsInfinity(c) || T.IsInfinity(d))
                 {
-                    // right is infinite; box its components to a signed 1/0
+                    // right is infinite; normalize its parts to a signed 1/0
                     c = T.CopySign(T.IsInfinity(c) ? T.One : T.Zero, c);
                     d = T.CopySign(T.IsInfinity(d) ? T.One : T.Zero, d);
                     if (T.IsNaN(a)) a = T.CopySign(T.Zero, a);
