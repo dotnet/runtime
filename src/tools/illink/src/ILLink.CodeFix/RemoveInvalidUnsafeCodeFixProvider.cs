@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Composition;
 using System.Threading.Tasks;
 using ILLink.CodeFixProvider;
+using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -46,7 +47,7 @@ namespace ILLink.CodeFix
                 diagnostic.Location.SourceSpan,
                 getInnermostNodeForTie: true);
             if (UnsafeModifierCodeFixHelpers.FindDeclaration(targetNode) is not { } declaration
-                || !UnsafeModifierCodeFixHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword))
+                || !UnsafeMigrationAnalyzerHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword))
             {
                 return;
             }

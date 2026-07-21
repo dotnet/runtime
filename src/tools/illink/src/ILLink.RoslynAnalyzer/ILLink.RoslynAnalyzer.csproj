@@ -50,6 +50,10 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="ILLink.CodeFixProvider" />
+  </ItemGroup>
+
   <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 
 </Project>

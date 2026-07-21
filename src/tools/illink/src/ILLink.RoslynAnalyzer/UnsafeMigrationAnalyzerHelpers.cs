@@ -18,36 +18,8 @@ namespace ILLink.RoslynAnalyzer
     /// </summary>
     internal static class UnsafeMigrationAnalyzerHelpers
     {
-        internal static readonly SyntaxKind[] UnsafeContractDeclarationKinds =
-        [
-            SyntaxKind.MethodDeclaration,
-            SyntaxKind.ConstructorDeclaration,
-            SyntaxKind.OperatorDeclaration,
-            SyntaxKind.ConversionOperatorDeclaration,
-            SyntaxKind.LocalFunctionStatement,
-            SyntaxKind.PropertyDeclaration,
-            SyntaxKind.IndexerDeclaration,
-            SyntaxKind.GetAccessorDeclaration,
-            SyntaxKind.SetAccessorDeclaration,
-            SyntaxKind.InitAccessorDeclaration,
-            SyntaxKind.EventDeclaration,
-            SyntaxKind.EventFieldDeclaration,
-            SyntaxKind.FieldDeclaration,
-        ];
-
-        internal static readonly SyntaxKind[] PointerSignatureDeclarationKinds =
-        [
-            SyntaxKind.MethodDeclaration,
-            SyntaxKind.ConstructorDeclaration,
-            SyntaxKind.OperatorDeclaration,
-            SyntaxKind.ConversionOperatorDeclaration,
-            SyntaxKind.LocalFunctionStatement,
-            SyntaxKind.PropertyDeclaration,
-            SyntaxKind.IndexerDeclaration,
-            SyntaxKind.EventDeclaration,
-            SyntaxKind.EventFieldDeclaration,
-            SyntaxKind.FieldDeclaration,
-        ];
+        // The analyzer builds against a Roslyn version that predates SyntaxKind.SafeKeyword.
+        private static readonly SyntaxKind s_safeKeyword = SyntaxFacts.GetContextualKeywordKind("safe");
 
         internal static SyntaxTokenList GetModifiers(SyntaxNode declaration) =>
             declaration switch
@@ -61,16 +33,8 @@ namespace ILLink.RoslynAnalyzer
         internal static bool HasModifier(SyntaxNode declaration, SyntaxKind modifier) =>
             GetModifiers(declaration).Any(modifier);
 
-        internal static bool HasSafeModifier(SyntaxNode declaration)
-        {
-            foreach (SyntaxToken modifier in GetModifiers(declaration))
-            {
-                if (modifier.ValueText == "safe")
-                    return true;
-            }
-
-            return false;
-        }
+        internal static bool HasSafeModifier(SyntaxNode declaration) =>
+            s_safeKeyword != SyntaxKind.None && GetModifiers(declaration).Any(s_safeKeyword);
 
         internal static SyntaxToken GetModifier(SyntaxNode declaration, SyntaxKind modifier)
         {
@@ -84,37 +48,36 @@ namespace ILLink.RoslynAnalyzer
         }
 
         /// <summary>
-        /// Resolves the declaration symbol, using the first declared variable for field-like syntax nodes.
+        /// Gets source declarations for a symbol, normalizing field-like variable declarators to their shared declaration.
         /// </summary>
-        internal static ISymbol? GetDeclaredSymbol(
-            SyntaxNode declaration,
-            SemanticModel semanticModel,
-            CancellationToken cancellationToken) =>
-            declaration switch
+        internal static IEnumerable<SyntaxNode> GetDeclarations(ISymbol symbol, CancellationToken cancellationToken)
+        {
+            foreach (SyntaxReference reference in symbol.DeclaringSyntaxReferences)
             {
-                BaseFieldDeclarationSyntax field => field.Declaration.Variables
-                    .Select(variable => semanticModel.GetDeclaredSymbol(variable, cancellationToken))
-                    .FirstOrDefault(symbol => symbol is not null),
-                _ => semanticModel.GetDeclaredSymbol(declaration, cancellationToken),
-            };
+                SyntaxNode declaration = reference.GetSyntax(cancellationToken);
+                if (declaration is VariableDeclaratorSyntax variable
+                    && variable.Parent?.Parent is BaseFieldDeclarationSyntax field)
+                {
+                    if (field.Declaration.Variables[0] != variable)
+                        continue;
+
+                    declaration = field;
+                }
+
+                yield return declaration;
+            }
+        }
 
         /// <summary>
         /// Filters out declarations such as static constructors and destructors that cannot expose caller-unsafe contracts.
         /// </summary>
-        internal static bool IsUnsafeContractMember(SyntaxNode declaration, ISymbol? symbol) =>
+        internal static bool IsUnsafeContractMember(ISymbol symbol) =>
             symbol switch
             {
                 IMethodSymbol { MethodKind: MethodKind.StaticConstructor or MethodKind.Destructor } => false,
                 IMethodSymbol => true,
                 IFieldSymbol { IsConst: false } => true,
                 IPropertySymbol or IEventSymbol => true,
-                null => declaration switch
-                {
-                    ConstructorDeclarationSyntax constructor when constructor.Modifiers.Any(SyntaxKind.StaticKeyword) => false,
-                    DestructorDeclarationSyntax => false,
-                    FieldDeclarationSyntax field when field.Modifiers.Any(SyntaxKind.ConstKeyword) => false,
-                    _ => true,
-                },
                 _ => false,
             };
 
@@ -139,14 +102,14 @@ namespace ILLink.RoslynAnalyzer
         /// </summary>
         internal static bool HasSafetyDocumentation(
             SyntaxNode declaration,
-            ISymbol? symbol,
+            ISymbol symbol,
             CancellationToken cancellationToken)
         {
             if (HasSafetyDocumentation(declaration))
                 return true;
 
             // Documentation on another partial declaration or on an associated property also describes this contract.
-            return symbol is not null && GetDocumentationSymbols(symbol)
+            return GetDocumentationSymbols(symbol)
                 .SelectMany(static relatedSymbol => relatedSymbol.DeclaringSyntaxReferences)
                 .Select(reference => reference.GetSyntax(cancellationToken))
                 .Any(HasSafetyDocumentation);
@@ -155,9 +118,9 @@ namespace ILLink.RoslynAnalyzer
         /// <summary>
         /// Determines whether removing unsafe must be suppressed to avoid recreating CS9392.
         /// </summary>
-        internal static bool RequiresExplicitSafetyModifier(SyntaxNode declaration, ISymbol? symbol)
+        internal static bool RequiresExplicitSafetyModifier(SyntaxNode declaration, ISymbol symbol)
         {
-            if (declaration is AccessorDeclarationSyntax || symbol?.ContainingType is not { } containingType)
+            if (declaration is AccessorDeclarationSyntax || symbol.ContainingType is not { } containingType)
                 return false;
 
             // Removing unsafe from a field-backed declaration in these layouts would immediately reintroduce CS9392.

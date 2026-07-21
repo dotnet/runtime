@@ -61,7 +61,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                     }
 
                     public {|IL5005:unsafe|} event Action EventField;
-                    public {|IL5005:unsafe|} int Field;
+                    public {|IL5005:unsafe|} int Field1, Field2;
 
                     public void Outer()
                     {

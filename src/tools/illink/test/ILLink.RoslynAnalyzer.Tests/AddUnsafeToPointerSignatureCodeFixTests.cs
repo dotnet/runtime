@@ -76,13 +76,13 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """
                 class C
                 {
-                    public delegate*<void> {|IL5006:F|};
+                    public delegate*<void> {|IL5006:F1|}, F2;
                 }
                 """,
                 """
                 class C
                 {
-                    public unsafe delegate*<void> F;
+                    public unsafe delegate*<void> F1, F2;
                 }
                 """
             },
@@ -187,6 +187,36 @@ namespace ILLink.RoslynAnalyzer.Tests
                     {
                         static unsafe int* Local(int* value) => value;
                     }
+                }
+                """
+            },
+            {
+                """
+                class C
+                {
+                    required public int* {|IL5006:P|} { get; set; }
+                }
+                """,
+                """
+                class C
+                {
+                    required public unsafe int* P { get; set; }
+                }
+                """
+            },
+            {
+                """
+                class C
+                {
+                    /// <summary>Returns the supplied pointer.</summary>
+                    int* {|IL5006:M|}(int* value) => value;
+                }
+                """,
+                """
+                class C
+                {
+                    /// <summary>Returns the supplied pointer.</summary>
+                    unsafe int* M(int* value) => value;
                 }
                 """
             },

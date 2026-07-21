@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -16,7 +17,7 @@ using Microsoft.CodeAnalysis.Editing;
 namespace ILLink.CodeFix
 {
     /// <summary>
-    /// Centralizes modifier discovery and trivia-preserving edits for the unsafe-v2 code-fix providers.
+    /// Centralizes declaration discovery and trivia-preserving modifier edits for the unsafe-v2 code-fix providers.
     /// It is shared by fixes for <c>CS9389</c>, <c>CS9377</c>/<c>CS0106</c>, <c>IL5005</c>, <c>IL5006</c>, and <c>CS9392</c>.
     /// </summary>
     internal static class UnsafeModifierCodeFixHelpers
@@ -38,8 +39,8 @@ namespace ILLink.CodeFix
                 getInnermostNodeForTie: true);
             if (FindDeclaration(targetNode) is not { } declaration
                 || !isSupportedDeclaration(declaration)
-                || HasModifier(declaration, SyntaxKind.UnsafeKeyword)
-                || HasSafeModifier(declaration))
+                || UnsafeMigrationAnalyzerHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword)
+                || UnsafeMigrationAnalyzerHelpers.HasSafeModifier(declaration))
             {
                 return;
             }
@@ -58,26 +59,13 @@ namespace ILLink.CodeFix
         /// </summary>
         internal static SyntaxNode? FindDeclaration(SyntaxNode node) =>
             node.AncestorsAndSelf().FirstOrDefault(static ancestor =>
-                ancestor is MemberDeclarationSyntax
+                ancestor is BaseTypeDeclarationSyntax
+                    or DelegateDeclarationSyntax
+                    or BaseMethodDeclarationSyntax
+                    or BasePropertyDeclarationSyntax
+                    or BaseFieldDeclarationSyntax
                     or LocalFunctionStatementSyntax
                     or AccessorDeclarationSyntax);
-
-        internal static bool HasModifier(SyntaxNode declaration, SyntaxKind modifier) =>
-            GetModifiers(declaration).Any(modifier);
-
-        /// <summary>
-        /// Checks for the contextual <c>safe</c> modifier without depending on a newer SyntaxKind API.
-        /// </summary>
-        internal static bool HasSafeModifier(SyntaxNode declaration)
-        {
-            foreach (SyntaxToken modifier in GetModifiers(declaration))
-            {
-                if (modifier.ValueText == "safe")
-                    return true;
-            }
-
-            return false;
-        }
 
         /// <summary>
         /// Adds unsafe while preserving declaration-specific modifiers and trivia.
@@ -88,21 +76,21 @@ namespace ILLink.CodeFix
             CancellationToken cancellationToken)
         {
             var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
+            SyntaxTokenList modifiers = UnsafeMigrationAnalyzerHelpers.GetModifiers(declaration);
             if (declaration is AccessorDeclarationSyntax accessor)
             {
                 editor.ReplaceNode(accessor, AddUnsafeModifier(accessor));
             }
-            else if (declaration is DestructorDeclarationSyntax destructor)
+            else if (modifiers.Count > 0)
             {
-                // SyntaxGenerator does not preserve extern on destructors in the current Workspaces dependency.
                 editor.ReplaceNode(
-                    destructor,
-                    destructor.WithModifiers(AddUnsafeModifier(destructor.Modifiers)));
+                    declaration,
+                    WithModifiers(declaration, AddUnsafeModifier(modifiers)));
             }
             else
             {
-                var modifiers = editor.Generator.GetModifiers(declaration);
-                editor.SetModifiers(declaration, modifiers.WithIsUnsafe(true));
+                DeclarationModifiers declarationModifiers = editor.Generator.GetModifiers(declaration);
+                editor.SetModifiers(declaration, declarationModifiers.WithIsUnsafe(true));
             }
 
             return editor.GetChangedDocument();
@@ -117,35 +105,25 @@ namespace ILLink.CodeFix
             CancellationToken cancellationToken)
         {
             var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
+            SyntaxTokenList modifiers = UnsafeMigrationAnalyzerHelpers.GetModifiers(declaration);
             if (declaration is AccessorDeclarationSyntax accessor)
             {
                 editor.ReplaceNode(accessor, RemoveUnsafeModifier(accessor));
             }
-            else if (declaration is DestructorDeclarationSyntax destructor
-                && destructor.Modifiers.Any(SyntaxKind.ExternKeyword))
+            else if (modifiers.Count > 1)
             {
-                // Remove only unsafe; routing this through SyntaxGenerator would also remove extern.
                 editor.ReplaceNode(
-                    destructor,
-                    destructor.WithModifiers(RemoveUnsafeModifier(destructor.Modifiers)));
+                    declaration,
+                    WithModifiers(declaration, RemoveUnsafeModifier(modifiers)));
             }
             else
             {
-                var modifiers = editor.Generator.GetModifiers(declaration);
-                editor.SetModifiers(declaration, modifiers.WithIsUnsafe(false));
+                DeclarationModifiers declarationModifiers = editor.Generator.GetModifiers(declaration);
+                editor.SetModifiers(declaration, declarationModifiers.WithIsUnsafe(false));
             }
 
             return editor.GetChangedDocument();
         }
-
-        private static SyntaxTokenList GetModifiers(SyntaxNode declaration) =>
-            declaration switch
-            {
-                MemberDeclarationSyntax member => member.Modifiers,
-                LocalFunctionStatementSyntax localFunction => localFunction.Modifiers,
-                AccessorDeclarationSyntax accessor => accessor.Modifiers,
-                _ => default,
-            };
 
         private static AccessorDeclarationSyntax AddUnsafeModifier(AccessorDeclarationSyntax accessor)
         {
@@ -190,7 +168,7 @@ namespace ILLink.CodeFix
 
         private static SyntaxTokenList AddUnsafeModifier(SyntaxTokenList modifiers)
         {
-            // Match SyntaxGenerator's canonical order by placing unsafe before extern.
+            // Place unsafe before extern while preserving the existing modifier order.
             int insertionIndex = modifiers.IndexOf(SyntaxKind.ExternKeyword);
             if (insertionIndex < 0)
                 insertionIndex = modifiers.Count;
@@ -224,6 +202,19 @@ namespace ILLink.CodeFix
 
             return modifiers;
         }
+
+        private static SyntaxNode WithModifiers(SyntaxNode declaration, SyntaxTokenList modifiers) =>
+            declaration switch
+            {
+                BaseTypeDeclarationSyntax type => type.WithModifiers(modifiers),
+                DelegateDeclarationSyntax @delegate => @delegate.WithModifiers(modifiers),
+                BaseMethodDeclarationSyntax method => method.WithModifiers(modifiers),
+                BasePropertyDeclarationSyntax property => property.WithModifiers(modifiers),
+                BaseFieldDeclarationSyntax field => field.WithModifiers(modifiers),
+                LocalFunctionStatementSyntax localFunction => localFunction.WithModifiers(modifiers),
+                AccessorDeclarationSyntax accessor => accessor.WithModifiers(modifiers),
+                _ => declaration,
+            };
 
         private static int GetUnsafeModifierIndex(SyntaxTokenList modifiers) =>
             modifiers.IndexOf(SyntaxKind.UnsafeKeyword);

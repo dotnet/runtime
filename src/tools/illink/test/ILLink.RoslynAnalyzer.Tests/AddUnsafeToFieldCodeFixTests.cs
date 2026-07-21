@@ -126,6 +126,52 @@ namespace ILLink.RoslynAnalyzer.Tests
                 }
                 """
             },
+            {
+                """
+                using System.Runtime.InteropServices;
+
+                [StructLayout(LayoutKind.Explicit)]
+                class C
+                {
+                    [field: FieldOffset(0)]
+                    required public int {|CS9392:P|} { get; set; }
+                }
+                """,
+                """
+                using System.Runtime.InteropServices;
+
+                [StructLayout(LayoutKind.Explicit)]
+                class C
+                {
+                    [field: FieldOffset(0)]
+                    required public unsafe int P { get; set; }
+                }
+                """
+            },
+            {
+                """
+                using System.Runtime.InteropServices;
+
+                [StructLayout(LayoutKind.Explicit)]
+                class C
+                {
+                    /// <summary>Stores the native value.</summary>
+                    [FieldOffset(0)]
+                    int {|CS9392:F|};
+                }
+                """,
+                """
+                using System.Runtime.InteropServices;
+
+                [StructLayout(LayoutKind.Explicit)]
+                class C
+                {
+                    /// <summary>Stores the native value.</summary>
+                    [FieldOffset(0)]
+                    unsafe int F;
+                }
+                """
+            },
         };
 
         [Theory]

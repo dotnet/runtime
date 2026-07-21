@@ -36,8 +36,8 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public {|IL5006:C|}(delegate*<void> callback) { }
                     public int* {|IL5006:Property|} { get; set; }
                     public int* {|IL5006:this|}[int* index] => index;
-                    public delegate*<void> {|IL5006:Field|};
-                    public event Outer<int*[]>.D {|IL5006:Event|};
+                    public delegate*<void> {|IL5006:Field1|}, Field2;
+                    public event Outer<int*[]>.D {|IL5006:Event1|}, Event2;
                     public event Outer<int*[]>.D {|IL5006:ManualEvent|}
                     {
                         add { }

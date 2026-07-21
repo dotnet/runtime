@@ -152,6 +152,36 @@ namespace ILLink.RoslynAnalyzer.Tests
                 }
                 """
             },
+            {
+                """
+                class C
+                {
+                    required public {|CS9389:extern|} int P { get; set; }
+                }
+                """,
+                """
+                class C
+                {
+                    required public unsafe extern int P { get; set; }
+                }
+                """
+            },
+            {
+                """
+                class C
+                {
+                    /// <summary>Invokes native code.</summary>
+                    {|CS9389:extern|} void M();
+                }
+                """,
+                """
+                class C
+                {
+                    /// <summary>Invokes native code.</summary>
+                    unsafe extern void M();
+                }
+                """
+            },
         };
 
         [Theory]
