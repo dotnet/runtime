@@ -225,9 +225,9 @@ enum insFlags : uint64_t
     KInstruction = 1ULL << 41,
     KInstructionWithLBit = 1ULL << 42,
 
-    // APX: extended EVEX encoding for instructions introduced by APX. Do not use this for
-    // legacy instructions that merely gain an APX encoding; use INS_Flags_Has_NDD and/or
-    // INS_Flags_Has_NF for those instructions instead.
+    // APX: extended EVEX encoding for instruction IDs that only exist in the APX EVEX space
+    // (including *_apx variants such as crc32_apx/movbe_apx). Do not use this for existing instruction IDs
+    // that merely gain an APX encoding through NDD/NF; use INS_Flags_Has_NDD and/or INS_Flags_Has_NF instead.
     Encoding_EVEX_APX_ONLY = 1ULL << 43,
 
     // APX: REX2 prefix:
