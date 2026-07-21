@@ -12606,7 +12606,24 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "get_Item",
        "GetFastModMultiplier",
        "IndexOfValueType",
-       "SetDefaultFallbacks"
+       "SetDefaultFallbacks",
+       "get_IsPointer",
+       "get_HasElementType",
+       "RemovePreamble",
+       "WriteSpan",
+       "TryGetCachedCursorPosition",
+       "IndexOf",
+       "GetHashCode",
+       "GetBooleanConfig",
+       "GetCharset",
+       "GetCharCountFast",
+       "get_IsByRef",
+       "get_IsPublic",
+       "GetCharCountFast",
+       "set_Length",
+       "AddWithResize",
+       "GetConstructorCandidates"
+
     };
 
     struct JitInclusionEntry
