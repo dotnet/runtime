@@ -730,7 +730,7 @@ BIO* CryptoNative_BioNewSocketReplay(intptr_t fd, const void* prefix, int32_t pr
 {
     ERR_clear_error();
 
-    if (fd < 0 || prefixLen < 0)
+    if (fd < 0 || prefixLen < 0 || (prefixLen > 0 && prefix == NULL))
     {
         return NULL;
     }
