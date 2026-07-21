@@ -1099,27 +1099,30 @@ namespace System.Numerics
                 return Zero;
             }
 
-            T rho = Abs(value);
-
-            if (!IsFinite(value) || !IsFinite(power) || !T.IsFinite(rho))
+            if (IsFinite(value) && IsFinite(power))
             {
-                // C23: cpow(z, w) special values are those of cexp(w * clog(z)). The polar
-                // core below loses them, so defer to the conformant Exp/Log for any input
-                // that is non-finite or whose magnitude overflows.
-                return Exp(power * Log(value));
+                T rho = Abs(value);
+
+                if (T.IsFinite(rho))
+                {
+                    T valueImaginary = value.m_imaginary;
+                    T valueReal = value.m_real;
+                    T powerReal = power.m_real;
+                    T powerImaginary = power.m_imaginary;
+
+                    T theta = T.Atan2(valueImaginary, valueReal);
+                    T newRho = powerReal * theta + powerImaginary * T.Log(rho);
+
+                    T t = T.Pow(rho, powerReal) * T.Exp(-powerImaginary * theta);
+
+                    return FromPolarCoordinates(t, newRho);
+                }
             }
 
-            T valueImaginary = value.m_imaginary;
-            T valueReal = value.m_real;
-            T powerReal = power.m_real;
-            T powerImaginary = power.m_imaginary;
-
-            T theta = T.Atan2(valueImaginary, valueReal);
-            T newRho = powerReal * theta + powerImaginary * T.Log(rho);
-
-            T t = T.Pow(rho, powerReal) * T.Exp(-powerImaginary * theta);
-
-            return FromPolarCoordinates(t, newRho);
+            // C23: cpow(z, w) special values are those of cexp(w * clog(z)). The polar
+            // core above loses them, so defer to the conformant Exp/Log for any input
+            // that is non-finite or whose magnitude overflows.
+            return Exp(power * Log(value));
         }
 
         public static Complex<T> Pow(Complex<T> value, T power)
