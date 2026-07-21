@@ -509,7 +509,8 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(ReadOnlySpan<char> propertyName, ReadOnlySpan<char> value)
         {
-            JsonWriterHelper.ValidatePropertyAndValue(propertyName, value);
+            JsonWriterHelper.ValidateProperty(propertyName);
+            JsonWriterHelper.ValidateValue(value);
 
             WriteStringEscape(propertyName, value);
 
@@ -533,7 +534,8 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> utf8Value)
         {
-            JsonWriterHelper.ValidatePropertyAndValue(utf8PropertyName, utf8Value);
+            JsonWriterHelper.ValidateProperty(utf8PropertyName);
+            JsonWriterHelper.ValidateValue(utf8Value);
 
             WriteStringEscape(utf8PropertyName, utf8Value);
 
@@ -652,7 +654,8 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<char> value)
         {
-            JsonWriterHelper.ValidatePropertyAndValue(utf8PropertyName, value);
+            JsonWriterHelper.ValidateProperty(utf8PropertyName);
+            JsonWriterHelper.ValidateValue(value);
 
             WriteStringEscape(utf8PropertyName, value);
 
@@ -739,7 +742,8 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> utf8Value)
         {
-            JsonWriterHelper.ValidatePropertyAndValue(propertyName, utf8Value);
+            JsonWriterHelper.ValidateProperty(propertyName);
+            JsonWriterHelper.ValidateValue(utf8Value);
 
             WriteStringEscape(propertyName, utf8Value);
 
