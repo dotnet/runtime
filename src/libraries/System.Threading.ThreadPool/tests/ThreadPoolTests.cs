@@ -608,6 +608,34 @@ namespace System.Threading.ThreadPools.Tests
         public static void ThreadPoolCanPickUpOneOrMoreWorkItemsWhenThreadIsAvailable()
         {
             int processorCount = Environment.ProcessorCount;
+
+            Console.WriteLine($"Environment.ProcessorCount = {Environment.ProcessorCount}");
+            Console.WriteLine($"GCSettings.IsServerGC       = {System.Runtime.GCSettings.IsServerGC}");
+            Console.WriteLine($"OperatingSystem.IsAndroid  = {OperatingSystem.IsAndroid()}");
+
+            foreach (string entry in new[] { "possible", "present", "online", "offline" })
+            {
+                string path = $"/sys/devices/system/cpu/{entry}";
+                try
+                {
+                    string value = System.IO.File.Exists(path)
+                        ? System.IO.File.ReadAllText(path).Trim()
+                        : "<not present>";
+                    Console.WriteLine($"{path} = {value}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{path} = <error: {ex.GetType().Name}: {ex.Message}>");
+                }
+            }
+
+            Console.WriteLine("=====================================================");
+
+            if (OperatingSystem.IsAndroid())
+            {
+                throw new Exception("Just fail on android");
+            }
+
             AutoResetEvent allBlockingWorkItemsStarted = new AutoResetEvent(false);
             AutoResetEvent allTestWorkItemsStarted = new AutoResetEvent(false);
             ManualResetEvent unblockWorkItems = new ManualResetEvent(false);
