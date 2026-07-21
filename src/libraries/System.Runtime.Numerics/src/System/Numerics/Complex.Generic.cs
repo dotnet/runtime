@@ -175,81 +175,90 @@ namespace System.Numerics
 
             if (T.IsNaN(x) && T.IsNaN(y))
             {
-                // C23 Annex G.5.1: recover a directed infinity that overflowed into a
-                // spurious NaN from the arithmetic above.
-                bool recalc = false;
+                // Outlined so the naive common path stays small enough to inline.
+                return MultiplyNaNRecovery(a, b, c, d, x, y);
+            }
 
-                if (T.IsInfinity(a) || T.IsInfinity(b))
+            return new Complex<T>(x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Complex<T> MultiplyNaNRecovery(T a, T b, T c, T d, T x, T y)
+        {
+            // C23 Annex G.5.1: recover a directed infinity that overflowed into a
+            // spurious NaN from the naive multiply above.
+            bool recalc = false;
+
+            if (T.IsInfinity(a) || T.IsInfinity(b))
+            {
+                // left is infinite; normalize its parts to a signed 1/0
+                a = T.CopySign(T.IsInfinity(a) ? T.One : T.Zero, a);
+                b = T.CopySign(T.IsInfinity(b) ? T.One : T.Zero, b);
+
+                if (T.IsNaN(c))
                 {
-                    // left is infinite; normalize its parts to a signed 1/0
-                    a = T.CopySign(T.IsInfinity(a) ? T.One : T.Zero, a);
-                    b = T.CopySign(T.IsInfinity(b) ? T.One : T.Zero, b);
-
-                    if (T.IsNaN(c))
-                    {
-                        c = T.CopySign(T.Zero, c);
-                    }
-
-                    if (T.IsNaN(d))
-                    {
-                        d = T.CopySign(T.Zero, d);
-                    }
-
-                    recalc = true;
+                    c = T.CopySign(T.Zero, c);
                 }
 
-                if (T.IsInfinity(c) || T.IsInfinity(d))
+                if (T.IsNaN(d))
                 {
-                    // right is infinite; normalize its parts to a signed 1/0
-                    c = T.CopySign(T.IsInfinity(c) ? T.One : T.Zero, c);
-                    d = T.CopySign(T.IsInfinity(d) ? T.One : T.Zero, d);
-
-                    if (T.IsNaN(a))
-                    {
-                        a = T.CopySign(T.Zero, a);
-                    }
-
-                    if (T.IsNaN(b))
-                    {
-                        b = T.CopySign(T.Zero, b);
-                    }
-
-                    recalc = true;
+                    d = T.CopySign(T.Zero, d);
                 }
 
-                if (!recalc && (T.IsInfinity(a * c) || T.IsInfinity(b * d) || T.IsInfinity(a * d) || T.IsInfinity(b * c)))
+                recalc = true;
+            }
+
+            if (T.IsInfinity(c) || T.IsInfinity(d))
+            {
+                // right is infinite; normalize its parts to a signed 1/0
+                c = T.CopySign(T.IsInfinity(c) ? T.One : T.Zero, c);
+                d = T.CopySign(T.IsInfinity(d) ? T.One : T.Zero, d);
+
+                if (T.IsNaN(a))
                 {
-                    // neither operand is infinite, but a product overflowed with a NaN
-                    // operand; treat the NaN as a signed zero and recover.
-                    if (T.IsNaN(a))
-                    {
-                        a = T.CopySign(T.Zero, a);
-                    }
-
-                    if (T.IsNaN(b))
-                    {
-                        b = T.CopySign(T.Zero, b);
-                    }
-
-                    if (T.IsNaN(c))
-                    {
-                        c = T.CopySign(T.Zero, c);
-                    }
-
-                    if (T.IsNaN(d))
-                    {
-                        d = T.CopySign(T.Zero, d);
-                    }
-
-                    recalc = true;
+                    a = T.CopySign(T.Zero, a);
                 }
 
-                if (recalc)
+                if (T.IsNaN(b))
                 {
-                    T inf = T.PositiveInfinity;
-                    x = inf * ((a * c) - (b * d));
-                    y = inf * ((b * c) + (a * d));
+                    b = T.CopySign(T.Zero, b);
                 }
+
+                recalc = true;
+            }
+
+            if (!recalc && (T.IsInfinity(a * c) || T.IsInfinity(b * d) || T.IsInfinity(a * d) || T.IsInfinity(b * c)))
+            {
+                // neither operand is infinite, but a product overflowed with a NaN
+                // operand; treat the NaN as a signed zero and recover.
+                if (T.IsNaN(a))
+                {
+                    a = T.CopySign(T.Zero, a);
+                }
+
+                if (T.IsNaN(b))
+                {
+                    b = T.CopySign(T.Zero, b);
+                }
+
+                if (T.IsNaN(c))
+                {
+                    c = T.CopySign(T.Zero, c);
+                }
+
+                if (T.IsNaN(d))
+                {
+                    d = T.CopySign(T.Zero, d);
+                }
+
+                recalc = true;
+            }
+
+            if (recalc)
+            {
+                T inf = T.PositiveInfinity;
+                x = inf * ((a * c) - (b * d));
+                y = inf * ((b * c) + (a * d));
             }
 
             return new Complex<T>(x, y);
@@ -298,30 +307,41 @@ namespace System.Numerics
 
             if (T.IsNaN(x) && T.IsNaN(y))
             {
-                if ((c == T.Zero) && (d == T.Zero) && (!T.IsNaN(a) || !T.IsNaN(b)))
-                {
-                    // Divisor is zero and the dividend is not fully NaN: directed infinity.
-                    T inf = T.CopySign(T.PositiveInfinity, c);
-                    x = inf * a;
-                    y = inf * b;
-                }
-                else if ((T.IsInfinity(a) || T.IsInfinity(b)) && T.IsFinite(c) && T.IsFinite(d))
-                {
-                    // Infinite dividend, finite divisor: infinity.
-                    a = T.CopySign(T.IsInfinity(a) ? T.One : T.Zero, a);
-                    b = T.CopySign(T.IsInfinity(b) ? T.One : T.Zero, b);
-                    T inf = T.PositiveInfinity;
-                    x = inf * ((a * c) + (b * d));
-                    y = inf * ((b * c) - (a * d));
-                }
-                else if ((T.IsInfinity(c) || T.IsInfinity(d)) && T.IsFinite(a) && T.IsFinite(b))
-                {
-                    // Finite dividend, infinite divisor: zero.
-                    c = T.CopySign(T.IsInfinity(c) ? T.One : T.Zero, c);
-                    d = T.CopySign(T.IsInfinity(d) ? T.One : T.Zero, d);
-                    x = T.Zero * ((a * c) + (b * d));
-                    y = T.Zero * ((b * c) - (a * d));
-                }
+                // Outlined so the Smith common path stays small enough to inline.
+                return DivideNaNRecovery(a, b, c, d, x, y);
+            }
+
+            return new Complex<T>(x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Complex<T> DivideNaNRecovery(T a, T b, T c, T d, T x, T y)
+        {
+            // C23 Annex G.5.1 recovery for the directed infinities/zeros that Smith's
+            // formula loses to a spurious NaN.
+            if ((c == T.Zero) && (d == T.Zero) && (!T.IsNaN(a) || !T.IsNaN(b)))
+            {
+                // Divisor is zero and the dividend is not fully NaN: directed infinity.
+                T inf = T.CopySign(T.PositiveInfinity, c);
+                x = inf * a;
+                y = inf * b;
+            }
+            else if ((T.IsInfinity(a) || T.IsInfinity(b)) && T.IsFinite(c) && T.IsFinite(d))
+            {
+                // Infinite dividend, finite divisor: infinity.
+                a = T.CopySign(T.IsInfinity(a) ? T.One : T.Zero, a);
+                b = T.CopySign(T.IsInfinity(b) ? T.One : T.Zero, b);
+                T inf = T.PositiveInfinity;
+                x = inf * ((a * c) + (b * d));
+                y = inf * ((b * c) - (a * d));
+            }
+            else if ((T.IsInfinity(c) || T.IsInfinity(d)) && T.IsFinite(a) && T.IsFinite(b))
+            {
+                // Finite dividend, infinite divisor: zero.
+                c = T.CopySign(T.IsInfinity(c) ? T.One : T.Zero, c);
+                d = T.CopySign(T.IsInfinity(d) ? T.One : T.Zero, d);
+                x = T.Zero * ((a * c) + (b * d));
+                y = T.Zero * ((b * c) - (a * d));
             }
 
             return new Complex<T>(x, y);
