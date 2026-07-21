@@ -185,6 +185,89 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetBaseClassInstantiation_MatchesBaseDefinitionAndRejectsInvalidMatches(MockTarget.Architecture arch)
+    {
+        TargetPointer derivedType = default;
+        TargetPointer matchingBaseInstantiation = default;
+        TargetPointer baseType = default;
+        TargetPointer unrelatedBaseType = default;
+        TargetPointer differentModuleBaseType = default;
+        TargetPointer zeroRidDerivedType = default;
+        TargetPointer zeroRidBaseType = default;
+        TargetPointer cycleDerivedType = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                const ulong Module = 0x1234_0000;
+
+                MockMethodTable AddType(string name, uint rid, ulong parent = 0, ulong module = Module)
+                {
+                    MockEEClass eeClass = rtsBuilder.AddEEClass(name);
+                    MockMethodTable methodTable = rtsBuilder.AddMethodTable(name);
+                    methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                    methodTable.Module = module;
+                    methodTable.MTFlags2 = rid << 8;
+                    methodTable.ParentMethodTable = parent;
+                    eeClass.MethodTable = methodTable.Address;
+                    methodTable.EEClassOrCanonMT = eeClass.Address;
+                    return methodTable;
+                }
+
+                baseType = AddType("BaseType", 42).Address;
+                matchingBaseInstantiation = AddType("MatchingBaseInstantiation", 42, rtsBuilder.SystemObjectMethodTable.Address).Address;
+                derivedType = AddType("DerivedType", 43, matchingBaseInstantiation.Value).Address;
+                unrelatedBaseType = AddType("UnrelatedBaseType", 44).Address;
+                differentModuleBaseType = AddType("DifferentModuleBaseType", 42, module: Module + 1).Address;
+                TargetPointer zeroRidBaseInstantiation = AddType("ZeroRidBaseInstantiation", 0, rtsBuilder.SystemObjectMethodTable.Address).Address;
+                zeroRidDerivedType = AddType("ZeroRidDerivedType", 45, zeroRidBaseInstantiation.Value).Address;
+                zeroRidBaseType = AddType("ZeroRidBaseType", 0).Address;
+                MockMethodTable cycleFirst = AddType("CycleFirst", 46);
+                MockMethodTable cycleSecond = AddType("CycleSecond", 47, cycleFirst.Address);
+                cycleFirst.ParentMethodTable = cycleSecond.Address;
+                cycleDerivedType = cycleFirst.Address;
+            });
+
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+        Assert.True(rts.TryGetBaseClassInstantiation(
+            rts.GetTypeHandle(derivedType),
+            rts.GetTypeHandle(baseType),
+            out TypeHandle baseInstantiation));
+        Assert.Equal(matchingBaseInstantiation, baseInstantiation.Address);
+
+        Assert.True(rts.TryGetBaseClassInstantiation(
+            rts.GetTypeHandle(zeroRidBaseType),
+            rts.GetTypeHandle(zeroRidBaseType),
+            out baseInstantiation));
+        Assert.Equal(zeroRidBaseType, baseInstantiation.Address);
+
+        Assert.False(rts.TryGetBaseClassInstantiation(
+            rts.GetTypeHandle(derivedType),
+            rts.GetTypeHandle(unrelatedBaseType),
+            out baseInstantiation));
+        Assert.True(baseInstantiation.IsNull);
+
+        Assert.False(rts.TryGetBaseClassInstantiation(
+            rts.GetTypeHandle(derivedType),
+            rts.GetTypeHandle(differentModuleBaseType),
+            out baseInstantiation));
+        Assert.True(baseInstantiation.IsNull);
+
+        Assert.False(rts.TryGetBaseClassInstantiation(
+            rts.GetTypeHandle(zeroRidDerivedType),
+            rts.GetTypeHandle(zeroRidBaseType),
+            out baseInstantiation));
+        Assert.True(baseInstantiation.IsNull);
+
+        Assert.False(rts.TryGetBaseClassInstantiation(
+            rts.GetTypeHandle(cycleDerivedType),
+            rts.GetTypeHandle(unrelatedBaseType),
+            out baseInstantiation));
+        Assert.True(baseInstantiation.IsNull);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void MethodTableEEClassInvalidThrows(MockTarget.Architecture arch)
     {
         TargetPointer badMethodTablePtr = default;

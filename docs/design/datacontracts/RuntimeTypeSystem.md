@@ -116,6 +116,10 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
     public virtual bool IsCollectible(TypeHandle typeHandle);
+    // Walks the class parent chain of derivedType, inclusive, to find the exact runtime
+    // instantiation whose module and TypeDef RID match baseType. Returns false and sets
+    // baseInstantiation to default when there is no match or the chain is detected as corrupt.
+    public virtual bool TryGetBaseClassInstantiation(TypeHandle derivedType, TypeHandle baseType, out TypeHandle baseInstantiation);
     public virtual bool ContainsGenericVariables(TypeHandle typeHandle);
     public virtual bool HasTypeParam(TypeHandle typeHandle);
 
@@ -977,6 +981,44 @@ Contracts used:
             return false;
         MethodTable typeHandle = _methodTables[typeHandle.Address];
         return typeHandle.Flags.IsCollectible;
+    }
+
+    private bool HasSameTypeDefinition(TypeHandle candidateType, TypeHandle baseType)
+    {
+        if (candidateType.Address == baseType.Address)
+            return true;
+
+        uint candidateTypeRid = GetRowId(GetTypeDefToken(candidateType));
+        uint baseTypeRid = GetRowId(GetTypeDefToken(baseType));
+        return candidateTypeRid != 0
+            && candidateTypeRid == baseTypeRid
+            && GetModule(candidateType) == GetModule(baseType);
+    }
+
+    public bool TryGetBaseClassInstantiation(TypeHandle derivedType, TypeHandle baseType, out TypeHandle baseInstantiation)
+    {
+        const int MaxParentWalkIterations = 8096;
+
+        TypeHandle current = derivedType;
+        TargetPointer previous = TargetPointer.Null;
+        for (int i = 0; i < MaxParentWalkIterations && !current.IsNull; i++)
+        {
+            if (HasSameTypeDefinition(current, baseType))
+            {
+                baseInstantiation = current;
+                return true;
+            }
+
+            TargetPointer next = GetParentMethodTable(current);
+            if (next == TargetPointer.Null || next == previous || next == current.Address)
+                break;
+
+            previous = current.Address;
+            current = GetTypeHandle(next);
+        }
+
+        baseInstantiation = default;
+        return false;
     }
 
     public bool ContainsGenericVariables(TypeHandle typeHandle)

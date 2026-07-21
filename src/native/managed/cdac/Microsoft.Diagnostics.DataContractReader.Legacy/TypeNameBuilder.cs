@@ -161,27 +161,10 @@ public struct TypeNameBuilder
     public static TypeHandle GetExactOwningType(IRuntimeTypeSystem runtimeTypeSystem, TypeHandle possiblyDerivedType, MethodDescHandle method)
     {
         TypeHandle approxOwner = runtimeTypeSystem.GetTypeHandle(runtimeTypeSystem.GetMethodTable(method));
+        if (runtimeTypeSystem.TryGetBaseClassInstantiation(possiblyDerivedType, approxOwner, out TypeHandle baseInstantiation))
+            return baseInstantiation;
 
-        uint typeDefTokenOfOwner = runtimeTypeSystem.GetTypeDefToken(approxOwner);
-        TargetPointer moduleOfOwner = runtimeTypeSystem.GetModule(approxOwner);
-
-        do
-        {
-            uint typeDefTokenOfPossiblyDerivedType = runtimeTypeSystem.GetTypeDefToken(possiblyDerivedType);
-            TargetPointer moduleOfPossiblyDerivedType = runtimeTypeSystem.GetModule(possiblyDerivedType);
-
-            if ((typeDefTokenOfOwner == typeDefTokenOfPossiblyDerivedType) && (moduleOfOwner == moduleOfPossiblyDerivedType))
-            {
-                return possiblyDerivedType;
-            }
-
-            TargetPointer parentTypePointer = runtimeTypeSystem.GetParentMethodTable(possiblyDerivedType);
-            if (parentTypePointer.Value == 0)
-                throw new InvalidOperationException("Invalid parent type");
-
-            // TODO(cdac) - Consider adding infinite loop detection here
-            possiblyDerivedType = runtimeTypeSystem.GetTypeHandle(parentTypePointer);
-        } while (true);
+        throw new InvalidOperationException("Invalid parent type");
     }
 
     public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, TypeNameFormat format)
