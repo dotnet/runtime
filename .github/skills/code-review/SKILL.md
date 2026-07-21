@@ -45,6 +45,11 @@ Before analyzing anything, collect as much relevant **code** context as you can.
   steps, integrating their results. Do not infer or invent an agent from an instruction file.
 - If the environment lacks sub-agent tooling or no matching agent exists, continue the review
   yourself. Area agents are additions to, not replacements for, the regular review.
+- Some specialist skills are triggered by diff **content**, not path. In particular, if the diff
+  contains `Vector128`/`Vector256`/`Vector512`, `Vector<T>`, or any `System.Runtime.Intrinsics.*`
+  type, also apply the `vectorization` skill's review checklist (correctness vs. the scalar
+  contract, remainder handling, memory safety, cross-platform consistency, and `BoundedMemory`
+  test coverage). This holds regardless of which folder the change lives in.
 
 ### Step 3: Form an Independent Assessment
 
@@ -188,6 +193,7 @@ Load, based on the paths in the diff:
 - **Native files (`*.c` / `*.cpp` / `*.h` / `*.inc` / `*.S` / `*.asm`) changed:** `.github/instructions/review-native.instructions.md` -- C++ style, VM/JIT contracts, GC protection, platform defines, and interop/marshalling rules.
 - **Test files (`**/tests/**`, `src/tests/**`) changed:** `.github/instructions/review-all-tests.instructions.md` -- testing conventions and regression-test requirements.
 - **Area matches:** also load any matching area file under `.github/instructions/` (for example `.github/instructions/review-core-runtime.instructions.md`, `.github/instructions/jit.instructions.md`, `.github/instructions/system-net-*.instructions.md`, `.github/instructions/extensions-*.instructions.md`, `.github/instructions/compression.instructions.md`, `.github/instructions/cdac.instructions.md`). These stack on top of the language rules. An area instruction file does not imply that a corresponding agent exists; invoke an area **agent** under `.github/agents/` only when it actually exists and applies, as described in Step 2.
+- **Content matches (not path-based):** if the diff uses `Vector128`/`Vector256`/`Vector512`, `Vector<T>`, or `System.Runtime.Intrinsics.*` anywhere, apply the `vectorization` skill in addition to the above. SIMD code appears in arbitrary library files, so this trigger is keyed on content, not folder.
 
 If a rule in a more specific file conflicts with a general one, the more specific file
 wins. If any required instruction file cannot be loaded, note it in the review and fall
