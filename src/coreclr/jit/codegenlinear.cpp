@@ -981,6 +981,8 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 {
 }
 
+#endif // !TARGET_WASM
+
 //------------------------------------------------------------------------
 // genRecordAsyncResume:
 //   Record information about an async resume point in the async resume info tabl.e
@@ -999,6 +1001,8 @@ void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
 
     asyncResumeInfo->Locations()[index] = emitLocation(GetEmitter());
 }
+
+#ifndef TARGET_WASM
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

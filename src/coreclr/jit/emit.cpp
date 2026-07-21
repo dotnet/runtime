@@ -8520,7 +8520,19 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
                 // Async call may have been removed very late, after we have introduced suspension/resumption.
                 // In those cases just encode null.
-                BYTE* target           = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
+                BYTE* target = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
+#ifdef TARGET_WASM
+                // On Wasm, Resume is a function-table index (dispatched via call_indirect); DiagnosticIP
+                // has no Wasm equivalent so leave it null.
+                aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
+                aDstRW[i].DiagnosticIP = 0;
+
+                if (m_compiler->opts.compReloc)
+                {
+                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint,
+                                         CorInfoReloc::WASM_TABLE_INDEX_I32);
+                }
+#else
                 aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
 
@@ -8532,6 +8544,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                         emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
                     }
                 }
+#endif // TARGET_WASM
 
                 JITDUMP("  Resume=%p, FinalResumeIP=%p\n", emitAsyncResumeStubEntryPoint, (void*)target);
             }

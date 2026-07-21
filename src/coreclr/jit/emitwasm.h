@@ -39,6 +39,7 @@ void emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t offset, u
 
 void emitAddressConstant(void* address);
 void emitFuncletAddressConstant(cnsval_ssize_t funcletId);
+void emitDataOffsetConstant(UNATIVE_OFFSET dataOffs);
 
 static unsigned SizeOfULEB128(uint64_t value);
 static unsigned SizeOfSLEB128(int64_t value);

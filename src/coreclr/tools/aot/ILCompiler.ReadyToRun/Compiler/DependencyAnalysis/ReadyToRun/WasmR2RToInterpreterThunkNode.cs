@@ -47,8 +47,37 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_wasmSignature, _context);
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
-        bool INodeWithTypeSignature.IsAsyncCall => false;
+        bool INodeWithTypeSignature.IsAsyncCall => HasAsyncContinuation;
         bool INodeWithTypeSignature.HasGenericContextArg => false;
+
+        private bool HasAsyncContinuation => _wasmSignature.SignatureString.Contains('a');
+        private bool HasGenericContextBeforeAsync
+        {
+            get
+            {
+                int asyncMarkerIndex = _wasmSignature.SignatureString.IndexOf('a');
+                if (asyncMarkerIndex < 0)
+                {
+                    return false;
+                }
+
+                int pos = 1;
+                if (_wasmSignature.SignatureString[0] == 'S')
+                {
+                    while ((pos < _wasmSignature.SignatureString.Length) && char.IsDigit(_wasmSignature.SignatureString[pos]))
+                    {
+                        pos++;
+                    }
+                }
+
+                if ((pos < _wasmSignature.SignatureString.Length) && (_wasmSignature.SignatureString[pos] == 'T'))
+                {
+                    pos++;
+                }
+
+                return (pos < asyncMarkerIndex) && (_wasmSignature.SignatureString[pos] == 'i');
+            }
+        }
 
         public WasmR2RToInterpreterThunkNode(NodeFactory factory, WasmSignature wasmSignature)
         {
@@ -94,7 +123,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(s_helperTypeParams);
 
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
+            bool hasAsyncContinuation = HasAsyncContinuation;
+            bool hasGenericContextBeforeAsync = HasGenericContextBeforeAsync;
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context, methodIsAsyncCall: hasAsyncContinuation);
 
             bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
             bool hasThis = !methodSignature.IsStatic;
@@ -126,6 +157,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 offsets[i] += transitionBlockOffset;
             }
+            int asyncContinuationOffset = hasAsyncContinuation ? argit.GetAsyncContinuationArgOffset() + transitionBlockOffset : 0;
             int sizeOfStoredLocals = argumentsOffset + AlignmentHelper.AlignUp(sizeOfArgumentArray, 16);
 
             bool hasWasmReturn = _typeNode.Type.Returns.Types.Length > 0;
@@ -175,6 +207,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Hidden retbuf pointer occupies a wasm local but is not in methodSignature params
             if (hasRetBuffArg)
             {
+                wasmLocalIndex++;
+            }
+
+            if (hasAsyncContinuation && !hasGenericContextBeforeAsync)
+            {
+                expressions.Add(Local.Get(0));
+                expressions.Add(Local.Get(wasmLocalIndex));
+                expressions.Add(I32.Store((ulong)asyncContinuationOffset));
                 wasmLocalIndex++;
             }
 
@@ -249,6 +289,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     wasmLocalIndex++;
                 }
+
+                if (hasAsyncContinuation && hasGenericContextBeforeAsync && (i == 0))
+                {
+                    expressions.Add(Local.Get(0));
+                    expressions.Add(Local.Get(wasmLocalIndex));
+                    expressions.Add(I32.Store((ulong)asyncContinuationOffset));
+                    wasmLocalIndex++;
+                }
             }
 
             // Zero the local return buffer
@@ -311,6 +359,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex));
             expressions.Add(I32.LoadWithRVAOffset(_helperCell));
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
+
+            if (hasAsyncContinuation)
+            {
+                expressions.Add(Local.Get(0));
+                expressions.Add(I32.Load((ulong)asyncContinuationOffset));
+                expressions.Add(Global.Set(WasmObjectWriter.AsyncContinuationGlobalIndex));
+            }
 
             // Restore the old stack pointer global
             expressions.Add(Local.Get(savedSpLocalIndex));

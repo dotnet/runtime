@@ -3287,6 +3287,7 @@ SWITCH_OPCODE:
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
                     else
                     {
+                        Object** pCalliContinuationRet = pInterpreterFrame->GetContinuationPtr();
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
                         // On portable entry point platforms, managed calli targets are portable
                         // entry points and always have a MethodDesc.
@@ -3307,9 +3308,14 @@ SWITCH_OPCODE:
                             targetMethod->SetCalliCookie(cookie);
                             cookie = targetMethod->GetCalliCookie();
                         }
+
+                        // Only async callees take the continuation arg.
+                        //
+                        if (!targetMethod->IsAsyncMethod())
+                            pCalliContinuationRet = nullptr;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
                         frameNeedsTailcallUpdate = false;
-                        InvokeCalliStub(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr());
+                        InvokeCalliStub(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pCalliContinuationRet);
                     }
 
                     INTOP_NEXT;

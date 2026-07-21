@@ -3,6 +3,7 @@
 
 using Internal.ReadyToRunConstants;
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -19,8 +20,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
             builder.EmitByte((byte)ReadyToRunFixupKind.ResumptionStubEntryPoint);
-            // Emit a relocation to the resumption stub code; at link time this becomes the RVA.
-            builder.EmitReloc(_resumptionStub, RelocType.IMAGE_REL_BASED_ADDR32NB);
+            // On wasm the stub is a function-table index (WASM_TABLE_INDEX_REL_I32); elsewhere an imageBase RVA.
+            RelocType relocType = factory.Target.Architecture == TargetArchitecture.Wasm32
+                ? RelocType.WASM_TABLE_INDEX_REL_I32
+                : RelocType.IMAGE_REL_BASED_ADDR32NB;
+            builder.EmitReloc(_resumptionStub, relocType);
 
             return builder.ToObjectData();
         }

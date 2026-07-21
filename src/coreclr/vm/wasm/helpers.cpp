@@ -882,7 +882,15 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
     _ASSERTE(ftn != (PCODE)NULL);
     _ASSERTE(cookie != NULL);
 
-    (cookie)(ftn, pArgs, pRet);
+    if (pContinuationRet != nullptr)
+    {
+        typedef void (*AsyncInterpreterCalliCookie)(PCODE, int8_t*, int8_t*, Object**);
+        ((AsyncInterpreterCalliCookie)(void*)cookie)(ftn, pArgs, pRet, pContinuationRet);
+    }
+    else
+    {
+        (cookie)(ftn, pArgs, pRet);
+    }
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet)
@@ -1096,6 +1104,13 @@ namespace
         {
             if (pos < maxSize)
                 keyBuffer[pos] = 'i';
+            pos++;
+        }
+
+        if (sig.HasAsyncContinuation())
+        {
+            if (pos < maxSize)
+                keyBuffer[pos] = 'a';
             pos++;
         }
 
@@ -1512,7 +1527,10 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
         cookie = pMD->GetCalliCookie();
     }
 
-    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pContinuationRet);
+    // Only pass the continuation arg to async callees.
+    //
+    Object** pCalleeContinuationRet = pMD->IsAsyncMethod() ? pContinuationRet : nullptr;
+    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pCalleeContinuationRet);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)

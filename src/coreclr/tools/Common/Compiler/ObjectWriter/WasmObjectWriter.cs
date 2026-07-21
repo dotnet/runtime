@@ -976,7 +976,7 @@ namespace ILCompiler.ObjectWriter
                             // flag mapping
                             if (symbolWebcilSection is null)
                             {
-                                throw new InvalidDataException();
+                                throw new InvalidDataException($"WASM_MEMORY_ADDR_REL_SLEB: symbol '{reloc.SymbolName}' (sectionIndex {definedSymbol.SectionIndex}, section type {_sections[definedSymbol.SectionIndex]?.GetType().Name}) is not in a WebcilSection. Reloc in section {sectionIndex} ({_sections[sectionIndex]?.GetType().Name}), offset {reloc.Offset:X}.");
                             }
 
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
@@ -992,7 +992,7 @@ namespace ILCompiler.ObjectWriter
                             // flag mapping
                             if (symbolWebcilSection is null)
                             {
-                                throw new InvalidDataException();
+                                throw new InvalidDataException($"WASM_MEMORY_ADDR_REL_LEB: symbol '{reloc.SymbolName}' (sectionIndex {definedSymbol.SectionIndex}, section type {_sections[definedSymbol.SectionIndex]?.GetType().Name}) is not in a WebcilSection. Reloc in section {sectionIndex} ({_sections[sectionIndex]?.GetType().Name}), offset {reloc.Offset:X}.");
                             }
 
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
@@ -1053,9 +1053,10 @@ namespace ILCompiler.ObjectWriter
         }
 #nullable disable
 
-        public const int StackPointerGlobalIndex = 0;
-        public const int ImageBaseGlobalIndex = 1;
-        public const int TableBaseGlobalIndex = 2;
+        public const int StackPointerGlobalIndex = WasmGlobalImports.StackPointerGlobalIndex;
+        public const int ImageBaseGlobalIndex = WasmGlobalImports.ImageBaseGlobalIndex;
+        public const int TableBaseGlobalIndex = WasmGlobalImports.TableBaseGlobalIndex;
+        public const int AsyncContinuationGlobalIndex = WasmGlobalImports.AsyncContinuationGlobalIndex;
         public const int RtlRestoreContextTagIndex = 0;
 
         private static readonly WasmFuncType RtlRestoreContextTagSignature = new(
@@ -1065,7 +1066,8 @@ namespace ILCompiler.ObjectWriter
         private static readonly FrozenDictionary<Utf8String, int> _globalSymbolNameToGlobalIndex = FrozenDictionary.Create<Utf8String, int>([
             new(new(WasmWellKnownGlobalSymbolNode.StackPointerName), StackPointerGlobalIndex),
             new(new(WasmWellKnownGlobalSymbolNode.ImageBaseName),    ImageBaseGlobalIndex),
-            new(new(WasmWellKnownGlobalSymbolNode.TableBaseName),    TableBaseGlobalIndex)
+            new(new(WasmWellKnownGlobalSymbolNode.TableBaseName),    TableBaseGlobalIndex),
+            new(new(WasmWellKnownGlobalSymbolNode.AsyncContinuationName), AsyncContinuationGlobalIndex)
         ]);
 
         private WasmImport[] CreateDefaultGlobalImports()
@@ -1077,6 +1079,7 @@ namespace ILCompiler.ObjectWriter
                 new WasmImport("webcil", "stackPointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
                 new WasmImport("webcil", "imageBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
                 new WasmImport("webcil", "tableBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
+                new WasmImport("webcil", "asyncContinuation", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: AsyncContinuationGlobalIndex),
                 new WasmImport("webcil", "table", import: new WasmTableImportType(), index: 0),
                 new WasmImport("webcil", "rtlRestoreContextTag", import: new WasmTagImportType(rtlRestoreContextTagTypeIndex), index: RtlRestoreContextTagIndex),
             ];

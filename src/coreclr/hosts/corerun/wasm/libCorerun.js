@@ -31,11 +31,18 @@ function libCoreRunFactory() {
                 }
 
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
+
+                // Shared i32 global holding the runtime-async continuation return value.
+                CORERUN.sharedAsyncContinuation = new WebAssembly.Global({ value: "i32", mutable: true }, 0);
             },
         },
         $CORERUN__postset: "CORERUN.selfInitialize()",
         $CORERUN__deps: commonDeps,
         BrowserHost_ShutdownDotnet: (exitCode) => _corerun_shutdown(exitCode),
+        // C-callable accessors for the shared asyncContinuation global, used by interp <-> R2R
+        // boundary code where the C++ side can't emit `global.get`/`global.set`.
+        RuntimeAsync_LoadAsyncContinuation: () => CORERUN.sharedAsyncContinuation.value,
+        RuntimeAsync_StoreAsyncContinuation: (value) => { CORERUN.sharedAsyncContinuation.value = value >>> 0; },
         BrowserHost_ExternalAssemblyProbe: (pathPtr, outDataStartPtr, outSize) => {
             function asUint8Array(bufferSource) {
                 if (bufferSource instanceof ArrayBuffer) {
@@ -235,7 +242,9 @@ function libCoreRunFactory() {
                         rtlRestoreContextTag: wasmExports.__coreclr_wasm_rtlrestorecontext_tag,
                         table: wasmTable,
                         tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
-                        imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr)
+                        imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr),
+                        // Runtime-async continuation return slot, shared across all webcils.
+                        asyncContinuation: CORERUN.sharedAsyncContinuation
                     }
                 });
             } catch (e) {

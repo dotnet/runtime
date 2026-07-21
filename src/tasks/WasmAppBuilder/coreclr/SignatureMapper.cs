@@ -176,7 +176,7 @@ internal static class SignatureMapper
     /// <summary>
     /// Parses a signature string into individual tokens.
     /// Single-char types produce one-char tokens; S&lt;N&gt; produces a multi-char token like "S8" or "S64".
-    /// The 'p' suffix is included as its own token.
+    /// The 'a' and 'p' suffixes are included as their own tokens.
     /// </summary>
     public static List<string> ParseSignatureTokens(string signature)
     {
