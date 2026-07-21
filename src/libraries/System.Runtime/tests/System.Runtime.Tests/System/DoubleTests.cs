@@ -1051,6 +1051,23 @@ namespace System.Tests
             Assert.Equal(expected, d.ToString(format, NumberFormatInfo.InvariantInfo));
         }
 
+        [Theory]
+        // Exact powers of two have unequal rounding margins, so the shortest round-trippable
+        // string needs all 17 significant digits. Dropping the last one parses back to the
+        // adjacent lower value.
+        [InlineData(0x3E60000000000000, "2.9802322387695312E-08")]   // +2^-25
+        [InlineData(0xBE60000000000000, "-2.9802322387695312E-08")]  // -2^-25
+        [InlineData(0x0410000000000000, "4.1045368012983762E-289")]  // +2^-958
+        [InlineData(0x8410000000000000, "-4.1045368012983762E-289")] // -2^-958
+        public static void ToString_ExactPowerOfTwo_Roundtrips(ulong bits, string expected)
+        {
+            double d = BitConverter.UInt64BitsToDouble(bits);
+
+            Assert.Equal(expected, d.ToString("R", CultureInfo.InvariantCulture));
+            Assert.Equal(expected, d.ToString(CultureInfo.InvariantCulture));
+            Assert.Equal(d, double.Parse(expected, CultureInfo.InvariantCulture));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Requires a lot of memory
         [OuterLoop("Takes a long time, allocates a lot of memory")]
         [SkipOnMono("Frequently throws OOM on Mono")]
