@@ -31,7 +31,7 @@ namespace System.Net.Sockets
             // and schedule corresponding work items to ThreadPool (socket reads and writes).
             //
             // Using TechEmpower benchmarks that generate a LOT of SMALL socket reads and writes under a VERY HIGH load
-            // we have observed that a single engine is capable of keeping busy up to thirty x64 and eight ARM64 CPU Cores.
+            // we have observed that a single engine is capable of keeping busy up to thirty CPU Cores.
             //
             // The vast majority of real-life scenarios is never going to generate such a huge load (hundreds of thousands of requests per second)
             // and having a single producer should be almost always enough.
@@ -50,11 +50,7 @@ namespace System.Net.Sockets
                 return Environment.ProcessorCount;
             }
 
-            Architecture architecture = RuntimeInformation.ProcessArchitecture;
-            int coresPerEngine = architecture == Architecture.Arm64 || architecture == Architecture.Arm
-                ? 8
-                : 30;
-
+            int coresPerEngine = 30;
             return Math.Max(1, (int)Math.Round(Environment.ProcessorCount / (double)coresPerEngine));
         }
 
