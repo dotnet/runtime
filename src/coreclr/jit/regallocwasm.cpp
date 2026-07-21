@@ -717,8 +717,10 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
 // Notes:
 //   There are only 3 cases where we need to consume temporary registers for a hardware intrinsic:
 //   1) A swizzle with a contained mask (source operand multiply used)
-//   2) A hardware intrinsic with a non-constant immediate operand that requires a jump table fallback (all operands multiply used)
-//   3) A memory load/store hardware intrinsic that requires a null check of the address (address multiply used for null check)
+//   2) A hardware intrinsic with a non-constant immediate operand that requires a jump table fallback (all operands
+//   multiply used)
+//   3) A memory load/store hardware intrinsic that requires a null check of the address (address
+//   multiply used for null check)
 void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* node)
 {
     // A constant, in-range mask Swizzle is lowered to an immediate i8x16.shuffle, which reuses the
@@ -754,7 +756,8 @@ void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* nod
     }
     else
     {
-        // We still need to consume a temporary register due to a null check of the address operand for memory load/store intrinsics.
+        // We still need to consume a temporary register due to a null check of the address operand for memory
+        // load/store intrinsics.
         GenTree* addr;
         if (node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr))
         {
