@@ -6005,8 +6005,10 @@ void Debugger::LockAndSendEnCRemapEvent(DebuggerJitInfo * dji, SIZE_T currentIP,
     ipce->EnCRemap.resumeILOffset = PTR_TO_CORDB_ADDRESS(resumeIP);
     ipce->EnCRemap.funcMetadataToken = pMD->GetMemberDef();
 
-    LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: methodDef 0x%x, from version %zx to %zx\n",
-    ipce->EnCRemap.funcMetadataToken, ipce->EnCRemap.currentVersionNumber, ipce->EnCRemap.resumeVersionNumber));
+    LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: methodDef 0x%x, from version %llx to %llx\n",
+        static_cast<mdMethodDef>(ipce->EnCRemap.funcMetadataToken),
+        static_cast<unsigned long long>(ipce->EnCRemap.currentVersionNumber),
+        static_cast<unsigned long long>(ipce->EnCRemap.resumeVersionNumber)));
 
     Module *pRuntimeModule = pMD->GetModule();
 
@@ -6060,7 +6062,7 @@ void Debugger::LockAndSendEnCRemapCompleteEvent(MethodDesc *pMD)
     LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s dmod:%p, methodDef:0x%08x \n",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName,
         pDModule,
-        ipce->EnCRemap.funcMetadataToken));
+        static_cast<mdMethodDef>(ipce->EnCRemapComplete.funcMetadataToken)));
 
     // IPC event is now initialized, so we can send it over.
     SendSimpleIPCEventAndBlock();
@@ -9808,7 +9810,8 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
         GetSizeForCorElementType(ipce->FuncEvalComplete.resultType.elementType)));
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: returned el %04x resultAddr %p\n",
-        ipce->FuncEvalComplete.resultType.elementType, (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr))));
+        static_cast<unsigned>(ipce->FuncEvalComplete.resultType.elementType),
+        (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr))));
 
     m_pRCThread->SendIPCEvent();
 
@@ -10297,9 +10300,9 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             LOG((LF_CORDB,LL_INFO10000,"\tBP Add: BPTOK:"
                 "0x%p, tok=0x%08x, offset=0x%x, isIL=%d dm=0x%p m=0x%p\n",
                  pDebuggerBP,
-                 pEvent->BreakpointData.funcMetadataToken,
-                 pEvent->BreakpointData.offset,
-                 pEvent->BreakpointData.isIL,
+                 static_cast<mdMethodDef>(pEvent->BreakpointData.funcMetadataToken),
+                 static_cast<UINT>(pEvent->BreakpointData.offset),
+                 static_cast<bool>(pEvent->BreakpointData.isIL),
                  pDebuggerModule,
                  pModule));
 
@@ -10330,9 +10333,9 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                 CORDB_ADDRESS_TO_PTR(pEvent->StepData.frameToken),
                 (pEvent->StepData.stepIn ? "true" : "false"),
                 (pEvent->StepData.rangeIL ? "true" : "false"),
-                pEvent->StepData.rangeCount,
-                pEvent->StepData.rgfMappingStop,
-                pEvent->StepData.rgfInterceptStop,
+                static_cast<UINT>(pEvent->StepData.rangeCount),
+                static_cast<unsigned>(pEvent->StepData.rgfMappingStop),
+                static_cast<unsigned>(pEvent->StepData.rgfInterceptStop),
                 pEvent->vmAppDomain.GetRawPtr()));
 
             // <TODO>@todo memory allocation - bad if we're synced</TODO>
@@ -11087,7 +11090,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         // We should never get an event that we don't know about.
         CONSISTENCY_CHECK_MSGF(false, ("Unknown Debug-Event on LS:id=0x%08x.", pEvent->type));
         LOG((LF_CORDB, LL_INFO10000, "Unknown event type: 0x%08x\n",
-             pEvent->type));
+             static_cast<unsigned>(pEvent->type)));
     }
 
     STRESS_LOG0(LF_CORDB, LL_INFO10000, "D::HIPCE: finished handling event\n");
@@ -11602,7 +11605,9 @@ HRESULT Debugger::BasicTypeInfoToTypeHandle(DebuggerIPCE_BasicTypeData *data, Ty
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO10000, "D::BTITTH: expanding basic right-side type to left-side type, ELEMENT_TYPE: %d.\n", data->elementType));
+    LOG((LF_CORDB, LL_INFO10000,
+         "D::BTITTH: expanding basic right-side type to left-side type, ELEMENT_TYPE: %d.\n",
+         static_cast<CorElementType>(data->elementType)));
     *pRes = TypeHandle();
     TypeHandle th;
     switch (data->elementType)
@@ -11694,7 +11699,9 @@ TypeHandle Debugger::TypeDataWalk::ReadTypeHandle()
     if (!data)
       COMPlusThrow(kArgumentException, W("Argument_InvalidGenericArg"));
 
-    LOG((LF_CORDB, LL_INFO10000, "D::ETITTH: expanding right-side type to left-side type, ELEMENT_TYPE: %d.\n", data->data.elementType));
+    LOG((LF_CORDB, LL_INFO10000,
+         "D::ETITTH: expanding right-side type to left-side type, ELEMENT_TYPE: %d.\n",
+         static_cast<CorElementType>(data->data.elementType)));
 
     TypeHandle th;
     CorElementType et = data->data.elementType;

@@ -2320,7 +2320,7 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
             "\t: argSigType=0x%x, byrefArgSigType=0x%0x, inType=0x%0x\n",
              pFEArgInfo[currArgIndex].argSigType,
              pFEArgInfo[currArgIndex].byrefArgSigType,
-             pFEAD->argElementType));
+             static_cast<unsigned>(pFEAD->argElementType)));
 
         INT64 *pDest = &(pBufferArray[currArgIndex]);
 
@@ -2835,7 +2835,7 @@ void PackArgumentArray(DebuggerEval *pDE,
             "\t: argSigType=0x%x, byrefArgSigType=0x%0x, inType=0x%0x\n",
              pFEArgInfo[currArgIndex].argSigType,
              pFEArgInfo[currArgIndex].byrefArgSigType,
-             pFEAD->argElementType));
+             static_cast<unsigned>(pFEAD->argElementType)));
 
 
         GetFuncEvalArgValue(pDE,

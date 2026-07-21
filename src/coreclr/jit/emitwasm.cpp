@@ -1314,7 +1314,7 @@ void emitter::emitDispIns(
         case IF_FUNCLETIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf("funclet %lli", (int64_t)imm);
+            printf("funclet %lli", static_cast<long long>(imm));
             dispLclVarInfoIfAny();
         }
         break;
@@ -1407,7 +1407,7 @@ void emitter::emitDispIns(
         {
             unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
-            printf(" %u %llu", log2align, (uint64_t)offset);
+            printf(" %u %llu", log2align, static_cast<unsigned long long>(offset));
             dispLclVarInfoIfAny();
 
             uint8_t lane = emitGetLaneImmValue(id);

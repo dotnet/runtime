@@ -2193,11 +2193,12 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
                 _ASSERTE(retEvent->type == DB_IPCE_ENC_UPDATE_FUNCTION ||
                                   retEvent->type == DB_IPCE_ENC_ADD_FUNCTION ||
                                   retEvent->type == DB_IPCE_ENC_ADD_FIELD);
-                LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC %s %8.8x to version %zu.\n",
+                LOG((LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: EnC %s %8.8x to version %llu.\n",
                         GetCurrentThreadId(),
                         retEvent->type == DB_IPCE_ENC_UPDATE_FUNCTION ? "Update function" :
                         retEvent->type == DB_IPCE_ENC_ADD_FUNCTION ? "Add function" : "Add field",
-                        retEvent->EnCUpdate.memberMetadataToken, retEvent->EnCUpdate.newVersionNumber));
+                        static_cast<mdToken>(retEvent->EnCUpdate.memberMetadataToken),
+                        static_cast<unsigned long long>(retEvent->EnCUpdate.newVersionNumber)));
 
                 CordbAppDomain *pAppDomain = GetAppDomain();
                 _ASSERTE(NULL != pAppDomain);

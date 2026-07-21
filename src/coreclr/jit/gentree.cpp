@@ -13101,7 +13101,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         msgLength = 0;
     }
 
-    printf(isLIR ? " %+*s" : " %-*s", msgLength, msg);
+    printf(isLIR ? " %*s" : " %-*s", static_cast<int>(msgLength), msg);
 
     /* Indent the node accordingly */
     if (!isLIR || hasOperands)
@@ -13199,11 +13199,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
 
             if (tree->OperIs(GT_RUNTIMELOOKUP))
             {
-#ifdef TARGET_64BIT
-                printf(" 0x%llx", dspPtr(tree->AsRuntimeLookup()->gtHnd));
-#else
-                printf(" 0x%x", dspPtr(tree->AsRuntimeLookup()->gtHnd));
-#endif
+                printf(" %p", dspPtr(tree->AsRuntimeLookup()->gtHnd));
 
                 switch (tree->AsRuntimeLookup()->gtHndType)
                 {
@@ -13571,7 +13567,7 @@ void Compiler::gtDispLclVar(unsigned lclNum, bool padForBiggestDisp)
 
     if (padForBiggestDisp && (charsPrinted < (int)LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH))
     {
-        printf("%*c", LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH - charsPrinted, ' ');
+        printf("%*c", static_cast<int>(LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH) - charsPrinted, ' ');
     }
 }
 
@@ -13675,7 +13671,7 @@ void Compiler::gtDispConst(GenTree* tree)
         case GT_CNS_INT:
             if (tree->IsIconHandle(GTF_ICON_STR_HDL))
             {
-                printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->IconValue()));
+                printf(" 0x%zX [ICON_STR_HDL]", static_cast<size_t>(dspPtr(tree->AsIntCon()->IconValue())));
             }
             else if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
@@ -13694,23 +13690,23 @@ void Compiler::gtDispConst(GenTree* tree)
                     }
                     else
                     {
-                        printf(" 0x%llx", dspIconVal);
+                        printf(" 0x%zx", static_cast<size_t>(dspIconVal));
                     }
                 }
                 else if ((iconVal > -1000) && (iconVal < 1000))
                 {
-                    printf(" %ld", dspIconVal);
+                    printf(" %zd", dspIconVal);
                 }
 #ifdef TARGET_64BIT
                 else if ((iconVal & 0xFFFFFFFF00000000LL) != 0)
                 {
                     if (dspIconVal >= 0)
                     {
-                        printf(" 0x%llx", dspIconVal);
+                        printf(" 0x%zx", static_cast<size_t>(dspIconVal));
                     }
                     else
                     {
-                        printf(" -0x%llx", -dspIconVal);
+                        printf(" -0x%zx", static_cast<size_t>(-dspIconVal));
                     }
                 }
 #endif
@@ -13718,11 +13714,11 @@ void Compiler::gtDispConst(GenTree* tree)
                 {
                     if (dspIconVal >= 0)
                     {
-                        printf(" 0x%X", dspIconVal);
+                        printf(" 0x%zX", static_cast<size_t>(dspIconVal));
                     }
                     else
                     {
-                        printf(" -0x%X", -dspIconVal);
+                        printf(" -0x%zX", static_cast<size_t>(-dspIconVal));
                     }
                 }
 
@@ -13786,7 +13782,7 @@ void Compiler::gtDispConst(GenTree* tree)
             break;
 
         case GT_CNS_LNG:
-            printf(" 0x%016I64x", tree->AsLngCon()->gtLconVal);
+            printf(" 0x%016llx", static_cast<unsigned long long>(tree->AsLngCon()->gtLconVal));
             break;
 
         case GT_CNS_DBL:
@@ -13801,7 +13797,7 @@ void Compiler::gtDispConst(GenTree* tree)
                 uint64_t bits;
                 static_assert(sizeof(bits) == sizeof(dcon));
                 memcpy(&bits, &dcon, sizeof(dcon));
-                printf(" %#.17g(0x%llx)\n", dcon, bits);
+                printf(" %#.17g(0x%llx)\n", dcon, static_cast<unsigned long long>(bits));
             }
             else
             {
@@ -13854,17 +13850,25 @@ void Compiler::gtDispConst(GenTree* tree)
 #if defined(TARGET_XARCH)
                 case TYP_SIMD32:
                 {
-                    printf("<0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx>", vecCon->gtSimdVal.u64[0],
-                           vecCon->gtSimdVal.u64[1], vecCon->gtSimdVal.u64[2], vecCon->gtSimdVal.u64[3]);
+                    printf("<0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx>",
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[0]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[1]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[2]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[3]));
                     break;
                 }
 
                 case TYP_SIMD64:
                 {
                     printf("<0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx>",
-                           vecCon->gtSimdVal.u64[0], vecCon->gtSimdVal.u64[1], vecCon->gtSimdVal.u64[2],
-                           vecCon->gtSimdVal.u64[3], vecCon->gtSimdVal.u64[4], vecCon->gtSimdVal.u64[5],
-                           vecCon->gtSimdVal.u64[6], vecCon->gtSimdVal.u64[7]);
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[0]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[1]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[2]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[3]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[4]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[5]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[6]),
+                           static_cast<unsigned long long>(vecCon->gtSimdVal.u64[7]));
                     break;
                 }
 
@@ -14145,7 +14149,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
 {
     if (tree == nullptr)
     {
-        printf(" [%08X] <NULL>\n", tree);
+        printf(" [%p] <NULL>\n", tree);
         printf(""); // null string means flush
         return;
     }
@@ -19515,7 +19519,7 @@ void dispNodeList(GenTree* list, bool verbose)
 
         if (verbose)
         {
-            printf("%08X -> %08X -> %08X\n", last, list, next);
+            printf("%p -> %p -> %p\n", last, list, next);
         }
 
         assert(!last || last->gtNext == list);
