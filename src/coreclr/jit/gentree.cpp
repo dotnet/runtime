@@ -20219,6 +20219,12 @@ UINT64 GenTreeIntConCommon::UnsignedIntegralValue() const
 // be encoded as 32-bit offset relative to IP or zero.
 bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
 {
+    // The relocation addend is not part of IconValue(), so address containment cannot preserve it.
+    if (IsIconHandle(GTF_ICON_RELOC_ADDR))
+    {
+        return false;
+    }
+
 #ifdef DEBUG
     // Early out if PC-rel encoding of absolute addr is disabled.
     if (!comp->opts.compEnablePCRelAddr)

@@ -8011,16 +8011,36 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             // We could do this folding earlier, but that is not trivial as we'll have to introduce a way to restore
             // the original object from a byref constant for optimizations.
             if (op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && !node->gtOverflow() &&
-                (op1->IsIconHandle(GTF_ICON_OBJ_HDL) || op2->IsIconHandle(GTF_ICON_OBJ_HDL)) &&
-                !op1->AsIntCon()->ImmedValNeedsReloc(m_compiler) && !op2->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+                (op1->IsIconHandle(GTF_ICON_OBJ_HDL) || op2->IsIconHandle(GTF_ICON_OBJ_HDL)))
             {
                 assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
-                // TODO-CQ: we should allow this for AOT too. For that we need to guarantee that the new constant
-                // will be lowered as the original handle with offset in a reloc.
-                BlockRange().Remove(op1);
-                BlockRange().Remove(op2);
-                node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
+                GenTreeIntCon* objHandle = op1->IsIconHandle(GTF_ICON_OBJ_HDL) ? op1->AsIntCon() : op2->AsIntCon();
+                GenTreeIntCon* offset    = (objHandle == op1) ? op2->AsIntCon() : op1->AsIntCon();
+
+                if (!objHandle->ImmedValNeedsReloc(m_compiler) && !offset->ImmedValNeedsReloc(m_compiler))
+                {
+                    BlockRange().Remove(op1);
+                    BlockRange().Remove(op2);
+                    node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
+                }
+#ifdef TARGET_AMD64
+                else if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && objHandle->ImmedValNeedsReloc(m_compiler) &&
+                         !offset->IsIconHandle() && !offset->ImmedValNeedsReloc(m_compiler) &&
+                         FitsIn<int32_t>(offset->IconValue()))
+                {
+                    FieldSeq* fieldSeq =
+                        m_compiler->GetFieldSeqStore()->Append(objHandle->GetFieldSeq(), offset->GetFieldSeq());
+                    int32_t relocOffset = static_cast<int32_t>(offset->IconValue());
+
+                    BlockRange().Remove(op1);
+                    BlockRange().Remove(op2);
+                    node->BashToConst(objHandle->IconValue(), node->TypeGet());
+                    node->gtFlags |= GTF_ICON_RELOC_ADDR;
+                    node->AsIntCon()->SetRelocOffset(relocOffset);
+                    node->AsIntCon()->SetFieldSeq(fieldSeq);
+                }
+#endif // TARGET_AMD64
             }
         }
 
