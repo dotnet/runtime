@@ -4123,15 +4123,19 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
     // Check for reverse pinvoke or CallDescrWorkerInternal.
     if (isNativeTransition)
     {
+        CLR_BOOL isPropagatingToNativeCode = FALSE;
         EECodeInfo codeInfo(preUnwindControlPC);
+        if (!doingFuncletUnwind)
+        {
 #ifdef USE_GC_INFO_DECODER
-        GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
-        CLR_BOOL isPropagatingToNativeCode = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
+            GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+            isPropagatingToNativeCode = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
 #else // USE_GC_INFO_DECODER
-        hdrInfo *hdrInfoBody;
-        codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
-        CLR_BOOL isPropagatingToNativeCode = hdrInfoBody->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
+            hdrInfo *hdrInfoBody;
+            codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
+            isPropagatingToNativeCode = hdrInfoBody->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // USE_GC_INFO_DECODER
+        }
         bool isPropagatingToExternalNativeCode = false;
 
         EH_LOG((LL_INFO100, "SfiNext: reached native frame at IP=%p, SP=%p, isPropagatingToNativeCode=%d\n",
