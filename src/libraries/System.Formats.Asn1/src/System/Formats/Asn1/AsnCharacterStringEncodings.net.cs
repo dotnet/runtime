@@ -99,20 +99,20 @@ namespace System.Formats.Asn1
         private int GetBytesVectorized(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
         {
             int available = write ? Math.Min(chars.Length, bytes.Length) : chars.Length;
-            int vectorizedLength = available - (available % Vector<byte>.Count);
             int position = 0;
 
             Debug.Assert(Vector<byte>.Count == 2 * Vector<ushort>.Count);
 
             // Revisit this cast when Vector<char> is supported: https://github.com/dotnet/runtime/issues/127611
-            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<char, ushort>(chars);
+            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<char, ushort>(chars).Slice(0, available);
+            Span<byte> destination = write ? bytes.Slice(0, available) : Span<byte>.Empty;
             Vector<ushort> minCharAllowed = new Vector<ushort>(_minCharAllowed);
             Vector<ushort> range = new Vector<ushort>(_range);
 
-            for (; position < vectorizedLength; position += Vector<byte>.Count)
+            while (source.Length >= Vector<byte>.Count)
             {
-                Vector<ushort> lower = new Vector<ushort>(source.Slice(position));
-                Vector<ushort> upper = new Vector<ushort>(source.Slice(position + Vector<ushort>.Count));
+                Vector<ushort> lower = new Vector<ushort>(source);
+                Vector<ushort> upper = new Vector<ushort>(source.Slice(Vector<ushort>.Count));
 
                 if (!IsAllowed(lower, minCharAllowed, range) || !IsAllowed(upper, minCharAllowed, range))
                 {
@@ -124,8 +124,12 @@ namespace System.Formats.Asn1
 
                 if (write)
                 {
-                    Vector.Narrow(lower, upper).CopyTo(bytes.Slice(position));
+                    Vector.Narrow(lower, upper).CopyTo(destination);
+                    destination = destination.Slice(Vector<byte>.Count);
                 }
+
+                source = source.Slice(Vector<byte>.Count);
+                position += Vector<byte>.Count;
             }
 
             return position;
@@ -134,21 +138,23 @@ namespace System.Formats.Asn1
         private int GetCharsVectorized(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
         {
             int available = write ? Math.Min(bytes.Length, chars.Length) : bytes.Length;
-            int vectorizedLength = available - (available % Vector<byte>.Count);
             int position = 0;
 
             Debug.Assert(Vector<byte>.Count == 2 * Vector<ushort>.Count);
 
+            ReadOnlySpan<byte> source = bytes.Slice(0, available);
             // Revisit this cast when Vector<char> is supported: https://github.com/dotnet/runtime/issues/127611
-            Span<ushort> destination = write ? MemoryMarshal.Cast<char, ushort>(chars) : Span<ushort>.Empty;
+            Span<ushort> destination = write ?
+                MemoryMarshal.Cast<char, ushort>(chars).Slice(0, available) :
+                Span<ushort>.Empty;
             Vector<byte> minCharAllowed = new Vector<byte>(_minCharAllowed);
             Vector<byte> range = new Vector<byte>(_range);
 
-            for (; position < vectorizedLength; position += Vector<byte>.Count)
+            while (source.Length >= Vector<byte>.Count)
             {
-                Vector<byte> source = new Vector<byte>(bytes.Slice(position));
+                Vector<byte> value = new Vector<byte>(source);
 
-                if (!IsAllowed(source, minCharAllowed, range))
+                if (!IsAllowed(value, minCharAllowed, range))
                 {
                     // If any element in the vector is not allowed, we break out and return the position before the
                     // current vector's width so that it goes down the scalar path. The scalar path will determine the
@@ -158,10 +164,14 @@ namespace System.Formats.Asn1
 
                 if (write)
                 {
-                    Vector.Widen(source, out Vector<ushort> lower, out Vector<ushort> upper);
-                    lower.CopyTo(destination.Slice(position));
-                    upper.CopyTo(destination.Slice(position + Vector<ushort>.Count));
+                    Vector.Widen(value, out Vector<ushort> lower, out Vector<ushort> upper);
+                    lower.CopyTo(destination);
+                    upper.CopyTo(destination.Slice(Vector<ushort>.Count));
+                    destination = destination.Slice(Vector<byte>.Count);
                 }
+
+                source = source.Slice(Vector<byte>.Count);
+                position += Vector<byte>.Count;
             }
 
             return position;
@@ -293,18 +303,19 @@ namespace System.Formats.Asn1
         private static int GetBytesVectorized(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
         {
             int available = write ? Math.Min(chars.Length, bytes.Length / sizeof(ushort)) : chars.Length;
-            int vectorizedLength = available - (available % Vector<ushort>.Count);
             int position = 0;
 
             // Revisit this cast when Vector<char> is supported: https://github.com/dotnet/runtime/issues/127611
-            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<char, ushort>(chars);
-            Span<ushort> destination = write ? MemoryMarshal.Cast<byte, ushort>(bytes) : Span<ushort>.Empty;
+            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<char, ushort>(chars).Slice(0, available);
+            Span<ushort> destination = write ?
+                MemoryMarshal.Cast<byte, ushort>(bytes).Slice(0, available) :
+                Span<ushort>.Empty;
             Vector<ushort> surrogateStart = new Vector<ushort>(SurrogateStart);
             Vector<ushort> surrogateRange = new Vector<ushort>(SurrogateRange);
 
-            for (; position < vectorizedLength; position += Vector<ushort>.Count)
+            while (source.Length >= Vector<ushort>.Count)
             {
-                Vector<ushort> value = new Vector<ushort>(source.Slice(position));
+                Vector<ushort> value = new Vector<ushort>(source);
 
                 if (ContainsSurrogate(value, surrogateStart, surrogateRange))
                 {
@@ -314,8 +325,12 @@ namespace System.Formats.Asn1
 
                 if (write)
                 {
-                    ToBigEndian(value).CopyTo(destination.Slice(position));
+                    ToBigEndian(value).CopyTo(destination);
+                    destination = destination.Slice(Vector<ushort>.Count);
                 }
+
+                source = source.Slice(Vector<ushort>.Count);
+                position += Vector<ushort>.Count;
             }
 
             return position;
@@ -325,17 +340,18 @@ namespace System.Formats.Asn1
         {
             int sourceLength = bytes.Length / sizeof(ushort);
             int available = write ? Math.Min(sourceLength, chars.Length) : sourceLength;
-            int vectorizedLength = available - (available % Vector<ushort>.Count);
             int position = 0;
 
-            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<byte, ushort>(bytes);
-            Span<ushort> destination = write ? MemoryMarshal.Cast<char, ushort>(chars) : Span<ushort>.Empty;
+            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<byte, ushort>(bytes).Slice(0, available);
+            Span<ushort> destination = write ?
+                MemoryMarshal.Cast<char, ushort>(chars).Slice(0, available) :
+                Span<ushort>.Empty;
             Vector<ushort> surrogateStart = new Vector<ushort>(SurrogateStart);
             Vector<ushort> surrogateRange = new Vector<ushort>(SurrogateRange);
 
-            for (; position < vectorizedLength; position += Vector<ushort>.Count)
+            while (source.Length >= Vector<ushort>.Count)
             {
-                Vector<ushort> value = FromBigEndian(new Vector<ushort>(source.Slice(position)));
+                Vector<ushort> value = FromBigEndian(new Vector<ushort>(source));
 
                 if (ContainsSurrogate(value, surrogateStart, surrogateRange))
                 {
@@ -345,8 +361,12 @@ namespace System.Formats.Asn1
 
                 if (write)
                 {
-                    value.CopyTo(destination.Slice(position));
+                    value.CopyTo(destination);
+                    destination = destination.Slice(Vector<ushort>.Count);
                 }
+
+                source = source.Slice(Vector<ushort>.Count);
+                position += Vector<ushort>.Count;
             }
 
             return position;
