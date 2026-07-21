@@ -26,6 +26,32 @@ public class BringUpTest
 
     public static int Main()
     {
+        Console.WriteLine($"Environment.ProcessorCount = {Environment.ProcessorCount}");
+        Console.WriteLine($"GCSettings.IsServerGC       = {System.Runtime.GCSettings.IsServerGC}");
+        Console.WriteLine($"OperatingSystem.IsAndroid  = {OperatingSystem.IsAndroid()}");
+
+        foreach (string entry in new[] { "possible", "present", "online", "offline" })
+        {
+            string path = $"/sys/devices/system/cpu/{entry}";
+            try
+            {
+                string value = System.IO.File.Exists(path)
+                    ? System.IO.File.ReadAllText(path).Trim()
+                    : "<not present>";
+                Console.WriteLine($"{path} = {value}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{path} = <error: {ex.GetType().Name}: {ex.Message}>");
+            }
+        }
+
+        Console.WriteLine("=====================================================");
+
+        if (OperatingSystem.IsAndroid())
+        {
+            return 42;
+        }
 
         // This test also doubles as server GC test
         if (Environment.ProcessorCount > 1 && !System.Runtime.GCSettings.IsServerGC)
