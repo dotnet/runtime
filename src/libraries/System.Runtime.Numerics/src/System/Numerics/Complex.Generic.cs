@@ -457,6 +457,10 @@ namespace System.Numerics
             }
 
             (T sin, T cos) = T.SinCos(value.m_real);
+
+            // Known limitation (finite-input accuracy, outside Annex G's special-value scope): a large
+            // imaginary part overflows Cosh/Sinh even when sin/cos is small enough that the product would
+            // be representable, so e.g. Sin((0.01, 711.0)) yields (+inf, +inf) instead of (~3.0e306, +inf).
             return new Complex<T>(sin * T.Cosh(value.m_imaginary), cos * T.Sinh(value.m_imaginary));
         }
 
@@ -583,6 +587,9 @@ namespace System.Numerics
             }
 
             (T sin, T cos) = T.SinCos(value.m_real);
+
+            // Same finite-input overflow limitation as Sin: a large imaginary part overflows Cosh/Sinh
+            // even when cos/sin is small enough that the product would otherwise be representable.
             return new Complex<T>(cos * T.Cosh(value.m_imaginary), -sin * T.Sinh(value.m_imaginary));
         }
 
