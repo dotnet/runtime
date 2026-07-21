@@ -984,7 +984,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
                 // TODO-SVE: For now, we always pass Vector<T> by reference. Support passing Vector<T> in Z registers.
                 unsigned simdSize = 0;
-                if (structSizeMightRepresentSIMDType(structSize) &&
+                if (structMightRepresentSIMDType(clsHnd) &&
                     (getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize) != TYP_UNDEF) && (simdSize == SIZE_UNKNOWN))
                 {
                     howToReturnStruct = SPK_ByReference;
@@ -6070,6 +6070,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_Crc32);
         }
 
+        if (JitConfig.EnableArm64Cssc() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Cssc);
+        }
+
         if (JitConfig.EnableArm64Dp() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Dp);
@@ -6252,6 +6257,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableRiscV64Zbb() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
+        }
+
+        if (JitConfig.EnableRiscV64Zicond() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Zicond);
         }
 #endif
 

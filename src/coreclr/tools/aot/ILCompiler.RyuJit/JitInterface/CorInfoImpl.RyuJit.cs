@@ -101,7 +101,8 @@ namespace Internal.JitInterface
             CFI_ADJUST_CFA_OFFSET,    // Offset is adjusted relative to the current one.
             CFI_DEF_CFA_REGISTER,     // New register is used to compute CFA
             CFI_REL_OFFSET,           // Register is saved at offset from the current CFA
-            CFI_DEF_CFA               // Take address from register and add offset to it.
+            CFI_DEF_CFA,              // Take address from register and add offset to it.
+            CFI_NEGATE_RA_STATE,      // Sign the return address in lr with the platform PAC key
         }
 
         // Get the CFI data in the same shape as clang/LLVM generated one. This improves the compatibility with libunwind and other unwind solutions
@@ -132,6 +133,7 @@ namespace Internal.JitInterface
             }
 
             int offset = 0;
+            bool shouldAddPacOpCode = false;
             while (offset < blobData.Length)
             {
                 codeOffset = Math.Max(codeOffset, blobData[offset++]);
@@ -185,6 +187,15 @@ namespace Internal.JitInterface
                             }
                         }
                         break;
+
+                    case CFI_OPCODE.CFI_NEGATE_RA_STATE:
+                        Debug.Assert(cfaRegister == spReg);
+                        Debug.Assert(cfaOffset == 0);
+                        // TODO-PAC: Support prologs that adjust SP before signing LR.
+                        // Currently we require PAC to be emitted before any stack adjustment.
+                        Debug.Assert(spOffset == 0);
+                        shouldAddPacOpCode = true;
+                        break;
                 }
             }
 
@@ -194,6 +205,14 @@ namespace Internal.JitInterface
 
                 using (BinaryWriter cfiWriter = new BinaryWriter(cfiStream))
                 {
+                    if (shouldAddPacOpCode)
+                    {
+                        cfiWriter.Write((byte)codeOffset);
+                        cfiWriter.Write((byte)CFI_OPCODE.CFI_NEGATE_RA_STATE);
+                        cfiWriter.Write((short)-1);
+                        cfiWriter.Write(0);
+                    }
+
                     if (cfaRegister != -1)
                     {
                         cfiWriter.Write((byte)codeOffset);
@@ -1576,11 +1595,29 @@ namespace Internal.JitInterface
                     ((MethodILScope)HandleToObject((void*)pResolvedToken.tokenScope)).OwningMethod,
                     targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
-                ComputeLookup(ref pResolvedToken,
-                    targetOfLookup,
-                    ReadyToRunHelperId.MethodHandle,
-                    HandleToObject(callerHandle),
-                    ref pResult->codePointerOrStubLookup);
+
+                if (pResult->exactContextNeedsRuntimeLookup)
+                {
+                    ComputeLookup(ref pResolvedToken,
+                        targetOfLookup,
+                        ReadyToRunHelperId.DispatchCell,
+                        HandleToObject(callerHandle),
+                        ref pResult->codePointerOrStubLookup);
+                    Debug.Assert(pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
+                }
+                else
+                {
+                    pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
+                    pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+#pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
+                    pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                        _compilation.NodeFactory.DispatchCell(targetOfLookup
+#if !SUPPORT_JIT
+                        , _methodCodeNode
+#endif
+                        ));
+#pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly
+                }
 
                 // RyuJIT will assert if we report CORINFO_CALLCONV_PARAMTYPE for a result of a ldvirtftn
                 // We don't need an instantiation parameter, so let's just not report it. Might be nice to
@@ -1596,7 +1633,7 @@ namespace Internal.JitInterface
                 {
                     ComputeLookup(ref pResolvedToken,
                         GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
-                        ReadyToRunHelperId.VirtualDispatchCell,
+                        ReadyToRunHelperId.DispatchCell,
                         HandleToObject(callerHandle),
                         ref pResult->codePointerOrStubLookup);
                     Debug.Assert(pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
@@ -1607,7 +1644,7 @@ namespace Internal.JitInterface
                     pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
 #pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
                     pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
+                        _compilation.NodeFactory.DispatchCell(targetMethod
 #if !SUPPORT_JIT
                         , _methodCodeNode
 #endif

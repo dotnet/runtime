@@ -41,6 +41,8 @@ struct CodeBlockHandle
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion);
     // Gets the offset of the codeInfoHandle inside of the code block
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
+    // Returns true if the instruction pointer is in managed code at a GC-safe point.
+    bool IsGcSafe(TargetCodePointer instructionPointer);
     // Gets information about the EEJitManager: its address, code type, and head of the code heap list.
     JitManagerInfo GetEEJitManagerInfo();
     // Walks the linked list of CodeHeapListNodes starting from the EEJitManager's AllCodeHeaps head
@@ -205,6 +207,7 @@ Data descriptors used:
 | `ReadyToRunInfo` | `LoadedImageBase` | Base address of the loaded R2R image |
 | `ReadyToRunInfo` | `Composite` | Pointer to the `ReadyToRunCoreInfo` used for section lookup |
 | `ReadyToRunInfo` | `ExceptionInfoSection` | Pointer to the `ImageDataDirectory` for R2R exception info section |
+| `ReadyToRunInfo` | `MinVirtualIP` | (WASM only) Base virtual IP for the module's ReadyToRun functions; a function-table index is mapped to a virtual IP relative to this base |
 | `ReadyToRunHeader` | `MajorVersion` | ReadyToRun major version |
 | `ReadyToRunHeader` | `MinorVersion` | ReadyToRun minor version |
 | `ImageDataDirectory` | `VirtualAddress` | Virtual address of the image data directory |
@@ -237,6 +240,10 @@ Data descriptors used:
 | `ReadyToRunSection` | `Section` | `IMAGE_DATA_DIRECTORY` for the section data |
 | `ExceptionLookupTableEntry` | `MethodStartRVA` | RVA of the method start |
 | `ExceptionLookupTableEntry` | `ExceptionInfoRVA` | RVA of the exception clause data |
+| `FunctionTableIndexRangeSection` | `MinFunctionTableIndex` | (WASM only) Lowest ReadyToRun function-table index covered by this range |
+| `FunctionTableIndexRangeSection` | `NumRuntimeFunctions` | (WASM only) Number of runtime functions in the range |
+| `FunctionTableIndexRangeSection` | `R2RModule` | (WASM only) Pointer to the owning ReadyToRun module |
+| `FunctionTableIndexRangeSection` | `Next` | (WASM only) Pointer to the next `FunctionTableIndexRangeSection` in the list |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -251,6 +258,7 @@ Global variables used:
 | `FeatureOnStackReplacement` | uint8 | 1 if FEATURE_ON_STACK_REPLACEMENT is enabled, 0 otherwise |
 | `FeaturePortableEntrypoints` | uint8 | 1 if FEATURE_PORTABLE_ENTRYPOINTS is enabled, 0 otherwise |
 | `ObjectMethodTable` | TargetPointer | Pointer to the `System.Object` MethodTable, used for catch-all handler detection |
+| `FunctionTableIndexRangeList` | TargetPointer | (WASM only) Head of the linked list of `FunctionTableIndexRangeSection`, mapping ReadyToRun function-table indices to their owning module for virtual-IP stack walking |
 
 Contract constants used:
 | Name | Type | Purpose | Value |
@@ -534,6 +542,8 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 `IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
 
 `IExecutionManager.GetStackParameterSize` returns the size (in bytes) of stack-passed parameters at the call to the method described by the code block handle. It mirrors the native `EECodeManager::GetStackParameterSize`: it returns 0 for funclets and for non-x86 targets. On x86, it returns 0 for methods using the varargs calling convention (which are caller-popped), otherwise it returns the argument size encoded in the GC info header.
+
+`IExecutionManager.IsGcSafe` returns whether a given instruction pointer is in managed code at a GC-safe point. First it resolves the instruction pointer to a `CodeBlockHandle` via `GetCodeBlockHandle`; if the pointer is not in managed code, it returns `false`. Otherwise it obtains the code block's relative offset and GC info, decodes the GC info via the `GCInfo` contract, and delegates to `GCInfo` `IsGcSafe`.
 
 `GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), ReadyToRun code, and interpreter code. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
 ### FindReadyToRunModule

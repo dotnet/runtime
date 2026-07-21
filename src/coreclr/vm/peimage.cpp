@@ -368,7 +368,7 @@ void PEImage::GetMVID(GUID *pMvid)
     if (pMeta == NULL)
         ThrowHR(COR_E_BADIMAGEFORMAT);
 
-    SafeComHolder<IMDInternalImport> pMDImport;
+    ComHolderAnyMode<IMDInternalImport> pMDImport;
 
     IfFailThrow(GetMDInternalInterface((void *) pMeta,
                                        cMeta,

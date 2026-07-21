@@ -35,6 +35,13 @@ public class ManagedToNativeGenerator : Task
 
     public bool IsLibraryMode { get; set; }
 
+    // When true (default), a P/Invoke to a module that isn't statically linked, ignored,
+    // [WasmImportLinkage], "*" or QCall produces a WASM0066 warning. Consumers that scan
+    // untrimmed closures full of cross-platform interop (e.g. library-test bundles) set this
+    // false so the expected "unresolved module, skip and throw-if-called" case is logged as a
+    // message instead of a build-breaking (under warn-as-error) warning.
+    public bool WarnOnUnresolvedPInvokeModules { get; set; } = true;
+
     public string TargetOS { get; set; } = "browser";
 
     private static readonly string[] s_knownTargetOSes = new[] { "browser", "wasi" };
@@ -86,7 +93,7 @@ public class ManagedToNativeGenerator : Task
     {
         Dictionary<string, string> _symbolNameFixups = new();
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
-        var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode, TargetOS);
+        var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode, TargetOS, WarnOnUnresolvedPInvokeModules);
         var internalCallCollector = new InternalCallSignatureCollector(log);
 
         var resolver = new PathAssemblyResolver(managedAssemblies);

@@ -115,7 +115,16 @@ namespace System.Runtime.CompilerServices
         {
             try
             {
-                awaiter.OnCompleted(GetStateMachineBox(ref stateMachine, ref box).MoveNextAction);
+                IAsyncStateMachineBox ibox = GetStateMachineBox(ref stateMachine, ref box);
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
+                {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        ibox = AsyncStateMachineDispatcherInfo.CreateDispatcher(ibox, flags);
+                    }
+                }
+
+                awaiter.OnCompleted(ibox.MoveNextAction);
             }
             catch (Exception e)
             {
@@ -247,9 +256,12 @@ namespace System.Runtime.CompilerServices
             /// <param name="result">The result.</param>
             public void SetResult(TResult result)
             {
-                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
                 {
-                    AsyncStateMachineDispatcherInfo.CompleteAsyncMethod(this, AsyncInstrumentation.ActiveFlags);
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncStateMachineDispatcherInfo.CompleteAsyncMethod(this, flags);
+                    }
                 }
 
                 _valueTaskSource.SetResult(result);
@@ -259,9 +271,12 @@ namespace System.Runtime.CompilerServices
             /// <param name="error">The exception.</param>
             public void SetException(Exception error)
             {
-                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
                 {
-                    AsyncStateMachineDispatcherInfo.UnwindAsyncFrame(this, AsyncInstrumentation.ActiveFlags);
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncStateMachineDispatcherInfo.UnwindAsyncFrame(this, flags);
+                    }
                 }
 
                 _valueTaskSource.SetException(error);
@@ -415,9 +430,12 @@ namespace System.Runtime.CompilerServices
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext()
             {
-                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
                 {
-                    AsyncStateMachineDispatcherInfo.ResumeAsyncMethod(this, AsyncInstrumentation.ActiveFlags);
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncStateMachineDispatcherInfo.ResumeAsyncMethod(this, flags);
+                    }
                 }
 
                 ExecutionContext? context = Context;
@@ -464,7 +482,7 @@ namespace System.Runtime.CompilerServices
 
             bool IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
             {
-                if (AsyncStateMachineDispatcherInfo.InstrumentCheckPoint)
+                if (AsyncStateMachineDispatcherInfo.IsSupported)
                 {
                     methodId = AsyncStateMachineDiagnostics<TStateMachine>.MethodId;
                     state = AsyncStateMachineDiagnostics<TStateMachine>.GetState(ref StateMachine);

@@ -11,7 +11,6 @@ namespace WKS
 {
 #endif // SERVER_GC
 
-#ifdef FEATURE_BASICFREEZE
 
 inline
 void gc_heap::seg_clear_mark_bits (heap_segment* seg)
@@ -58,7 +57,6 @@ void gc_heap::sweep_ro_segments()
 #endif //!USE_REGIONS
 }
 
-#endif //FEATURE_BASICFREEZE
 
 void gc_heap::make_free_lists (int condemned_gen_number)
 {

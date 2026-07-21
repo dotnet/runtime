@@ -35,6 +35,19 @@ namespace System.IO.Pipes
             // either succeeding immediately if the server is listening or failing
             // immediately if it isn't.  The only delay will be between the time the server
             // has called Bind and Listen, with the latter immediately following the former.
+
+            // If the socket file doesn't exist yet, skip the socket allocation and
+            // Connect call that would throw a SocketException.  Only ENOENT (not found)
+            // is short-circuited; permission errors and other conditions still reach
+            // socket.Connect so they surface their specific exceptions.
+            // TOCTOU note: the file could appear between this check and the next retry
+            // iteration, but ConnectInternal's polling loop handles that naturally.
+            if (Interop.Sys.Stat(_normalizedPipePath!, out Interop.Sys.FileStatus _) != 0 &&
+                Interop.Sys.GetLastErrorInfo().Error == Interop.Error.ENOENT)
+            {
+                return false;
+            }
+
             var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
             SafePipeHandle? clientHandle = null;
             try

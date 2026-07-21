@@ -66,10 +66,11 @@ Data descriptors used:
 | `SyncTableEntry` | `SyncBlock` | `SyncBlock` corresponding to the entry |
 | `ObjectHeader` | `SyncBlockValue` | Sync block value from the object header |
 | `SyncBlock` | `HashCode` | Hash code stored in the sync block |
+| `Delegate` | `HelperObject` | Invocation list for multicast, MethodInfo otherwise |
 | `Delegate` | `Target` | Bound `this` reference for closed delegates |
 | `Delegate` | `MethodPtr` | Primary method pointer |
 | `Delegate` | `MethodPtrAux` | Auxiliary method pointer |
-| `Delegate` | `InvocationCount` | Invocation count (non-zero for multicast/wrapper/unmanaged/special delegates) |
+| `Delegate` | `ExtraData` | Invocation count for multicast, UnmanagedMarker for unmanaged, MethodDesc otherwise |
 | `ContinuationObject` | `Next` | Pointer to the next continuation in the linked list |
 | `ContinuationObject` | `ResumeInfo` | Pointer to the `ResumeInfo` for this suspension point (may be null) |
 | `ContinuationObject` | `State` | State index identifying the suspension point within the resumed method |
@@ -88,6 +89,11 @@ Global variables used:
 | `SyncBlockIsHashCode` | uint32 | Check bit that, when `SyncBlockIsHashOrSyncBlockIndex` is set, specifies that the remaining bits hold the hash code; when clear, the remaining bits hold the sync block index. |
 | `SyncBlockHashCodeMask` | uint32 | Mask for extracting the hash code from the sync block value. |
 | `SyncBlockIndexMask` | uint32 | The mask for sync block index field. |
+
+Contract Constants:
+| Name | Type | Purpose | Value |
+| --- | --- | --- | --- |
+| `UnmanagedMarker` | nint | Sentinel value for detecting unmanaged pointer delegates. | `-1` |
 
 Contracts used:
 | Contract Name |
@@ -220,15 +226,25 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
 {
     Data.Delegate del = new Data.Delegate(target, address);
 
-    // Classify the delegate from its invocation count and auxiliary pointer.
-    // This does not handle open virtual delegates correctly.
-    DelegateType delegateType = target.ReadNInt(address + /* Delegate::InvocationCount offset */) switch
+    // Check for multicast and unmanaged first.
+    bool isMulticast = false;
+    TargetPointer helperObject = target.ReadPointer(address + /* Delegate::HelperObject offset */);
+    if (helperObject != TargetPointer.Null)
     {
-        0  => del.MethodPtrAux == TargetCodePointer.Null
-                ? DelegateType.Closed
-                : DelegateType.Open,
-        _  => DelegateType.Unknown,
-    };
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer mt = GetMethodTableAddress(helperObject);
+        Debug.Assert(mt != TargetPointer.Null);
+
+        isMulticast = rts.IsArray(rts.GetTypeHandle(mt), out _);
+    }
+
+    const nint UnmanagedMarker = -1;
+    DelegateType delegateType = DelegateType.Unknown;
+    if (!isMulticast && target.ReadNInt(address + /* Delegate::ExtraData offset */) != UnmanagedMarker)
+    {
+        delegateType = del.MethodPtrAux == TargetCodePointer.Null ? DelegateType.Closed : DelegateType.Open;
+    }
 
     // Pick the bound object and primary entry point based on the classification.
     // For Closed delegates the target is the bound `this` and MethodPtr is invoked on it.

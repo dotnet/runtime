@@ -9,6 +9,8 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -29,14 +31,17 @@ namespace ILCompiler.DependencyAnalysis
             builder.RequireInitialAlignment(factory.Target.PointerSize);
 
             int currentDispatchCellOffset = 0;
-            foreach (InterfaceDispatchCellNode node in new SortedSet<InterfaceDispatchCellNode>(factory.MetadataManager.GetInterfaceDispatchCells(), new DispatchCellComparer()))
+            foreach (DispatchCellNode node in new SortedSet<DispatchCellNode>(factory.MetadataManager.GetDispatchCells(), new DispatchCellComparer()))
             {
                 MethodDesc targetMethod = node.TargetMethod;
+                if (targetMethod.HasInstantiation)
+                    continue;
+
                 int targetSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
 
                 node.InitializeOffset(currentDispatchCellOffset);
 
-                IEETypeNode interfaceType = node.GetInterfaceTypeNode(factory);
+                IEETypeNode interfaceType = GetInterfaceTypeNode(factory, targetMethod);
                 if (factory.Target.SupportsRelativePointers)
                 {
                     builder.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32);
@@ -69,14 +74,44 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
+        public static IEnumerable<DependencyListEntry> GetCellDependencies(NodeFactory factory, MethodDesc targetMethod)
+        {
+            DependencyList result = new DependencyList();
+
+            if (!factory.VTable(targetMethod.OwningType).HasKnownVirtualMethodUse)
+            {
+                result.Add(factory.VirtualMethodUse(targetMethod), "Interface method use");
+            }
+
+            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, targetMethod);
+
+            result.Add(GetInterfaceTypeNode(factory, targetMethod), "Interface type");
+
+            return result;
+        }
+
+        private static IEETypeNode GetInterfaceTypeNode(NodeFactory factory, MethodDesc targetMethod)
+        {
+            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
+            // see a RuntimeTypeHandle representing this interface.
+            if (factory.DevirtualizationManager.CanHaveDynamicInterfaceImplementations(targetMethod.OwningType))
+            {
+                return factory.ConstructedTypeSymbol(targetMethod.OwningType);
+            }
+            else
+            {
+                return factory.NecessaryTypeSymbol(targetMethod.OwningType);
+            }
+        }
+
         /// <summary>
         /// Comparer that groups interface dispatch cells by their callsite.
         /// </summary>
-        private sealed class DispatchCellComparer : IComparer<InterfaceDispatchCellNode>
+        private sealed class DispatchCellComparer : IComparer<DispatchCellNode>
         {
             private readonly CompilerComparer _comparer = CompilerComparer.Instance;
 
-            public int Compare(InterfaceDispatchCellNode x, InterfaceDispatchCellNode y)
+            public int Compare(DispatchCellNode x, DispatchCellNode y)
             {
                 int result = _comparer.Compare(x.CallSiteIdentifier, y.CallSiteIdentifier);
                 if (result != 0)
