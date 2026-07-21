@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Collections.Generic;
+using System.Numerics;
 using System.Reflection;
 using System.Text;
 using Xunit;
@@ -9,6 +12,38 @@ namespace System.Formats.Asn1.Tests.Writer
 {
     public static class SimpleWriterTests
     {
+        public static IEnumerable<object[]> VectorBoundaryLengths
+        {
+            get
+            {
+                yield return new object[] { Vector<byte>.Count - 1 };
+                yield return new object[] { Vector<byte>.Count };
+                yield return new object[] { Vector<byte>.Count + 1 };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorBoundaryLengths))]
+        public static void WriteVisibleString_DoesNotAccessOutsideBounds(int payloadLength)
+        {
+            using BoundedMemory<char> value = BoundedMemory.Allocate<char>(payloadLength);
+            value.Span.Fill('A');
+            value.MakeReadonly();
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.VisibleString, value.Span);
+            byte[] encoded = writer.Encode();
+
+            string decoded = AsnDecoder.ReadCharacterString(
+                encoded,
+                AsnEncodingRules.DER,
+                UniversalTagNumber.VisibleString,
+                out int bytesConsumed);
+            Assert.Equal(encoded.Length, bytesConsumed);
+            Assert.Equal(payloadLength, decoded.Length);
+            AssertExtensions.FilledWith('A', decoded);
+        }
+
         [Fact]
         public static void WriteVisibleString_VectorSizedRange()
         {

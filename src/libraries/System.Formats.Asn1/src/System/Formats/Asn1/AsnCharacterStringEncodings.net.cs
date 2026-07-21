@@ -93,7 +93,7 @@ namespace System.Formats.Asn1
             return bytes.Length;
         }
 
-        // The vectorization is left out of the GetChars and GetBytes directly to not regress the the code size
+        // The vectorization is left out of the GetChars and GetBytes directly to not regress the code size
         // and register allocation for small inputs. Instead they are extracted methods.
         private int GetBytesVectorized(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
         {

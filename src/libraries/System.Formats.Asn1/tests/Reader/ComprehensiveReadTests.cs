@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,6 +15,43 @@ namespace System.Formats.Asn1.Tests.Reader
 {
     public static class ComprehensiveReadTests
     {
+        public static IEnumerable<object[]> VectorBoundaryLengths
+        {
+            get
+            {
+                yield return new object[] { Vector<byte>.Count - 1 };
+                yield return new object[] { Vector<byte>.Count };
+                yield return new object[] { Vector<byte>.Count + 1 };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorBoundaryLengths))]
+        public static void ReadVisibleString_DoesNotAccessOutsideBounds(int payloadLength)
+        {
+            AssertExtensions.LessThan(payloadLength, 128);
+
+            using BoundedMemory<byte> encoded = BoundedMemory.Allocate<byte>(payloadLength + 2);
+            using BoundedMemory<char> destination = BoundedMemory.Allocate<char>(payloadLength);
+
+            encoded.Span[0] = (byte)UniversalTagNumber.VisibleString;
+            encoded.Span[1] = (byte)payloadLength;
+            encoded.Span.Slice(2).Fill((byte)'A');
+            encoded.MakeReadonly();
+
+            Assert.True(
+                AsnDecoder.TryReadCharacterString(
+                    encoded.Span,
+                    destination.Span,
+                    AsnEncodingRules.DER,
+                    UniversalTagNumber.VisibleString,
+                    out int bytesConsumed,
+                    out int charsWritten));
+            Assert.Equal(encoded.Length, bytesConsumed);
+            Assert.Equal(payloadLength, charsWritten);
+            AssertExtensions.FilledWith('A', destination.Span);
+        }
+
         [Fact]
         public static void ReadVisibleString_VectorSizedRange()
         {
