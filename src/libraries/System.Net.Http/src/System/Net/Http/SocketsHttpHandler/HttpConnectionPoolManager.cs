@@ -446,6 +446,11 @@ namespace System.Net.Http
         {
             HttpRequestException rethrowException;
 
+            // Save the original ProxyAuthorization header value so we can restore it when retrying with a different proxy.
+            // This ensures that any proxy credentials set from the credential cache during a failed attempt are cleared
+            // before trying the next proxy, while preserving any user-set credentials.
+            Headers.AuthenticationHeaderValue? originalProxyAuthorization = request.Headers.ProxyAuthorization;
+
             do
             {
                 try
@@ -455,6 +460,10 @@ namespace System.Net.Http
                 catch (HttpRequestException ex) when (ex.AllowRetry != RequestRetryType.NoRetry)
                 {
                     rethrowException = ex;
+
+                    // Clear any proxy-auth credentials that were set from the proxy credential cache for the previous proxy.
+                    // Restore the original value before retrying with the next proxy.
+                    request.Headers.ProxyAuthorization = originalProxyAuthorization;
                 }
             }
             while (multiProxy.ReadNext(out firstProxy, out _));
