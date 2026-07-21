@@ -402,9 +402,9 @@ namespace Internal.TypeSystem
         /// Determines whether an object of type '<paramref name="type"/>' requires 8-byte alignment on
         /// 32bit ARM or 32bit Wasm architectures.
         /// </summary>
-        public static bool RequiresAlign8(this TypeDesc type)
+        public static bool RequiresAlign2xPtr(this TypeDesc type)
         {
-            if (!type.Context.Target.SupportsAlign8)
+            if (!type.Context.Target.SupportsAlign2xPtr)
             {
                 return false;
             }

@@ -1668,9 +1668,9 @@ typedef ErrorWrapper*     ERRORWRAPPEROBJECTREF;
 
 // Keep this in sync with code:MethodTableBuilder.CheckForSystemTypes where
 // alignment requirement of the managed System.Decimal structure is computed.
-#if !defined(ALIGN_ACCESS) && !defined(FEATURE_64BIT_ALIGNMENT)
+#if !defined(ALIGN_ACCESS) && !defined(FEATURE_2XPTR_ALIGNMENT)
 #include <pshpack4.h>
-#endif // !ALIGN_ACCESS && !FEATURE_64BIT_ALIGNMENT
+#endif // !ALIGN_ACCESS && !FEATURE_2XPTR_ALIGNMENT
 
 class CurrencyWrapper : public Object
 {
@@ -1696,9 +1696,9 @@ public:
     }
 };
 
-#if !defined(ALIGN_ACCESS) && !defined(FEATURE_64BIT_ALIGNMENT)
+#if !defined(ALIGN_ACCESS) && !defined(FEATURE_2XPTR_ALIGNMENT)
 #include <poppack.h>
-#endif // !ALIGN_ACCESS && !FEATURE_64BIT_ALIGNMENT
+#endif // !ALIGN_ACCESS && !FEATURE_2XPTR_ALIGNMENT
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<CurrencyWrapper> CURRENCYWRAPPEROBJECTREF;

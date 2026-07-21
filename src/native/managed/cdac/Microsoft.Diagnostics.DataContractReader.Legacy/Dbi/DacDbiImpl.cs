@@ -2228,19 +2228,19 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int RequiresAlign8(ulong thExact, Interop.BOOL* pResult)
+    public int RequiresAlign2xPtr(ulong thExact, Interop.BOOL* pResult)
     {
         *pResult = Interop.BOOL.FALSE;
         int hr = HResults.S_OK;
         RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
         try
         {
-            // Some 32-bit platform ABIs require 64-bit alignment (FEATURE_64BIT_ALIGNMENT).
+            // Some 32-bit platform ABIs require 2 * pointer-size (8-byte) alignment (FEATURE_2XPTR_ALIGNMENT).
             if (arch == RuntimeInfoArchitecture.Arm || arch == RuntimeInfoArchitecture.Wasm)
             {
                 Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 Contracts.TypeHandle th = rts.GetTypeHandle(new TargetPointer(thExact));
-                *pResult = rts.RequiresAlign8(th) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                *pResult = rts.RequiresAlign2xPtr(th) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             }
             else
             {
@@ -2255,7 +2255,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null)
         {
             Interop.BOOL resultLocal;
-            int hrLocal = _legacy.RequiresAlign8(thExact, &resultLocal);
+            int hrLocal = _legacy.RequiresAlign2xPtr(thExact, &resultLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");

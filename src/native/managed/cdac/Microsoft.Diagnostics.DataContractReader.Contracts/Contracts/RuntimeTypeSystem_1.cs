@@ -664,12 +664,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (!typeHandle.IsMethodTable() || !_methodTables[typeHandle.Address].Flags.IsHFA)
             return false;
 
-        // ARM shortcut: no HVA, and RequiresAlign8 encodes the R4-vs-R8 choice
+        // ARM shortcut: no HVA, and RequiresAlign2xPtr encodes the R4-vs-R8 choice
         // (CheckForHFA sets the alignment flag based on the resolved element
         // type). Avoids walking fields.
         if (arch == RuntimeInfoArchitecture.Arm)
         {
-            elementSize = _methodTables[typeHandle.Address].Flags.RequiresAlign8 ? 8 : 4;
+            elementSize = _methodTables[typeHandle.Address].Flags.RequiresAlign2xPtr ? 8 : 4;
             return true;
         }
 
@@ -794,7 +794,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         => (t >= CorElementType.I1 && t <= CorElementType.R8)
             || t == CorElementType.I
             || t == CorElementType.U;
-    public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+    public bool RequiresAlign2xPtr(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign2xPtr;
     public bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => typeHandle.IsMethodTable()
         && ContinuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer

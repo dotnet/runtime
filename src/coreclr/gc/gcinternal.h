@@ -949,12 +949,14 @@ public:
         _ASSERTE(IsStructAligned((uint8_t *)this, GetMethodTable()->GetBaseAlignment()));
 #endif // FEATURE_STRUCTALIGN
 
-#if defined(FEATURE_64BIT_ALIGNMENT) && !defined(FEATURE_NATIVEAOT)
-        if (pMT->RequiresAlign8())
+#if defined(FEATURE_2XPTR_ALIGNMENT) && !defined(FEATURE_NATIVEAOT)
+        if (pMT->RequiresAlign2xPtr())
         {
-            _ASSERTE((((size_t)this) & 0x7) == (pMT->IsValueType() ? 4U : 0U));
+            // Value types carry a bias of DATA_ALIGNMENT so the payload -- not the object
+            // reference -- lands on the 2 * DATA_ALIGNMENT boundary; reference types have no bias.
+            _ASSERTE((((size_t)this) & (2 * DATA_ALIGNMENT - 1)) == (pMT->IsValueType() ? DATA_ALIGNMENT : 0U));
         }
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
 #ifdef VERIFY_HEAP
         if (bDeep && (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC))

@@ -37,17 +37,17 @@ namespace System.Runtime
                 Debug.Assert(false);
 #endif
 
-#if FEATURE_64BIT_ALIGNMENT
-            if (pEEType->RequiresAlign8)
+#if FEATURE_2XPTR_ALIGNMENT
+            if (pEEType->RequiresAlign2xPtr)
             {
                 if (pEEType->IsValueType)
                     return InternalCalls.RhpNewFastMisalign(pEEType);
                 if (pEEType->IsFinalizable)
-                    return InternalCalls.RhpNewFinalizableAlign8(pEEType);
-                return InternalCalls.RhpNewFastAlign8(pEEType);
+                    return InternalCalls.RhpNewFinalizableAlign2xPtr(pEEType);
+                return InternalCalls.RhpNewFastAlign2xPtr(pEEType);
             }
             else
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
             {
                 if (pEEType->IsFinalizable)
                     return InternalCalls.RhpNewFinalizable(pEEType);
@@ -60,14 +60,14 @@ namespace System.Runtime
         {
             Debug.Assert(pEEType->IsSzArray);
 
-#if FEATURE_64BIT_ALIGNMENT
+#if FEATURE_2XPTR_ALIGNMENT
             MethodTable* pEEElementType = pEEType->RelatedParameterType;
-            if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
+            if (pEEElementType->IsValueType && pEEElementType->RequiresAlign2xPtr)
             {
-                return InternalCalls.RhpNewArrayFastAlign8(pEEType, length);
+                return InternalCalls.RhpNewArrayFastAlign2xPtr(pEEType, length);
             }
             else
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
             {
                 return InternalCalls.RhpNewArrayFast(pEEType, length);
             }
@@ -79,14 +79,14 @@ namespace System.Runtime
             Debug.Assert(pEEType->IsArray || pEEType->IsString);
 
             object array;
-#if FEATURE_64BIT_ALIGNMENT
+#if FEATURE_2XPTR_ALIGNMENT
             MethodTable* pEEElementType = pEEType->RelatedParameterType;
-            if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
+            if (pEEElementType->IsValueType && pEEElementType->RequiresAlign2xPtr)
             {
-                RuntimeImports.RhAllocateNewArray(pEEType, (uint)length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_ALIGN8, &array);
+                RuntimeImports.RhAllocateNewArray(pEEType, (uint)length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_ALIGN_2XPTR, &array);
             }
             else
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
             {
                 RuntimeImports.RhAllocateNewArray(pEEType, (uint)length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS, &array);
             }
@@ -100,17 +100,17 @@ namespace System.Runtime
         [RuntimeExport("RhGetNewObjectHelper")]
         internal static unsafe IntPtr RhGetNewObjectHelper(MethodTable* pEEType)
         {
-#if FEATURE_64BIT_ALIGNMENT
-            if (pEEType->RequiresAlign8)
+#if FEATURE_2XPTR_ALIGNMENT
+            if (pEEType->RequiresAlign2xPtr)
             {
                 if (pEEType->IsFinalizable)
-                    return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFinalizableAlign8;
+                    return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFinalizableAlign2xPtr;
                 else if (pEEType->IsValueType)            // returns true for enum types as well
                     return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFastMisalign;
                 else
-                    return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFastAlign8;
+                    return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFastAlign2xPtr;
             }
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
             if (pEEType->IsFinalizable)
                 return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFinalizable;
@@ -143,13 +143,13 @@ namespace System.Runtime
             }
 
             object result;
-#if FEATURE_64BIT_ALIGNMENT
-            if (pEEType->RequiresAlign8)
+#if FEATURE_2XPTR_ALIGNMENT
+            if (pEEType->RequiresAlign2xPtr)
             {
                 result = InternalCalls.RhpNewFastMisalign(pEEType);
             }
             else
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
             {
                 result = InternalCalls.RhpNewFast(pEEType);
             }

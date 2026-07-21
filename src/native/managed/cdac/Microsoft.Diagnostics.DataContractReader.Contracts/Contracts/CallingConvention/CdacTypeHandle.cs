@@ -105,9 +105,9 @@ internal readonly struct CdacTypeHandle : ITypeHandle
         return MapCorElementType(cdacType);
     }
 
-    public bool RequiresAlign8()
+    public bool RequiresAlign2xPtr()
     {
-        return !_typeHandle.IsNull && Rts.RequiresAlign8(_typeHandle);
+        return !_typeHandle.IsNull && Rts.RequiresAlign2xPtr(_typeHandle);
     }
 
     public bool IsHomogeneousAggregate()

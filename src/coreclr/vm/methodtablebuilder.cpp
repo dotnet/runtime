@@ -1839,9 +1839,9 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     MethodTable * pMT = GetHalfBakedMethodTable();
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (GetHalfBakedClass()->IsAlign8Candidate())
-        pMT->SetRequiresAlign8();
+#ifdef FEATURE_2XPTR_ALIGNMENT
+    if (GetHalfBakedClass()->IsAlign2xPtrCandidate())
+        pMT->SetRequiresAlign2xPtr();
 #endif
 
     if (bmtGenerics->pVarianceInfo != NULL)
@@ -8268,11 +8268,11 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
         // Auto layout has been requested.
         // We never switch away from auto layout, so just go use it right away.
 
-#if defined(FEATURE_64BIT_ALIGNMENT) || defined(FEATURE_DOUBLE_ALIGNMENT_HINT)
-        // Check for 8-byte alignment requirements for this type.
-        // We don't need to check any of the other nested field flags
-        // for auto layout, so only check this flag when targeting
-        // a platform that can have the align8 requirement for a type.
+#if defined(FEATURE_2XPTR_ALIGNMENT) || defined(FEATURE_DOUBLE_ALIGNMENT_HINT)
+        // Check whether this type needs the larger 2 * DATA_ALIGNMENT alignment (or 8-byte alignment
+        // for the FEATURE_DOUBLE_ALIGNMENT_HINT double case). We don't need to check any of the other
+        // nested field flags for auto layout, so only check this flag when targeting a platform that
+        // can have the larger alignment requirement for a type.
         EEClassLayoutInfo::NestedFieldFlags nestedFieldFlags =
             EEClassLayoutInfo::GetNestedFieldFlags(
                 GetModule(),
@@ -8281,17 +8281,17 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
                 bmtLayout->nlFlags,
                 pByValueClassCache);
 
-        bool isAlign8 = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Align8) == EEClassLayoutInfo::NestedFieldFlags::Align8)
-#if defined(FEATURE_64BIT_ALIGNMENT)
-            || (pParentMT && pParentMT->RequiresAlign8())
-#endif // FEATURE_64BIT_ALIGNMENT
+        bool isAlign2xPtr = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Align2xPtr) == EEClassLayoutInfo::NestedFieldFlags::Align2xPtr)
+#if defined(FEATURE_2XPTR_ALIGNMENT)
+            || (pParentMT && pParentMT->RequiresAlign2xPtr())
+#endif // FEATURE_2XPTR_ALIGNMENT
         ;
 
-        if (isAlign8)
+        if (isAlign2xPtr)
         {
-            GetHalfBakedClass()->SetAlign8Candidate();
+            GetHalfBakedClass()->SetAlign2xPtrCandidate();
         }
-#endif // FEATURE_64BIT_ALIGNMENT || FEATURE_DOUBLE_ALIGNMENT_HINT
+#endif // FEATURE_2XPTR_ALIGNMENT || FEATURE_DOUBLE_ALIGNMENT_HINT
 
         HandleAutoLayout(pByValueClassCache);
         return;
@@ -8325,10 +8325,10 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     bool hasInt128Field = (pParentMT && pParentMT->IsInt128OrHasInt128Fields())
         || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Int128) == EEClassLayoutInfo::NestedFieldFlags::Int128);
 
-    bool isAlign8 = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Align8) == EEClassLayoutInfo::NestedFieldFlags::Align8)
-#if defined(FEATURE_64BIT_ALIGNMENT)
-        || (pParentMT && pParentMT->RequiresAlign8())
-#endif // FEATURE_64BIT_ALIGNMENT
+    bool isAlign2xPtr = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Align2xPtr) == EEClassLayoutInfo::NestedFieldFlags::Align2xPtr)
+#if defined(FEATURE_2XPTR_ALIGNMENT)
+        || (pParentMT && pParentMT->RequiresAlign2xPtr())
+#endif // FEATURE_2XPTR_ALIGNMENT
         ;
 
     _ASSERTE(HasLayout());
@@ -8352,27 +8352,27 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
 
     if (bmtLayout->layoutType == EEClassLayoutInfo::LayoutType::Auto)
     {
-        if (isAlign8)
+        if (isAlign2xPtr)
         {
-            GetHalfBakedClass()->SetAlign8Candidate();
+            GetHalfBakedClass()->SetAlign2xPtrCandidate();
         }
         HandleAutoLayout(pByValueClassCache);
         return;
     }
 
-    // For types with layout we drop any 64-bit alignment requirement if the packing size was less than 8
-    // bytes (this mimics what the native compiler does and ensures we match up calling conventions during
-    // interop).
+    // For types with layout we drop any 2 * pointer-size alignment requirement if the packing size is
+    // smaller than that alignment (this mimics what the native compiler does and ensures we match up
+    // calling conventions during interop).
     // We don't do this for types that are marked as sequential but end up with auto-layout due to containing pointers,
     // as auto-layout ignores any Pack directives.
-    if (bmtLayout->packingSize < 8)
+    if (bmtLayout->packingSize < 2 * DATA_ALIGNMENT)
     {
-        isAlign8 = false;
+        isAlign2xPtr = false;
     }
 
-    if (isAlign8)
+    if (isAlign2xPtr)
     {
-        GetHalfBakedClass()->SetAlign8Candidate();
+        GetHalfBakedClass()->SetAlign2xPtrCandidate();
     }
 
     if (!hasGCFields)
@@ -8482,13 +8482,13 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
         }
 
         DWORD dwOffsetBias = 0;
-#ifdef FEATURE_64BIT_ALIGNMENT
-        // On platforms where the alignment of 64-bit primitives is a requirement (but we're not guaranteed
-        // this implicitly by the GC) field offset 0 is actually not 8-byte aligned in reference classes.
-        // That's because all such platforms are currently 32-bit and the 4-byte MethodTable pointer pushes us
-        // out of alignment. Ideally we'd solve this by arranging to have the object header allocated at a
-        // 4-byte offset from an 8-byte boundary, but this is difficult to achieve for objects allocated on
-        // the large object heap (which actually requires headers to be 8-byte aligned).
+#ifdef FEATURE_2XPTR_ALIGNMENT
+        // On configs where a 2 * pointer-size alignment is a requirement (but we're not guaranteed this
+        // implicitly by the GC) field offset 0 is actually not 2 * pointer-size aligned in reference classes.
+        // That's because the pointer-sized MethodTable* pushes us out of alignment. Ideally we'd solve this
+        // by arranging to have the object header allocated at a pointer-size offset from a 2 * pointer-size
+        // boundary, but this is difficult to achieve for objects allocated on the large object heap (whose
+        // header alignment is controlled by the GC).
         //
         // So we adjust dwCumulativeInstanceFieldPos to account for the MethodTable* and our alignment
         // calculations will automatically adjust and add padding as necessary. We need to remove this
@@ -8503,16 +8503,16 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
             dwOffsetBias = TARGET_POINTER_SIZE;
             dwCumulativeInstanceFieldPos += dwOffsetBias;
         }
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
 #ifdef FEATURE_READYTORUN
         if (NeedsAlignedBaseOffset())
         {
             // READYTORUN: FUTURE: Use the minimum possible alignment, reduce padding when inheriting within same bubble
             DWORD dwAlignment = DATA_ALIGNMENT;
-#ifdef FEATURE_64BIT_ALIGNMENT
-            if (GetHalfBakedClass()->IsAlign8Candidate())
-                dwAlignment = 8;
+#ifdef FEATURE_2XPTR_ALIGNMENT
+            if (GetHalfBakedClass()->IsAlign2xPtrCandidate())
+                dwAlignment = 2 * DATA_ALIGNMENT;
 #endif
             dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, dwAlignment);
         }
@@ -8698,12 +8698,15 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
                 {
                     alignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
                 }
-#if defined(FEATURE_64BIT_ALIGNMENT)
-                if (pByValueMT->RequiresAlign8())
+#if defined(FEATURE_2XPTR_ALIGNMENT)
+                if (pByValueMT->RequiresAlign2xPtr())
                 {
-                    alignmentRequirement = max(8, alignmentRequirement);
+                    // A nested value type that requires the larger alignment forces the same on the
+                    // containing type. On 64-bit an auto-layout wrapper (e.g. a struct with an Int128
+                    // field) reports only pointer-size field alignment, so floor it at 2 * DATA_ALIGNMENT.
+                    alignmentRequirement = max((int)(2 * DATA_ALIGNMENT), alignmentRequirement);
                 }
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
                 largestAlignmentRequirement = max(largestAlignmentRequirement, alignmentRequirement);
                 dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, alignmentRequirement);
@@ -8725,7 +8728,7 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
             else
             {
                 // non-value-type fields always require pointer alignment
-                // This does not account for types that are marked IsAlign8Candidate due to 8-byte fields
+                // This does not account for types that are marked IsAlign2xPtrCandidate due to larger-than-pointer fields
                 // but that is explicitly handled when we calculate the final alignment for the type.
                 largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
 
@@ -8754,12 +8757,18 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
             // and if the size is smaller than void* round it up to next power of two
             unsigned minAlign;
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-            if (GetHalfBakedClass()->IsAlign8Candidate()) {
-                minAlign = 8;
+#ifdef FEATURE_2XPTR_ALIGNMENT
+            if (GetHalfBakedClass()->IsAlign2xPtrCandidate()) {
+                minAlign = (unsigned)(2 * DATA_ALIGNMENT);
+#ifdef TARGET_64BIT
+                // On 64-bit an align candidate needs at least 2 * DATA_ALIGNMENT (16-byte) alignment,
+                // but the field that triggered it may require even more (e.g. a Vector256 field wants
+                // 32). Honor the stronger requirement so the value type's size is not under-rounded.
+                minAlign = max(minAlign, (unsigned)largestAlignmentRequirement);
+#endif // TARGET_64BIT
             }
             else
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
             if (dwNumInstanceFieldBytes > TARGET_POINTER_SIZE) {
                 minAlign = (unsigned)(containsGCPointers ? TARGET_POINTER_SIZE : largestAlignmentRequirement);
             }
@@ -10698,6 +10707,18 @@ void MethodTableBuilder::CheckForSystemTypes()
                     _ASSERTE_MSG(FALSE, "Unhandled Hardware Intrinsic Type.");
                 }
 
+#if defined(FEATURE_2XPTR_ALIGNMENT)
+                // Fields of these types are laid out with their natural (>= 2 * DATA_ALIGNMENT)
+                // alignment, but that only holds if the containing object is aligned at least as
+                // strongly. Flag the type so the GC guarantees 2 * DATA_ALIGNMENT object alignment
+                // (16 bytes on 64-bit, best-effort 8 bytes on 32-bit), letting a boxed value (or array
+                // element) actually land on a correctly-aligned boundary.
+                if ((size_t)pLayout->GetAlignmentRequirement() >= (2 * DATA_ALIGNMENT))
+                {
+                    pClass->SetAlign2xPtrCandidate();
+                }
+#endif // FEATURE_2XPTR_ALIGNMENT
+
                 return;
             }
         }
@@ -10813,6 +10834,16 @@ void MethodTableBuilder::CheckForSystemTypes()
 #else
 #error Unknown architecture
 #endif // TARGET_64BIT
+
+#if defined(FEATURE_2XPTR_ALIGNMENT)
+            // Request 2 * DATA_ALIGNMENT object alignment from the GC so a boxed Int128 / UInt128 (or
+            // an array element) lands on a correctly-aligned boundary. See the matching note in the
+            // hardware-intrinsic block above.
+            if ((size_t)pLayout->GetAlignmentRequirement() >= (2 * DATA_ALIGNMENT))
+            {
+                pClass->SetAlign2xPtrCandidate();
+            }
+#endif // FEATURE_2XPTR_ALIGNMENT
         }
     }
     else

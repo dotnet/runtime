@@ -611,13 +611,17 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
 
         lastTest = 8;
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-        if (pMT->RequiresAlign8())
+#ifdef FEATURE_2XPTR_ALIGNMENT
+        if (pMT->RequiresAlign2xPtr())
         {
-            CHECK_AND_TEAR_DOWN((((size_t)this) & 0x7) == (size_t)(pMT->IsValueType()?4:0));
+            // The GC guarantees 2 * DATA_ALIGNMENT alignment for these objects. Value types carry a
+            // bias of DATA_ALIGNMENT (one MethodTable pointer) so that the payload -- not the object
+            // reference -- lands on the 2 * DATA_ALIGNMENT boundary; reference types have no bias, so
+            // the object reference itself is aligned.
+            CHECK_AND_TEAR_DOWN((((size_t)this) & (2 * DATA_ALIGNMENT - 1)) == (size_t)(pMT->IsValueType() ? DATA_ALIGNMENT : 0));
         }
         lastTest = 9;
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
     }
     EX_CATCH

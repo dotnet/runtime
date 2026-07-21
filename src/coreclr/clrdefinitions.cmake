@@ -60,6 +60,14 @@ if(CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
 add_compile_definitions(OUT_OF_PROCESS_SETTHREADCONTEXT)
 endif(CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
 
+# Opt-in build flag (default OFF) that lets the GC guarantee twice the natural (pointer) alignment,
+# i.e. 16 bytes on 64-bit, for flagged objects. Intended for testing larger alignments. On 32-bit
+# ARM/WASM targets FEATURE_2XPTR_ALIGNMENT is already defined unconditionally in switches.h, so those
+# are excluded here to avoid a redundant define; when this flag is off, builds are unaffected.
+if(CLR_CMAKE_ENABLE_2XPTR_ALIGNMENT AND NOT CLR_CMAKE_TARGET_ARCH_ARM AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  add_compile_definitions(FEATURE_2XPTR_ALIGNMENT)
+endif()
+
 add_definitions(-DFEATURE_COLLECTIBLE_TYPES)
 
 if(CLR_CMAKE_TARGET_WIN32)

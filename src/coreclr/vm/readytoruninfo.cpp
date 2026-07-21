@@ -1648,10 +1648,13 @@ DWORD ReadyToRunInfo::GetFieldBaseOffset(MethodTable * pMT)
 
     DWORD dwAlignment = DATA_ALIGNMENT;
     DWORD dwOffsetBias = 0;
-#ifdef FEATURE_64BIT_ALIGNMENT
-    dwOffsetBias = 4;
-    if (pMT->RequiresAlign8())
-        dwAlignment = 8;
+#ifdef FEATURE_2XPTR_ALIGNMENT
+    // Mirror the field-base-offset bias applied during type layout (see MethodTableBuilder::
+    // HandleAutoLayout): the MethodTable pointer pushes field 0 off the natural boundary, so the
+    // alignment math must account for it. On 32-bit this is 4; on 64-bit it is 8.
+    dwOffsetBias = TARGET_POINTER_SIZE;
+    if (pMT->RequiresAlign2xPtr())
+        dwAlignment = 2 * DATA_ALIGNMENT;
 #endif
 
     MethodTable * pParentMT = pMT->GetParentMethodTable();

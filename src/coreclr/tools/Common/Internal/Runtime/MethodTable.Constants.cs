@@ -98,7 +98,7 @@ namespace Internal.Runtime
         /// <summary>
         /// This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
         /// </summary>
-        RequiresAlign8Flag = 0x1000
+        RequiresAlign2xPtrFlag = 0x1000
     }
 
     internal static class ValueTypeFieldPaddingConsts

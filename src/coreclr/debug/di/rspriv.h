@@ -4770,10 +4770,10 @@ public:
     // Is this type a GC-root.
     bool IsGCRoot();
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-    // checks if the type requires 8-byte alignment.
-    // this is not exposed via ICorDebug at present.
-    HRESULT RequiresAlign8(BOOL* isRequired);
+#ifdef FEATURE_2XPTR_ALIGNMENT
+    // Checks if the type requires 2 * pointer-size alignment.
+    // This is not exposed via ICorDebug at present.
+    HRESULT RequiresAlign2xPtr(BOOL* isRequired);
 #endif
 
     //-----------------------------------------------------------
@@ -11386,14 +11386,14 @@ inline void AlignAddressForType(CordbType* pArgType, CORDB_ADDRESS& argBase)
 {
 #ifdef TARGET_ARM
 // TODO: review the following
-#ifdef FEATURE_64BIT_ALIGNMENT
+#ifdef FEATURE_2XPTR_ALIGNMENT
     BOOL align = FALSE;
-    HRESULT hr = pArgType->RequiresAlign8(&align);
+    HRESULT hr = pArgType->RequiresAlign2xPtr(&align);
     _ASSERTE(SUCCEEDED(hr));
 
     if (align)
         argBase = ALIGN_ADDRESS(argBase, 8);
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 #endif // TARGET_ARM
 }
 

@@ -178,10 +178,10 @@ inline void FATAL_GC_ERROR()
 // turned on.
 #define FEATURE_LOH_COMPACTION
 
-#ifdef FEATURE_64BIT_ALIGNMENT
+#ifdef FEATURE_2XPTR_ALIGNMENT
 // We need the following feature as part of keeping 64-bit types aligned in the GC heap.
 #define RESPECT_LARGE_ALIGNMENT //Preserve double alignment of objects during relocation
-#endif //FEATURE_64BIT_ALIGNMENT
+#endif //FEATURE_2XPTR_ALIGNMENT
 
 #define SHORT_PLUGS //used to keep ephemeral plugs short so they fit better into the oldest generation free items
 
@@ -1533,7 +1533,7 @@ class gc_heap
     friend struct ::alloc_context;
     friend void ProfScanRootsHelper(Object** object, ScanContext *pSC, uint32_t dwFlags);
     friend void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw);
-    friend Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags);
+    friend Object* AllocAlign2xPtr(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags);
     friend class t_join;
     friend class gc_mechanisms;
     friend class seg_free_spaces;
@@ -3507,6 +3507,12 @@ private:
     PER_HEAP_FIELD_SINGLE_GC int condemned_generation_num;
     PER_HEAP_FIELD_SINGLE_GC BOOL blocking_collection;
     PER_HEAP_FIELD_SINGLE_GC BOOL elevation_requested;
+#ifdef RESPECT_LARGE_ALIGNMENT
+    // Set per-plug during plan: TRUE only when the plug contains an object that actually
+    // requires 2 * DATA_ALIGNMENT alignment. Gates residue-preservation padding so plugs
+    // with no such object compact freely (pay-for-play) instead of preserving accidental alignment.
+    PER_HEAP_FIELD_SINGLE_GC BOOL plug_requires_large_align;
+#endif //RESPECT_LARGE_ALIGNMENT
 
     PER_HEAP_FIELD_SINGLE_GC mark_queue_t mark_queue;
 
@@ -6258,6 +6264,13 @@ public:
     //
     // swept_in_plan_p can be folded into gen_num.
     bool            swept_in_plan_p;
+#ifdef RESPECT_LARGE_ALIGNMENT
+    // Set when this region held a 2 * DATA_ALIGNMENT object as of the last GC. Lets the
+    // plan phase skip the per-object alignment probe for gen2 regions known to be clean:
+    // gen2 regions only receive objects via GC placement, which sets this, so a clear flag
+    // proves the region has no alignment-constrained object to preserve during compaction.
+    bool            contains_large_align;
+#endif //RESPECT_LARGE_ALIGNMENT
     int             plan_gen_num;
     int             old_card_survived;
     int             pinned_survived;
@@ -6695,6 +6708,13 @@ bool& heap_segment_swept_in_plan (heap_segment* inst)
 {
     return inst->swept_in_plan_p;
 }
+#ifdef RESPECT_LARGE_ALIGNMENT
+inline
+bool& heap_segment_large_align (heap_segment* inst)
+{
+    return inst->contains_large_align;
+}
+#endif //RESPECT_LARGE_ALIGNMENT
 inline
 int& heap_segment_plan_gen_num (heap_segment* inst)
 {

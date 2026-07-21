@@ -1307,7 +1307,7 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE RequiresAlign8(VMPTR_TypeHandle thExact, OUT BOOL * pResult) = 0;
+    virtual HRESULT STDMETHODCALLTYPE RequiresAlign2xPtr(VMPTR_TypeHandle thExact, OUT BOOL * pResult) = 0;
 
     //
     // Resolve the raw generics token to the real generics type token.  The resolution is based on the

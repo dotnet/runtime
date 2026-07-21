@@ -682,7 +682,7 @@ public unsafe partial interface IDacDbiInterface
     int GetVarArgSig(ulong VASigCookieAddr, ulong* pArgBase, DacDbiTargetBuffer* pRetVal);
 
     [PreserveSig]
-    int RequiresAlign8(ulong thExact, Interop.BOOL* pResult);
+    int RequiresAlign2xPtr(ulong thExact, Interop.BOOL* pResult);
 
     [PreserveSig]
     int ResolveExactGenericArgsToken(uint dwExactGenericArgsTokenIndex, ulong rawToken, ulong* pRetVal);

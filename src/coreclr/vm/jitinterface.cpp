@@ -1910,7 +1910,7 @@ unsigned CEEInfo::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE type, bool f
         {
             // Return the size of the double align hint. Ignore the actual alignment info account
             // so that structs with 64-bit integer fields do not trigger double aligned frames on x86.
-            if (pMT->GetClass()->IsAlign8Candidate())
+            if (pMT->GetClass()->IsAlign2xPtrCandidate())
                 result = 8;
         }
     }
@@ -1954,19 +1954,20 @@ unsigned CEEInfo::getClassAlignmentRequirementStatic(TypeHandle clsHnd)
         }
     }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (result < 8 && pMT->RequiresAlign8())
+#ifdef FEATURE_2XPTR_ALIGNMENT
+    if (result < (2 * TARGET_POINTER_SIZE) && pMT->RequiresAlign2xPtr())
     {
-        // If the structure contains 64-bit primitive fields and the platform requires 8-byte alignment for
-        // such fields then make sure we return at least 8-byte alignment. Note that it's technically possible
-        // to create unmanaged APIs that take unaligned structures containing such fields and this
-        // unconditional alignment bump would cause us to get the calling convention wrong on platforms such
-        // as ARM. If we see such cases in the future we'd need to add another control (such as an alignment
-        // property for the StructLayout attribute or a marshaling directive attribute for p/invoke arguments)
-        // that allows more precise control. For now we'll go with the likely scenario.
-        result = 8;
+        // If the structure requires higher-than-pointer alignment -- 64-bit primitive fields on a
+        // 32-bit target, or 16-byte types such as Int128/Vector128 on a 64-bit target -- then make
+        // sure we return at least 2 * TARGET_POINTER_SIZE. Note that it's technically possible to create
+        // unmanaged APIs that take unaligned structures containing such fields and this unconditional
+        // alignment bump would cause us to get the calling convention wrong on platforms such as ARM.
+        // If we see such cases in the future we'd need to add another control (such as an alignment
+        // property for the StructLayout attribute or a marshaling directive attribute for p/invoke
+        // arguments) that allows more precise control. For now we'll go with the likely scenario.
+        result = 2 * TARGET_POINTER_SIZE;
     }
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
     return result;
 }
@@ -5743,13 +5744,13 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT, bool * pHasSideEf
         _ASSERTE(helper == CORINFO_HELP_NEWFAST);
     }
     else
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (pMT->RequiresAlign8())
+#ifdef FEATURE_2XPTR_ALIGNMENT
+    if (pMT->RequiresAlign2xPtr())
     {
         if (pMT->IsValueType())
-            helper = CORINFO_HELP_NEWSFAST_ALIGN8_VC;
+            helper = CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_VC;
         else
-            helper = CORINFO_HELP_NEWSFAST_ALIGN8;
+            helper = CORINFO_HELP_NEWSFAST_ALIGN_2XPTR;
     }
     else
 #endif
@@ -5831,10 +5832,10 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
             // Use the slow helper
             result = CORINFO_HELP_NEWARR_1_DIRECT;
         }
-#ifdef FEATURE_64BIT_ALIGNMENT
-        else if (thElemType.RequiresAlign8())
+#ifdef FEATURE_2XPTR_ALIGNMENT
+        else if (thElemType.RequiresAlign2xPtr())
         {
-            result = CORINFO_HELP_NEWARR_1_ALIGN8;
+            result = CORINFO_HELP_NEWARR_1_ALIGN_2XPTR;
         }
 #endif
         else
@@ -11252,7 +11253,7 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
         {
             _ASSERTE(pfnHelper != NULL);
             AllocMemHolder<PortableEntryPoint> portableEntryPoint = SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) });
-            if (ftnNum >= CORINFO_HELP_NEWFAST && ftnNum <= CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE)
+            if (ftnNum >= CORINFO_HELP_NEWFAST && ftnNum <= CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_FINALIZE)
             {
                 // CoreLib calls newobj helpers via calli. Give these helpers a MethodDesc
                 // so the interpreter can find the method signature for the call cookie.

@@ -22,14 +22,14 @@ namespace ILCompiler.DependencyAnalysis
         private readonly string _prefix;
         protected readonly GCPointerMap _gcMap;
         private readonly TypeDesc _baseType;
-        protected readonly bool _requiresAlign8;
+        protected readonly bool _requiresAlign2xPtr;
 
-        public DataOnlyEETypeNode(string prefix, GCPointerMap gcMap, TypeDesc baseType, bool requiresAlign8)
+        public DataOnlyEETypeNode(string prefix, GCPointerMap gcMap, TypeDesc baseType, bool requiresAlign2xPtr)
         {
             _prefix = prefix;
             _gcMap = gcMap;
             _baseType = baseType;
-            _requiresAlign8 = requiresAlign8;
+            _requiresAlign2xPtr = requiresAlign2xPtr;
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -47,9 +47,9 @@ namespace ILCompiler.DependencyAnalysis
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append($"__{_prefix}_").Append(_gcMap.ToString());
-            if (_requiresAlign8)
+            if (_requiresAlign2xPtr)
             {
-                sb.Append("_align8"u8);
+                sb.Append("_align2xptr"u8);
             }
         }
 
@@ -88,10 +88,10 @@ namespace ILCompiler.DependencyAnalysis
             if (containsPointers)
                 flags |= (uint)EETypeFlags.HasPointersFlag;
 
-            if (_requiresAlign8)
+            if (_requiresAlign2xPtr)
             {
                 // Mark the method table as non-value type that requires 8-byte alignment
-                flags |= (uint)EETypeFlagsEx.RequiresAlign8Flag;
+                flags |= (uint)EETypeFlagsEx.RequiresAlign2xPtrFlag;
                 flags |= (uint)EETypeElementType.Class << (byte)EETypeFlags.ElementTypeShift;
             }
 
@@ -113,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis
             int mapCompare = _gcMap.CompareTo(otherNode._gcMap);
             if (mapCompare == 0)
             {
-                return _requiresAlign8.CompareTo(otherNode._requiresAlign8);
+                return _requiresAlign2xPtr.CompareTo(otherNode._requiresAlign2xPtr);
             }
 
             return mapCompare;

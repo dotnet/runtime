@@ -698,7 +698,7 @@ namespace Internal.Runtime
 #endif
         }
 
-        internal bool RequiresAlign8
+        internal bool RequiresAlign2xPtr
         {
             get
             {
@@ -707,9 +707,9 @@ namespace Internal.Runtime
                 // here to enforce the assumption.
 #if DEBUG
                 if (HasComponentSize)
-                    Debug.Fail("RequiresAlign8 called for array or string");
+                    Debug.Fail("RequiresAlign2xPtr called for array or string");
 #endif
-                return (_uFlags & (uint)EETypeFlagsEx.RequiresAlign8Flag) != 0;
+                return (_uFlags & (uint)EETypeFlagsEx.RequiresAlign2xPtrFlag) != 0;
             }
         }
 

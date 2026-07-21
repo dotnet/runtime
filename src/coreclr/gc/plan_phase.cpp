@@ -3324,6 +3324,12 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
     assert (settings.concurrent == FALSE);
 
+#ifdef RESPECT_LARGE_ALIGNMENT
+    // Default to preserving alignment; the per-plug walk below narrows this to only
+    // plugs that actually contain a 2 * DATA_ALIGNMENT object before each placement.
+    plug_requires_large_align = TRUE;
+#endif //RESPECT_LARGE_ALIGNMENT
+
     dprintf (2,(ThreadStressLog::gcStartPlanMsg(), heap_number,
                 condemned_gen_number, settings.promotion ? 1 : 0));
 
@@ -3920,6 +3926,20 @@ void gc_heap::plan_phase (int condemned_gen_number)
             size_t alignmentOffset = OBJECT_ALIGNMENT_OFFSET;
 #endif // FEATURE_STRUCTALIGN
 
+#ifdef RESPECT_LARGE_ALIGNMENT
+            BOOL plug_has_large_align = FALSE;
+#ifdef USE_REGIONS
+            // Gen2 regions receive objects only via GC placement, which flags the destination,
+            // so a clear flag proves the region holds no 2 * DATA_ALIGNMENT object and the
+            // per-object probe below can be skipped. Ephemeral regions can be freshly allocated
+            // into between GCs, so they are always probed.
+            BOOL probe_large_align = heap_segment_large_align (seg1) ||
+                                     (heap_segment_gen_num (seg1) != max_generation);
+#else
+            const BOOL probe_large_align = TRUE;
+#endif //USE_REGIONS
+#endif // RESPECT_LARGE_ALIGNMENT
+
             {
                 uint8_t* xl = x;
                 while ((xl < end) && marked (xl) && (pinned (xl) == pinned_plug_p))
@@ -3940,6 +3960,14 @@ void gc_heap::plan_phase (int condemned_gen_number)
                         }
                     }
 #endif // FEATURE_STRUCTALIGN
+
+#ifdef RESPECT_LARGE_ALIGNMENT
+                    if (probe_large_align && !pinned_plug_p && !plug_has_large_align &&
+                        ((CObjectHeader*)xl)->GetMethodTable()->RequiresAlign2xPtr())
+                    {
+                        plug_has_large_align = TRUE;
+                    }
+#endif // RESPECT_LARGE_ALIGNMENT
 
                     clear_marked (xl);
 
@@ -4053,6 +4081,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 dd_num_npinned_plugs (dd_active_old)++;
 #endif //RESPECT_LARGE_ALIGNMENT || FEATURE_STRUCTALIGN
 
+#ifdef RESPECT_LARGE_ALIGNMENT
+                plug_requires_large_align = plug_has_large_align;
+#endif //RESPECT_LARGE_ALIGNMENT
+
                 add_gen_plug (active_old_gen_number, ps);
 
                 if (allocate_in_condemned)
@@ -4102,6 +4134,16 @@ void gc_heap::plan_phase (int condemned_gen_number)
                                                                          plug_start REQD_ALIGN_AND_OFFSET_ARG);
                     }
                 }
+
+#if defined(RESPECT_LARGE_ALIGNMENT) && defined(USE_REGIONS)
+                // Flag the destination region so the next GC knows to preserve alignment for it.
+                // new_address is 0 only when the plug converted to pinned or ran off the segment,
+                // neither of which relocates it, so there is nothing to preserve in that case.
+                if (plug_has_large_align && new_address)
+                {
+                    heap_segment_large_align (region_of (new_address)) = true;
+                }
+#endif //RESPECT_LARGE_ALIGNMENT && USE_REGIONS
 
 #ifdef FEATURE_EVENT_TRACE
                 if (record_fl_info_p && !allocated_in_older_p)
@@ -5936,6 +5978,11 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
     set_region_sweep_in_plan (region);
 
     region->init_free_list();
+#ifdef RESPECT_LARGE_ALIGNMENT
+    // SIP regions bypass the plan-phase probe, so recompute the flag here from the survivors
+    // that stay in place. Clearing first makes it self-clearing once the last aligned object dies.
+    heap_segment_large_align (region) = false;
+#endif //RESPECT_LARGE_ALIGNMENT
 
     uint8_t* x = heap_segment_mem (region);
     uint8_t* last_marked_obj_start = 0;
@@ -5969,6 +6016,12 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
             clear_marked (obj);
 
             size_t s = size (obj);
+#ifdef RESPECT_LARGE_ALIGNMENT
+            if (((CObjectHeader*)obj)->GetMethodTable()->RequiresAlign2xPtr())
+            {
+                heap_segment_large_align (region) = true;
+            }
+#endif //RESPECT_LARGE_ALIGNMENT
             next_obj = obj + Align (s);
             last_marked_obj_start = obj;
             last_marked_obj_end = next_obj;

@@ -105,12 +105,12 @@ namespace
             {
                 placementInfo.m_alignment = pNestedType.GetMethodTable()->GetFieldAlignmentRequirement();
             }
-#ifdef FEATURE_64BIT_ALIGNMENT
-            if (pNestedType.RequiresAlign8())
+#ifdef FEATURE_2XPTR_ALIGNMENT
+            if (pNestedType.RequiresAlign2xPtr())
             {
-                placementInfo.m_alignment = max(8u, placementInfo.m_alignment);
+                placementInfo.m_alignment = max((UINT32)(2 * DATA_ALIGNMENT), placementInfo.m_alignment);
             }
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
         }
 
         // No other type permitted for ManagedSequential.
@@ -454,20 +454,35 @@ auto EEClassLayoutInfo::GetNestedFieldFlags(Module* pModule, FieldDesc *pFields,
             numR8Fields++;
         }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-        if (!typeHandleMaybe.IsNull() && typeHandleMaybe.GetMethodTable()->GetClass()->IsAlign8Candidate())
+#ifdef FEATURE_2XPTR_ALIGNMENT
+        if (!typeHandleMaybe.IsNull() && typeHandleMaybe.GetMethodTable()->GetClass()->IsAlign2xPtrCandidate())
         {
-            flags |= NestedFieldFlags::Align8;
+            flags |= NestedFieldFlags::Align2xPtr;
         }
 
+        // Value-type fields that report a true alignment requirement of at least 2 * DATA_ALIGNMENT
+        // (16 bytes on 64-bit, 8 bytes on 32-bit) need the larger GC alignment. This covers leaf types
+        // with explicit layout such as Int128/UInt128/Vector128; nested aggregates that merely wrap
+        // such a field are caught by the IsAlign2xPtrCandidate propagation above.
+        if (!typeHandleMaybe.IsNull()
+            && (size_t)typeHandleMaybe.GetMethodTable()->GetFieldAlignmentRequirement() >= (2 * DATA_ALIGNMENT))
+        {
+            flags |= NestedFieldFlags::Align2xPtr;
+        }
+
+#ifndef TARGET_64BIT
+        // On 32-bit, DATA_ALIGNMENT is 4, so 8-byte primitive fields (long/double) exceed the natural
+        // allocator alignment and must request the larger GC alignment explicitly. These primitives
+        // have no MethodTable, so the alignment-requirement check above does not cover them. On 64-bit
+        // they are already naturally aligned.
         if (corElemType == ELEMENT_TYPE_I8
             || corElemType == ELEMENT_TYPE_U8
-            || corElemType == ELEMENT_TYPE_R8
-            IN_TARGET_64BIT(|| corElemType == ELEMENT_TYPE_I || corElemType == ELEMENT_TYPE_U))
+            || corElemType == ELEMENT_TYPE_R8)
         {
-            flags |= NestedFieldFlags::Align8;
+            flags |= NestedFieldFlags::Align2xPtr;
         }
-#endif
+#endif // !TARGET_64BIT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
         if (!IsFieldBlittable(pModule, pField->GetMemberDef(), corElemType, typeHandleMaybe, nativeTypeFlags))
         {
@@ -493,7 +508,7 @@ auto EEClassLayoutInfo::GetNestedFieldFlags(Module* pModule, FieldDesc *pFields,
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
     if (ShouldAlign8(numR8Fields, numInstanceFields))
     {
-        flags |= NestedFieldFlags::Align8;
+        flags |= NestedFieldFlags::Align2xPtr;
     }
 #endif
 

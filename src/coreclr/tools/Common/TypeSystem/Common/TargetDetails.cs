@@ -366,7 +366,7 @@ namespace Internal.TypeSystem
         /// Encapsulates the fact that some architectures require 8-byte (larger than pointer
         /// size) alignment on some value types and arrays.
         /// </summary>
-        public bool SupportsAlign8
+        public bool SupportsAlign2xPtr
         {
             get
             {

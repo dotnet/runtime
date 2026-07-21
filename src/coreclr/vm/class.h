@@ -531,7 +531,7 @@ class EEClassLayoutInfo
             None = 0x0,
             NonBlittable = 0x1,
             GCPointer = 0x2,
-            Align8 = 0x4,
+            Align2xPtr = 0x4,
             AutoLayout = 0x8,
             Int128 = 0x10,
         };
@@ -1189,15 +1189,15 @@ public:
     }
 
 public:
-    inline BOOL IsAlign8Candidate()
+    inline BOOL IsAlign2xPtrCandidate()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_VMFlags & VMFLAG_PREFER_ALIGN8);
+        return (m_VMFlags & VMFLAG_PREFER_ALIGN_2XPTR);
     }
-    inline void SetAlign8Candidate()
+    inline void SetAlign2xPtrCandidate()
     {
         LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= VMFLAG_PREFER_ALIGN8;
+        m_VMFlags |= VMFLAG_PREFER_ALIGN_2XPTR;
     }
     inline BOOL HasCustomFieldAlignment()
     {
@@ -1636,7 +1636,7 @@ public:
         VMFLAG_HASRVASTATICFIELDS              = 0x00040000,
         VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT      = 0x00080000,
         VMFLAG_CONTAINS_STACK_PTR              = 0x00100000,
-        VMFLAG_PREFER_ALIGN8                   = 0x00200000, // Would like to have 8-byte alignment
+        VMFLAG_PREFER_ALIGN_2XPTR              = 0x00200000, // Would like to have 2 * DATA_ALIGNMENT alignment (8 bytes on 32-bit, 16 on 64-bit)
         VMFLAG_ONLY_ABSTRACT_METHODS           = 0x00400000, // Type only contains abstract methods
 
 #ifdef FEATURE_COMINTEROP

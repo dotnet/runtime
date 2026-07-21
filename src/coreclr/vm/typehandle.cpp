@@ -464,17 +464,17 @@ bool TypeHandle::IsVectorT() const
 }
 
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-bool TypeHandle::RequiresAlign8() const
+#ifdef FEATURE_2XPTR_ALIGNMENT
+bool TypeHandle::RequiresAlign2xPtr() const
 {
     WRAPPER_NO_CONTRACT;
 
     if (IsNativeValueType())
-        return AsNativeValueType()->NativeRequiresAlign8();
+        return AsNativeValueType()->NativeRequiresAlign2xPtr();
 
-    return GetMethodTable()->RequiresAlign8();
+    return GetMethodTable()->RequiresAlign2xPtr();
 }
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
 #ifndef DACCESS_COMPILE
 
