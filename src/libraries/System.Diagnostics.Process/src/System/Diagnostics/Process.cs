@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -1757,6 +1756,23 @@ namespace System.Diagnostics
                 }
             }
         }
+
+        /// <inheritdoc cref="SafeProcessHandle.Signal(PosixSignal)"/>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public bool Signal(PosixSignal signal) => SafeHandle.Signal(signal);
+
+        /// <inheritdoc cref="SafeProcessHandle.WaitForExit()"/>
+        public ProcessExitStatus WaitForExitStatus() => SafeHandle.WaitForExit();
+
+        /// <inheritdoc cref="SafeProcessHandle.TryWaitForExit(TimeSpan, out ProcessExitStatus?)"/>
+        public bool TryWaitForExitStatus(TimeSpan timeout, [NotNullWhen(true)] out ProcessExitStatus? exitStatus) =>
+            SafeHandle.TryWaitForExit(timeout, out exitStatus);
+
+        /// <inheritdoc cref="SafeProcessHandle.WaitForExitAsync(CancellationToken)"/>
+        public Task<ProcessExitStatus> WaitForExitStatusAsync(CancellationToken cancellationToken = default) =>
+            SafeHandle.WaitForExitAsync(cancellationToken);
 
         /// <devdoc>
         /// <para>
