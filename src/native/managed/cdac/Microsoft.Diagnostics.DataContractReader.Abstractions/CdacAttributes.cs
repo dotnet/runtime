@@ -32,8 +32,8 @@ public sealed class CdacTypeAttribute : Attribute
 
     /// <summary>
     /// When <c>true</c>, the generator emits a <c>TypeHandle(Target)</c>
-    /// accessor that resolves the runtime <c>TypeHandle</c> by trying each
-    /// candidate name against <c>IManagedTypeSource</c>.
+    /// accessor returning an <c>ITypeHandle</c> by trying each candidate name
+    /// against <c>IManagedTypeSource</c>.
     /// </summary>
     public bool HasTypeHandle { get; set; }
 }
