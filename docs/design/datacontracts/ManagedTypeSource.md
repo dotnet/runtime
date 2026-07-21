@@ -86,8 +86,11 @@ bool TryResolveType(string managedFqName, out TypeHandle th, out MetadataReader 
 
     // Resolve the TypeDef token via the module's TypeDef -> MethodTable map.
     int token = MetadataTokens.GetToken(typeDefHandle);
-    TargetPointer typeDefToMT = loader.GetLookupTables(moduleHandle).TypeDefToMethodTable;
-    TargetPointer mt = loader.GetModuleLookupMapElement(typeDefToMT, (uint)token, out _);
+    TargetPointer mt = loader.GetModuleLookupMapElement(
+        moduleHandle,
+        ModuleLookupMapKind.TypeDefToMethodTable,
+        (uint)token,
+        out _);
     if (mt == TargetPointer.Null)
         return false;
 

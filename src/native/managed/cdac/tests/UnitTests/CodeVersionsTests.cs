@@ -87,18 +87,19 @@ internal static class MockExtensions
     {
         Contracts.ModuleHandle handle = new Contracts.ModuleHandle(module.Address);
         mock.Setup(l => l.GetModuleHandleFromModulePtr(module.Address)).Returns(handle);
-        mock.Setup(l => l.GetLookupTables(handle)).Returns(new ModuleLookupTables() {
-            MethodDefToILCodeVersioningState = module.MethodDefToILCodeVersioningStateAddress,
-        });
-        mock.Setup(l => l.GetModuleLookupMapElement(module.MethodDefToILCodeVersioningStateAddress, It.IsAny<uint>(), out It.Ref<TargetNUInt>.IsAny))
-        .Returns<TargetPointer, uint, TargetNUInt>((table, token, flags) =>
+        mock.Setup(l => l.GetModuleLookupMapElement(
+                handle,
+                ModuleLookupMapKind.MethodDefToILCodeVersioningState,
+                It.IsAny<uint>(),
+                out It.Ref<TargetNUInt>.IsAny))
+        .Returns<Contracts.ModuleHandle, ModuleLookupMapKind, uint, TargetNUInt>((_, kind, token, flags) =>
         {
             flags = new TargetNUInt(0);
             if (module.MethodDefToILCodeVersioningStateTable.TryGetValue(EcmaMetadataUtils.GetRowId(token), out TargetPointer value))
             {
                 return value;
             }
-            throw new InvalidOperationException($"No token found for 0x{token:x} in table {table}");
+            throw new InvalidOperationException($"No token found for 0x{token:x} in lookup map {kind}");
         });
     }
 

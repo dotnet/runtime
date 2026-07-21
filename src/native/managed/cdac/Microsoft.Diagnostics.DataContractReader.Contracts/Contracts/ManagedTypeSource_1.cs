@@ -266,8 +266,11 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
         // Look up the runtime TypeHandle via the module's TypeDef → MethodTable map.
         int token = MetadataTokens.GetToken((EntityHandle)typeDefHandle);
-        TargetPointer typeDefToMethodTable = loader.GetLookupTables(moduleHandle).TypeDefToMethodTable;
-        TargetPointer typeHandlePtr = loader.GetModuleLookupMapElement(typeDefToMethodTable, (uint)token, out _);
+        TargetPointer typeHandlePtr = loader.GetModuleLookupMapElement(
+            moduleHandle,
+            ModuleLookupMapKind.TypeDefToMethodTable,
+            (uint)token,
+            out _);
         if (typeHandlePtr == TargetPointer.Null)
             return false;
 

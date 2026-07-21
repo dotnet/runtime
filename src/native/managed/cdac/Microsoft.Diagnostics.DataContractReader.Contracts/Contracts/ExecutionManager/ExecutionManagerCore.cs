@@ -517,12 +517,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         ILoader loader = _target.Contracts.Loader;
         ModuleHandle module = loader.GetModuleHandleFromModulePtr(moduleAddr);
-        ModuleLookupTables tables = loader.GetLookupTables(module);
 
         TargetPointer resolvedMethodTable = (EcmaMetadataUtils.TokenType)(classToken & EcmaMetadataUtils.TokenTypeMask) switch
         {
-            EcmaMetadataUtils.TokenType.mdtTypeDef => loader.GetModuleLookupMapElement(tables.TypeDefToMethodTable, classToken, out _),
-            EcmaMetadataUtils.TokenType.mdtTypeRef => loader.GetModuleLookupMapElement(tables.TypeRefToMethodTable, classToken, out _),
+            EcmaMetadataUtils.TokenType.mdtTypeDef => loader.GetModuleLookupMapElement(module, ModuleLookupMapKind.TypeDefToMethodTable, classToken, out _),
+            EcmaMetadataUtils.TokenType.mdtTypeRef => loader.GetModuleLookupMapElement(module, ModuleLookupMapKind.TypeRefToMethodTable, classToken, out _),
             _ => TargetPointer.Null,
         };
 

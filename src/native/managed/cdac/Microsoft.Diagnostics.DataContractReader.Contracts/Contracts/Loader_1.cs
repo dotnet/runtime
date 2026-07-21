@@ -521,24 +521,44 @@ internal readonly struct Loader_1 : ILoader
         return binder.AssemblyLoadContext.Object;
     }
 
-    ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)
+    private TargetPointer GetModuleLookupMap(ModuleHandle handle, ModuleLookupMapKind kind)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        Target.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
-        uint tableDataOffset = (uint)lookupMapTypeInfo.Fields[Constants.FieldNames.ModuleLookupMap.TableData].Offset;
-        return new ModuleLookupTables(
-            module.FieldDefToDescMap,
-            module.ManifestModuleReferencesMap,
-            module.MemberRefToDescMap,
-            module.MethodDefToDescMap,
-            module.TypeDefToMethodTableMap,
-            module.TypeRefToMethodTableMap,
-            module.MethodDefToILCodeVersioningStateMap,
-            tableDataOffset);
+        return kind switch
+        {
+            ModuleLookupMapKind.FieldDefToDesc => module.FieldDefToDescMap,
+            ModuleLookupMapKind.ManifestModuleReferences => module.ManifestModuleReferencesMap,
+            ModuleLookupMapKind.MemberRefToDesc => module.MemberRefToDescMap,
+            ModuleLookupMapKind.MethodDefToDesc => module.MethodDefToDescMap,
+            ModuleLookupMapKind.TypeDefToMethodTable => module.TypeDefToMethodTableMap,
+            ModuleLookupMapKind.TypeRefToMethodTable => module.TypeRefToMethodTableMap,
+            ModuleLookupMapKind.MethodDefToILCodeVersioningState => module.MethodDefToILCodeVersioningStateMap,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+        };
+    }
+
+    TargetPointer ILoader.GetModuleLookupMapBase(ModuleHandle module, ModuleLookupMapKind kind)
+    {
+        TargetPointer table = GetModuleLookupMap(module, kind);
+        return table == TargetPointer.Null
+            ? TargetPointer.Null
+            : _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table).TableData;
     }
 
     private static (bool Done, uint NextIndex) IterateLookupMap(uint index) => (false, index + 1);
     private static (bool Done, uint NextIndex) SearchLookupMap(uint index) => (true, index);
+    private static uint CreateModuleLookupMapToken(ModuleLookupMapKind kind, uint rid)
+        => (uint)(kind switch
+        {
+            ModuleLookupMapKind.FieldDefToDesc => EcmaMetadataUtils.TokenType.mdtFieldDef,
+            ModuleLookupMapKind.ManifestModuleReferences => EcmaMetadataUtils.TokenType.mdtAssemblyRef,
+            ModuleLookupMapKind.MemberRefToDesc => EcmaMetadataUtils.TokenType.mdtMemberRef,
+            ModuleLookupMapKind.MethodDefToDesc or ModuleLookupMapKind.MethodDefToILCodeVersioningState => EcmaMetadataUtils.TokenType.mdtMethodDef,
+            ModuleLookupMapKind.TypeDefToMethodTable => EcmaMetadataUtils.TokenType.mdtTypeDef,
+            ModuleLookupMapKind.TypeRefToMethodTable => EcmaMetadataUtils.TokenType.mdtTypeRef,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+        }) | rid;
+
     private delegate (bool Done, uint NextIndex) Delegate(uint index);
     private IEnumerable<(TargetPointer, uint)> IterateModuleLookupMap(TargetPointer table, uint index, Delegate iterator)
     {
@@ -563,7 +583,7 @@ internal readonly struct Loader_1 : ILoader
         } while (table != TargetPointer.Null);
     }
 
-    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
+    private TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
     {
         uint rid = EcmaMetadataUtils.GetRowId(token);
         if (table == TargetPointer.Null || rid == 0)
@@ -579,13 +599,15 @@ internal readonly struct Loader_1 : ILoader
         return rval & ~supportedFlagsMask;
     }
 
-    IEnumerable<(TargetPointer, uint)> ILoader.EnumerateModuleLookupMap(TargetPointer table)
+    TargetPointer ILoader.GetModuleLookupMapElement(ModuleHandle module, ModuleLookupMapKind kind, uint token, out TargetNUInt flags)
+        => GetModuleLookupMapElement(GetModuleLookupMap(module, kind), token, out flags);
+
+    private IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table)
     {
         if (table == TargetPointer.Null)
             yield break;
         Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
         ulong supportedFlagsMask = lookupMap.SupportedFlagsMask.Value;
-        TargetNUInt flags = new TargetNUInt(0);
         uint index = 1; // zero is invalid
         foreach ((TargetPointer targetPointer, uint idx) in IterateModuleLookupMap(table, index, IterateLookupMap))
         {
@@ -593,6 +615,12 @@ internal readonly struct Loader_1 : ILoader
             if (rval != TargetPointer.Null)
                 yield return (rval, idx);
         }
+    }
+
+    IEnumerable<(TargetPointer Value, uint Token)> ILoader.EnumerateModuleLookupMap(ModuleHandle module, ModuleLookupMapKind kind)
+    {
+        foreach ((TargetPointer value, uint rid) in EnumerateModuleLookupMap(GetModuleLookupMap(module, kind)))
+            yield return (value, CreateModuleLookupMapToken(kind, rid));
     }
 
     bool ILoader.IsCollectible(ModuleHandle handle)

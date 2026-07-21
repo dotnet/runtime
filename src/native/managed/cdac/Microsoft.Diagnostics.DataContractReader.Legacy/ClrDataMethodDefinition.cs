@@ -35,8 +35,11 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     {
         ILoader loader = _target.Contracts.Loader;
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_module);
-        ModuleLookupTables tables = loader.GetLookupTables(moduleHandle);
-        TargetPointer methodDescAddr = loader.GetModuleLookupMapElement(tables.MethodDefToDesc, _token, out _);
+        TargetPointer methodDescAddr = loader.GetModuleLookupMapElement(
+            moduleHandle,
+            ModuleLookupMapKind.MethodDefToDesc,
+            _token,
+            out _);
 
         return methodDescAddr;
     }

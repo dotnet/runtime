@@ -583,13 +583,12 @@ public unsafe class DacDbiImplTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void ResolveTypeReference_TypeRef_NotCached_ReturnsClassNotLoaded(MockTarget.Architecture arch)
     {
-        const ulong refAsmPtr = 0x100, refManifest = 0x9001;
+        const ulong refAsmPtr = 0x100;
         ModuleHandle refHandle = Mod(0x1000);
 
         Mock<ILoader> loader = new(MockBehavior.Strict);
         loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
-        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
-        SetupTypeRefCacheMiss(loader);
+        SetupTypeRefCacheMiss(loader, refHandle);
 
         Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
         ecma.Setup(e => e.GetMetadata(refHandle)).Returns((MetadataReader?)null);
@@ -636,29 +635,22 @@ public unsafe class DacDbiImplTests
             MetadataTokens.FieldDefinitionHandle(1),
             MetadataTokens.MethodDefinitionHandle(1));
 
-    private static ModuleLookupTables Tables(ulong manifestModuleReferences)
-        => new ModuleLookupTables(
-            FieldDefToDesc: TargetPointer.Null,
-            ManifestModuleReferences: Ptr(manifestModuleReferences),
-            MemberRefToDesc: TargetPointer.Null,
-            MethodDefToDesc: TargetPointer.Null,
-            TypeDefToMethodTable: TargetPointer.Null,
-            TypeRefToMethodTable: TargetPointer.Null,
-            MethodDefToILCodeVersioningState: TargetPointer.Null,
-            TableDataOffset: 0);
-
-    private static void SetupLookupMap(Mock<ILoader> loader, ulong table, uint token, ulong result)
+    private static void SetupLookupMap(Mock<ILoader> loader, ModuleHandle module, ModuleLookupMapKind kind, uint token, ulong result)
     {
         TargetNUInt flags = default;
-        loader.Setup(l => l.GetModuleLookupMapElement(Ptr(table), token, out flags)).Returns(Ptr(result));
+        loader.Setup(l => l.GetModuleLookupMapElement(module, kind, token, out flags)).Returns(Ptr(result));
     }
 
-    private static void SetupTypeRefCacheMiss(Mock<ILoader> loader)
+    private static void SetupTypeRefCacheMiss(Mock<ILoader> loader, ModuleHandle module)
     {
-        // The referencing module's TypeRef->MethodTable cache is empty (TypeRefToMethodTable == Null),
-        // so every Tier 1 lookup on the Null table misses.
+        // The referencing module's TypeRef->MethodTable cache misses.
         TargetNUInt flags = default;
-        loader.Setup(l => l.GetModuleLookupMapElement(TargetPointer.Null, It.IsAny<uint>(), out flags)).Returns(TargetPointer.Null);
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                module,
+                ModuleLookupMapKind.TypeRefToMethodTable,
+                It.IsAny<uint>(),
+                out flags))
+            .Returns(TargetPointer.Null);
     }
 
     private static DacDbiImpl CreateDacDbiWithMockContracts(MockTarget.Architecture arch, Mock<ILoader> loader, Mock<IEcmaMetadata> ecma)
@@ -684,14 +676,13 @@ public unsafe class DacDbiImplTests
         // Target module: TypeDef "NS.Foo" (row 2 -> token 0x02000002).
         var (targetReader, targetProvider) = BuildMetadata(mb => AddTypeDef(mb, "NS", "Foo"));
 
-        const ulong refAsmPtr = 0x100, targetAsmPtr = 0x200, refManifest = 0x9001, targetModPtr = 0x4000;
+        const ulong refAsmPtr = 0x100, targetAsmPtr = 0x200, targetModPtr = 0x4000;
         ModuleHandle refHandle = Mod(0x1000), targetHandle = Mod(0x2000);
 
         Mock<ILoader> loader = new(MockBehavior.Strict);
         loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
-        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
-        SetupTypeRefCacheMiss(loader);
-        SetupLookupMap(loader, refManifest, MdtAssemblyRef | 1, targetModPtr);
+        SetupTypeRefCacheMiss(loader, refHandle);
+        SetupLookupMap(loader, refHandle, ModuleLookupMapKind.ManifestModuleReferences, MdtAssemblyRef | 1, targetModPtr);
         loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(targetModPtr))).Returns(targetHandle);
         loader.Setup(l => l.GetAssembly(targetHandle)).Returns(Ptr(targetAsmPtr));
 
@@ -735,16 +726,14 @@ public unsafe class DacDbiImplTests
         var (readerB, providerB) = BuildMetadata(mb => AddTypeDef(mb, "NS", "Bar"));
 
         const ulong refAsmPtr = 0x100, asmBPtr = 0x300;
-        const ulong refManifest = 0x9001, manifestA = 0x9002, modAPtr = 0x4000, modBPtr = 0x5000;
+        const ulong modAPtr = 0x4000, modBPtr = 0x5000;
         ModuleHandle refHandle = Mod(0x1000), handleA = Mod(0x2000), handleB = Mod(0x3000);
 
         Mock<ILoader> loader = new(MockBehavior.Strict);
         loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
-        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
-        loader.Setup(l => l.GetLookupTables(handleA)).Returns(Tables(manifestA));
-        SetupTypeRefCacheMiss(loader);
-        SetupLookupMap(loader, refManifest, MdtAssemblyRef | 1, modAPtr);
-        SetupLookupMap(loader, manifestA, MdtAssemblyRef | 1, modBPtr);
+        SetupTypeRefCacheMiss(loader, refHandle);
+        SetupLookupMap(loader, refHandle, ModuleLookupMapKind.ManifestModuleReferences, MdtAssemblyRef | 1, modAPtr);
+        SetupLookupMap(loader, handleA, ModuleLookupMapKind.ManifestModuleReferences, MdtAssemblyRef | 1, modBPtr);
         loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(modAPtr))).Returns(handleA);
         loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(modBPtr))).Returns(handleB);
         loader.Setup(l => l.GetAssembly(handleB)).Returns(Ptr(asmBPtr));
@@ -793,15 +782,14 @@ public unsafe class DacDbiImplTests
             mb.AddNestedType(inner, outer);
         });
 
-        const ulong refAsmPtr = 0x100, targetAsmPtr = 0x200, refManifest = 0x9001, targetModPtr = 0x4000;
+        const ulong refAsmPtr = 0x100, targetAsmPtr = 0x200, targetModPtr = 0x4000;
         ModuleHandle refHandle = Mod(0x1000), targetHandle = Mod(0x2000);
         uint innerToken = (uint)MetadataTokens.GetToken(innerRefHandle);
 
         Mock<ILoader> loader = new(MockBehavior.Strict);
         loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
-        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
-        SetupTypeRefCacheMiss(loader);
-        SetupLookupMap(loader, refManifest, MdtAssemblyRef | 1, targetModPtr);
+        SetupTypeRefCacheMiss(loader, refHandle);
+        SetupLookupMap(loader, refHandle, ModuleLookupMapKind.ManifestModuleReferences, MdtAssemblyRef | 1, targetModPtr);
         loader.Setup(l => l.GetModuleHandleFromModulePtr(Ptr(targetModPtr))).Returns(targetHandle);
         loader.Setup(l => l.GetAssembly(targetHandle)).Returns(Ptr(targetAsmPtr));
 
@@ -938,10 +926,12 @@ public unsafe class DacDbiImplTests
     {
         var mockLoader = new Mock<ILoader>();
         var moduleHandle = new Contracts.ModuleHandle(modulePtr);
-        var lookupTables = new ModuleLookupTables { MethodDefToDesc = new TargetPointer(0x4000) };
         mockLoader.Setup(l => l.GetModuleHandleFromModulePtr(modulePtr)).Returns(moduleHandle);
-        mockLoader.Setup(l => l.GetLookupTables(moduleHandle)).Returns(lookupTables);
-        mockLoader.Setup(l => l.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out It.Ref<TargetNUInt>.IsAny))
+        mockLoader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.MethodDefToDesc,
+                methodTk,
+                out It.Ref<TargetNUInt>.IsAny))
             .Returns(methodDesc);
         return mockLoader;
     }

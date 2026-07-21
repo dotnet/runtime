@@ -354,8 +354,11 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             return TargetPointer.Null;
 
         ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(module);
-        TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
-        TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
+        TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(
+            moduleHandle,
+            ModuleLookupMapKind.MethodDefToILCodeVersioningState,
+            methodDefToken,
+            out var _);
         return ilVersionStateAddress;
     }
 

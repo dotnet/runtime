@@ -67,10 +67,10 @@ internal sealed class GcSignatureTypeProvider
         };
 
     public GcTypeKind GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
-        => ClassifyTokenLookup(_target.Contracts.Loader.GetLookupTables(_moduleHandle).TypeDefToMethodTable, MetadataTokens.GetToken(handle), rawTypeKind);
+        => ClassifyTokenLookup(ModuleLookupMapKind.TypeDefToMethodTable, MetadataTokens.GetToken(handle), rawTypeKind);
 
     public GcTypeKind GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
-        => ClassifyTokenLookup(_target.Contracts.Loader.GetLookupTables(_moduleHandle).TypeRefToMethodTable, MetadataTokens.GetToken(handle), rawTypeKind);
+        => ClassifyTokenLookup(ModuleLookupMapKind.TypeRefToMethodTable, MetadataTokens.GetToken(handle), rawTypeKind);
 
     public GcTypeKind GetTypeFromSpecification(MetadataReader reader, GcSignatureContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
         => rawTypeKind == (byte)SignatureTypeKind.ValueType ? GcTypeKind.Other : GcTypeKind.Ref;
@@ -153,11 +153,11 @@ internal sealed class GcSignatureTypeProvider
     /// resulting <see cref="TypeHandle"/>. Falls back to a <paramref name="rawTypeKind"/>-based
     /// classification when the type has not been loaded.
     /// </summary>
-    private GcTypeKind ClassifyTokenLookup(TargetPointer lookupTable, int token, byte rawTypeKind)
+    private GcTypeKind ClassifyTokenLookup(ModuleLookupMapKind kind, int token, byte rawTypeKind)
     {
         try
         {
-            TargetPointer typeHandlePtr = _target.Contracts.Loader.GetModuleLookupMapElement(lookupTable, (uint)token, out _);
+            TargetPointer typeHandlePtr = _target.Contracts.Loader.GetModuleLookupMapElement(_moduleHandle, kind, (uint)token, out _);
             if (typeHandlePtr == TargetPointer.Null)
                 return rawTypeKind == (byte)SignatureTypeKind.ValueType ? GcTypeKind.Other : GcTypeKind.Ref;
 
