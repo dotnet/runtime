@@ -1052,8 +1052,8 @@ namespace System.Tests
         }
 
         [Theory]
-        // Exact powers of two have unequal rounding margins, so the shortest round-trippable
-        // string needs all 17 significant digits. Dropping the last one parses back to the
+        // These exact powers of two have unequal rounding margins; their shortest round-trippable
+        // string needs all 17 significant digits, and dropping the last one parses back to the
         // adjacent lower value.
         [InlineData(0x3E60000000000000, "2.9802322387695312E-08")]   // +2^-25
         [InlineData(0xBE60000000000000, "-2.9802322387695312E-08")]  // -2^-25
