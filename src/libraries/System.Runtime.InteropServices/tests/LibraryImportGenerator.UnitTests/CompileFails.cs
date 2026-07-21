@@ -906,9 +906,7 @@ namespace LibraryImportGenerator.UnitTests
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
 
-            // The generator no longer emits an 'unsafe' modifier on the containing type, and the trivial
-            // (forwarder) stubs it produces here contain no unsafe code, so no CS0227 is reported. The
-            // analyzer still reports SYSLIB1062 once per compilation to recommend enabling AllowUnsafeBlocks.
+            // The analyzer reports SYSLIB1062 once per compilation to recommend enabling AllowUnsafeBlocks.
             test.ExpectedDiagnostics.Add(VerifyAnalyzerCS.Diagnostic("SYSLIB1062"));
 
             await test.RunAsync();
