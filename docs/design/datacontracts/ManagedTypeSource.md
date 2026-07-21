@@ -23,7 +23,7 @@ Target.TypeInfo GetTypeInfo(string fullyQualifiedName);
 
 // Return true and populate `typeHandle` with the ITypeHandle for the runtime type,
 // or false if the type cannot be resolved.
-bool TryGetTypeHandle(string fullyQualifiedName, out ITypeHandle? typeHandle);
+bool TryGetTypeHandle(string fullyQualifiedName, [NotNullWhen(true)] out ITypeHandle? typeHandle);
 ITypeHandle GetTypeHandle(string fullyQualifiedName);
 
 // Return true and populate `address` with the address of the named static field,
@@ -68,7 +68,11 @@ they read in their own `### Managed types used` section.
 ``` csharp
 // Type resolution: parse the fully-qualified name, walk System.Private.CoreLib's
 // metadata to locate the TypeDef, then map TypeDef -> MethodTable via the loader.
-bool TryResolveType(string managedFqName, out ITypeHandle th, out MetadataReader mdReader, out TypeDefinition typeDef)
+bool TryResolveType(
+    string managedFqName,
+    [NotNullWhen(true)] out ITypeHandle? th,
+    [NotNullWhen(true)] out MetadataReader? mdReader,
+    out TypeDefinition typeDef)
 {
     ILoader loader = target.Contracts.Loader;
     TargetPointer systemAssembly = loader.GetSystemAssembly();
@@ -96,14 +100,14 @@ bool TryResolveType(string managedFqName, out ITypeHandle th, out MetadataReader
     return true;
 }
 
-bool TryGetTypeHandle(string fqn, out ITypeHandle? th)
+bool TryGetTypeHandle(string fqn, [NotNullWhen(true)] out ITypeHandle? th)
 {
     return TryResolveType(fqn, out th, out _, out _);
 }
 
 bool TryGetTypeInfo(string fqn, out Target.TypeInfo info)
 {
-    if (!TryResolveType(fqn, out ITypeHandle th, out MetadataReader mdReader, out TypeDefinition typeDef))
+    if (!TryResolveType(fqn, out ITypeHandle? th, out MetadataReader? mdReader, out TypeDefinition typeDef))
         return false;
 
     IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
