@@ -2962,7 +2962,7 @@ namespace System.Tests
         [InlineData(0xFC000000U, 0xFC000000U)] // quantum(-NaN) = -NaN (propagated)
         public static void QuantumTest(uint value, uint expected)
         {
-            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Quantum(Unsafe.BitCast<uint, Decimal32>(value))));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.GetQuantum(Unsafe.BitCast<uint, Decimal32>(value))));
         }
 
         [Theory]
@@ -2975,7 +2975,70 @@ namespace System.Tests
         [InlineData(0x78000000U, 0x32800001U, false)] // Infinity vs finite
         public static void SameQuantumTest(uint x, uint y, bool expected)
         {
-            Assert.Equal(expected, Decimal32.SameQuantum(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y)));
+            Assert.Equal(expected, Decimal32.HaveSameQuantum(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y)));
+        }
+
+        [Theory]
+        [InlineData(0x32800000U)] // +0
+        [InlineData(0xB2800000U)] // -0
+        [InlineData(0x32800001U)] // +1
+        [InlineData(0x78000000U)] // +Infinity
+        [InlineData(0xF8000000U)] // -Infinity
+        [InlineData(0x7C000000U)] // NaN
+        [InlineData(0x31803039U)] // 123.45
+        [InlineData(0x7DF004D2U)] // NaN with reserved-bit garbage (binary copy preserves non-canonical bits)
+        public static void EncodeDecodeBinaryRoundTrips(uint bits)
+        {
+            Decimal32 value = Decimal32.DecodeBinary(bits);
+            Assert.Equal(bits, Decimal32.EncodeBinary(value));
+            Assert.Equal(bits, Unsafe.BitCast<Decimal32, uint>(value));
+        }
+
+        [Theory]
+        [InlineData(0x32800000U, 0x22500000U)] // +0
+        [InlineData(0x32800001U, 0x22500001U)] // +1
+        public static void EncodeDecimalKnownVectors(uint bid, uint dpd)
+        {
+            Assert.Equal(dpd, Decimal32.EncodeDecimal(Decimal32.DecodeBinary(bid)));
+            Assert.Equal(bid, Decimal32.EncodeBinary(Decimal32.DecodeDecimal(dpd)));
+        }
+
+        [Theory]
+        [InlineData(0x32800000U)] // +0
+        [InlineData(0xB2800000U)] // -0
+        [InlineData(0x32800001U)] // +1
+        [InlineData(0x31803039U)] // 123.45
+        [InlineData(0x6CB8967FU)] // 9999999 (leading digit 9)
+        [InlineData(0x78000000U)] // +Infinity
+        [InlineData(0xF8000000U)] // -Infinity
+        [InlineData(0x7C000000U)] // NaN
+        [InlineData(0x7C0004D2U)] // NaN with payload
+        public static void EncodeDecodeDecimalRoundTrips(uint bits)
+        {
+            Decimal32 value = Decimal32.DecodeBinary(bits);
+            Assert.Equal(bits, Unsafe.BitCast<Decimal32, uint>(Decimal32.DecodeDecimal(Decimal32.EncodeDecimal(value))));
+        }
+
+        [Fact]
+        public static void CrossEncodingCanonicalizesNaN()
+        {
+            // The bits between the signaling bit and the payload are reserved; a cross-encoding conversion drops them.
+            const uint ReservedMask = 0x01F0_0000U;
+            const uint SignalingBit = 0x0200_0000U;
+
+            // BID -> DPD drops reserved-bit garbage while preserving the sign, marker, signaling bit, and payload.
+            uint canonicalDpd = Decimal32.EncodeDecimal(Decimal32.DecodeBinary(0x7C0004D2U));
+            uint garbageDpd = Decimal32.EncodeDecimal(Decimal32.DecodeBinary(0x7C0004D2U | ReservedMask));
+            Assert.Equal(canonicalDpd, garbageDpd);
+            Assert.Equal(0u, garbageDpd & ReservedMask);
+
+            // DPD -> BID canonicalizes the same way.
+            Assert.Equal(0x7C0004D2U, Decimal32.EncodeBinary(Decimal32.DecodeDecimal(canonicalDpd | ReservedMask)));
+
+            // The signaling bit is preserved both ways (IEEE 754 exceptions are treated as disabled, so sNaN is not quieted).
+            uint signalingDpd = Decimal32.EncodeDecimal(Decimal32.DecodeBinary(0x7C0004D2U | SignalingBit));
+            Assert.Equal(SignalingBit, signalingDpd & SignalingBit);
+            Assert.Equal(0x7C0004D2U | SignalingBit, Decimal32.EncodeBinary(Decimal32.DecodeDecimal(signalingDpd)));
         }
 
 
@@ -3145,7 +3208,7 @@ namespace System.Tests
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32Quantum), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void Quantum_IntelReferenceVectors(uint value, uint expected)
         {
-            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Quantum(Unsafe.BitCast<uint, Decimal32>(value))));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.GetQuantum(Unsafe.BitCast<uint, Decimal32>(value))));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]

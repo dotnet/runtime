@@ -353,6 +353,7 @@ Reflection.RunClassConstructor
 Reflection.TypeHierarchyLibraryModeSuppressions
 Reflection.TypeHierarchyReflectionWarnings
 Reflection.TypeMap
+Reflection.TypeMapAssemblyTargetRemovedWhenAllEntriesTrimmed
 Reflection.TypeUsedViaReflection
 Reflection.UnsafeAccessor
 RequiresCapability.BasicRequires

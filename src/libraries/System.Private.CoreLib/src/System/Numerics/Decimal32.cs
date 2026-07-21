@@ -10,6 +10,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
+    /// <summary>
+    /// Represents a decimal floating-point number that uses the IEEE 754 <c>decimal32</c> interchange format, providing 7 decimal digits of precision.
+    /// </summary>
+    /// <remarks>The IEEE 754 standard defines two interchange encodings for decimal floating-point: binary integer decimal (BID) and densely packed decimal (DPD). Which encoding is used is determined by the underlying ABI for the platform and defaults to BID where the ABI does not otherwise specify.</remarks>
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Decimal32
         : IComparable,
@@ -52,19 +56,34 @@ namespace System.Numerics
         private const uint SignMask = 0x8000_0000;
         private const uint MostSignificantBitOfSignificandMask = 0x0080_0000;
         private const uint NaNMask = 0x7C00_0000;
+        private const uint SNaNMask = 0x7E00_0000;
         private const uint InfinityMask = 0x7800_0000;
         private const uint MaxSignificand = 9_999_999;
         private const uint MaxInternalValue = 0x77F8_967F; // +9.999_999 * 10^96; aka +9_999_999 * 10^90
         private const uint MinInternalValue = 0xF7F8_967F; // -9.999_999 * 10^96; aka -9_999_999 * 10^90
 
+        /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         public static Decimal32 PositiveInfinity => new Decimal32(PositiveInfinityValue);
+
+        /// <summary>Gets a value that represents negative <c>infinity</c>.</summary>
         public static Decimal32 NegativeInfinity => new Decimal32(NegativeInfinityValue);
+
+        /// <summary>Gets a value that represents <c>NaN</c>.</summary>
         public static Decimal32 NaN => new Decimal32(QuietNaNValue);
+
+        /// <summary>Gets a value that represents negative <c>zero</c>.</summary>
         public static Decimal32 NegativeZero => new Decimal32(NegativeZeroValue);
+
+        /// <summary>Gets the value <c>0</c> for the type.</summary>
         public static Decimal32 Zero => new Decimal32(ZeroValue);
+
+        /// <summary>Gets the minimum value of the current type.</summary>
         public static Decimal32 MinValue => new Decimal32(MinInternalValue);
+
+        /// <summary>Gets the maximum value of the current type.</summary>
         public static Decimal32 MaxValue => new Decimal32(MaxInternalValue);
 
+        /// <summary>Gets the smallest value such that can be added to <c>0</c> that does not result in <c>0</c>.</summary>
         public static Decimal32 Epsilon => new Decimal32(0x0000_0001); // Smallest positive subnormal value, aka 1 * 10^-101
 
         private static ReadOnlySpan<uint> UInt32Powers10 =>
@@ -232,6 +251,30 @@ namespace System.Numerics
         {
             return Number.GetDecimalIeee754HashCode<Decimal32, uint>(_value);
         }
+
+        /// <summary>Encodes a value as its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The BID bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static uint EncodeBinary(Decimal32 x) => x._value;
+
+        /// <summary>Decodes a value from its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The BID bit pattern to decode.</param>
+        /// <returns>The value represented by the BID bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal32 DecodeBinary(uint x) => new Decimal32(x);
+
+        /// <summary>Encodes a value as its IEEE 754 densely packed decimal (DPD) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The DPD bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static uint EncodeDecimal(Decimal32 x) => Number.EncodeDecimalIeee754<Decimal32, uint>(x._value);
+
+        /// <summary>Decodes a value from its IEEE 754 densely packed decimal (DPD) representation.</summary>
+        /// <param name="x">The DPD bit pattern to decode.</param>
+        /// <returns>The value represented by the DPD bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal32 DecodeDecimal(uint x) => new Decimal32(Number.DecodeDecimalIeee754<Decimal32, uint>(x));
 
         /// <summary>
         /// Returns a string representation of the current value.
@@ -960,6 +1003,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Decimal32 x) => Number.ILogBDecimalIeee754<Decimal32, uint>(x._value);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static Decimal32 Lerp(Decimal32 value1, Decimal32 value2, Decimal32 amount) => MultiplyAddEstimate(value1, One - amount, value2 * amount);
+
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
         public static Decimal32 Log(Decimal32 x) => new Decimal32(Number.LogDecimalIeee754<Decimal32, uint>(x._value));
 
@@ -983,6 +1029,12 @@ namespace System.Numerics
 
         /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
         public static Decimal32 Pow(Decimal32 x, Decimal32 y) => new Decimal32(Number.PowDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        public static Decimal32 ReciprocalEstimate(Decimal32 x) => One / x;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        public static Decimal32 ReciprocalSqrtEstimate(Decimal32 x) => One / Sqrt(x);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
         public static Decimal32 RootN(Decimal32 x, int n) => new Decimal32(Number.RootNDecimalIeee754<Decimal32, uint>(x._value, n));
@@ -1034,13 +1086,13 @@ namespace System.Numerics
         /// <summary>Computes the quantum of a value: one unit in the last place sharing its exponent.</summary>
         /// <param name="x">The value whose quantum is returned.</param>
         /// <returns>The quantum of <paramref name="x" />.</returns>
-        public static Decimal32 Quantum(Decimal32 x) => new Decimal32(Number.QuantumDecimalIeee754<Decimal32, uint>(x._value));
+        public static Decimal32 GetQuantum(Decimal32 x) => new Decimal32(Number.QuantumDecimalIeee754<Decimal32, uint>(x._value));
 
         /// <summary>Determines whether two values have the same quantum (exponent).</summary>
         /// <param name="x">The first value to compare.</param>
         /// <param name="y">The second value to compare.</param>
         /// <returns><c>true</c> if <paramref name="x" /> and <paramref name="y" /> have the same quantum; otherwise, <c>false</c>.</returns>
-        public static bool SameQuantum(Decimal32 x, Decimal32 y) => Number.SameQuantumDecimalIeee754<Decimal32, uint>(x._value, y._value);
+        public static bool HaveSameQuantum(Decimal32 x, Decimal32 y) => Number.SameQuantumDecimalIeee754<Decimal32, uint>(x._value, y._value);
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
@@ -1718,6 +1770,8 @@ namespace System.Numerics
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NaNMask => NaNMask;
+
+        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.SNaNMask => SNaNMask;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.SignMask => SignMask;
 

@@ -1488,6 +1488,9 @@ namespace Mono.Linker.Steps
             if (CheckProcessed(assembly))
                 return;
 
+            // Flush any TypeMapAssemblyTarget attributes that were waiting for this assembly to be marked.
+            _typeMapHandler.TriggerPendingAssemblyTargets(assembly);
+
             var assemblyOrigin = new MessageOrigin(assembly);
 
             EmbeddedXmlInfo.ProcessDescriptors(assembly, Context);
