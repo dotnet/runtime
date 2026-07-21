@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
@@ -131,7 +132,7 @@ namespace System.Threading.Tasks
         {
             // Browser hosts do not support synchronous Wait so we want to run the
             //  replicated task directly instead of going through Task infrastructure
-            if (Parallel.IsSingleThreaded)
+            if (!RuntimeFeature.IsMultithreadingSupported)
             {
                 // Since we are running on a single thread, we don't want the action to time out
                 long timeout = long.MaxValue - 1;

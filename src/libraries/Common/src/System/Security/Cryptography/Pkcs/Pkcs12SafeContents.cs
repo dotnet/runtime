@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -8,6 +8,11 @@ using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
+
+using NestedSafeContentsStack = System.Collections.Generic.Stack<(
+    System.ReadOnlyMemory<byte> Serialized,
+    System.Security.Cryptography.Pkcs.Pkcs12SafeContentsBag Bag,
+    System.Collections.Generic.List<System.Security.Cryptography.Pkcs.Pkcs12SafeBag> Container)>;
 
 namespace System.Security.Cryptography.Pkcs
 {
@@ -27,6 +32,12 @@ namespace System.Security.Cryptography.Pkcs
 
         public Pkcs12SafeContents()
         {
+            ConfidentialityMode = Pkcs12ConfidentialityMode.None;
+        }
+
+        private Pkcs12SafeContents(bool isReadOnly)
+        {
+            IsReadOnly = isReadOnly;
             ConfidentialityMode = Pkcs12ConfidentialityMode.None;
         }
 
@@ -279,12 +290,56 @@ namespace System.Security.Cryptography.Pkcs
 
         private static List<Pkcs12SafeBag> ReadBags(ReadOnlyMemory<byte> serialized)
         {
+            NestedSafeContentsStack pendingContents = new NestedSafeContentsStack();
+            List<Pkcs12SafeBag> result = ReadBagsCore(serialized, pendingContents);
+
+            while (pendingContents.Count > 0)
+            {
+                (ReadOnlyMemory<byte> nestedSerialized, Pkcs12SafeContentsBag bag, List<Pkcs12SafeBag> container) = pendingContents.Pop();
+                bool replace = true;
+
+                try
+                {
+                    Pkcs12SafeContents? target = bag.SafeContents;
+                    Debug.Assert(target is not null);
+                    target._bags = ReadBagsCore(nestedSerialized, pendingContents);
+                    replace = false;
+                }
+                catch (AsnContentException)
+                {
+                }
+                catch (CryptographicException)
+                {
+                }
+
+                if (replace)
+                {
+                    // Replace the deferred bag with an unknown bag, since the contents couldn't be parsed.
+                    Pkcs12SafeBag.UnknownBag unknownBag = new(Oids.Pkcs12SafeContentsBag, nestedSerialized)
+                    {
+                        Attributes = bag.Attributes,
+                    };
+
+                    int idx = container.IndexOf(bag);
+                    Debug.Assert(idx != -1);
+
+                    container[idx] = unknownBag;
+                }
+            }
+
+            return result;
+        }
+
+        private static List<Pkcs12SafeBag> ReadBagsCore(
+            ReadOnlyMemory<byte> serialized,
+            NestedSafeContentsStack pendingSafeContents)
+        {
             List<SafeBagAsn> serializedBags = new List<SafeBagAsn>();
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(serialized.Span, AsnEncodingRules.BER);
-                AsnValueReader sequenceReader = reader.ReadSequence();
+                ValueAsnReader reader = new ValueAsnReader(serialized.Span, AsnEncodingRules.BER);
+                ValueAsnReader sequenceReader = reader.ReadSequence();
 
                 reader.ThrowIfNotEmpty();
                 while (sequenceReader.HasData)
@@ -330,8 +385,14 @@ namespace System.Security.Cryptography.Pkcs
                             bag = Pkcs12SecretBag.DecodeValue(bagValue);
                             break;
                         case Oids.Pkcs12SafeContentsBag:
-                            bag = Pkcs12SafeContentsBag.Decode(bagValue);
+                        {
+                            Pkcs12SafeContents deferredContents = new(isReadOnly: true);
+                            Pkcs12SafeContentsBag nested;
+                            nested = Pkcs12SafeContentsBag.CreateWithDeferredContents(bagValue, deferredContents);
+                            bag = nested;
+                            pendingSafeContents.Push((bagValue, nested, bags));
                             break;
+                        }
                     }
                 }
                 catch (AsnContentException)
@@ -350,7 +411,7 @@ namespace System.Security.Cryptography.Pkcs
             return bags;
         }
 
-        internal byte[] Encrypt(
+        internal unsafe byte[] Encrypt(
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)

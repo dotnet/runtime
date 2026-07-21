@@ -8,7 +8,7 @@ include(CheckStructHasMember)
 include(CheckTypeSize)
 include(CheckLibraryExists)
 
-if(CLR_CMAKE_TARGET_FREEBSD)
+if(CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD)
   set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
 elseif(CLR_CMAKE_TARGET_SUNOS)
   set(CMAKE_REQUIRED_INCLUDES /opt/local/include)
@@ -16,7 +16,7 @@ endif()
 
 if(CLR_CMAKE_TARGET_APPLE)
   set(CMAKE_REQUIRED_DEFINITIONS -D_XOPEN_SOURCE)
-elseif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
+elseif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD AND NOT CLR_CMAKE_TARGET_OPENBSD)
   set(CMAKE_REQUIRED_DEFINITIONS "-D_BSD_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L")
 endif()
 
@@ -100,10 +100,12 @@ elseif (HAVE_PTHREAD_IN_LIBC)
   set(PTHREAD_LIBRARY c)
 endif()
 
-check_library_exists(${PTHREAD_LIBRARY} pthread_attr_get_np "" HAVE_PTHREAD_ATTR_GET_NP)
-check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETATTR_NP)
-check_library_exists(${PTHREAD_LIBRARY} pthread_getcpuclockid "" HAVE_PTHREAD_GETCPUCLOCKID)
-check_library_exists(${PTHREAD_LIBRARY} pthread_getaffinity_np "" HAVE_PTHREAD_GETAFFINITY_NP)
+if (PTHREAD_LIBRARY)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_attr_get_np "" HAVE_PTHREAD_ATTR_GET_NP)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETATTR_NP)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_getcpuclockid "" HAVE_PTHREAD_GETCPUCLOCKID)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_getaffinity_np "" HAVE_PTHREAD_GETAFFINITY_NP)
+endif()
 
 check_function_exists(fsync HAVE_FSYNC)
 check_function_exists(futimes HAVE_FUTIMES)
@@ -136,7 +138,6 @@ int main(int argc, char **argv) {
 }" HAVE_SIGALTSTACK)
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
 check_function_exists(vm_read HAVE_VM_READ)
-check_function_exists(directio HAVE_DIRECTIO)
 check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
@@ -368,7 +369,9 @@ set(CMAKE_REQUIRED_LIBRARIES)
 
 
 
-check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+if (PTHREAD_LIBRARY)
+  check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+endif()
 
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
 check_cxx_source_runs("
@@ -549,7 +552,6 @@ int main(int argc, char **argv)
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
 
-check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
 check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
 check_symbol_exists(unw_get_proc_info_in_range libunwind.h HAVE_GET_PROC_INFO_IN_RANGE)
 
@@ -594,14 +596,14 @@ if(CLR_CMAKE_TARGET_APPLE)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 
-elseif(CLR_CMAKE_TARGET_FREEBSD)
+elseif(CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   if (CLR_CMAKE_HOST_ARCH_AMD64)
     set(BSD_REGS_STYLE "((reg).r_##rr)")
   elseif(CLR_CMAKE_HOST_ARCH_ARM64)
     set(BSD_REGS_STYLE "((reg).rr)")
   else()
-    message(FATAL_ERROR "Unknown FreeBSD architecture")
+    message(FATAL_ERROR "Unknown architecture")
   endif()
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 elseif(CLR_CMAKE_TARGET_NETBSD)
@@ -617,6 +619,8 @@ elseif(CLR_CMAKE_TARGET_HAIKU)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 elseif(CLR_CMAKE_TARGET_BROWSER)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
+elseif(CLR_CMAKE_TARGET_WASI)
+  set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 else() # Anything else is Linux
   # LTTNG is not available on Android, so don't error out
   if(FEATURE_EVENTSOURCE_XPLAT AND NOT HAVE_LTTNG_TRACEPOINT_H)
@@ -630,7 +634,7 @@ endif(CLR_CMAKE_TARGET_APPLE)
 check_struct_has_member(
     "struct statfs"
     f_fstypename
-    "sys/mount.h"
+    "sys/types.h;sys/mount.h"
     HAVE_STATFS_FSTYPENAME)
 
 check_struct_has_member(
@@ -650,7 +654,7 @@ check_prototype_definition(
     statfs
     "int statfs(const char *path, struct statfs *buf)"
     0
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_NON_LEGACY_STATFS)
 
 configure_file(${CMAKE_CURRENT_LIST_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

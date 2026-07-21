@@ -12,6 +12,7 @@ internal static partial class Interop
         internal const uint COINIT_APARTMENTTHREADED = 2;
         internal const uint COINIT_MULTITHREADED = 0;
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.Ole32)]
         internal static partial int CoInitializeEx(IntPtr reserved, uint dwCoInit);
     }

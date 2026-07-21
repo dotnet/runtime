@@ -433,8 +433,6 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
     if (!t.IsFnPtrType())
         return FALSE;
 
-#ifndef DACCESS_COMPILE
-
     FnPtrTypeDesc* pTD = t.AsFnPtrType();
 
     if (pTD->GetNumArgs() != numArgs || pTD->GetCallConv() != callConv)
@@ -451,11 +449,6 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
     }
 
     return TRUE;
-
-#else
-    DacNotImpl();
-    return FALSE;
-#endif // #ifndef DACCESS_COMPILE
 }
 
 TypeHandle EETypeHashTable::GetValue(const TypeKey *pKey)

@@ -85,6 +85,48 @@ static inline bool InterpOpIsCondBranch(int32_t opcode)
     return opcode >= INTOP_BRFALSE_I4 && opcode <= INTOP_BLT_UN_R8;
 }
 
+// Check if opcode is a return instruction
+static inline bool InterpOpIsReturn(int32_t opcode)
+{
+    return opcode >= INTOP_RET && opcode <= INTOP_RET_VOID;
+}
+
+// Check if opcode is a direct call (target can be resolved statically from data items)
+static inline bool InterpOpIsDirectCall(int32_t opcode)
+{
+    return opcode == INTOP_CALL ||
+           opcode == INTOP_CALL_NULLCHECK ||
+           opcode == INTOP_CALL_PINVOKE ||
+           opcode == INTOP_NEWOBJ ||
+           opcode == INTOP_NEWOBJ_GENERIC ||
+           opcode == INTOP_NEWOBJ_VT;
+}
+
+// Check if opcode is an indirect call (virtual, delegate, or function pointer)
+static inline bool InterpOpIsIndirectCall(int32_t opcode)
+{
+    return opcode == INTOP_CALLVIRT ||
+           opcode == INTOP_CALLI ||
+           opcode == INTOP_CALLDELEGATE;
+}
+
+// Check if opcode is a tail call (transfers control and does not return)
+static inline bool InterpOpIsTailCall(int32_t opcode)
+{
+    return opcode == INTOP_CALL_TAIL ||
+           opcode == INTOP_CALLI_TAIL ||
+           opcode == INTOP_CALLVIRT_TAIL ||
+           opcode == INTOP_CALLDELEGATE_TAIL;
+}
+
+// Check if opcode is a throw instruction (exception flow)
+static inline bool InterpOpIsThrow(int32_t opcode)
+{
+    return opcode == INTOP_THROW ||
+           opcode == INTOP_RETHROW ||
+           opcode == INTOP_THROW_PNSE;
+}
+
 // Helpers for reading data from uint8_t code stream
 inline uint16_t getU2LittleEndian(const uint8_t* ptr)
 {

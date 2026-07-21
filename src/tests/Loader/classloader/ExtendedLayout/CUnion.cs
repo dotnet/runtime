@@ -18,7 +18,7 @@ public static class CUnionTests
         CUnionBlittablePrimitiveFields c = default;
 
         // All fields should be at offset 0, size should be max field size (4 bytes for int/float)
-        Assert.Equal(4, Unsafe.SizeOf<CUnionBlittablePrimitiveFields>());
+        Assert.Equal(4, sizeof(CUnionBlittablePrimitiveFields));
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<int, byte>(ref c.a)));
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<float, byte>(ref c.b)));
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionBlittablePrimitiveFields, byte>(ref c), ref c.c));
@@ -29,9 +29,9 @@ public static class CUnionTests
     public static void NonBlittableUnmanagedPrimitiveFields_TreatedAsBlittable()
     {
         CUnionNonBlittablePrimitiveFields c = default;
-        Assert.Equal(Unsafe.SizeOf<CUnionNonBlittablePrimitiveFields>(), Marshal.SizeOf<CUnionNonBlittablePrimitiveFields>());
+        Assert.Equal(sizeof(CUnionNonBlittablePrimitiveFields), Marshal.SizeOf<CUnionNonBlittablePrimitiveFields>());
         // Size should be 2 (char is 2 bytes, bool is 1 byte)
-        Assert.Equal(2, Unsafe.SizeOf<CUnionNonBlittablePrimitiveFields>());
+        Assert.Equal(2, sizeof(CUnionNonBlittablePrimitiveFields));
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionNonBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<bool, byte>(ref c.b)));
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionNonBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<char, byte>(ref c.c)));
     }
@@ -52,7 +52,7 @@ public static class CUnionTests
         CUnionCustomCUnionField nested = default;
 
         // Size should be the size of NestedCUnionType (8 bytes for int64)
-        Assert.Equal(8, Unsafe.SizeOf<CUnionCustomCUnionField>());
+        Assert.Equal(8, sizeof(CUnionCustomCUnionField));
     }
 
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
@@ -61,7 +61,7 @@ public static class CUnionTests
     {
         CUnionCustomSeqStructField nested = default;
 
-        Assert.Equal(4, Unsafe.SizeOf<CUnionCustomSeqStructField>());
+        Assert.Equal(4, sizeof(CUnionCustomSeqStructField));
     }
 
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
@@ -93,7 +93,7 @@ public static class CUnionTests
     public static void ExplicitSize_Ignored()
     {
         // Size should be 4 (int size), not 12
-        Assert.Equal(4, Unsafe.SizeOf<CUnionWithSize>());
+        Assert.Equal(4, sizeof(CUnionWithSize));
     }
 
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
@@ -101,7 +101,7 @@ public static class CUnionTests
     public static void Pack_Ignored()
     {
         // Size should be 4 (max of int8=1 and int32=4), aligned to 4
-        Assert.Equal(4, Unsafe.SizeOf<CUnionWithPack>());
+        Assert.Equal(4, sizeof(CUnionWithPack));
 
         CUnionWithPack c = default;
 
@@ -117,7 +117,7 @@ public static class CUnionTests
         CUnionMixedSizes c = default;
 
         // Size should be 8 (int64 is the largest field)
-        Assert.Equal(8, Unsafe.SizeOf<CUnionMixedSizes>());
+        Assert.Equal(8, sizeof(CUnionMixedSizes));
 
         // All fields should be at offset 0
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionMixedSizes, byte>(ref c), ref c.byteField));
@@ -133,7 +133,7 @@ public static class CUnionTests
         CUnionTwoInts c = default;
 
         // Size should be 4 (both fields are int32)
-        Assert.Equal(4, Unsafe.SizeOf<CUnionTwoInts>());
+        Assert.Equal(4, sizeof(CUnionTwoInts));
 
         // Both fields should be at offset 0
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionTwoInts, byte>(ref c), ref Unsafe.As<int, byte>(ref c.first)));

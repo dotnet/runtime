@@ -10,6 +10,7 @@ class ICodeManager;
 class TypeManager;
 enum GenericVarianceType : uint8_t;
 
+#include "forward_declarations.h"
 #include "ICodeManager.h"
 
 extern "C" void PopulateDebugHeaders();
@@ -17,11 +18,10 @@ extern "C" void PopulateDebugHeaders();
 class RuntimeInstance
 {
     friend class AsmOffsets;
-    friend struct DefaultSListTraits<RuntimeInstance>;
     friend class Thread;
     friend void PopulateDebugHeaders();
+    friend struct ::cdac_data<RuntimeInstance>;
 
-    PTR_ThreadStore             m_pThreadStore;
     HANDLE                      m_hPalInstance; // this is the HANDLE passed into DllMain
 
 public:
@@ -29,10 +29,8 @@ public:
     typedef DPTR(OsModuleEntry) PTR_OsModuleEntry;
     struct OsModuleEntry
     {
-        // os Module list is add-only, so we can use PushHeadInterlocked and iterate without synchronization.
-        // m_pNext is volatile - to make sure there are no re-reading optimizations when iterating.
-        PTR_OsModuleEntry      volatile m_pNext;
-        HANDLE                 m_osModule;
+        PTR_OsModuleEntry          m_pNext;
+        HANDLE                     m_osModule;
     };
 
     typedef SList<OsModuleEntry> OsModuleList;
@@ -48,10 +46,8 @@ private:
 public:
     struct TypeManagerEntry
     {
-        // TypeManager list is add-only, so we can use PushHeadInterlocked and iterate without synchronization.
-        // m_pNext is volatile - to make sure there are no re-reading optimizations when iterating.
-        TypeManagerEntry*         volatile m_pNext;
-        TypeManager*              m_pTypeManager;
+        TypeManagerEntry*             m_pNext;
+        TypeManager*                  m_pTypeManager;
     };
 
     typedef SList<TypeManagerEntry> TypeManagerList;
@@ -114,6 +110,13 @@ public:
 };
 typedef DPTR(RuntimeInstance) PTR_RuntimeInstance;
 
+template<> struct cdac_data<RuntimeInstance>
+{
+    static constexpr size_t OsModuleList = offsetof(RuntimeInstance, m_OsModuleList);
+    static constexpr size_t TypeManagerList = offsetof(RuntimeInstance, m_TypeManagerList);
+    static constexpr size_t ManagedCodeStartRange = offsetof(RuntimeInstance, m_pvManagedCodeStartRange);
+    static constexpr size_t ManagedCodeRangeSize = offsetof(RuntimeInstance, m_cbManagedCodeRange);
+};
 
 PTR_RuntimeInstance GetRuntimeInstance();
 

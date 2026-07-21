@@ -591,11 +591,6 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 
 /*****************************************************************************/
 
-// The pseudorandom nop insertion is not necessary for current scenarios
-// #define PSEUDORANDOM_NOP_INSERTION
-
-/*****************************************************************************/
-
 // clang-format off
 #if defined(TARGET_X86)
 #include "targetx86.h"

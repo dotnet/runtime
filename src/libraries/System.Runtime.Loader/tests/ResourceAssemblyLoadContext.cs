@@ -31,6 +31,28 @@ namespace System.Runtime.Loader.Tests
 
             if (asmStream == null)
             {
+                // On platforms where assemblies are deployed as files alongside the app
+                // (e.g., Apple mobile CoreCLR) rather than embedded resources, fall back
+                // to loading from the app directory.
+                string basePath = Path.Combine(AppContext.BaseDirectory, assembly);
+                if (File.Exists(basePath))
+                {
+                    if (LoadBy == LoadBy.Path)
+                    {
+                        var tempPath = Directory.CreateTempSubdirectory().FullName;
+                        string path = Path.Combine(tempPath, assembly);
+                        File.Copy(basePath, path);
+                        return LoadFromAssemblyPath(path);
+                    }
+                    else if (LoadBy == LoadBy.Stream)
+                    {
+                        using (FileStream stream = File.OpenRead(basePath))
+                        {
+                            return LoadFromStream(stream);
+                        }
+                    }
+                }
+
                 return null;
             }
 

@@ -136,7 +136,7 @@ namespace System.Threading.Channels.Tests
             await c.Reader.Completion;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AllowSynchronousContinuations_WaitToReadAsync_ContinuationsInvokedAccordingToSetting()
         {
             Channel<int> c = CreateChannel();
@@ -152,7 +152,7 @@ namespace System.Threading.Channels.Tests
             r.GetAwaiter().GetResult();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AllowSynchronousContinuations_CompletionTask_ContinuationsInvokedAccordingToSetting()
         {
             Channel<int> c = CreateChannel();
@@ -169,7 +169,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Completion_CompletesAfterConcurrentTryReadAndTryComplete()
         {
             for (int iter = 0; iter < 100_000; iter++)
@@ -242,7 +242,24 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(42, await t2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
+        public async Task WaitToReadAsync_ReturnsFalse_WhenReadAsyncWasCanceledAndChannelCompleted()
+        {
+            Channel<int> c = CreateChannel();
+
+            using var cts = new CancellationTokenSource();
+            ValueTask<int> readTask = c.Reader.ReadAsync(cts.Token);
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await readTask);
+
+            ValueTask<bool> waitTask = c.Reader.WaitToReadAsync(CancellationToken.None);
+
+            c.Writer.Complete();
+
+            Assert.False(await waitTask);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Stress_TryWrite_TryRead()
         {
             const int NumItems = 3000000;

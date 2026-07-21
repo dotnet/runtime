@@ -42,38 +42,36 @@ jobs:
       jobParameters:
         dependsOn:
           - ${{ if eq(platform, 'browser_wasm') }}:
-            - build_browser_wasm_linux_Release_AllSubsets_CoreCLR
+            - build_browser_wasm_linux_Release_CoreCLR
           - ${{ if eq(platform, 'browser_wasm_win') }}:
-            - build_browser_wasm_windows_Release_AllSubsets_CoreCLR
+            - build_browser_wasm_windows_Release_CoreCLR
         isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
         testGroup: innerloop
         nameSuffix: CoreCLR_WasmBuildTests
 
         preBuildSteps:
           # Download single threaded runtime packs, and tasks needed to build WBT
-          - task: DownloadBuildArtifacts@0
+          - task: DownloadPipelineArtifact@2
             displayName: Download built nugets for singlethreaded runtime
             inputs:
               buildType: current
-              artifactName: 'BuildArtifacts_browser_wasm_$(_hostedOs)_Release_AllSubsets_CoreCLR'
-              downloadType: single
-              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+              artifactName: 'BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR'
+              targetPath: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR'
 
           - task: CopyFiles@2
             displayName: Copy single threaded assets
             inputs:
-              SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_AllSubsets_CoreCLR'
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR'
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
           # Download for multi-threaded
-          # - task: DownloadBuildArtifacts@0
+          # - task: DownloadPipelineArtifact@2
           #   displayName: Download built nugets for multi-threaded runtime
           #   inputs:
           #     buildType: current
           #     artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly
-          #     downloadType: single
-          #     downloadPath: '$(Build.SourcesDirectory)/artifacts'
+          #     targetPath: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
 
           # - task: CopyFiles@2
           #   displayName: Copy multithreading runtime pack
@@ -84,21 +82,35 @@ jobs:
           #     CleanTargetFolder: false
 
           # Download WBT - TODO-WASM: This points to "mono" build, altough 
-          - task: DownloadBuildArtifacts@0
+          - task: DownloadPipelineArtifact@2
             displayName: Download Wasm.Build.Tests
             inputs:
               buildType: current
-              artifactName: WasmBuildTests_$(_hostedOs)_AllSubsets_CoreCLR
-              downloadType: single
-              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+              artifactName: WasmBuildTests_$(_hostedOs)_CoreCLR
+              targetPath: '$(Build.SourcesDirectory)/artifacts/WasmBuildTests_$(_hostedOs)_CoreCLR'
 
           - task: CopyFiles@2
             displayName: Copy Wasm.Build.Tests archive
             inputs:
-              SourceFolder: '$(Build.SourcesDirectory)/artifacts/WasmBuildTests_$(_hostedOs)_AllSubsets_CoreCLR'
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/WasmBuildTests_$(_hostedOs)_CoreCLR'
               Contents: helix/**
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
+
+          # Provision emsdk on this agent so src/mono/browser/emsdk/ is populated
+          # before sendtohelix runs. The upstream runtime-build job acquires emsdk on
+          # its own agent (via src/coreclr/runtime.proj's BuildRuntimeDependsOnTargets),
+          # but that state is not shipped in its build artifacts. Mono WBT provisions
+          # implicitly because it builds the runtime in the same job; CoreCLR WBT is
+          # split across two agents, so we acquire it here on the WBT agent.
+          - ${{ if eq(platform, 'browser_wasm_win') }}:
+            - script: build.cmd -s provision.emsdk -os browser -c $(_BuildConfig)
+              displayName: Provision emsdk
+              workingDirectory: $(Build.SourcesDirectory)
+          - ${{ else }}:
+            - script: ./build.sh -s provision.emsdk -os browser -c $(_BuildConfig)
+              displayName: Provision emsdk
+              workingDirectory: $(Build.SourcesDirectory)
 
         # build WBT
         buildArgs: >-
@@ -123,6 +135,11 @@ jobs:
             parameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)_$(_hostedOs)
-              extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+              # WBT (buildwasmapps) fans out into several sendtohelixhelp.proj invocations
+              # (Workloads/Webcil/Fingerprinting/Bundler combos). sendtohelix.proj already builds
+              # them with BuildInParallel=true, but that only parallelizes when the msbuild running
+              # it has multiple nodes. /maxcpucount lets the Helix jobs be sent (and waited on)
+              # concurrently instead of one-send-then-wait-for-completion serially (see issue #118938).
+              extraHelixArguments: /p:BrowserHost=$(_hostedOs) /maxcpucount:8
               scenarios:
               - buildwasmapps

@@ -147,6 +147,8 @@ namespace System.Threading
 
         internal bool IsDefault => m_isDefault;
 
+        internal bool InstanceIsFlowSuppressed => m_isFlowSuppressed;
+
         public static void Run(ExecutionContext executionContext, ContextCallback callback, object? state)
         {
             // Note: ExecutionContext.Run is an extremely hot function and used by every await, ThreadPool execution, etc.
@@ -362,7 +364,7 @@ namespace System.Threading
         [Conditional("DEBUG")]
         internal static void CheckThreadPoolAndContextsAreDefault()
         {
-            Debug.Assert(Thread.IsSingleThreaded || Thread.CurrentThread.IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!RuntimeFeature.IsMultithreadingSupported || Thread.CurrentThread.IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
             Debug.Assert(Thread.CurrentThread._executionContext == null, "ThreadPool thread not on Default ExecutionContext.");
             Debug.Assert(Thread.CurrentThread._synchronizationContext == null, "ThreadPool thread not on Default SynchronizationContext.");
         }

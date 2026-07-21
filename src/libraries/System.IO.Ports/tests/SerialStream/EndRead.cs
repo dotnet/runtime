@@ -13,7 +13,7 @@ namespace System.IO.Ports.Tests
     {
         #region Test Cases
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_EndRead), nameof(HasNullModem))]
         public void EndReadAfterClose()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -39,7 +39,7 @@ namespace System.IO.Ports.Tests
             Thread.Sleep(200);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_EndRead), nameof(HasNullModem))]
         public void EndReadAfterSerialStreamClose()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -65,7 +65,7 @@ namespace System.IO.Ports.Tests
             Thread.Sleep(200);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_EndRead), nameof(HasOneSerialPort))]
         public void AsyncResult_Null()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -77,7 +77,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_EndRead), nameof(HasNullModem))]
         public void AsyncResult_MultipleInOrder()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -122,7 +122,7 @@ namespace System.IO.Ports.Tests
             Thread.Sleep(200);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_EndRead), nameof(HasNullModem))]
         public void AsyncResult_MultipleOutOfOrder()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

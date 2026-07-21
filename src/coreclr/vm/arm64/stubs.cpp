@@ -218,12 +218,10 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     if (updateFloats)
     {
         UpdateFloatingPointRegisters(pRD, GetSP());
-        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
     }
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     // copy the callee saved regs
     CalleeSavedRegisters *pCalleeSaved = GetCalleeSavedRegisters();
@@ -255,7 +253,6 @@ void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updat
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     // copy the callee saved regs
     CalleeSavedRegisters *pCalleeSaved = GetCalleeSavedRegisters();
@@ -278,6 +275,31 @@ void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updat
 }
 #endif // FEATURE_RESOLVE_HELPER_DISPATCH
 
+#ifdef FEATURE_INTERPRETER
+#ifndef DACCESS_COMPILE
+void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // The interpreter frame saves the floating point callee-saved registers (d8-d15) in the TransitionBlock,
+    // so we need to update them in the REGDISPLAY when we update the REGDISPLAY for an interpreter frame.
+    //
+    // Stack layout when pushCalleeSavedFloatRegs is used:
+    //   [d8-d15 (64 bytes)] [q0-q7 (128 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 192 (64 + 128)
+    TADDR pTransitionBlock = GetTransitionBlock();
+    UINT64 *pCalleeSavedFloats = (UINT64*)((BYTE*)pTransitionBlock - 192);
+
+    for (int i = 0; i < 8; i++)
+    {
+        pRD->pCurrentContext->V[8 + i].Low = pCalleeSavedFloats[i];
+        pRD->pCurrentContext->V[8 + i].High = 0;
+        (&pRD->pCurrentContextPointers->D8)[i] = &pCalleeSavedFloats[i];
+    }
+}
+#endif // DACCESS_COMPILE
+#endif // FEATURE_INTERPRETER
+
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -294,23 +316,31 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     // Update the integer registers in KNONVOLATILE_CONTEXT_POINTERS from
     // the exception context we have.
-    pRD->pCurrentContextPointers->X19 = (PDWORD64)&m_ctx.X19;
-    pRD->pCurrentContextPointers->X20 = (PDWORD64)&m_ctx.X20;
-    pRD->pCurrentContextPointers->X21 = (PDWORD64)&m_ctx.X21;
-    pRD->pCurrentContextPointers->X22 = (PDWORD64)&m_ctx.X22;
-    pRD->pCurrentContextPointers->X23 = (PDWORD64)&m_ctx.X23;
-    pRD->pCurrentContextPointers->X24 = (PDWORD64)&m_ctx.X24;
-    pRD->pCurrentContextPointers->X25 = (PDWORD64)&m_ctx.X25;
-    pRD->pCurrentContextPointers->X26 = (PDWORD64)&m_ctx.X26;
-    pRD->pCurrentContextPointers->X27 = (PDWORD64)&m_ctx.X27;
-    pRD->pCurrentContextPointers->X28 = (PDWORD64)&m_ctx.X28;
-    pRD->pCurrentContextPointers->Fp = (PDWORD64)&m_ctx.Fp;
-    pRD->pCurrentContextPointers->Lr = (PDWORD64)&m_ctx.Lr;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    T_CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    T_CONTEXT *pContext = &m_ctx;
+#endif
+
+    pRD->pCurrentContextPointers->X19 = (PDWORD64)&pContext->X19;
+    pRD->pCurrentContextPointers->X20 = (PDWORD64)&pContext->X20;
+    pRD->pCurrentContextPointers->X21 = (PDWORD64)&pContext->X21;
+    pRD->pCurrentContextPointers->X22 = (PDWORD64)&pContext->X22;
+    pRD->pCurrentContextPointers->X23 = (PDWORD64)&pContext->X23;
+    pRD->pCurrentContextPointers->X24 = (PDWORD64)&pContext->X24;
+    pRD->pCurrentContextPointers->X25 = (PDWORD64)&pContext->X25;
+    pRD->pCurrentContextPointers->X26 = (PDWORD64)&pContext->X26;
+    pRD->pCurrentContextPointers->X27 = (PDWORD64)&pContext->X27;
+    pRD->pCurrentContextPointers->X28 = (PDWORD64)&pContext->X28;
+    pRD->pCurrentContextPointers->Fp = (PDWORD64)&pContext->Fp;
+    pRD->pCurrentContextPointers->Lr = (PDWORD64)&pContext->Lr;
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
@@ -338,12 +368,11 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
+        UpdateFloatingPointRegisters(pRD, dac_cast<TADDR>(GetCallSiteSP()));
     }
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;
 
     pRD->pCurrentContext->Pc = *(DWORD64 *)&m_pCallerReturnAddress;
     pRD->pCurrentContext->Sp = *(DWORD64 *)&m_pCallSiteSP;
@@ -373,7 +402,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     pRD->pCurrentContextPointers->Fp = (DWORD64 *)&m_pCalleeSavedFP;
 
 #ifdef FEATURE_INTERPRETER
-    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    if ((m_Next != FRAME_TOP) && (m_Next != NULL) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
     {
         // If the next frame is an interpreter frame, we also need to set the first argument register to point to the interpreter frame.
         SetFirstArgReg(pRD->pCurrentContext, dac_cast<TADDR>(m_Next));
@@ -427,7 +456,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
         pRD->volatileCurrContextPointers.X[i] = &m_Regs->X[i];
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
@@ -439,9 +467,8 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     LIMITED_METHOD_CONTRACT;
 
      pRD->IsCallerContextValid = FALSE;
-     pRD->IsCallerSPValid      = FALSE;
 
-     pRD->pCurrentContext->Pc = m_ReturnAddress;
+     pRD->pCurrentContext->Pc = GetReturnAddress();
      size_t s = sizeof(struct HijackArgs);
      _ASSERTE(s%8 == 0); // HijackArgs contains register values and hence will be a multiple of 8
      // stack must be multiple of 16. So if s is not multiple of 16 then there must be padding of 8 bytes
@@ -487,39 +514,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 #endif // FEATURE_HIJACK
-
-#ifdef FEATURE_COMINTEROP
-
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    WRAPPER_NO_CONTRACT;
-
-	// adr x12, label_comCallMethodDesc
-	// ldr x10, label_target
-	// br x10
-	// 4 byte padding for alignment
-	// label_target:
-    // target address (8 bytes)
-    // label_comCallMethodDesc:
-    DWORD rgCode[] = {
-        0x100000cc,
-        0x5800006a,
-        0xd61f0140
-    };
-
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    memcpy(pBufferRW, rgCode, sizeof(rgCode));
-    *((PCODE*)(pBufferRW + sizeof(rgCode) + 4)) = target;
-
-    // Ensure that the updated instructions get actually written
-    ClrFlushInstructionCache(pBufferRX, COMMETHOD_CALL_PRESTUB_SIZE);
-
-    _ASSERTE(IS_ALIGNED(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
-             *((PCODE*)(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == target);
-}
-#endif // FEATURE_COMINTEROP
 
 #ifdef TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)

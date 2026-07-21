@@ -173,7 +173,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await wob.Completion;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task TestReceiveThenPost()
         {
             var wob = new WriteOnceBlock<int>(null);
@@ -188,7 +188,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 16, actual: await t);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop] // stress test with many iterations
         public async Task TestConcurrentPostAndReceiveAsync()
         {

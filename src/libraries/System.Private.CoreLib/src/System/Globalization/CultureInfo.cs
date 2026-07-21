@@ -96,10 +96,10 @@ namespace System.Globalization
         private string? _sortName;
 
         // Get the current user default culture. This one is almost always used, so we create it by default.
-        private static volatile CultureInfo? s_userDefaultCulture;
+        private static CultureInfo? s_userDefaultCulture;
 
         // The culture used in the user interface. This is mostly used to load correct localized resources.
-        private static volatile CultureInfo? s_userDefaultUICulture;
+        private static CultureInfo? s_userDefaultUICulture;
 
         // The Invariant culture;
         private static readonly CultureInfo s_InvariantCultureInfo = new CultureInfo(CultureData.Invariant, isReadOnly: true);

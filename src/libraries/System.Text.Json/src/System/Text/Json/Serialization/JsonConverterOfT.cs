@@ -558,8 +558,8 @@ namespace System.Text.Json.Serialization
                     else
                     {
                         // A non-value converter (object or collection) should always have Start and End tokens
-                        // unless it is polymorphic or supports null value reads.
-                        if (!CanBePolymorphic && !(HandleNullOnRead && tokenType == JsonTokenType.Null))
+                        // unless it is polymorphic, supports null value reads, or handles multiple token types.
+                        if (!CanBePolymorphic && !SupportsMultipleTokenTypes && !(HandleNullOnRead && tokenType == JsonTokenType.Null))
                         {
                             ThrowHelper.ThrowJsonException_SerializationConverterRead(this);
                         }

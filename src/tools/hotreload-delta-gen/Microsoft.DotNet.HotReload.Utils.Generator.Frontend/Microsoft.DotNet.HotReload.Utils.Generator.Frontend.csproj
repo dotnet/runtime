@@ -1,0 +1,7 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.DotNet.HotReload.Utils.Generator\Microsoft.DotNet.HotReload.Utils.Generator.csproj" />
+  </ItemGroup>
+
+</Project>

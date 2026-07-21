@@ -12,6 +12,7 @@ success &= RunTest(Threading.Run);
 success &= RunTest(Devirtualization.Run);
 success &= RunTest(StackTraces.Run);
 success &= RunTest(Ordering.Run);
+success &= RunTest(MiscTests.Run);
 
 return success ? 100 : 1;
 

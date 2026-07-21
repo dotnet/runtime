@@ -87,8 +87,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
-                AsnReader sequenceReader = reader.ReadSequence();
+                ValueAsnReader reader = new(encoded, AsnEncodingRules.BER);
+                ValueAsnReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
                 usages = new OidCollection();
 

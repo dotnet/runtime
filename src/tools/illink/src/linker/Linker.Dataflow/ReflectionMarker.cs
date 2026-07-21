@@ -73,9 +73,9 @@ namespace Mono.Linker.Dataflow
         }
 
         // Resolve a type from the specified assembly and mark it for reflection.
-        internal bool TryResolveTypeNameAndMark(AssemblyDefinition assembly, string typeName, in DiagnosticContext diagnosticContext, [NotNullWhen(true)] out TypeReference? type)
+        internal bool TryResolveTypeNameAndMark(AssemblyDefinition assembly, string typeName, in DiagnosticContext diagnosticContext, bool fallbackToCoreLib, [NotNullWhen(true)] out TypeReference? type)
         {
-            if (!Context.TypeNameResolver.TryResolveTypeName(assembly, typeName, out type, out var typeResolutionRecords))
+            if (!Context.TypeNameResolver.TryResolveTypeName(assembly, typeName, fallbackToCoreLib, out type, out var typeResolutionRecords))
             {
                 type = default;
                 return false;

@@ -13,7 +13,7 @@ using Xunit;
 namespace System.Collections.Concurrent.Tests
 {
     /// <summary>The class that contains the unit tests of the BlockingCollection.</summary>
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class BlockingCollectionTests
     {
         [Fact]

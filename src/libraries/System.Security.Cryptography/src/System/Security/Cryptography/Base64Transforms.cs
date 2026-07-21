@@ -139,7 +139,7 @@ namespace System.Security.Cryptography
         public bool CanTransformMultipleBlocks => true;
         public virtual bool CanReuseTransform => true;
 
-        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
+        public unsafe int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
         {
             // inputCount != InputBlockSize is allowed
             ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography
             return written;
         }
 
-        public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+        public unsafe byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
             // inputCount != InputBlockSize is allowed
             ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
@@ -189,6 +189,7 @@ namespace System.Security.Cryptography
 
             if (inputCount == 0)
             {
+                Reset();
                 return Array.Empty<byte>();
             }
 

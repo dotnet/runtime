@@ -15,23 +15,5 @@ namespace ILLink.RoslynAnalyzer.Tests.CommandLine
             return RunTest(allowMissingWarnings: true);
         }
 
-        [Fact]
-        public Task DeterministicMvidWorks()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task NewMvidWorks()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task RetainMvid()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
     }
 }

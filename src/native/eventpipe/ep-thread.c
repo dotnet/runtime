@@ -37,6 +37,12 @@ ep_thread_alloc (void)
 	instance->session_use_in_progress = UINT32_MAX;
 	instance->unregistered = 0;
 
+	instance->buffer_wait_enqueued = 0;
+	instance->buffer_wait_queue_next_thread = NULL;
+	// Leave buffer_wait_event zero-initialized (invalid); it is allocated when the thread first gets a
+	// Block-mode session state.
+	memset (&instance->buffer_wait_event, 0, sizeof (instance->buffer_wait_event));
+
 ep_on_exit:
 	return instance;
 
@@ -58,6 +64,11 @@ ep_thread_free (EventPipeThread *thread)
 		EP_ASSERT (thread->session_state [i] == NULL);
 	}
 #endif
+
+	EP_ASSERT (thread->buffer_wait_enqueued == 0);
+	EP_ASSERT (thread->buffer_wait_queue_next_thread == NULL);
+	if (ep_rt_wait_event_is_valid (&thread->buffer_wait_event))
+		ep_rt_wait_event_free (&thread->buffer_wait_event);
 
 	ep_rt_object_free (thread);
 }
@@ -213,7 +224,7 @@ ep_thread_set_session_use_in_progress (
 	uint32_t session_index)
 {
 	EP_ASSERT (thread != NULL);
-	EP_ASSERT (session_index < EP_MAX_NUMBER_OF_SESSIONS || session_index == UINT32_MAX);
+	EP_ASSERT ((session_index & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) < EP_MAX_NUMBER_OF_SESSIONS || session_index == UINT32_MAX);
 
 	ep_rt_volatile_store_uint32_t (&thread->session_use_in_progress, session_index);
 }
@@ -265,7 +276,7 @@ ep_thread_get_volatile_session_state (
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_session_get_index (session) < EP_MAX_NUMBER_OF_SESSIONS);
 	EP_ASSERT (ep_thread_get() == thread);
-	EP_ASSERT (thread->session_use_in_progress == ep_session_get_index (session));
+	EP_ASSERT ((thread->session_use_in_progress & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == ep_session_get_index (session));
 
 	size_t index = ep_session_get_index (session);
 	return (EventPipeThreadSessionState *)ep_rt_volatile_load_ptr ((volatile void **)(&thread->session_state [index]));

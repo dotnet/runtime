@@ -11,9 +11,9 @@ export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): n
     const batchedQuotaMax = 65536;
 
     if (!globalThis.crypto || !globalThis.crypto.getRandomValues) {
-        if (!_ems_.DOTNET["cryptoWarnOnce"]) {
+        if (!_ems_.DOTNET.cryptoWarnOnce) {
             _ems_.dotnetLogger.debug("This engine doesn't support crypto.getRandomValues. Please use a modern version or provide polyfill for 'globalThis.crypto.getRandomValues'.");
-            _ems_.DOTNET["cryptoWarnOnce"] = true;
+            _ems_.DOTNET.cryptoWarnOnce = true;
         }
         return -1;
     }
@@ -23,7 +23,7 @@ export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): n
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 
     // When threading is enabled, Chrome doesn't want SharedArrayBuffer to be passed to crypto APIs
-    const needsCopy = _ems_.dotnetBrowserUtilsExports.isSharedArrayBuffer(memoryView.buffer);
+    const needsCopy = _ems_.dotnetBrowserUtilsExports.arrayBufferNeedsCopy(memoryView.buffer);
     const targetBuffer = needsCopy
         ? new Uint8Array(bufferLength)
         : targetView;

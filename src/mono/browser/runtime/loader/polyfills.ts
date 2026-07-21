@@ -19,8 +19,8 @@ const URLPolyfill = class URL {
 };
 
 export function verifyEnvironment () {
-    mono_assert(ENVIRONMENT_IS_SHELL || typeof globalThis.URL === "function", "This browser/engine doesn't support URL API. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
-    mono_assert(typeof globalThis.BigInt64Array === "function", "This browser/engine doesn't support BigInt64Array API. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    mono_assert(ENVIRONMENT_IS_SHELL || typeof globalThis.URL === "function", "This browser/engine doesn't support URL API. Please use a modern version.");
+    mono_assert(typeof globalThis.BigInt64Array === "function", "This browser/engine doesn't support BigInt64Array API. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     mono_assert(globalThis.performance && typeof globalThis.performance.now === "function", "This browser/engine doesn't support performance.now. Please use a modern version.");
     mono_assert(ENVIRONMENT_IS_SHELL || globalThis.crypto && typeof globalThis.crypto.subtle === "object", "This engine doesn't support crypto.subtle. Please use a modern version.");
     mono_assert(ENVIRONMENT_IS_SHELL || globalThis.crypto && typeof globalThis.crypto.getRandomValues === "function", "This engine doesn't support crypto.getRandomValues. Please use a modern version.");
@@ -28,20 +28,36 @@ export function verifyEnvironment () {
         mono_assert(typeof process.exit === "function", "This engine doesn't support process.exit. Please use a modern version.");
     }
     if (WasmEnableThreads) {
-        mono_assert(!ENVIRONMENT_IS_SHELL && !ENVIRONMENT_IS_NODE, "This build of dotnet is multi-threaded, it doesn't support shell environments like V8 or NodeJS. See also https://aka.ms/dotnet-wasm-features");
-        mono_assert(globalThis.SharedArrayBuffer !== undefined, "SharedArrayBuffer is not enabled on this page. Please use a modern browser and set Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy http headers. See also https://aka.ms/dotnet-wasm-features");
-        mono_assert(typeof globalThis.EventTarget === "function", "This browser/engine doesn't support EventTarget API. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+        mono_assert(!ENVIRONMENT_IS_SHELL && !ENVIRONMENT_IS_NODE, "This build of dotnet is multi-threaded, it doesn't support shell environments like V8 or NodeJS.");
+        mono_assert(globalThis.SharedArrayBuffer !== undefined, "SharedArrayBuffer is not enabled on this page. Please use a modern browser and set Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy http headers.");
+        mono_assert(typeof globalThis.EventTarget === "function", "This browser/engine doesn't support EventTarget API. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
 }
 
 export async function detect_features_and_polyfill (module: DotnetModuleInternal): Promise<void> {
+    if (ENVIRONMENT_IS_SHELL) {
+        if (typeof globalThis.atob !== "function") {
+            const b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+            globalThis.atob = (input) => {
+                const str = String(input).replace(/=+$/, "");
+                let output = "";
+                for (let bc = 0, bs = 0, i = 0; i < str.length; i++) {
+                    const c = b64.indexOf(str.charAt(i));
+                    if (c === -1) continue;
+                    bs = bc % 4 ? bs * 64 + c : c;
+                    if (bc++ % 4) output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)));
+                }
+                return output;
+            };
+        }
+    }
     if (ENVIRONMENT_IS_NODE) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
         const process = await import(/*! webpackIgnore: true */"process");
         const minNodeVersion = 14;
         if (process.versions.node.split(".")[0] < minNodeVersion) {
-            throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}', please use at least ${minNodeVersion}. See also https://aka.ms/dotnet-wasm-features`);
+            throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}', please use at least ${minNodeVersion}.`);
         }
     }
 

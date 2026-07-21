@@ -88,7 +88,7 @@ namespace System.Threading.Tasks.Tests
         /// and those parameters are respected when tasks are executed
         /// </summary>
         /// <remarks>maxItemsPerTask and which scheduler is used are verified in other testcases</remarks>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData("default")]
         [InlineData("scheduler")]
         [InlineData("maxconcurrent")]
@@ -184,7 +184,7 @@ namespace System.Threading.Tasks.Tests
         /// is that each time ConcurrentExclusiveScheduler is called QueueTasK a counter (which acts as scheduler's Task id) is incremented.
         /// When a task executes, it observes the parent Task Id and if it matches the one its local cache, it increments its local counter (which tracks
         /// the items executed by a ConcurrentExclusiveScheduler Task). At any given time the Task's local counter cant exceed maxItemsPerTask</remarks>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(4, 1, true)]
         [InlineData(1, 4, true)]
         [InlineData(4, 1, false)]
@@ -259,7 +259,7 @@ namespace System.Threading.Tasks.Tests
         /// When user specifies a concurrency level above the level allowed by the task scheduler, the concurrency level should be set
         /// to the concurrencylevel specified in the taskscheduler. Also tests that the maxConcurrencyLevel specified was respected
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestLowerConcurrencyLevel()
         {
             //a custom scheduler with maxConcurrencyLevel of one
@@ -296,7 +296,7 @@ namespace System.Threading.Tasks.Tests
             Task.WaitAll(taskList);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestConcurrentBlockage()
         {
             ConcurrentExclusiveSchedulerPair schedPair = new ConcurrentExclusiveSchedulerPair();
@@ -329,7 +329,7 @@ namespace System.Threading.Tasks.Tests
             Task.WaitAll(taskList);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(ApiType))]
         public static void TestIntegration(string apiType, bool useReader)
         {
@@ -363,7 +363,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test to ensure completion task works successfully
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestCompletionTask()
         {
             // Completion tasks is valid after initialization
@@ -416,7 +416,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Ensure that CESPs can be layered on other CESPs.
         /// </summary
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestSchedulerNesting()
         {
             // Create a hierarchical set of scheduler pairs
@@ -495,7 +495,7 @@ namespace System.Threading.Tasks.Tests
         /// Ensure that continuations and parent/children which hop between concurrent and exclusive work correctly.
         /// EH
         /// </summary>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public static void TestConcurrentExclusiveChain(bool syncContinuations)

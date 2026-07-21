@@ -48,7 +48,7 @@ OPRANGE(MINT_ADD1_I4, MINT_CEQ0_I4, NORMAL)
 // Some superinsns that will be faster in jiterp due to inline constants
 OPRANGE(MINT_ADD_I4_IMM, MINT_ADD_MUL_I8_IMM, HIGH)
 // Math intrinsics. We implement most of these by calling libc or using wasm opcodes
-OPRANGE(MINT_ASIN, MINT_MAXF, NORMAL)
+OPRANGE(MINT_ASIN, MINT_COPYSIGNF, NORMAL)
 // Field operations. Null check optimization makes these more efficient than interp
 OPRANGE(MINT_LDFLD_I1, MINT_LDTSFLDA, HIGH)
 // Indirect operations. Some of these are complex or more efficient than interp

@@ -112,7 +112,7 @@ namespace ILCompiler.ObjectWriter
             // Layout sections. At this point we don't really care if the file offsets are correct
             // but we need to compute the virtual addresses to populate the symbol table.
             uint fileOffset = 0;
-            LayoutSections(recordFinalLayout: false, ref fileOffset, out _, out _);
+            LayoutSections(recordFinalLayout: false, ref fileOffset, out _, out _, out _);
 
             // Generate section base symbols. The section symbols are used for PC relative relocations
             // to subtract the base of the section, and in DWARF to emit section relative relocations.
@@ -133,11 +133,12 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void LayoutSections(bool recordFinalLayout, ref uint fileOffset, out uint segmentFileSize, out ulong segmentSize)
+        private void LayoutSections(bool recordFinalLayout, ref uint fileOffset, out uint segmentFileOffset, out uint segmentFileSize, out ulong segmentSize)
         {
             ulong virtualAddress = 0;
             byte sectionIndex = 1;
 
+            segmentFileOffset = 0;
             segmentFileSize = 0;
             segmentSize = 0;
             foreach (MachSection section in _sections)
@@ -149,9 +150,11 @@ namespace ILCompiler.ObjectWriter
 
                 if (section.IsInFile)
                 {
+                    // Initialize the segment file offset to the first aligned section offset in the file.
+                    segmentFileOffset = segmentFileSize == 0 ? fileOffset : segmentFileOffset;
                     section.FileOffset = fileOffset;
                     fileOffset += (uint)section.Size;
-                    segmentFileSize = Math.Max(segmentFileSize, fileOffset);
+                    segmentFileSize = Math.Max(segmentFileSize, fileOffset - segmentFileOffset);
                 }
                 else
                 {
@@ -200,8 +203,12 @@ namespace ILCompiler.ObjectWriter
             // We added the compact unwinding section, debug sections, and relocations,
             // so re-run the layout and this time calculate with the correct file offsets.
             uint fileOffset = (uint)MachHeader64.HeaderSize + loadCommandsSize;
-            uint segmentFileOffset = fileOffset;
-            LayoutSections(recordFinalLayout: true, ref fileOffset, out uint segmentFileSize, out ulong segmentSize);
+            LayoutSections(
+                recordFinalLayout: true,
+                ref fileOffset,
+                out uint segmentFileOffset,
+                out uint segmentFileSize,
+                out ulong segmentSize);
 
             MachHeader64 machHeader = new MachHeader64
             {

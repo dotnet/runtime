@@ -201,7 +201,7 @@ int createdump_main(const int argc, const char* argv[])
     g_startTime = minipal_hires_ticks();
     TRACE("TickFrequency: %d ticks per ms\n", g_ticksPerMS);
 
-    ArrayHolder<char> tmpPath = new char[MAX_LONGPATH];
+    AStringHolder tmpPath = new char[MAX_LONGPATH];
     if (options.DumpPathTemplate == nullptr)
     {
         if (GetTempPathWrapper(MAX_LONGPATH, tmpPath) == 0)
@@ -256,7 +256,7 @@ GetDumpTypeString(DumpType dumpType)
             return "unknown";
     }
 }
-            
+
 MINIDUMP_TYPE
 GetMiniDumpType(DumpType dumpType)
 {

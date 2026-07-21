@@ -1,18 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
     [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
-    public partial class DSAKeyGeneration
+    public abstract class DSAKeyGeneration
     {
-        public static bool HasSecondMinSize { get; } = GetHasSecondMinSize();
+        protected abstract DSAProvider DSAFactory { get; }
 
         [Fact]
-        public static void VerifyDefaultKeySize_Fips186_2()
+        public void VerifyDefaultKeySize_Fips186_2()
         {
             if (!DSAFactory.SupportsFips186_3)
             {
@@ -24,29 +25,34 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void GenerateMinKey()
+        public void GenerateMinKey()
         {
             GenerateKey(dsa => GetMin(dsa.LegalKeySizes));
         }
 
-        [ConditionalFact(nameof(HasSecondMinSize))]
-        public static void GenerateSecondMinKey()
+        [ConditionalFact]
+        public void GenerateSecondMinKey()
         {
+            if (!HasSecondMinSize())
+            {
+                throw new SkipTestException("Provider does not have a second minimum key size.");
+            }
+
             GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));
         }
 
         [Fact]
-        public static void GenerateKey_1024()
+        public void GenerateKey_1024()
         {
             GenerateKey(1024);
         }
 
-        private static void GenerateKey(int size)
+        private void GenerateKey(int size)
         {
             GenerateKey(dsa => size);
         }
 
-        private static void GenerateKey(Func<DSA, int> getSize)
+        private void GenerateKey(Func<DSA, int> getSize)
         {
             int keySize;
 
@@ -120,7 +126,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             return secondMin;
         }
 
-        private static bool GetHasSecondMinSize()
+        private bool HasSecondMinSize()
         {
             try
             {

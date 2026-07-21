@@ -392,7 +392,7 @@ namespace System.Runtime.Serialization.DataContracts
                 int currentDataContractId = DataContractCriticalHelper.s_dataContractID;
                 for (int i = 0; i < currentDataContractId; i++)
                 {
-                    if (ContractMatches(classContract, s_dataContractCache.GetItem(id)))
+                    if (ContractMatches(classContract, s_dataContractCache.GetItem(i)))
                     {
                         return i;
                     }
@@ -1666,7 +1666,7 @@ namespace System.Runtime.Serialization.DataContracts
             ns = GetDefaultXmlNamespace(ns);
         }
 
-        private static void CheckExplicitDataContractNamespaceUri(string dataContractNs, Type type)
+        private static unsafe void CheckExplicitDataContractNamespaceUri(string dataContractNs, Type type)
         {
             if (dataContractNs.Length > 0)
             {

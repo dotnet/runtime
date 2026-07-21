@@ -82,6 +82,7 @@ public:
         OptimizationTierOptimized, // may do less optimizations than tier 1
         OptimizationTier0Instrumented,
         OptimizationTier1Instrumented,
+        OptimizationTierUnknown = 0xFFFFFFFF
     };
 #ifdef FEATURE_TIERED_COMPILATION
     OptimizationTier GetOptimizationTier() const;
@@ -209,7 +210,7 @@ public:
 #ifndef DACCESS_COMPILE
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
-    void SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap);
+    void SetInstrumentedILMap(UINT cMap, COR_IL_MAP * rgMap);
     HRESULT AddNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier,
         NativeCodeVersion* pNativeCodeVersion, PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
     HRESULT GetOrCreateActiveNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion* pNativeCodeVersion);
@@ -339,6 +340,9 @@ struct cdac_data<NativeCodeVersionNode>
 #ifdef HAVE_GCCOVER
     static constexpr size_t GCCoverageInfo = offsetof(NativeCodeVersionNode, m_gcCover);
 #endif // HAVE_GCCOVER
+#ifdef FEATURE_TIERED_COMPILATION
+    static constexpr size_t OptimizationTier = offsetof(NativeCodeVersionNode, m_optTier);
+#endif // FEATURE_TIERED_COMPILATION
 };
 
 class NativeCodeVersionCollection
@@ -404,7 +408,7 @@ public:
 #ifndef DACCESS_COMPILE
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
-    void SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap);
+    void SetInstrumentedILMap(UINT cMap, COR_IL_MAP * rgMap);
     void SetRejitState(RejitFlags newState);
     void SetEnableReJITCallback(BOOL state);
     void SetNextILVersionNode(ILCodeVersionNode* pNextVersionNode);
@@ -431,6 +435,8 @@ struct cdac_data<ILCodeVersionNode>
     static constexpr size_t Next = offsetof(ILCodeVersionNode, m_pNextILVersionNode);
     static constexpr size_t RejitState = offsetof(ILCodeVersionNode, m_rejitState);
     static constexpr size_t ILAddress = offsetof(ILCodeVersionNode, m_pIL);
+    static constexpr size_t InstrumentedILMap = offsetof(ILCodeVersionNode, m_instrumentedILMap);
+    static constexpr size_t Deoptimized = offsetof(ILCodeVersionNode, m_deoptimized);
 };
 
 class ILCodeVersionCollection

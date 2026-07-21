@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -18,7 +19,19 @@ namespace Tracing.UserEvents.Tests.Common
         private const int SIGINT = 2;
         private const int DefaultTraceeExitTimeoutMs = 5000;
         private const int DefaultRecordTraceExitTimeoutMs = 20000;
-        private const int DefaultTraceeDelayToSetupTracepointsMs = 200;
+
+        // Timeout for record-trace to emit "Recording started" on stdout. record-trace's
+        // startup has two phases: a /proc scan for existing processes, then enabling ring
+        // buffers to capture live mmap events. If the tracee starts during the /proc scan,
+        // record-trace may discover it and send IPC before ring buffers are active, causing
+        // emitted events to be lost. If the tracee starts after the /proc scan but before
+        // ring buffers are enabled, its mmap events are missed entirely and record-trace
+        // never discovers it. By gating on "Recording started" (printed after enable), the
+        // tracee is only discovered via live mmap events with ring buffers already active.
+        // record-trace startup -> enable scales with system process count: averaged 113ms at
+        // 126 processes and 253ms at 534 processes on a 2-core x64 system, but took ~1845ms
+        // on a 2-core ARM64 CI machine.
+        private const int RecordTraceSetupTimeoutMs = 10000;
 
         [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
         private static extern int Kill(int pid, int sig);
@@ -27,19 +40,34 @@ namespace Tracing.UserEvents.Tests.Common
             string[] args,
             string scenarioName,
             Action traceeAction,
-            Func<EventPipeEventSource, bool> traceValidator,
+            Func<int, EventPipeEventSource, bool> traceValidator,
+            EventSource traceeEventSource,
             int traceeExitTimeout = DefaultTraceeExitTimeoutMs,
-            int recordTraceExitTimeout = DefaultRecordTraceExitTimeoutMs,
-            int traceeDelayToSetupTracepoints = DefaultTraceeDelayToSetupTracepointsMs)
+            int recordTraceExitTimeout = DefaultRecordTraceExitTimeoutMs)
         {
             if (args.Length > 0 && args[0].Equals("tracee", StringComparison.OrdinalIgnoreCase))
             {
-                if (traceeDelayToSetupTracepoints > 0)
+                using var enabledEvent = new ManualResetEventSlim(false);
+
+                traceeEventSource.EventCommandExecuted += (sender, e) =>
                 {
-                    Thread.Sleep(traceeDelayToSetupTracepoints);
+                    if (e.Command == EventCommand.Enable)
+                    {
+                        enabledEvent.Set();
+                    }
+                };
+
+                if (traceeEventSource.IsEnabled())
+                {
+                    enabledEvent.Set();
                 }
 
+                Console.WriteLine("Tracee waiting for EventSource to be enabled via IPC...");
+                enabledEvent.Wait();
+                Console.WriteLine("Tracee EventSource enabled, emitting events.");
+
                 traceeAction();
+                Console.WriteLine("Tracee finished emitting events.");
                 return 0;
             }
 
@@ -52,7 +80,7 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static int RunOrchestrator(
             string scenarioName,
-            Func<EventPipeEventSource, bool> traceValidator,
+            Func<int, EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout,
             int recordTraceExitTimeout)
         {
@@ -99,6 +127,7 @@ namespace Tracing.UserEvents.Tests.Common
             // As a workaround, deleting the temp file and allowing record-trace to create it works reliably.
             File.Delete(traceFilePath);
             traceFilePath = Path.ChangeExtension(traceFilePath, ".nettrace");
+            string recordTraceLogPath = Path.ChangeExtension(traceFilePath, ".log");
 
             ProcessStartInfo recordTraceStartInfo = new();
             recordTraceStartInfo.FileName = "sudo";
@@ -108,6 +137,19 @@ namespace Tracing.UserEvents.Tests.Common
             recordTraceStartInfo.ArgumentList.Add(scriptFilePath);
             recordTraceStartInfo.ArgumentList.Add("--out");
             recordTraceStartInfo.ArgumentList.Add(traceFilePath);
+            recordTraceStartInfo.ArgumentList.Add("--log-path");
+            recordTraceStartInfo.ArgumentList.Add(recordTraceLogPath);
+            recordTraceStartInfo.ArgumentList.Add("--log-filter");
+            recordTraceStartInfo.ArgumentList.Add(
+                "one_collect::helpers::dotnet=debug," +
+                "one_collect::perf_event=debug," +
+                "one_collect::perf_event::rb=info," +
+                "one_collect::helpers::exporting::formats::nettrace=debug," +
+                "one_collect::helpers::exporting::os=warn," +
+                "ruwind=warn," +
+                "one_collect::tracefs=warn," +
+                "one_collect::scripting=warn," +
+                "engine=warn");
             recordTraceStartInfo.WorkingDirectory = userEventsScenarioDir;
             recordTraceStartInfo.UseShellExecute = false;
             recordTraceStartInfo.RedirectStandardOutput = true;
@@ -115,11 +157,16 @@ namespace Tracing.UserEvents.Tests.Common
 
             Console.WriteLine($"Starting record-trace: {recordTraceStartInfo.FileName} {string.Join(" ", recordTraceStartInfo.ArgumentList)}");
             using Process recordTraceProcess = Process.Start(recordTraceStartInfo);
+            using var recordingStarted = new ManualResetEventSlim(false);
             recordTraceProcess.OutputDataReceived += (_, args) =>
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.WriteLine($"[record-trace] {args.Data}");
+                    Console.WriteLine($"[record-trace][stdout] {args.Data}");
+                    if (args.Data.Contains("Recording started", StringComparison.Ordinal))
+                    {
+                        recordingStarted.Set();
+                    }
                 }
             };
             recordTraceProcess.BeginOutputReadLine();
@@ -127,7 +174,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.Error.WriteLine($"[record-trace] {args.Data}");
+                    Console.WriteLine($"[record-trace][stderr] {args.Data}");
                 }
             };
             recordTraceProcess.BeginErrorReadLine();
@@ -165,6 +212,26 @@ namespace Tracing.UserEvents.Tests.Common
             // When https://github.com/microsoft/one-collect/issues/183 is fixed, this and the above TMPDIR should be removed.
             EnsureCleanDiagnosticPorts(diagnosticPortDir);
 
+            // Wait for record-trace to finish setup (capture_environment + enable ring buffers).
+            // "Recording started" is printed after session.enable() succeeds, which means
+            // the ring buffers are active and will capture the tracee's mmap events.
+            Console.WriteLine("Waiting for record-trace to signal 'Recording started'...");
+            if (!recordingStarted.Wait(RecordTraceSetupTimeoutMs))
+            {
+                if (recordTraceProcess.HasExited)
+                {
+                    Console.Error.WriteLine($"record-trace exited prematurely with code {recordTraceProcess.ExitCode}.");
+                }
+                else
+                {
+                    Console.Error.WriteLine($"record-trace did not emit 'Recording started' within {RecordTraceSetupTimeoutMs}ms.");
+                    recordTraceProcess.Kill();
+                }
+
+                UploadArtifactsFromHelixOnFailure(scenarioName, recordTraceLogPath);
+                return -1;
+            }
+
             Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {string.Join(" ", traceeStartInfo.ArgumentList)}");
             using Process traceeProcess = Process.Start(traceeStartInfo);
             int traceePid = traceeProcess.Id;
@@ -173,7 +240,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.WriteLine($"[tracee] {args.Data}");
+                    Console.WriteLine($"[tracee][stdout] {args.Data}");
                 }
             };
             traceeProcess.BeginOutputReadLine();
@@ -181,7 +248,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.Error.WriteLine($"[tracee] {args.Data}");
+                    Console.WriteLine($"[tracee][stderr] {args.Data}");
                 }
             };
             traceeProcess.BeginErrorReadLine();
@@ -193,6 +260,7 @@ namespace Tracing.UserEvents.Tests.Common
                 traceeProcess.Kill();
             }
             traceeProcess.WaitForExit(); // flush async output
+            Console.WriteLine($"Tracee process exited with code {traceeProcess.ExitCode}.");
 
             if (!recordTraceProcess.HasExited)
             {
@@ -216,14 +284,16 @@ namespace Tracing.UserEvents.Tests.Common
             if (!File.Exists(traceFilePath))
             {
                 Console.Error.WriteLine($"Expected trace file not found at `{traceFilePath}`");
+                UploadArtifactsFromHelixOnFailure(scenarioName, recordTraceLogPath);
                 return -1;
             }
 
             using EventPipeEventSource source = new EventPipeEventSource(traceFilePath);
-            if (!traceValidator(source))
+            if (!traceValidator(traceePid, source))
             {
                 Console.Error.WriteLine($"Trace file `{traceFilePath}` does not contain expected events.");
-                UploadTraceFileFromHelix(traceFilePath, scenarioName);
+                DumpTraceeEvents(traceFilePath, traceePid);
+                UploadArtifactsFromHelixOnFailure(scenarioName, traceFilePath, recordTraceLogPath);
                 return -1;
             }
 
@@ -276,8 +346,19 @@ namespace Tracing.UserEvents.Tests.Common
                 {
                     foreach (FileInfo fi in ipc)
                     {
-                        Console.WriteLine($"Deleting zombie diagnostic port: {fi.FullName}");
-                        fi.Delete();
+                        try
+                        {
+                            Console.WriteLine($"Deleting zombie diagnostic port: {fi.FullName}");
+                            fi.Delete();
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            Console.WriteLine($"Skipping zombie diagnostic port (permission denied): {fi.FullName}");
+                        }
+                        catch (IOException)
+                        {
+                            Console.WriteLine($"Skipping zombie diagnostic port (I/O error): {fi.FullName}");
+                        }
                     }
                 }
                 else
@@ -288,22 +369,75 @@ namespace Tracing.UserEvents.Tests.Common
                         var duplicates = ipc.OrderBy(fileInfo => fileInfo.CreationTime.Ticks).SkipLast(1);
                         foreach (FileInfo fi in duplicates)
                         {
-                            Console.WriteLine($"Deleting duplicate diagnostic port: {fi.FullName}");
-                            fi.Delete();
+                            try
+                            {
+                                Console.WriteLine($"Deleting duplicate diagnostic port: {fi.FullName}");
+                                fi.Delete();
+                            }
+                            catch (UnauthorizedAccessException)
+                            {
+                                Console.WriteLine($"Skipping duplicate diagnostic port (permission denied): {fi.FullName}");
+                            }
+                            catch (IOException)
+                            {
+                                Console.WriteLine($"Skipping duplicate diagnostic port (I/O error): {fi.FullName}");
+                            }
                         }
                     }
                 }
             }
         }
 
-        private static void UploadTraceFileFromHelix(string traceFilePath, string scenarioName)
+        private static void UploadArtifactsFromHelixOnFailure(string scenarioName, params string[] filePaths)
         {
             var helixWorkItemDirectory = Environment.GetEnvironmentVariable("HELIX_WORKITEM_UPLOAD_ROOT");
-            if (helixWorkItemDirectory != null && Directory.Exists(helixWorkItemDirectory))
+            if (helixWorkItemDirectory is null || !Directory.Exists(helixWorkItemDirectory))
+                return;
+
+            foreach (string filePath in filePaths)
             {
-                var destPath = Path.Combine(helixWorkItemDirectory, $"{scenarioName}.nettrace");
-                Console.WriteLine($"Uploading trace file to Helix work item directory: {destPath}");
-                File.Copy(traceFilePath, destPath, overwrite: true);
+                if (!File.Exists(filePath))
+                {
+                    Console.WriteLine($"Artifact not found at `{filePath}`, skipping upload.");
+                    continue;
+                }
+
+                string extension = Path.GetExtension(filePath);
+                string destPath = Path.Combine(helixWorkItemDirectory, $"{scenarioName}{extension}");
+                Console.WriteLine($"Uploading artifact to Helix work item directory: {destPath}");
+                File.Copy(filePath, destPath, overwrite: true);
+            }
+        }
+
+        private static void DumpTraceeEvents(string traceFilePath, int traceePid)
+        {
+            try
+            {
+                using EventPipeEventSource diagSource = new EventPipeEventSource(traceFilePath);
+                int traceeEventCount = 0;
+                var eventSummary = new Dictionary<string, int>();
+
+                diagSource.Dynamic.All += (TraceEvent e) =>
+                {
+                    if (e.ProcessID != traceePid)
+                        return;
+
+                    traceeEventCount++;
+                    string key = $"{e.ProviderName}/{e.EventName}";
+                    eventSummary[key] = eventSummary.GetValueOrDefault(key) + 1;
+                };
+
+                diagSource.Process();
+
+                Console.Error.WriteLine($"Tracee PID {traceePid} had {traceeEventCount} event(s) in the trace:");
+                foreach (var (key, count) in eventSummary)
+                {
+                    Console.Error.WriteLine($"  {key}: {count}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to dump tracee events: {ex}");
             }
         }
     }

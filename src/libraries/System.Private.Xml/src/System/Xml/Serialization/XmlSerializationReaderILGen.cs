@@ -3229,6 +3229,8 @@ namespace System.Xml.Serialization
                         ReflectionAwareILGen.ILGenForCreateInstance(ilg, sm.TypeDesc!.Type!, sm.TypeDesc.CannotNew, false);
                         if (sm.TypeDesc.CannotNew)
                             ilg.ConvertValue(typeof(object), typeof(IXmlSerializable));
+                        else if (sm.TypeDesc.IsValueType)
+                            ilg.ConvertValue(sm.TypeDesc.Type!, typeof(IXmlSerializable));
                         if (isWrappedAny)
                             ilg.Ldc(true);
                         ilg.Call(XmlSerializationReader_ReadSerializable);

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -17,6 +16,17 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstance
 {
+    private sealed class EnumMethodExtents : IEnum<ClrDataAddressRange>
+    {
+        public IEnumerator<ClrDataAddressRange> Enumerator { get; }
+        public nuint LegacyHandle { get; set; }
+
+        public EnumMethodExtents(ClrDataAddressRange extent)
+        {
+            Enumerator = Enumerable.Repeat(extent, 1).GetEnumerator();
+        }
+    }
+
     private readonly Target _target;
     private readonly MethodDescHandle _methodDesc;
     private readonly TargetPointer _appDomain;
@@ -33,16 +43,15 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         _legacyImpl = legacyImpl;
     }
 
-    int IXCLRDataMethodInstance.GetTypeInstance(void** typeInstance)
-        => _legacyImpl is not null ? _legacyImpl.GetTypeInstance(typeInstance) : HResults.E_NOTIMPL;
+    int IXCLRDataMethodInstance.GetTypeInstance(DacComNullableByRef<IXCLRDataTypeInstance> typeInstance)
+        => HResults.E_NOTIMPL;
 
-    int IXCLRDataMethodInstance.GetDefinition(void** methodDefinition)
-        => _legacyImpl is not null ? _legacyImpl.GetDefinition(methodDefinition) : HResults.E_NOTIMPL;
+    int IXCLRDataMethodInstance.GetDefinition(DacComNullableByRef<IXCLRDataMethodDefinition> methodDefinition)
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetDefinition(methodDefinition) : HResults.E_NOTIMPL;
 
-    int IXCLRDataMethodInstance.GetTokenAndScope(uint* token, void** /*IXCLRDataModule*/ mod)
+    int IXCLRDataMethodInstance.GetTokenAndScope(uint* token, DacComNullableByRef<IXCLRDataModule> mod)
     {
         int hr = HResults.S_OK;
-        StrategyBasedComWrappers cw = new();
 
         try
         {
@@ -51,31 +60,22 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             {
                 *token = rts.GetMethodToken(_methodDesc);
             }
-            if (mod is not null)
+            if (!mod.IsNullRef)
             {
                 IXCLRDataModule? legacyMod = null;
                 if (_legacyImpl is not null)
                 {
-                    void* legacyModPtr = null;
-                    int hrLegacy = _legacyImpl.GetTokenAndScope(token, &legacyModPtr);
+                    DacComNullableByRef<IXCLRDataModule> legacyModOut = new(isNullRef: false);
+                    int hrLegacy = _legacyImpl.GetTokenAndScope(token, legacyModOut);
                     if (hrLegacy < 0)
                         return hrLegacy;
-                    object obj = cw.GetOrCreateObjectForComInstance((nint)legacyModPtr, CreateObjectFlags.None);
-                    if (obj is not IXCLRDataModule)
-                    {
-                        throw new ArgumentException("Invalid module object", nameof(mod));
-                    }
-                    legacyMod = obj as IXCLRDataModule;
+                    legacyMod = legacyModOut.Interface;
                 }
 
                 TargetPointer mtAddr = rts.GetMethodTable(_methodDesc);
                 TypeHandle mainMT = rts.GetTypeHandle(mtAddr);
                 TargetPointer module = rts.GetModule(mainMT);
-                IXCLRDataModule modImpl = new ClrDataModule(module, _target, legacyMod);
-                nint modImplPtr = cw.GetOrCreateComInterfaceForObject(modImpl, CreateComInterfaceFlags.None);
-                Marshal.QueryInterface(modImplPtr, typeof(IXCLRDataModule).GUID, out nint ptrToMod);
-                Marshal.Release(modImplPtr);
-                *mod = (void*)ptrToMod;
+                mod.Interface = new ClrDataModule(module, _target, legacyMod);
             }
         }
         catch (System.Exception ex)
@@ -87,22 +87,17 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         if (_legacyImpl is not null)
         {
             bool validateToken = token is not null;
-            bool validateMod = mod is not null;
+            bool validateMod = !mod.IsNullRef;
 
             uint tokenLocal = 0;
-            void* legacyModPtr = null;
-            int hrLocal = _legacyImpl.GetTokenAndScope(validateToken ? &tokenLocal : null, validateMod ? &legacyModPtr : null);
+            DacComNullableByRef<IXCLRDataModule> legacyModOutLocal = new(isNullRef: !validateMod);
+            int hrLocal = _legacyImpl.GetTokenAndScope(validateToken ? &tokenLocal : null, legacyModOutLocal);
 
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
 
             if (validateToken)
             {
                 Debug.Assert(tokenLocal == *token, $"cDAC: {*token:x}, DAC: {tokenLocal:x}");
-            }
-
-            if (validateMod && hr == HResults.S_OK)
-            {
-                Marshal.Release((nint)legacyModPtr); // release the legacy module
             }
         }
 #endif
@@ -172,7 +167,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 hrLocal = _legacyImpl.GetName(flags, bufLen, &nameLenLocal, nameBuf is null ? null : pNameBufLocal);
             }
 
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             if (nameLen is not null)
                 Debug.Assert(nameLenLocal == *nameLen, $"cDAC: {*nameLen:x}, DAC: {nameLenLocal:x}");
 
@@ -189,19 +184,19 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     }
 
     int IXCLRDataMethodInstance.GetFlags(uint* flags)
-        => _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.IsSameObject(IXCLRDataMethodInstance* method)
-        => _legacyImpl is not null ? _legacyImpl.IsSameObject(method) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetEnCVersion(uint* version)
-        => _legacyImpl is not null ? _legacyImpl.GetEnCVersion(version) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetNumTypeArguments(uint* numTypeArgs)
-        => _legacyImpl is not null ? _legacyImpl.GetNumTypeArguments(numTypeArgs) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
-    int IXCLRDataMethodInstance.GetTypeArgumentByIndex(uint index, void** typeArg)
-        => _legacyImpl is not null ? _legacyImpl.GetTypeArgumentByIndex(index, typeArg) : HResults.E_NOTIMPL;
+    int IXCLRDataMethodInstance.GetTypeArgumentByIndex(uint index, DacComNullableByRef<IXCLRDataTypeInstance> typeArg)
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetILOffsetsByAddress(ClrDataAddress address, uint offsetsLen, uint* offsetsNeeded, uint* ilOffsets)
     {
@@ -210,10 +205,18 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         try
         {
             TargetCodePointer pCode = address.ToTargetCodePointer(_target);
-            List<OffsetMapping> map = _target.Contracts.DebugInfo.GetMethodNativeMap(
+
+            // No debug info exists at all (e.g. ILStubs).
+            // This matches the DAC where GetBoundariesAndVars returns FALSE -> E_FAIL.
+            if (!_target.Contracts.DebugInfo.HasDebugInfo(pCode))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            IEnumerable<OffsetMapping> mapEnumerable = _target.Contracts.DebugInfo.GetMethodNativeMap(
                 pCode,
                 preferUninstrumented: false,
-                out uint codeOffset).ToList();
+                out uint codeOffset);
+
+            List<OffsetMapping> map = [.. mapEnumerable];
 
             uint hits = 0;
             for (int i = 0; i < map.Count; i++)
@@ -262,10 +265,10 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                     validateIlOffsets ? localIlOffsetsPtr : null);
             }
 
-            // DAC function returns odd failure codes it doesn't make sense to match directly
-            Debug.Assert(hrLocal == hr || (hrLocal < 0 && hr < 0), $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            // AllowCdacSuccess: the DAC fails on interpreted code.
+            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
 
-            if (hr == HResults.S_OK)
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
             {
                 if (validateOffsetsNeeded)
                 {
@@ -287,7 +290,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     }
 
     int IXCLRDataMethodInstance.GetAddressRangesByILOffset(uint ilOffset, uint rangesLen, uint* rangesNeeded, void* addressRanges)
-        => _legacyImpl is not null ? _legacyImpl.GetAddressRangesByILOffset(ilOffset, rangesLen, rangesNeeded, addressRanges) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetILAddressMap(uint mapLen, uint* mapNeeded, [In, Out, MarshalUsing(CountElementName = "mapLen")] ClrDataILAddressMap[]? maps)
     {
@@ -295,12 +298,21 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
         try
         {
-            TargetCodePointer pCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
+            TargetCodePointer nativeCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
+            TargetCodePointer pCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
             TargetPointer codeStart = pCode.ToAddress(_target);
-            List<OffsetMapping> map = _target.Contracts.DebugInfo.GetMethodNativeMap(
+
+            // No debug info exists at all (e.g. ILStubs).
+            // This matches the DAC where GetBoundariesAndVars returns FALSE -> E_FAIL.
+            if (!_target.Contracts.DebugInfo.HasDebugInfo(pCode))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            IEnumerable<OffsetMapping> mapEnumerable = _target.Contracts.DebugInfo.GetMethodNativeMap(
                 pCode,
                 preferUninstrumented: false,
-                out uint _).ToList();
+                out uint _);
+
+            List<OffsetMapping> map = [.. mapEnumerable];
 
             if (maps is not null)
             {
@@ -346,7 +358,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             uint mapNeededLocal;
             ClrDataILAddressMap[]? mapsLocal = mapLen > 0 ? new ClrDataILAddressMap[mapLen] : null;
             int hrLocal = _legacyImpl.GetILAddressMap(mapLen, &mapNeededLocal, mapsLocal);
-            Debug.Assert(hrLocal == hr, $"HResult - cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
 
             if (hr == HResults.S_OK)
             {
@@ -370,17 +382,168 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         return hr;
     }
 
-    int IXCLRDataMethodInstance.StartEnumExtents(ulong* handle)
-        => _legacyImpl is not null ? _legacyImpl.StartEnumExtents(handle) : HResults.E_NOTIMPL;
+    private ClrDataAddressRange GetMethodExtent()
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        TargetCodePointer nativeCode = rts.GetNativeCode(_methodDesc);
+        TargetCodePointer code = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
+        if (code == TargetCodePointer.Null)
+        {
+            code = nativeCode;
+        }
 
-    int IXCLRDataMethodInstance.EnumExtent(ulong* handle, void* extent)
-        => _legacyImpl is not null ? _legacyImpl.EnumExtent(handle, extent) : HResults.E_NOTIMPL;
+        if (code == TargetCodePointer.Null)
+        {
+            throw new InvalidCastException(); // E_NOINTERFACE
+        }
+
+        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+        CodeBlockHandle? codeBlock = executionManager.GetCodeBlockHandle(code);
+        if (codeBlock is null)
+        {
+            throw new InvalidOperationException($"No code block found for native code address {code.ToClrDataAddress(_target):x} (the address may be invalid or the corresponding module may not be loaded).");
+        }
+
+        executionManager.GetGCInfo(codeBlock.Value, out TargetPointer gcInfoAddress, out uint gcVersion);
+        CodeKind codeKind = executionManager.GetCodeKind(code);
+        IGCInfo gcInfo = _target.Contracts.GCInfo;
+        IGCInfoHandle gcInfoHandle = codeKind == CodeKind.Interpreter
+            ? gcInfo.DecodeInterpreterGCInfo(gcInfoAddress, gcVersion)
+            : gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion);
+
+        ClrDataAddress startAddress = code.ToClrDataAddress(_target);
+        uint codeLength = gcInfo.GetCodeLength(gcInfoHandle);
+        return new ClrDataAddressRange
+        {
+            startAddress = startAddress,
+            endAddress = startAddress + codeLength,
+        };
+    }
+
+    int IXCLRDataMethodInstance.StartEnumExtents(ulong* handle)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (handle is null)
+                throw new ArgumentNullException(nameof(handle));
+
+            EnumMethodExtents extents = new(GetMethodExtent());
+            *handle = (ulong)((IEnum<ClrDataAddressRange>)extents).GetHandle();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ulong legacyHandle = 0;
+            int hrLocal = _legacyImpl.StartEnumExtents(handle is null ? null : &legacyHandle);
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+                ((EnumMethodExtents)gcHandle.Target!).LegacyHandle = (nuint)legacyHandle;
+            }
+            else if (hrLocal == HResults.S_OK)
+            {
+                _legacyImpl.EndEnumExtents(legacyHandle);
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataMethodInstance.EnumExtent(ulong* handle, ClrDataAddressRange* extent)
+    {
+        int hr = HResults.S_OK;
+        EnumMethodExtents? extents = null;
+        try
+        {
+            if (handle is null)
+                throw new ArgumentNullException(nameof(handle));
+            if (extent is null)
+                throw new ArgumentNullException(nameof(extent));
+            if (*handle == 0)
+                throw new ArgumentException("Invalid extent handle.", nameof(handle));
+
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+            if (gcHandle.Target is not EnumMethodExtents methodExtents)
+                throw new ArgumentException("Invalid extent handle.", nameof(handle));
+
+            extents = methodExtents;
+            if (extents.Enumerator.MoveNext())
+            {
+                *extent = extents.Enumerator.Current;
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null && extents is { LegacyHandle: not 0 })
+        {
+            ulong legacyHandle = (ulong)extents.LegacyHandle;
+            ClrDataAddressRange extentLocal = default;
+            int hrLocal = _legacyImpl.EnumExtent(&legacyHandle, &extentLocal);
+            extents.LegacyHandle = (nuint)legacyHandle;
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(extent->startAddress == extentLocal.startAddress, $"StartAddress - cDAC: {extent->startAddress:x}, DAC: {extentLocal.startAddress:x}");
+                Debug.Assert(extent->endAddress == extentLocal.endAddress, $"EndAddress - cDAC: {extent->endAddress:x}, DAC: {extentLocal.endAddress:x}");
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.EndEnumExtents(ulong handle)
-        => _legacyImpl is not null ? _legacyImpl.EndEnumExtents(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        nuint legacyHandle = 0;
+        try
+        {
+            if (handle != 0)
+            {
+                GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
+                if (gcHandle.Target is not EnumMethodExtents extents)
+                    throw new ArgumentException("Invalid extent handle.", nameof(handle));
+
+                legacyHandle = extents.LegacyHandle;
+                ((IEnum<ClrDataAddressRange>)extents).Dispose();
+                gcHandle.Free();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null && legacyHandle != 0)
+        {
+            int hrLocal = _legacyImpl.EndEnumExtents((ulong)legacyHandle);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetRepresentativeEntryAddress(ClrDataAddress* addr)
     {
@@ -412,7 +575,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             ClrDataAddress addrLocal;
             int hrLocal = _legacyImpl.GetRepresentativeEntryAddress(&addrLocal);
 
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             Debug.Assert(addrLocal == *addr, $"cDAC: {*addr:x}, DAC: {addrLocal:x}");
         }
 #endif

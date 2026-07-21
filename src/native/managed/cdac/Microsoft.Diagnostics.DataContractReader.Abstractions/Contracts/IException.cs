@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -15,12 +16,18 @@ public record struct ExceptionData(
     int HResult,
     int XCode);
 
+public readonly record struct ExceptionStackFrameInfo(
+    TargetPointer Ip,
+    TargetPointer MethodDesc,
+    bool IsLastForeignExceptionFrame);
+
 public interface IException : IContract
 {
     static string IContract.Name { get; } = nameof(Exception);
 
-    TargetPointer GetNestedExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException) => throw new NotImplementedException();
+    TargetPointer GetNestedExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException, out TargetPointer thrownObjectHandle) => throw new NotImplementedException();
     ExceptionData GetExceptionData(TargetPointer managedException) => throw new NotImplementedException();
+    IEnumerable<ExceptionStackFrameInfo> GetExceptionStackFrames(TargetPointer exceptionAddr) => throw new NotImplementedException();
 }
 
 public readonly struct Exception : IException

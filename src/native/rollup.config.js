@@ -25,7 +25,7 @@ const dotnetDTS = {
         },
         ...(isDebug ? [{
             format: "es",
-            file: "./corehost/browserhost/loader/dotnet.d.ts",
+            file: "./libs/Common/JavaScript/loader/dotnet.d.ts",
             banner: banner_dts,
             plugins: [alwaysLF(), writeOnChangePlugin()],
         }] : [])
@@ -36,7 +36,7 @@ const dotnetDTS = {
 };
 
 const dotnetJS = configure({
-    input: "./corehost/browserhost/loader/dotnet.ts",
+    input: "./libs/Common/JavaScript/loader/dotnet.ts",
     output: [{
         file: staticLibDestination + "/dotnet.js",
         intro: "/*! bundlerFriendlyImports */",
@@ -141,7 +141,7 @@ const libInteropJavaScriptNative = configure({
 });
 
 const libBrowserHost = configure({
-    input: "./corehost/browserhost/host/index.ts",
+    input: "./libs/Common/JavaScript/host/index.ts",
     output: [{
         name: "libBrowserHost",
         format: "iife",

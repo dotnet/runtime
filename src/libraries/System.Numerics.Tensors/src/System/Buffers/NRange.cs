@@ -110,7 +110,7 @@ namespace System.Buffers
             nint start = Start.GetOffset(length);
             nint end = End.GetOffset(length);
 
-            if ((uint)end > (uint)length || (uint)start > (uint)end)
+            if ((nuint)end > (nuint)length || (nuint)start > (nuint)end)
             {
                 ThrowArgumentOutOfRangeException();
             }

@@ -998,7 +998,7 @@ namespace System.Collections.Tests
 
         private const int MAX_TEST_TIME_MS = 10000; // 10 seconds
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public void GetItem_ThreadSafety()
         {
@@ -1091,7 +1091,7 @@ namespace System.Collections.Tests
         private Hashtable _hash2;
         private int _iNumberOfElements = 20;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public void SynchronizedThreadSafety()
         {
@@ -1163,7 +1163,7 @@ namespace System.Collections.Tests
         private Hashtable _hashGrandDaughter;
         private const int NumberOfElements = 100;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void SyncRoot()
         {
             // Different hashtables have different SyncRoots

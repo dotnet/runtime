@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -1505,7 +1505,7 @@ namespace System.IO
             ArgumentNullException.ThrowIfNull(encoding);
         }
 
-        private static byte[] ReadAllBytesUnknownLength(SafeFileHandle sfh)
+        private static unsafe byte[] ReadAllBytesUnknownLength(SafeFileHandle sfh)
         {
             byte[]? rentedArray = null;
             Span<byte> buffer = stackalloc byte[512];
@@ -1550,7 +1550,7 @@ namespace System.IO
             }
         }
 
-        private static void WriteToFile(string path, FileMode mode, ReadOnlySpan<char> contents, Encoding encoding)
+        private static unsafe void WriteToFile(string path, FileMode mode, ReadOnlySpan<char> contents, Encoding encoding)
         {
             ReadOnlySpan<byte> preamble = encoding.GetPreamble();
             int preambleSize = preamble.Length;

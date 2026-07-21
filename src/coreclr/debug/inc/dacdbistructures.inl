@@ -118,7 +118,7 @@ template<class T>
 inline
 void DacDbiArrayList<T>::Init(const T * pList, int count)
 {
-    _ASSERTE((m_pList == NULL) && (m_nEntries == 0));
+    Dealloc();
     if (count > 0)
     {
         Alloc(count);
@@ -552,27 +552,26 @@ CodeBlobRegion & operator++(CodeBlobRegion & rs)
      return rs = CodeBlobRegion(rs + 1);
 }
 
-// Convert the data in an instance of DebuggerIPCE_JITFUncData to an instance of NativeCodeFunctionData.
+// Convert the data in an instance of Debugger_JITFuncData to an instance of NativeCodeFunctionData.
 // We need to have this latter type to look up or create a new CordbNativeCode object, but the stack walker is
 // using the former type to gather information.
 // Arguments:
 //     Input:
-//            source - an initialized instance of DebuggerIPCE_JITFuncData containing the information to
+//            source - an initialized instance of Debugger_JITFuncData containing the information to
 //                     be copied into this instance of NativeCodeFunctionData
 // @dbgtodo dlaw: Once CordbThread::RefreshStack is fully DAC-ized, we can change the data structure that it uses
 // to have a member of type NativeCodeFunctionData which we can pass without copying. At that point,
 // this method can disappear.
 inline
-NativeCodeFunctionData::NativeCodeFunctionData(DebuggerIPCE_JITFuncData * source)
+NativeCodeFunctionData::NativeCodeFunctionData(Debugger_JITFuncData * source)
 {
     // copy the code region information
-    m_rgCodeRegions[kHot].Init(CORDB_ADDRESS(source->nativeStartAddressPtr), (ULONG)source->nativeHotSize);
-    m_rgCodeRegions[kCold].Init(CORDB_ADDRESS(source->nativeStartAddressColdPtr), (ULONG)source->nativeColdSize);
+    m_rgCodeRegions[kHot].Init(source->nativeStartAddressPtr, (ULONG)source->nativeHotSize);
+    m_rgCodeRegions[kCold].Init(source->nativeStartAddressColdPtr, (ULONG)source->nativeColdSize);
 
     // copy the other function information
     isInstantiatedGeneric = source->isInstantiatedGeneric;
     vmNativeCodeMethodDescToken = source->vmNativeCodeMethodDescToken;
-    encVersion = source->enCVersion;
 }
 
 
@@ -641,25 +640,25 @@ void FieldData::ClearFields()
     m_fldSignatureCache = NULL;
     m_fldSignatureCacheSize = 0;
     m_fldInstanceOffset = 0;
-    m_pFldStaticAddress = (TADDR)NULL;
+    m_pFldStaticAddress = (CORDB_ADDRESS)NULL;
 }
 
 inline
 BOOL FieldData::OkToGetOrSetInstanceOffset()
 {
     return (!m_fFldIsStatic && !m_fFldIsRVA && !m_fFldIsTLS &&
-            m_fFldStorageAvailable  && (m_pFldStaticAddress == (TADDR)NULL));
+            m_fFldStorageAvailable  && (m_pFldStaticAddress == (CORDB_ADDRESS)NULL));
 }
 
 // If this is an instance field, store its offset
 inline
-void FieldData::SetInstanceOffset(SIZE_T offset)
+void FieldData::SetInstanceOffset(ULONG64 offset)
 {
     _ASSERTE(!m_fFldIsStatic);
     _ASSERTE(!m_fFldIsRVA);
     _ASSERTE(!m_fFldIsTLS);
     _ASSERTE(m_fFldStorageAvailable);
-    _ASSERTE(m_pFldStaticAddress == (TADDR)NULL);
+    _ASSERTE(m_pFldStaticAddress == (CORDB_ADDRESS)NULL);
     m_fldInstanceOffset = offset;
 }
 
@@ -672,34 +671,34 @@ BOOL FieldData::OkToGetOrSetStaticAddress()
 
 // If this is a "normal" static, store its absolute address
 inline
-void FieldData::SetStaticAddress(TADDR addr)
+void FieldData::SetStaticAddress(CORDB_ADDRESS addr)
 {
     _ASSERTE(m_fFldIsStatic);
     _ASSERTE(!m_fFldIsTLS);
     _ASSERTE(m_fFldStorageAvailable);
     _ASSERTE(m_fldInstanceOffset == 0);
-    m_pFldStaticAddress = TADDR(addr);
+    m_pFldStaticAddress = addr;
 }
 
 // Get the offset of a field
 inline
-SIZE_T FieldData::GetInstanceOffset()
+CORDB_ADDRESS FieldData::GetInstanceOffset()
 {
     _ASSERTE(!m_fFldIsStatic);
     _ASSERTE(!m_fFldIsRVA);
     _ASSERTE(!m_fFldIsTLS);
     _ASSERTE(m_fFldStorageAvailable);
-    _ASSERTE(m_pFldStaticAddress == (TADDR)NULL);
+    _ASSERTE(m_pFldStaticAddress == (CORDB_ADDRESS)NULL);
     return m_fldInstanceOffset;
 }
 
 // Get the static address for a field
 inline
-TADDR FieldData::GetStaticAddress()
+CORDB_ADDRESS FieldData::GetStaticAddress()
 {
     _ASSERTE(m_fFldIsStatic);
     _ASSERTE(!m_fFldIsTLS);
-    _ASSERTE(m_fFldStorageAvailable || (m_pFldStaticAddress == (TADDR)NULL));
+    _ASSERTE(m_fFldStorageAvailable || (m_pFldStaticAddress == (CORDB_ADDRESS)NULL));
     _ASSERTE(m_fldInstanceOffset == 0);
     return m_pFldStaticAddress;
 }
@@ -710,18 +709,18 @@ TADDR FieldData::GetStaticAddress()
 
 inline
 void EnCHangingFieldInfo::Init(VMPTR_Object     pObject,
-                               SIZE_T           offset,
+                               UINT             offset,
                                mdFieldDef       fieldToken,
                                CorElementType   elementType,
                                mdTypeDef        metadataToken,
-                               VMPTR_DomainAssembly vmDomainAssembly)
+                               VMPTR_Assembly vmAssembly)
     {
         m_vmObject = pObject;
         m_offsetToVars = offset;
         m_fldToken = fieldToken;
         m_objectTypeData.elementType = elementType;
         m_objectTypeData.metadataToken = metadataToken;
-        m_objectTypeData.vmDomainAssembly = vmDomainAssembly;
+        m_objectTypeData.vmAssembly = vmAssembly;
     }
 
 

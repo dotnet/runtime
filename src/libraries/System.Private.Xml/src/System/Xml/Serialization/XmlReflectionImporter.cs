@@ -860,19 +860,20 @@ namespace System.Xml.Serialization
                 {
                     MemberMapping? member = ImportFieldMapping(model, fieldModel, memberAttrs, mapping.Namespace, limiter);
                     if (member == null) continue;
-                    if (mapping.BaseMapping != null)
+                    bool memberDeclaredByBase = mapping.BaseMapping != null && mapping.BaseMapping.Declares(member, mapping.TypeName);
+                    if (memberDeclaredByBase)
                     {
                         // If the base mapping already declares this member, then we should remove that accessor and prefer the derived one.
-                        if (mapping.BaseMapping.Declares(member, mapping.TypeName))
-                        {
-                            RemoveUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
-                        }
+                        RemoveUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
                     }
                     isSequence |= member.IsSequence;
                     // add All member accessors to the scope accessors
                     AddUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
 
-                    if (member.Text != null)
+                    // Skip text/xmlns tracking for members that override a base mapping's member:
+                    // the base mapping already registered the accessor; re-registering it here
+                    // would falsely trigger the simpleContent extension check in SetContentModel.
+                    if (member.Text != null && !memberDeclaredByBase)
                     {
                         if (!member.Text.Mapping!.TypeDesc!.CanBeTextValue && member.Text.Mapping.IsList)
                             throw new InvalidOperationException(SR.Format(SR.XmlIllegalTypedTextAttribute, typeName, member.Text.Name, member.Text.Mapping.TypeDesc.FullName));
@@ -882,7 +883,7 @@ namespace System.Xml.Serialization
                         }
                         textAccessor = member.Text;
                     }
-                    if (member.Xmlns != null)
+                    if (member.Xmlns != null && !memberDeclaredByBase)
                     {
                         if (mapping.XmlnsMember != null)
                             throw new InvalidOperationException(SR.Format(SR.XmlMultipleXmlns, model.Type.FullName));

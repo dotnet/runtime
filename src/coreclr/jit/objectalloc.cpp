@@ -59,6 +59,7 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_initialMaxBlockID(comp->compBasicBlockID)
 {
     m_EscapingPointers                = BitVecOps::UninitVal();
+    m_DefinitelyUsedPointers          = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
     m_DefinitelyStackPointingPointers = BitVecOps::UninitVal();
     m_ConnGraphAdjacencyMatrix        = nullptr;
@@ -273,6 +274,17 @@ void ObjectAllocator::MarkIndexAsEscaping(unsigned int bvIndex)
 }
 
 //------------------------------------------------------------------------------
+// MarkIndexAsUsed : Mark resource as having at least one non-trivial use.
+//
+// Arguments:
+//    bvIndex - bv index for the resource
+//
+void ObjectAllocator::MarkIndexAsUsed(unsigned int bvIndex)
+{
+    BitVecOps::AddElemD(&m_bitVecTraits, m_DefinitelyUsedPointers, bvIndex);
+}
+
+//------------------------------------------------------------------------------
 // MarkLclVarAsPossiblyStackPointing : Mark local variable as possibly pointing
 //                                     to a stack-allocated object.
 //
@@ -314,7 +326,7 @@ void ObjectAllocator::MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum)
 }
 
 //------------------------------------------------------------------------------
-// MarIndexAsDefinitelyStackPointing : Mark resource as definitely pointing
+// MarkIndexAsDefinitelyStackPointing : Mark resource as definitely pointing
 //                                       to a stack-allocated object.
 //
 //
@@ -360,7 +372,7 @@ void ObjectAllocator::AddConnGraphEdgeIndex(unsigned int sourceBvIndex, unsigned
 //
 void ObjectAllocator::PrepareAnalysis()
 {
-    // Determine how locals map to indicies in the bit vectors / connection graph.
+    // Determine how locals map to indices in the bit vectors / connection graph.
     //
     // In "lcl num" space
     //
@@ -386,13 +398,13 @@ void ObjectAllocator::PrepareAnalysis()
     // We reserve the singleton [N+2M] for the "unknown source" local
     //
     // LocalToIndex translates from "lcl num" space to "bv" space
-    // IndexToLocal translates from "bv" space space to "lcl num" space
+    // IndexToLocal translates from "bv" space to "lcl num" space
     //
     const unsigned localCount = m_compiler->lvaCount;
     unsigned       bvNext     = 0;
 
     // Enumerate which locals are going to appear in our connection
-    // graph, and assign them BV indicies.
+    // graph, and assign them BV indices.
     //
     for (unsigned lclNum = 0; lclNum < localCount; lclNum++)
     {
@@ -551,6 +563,7 @@ void ObjectAllocator::DoAnalysis()
     if (m_bvCount > 0)
     {
         m_EscapingPointers         = BitVecOps::MakeEmpty(&m_bitVecTraits);
+        m_DefinitelyUsedPointers   = BitVecOps::MakeEmpty(&m_bitVecTraits);
         m_ConnGraphAdjacencyMatrix = new (m_compiler->getAllocator(CMK_ObjectAllocator)) BitSetShortLongRep[m_bvCount];
 
         // If we are doing conditional escape analysis, we also need to compute dominance.
@@ -569,6 +582,14 @@ void ObjectAllocator::DoAnalysis()
 
         MarkEscapingVarsAndBuildConnGraph();
         ComputeEscapingNodes(&m_bitVecTraits, m_EscapingPointers);
+
+        // Every escaping local is also (by definition) used: the value flows
+        // somewhere we can't see. Seed the used set with the escape set so that
+        // the closure propagates correctly through chains that terminate in an
+        // escape.
+        //
+        BitVecOps::UnionD(&m_bitVecTraits, m_DefinitelyUsedPointers, m_EscapingPointers);
+        ComputeConnGraphClosure(&m_bitVecTraits, m_DefinitelyUsedPointers, "used");
     }
 
 #ifdef DEBUG
@@ -959,6 +980,67 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
 }
 
 //------------------------------------------------------------------------------
+// ComputeConnGraphClosure : Propagate membership over the connection graph.
+//
+// Arguments:
+//    bitVecTraits   - Bit vector traits
+//    nodes [in/out] - Initial set of nodes; on return, contains all nodes
+//                     reachable from the initial set via connection-graph edges
+//                     (an edge dst -> src means the value of src flowed into dst,
+//                     so any property of dst also holds for src).
+//    setName        - Human-readable name of the set for JITDUMP output
+//
+// Notes:
+//    Mirrors the propagation in ComputeEscapingNodes but for arbitrary attributes
+//    (currently used for "used" tracking).
+//
+void ObjectAllocator::ComputeConnGraphClosure(BitVecTraits* bitVecTraits, BitVec& nodes, const char* setName)
+{
+    BitVec nodesToProcess = BitVecOps::MakeCopy(bitVecTraits, nodes);
+
+    JITDUMP("\nComputing %s closure\n\n", setName);
+
+    bool               doOneMoreIteration = true;
+    BitSetShortLongRep newNodes           = BitVecOps::UninitVal();
+    unsigned int       lclIndex;
+
+    while (doOneMoreIteration)
+    {
+        BitVecOps::Iter iterator(bitVecTraits, nodesToProcess);
+        doOneMoreIteration = false;
+
+        while (iterator.NextElem(&lclIndex))
+        {
+            if (m_ConnGraphAdjacencyMatrix[lclIndex] != nullptr)
+            {
+                doOneMoreIteration = true;
+
+                BitVecOps::Assign(bitVecTraits, newNodes, m_ConnGraphAdjacencyMatrix[lclIndex]);
+                BitVecOps::DiffD(bitVecTraits, newNodes, nodes);
+                BitVecOps::UnionD(bitVecTraits, nodesToProcess, newNodes);
+                BitVecOps::UnionD(bitVecTraits, nodes, newNodes);
+                BitVecOps::RemoveElemD(bitVecTraits, nodesToProcess, lclIndex);
+
+#ifdef DEBUG
+                if (!BitVecOps::IsEmpty(bitVecTraits, newNodes))
+                {
+                    BitVecOps::Iter newIterator(bitVecTraits, newNodes);
+                    unsigned int    newLclIndex;
+                    while (newIterator.NextElem(&newLclIndex))
+                    {
+                        JITDUMPEXEC(DumpIndex(lclIndex));
+                        JITDUMP(" causes ");
+                        JITDUMPEXEC(DumpIndex(newLclIndex));
+                        JITDUMP(" to be %s\n", setName);
+                    }
+                }
+#endif
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 // ComputeStackObjectPointers : Given an initial set of possibly stack-pointing nodes,
 //                              and an initial set of definitely stack-pointing nodes,
 //                              update both sets by computing nodes reachable from the
@@ -1164,6 +1246,14 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
     if (escapes)
     {
         *reason = "[escapes]";
+        return false;
+    }
+
+    if (!IsLclVarUsed(lclNum))
+    {
+        // No non-trivial use; leave as heap and let DCE clean up.
+        //
+        *reason = "[unused]";
         return false;
     }
 
@@ -1456,7 +1546,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
 }
 
 //------------------------------------------------------------------------
-// MorphAllocObjNodeHelperObj: See if we can stack allocate a GT_NEWARR
+// MorphAllocObjNodeHelperArr: See if we can stack allocate a GT_NEWARR
 //
 // Arguments:
 //    candidate -- allocation candidate
@@ -1751,7 +1841,7 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
 //                                  allocation.
 // Arguments:
 //    allocObj     - GT_ALLOCOBJ that will be replaced by a stack allocation
-//    layout       - layout for the stack allocated objectd
+//    layout       - layout for the stack allocated object
 //    block        - a basic block where allocObj is
 //    stmt         - a statement where allocObj is
 //
@@ -1893,7 +1983,8 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 
     bool       keepChecking                  = true;
     bool       canLclVarEscapeViaParentStack = true;
-    bool       isCopy                        = true;
+    bool       edgeAddedForLcl               = false;
+    bool       isTrivialUse                  = false;
     bool const isEnumeratorLocal             = lclDsc->lvIsEnumerator;
     bool       isAddress                     = parentStack->Top()->OperIs(GT_LCL_ADDR);
 
@@ -1901,17 +1992,18 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
     {
         if (parentStack->Height() <= parentIndex)
         {
+            // No parent uses this expression.
             canLclVarEscapeViaParentStack = false;
+            isTrivialUse                  = true;
             break;
         }
 
-        GenTree* tree    = parentStack->Top(parentIndex - 1);
-        GenTree* parent  = parentStack->Top(parentIndex);
-        bool     wasCopy = isCopy;
+        GenTree* tree   = parentStack->Top(parentIndex - 1);
+        GenTree* parent = parentStack->Top(parentIndex);
 
-        isCopy                        = false;
         canLclVarEscapeViaParentStack = true;
         keepChecking                  = false;
+        isTrivialUse                  = false;
 
         JITDUMP("... V%02u ... checking [%06u]\n", lclNum, m_compiler->dspTreeID(parent));
 
@@ -1941,15 +2033,8 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 // Add an edge to the connection graph.
                 //
                 AddConnGraphEdgeIndex(dstIndex, lclIndex);
+                edgeAddedForLcl               = true;
                 canLclVarEscapeViaParentStack = false;
-
-                // If the source of this store is an enumerator local,
-                // then the dest also becomes an enumerator local.
-                //
-                if (isCopy)
-                {
-                    CheckForEnumeratorUse(lclNum, dstLclNum);
-                }
 
                 // Note that we modelled this store in the connection graph
                 //
@@ -1963,10 +2048,29 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
             case GT_GT:
             case GT_LE:
             case GT_GE:
+            {
+                canLclVarEscapeViaParentStack = false;
+
+                // Comparing against a constant zero just tests nullness. The
+                // allocation candidate is known non-null, so this folds away.
+                //
+                GenTree* const op1   = parent->AsOp()->gtGetOp1();
+                GenTree* const op2   = parent->AsOp()->gtGetOp2();
+                GenTree* const other = (op1 == tree) ? op2 : op1;
+                if (other->IsIntegralConst(0))
+                {
+                    isTrivialUse = true;
+                }
+                break;
+            }
+
             case GT_NULLCHECK:
             case GT_ARR_LENGTH:
             case GT_BOUNDS_CHECK:
+                // These read statically-known properties (non-null, fixed length).
+                // BOUNDS_CHECK takes a length, so the local is unlikely to appear here.
                 canLclVarEscapeViaParentStack = false;
+                isTrivialUse                  = true;
                 break;
 
             case GT_COMMA:
@@ -1974,6 +2078,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 {
                     // Left child of GT_COMMA, it will be discarded
                     canLclVarEscapeViaParentStack = false;
+                    isTrivialUse                  = true;
                     break;
                 }
                 FALLTHROUGH;
@@ -2001,7 +2106,6 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 break;
 
             case GT_BOX:
-                isCopy = wasCopy;
                 ++parentIndex;
                 keepChecking = true;
                 break;
@@ -2029,7 +2133,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     break;
                 }
 
-                if (tree->OperIs(GT_STORE_BLK))
+                if (parent->OperIs(GT_STORE_BLK))
                 {
                     ClassLayout* const layout = parent->AsBlk()->GetLayout();
 
@@ -2044,13 +2148,14 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 {
                     if (isAddress)
                     {
-                        // Remember the resource being stored to.
+                        // Pure write through the local's address; does not read its value.
                         //
                         JITDUMP("... store address is local\n");
                         m_StoreAddressToIndexMap.Set(parent, StoreInfo(lclIndex));
+                        isTrivialUse = true;
                     }
 
-                    // The address does not escape
+                    // The address does not escape.
                     //
                     canLclVarEscapeViaParentStack = false;
                     break;
@@ -2080,6 +2185,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     else
                     {
                         AddConnGraphEdgeIndex(dstInfo->m_index, lclIndex);
+                        edgeAddedForLcl               = true;
                         canLclVarEscapeViaParentStack = false;
                         break;
                     }
@@ -2106,6 +2212,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     JITDUMP("... local V%02u.f store\n", dstLclNum);
                     const unsigned dstIndex = LocalToIndex(dstLclNum);
                     AddConnGraphEdgeIndex(dstIndex, lclIndex);
+                    edgeAddedForLcl               = true;
                     canLclVarEscapeViaParentStack = false;
 
                     // Note that we modelled this store in the connection graph
@@ -2125,6 +2232,9 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 //
                 if (!IsTrackedType(parent->TypeGet()))
                 {
+                    // Loading a non-GC value cannot reveal the local's ref identity,
+                    // but it is a real read of the storage, so not a trivial use.
+                    //
                     canLclVarEscapeViaParentStack = false;
                     break;
                 }
@@ -2199,8 +2309,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 
                 if (call->IsHelperCall())
                 {
-                    canLclVarEscapeViaParentStack =
-                        !Compiler::s_helperCallProperties.IsNoEscape(m_compiler->eeGetHelperNum(call->gtCallMethHnd));
+                    canLclVarEscapeViaParentStack = !Compiler::s_helperCallProperties.IsNoEscape(call->GetHelperNum());
                 }
                 else if (call->IsSpecialIntrinsic())
                 {
@@ -2268,6 +2377,16 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
         JITDUMP(" first escapes via [%06u]...[%06u]\n", m_compiler->dspTreeID(parentStack->Top()),
                 m_compiler->dspTreeID(parentStack->Top(parentIndex)));
         MarkLclVarAsEscaping(lclNum);
+    }
+
+    // If this use isn't a copy into another tracked local and isn't trivial,
+    // record it as a real use.
+    //
+    if (!edgeAddedForLcl && !isTrivialUse && !IsIndexUsed(lclIndex))
+    {
+        JITDUMPEXEC(DumpIndex(lclIndex));
+        JITDUMP(" first used via [%06u]\n", m_compiler->dspTreeID(parentStack->Top()));
+        MarkIndexAsUsed(lclIndex);
     }
 }
 
@@ -2695,7 +2814,7 @@ void ObjectAllocator::RewriteUses()
             {
                 GenTreeCall* const call = tree->AsCall();
 
-                if (call->IsHelperCall(m_compiler, CORINFO_HELP_UNBOX))
+                if (call->IsHelperCall(CORINFO_HELP_UNBOX))
                 {
                     JITDUMP("Found unbox helper call [%06u]\n", m_compiler->dspTreeID(call));
 
@@ -2780,9 +2899,10 @@ void ObjectAllocator::RewriteUses()
 
                             // Update call state -- now an indirect call to the delegate target
                             //
-                            call->gtCallAddr = target;
-                            call->gtCallType = CT_INDIRECT;
-                            call->gtCallMoreFlags &= ~(GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
+                            call->gtCallType    = CT_INDIRECT;
+                            call->gtControlExpr = target;
+                            call->gtCallMethHnd = NO_METHOD_HANDLE;
+                            call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
                         }
                     }
                 }
@@ -2799,8 +2919,7 @@ void ObjectAllocator::RewriteUses()
                 {
                     GenTree* const lastEffect = addr->AsOp()->gtGetOp1();
 
-                    if (lastEffect->IsCall() &&
-                        lastEffect->AsCall()->IsHelperCall(m_compiler, CORINFO_HELP_UNBOX_TYPETEST))
+                    if (lastEffect->IsCall() && lastEffect->AsCall()->IsHelperCall(CORINFO_HELP_UNBOX_TYPETEST))
                     {
                         GenTree* const actualAddr  = addr->gtEffectiveVal();
                         GenTree*       sideEffects = nullptr;
@@ -2946,7 +3065,7 @@ void ObjectAllocator::RewriteUses()
 //
 // Notes:
 //   During our analysis we have may have noted conditionally escaping objects
-//   and var references and connected them to a pseduo, along with information
+//   and var references and connected them to a pseudo, along with information
 //   about how we could clone blocks to ensure that the object could be stack allocated.
 //
 //   The current assumption is that these nodes do not escape, but to ensure
@@ -2956,7 +3075,7 @@ void ObjectAllocator::RewriteUses()
 //   as escaping. If any pseudo now escapes, we return true so that the main
 //   analysis can update its closure.
 //
-//   We may choose not to clone a candiate for several reasons:
+//   We may choose not to clone a candidate for several reasons:
 //   * too much EH already in the method, or some other reason cloning is infeasible
 //   * two different candidates have overlapping clone regions
 //   * the cost/benefit analysis does not look favorable
@@ -2970,128 +3089,9 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
     for (unsigned p = 0; p < m_numPseudos; p++)
     {
         unsigned const pseudoIndex = p + m_firstPseudoIndex;
-        bool           canClone    = true;
-        CloneInfo*     info        = nullptr;
 
-        const bool hasInfo = m_CloneMap.Lookup(pseudoIndex, &info);
-        if (!hasInfo)
+        if (AnalyzePseudoForCloning(bitVecTraits, escapingNodes, pseudoIndex))
         {
-            // We never found any conditional allocation attached to this pseudoIndex.
-            //
-            JITDUMPEXEC(DumpIndex(pseudoIndex));
-            JITDUMP("  has no guard info\n");
-            canClone = false;
-            break;
-        }
-
-        // See what locals were "assigned" to the pseudo.
-        //
-        BitVec pseudoAdjacencies = m_ConnGraphAdjacencyMatrix[pseudoIndex];
-
-        // If we found an allocation but didn't find any conditionally escaping uses, then cloning is of no use
-        //
-        if (BitVecOps::IsEmpty(bitVecTraits, pseudoAdjacencies))
-        {
-            JITDUMP("   No conditionally escaping uses under");
-            JITDUMPEXEC(DumpIndex(pseudoIndex));
-            JITDUMP(", so no reason to clone\n");
-            canClone = false;
-            break;
-        }
-
-        // Check if each conditionally escaping local escapes on its own; if so cloning is of no use
-        //
-        BitVecOps::Iter iterator(bitVecTraits, pseudoAdjacencies);
-        unsigned        lclNumIndex = BAD_VAR_NUM;
-        while (canClone && iterator.NextElem(&lclNumIndex))
-        {
-            if (BitVecOps::IsMember(bitVecTraits, escapingNodes, lclNumIndex))
-            {
-                // The enumerator var or a related var had escaping uses somewhere in the method,
-                // not under a failing GDV or any GDV.
-                //
-                JITDUMPEXEC(DumpIndex(lclNumIndex));
-                JITDUMP("   escapes independently of", IndexToLocal(lclNumIndex));
-                JITDUMPEXEC(DumpIndex(pseudoIndex));
-                JITDUMP("\n");
-                canClone = false;
-                break;
-            }
-        }
-
-        // Also check the alloc temps
-        //
-        if (canClone && (info->m_allocTemps != nullptr))
-        {
-            for (unsigned v : *(info->m_allocTemps))
-            {
-                if (BitVecOps::IsMember(bitVecTraits, escapingNodes, LocalToIndex(v)))
-                {
-                    JITDUMP("   alloc temp");
-                    JITDUMPEXEC(DumpIndex(v));
-                    JITDUMP("   escapes independently of", IndexToLocal(lclNumIndex));
-                    JITDUMPEXEC(DumpIndex(pseudoIndex));
-                    JITDUMP("\n");
-
-                    canClone = false;
-                    break;
-                }
-            }
-        }
-
-        if (canClone)
-        {
-            // We may be able to clone and specialize the enumerator uses to ensure
-            // that the allocated enumerator does not escape.
-            //
-            JITDUMPEXEC(DumpIndex(pseudoIndex));
-            JITDUMP("   is guarding the escape of V%02u\n", info->m_local);
-            if (info->m_allocTemps != nullptr)
-            {
-                JITDUMP("   along with ");
-                for (unsigned v : *(info->m_allocTemps))
-                {
-                    JITDUMP("V%02u ", v);
-                }
-                JITDUMP("\n");
-            }
-            JITDUMP("   they escape only when V%02u.Type NE %s\n", info->m_local,
-                    m_compiler->eeGetClassName(info->m_type));
-            JITDUMP("   V%02u + secondary vars have %u appearances\n", info->m_local, info->m_appearanceCount);
-
-            m_compiler->Metrics.EnumeratorGDVProvisionalNoEscape++;
-        }
-
-        // See if cloning is actually viable.
-        //
-        if (canClone)
-        {
-            canClone = CanClone(info);
-        }
-
-        // See if this clone would overlap with othr clones
-        //
-        if (canClone)
-        {
-            canClone = !CloneOverlaps(info);
-        }
-
-        // See if cloning is a good idea.
-        //
-        if (canClone)
-        {
-            canClone = ShouldClone(info);
-        }
-
-        // All checks are done
-        //
-        if (canClone)
-        {
-            JITDUMP("\n*** Can prevent escape under");
-            JITDUMPEXEC(DumpIndex(pseudoIndex));
-            JITDUMP(" via cloning ***\n");
-
-            info->m_willClone = true;
             m_regionsToClone++;
         }
         else
@@ -3106,6 +3106,133 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
     }
 
     return newEscapes;
+}
+
+//------------------------------------------------------------------------------
+// AnalyzePseudoForCloning: analyze a single pseudo to see if cloning can
+//    prevent the associated object from escaping.
+//
+// Arguments:
+//   bitVecTraits  - Bit vector traits
+//   escapingNodes - current set of escaping nodes
+//   pseudoIndex   - index of the pseudo to analyze
+//
+// Returns:
+//   true if cloning will proceed for this pseudo
+//
+bool ObjectAllocator::AnalyzePseudoForCloning(BitVecTraits* bitVecTraits, BitVec& escapingNodes, unsigned pseudoIndex)
+{
+    CloneInfo* info = nullptr;
+
+    if (!m_CloneMap.Lookup(pseudoIndex, &info))
+    {
+        // We never found any conditional allocation attached to this pseudoIndex.
+        //
+        JITDUMPEXEC(DumpIndex(pseudoIndex));
+        JITDUMP("  has no guard info\n");
+        return false;
+    }
+
+    // See what locals were "assigned" to the pseudo.
+    //
+    BitVec pseudoAdjacencies = m_ConnGraphAdjacencyMatrix[pseudoIndex];
+
+    // If we found an allocation but didn't find any conditionally escaping uses, then cloning is of no use
+    //
+    if (BitVecOps::IsEmpty(bitVecTraits, pseudoAdjacencies))
+    {
+        JITDUMP("   No conditionally escaping uses under");
+        JITDUMPEXEC(DumpIndex(pseudoIndex));
+        JITDUMP(", so no reason to clone\n");
+        return false;
+    }
+
+    // Check if each conditionally escaping local escapes on its own; if so cloning is of no use
+    //
+    {
+        BitVecOps::Iter iterator(bitVecTraits, pseudoAdjacencies);
+        unsigned        lclNumIndex = BAD_VAR_NUM;
+        while (iterator.NextElem(&lclNumIndex))
+        {
+            if (BitVecOps::IsMember(bitVecTraits, escapingNodes, lclNumIndex))
+            {
+                // The enumerator var or a related var had escaping uses somewhere in the method,
+                // not under a failing GDV or any GDV.
+                //
+                JITDUMPEXEC(DumpIndex(lclNumIndex));
+                JITDUMP("   escapes independently of");
+                JITDUMPEXEC(DumpIndex(pseudoIndex));
+                JITDUMP("\n");
+                return false;
+            }
+        }
+    }
+
+    // Also check the alloc temps
+    //
+    if (info->m_allocTemps != nullptr)
+    {
+        for (unsigned v : *(info->m_allocTemps))
+        {
+            if (BitVecOps::IsMember(bitVecTraits, escapingNodes, LocalToIndex(v)))
+            {
+                JITDUMP("   alloc temp");
+                JITDUMPEXEC(DumpIndex(LocalToIndex(v)));
+                JITDUMP("   escapes independently of");
+                JITDUMPEXEC(DumpIndex(pseudoIndex));
+                JITDUMP("\n");
+                return false;
+            }
+        }
+    }
+
+    // We may be able to clone and specialize the enumerator uses to ensure
+    // that the allocated enumerator does not escape.
+    //
+    JITDUMPEXEC(DumpIndex(pseudoIndex));
+    JITDUMP("   is guarding the escape of V%02u\n", info->m_local);
+    if (info->m_allocTemps != nullptr)
+    {
+        JITDUMP("   along with ");
+        for (unsigned v : *(info->m_allocTemps))
+        {
+            JITDUMP("V%02u ", v);
+        }
+        JITDUMP("\n");
+    }
+    JITDUMP("   they escape only when V%02u.Type NE %s\n", info->m_local, m_compiler->eeGetClassName(info->m_type));
+    JITDUMP("   V%02u + secondary vars have %u appearances\n", info->m_local, info->m_appearanceCount);
+
+    m_compiler->Metrics.EnumeratorGDVProvisionalNoEscape++;
+
+    // See if cloning is actually viable.
+    //
+    if (!CanClone(info))
+    {
+        return false;
+    }
+
+    // See if this clone would overlap with other clones
+    //
+    if (CloneOverlaps(info))
+    {
+        return false;
+    }
+
+    // See if cloning is a good idea.
+    //
+    if (!ShouldClone(info))
+    {
+        return false;
+    }
+
+    JITDUMP("\n*** Can prevent escape under");
+    JITDUMPEXEC(DumpIndex(pseudoIndex));
+    JITDUMP(" via cloning ***\n");
+
+    info->m_willClone = true;
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -3313,7 +3440,7 @@ GenTree* ObjectAllocator::IsGuard(BasicBlock* block, GuardInfo* info)
     info->m_local  = addr->AsLclVar()->GetLclNum();
     bool isNonNull = false;
     bool isExact   = false;
-    info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtCompileTimeHandle;
+    info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->GetCompileTimeHandle();
     info->m_block  = block;
     info->m_stmt   = stmt;
     info->m_relop  = tree;
@@ -3534,6 +3661,21 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
             RecordAppearance(lclNum, block, stmt, use);
         }
     }
+    else if (!data->IsIntegralConst(0))
+    {
+        // Store into a tracked enumerator local from an unrecognized source
+        // (e.g. a virtual GetEnumerator call that did not devirtualize, into
+        // a local Roslyn shares between two enumerator scopes). Record it so
+        // CheckCanClone's multiple-defs check bails out of unsafe cloning.
+        // Null/zero stores are skipped: the inliner emits these as GC cleanup
+        // of dead temps. See https://github.com/dotnet/runtime/issues/127075.
+        //
+        unsigned pseudoIndex = BAD_VAR_NUM;
+        if (m_EnumeratorLocalToPseudoIndexMap.TryGetValue(lclNum, &pseudoIndex))
+        {
+            RecordAppearance(lclNum, block, stmt, use);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -3642,7 +3784,7 @@ void ObjectAllocator::RecordAppearance(unsigned lclNum, BasicBlock* block, State
         {
             if (!v->m_hasMultipleDefs)
             {
-                JITDUMP("Enumerator V%02u has multiple defs\n");
+                JITDUMP("Enumerator V%02u has multiple defs\n", lclNum);
                 v->m_hasMultipleDefs = true;
             }
         }
@@ -3803,7 +3945,7 @@ bool ObjectAllocator::ShouldClone(CloneInfo* info)
 
 //------------------------------------------------------------------------------
 // CanClone: check that cloning can remove all escaping references and
-//   is a reasonble thing to do
+//   is a reasonable thing to do
 //
 // Arguments:
 //   info -- [in, out] info about the cloning opportunity
@@ -3826,7 +3968,7 @@ bool ObjectAllocator::CanClone(CloneInfo* info)
 
 //------------------------------------------------------------------------------
 // CheckCanClone: check that cloning can remove all escaping references and
-//   is a reasonble thing to do
+//   is a reasonable thing to do
 //
 // Arguments:
 //   info -- [in, out] info about the cloning opportunity

@@ -18,7 +18,7 @@ namespace System.Threading.Tasks.Tests
     {
         // Just ensure we eventually complete when many blocked tasks are created.
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunBlockedInjectionTest()
         {
             Debug.WriteLine("* RunBlockedInjectionTest() -- if it deadlocks, it failed");
@@ -50,7 +50,7 @@ namespace System.Threading.Tasks.Tests
             Task.WaitAll(tasks);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunBuggySchedulerTests()
         {
             Debug.WriteLine("* RunBuggySchedulerTests()");
@@ -209,7 +209,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/89921", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsMonoRuntime))]
         public static void RunSynchronizationContextTaskSchedulerTests()
@@ -299,7 +299,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(TaskScheduler.Default, foundSchedulers);
         }
 
-        [ConditionalFact(nameof(DebuggerIsAttached))]
+        [ConditionalFact(typeof(TaskSchedulerTests), nameof(DebuggerIsAttached))]
         public static void GetTaskSchedulersForDebugger_DebuggerAttached_ReturnsAllSchedulers()
         {
             MethodInfo getTaskSchedulersForDebuggerMethod = typeof(TaskScheduler).GetTypeInfo().GetDeclaredMethod("GetTaskSchedulersForDebugger");
@@ -314,7 +314,7 @@ namespace System.Threading.Tasks.Tests
             GC.KeepAlive(cesp);
         }
 
-        [ConditionalFact(nameof(DebuggerIsAttached))]
+        [ConditionalFact(typeof(TaskSchedulerTests), nameof(DebuggerIsAttached))]
         public static void GetScheduledTasksForDebugger_DebuggerAttached_ReturnsTasksFromCustomSchedulers()
         {
             var nonExecutingScheduler = new BuggyTaskScheduler(faultQueues: false);

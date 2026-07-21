@@ -85,8 +85,8 @@ namespace Microsoft.Interop.Analyzers
                             new CodeEmitOptions(SkipInit: true),
                             typeof(ConvertComImportToGeneratedComInterfaceAnalyzer).Assembly);
 
-                        var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.GetGeneratorResolver(env.EnvironmentFlags, MarshalDirection.ManagedToUnmanaged);
-                        var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.GetGeneratorResolver(env.EnvironmentFlags, MarshalDirection.UnmanagedToManaged);
+                        var managedToUnmanagedFactory = new ByValueContentsMarshalKindValidator(ComInterfaceGeneratorHelpers.GetGeneratorResolver(env.EnvironmentFlags, MarshalDirection.ManagedToUnmanaged));
+                        var unmanagedToManagedFactory = new ByValueContentsMarshalKindValidator(ComInterfaceGeneratorHelpers.GetGeneratorResolver(env.EnvironmentFlags, MarshalDirection.UnmanagedToManaged));
 
                         mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
                         bool anyExplicitlyUnsupportedInfo = false;

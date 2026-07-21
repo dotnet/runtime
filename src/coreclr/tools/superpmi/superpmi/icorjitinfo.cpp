@@ -203,18 +203,10 @@ bool MyICJI::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
     return result;
 }
 
-// Get the unboxed entry point for a method, if possible.
-CORINFO_METHOD_HANDLE MyICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
+CORINFO_METHOD_HANDLE MyICJI::getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk)
 {
-    jitInstance->mc->cr->AddCall("getUnboxedEntry");
-    CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetUnboxedEntry(ftn, requiresInstMethodTableArg);
-    return result;
-}
-
-CORINFO_METHOD_HANDLE MyICJI::getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodHandle, CORINFO_CLASS_HANDLE* classHandle)
-{
-    jitInstance->mc->cr->AddCall("getInstantiatedEntry");
-    CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetInstantiatedEntry(ftn, methodHandle, classHandle);
+    jitInstance->mc->cr->AddCall("getAsyncOtherVariant");
+    CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetAsyncOtherVariant(ftn, variantIsThunk);
     return result;
 }
 
@@ -665,13 +657,12 @@ CORINFO_CLASS_HANDLE MyICJI::getObjectType(CORINFO_OBJECT_HANDLE objPtr)
 }
 
 bool MyICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                  CorInfoHelpFunc         id,
                                  CORINFO_METHOD_HANDLE   callerHandle,
                                  CORINFO_CONST_LOOKUP*   pLookup)
 {
     jitInstance->mc->cr->AddCall("getReadyToRunHelper");
-    return jitInstance->mc->repGetReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
+    return jitInstance->mc->repGetReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup);
 }
 
 void MyICJI::getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
@@ -1204,6 +1195,17 @@ void MyICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
 {
     jitInstance->mc->cr->AddCall("getAsyncInfo");
     jitInstance->mc->repGetAsyncInfo(pAsyncInfo);
+}
+
+void MyICJI::getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    jitInstance->mc->cr->AddCall("getWasmWellKnownGlobals");
+    jitInstance->mc->repGetWasmWellKnownGlobals(pWellKnownGlobalsOut);
+}
+CORINFO_METHOD_HANDLE MyICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
+{
+    jitInstance->mc->cr->AddCall("getAwaitReturnCall");
+    return jitInstance->mc->repGetAwaitReturnCall(callerHandle, contextHandle, instArg);
 }
 
 /*********************************************************************************/
@@ -1821,6 +1823,12 @@ void MyICJI::recordCallSite(uint32_t              instrOffset, /* IN */
     jitInstance->mc->cr->repRecordCallSite(instrOffset, callSig, methodHandle);
 }
 
+void MyICJI::recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig /* IN */)
+{
+    jitInstance->mc->cr->AddCall("recordWasmManagedCallSig");
+    // No-op for SuperPMI replay. Only meaningful for ReadyToRun Wasm compilation.
+}
+
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 void MyICJI::recordRelocation(void*        location,   /* IN  */
@@ -1838,6 +1846,13 @@ CorInfoReloc MyICJI::getRelocTypeHint(void* target)
 {
     jitInstance->mc->cr->AddCall("getRelocTypeHint");
     CorInfoReloc result = jitInstance->mc->repGetRelocTypeHint(target);
+    return result;
+}
+
+uint32_t MyICJI::getAddressAlignment(void* address)
+{
+    jitInstance->mc->cr->AddCall("getAddressAlignment");
+    uint32_t result = jitInstance->mc->repGetAddressAlignment(address);
     return result;
 }
 

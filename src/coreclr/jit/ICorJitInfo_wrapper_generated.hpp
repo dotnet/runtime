@@ -181,24 +181,13 @@ bool WrapICorJitInfo::resolveVirtualMethod(
     return temp;
 }
 
-CORINFO_METHOD_HANDLE WrapICorJitInfo::getUnboxedEntry(
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncOtherVariant(
           CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg)
+          bool* variantIsThunk)
 {
-    API_ENTER(getUnboxedEntry);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getUnboxedEntry(ftn, requiresInstMethodTableArg);
-    API_LEAVE(getUnboxedEntry);
-    return temp;
-}
-
-CORINFO_METHOD_HANDLE WrapICorJitInfo::getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg)
-{
-    API_ENTER(getInstantiatedEntry);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getInstantiatedEntry(ftn, methodArg, classArg);
-    API_LEAVE(getInstantiatedEntry);
+    API_ENTER(getAsyncOtherVariant);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAsyncOtherVariant(ftn, variantIsThunk);
+    API_LEAVE(getAsyncOtherVariant);
     return temp;
 }
 
@@ -705,13 +694,12 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getObjectType(
 
 bool WrapICorJitInfo::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup)
 {
     API_ENTER(getReadyToRunHelper);
-    bool temp = wrapHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
+    bool temp = wrapHnd->getReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup);
     API_LEAVE(getReadyToRunHelper);
     return temp;
 }
@@ -1191,6 +1179,17 @@ void WrapICorJitInfo::getAsyncInfo(
     API_LEAVE(getAsyncInfo);
 }
 
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAwaitReturnCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    API_ENTER(getAwaitReturnCall);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAwaitReturnCall(callerHandle, contextHandle, instArg);
+    API_LEAVE(getAwaitReturnCall);
+    return temp;
+}
+
 mdMethodDef WrapICorJitInfo::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -1269,6 +1268,23 @@ CorInfoWasmType WrapICorJitInfo::getWasmLowering(
     CorInfoWasmType temp = wrapHnd->getWasmLowering(structHnd);
     API_LEAVE(getWasmLowering);
     return temp;
+}
+
+uint32_t WrapICorJitInfo::getAddressAlignment(
+          void* address)
+{
+    API_ENTER(getAddressAlignment);
+    uint32_t temp = wrapHnd->getAddressAlignment(address);
+    API_LEAVE(getAddressAlignment);
+    return temp;
+}
+
+void WrapICorJitInfo::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    API_ENTER(getWasmWellKnownGlobals);
+    wrapHnd->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
+    API_LEAVE(getWasmWellKnownGlobals);
 }
 
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
@@ -1717,6 +1733,14 @@ void WrapICorJitInfo::recordCallSite(
     API_ENTER(recordCallSite);
     wrapHnd->recordCallSite(instrOffset, callSig, methodHandle);
     API_LEAVE(recordCallSite);
+}
+
+void WrapICorJitInfo::recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig)
+{
+    API_ENTER(recordWasmManagedCallSig);
+    wrapHnd->recordWasmManagedCallSig(callSig);
+    API_LEAVE(recordWasmManagedCallSig);
 }
 
 void WrapICorJitInfo::recordRelocation(
