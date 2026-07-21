@@ -136,8 +136,8 @@ namespace System.Globalization.Tests
             if (!EqualityComparer<T>.Default.Equals(expected, actual))
             {
                 throw EqualException.ForMismatchedValues(
-                    expected: expected,
-                    actual: actual,
+                    expected: $"{expected}",
+                    actual: $"{actual}",
                     banner: FormattableString.Invariant($"CharUnicodeInfo.{methodName}({codePoint}) returned unexpected value."));
             }
         }

@@ -137,19 +137,11 @@ bool interceptor_ICJI::resolveVirtualMethod(
     return original_ICorJitInfo->resolveVirtualMethod(info);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncOtherVariant(
           CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg)
+          bool* variantIsThunk)
 {
-    return original_ICorJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg)
-{
-    return original_ICorJitInfo->getInstantiatedEntry(ftn, methodArg, classArg);
+    return original_ICorJitInfo->getAsyncOtherVariant(ftn, variantIsThunk);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultComparerClass(
@@ -857,6 +849,14 @@ void interceptor_ICJI::getAsyncInfo(
     original_ICorJitInfo->getAsyncInfo(pAsyncInfoOut);
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    return original_ICorJitInfo->getAwaitReturnCall(callerHandle, contextHandle, instArg);
+}
+
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -913,6 +913,18 @@ CorInfoWasmType interceptor_ICJI::getWasmLowering(
           CORINFO_CLASS_HANDLE structHnd)
 {
     return original_ICorJitInfo->getWasmLowering(structHnd);
+}
+
+uint32_t interceptor_ICJI::getAddressAlignment(
+          void* address)
+{
+    return original_ICorJitInfo->getAddressAlignment(address);
+}
+
+void interceptor_ICJI::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    original_ICorJitInfo->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(
@@ -1246,6 +1258,12 @@ void interceptor_ICJI::recordCallSite(
           CORINFO_METHOD_HANDLE methodHandle)
 {
     original_ICorJitInfo->recordCallSite(instrOffset, callSig, methodHandle);
+}
+
+void interceptor_ICJI::recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig)
+{
+    original_ICorJitInfo->recordWasmManagedCallSig(callSig);
 }
 
 void interceptor_ICJI::recordRelocation(

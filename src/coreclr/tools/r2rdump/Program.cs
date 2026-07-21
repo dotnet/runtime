@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
 using System.Text;
 using ILCompiler.Diagnostics;
 using ILCompiler.Reflection.ReadyToRun;
@@ -195,6 +196,26 @@ namespace R2RDump
                 QueryMethod(r2r, "R2R Methods by Keyword", keyword, false);
             }
 
+            string[] dumpRva = Get(_command.DumpRva);
+            if (dumpRva != null && dumpRva.Length > 0)
+            {
+                haveQuery = true;
+                foreach (string rvaSpec in dumpRva)
+                {
+                    string[] parts = rvaSpec.Split(':');
+                    if (parts.Length != 2)
+                    {
+                        throw new ArgumentException($"Invalid --dump-rva format '{rvaSpec}'. Expected RVA:Size (e.g. 0x1234:0x20)");
+                    }
+
+                    int rva = Convert.ToInt32(parts[0].Trim(), 16);
+                    uint size = Convert.ToUInt32(parts[1].Trim(), 16);
+
+                    _dumper.WriteDivider($"Raw bytes at RVA 0x{rva:X8}, size 0x{size:X}");
+                    _dumper.DumpBytes(rva, size);
+                }
+            }
+
             if (!haveQuery)
             {
                 // Dump all sections and methods if no queries specified
@@ -211,6 +232,7 @@ namespace R2RDump
                     Machine.Arm64 => TargetArchitecture.ARM64,
                     Machine.LoongArch64 => TargetArchitecture.LoongArch64,
                     Machine.RiscV64 => TargetArchitecture.RiscV64,
+                    WasmMachine.Wasm32 => TargetArchitecture.Wasm32,
                     _ => throw new NotImplementedException(r2r.Machine.ToString()),
                 };
                 TargetOS os = r2r.OperatingSystem switch
@@ -219,7 +241,10 @@ namespace R2RDump
                     OperatingSystem.Linux => TargetOS.Linux,
                     OperatingSystem.Apple => TargetOS.OSX,
                     OperatingSystem.FreeBSD => TargetOS.FreeBSD,
-                    OperatingSystem.NetBSD => TargetOS.FreeBSD,
+                    OperatingSystem.NetBSD => TargetOS.NetBSD,
+                    OperatingSystem.OpenBSD => TargetOS.OpenBSD,
+                    OperatingSystem.SunOS => TargetOS.SunOS,
+                    OperatingSystem.Unknown => TargetOS.Unknown, // Webcil/WASM images don't encode OS
                     _ => throw new NotImplementedException(r2r.OperatingSystem.ToString()),
                 };
                 TargetDetails details = new(architecture, os, TargetAbi.NativeAot);
@@ -395,6 +420,22 @@ namespace R2RDump
 
         public int Run()
         {
+            NativeLibrary.SetDllImportResolver(typeof(PdbWriter).Assembly,
+                (string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath) =>
+                {
+                    IntPtr libraryHandle = IntPtr.Zero;
+                    if (libraryName == "Microsoft.DiaSymReader.Native")
+                    {
+                        string archSuffix = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+                        if (archSuffix == "x64")
+                        {
+                            archSuffix = "amd64";
+                        }
+                        libraryHandle = NativeLibrary.Load(libraryName + "." + archSuffix + ".dll", assembly, searchPath);
+                    }
+                    return libraryHandle;
+                });
+
             Disassembler disassembler = null;
             List<string> inputs = Get(_command.In);
             bool inlineSignatureBinary = Get(_command.InlineSignatureBinary);

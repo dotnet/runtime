@@ -223,7 +223,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private static void WriteSignatureForFunctionPointerType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
+        internal static void WriteSignatureForFunctionPointerType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
         {
             SignatureCallingConvention callConv = SignatureCallingConvention.Default;
             FunctionPointerAttributes attribs = FunctionPointerAttributes.None;
@@ -258,13 +258,31 @@ namespace System.Reflection.Emit
             MethodSignatureEncoder sigEncoder = signature.FunctionPointer(callConv, attribs);
             sigEncoder.Parameters(paramTypes.Length, out ReturnTypeEncoder retTypeEncoder, out ParametersEncoder paramsEncoder);
 
-            WriteSignatureForType(retTypeEncoder.Type(), returnType, module);
+            Type returnTypeToWrite = returnType;
+            if (returnTypeToWrite.IsSignatureType)
+                returnTypeToWrite = returnTypeToWrite.UnderlyingSystemType;
+
+            WriteSignatureForType(
+                retTypeEncoder.Type(),
+                returnTypeToWrite,
+                module,
+                returnType.GetRequiredCustomModifiers(),
+                returnType.GetOptionalCustomModifiers());
 
             foreach (Type paramType in paramTypes)
             {
                 ParameterTypeEncoder paramEncoder = paramsEncoder.AddParameter();
 
-                WriteSignatureForType(paramEncoder.Type(), paramType, module);
+                Type paramTypeToWrite = paramType;
+                if (paramTypeToWrite.IsSignatureType)
+                    paramTypeToWrite = paramTypeToWrite.UnderlyingSystemType;
+
+                WriteSignatureForType(
+                    paramEncoder.Type(),
+                    paramTypeToWrite,
+                    module,
+                    paramType.GetRequiredCustomModifiers(),
+                    paramType.GetOptionalCustomModifiers());
             }
         }
 

@@ -1,30 +1,32 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Text;
 using Internal.ReadyToRunConstants;
+using Internal.Text;
+using Internal.TypeSystem;
 using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
+    public enum ImportThunkKind
+    {
+        Eager,
+        Lazy,
+        DelayLoadHelper,
+        DelayLoadHelperWithExistingIndirectionCell,
+        VirtualStubDispatch,
+    }
+
+
     /// <summary>
     /// This node emits a thunk calling DelayLoad_Helper with a given instance signature
     /// to populate its indirection cell.
     /// </summary>
     public partial class ImportThunk : AssemblyStubNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
-        enum Kind
-        {
-            Eager,
-            Lazy,
-            DelayLoadHelper,
-            DelayLoadHelperWithExistingIndirectionCell,
-            VirtualStubDispatch,
-        }
-
         private readonly Import _helperCell;
 
-        private readonly Kind _thunkKind;
+        private readonly ImportThunkKind _thunkKind;
 
         private readonly ImportSectionNode _containingImportSection;
 
@@ -39,26 +41,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (useVirtualCall)
             {
-                _thunkKind = Kind.VirtualStubDispatch;
+                _thunkKind = ImportThunkKind.VirtualStubDispatch;
             }
             else if (useJumpableStub)
             {
-                _thunkKind = Kind.DelayLoadHelperWithExistingIndirectionCell;
+                _thunkKind = ImportThunkKind.DelayLoadHelperWithExistingIndirectionCell;
             }
             else if (helperId == ReadyToRunHelper.GetString)
             {
-                _thunkKind = Kind.Lazy;
+                _thunkKind = ImportThunkKind.Lazy;
             }
             else if (helperId == ReadyToRunHelper.DelayLoad_MethodCall ||
                 helperId == ReadyToRunHelper.DelayLoad_Helper ||
                 helperId == ReadyToRunHelper.DelayLoad_Helper_Obj ||
                 helperId == ReadyToRunHelper.DelayLoad_Helper_ObjObj)
             {
-                _thunkKind = Kind.DelayLoadHelper;
+                _thunkKind = ImportThunkKind.DelayLoadHelper;
             }
             else
             {
-                _thunkKind = Kind.Eager;
+                _thunkKind = ImportThunkKind.Eager;
             }
         }
 

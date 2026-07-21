@@ -5,6 +5,7 @@
 #ifndef _WRAPPERS_H_
 #define _WRAPPERS_H_
 
+#include "holder.h"
 #include "metadata.h"
 #include "interoputil.h"
 
@@ -51,88 +52,64 @@ private:
     IMDInternalImport*  m_IMDII;
 };
 
+template <typename TYPE>
+struct ComHolderAnyModeTraits final
+{
+    static_assert(
+        std::is_base_of<IUnknown, TYPE>::value,
+        "TYPE must derive from IUnknown");
+
+    using Type = TYPE*;
+    static constexpr Type Default() { return nullptr; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        } CONTRACTL_END;
+
+        SafeRelease(value);
+    }
+};
+
+// Releases the held COM interface regardless of the current GC mode, switching
+// to preemptive internally when required. Use ComHolderPreemp instead when
+// the release will always occur in preemptive mode.
+template<typename _TYPE>
+using ComHolderAnyMode = LifetimeHolder<ComHolderAnyModeTraits<_TYPE>>;
+
+template <typename TYPE>
+struct ComHolderPreempTraits final
+{
+    static_assert(
+        std::is_base_of<IUnknown, TYPE>::value,
+        "TYPE must derive from IUnknown");
+
+    using Type = TYPE*;
+    static constexpr Type Default() { return nullptr; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_PREEMPTIVE;
+        } CONTRACTL_END;
+
+        SafeReleasePreemp(value);
+    }
+};
+
+// Use this holder if you're already in preemptive mode for other reasons,
+// use ComHolderAnyMode otherwise.
+template<typename _TYPE>
+using ComHolderPreemp = LifetimeHolder<ComHolderPreempTraits<_TYPE>>;
 
 //--------------------------------------------------------------------------------
 // safe variant helper
 void SafeVariantClear(_Inout_ VARIANT* pVar);
-
-class VariantHolder
-{
-public:
-    inline VariantHolder()
-    {
-        LIMITED_METHOD_CONTRACT;
-        memset(&m_var, 0, sizeof(VARIANT));
-    }
-
-    inline ~VariantHolder()
-    {
-        WRAPPER_NO_CONTRACT;
-        SafeVariantClear(&m_var);
-    }
-
-    inline VARIANT* operator&()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return static_cast<VARIANT*>(&m_var);
-    }
-
-private:
-    VARIANT  m_var;
-};
-
-
-template <typename TYPE>
-inline void SafeComRelease(TYPE *value)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    SafeRelease((IUnknown*)value);
-}
-template <typename TYPE>
-inline void SafeComReleasePreemp(TYPE *value)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    SafeReleasePreemp((IUnknown*)value);
-}
-
-template<typename _TYPE>
-using SafeComHolder = SpecializedWrapper<_TYPE, SafeComRelease<_TYPE>>;
-
-// Use this holder if you're already in preemptive mode for other reasons,
-// use SafeComHolder otherwise.
-template<typename _TYPE>
-using SafeComHolderPreemp = SpecializedWrapper<_TYPE, SafeComReleasePreemp<_TYPE>>;
-
-//-----------------------------------------------------------------------------
-// NewPreempHolder : New'ed memory holder, deletes in preemp mode.
-//
-//  {
-//      NewPreempHolder<Foo> foo = new Foo ();
-//  } // delete foo on out of scope in preemp mode.
-//-----------------------------------------------------------------------------
-
-template <typename TYPE>
-void DeletePreemp(TYPE *value)
-{
-    WRAPPER_NO_CONTRACT;
-
-    GCX_PREEMP();
-    delete value;
-}
-
-template<typename _TYPE>
-using NewPreempHolder = SpecializedWrapper<_TYPE, DeletePreemp<_TYPE>>;
-
 
 //-----------------------------------------------------------------------------
 // VariantPtrHolder : Variant holder, Calls VariantClear on scope exit.
@@ -142,32 +119,34 @@ using NewPreempHolder = SpecializedWrapper<_TYPE, DeletePreemp<_TYPE>>;
 //  } // Call SafeVariantClear on out of scope.
 //-----------------------------------------------------------------------------
 
-FORCEINLINE void VariantPtrRelease(VARIANT* value)
+struct VariantHolderTraits final
 {
-    WRAPPER_NO_CONTRACT;
-
-    if (value)
-    {
-        SafeVariantClear(value);
-    }
-}
-
-class VariantPtrHolder : public Wrapper<VARIANT*, VariantPtrDoNothing, VariantPtrRelease, 0>
-{
-public:
-    VariantPtrHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, VariantPtrDoNothing, VariantPtrRelease, 0>(p)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(VARIANT* p)
+    using Type = VARIANT;
+    static constexpr Type Default() { return {}; }
+    static void Free(Type& value)
     {
         WRAPPER_NO_CONTRACT;
-
-        Wrapper<VARIANT*, VariantPtrDoNothing, VariantPtrRelease, 0>::operator=(p);
+        SafeVariantClear(&value);
     }
 };
+
+using VariantHolder = LifetimeHolder<VariantHolderTraits>;
+
+struct VariantPtrHolderTraits final
+{
+    using Type = VARIANT*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (value != NULL)
+        {
+            SafeVariantClear(value);
+        }
+    }
+};
+
+using VariantPtrHolder = LifetimeHolder<VariantPtrHolderTraits>;
 
 #ifdef FEATURE_COMINTEROP
 //-----------------------------------------------------------------------------
@@ -179,75 +158,28 @@ public:
 //  } // Call SafeArrayDestroy on out of scope.
 //-----------------------------------------------------------------------------
 
-FORCEINLINE void SafeArrayPtrRelease(SAFEARRAY* value)
+struct SafeArrayPtrHolderTraits final
 {
-    WRAPPER_NO_CONTRACT;
-
-    if (value)
-    {
-        // SafeArrayDestroy may block and may also call back to MODE_PREEMPTIVE
-        // runtime functions like e.g. code:Unknown_Release_Internal
-        GCX_PREEMP();
-
-        HRESULT hr; hr = SafeArrayDestroy(value);
-        _ASSERTE(SUCCEEDED(hr));
-    }
-}
-
-class SafeArrayPtrHolder : public Wrapper<SAFEARRAY*, SafeArrayDoNothing, SafeArrayPtrRelease, 0>
-{
-public:
-    SafeArrayPtrHolder(SAFEARRAY* p = NULL)
-        : Wrapper<SAFEARRAY*, SafeArrayDoNothing, SafeArrayPtrRelease, 0>(p)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(SAFEARRAY* p)
+    using Type = SAFEARRAY*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
     {
         WRAPPER_NO_CONTRACT;
 
-        Wrapper<SAFEARRAY*, SafeArrayDoNothing, SafeArrayPtrRelease, 0>::operator=(p);
+        if (value != NULL)
+        {
+            // SafeArrayDestroy may block and may also call back to MODE_PREEMPTIVE
+            // runtime functions like e.g. code:Unknown_Release_Internal
+            GCX_PREEMP();
+
+            HRESULT hr; hr = SafeArrayDestroy(value);
+            _ASSERTE(SUCCEEDED(hr));
+        }
     }
 };
 
-#endif // FEATURE_COMINTEROP
+using SafeArrayPtrHolder = LifetimeHolder<SafeArrayPtrHolderTraits>;
 
-//-----------------------------------------------------------------------------
-// ZeroHolder : Sets value to zero on context exit.
-//
-//  {
-//      ZeroHolder foo = &data;
-//  } // set data to zero on context exit
-//-----------------------------------------------------------------------------
-
-FORCEINLINE void ZeroRelease(VOID* value)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (value)
-    {
-        (*(size_t*)value) = 0;
-    }
-}
-
-class ZeroHolder : public Wrapper<VOID*, ZeroDoNothing, ZeroRelease, 0>
-{
-public:
-    ZeroHolder(VOID* p = NULL)
-        : Wrapper<VOID*, ZeroDoNothing, ZeroRelease, 0>(p)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(VOID* p)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        Wrapper<VOID*, ZeroDoNothing, ZeroRelease, 0>::operator=(p);
-    }
-};
-
-#ifdef FEATURE_COMINTEROP
 class TYPEATTRHolder
 {
 public:

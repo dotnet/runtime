@@ -141,7 +141,7 @@ namespace System
 
         internal static unsafe void NumberToString<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             number.CheckConsistency();
             bool isCorrectlyRounded = (number.Kind == NumberBufferKind.FloatingPoint);
@@ -290,7 +290,7 @@ namespace System
 
         internal static unsafe void NumberToStringFormat<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             number.CheckConsistency();
 
@@ -464,7 +464,7 @@ namespace System
             // Adjust represents the number of characters over the formatting e.g. format string is "0000" and you are trying to
             // format 100000 (6 digits). Means adjust will be 2. On the other hand if you are trying to format 10 adjust will be
             // -2 and we'll need to fixup these digits with 0 padding if we have 0 formatting as in this example.
-            Span<int> thousandsSepPos = stackalloc int[4];
+            Span<int> thousandsSepPos = [0, 0, 0, 0];
             int thousandsSepCtr = -1;
 
             if (thousandSeps)
@@ -517,7 +517,15 @@ namespace System
                 }
             }
 
-            if (number.IsNegative && (section == 0) && (number.Scale != 0))
+            // A dedicated negative section (the portion after the first ';') is responsible for
+            // emitting the sign of negative values. When a negative value rounds to zero -- or is
+            // negative zero -- it can fall back to the first section (for example -0.001 or -0.0
+            // with "+0.00;-0.00"). In that case the first section already contains the caller's
+            // desired representation and we must not emit an extra sign, which would otherwise
+            // produce output such as "-+0.00". This only matters when 'section == 0', so
+            // 'HasNegativeSection' is evaluated lazily behind that check to avoid an extra format
+            // scan on the common path where the negative section is used directly ('section != 0').
+            if (number.IsNegative && (section == 0) && (number.Scale != 0) && !HasNegativeSection(format))
             {
                 vlb.Append(info.NegativeSignTChar<TChar>());
             }
@@ -684,7 +692,7 @@ namespace System
                                     vlb.Append(TChar.CastFrom(ch));
                                     if (src < format.Length)
                                     {
-                                        if (pFormat[src] == '+' || pFormat[src] == '-')
+                                        if (pFormat[src] is '+' or '-')
                                         {
                                             AppendUnknownChar(ref vlb, pFormat[src++]);
                                         }
@@ -705,7 +713,7 @@ namespace System
                 }
             }
 
-            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (vlb.Length > 0))
+            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (vlb.Length > 0) && !HasNegativeSection(format))
             {
                 vlb.Insert(0, info.NegativeSignTChar<TChar>());
             }
@@ -713,7 +721,7 @@ namespace System
 
         private static unsafe void FormatCurrency<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             string fmt = number.IsNegative ?
                 s_negCurrencyFormats[info.CurrencyNegativePattern] :
@@ -747,7 +755,7 @@ namespace System
             int nMaxDigits, int[]? groupDigits,
             ReadOnlySpan<TChar> sDecimal, ReadOnlySpan<TChar> sGroup) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             int digPos = number.Scale;
             byte* dig = number.DigitsPtr;
@@ -862,7 +870,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void AppendUnknownChar<TChar>(ref ValueListBuilder<TChar> vlb, char ch) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             if (sizeof(TChar) == sizeof(char) || char.IsAscii(ch))
             {
@@ -883,7 +891,7 @@ namespace System
 
         private static unsafe void FormatNumber<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             string fmt = number.IsNegative ?
                 s_negNumberFormats[info.NumberNegativePattern] :
@@ -910,7 +918,7 @@ namespace System
 
         private static unsafe void FormatScientific<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             byte* dig = number.DigitsPtr;
 
@@ -932,7 +940,7 @@ namespace System
 
         private static unsafe void FormatExponent<TChar>(ref ValueListBuilder<TChar> vlb, NumberFormatInfo info, int value, char expChar, int minDigits, bool positiveSign) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             vlb.Append(TChar.CastFrom(expChar));
 
@@ -956,7 +964,7 @@ namespace System
 
         private static unsafe void FormatGeneral<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar, bool suppressScientific) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             int digPos = number.Scale;
             bool scientific = false;
@@ -1010,7 +1018,7 @@ namespace System
 
         private static unsafe void FormatPercent<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             string fmt = number.IsNegative ?
                 s_negPercentFormats[info.PercentNegativePattern] :
@@ -1121,6 +1129,11 @@ namespace System
                 return digit >= '5';
             }
         }
+
+        // A distinct negative section always begins after the first ';', so its offset is > 0.
+        // FindSection returns 0 both for the first section and when no such section exists, so a
+        // non-zero result reliably indicates the format defines a dedicated negative section.
+        private static bool HasNegativeSection(ReadOnlySpan<char> format) => FindSection(format, 1) != 0;
 
         private static unsafe int FindSection(ReadOnlySpan<char> format, int section)
         {

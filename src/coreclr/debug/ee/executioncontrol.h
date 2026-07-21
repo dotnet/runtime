@@ -16,7 +16,6 @@ struct DebuggerControllerPatch;
 
 #ifdef FEATURE_INTERPRETER
 
-
 class IExecutionControl
 {
 public:
@@ -24,9 +23,8 @@ public:
 
     virtual bool ApplyPatch(DebuggerControllerPatch* patch) = 0;
     virtual bool UnapplyPatch(DebuggerControllerPatch* patch) = 0;
+    virtual void BypassPatch(DebuggerControllerPatch* patch, Thread* pThread) = 0;
 };
-
-typedef DPTR(IExecutionControl) PTR_IExecutionControl;
 
 // Interpreter execution control using bytecode patching
 class InterpreterExecutionControl : public IExecutionControl
@@ -40,9 +38,13 @@ public:
     // Remove a breakpoint patch and restore original instruction
     virtual bool UnapplyPatch(DebuggerControllerPatch* patch) override;
 
+    // Set bypass on the InterpThreadContext so the interpreter executes
+    // the original opcode instead of re-hitting the breakpoint.
+    // The bypass is cleared when the breakpoint is hit and the original opcode is executed.
+    virtual void BypassPatch(DebuggerControllerPatch* patch, Thread* pThread) override;
+
 private:
     InterpreterExecutionControl() = default;
-    static InterpreterExecutionControl s_instance;
 };
 
 #endif // FEATURE_INTERPRETER

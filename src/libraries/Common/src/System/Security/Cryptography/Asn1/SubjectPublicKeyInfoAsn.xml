@@ -2,7 +2,8 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="SubjectPublicKeyInfoAsn"
-  namespace="System.Security.Cryptography.Asn1">
+  namespace="System.Security.Cryptography.Asn1"
+  emitType="both">
 
   <!--
     https://tools.ietf.org/html/rfc3280#section-4.1
@@ -12,6 +13,9 @@
         subjectPublicKey     BIT STRING
     }
   -->
-  <asn:AsnType name="Algorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:AsnType
+    name="Algorithm"
+    typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn"
+    valueTypeName="System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn" />
   <asn:BitString name="SubjectPublicKey" />
 </asn:Sequence>

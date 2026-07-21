@@ -99,7 +99,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                     ulSize = assembly->GetLoadedLayout()->GetSize();
                 }
 
-                // memory are mapped in GetOsPageSize() size.
+                // memory are mapped in minipal_getpagesize() size.
                 // Some memory are mapped in but some are not. You cannot
                 // write all in one block. So iterating through page size
                 //
@@ -112,7 +112,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                     // MethodHeader MethodDesc::GetILHeader. Without this RVA,
                     // all locals are broken. In case, you are asked about this question again.
                     //
-                    ulSizeBlock = ulSize > GetOsPageSize() ? GetOsPageSize() : ulSize;
+                    ulSizeBlock = ulSize > minipal_getpagesize() ? minipal_getpagesize() : ulSize;
                     ReportMem(pStartAddr, ulSizeBlock, false);
                     pStartAddr += ulSizeBlock;
                     ulSize -= ulSizeBlock;
@@ -182,6 +182,8 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     // global pointers.
     //
 #define DEFINE_DACVAR(size_type, id, var) \
+    ReportMem(m_dacGlobals.id, sizeof(size_type));
+#define DEFINE_DACVAR_VOLATILE(size_type, id, var) \
     ReportMem(m_dacGlobals.id, sizeof(size_type));
 
     ULONG64 dacTableAddress;
@@ -300,6 +302,7 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pEEDbgInterfaceImpl.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CORDebuggerControlFlags.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CoreLib.EnumMem(); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( (&g_CoreLib)->EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT].EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( StubManager::EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pFinalizerThread.EnumMem(); )
@@ -1225,10 +1228,6 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
                 DacEnumHostDPtrMem(pThread);
 
                 // @TODO
-                // write TEB pointed by the thread
-                // DacEnumHostDPtrMem(pThread->GetTEB());
-
-                // @TODO
                 // If CLR is hosted, we want to write out fiber data
 
                 // Dump the managed thread object
@@ -1862,9 +1861,9 @@ HRESULT ClrDataAccess::EnumMemWriteDataSegment()
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// Custom Dump. Depending on the value of g_ECustomDumpFlavor, different dump
-// will be taken. You can set this global variable using hosting API
-// ICLRErrorReportingManager::BeginCustomDump.
+// Custom dumps enumerate the minimal CLR state needed for
+// MiniDumpWithFullAuxiliaryState: thread stacks, modules, CLR statics, and any
+// memory reached implicitly from those roots.
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 HRESULT ClrDataAccess::EnumMemoryRegionsWorkerCustom()
@@ -1872,87 +1871,41 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerCustom()
     SUPPORTS_DAC;
 
     HRESULT status = S_OK;
-
-    ECustomDumpFlavor eFlavor;
-
-    eFlavor = DUMP_FLAVOR_Default;
-
     m_enumMemFlags = CLRDATA_ENUM_MEM_MINI;
 
     // clear all of the previous cached memory
     Flush();
 
-    if (eFlavor == DUMP_FLAVOR_Mini)
+    // Iterating to all threads' stacks
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpAllThreadsStack(m_enumMemFlags); )
+    if (FAILED(status))
     {
-        // Iterating to all threads' stacks
-        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpAllThreadsStack(m_enumMemFlags); )
-
-        // Iterating to module list.
-        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpModuleList(m_enumMemFlags); )
-
-        //
-        // iterating through static that we care
-        //
-        // collect CLR static
-        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemCLRStatic(m_enumMemFlags); )
-
-        // we are done...
-
-        // now dump the memory get dragged in implicitly
-        m_dumpStats.m_cbImplicitly = m_instances.DumpAllInstances(m_enumMemCb);
-
-    }
-    else if (eFlavor == DUMP_FLAVOR_CriticalCLRState)
-    {
-        // We need to walk Threads stack to view managed frames.
-        // Iterating through module list
-
-        // Iterating to all threads' stacks
-        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpAllThreadsStack(m_enumMemFlags); )
-
-        // Iterating to module list.
-        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpModuleList(m_enumMemFlags); )
-
-        //
-        // iterating through static that we care
-        //
-        // collect CLR static
-        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemCLRStatic(m_enumMemFlags); )
-
-        // Collecting some CLR secondary critical data
-        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemCLRHeapCrticalStatic(m_enumMemFlags); )
-        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemWriteDataSegment(); )
-
-        // we are done...
-
-        // now dump the memory get dragged in implicitly
-        m_dumpStats.m_cbImplicitly = m_instances.DumpAllInstances(m_enumMemCb);
-
-    }
-    else if (eFlavor == DUMP_FLAVOR_NonHeapCLRState)
-    {
-        // since all CLR hosted heap will be dump by the host,
-        // the EE structures that are not loaded using LoadLibrary will
-        // be included by the host.
-        //
-        // Thus we only need to include mscorwks's critical data and ngen images
-
-        m_enumMemFlags = CLRDATA_ENUM_MEM_HEAP;
-
-        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemCLRStatic(m_enumMemFlags); )
-
-        // Collecting some CLR secondary critical data
-        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemCLRHeapCrticalStatic(m_enumMemFlags); )
-
-        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemWriteDataSegment(); )
-        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemCollectImages(); )
-    }
-    else
-    {
-        status = E_INVALIDARG;
+        return status;
     }
 
-    return S_OK;
+    // Iterating to module list.
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemDumpModuleList(m_enumMemFlags); )
+    if (FAILED(status))
+    {
+        return status;
+    }
+
+    //
+    // iterating through static that we care
+    //
+    // collect CLR static
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( status = EnumMemCLRStatic(m_enumMemFlags); )
+    if (FAILED(status))
+    {
+        return status;
+    }
+
+    // we are done...
+
+    // now dump the memory get dragged in implicitly
+    m_dumpStats.m_cbImplicitly = m_instances.DumpAllInstances(m_enumMemCb);
+
+    return status;
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1996,7 +1949,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWrapper(IN CLRDataEnumMemoryFlags flags)
             // triage micro-dump
             status = EnumMemoryRegionsWorkerMicroTriage(flags);
         }
-        else if (flags == CLRDATA_ENUM_MEM_HEAP || flags == CLRDATA_ENUM_MEM_HEAP2)
+        else if (flags == CLRDATA_ENUM_MEM_HEAP2)
         {
             status = EnumMemoryRegionsWorkerHeap(flags);
         }
@@ -2088,16 +2041,7 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
         ClearDumpStats();
         if (miniDumpFlags & MiniDumpWithPrivateReadWriteMemory)
         {
-            // heap dump
-            if (flags == CLRDATA_ENUM_MEM_HEAP2)
-            {
-                DacLogMessage("EnumMemoryRegions(CLRDATA_ENUM_MEM_HEAP2)\n");
-            }
-            else
-            {
-                flags = CLRDATA_ENUM_MEM_HEAP;
-            }
-            status = EnumMemoryRegionsWrapper(flags);
+            status = EnumMemoryRegionsWrapper(CLRDATA_ENUM_MEM_HEAP2);
         }
         else if (miniDumpFlags & MiniDumpWithFullAuxiliaryState)
         {

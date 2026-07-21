@@ -39,10 +39,10 @@ public:
         ThreadAbortRequested = 128,
     };
 
-    static FCDECL0(INT32,       GetOptimalMaxSpinWaitsPerSpinIteration);
-    static FCDECL1(void,        Finalize, ThreadBaseObject* pThis);
-    static FCDECL0(FC_BOOL_RET, CatchAtSafePoint);
-    static FCDECL0(FC_BOOL_RET, CurrentThreadIsFinalizerThread);
+    FCDECL0(static INT32,       GetOptimalMaxSpinWaitsPerSpinIteration);
+    FCDECL1(static void,        Finalize, ThreadBaseObject* pThis);
+    FCDECL0(static FC_BOOL_RET, CatchAtSafePoint);
+    FCDECL0(static FC_BOOL_RET, CurrentThreadIsFinalizerThread);
 };
 
 extern "C" BOOL QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName, QCall::ObjectHandleOnStack exception);
@@ -80,11 +80,8 @@ extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
 #endif // FEATURE_COMINTEROP
 
-extern "C" void QCALLTYPE Monitor_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj);
+extern "C" void QCALLTYPE ObjectHeader_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj);
 
-FCDECL1(OBJECTHANDLE, Monitor_GetLockHandleIfExists, Object* obj);
-
-FCDECL1(ObjHeader::HeaderLockResult, ObjHeader_AcquireThinLock, Object* obj);
-FCDECL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj);
+FCDECL1(OBJECTHANDLE, ObjectHeader_GetLockHandleIfExists, Object* obj);
 #endif // _COMSYNCHRONIZABLE_H
 

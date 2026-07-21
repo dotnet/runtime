@@ -72,7 +72,7 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
                                                ClassLayout* structLayout,
                                                WellKnownArg wellKnownParam)
 {
-    if (type == TYP_STRUCT)
+    if (varTypeIsStruct(type))
     {
         CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
         assert(clsHnd != NO_CLASS_HANDLE);
@@ -90,8 +90,11 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
             abiType = ToJitType(wasmAbiType);
         }
 
-        regNumber         reg = MakeWasmReg(m_localIndex++, genActualType(abiType));
-        ABIPassingSegment seg = ABIPassingSegment::InRegister(reg, 0, genTypeSize(abiType));
+        regNumber reg = MakeWasmReg(m_localIndex++, genActualType(abiType));
+        // If the struct is being passed directly as a wasm value, make sure we record
+        //  the actual size of the struct, not the size of the containing wasm value.
+        unsigned segmentSize  = passByRef ? genTypeSize(abiType) : min(structLayout->GetSize(), genTypeSize(abiType));
+        ABIPassingSegment seg = ABIPassingSegment::InRegister(reg, 0, segmentSize);
         return ABIPassingInformation::FromSegment(comp, passByRef, seg);
     }
 

@@ -2695,6 +2695,30 @@ DISPID ExtractStandardDispId(_In_z_ LPWSTR strStdDispIdMemberName)
     return _wtoi(strDispId);
 }
 
+// Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
+// in the native code.
+struct CallOutFilterParam { BOOL OneShot; };
+LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
+{
+    CallOutFilterParam *pParam = static_cast<CallOutFilterParam *>(pv);
+
+    _ASSERTE(pParam && (pParam->OneShot == TRUE || pParam->OneShot == FALSE));
+
+    if (pParam->OneShot == TRUE)
+    {
+        pParam->OneShot = FALSE;
+
+        // Replace whatever SEH exception is in flight, with an SEHException derived from
+        // CLRException.  But if the exception already looks like one of ours, let it
+        // go past since LastThrownObject should already represent it.
+        if ((!IsComPlusException(pExceptionInfo->ExceptionRecord)) &&
+            (pExceptionInfo->ExceptionRecord->ExceptionCode != EXCEPTION_MSVC))
+            PAL_CPP_THROW(SEHException *, new SEHException(pExceptionInfo->ExceptionRecord,
+                                                           pExceptionInfo->ContextRecord));
+    }
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
 static HRESULT InvokeExHelper(
     IDispatchEx *       pDispEx,
     DISPID              MemberID,
@@ -2933,44 +2957,34 @@ static void DoIUInvokeDispMethod(IDispatchEx* pDispEx, IDispatch* pDisp, DISPID 
     GCPROTECT_END();
 }
 
-
-FORCEINLINE void DispParamHolderRelease(VARIANT* value)
+struct DispParamHolderTraits final
 {
-    CONTRACTL
+    using Type = VARIANT*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
-    if (value)
-    {
-       if (V_VT(value) & VT_BYREF)
-       {
-           VariantHolder TmpVar;
-           OleVariant::ExtractContentsFromByrefVariant(value, &TmpVar);
-       }
+        if (value)
+        {
+            if (V_VT(value) & VT_BYREF)
+            {
+                VariantHolder TmpVar;
+                OleVariant::ExtractContentsFromByrefVariant(value, &TmpVar);
+            }
 
-       SafeVariantClear(value);
-    }
-}
-
-class DispParamHolder : public Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>
-{
-public:
-    DispParamHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(VARIANT* p)
-    {
-        WRAPPER_NO_CONTRACT;
-        Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>::operator=(p);
+            SafeVariantClear(value);
+        }
     }
 };
+
+using DispParamHolder = LifetimeHolder<DispParamHolderTraits>;
 
 //--------------------------------------------------------------------------------
 // This methods converts an IEnumVARIANT to a managed IEnumerator.
@@ -2984,12 +2998,11 @@ static OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT* pNativeEnum)
     }
     CONTRACTL_END;
 
-    OBJECTREF retObjRef;
-
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENUMERATORTOENUMVARIANTMARSHALER__INTERNALMARSHALNATIVETOMANAGED);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0]  = PTR_TO_ARGHOLDER(pNativeEnum);
-    CALL_MANAGED_METHOD_RETREF(retObjRef, OBJECTREF, args);
+    OBJECTREF retObjRef = NULL;
+    GCPROTECT_BEGIN(retObjRef);
+    UnmanagedCallersOnlyCaller internalMarshalNativeToManaged(METHOD__ENUMERATORTOENUMVARIANTMARSHALER__INTERNALMARSHALNATIVETOMANAGED);
+    internalMarshalNativeToManaged.InvokeThrowing((INT_PTR)pNativeEnum, &retObjRef);
+    GCPROTECT_END();
 
     return retObjRef;
 }
@@ -3032,10 +3045,10 @@ void IUInvokeDispMethod(
     DISPID              MemberID            = 0;
     ByrefArgumentInfo*  aByrefArgInfos      = NULL;
     BOOL                bSomeArgsAreByref   = FALSE;
-    SafeComHolder<IUnknown> pUnk            = NULL;
-    SafeComHolder<IDispatch> pDisp          = NULL;
-    SafeComHolder<IDispatchEx> pDispEx      = NULL;
-    VariantPtrHolder    pVarResult          = NULL;
+    ComHolderAnyMode<IUnknown> pUnk;
+    ComHolderAnyMode<IDispatch> pDisp;
+    ComHolderAnyMode<IDispatchEx> pDispEx;
+    VariantPtrHolder    pVarResult;
     NewArrayHolder<DispParamHolder> params  = NULL;
 
     //
@@ -3130,17 +3143,17 @@ void IUInvokeDispMethod(
         // we will not correctly detect that the user did something wrong and will crash.
         // This is a known issue with no solution.
         // Our check here is best effort to catch the simple case where a user may make a mistake.
-        SafeComHolder<IUnknown> pInvokedMTUnknown = ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
+        ComHolderAnyMode<IUnknown> pInvokedMTUnknown{ ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT) };
 
         // QI for IDispatch to catch the simple error case (COM object has no IDispatch but pInvokedMT is specified as a dispatch or dual interface)
-        SafeComHolder<IUnknown> pCanonicalDisp;
+        ComHolderAnyMode<IUnknown> pCanonicalDisp;
         hr = SafeQueryInterface(pInvokedMTUnknown, IID_IDispatch, &pCanonicalDisp);
         if (FAILED(hr))
             COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
 
         _ASSERTE(IsDispatchBasedItf(pInvokedMT->GetComInterfaceType()));
         // Extract the IDispatch pointer that is associated with pInvokedMT specifically.
-        pDisp = (IDispatch*)pInvokedMTUnknown.Extract();
+        pDisp = (IDispatch*)pInvokedMTUnknown.Detach();
     }
     else
     {
@@ -3300,7 +3313,7 @@ void IUInvokeDispMethod(
 
                         // We managed to retrieve an IDispatchEx IP so we will use it to
                         // retrieve the DISPID.
-                        BSTRHolder bstrTmpName = SysAllocString(aNamesToConvert[0]);
+                        BSTRHolder bstrTmpName{ SysAllocString(aNamesToConvert[0]) };
                         if (!bstrTmpName)
                             COMPlusThrowOM();
 
@@ -3696,7 +3709,6 @@ void InitializeComInterop()
     }
     CONTRACTL_END;
 
-    ComCall::Init();
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG
@@ -3912,7 +3924,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
 
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
-    SafeComHolder<IUnknown> pUnk        = NULL;
+    ComHolderAnyMode<IUnknown> pUnk;
     CHAR                szIID[MINIPAL_GUID_BUFFER_LEN];
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
@@ -3959,7 +3971,7 @@ VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, _In_z_ LPCSTR szMsg)
 
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
-    SafeComHolder<IUnknown> pUnk        = NULL;
+    ComHolderAnyMode<IUnknown> pUnk;
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
 

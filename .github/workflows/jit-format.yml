@@ -7,6 +7,9 @@ on:
       - 'src/coreclr/jit/**'
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   format:
     strategy:
@@ -29,11 +32,11 @@ jobs:
     name: Format jit codebase ${{ matrix.os.name }}
     steps:
       - name: Install .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '8.0.x'
       - name: Checkout runtime
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: runtime
       - name: Install Python
@@ -46,7 +49,7 @@ jobs:
           ROOTFS_DIR: ${{ matrix.os.rootfs }}
       
       - name: Publish format.patch
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           path: runtime/format.patch
           name: format.${{matrix.os.name}}.patch

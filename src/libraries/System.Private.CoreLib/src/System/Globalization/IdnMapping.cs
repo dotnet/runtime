@@ -763,8 +763,7 @@ namespace System.Globalization
                     throw new ArgumentException(SR.Argument_IdnBadLabelSize, nameof(ascii));
 
                 // See if this section's ASCII or ACE
-                if (ascii.Length < c_strAcePrefix.Length + iAfterLastDot ||
-                    string.Compare(ascii, iAfterLastDot, c_strAcePrefix, 0, c_strAcePrefix.Length, StringComparison.OrdinalIgnoreCase) != 0)
+                if (!ascii.AsSpan(iAfterLastDot).StartsWith(c_strAcePrefix, StringComparison.OrdinalIgnoreCase))
                 {
                     // Its ASCII, copy it
                     output.Append(ascii, iAfterLastDot, iNextDot - iAfterLastDot);

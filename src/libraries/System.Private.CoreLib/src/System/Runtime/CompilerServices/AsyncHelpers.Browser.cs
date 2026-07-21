@@ -10,6 +10,7 @@ namespace System.Runtime.CompilerServices
     {
         public static void HandleAsyncEntryPoint(Task task)
         {
+            SystemJS_MarkAsyncMain();
             task.ContinueWith(t =>
             {
                 if (t.IsCanceled)
@@ -29,6 +30,7 @@ namespace System.Runtime.CompilerServices
 
         public static int HandleAsyncEntryPoint(Task<int> task)
         {
+            SystemJS_MarkAsyncMain();
             task.ContinueWith(t =>
             {
                 if (t.IsCanceled)
@@ -61,6 +63,9 @@ namespace System.Runtime.CompilerServices
             string stackTrace = inner.StackTrace ?? "";
             SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
         }
+
+        [LibraryImport(RuntimeHelpers.QCall)]
+        private static partial void SystemJS_MarkAsyncMain();
 
         [LibraryImport(RuntimeHelpers.QCall)]
         private static unsafe partial void SystemJS_RejectMainPromise(

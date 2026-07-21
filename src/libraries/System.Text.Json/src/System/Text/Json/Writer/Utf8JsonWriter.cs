@@ -289,6 +289,9 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// Thrown when the instance of <see cref="Stream" /> that is passed in is null.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the instance of <see cref="Stream" /> that is passed in does not support writing.
+        /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The instance of <see cref="Utf8JsonWriter"/> has been disposed.
         /// </exception>
@@ -296,13 +299,18 @@ namespace System.Text.Json
         {
             CheckNotDisposed();
 
-            if (utf8Json == null)
+            if (utf8Json is null)
+            {
                 throw new ArgumentNullException(nameof(utf8Json));
+            }
+
             if (!utf8Json.CanWrite)
+            {
                 throw new ArgumentException(SR.StreamNotWritable);
+            }
 
             _stream = utf8Json;
-            if (_arrayBufferWriter == null)
+            if (_arrayBufferWriter is null)
             {
                 _arrayBufferWriter = new ArrayBufferWriter<byte>();
             }
@@ -310,9 +318,30 @@ namespace System.Text.Json
             {
                 _arrayBufferWriter.Clear();
             }
-            _output = null;
 
+            _output = null;
             ResetHelper();
+        }
+
+        /// <summary>
+        /// Resets the <see cref="Utf8JsonWriter"/> internal state so that it can be re-used with the new instance of <see cref="Stream" />
+        /// and the specified <see cref="JsonWriterOptions"/>.
+        /// </summary>
+        /// <param name="utf8Json">An instance of <see cref="Stream" /> used as a destination for writing JSON text into.</param>
+        /// <param name="options">Defines the customized behavior of the <see cref="Utf8JsonWriter"/>.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when the instance of <see cref="Stream" /> that is passed in is null.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the instance of <see cref="Stream" /> that is passed in does not support writing.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The instance of <see cref="Utf8JsonWriter"/> has been disposed.
+        /// </exception>
+        public void Reset(Stream utf8Json, JsonWriterOptions options)
+        {
+            Reset(utf8Json);
+            SetOptions(options);
         }
 
         /// <summary>
@@ -340,6 +369,24 @@ namespace System.Text.Json
             ResetHelper();
         }
 
+        /// <summary>
+        /// Resets the <see cref="Utf8JsonWriter"/> internal state so that it can be re-used with the new instance of <see cref="IBufferWriter{Byte}" />
+        /// and the specified <see cref="JsonWriterOptions"/>.
+        /// </summary>
+        /// <param name="bufferWriter">An instance of <see cref="IBufferWriter{Byte}" /> used as a destination for writing JSON text into.</param>
+        /// <param name="options">Defines the customized behavior of the <see cref="Utf8JsonWriter"/>.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when the instance of <see cref="IBufferWriter{Byte}" /> that is passed in is null.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The instance of <see cref="Utf8JsonWriter"/> has been disposed.
+        /// </exception>
+        public void Reset(IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
+        {
+            Reset(bufferWriter);
+            SetOptions(options);
+        }
+
         internal void ResetAllStateForCacheReuse()
         {
             ResetHelper();
@@ -349,7 +396,7 @@ namespace System.Text.Json
             _output = null;
         }
 
-        internal void Reset(IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
+        internal void ConfigureForCacheReuse(IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
         {
             Debug.Assert(_output is null && _stream is null && _arrayBufferWriter is null);
 
@@ -378,10 +425,10 @@ namespace System.Text.Json
 
         private void CheckNotDisposed()
         {
-            if (_stream == null)
+            if (_stream is null)
             {
                 // The conditions are ordered with stream first as that would be the most common mode
-                if (_output == null)
+                if (_output is null)
                 {
                     ThrowHelper.ThrowObjectDisposedException_Utf8JsonWriter();
                 }
@@ -404,9 +451,9 @@ namespace System.Text.Json
 
             _memory = default;
 
-            if (_stream != null)
+            if (_stream is not null)
             {
-                Debug.Assert(_arrayBufferWriter != null);
+                Debug.Assert(_arrayBufferWriter is not null);
                 if (BytesPending != 0)
                 {
                     _arrayBufferWriter.Advance(BytesPending);
@@ -425,7 +472,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(_output != null);
+                Debug.Assert(_output is not null);
                 if (BytesPending != 0)
                 {
                     _output.Advance(BytesPending);
@@ -449,10 +496,10 @@ namespace System.Text.Json
         /// </remarks>
         public void Dispose()
         {
-            if (_stream == null)
+            if (_stream is null)
             {
                 // The conditions are ordered with stream first as that would be the most common mode
-                if (_output == null)
+                if (_output is null)
                 {
                     return;
                 }
@@ -480,10 +527,10 @@ namespace System.Text.Json
         /// </remarks>
         public async ValueTask DisposeAsync()
         {
-            if (_stream == null)
+            if (_stream is null)
             {
                 // The conditions are ordered with stream first as that would be the most common mode
-                if (_output == null)
+                if (_output is null)
                 {
                     return;
                 }
@@ -513,9 +560,9 @@ namespace System.Text.Json
 
             _memory = default;
 
-            if (_stream != null)
+            if (_stream is not null)
             {
-                Debug.Assert(_arrayBufferWriter != null);
+                Debug.Assert(_arrayBufferWriter is not null);
                 if (BytesPending != 0)
                 {
                     _arrayBufferWriter.Advance(BytesPending);
@@ -530,7 +577,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(_output != null);
+                Debug.Assert(_output is not null);
                 if (BytesPending != 0)
                 {
                     _output.Advance(BytesPending);
@@ -809,7 +856,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteStartEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, byte token, int firstEscapeIndexProp)
+        private unsafe void WriteStartEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, byte token, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < utf8PropertyName.Length);
@@ -826,7 +873,7 @@ namespace System.Text.Json
 
             WriteStartByOptions(escapedPropertyName.Slice(0, written), token);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(propertyArray);
             }
@@ -958,7 +1005,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteStartEscapeProperty(ReadOnlySpan<char> propertyName, byte token, int firstEscapeIndexProp)
+        private unsafe void WriteStartEscapeProperty(ReadOnlySpan<char> propertyName, byte token, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < propertyName.Length);
@@ -975,7 +1022,7 @@ namespace System.Text.Json
 
             WriteStartByOptions(escapedPropertyName.Slice(0, written), token);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<char>.Shared.Return(propertyArray);
             }
@@ -1170,9 +1217,9 @@ namespace System.Text.Json
 
             Debug.Assert(BytesPending != 0);
 
-            if (_stream != null)
+            if (_stream is not null)
             {
-                Debug.Assert(_arrayBufferWriter != null);
+                Debug.Assert(_arrayBufferWriter is not null);
 
                 int needed = BytesPending + sizeHint;
                 JsonHelpers.ValidateInt32MaxArrayLength((uint)needed);
@@ -1183,7 +1230,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(_output != null);
+                Debug.Assert(_output is not null);
 
                 _output.Advance(BytesPending);
                 BytesCommitted += BytesPending;
@@ -1205,15 +1252,15 @@ namespace System.Text.Json
 
             int sizeHint = Math.Max(InitialGrowthSize, requiredSize);
 
-            if (_stream != null)
+            if (_stream is not null)
             {
-                Debug.Assert(_arrayBufferWriter != null);
+                Debug.Assert(_arrayBufferWriter is not null);
                 _memory = _arrayBufferWriter.GetMemory(sizeHint);
                 Debug.Assert(_memory.Length >= sizeHint);
             }
             else
             {
-                Debug.Assert(_output != null);
+                Debug.Assert(_output is not null);
                 _memory = _output.GetMemory(sizeHint);
 
                 if (_memory.Length < sizeHint)

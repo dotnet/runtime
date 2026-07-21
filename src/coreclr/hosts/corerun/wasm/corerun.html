@@ -9,28 +9,6 @@
     <h1>corerun-wasm</h1>
     <pre id="log"></pre>
     <script>
-        Module = {
-            arguments: [
-                "HelloWorld.dll"
-            ],
-            preRun: [ function () {
-                // Build the TPA list and set the APP_ASSEMBLIES environment variable.
-                const path = "/";
-                let tpaList = "";
-                let files = FS.readdir(path);
-                files.forEach(function(file) {
-                    if (file.endsWith(".dll")) {
-                        tpaList += (tpaList.length > 0 ? ":" : "") + path + file;
-                    }
-                });
-
-                ENV["APP_ASSEMBLIES"] = tpaList;
-            } ],
-            onExit: function (code) {
-                console.log("onExit, code: " + code);
-            },
-        };
-
         const originalConsoleLog = console.log;
         console.log = function(message) {
             originalConsoleLog(message);
@@ -61,5 +39,51 @@
             document.querySelector("#log").appendChild(elt);
         };
     </script>
-    <script src="corerun.js"></script>
+    <script type="module">
+        import { selfRun } from './corerun.js';
+        selfRun({
+            arguments: [
+                "HelloWorld.dll"
+            ],
+            preRun: [ function (module) {
+                // Emscripten's --preload-file data is loaded by a runWithFS
+                // preRun callback. Due to addOnPreRun using unshift(),
+                // runWithFS runs BEFORE this callback, so the virtual FS
+                // may already be populated when we get here.
+                function buildTpaList() {
+                    const path = "/";
+                    let tpaList = "";
+                    let files = module.FS.readdir(path);
+                    files.forEach(function(file) {
+                        if (file.endsWith(".dll")) {
+                            tpaList += (tpaList.length > 0 ? ":" : "") + path + file;
+                        }
+                    });
+                    return tpaList;
+                }
+
+                let tpaList = buildTpaList();
+                if (tpaList.length > 0) {
+                    // Data already loaded by runWithFS — set TPA list now.
+                    module.ENV["APP_ASSEMBLIES"] = tpaList;
+                } else {
+                    // Data not yet fetched. Block main() until preload
+                    // dependencies resolve and the FS is populated.
+                    module.addRunDependency('app_assemblies');
+                    var orig = module.monitorRunDependencies;
+                    module.monitorRunDependencies = function (left) {
+                        orig?.call(module, left);
+                        if (left === 1) {
+                            module.monitorRunDependencies = orig;
+                            module.ENV["APP_ASSEMBLIES"] = buildTpaList();
+                            module.removeRunDependency('app_assemblies');
+                        }
+                    };
+                }
+            } ],
+            onExit: function (code) {
+                console.log("onExit, code: " + code);
+            },
+        });
+    </script>
 </body>

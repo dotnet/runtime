@@ -68,7 +68,7 @@ namespace System.Text.Json
 
             scoped ReadOnlySpan<char> partialStringDataBuffer = PartialUtf16StringData;
 
-            Span<char> combinedBuffer = stackalloc char[2];
+            Span<char> combinedBuffer = ['\0', '\0'];
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(partialStringDataBuffer, value, combinedBuffer));
 
             switch (Rune.DecodeFromUtf16(combinedBuffer, out _, out int charsConsumed))
@@ -130,7 +130,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteStringSegmentEscapeValue(ReadOnlySpan<char> value, int firstEscapeIndexVal, bool isFinalSegment)
+        private unsafe void WriteStringSegmentEscapeValue(ReadOnlySpan<char> value, int firstEscapeIndexVal, bool isFinalSegment)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= value.Length);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < value.Length);
@@ -155,7 +155,7 @@ namespace System.Text.Json
                 PartialUtf16StringData = value.Slice(consumed);
             }
 
-            if (valueArray != null)
+            if (valueArray is not null)
             {
                 ArrayPool<char>.Shared.Return(valueArray);
             }
@@ -236,7 +236,7 @@ namespace System.Text.Json
 
             scoped ReadOnlySpan<byte> partialStringDataBuffer = PartialUtf8StringData;
 
-            Span<byte> combinedBuffer = stackalloc byte[4];
+            Span<byte> combinedBuffer = [0, 0, 0, 0];
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(partialStringDataBuffer, utf8Value, combinedBuffer));
 
             switch (Rune.DecodeFromUtf8(combinedBuffer, out _, out int bytesConsumed))
@@ -299,7 +299,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteStringSegmentEscapeValue(ReadOnlySpan<byte> utf8Value, int firstEscapeIndexVal, bool isFinalSegment)
+        private unsafe void WriteStringSegmentEscapeValue(ReadOnlySpan<byte> utf8Value, int firstEscapeIndexVal, bool isFinalSegment)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8Value.Length);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < utf8Value.Length);
@@ -321,7 +321,7 @@ namespace System.Text.Json
                 PartialUtf8StringData = utf8Value.Slice(consumed);
             }
 
-            if (valueArray != null)
+            if (valueArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(valueArray);
             }
@@ -403,7 +403,7 @@ namespace System.Text.Json
 
             scoped ReadOnlySpan<byte> partialStringDataBuffer = PartialBase64StringData;
 
-            Span<byte> combinedBuffer = stackalloc byte[3];
+            Span<byte> combinedBuffer = [0, 0, 0];
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(partialStringDataBuffer, bytes, combinedBuffer));
             if (combinedBuffer.Length is 3)
             {

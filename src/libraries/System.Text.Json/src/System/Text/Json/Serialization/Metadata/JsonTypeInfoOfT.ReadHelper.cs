@@ -102,12 +102,13 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Caches JsonTypeInfo&lt;List&lt;T&gt;&gt; instances used by the DeserializeAsyncEnumerable method.
+        /// Caches JsonTypeInfo instances used by the Serialize/DeserializeAsyncEnumerable methods.
         /// Store as a non-generic type to avoid triggering generic recursion in the AOT compiler.
         /// cf. https://github.com/dotnet/runtime/issues/85184
         /// </summary>
         internal JsonTypeInfo? _asyncEnumerableArrayTypeInfo;
         internal JsonTypeInfo? _asyncEnumerableRootLevelValueTypeInfo;
+        internal JsonTypeInfo? _asyncEnumerableRootLevelSerializer;
 
         internal sealed override object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state)
             => Deserialize(ref reader, ref state);

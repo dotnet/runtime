@@ -24,17 +24,20 @@ namespace System.Net.Security.Tests
                                     "_connectionInfo",
                                     BindingFlags.Instance | BindingFlags.NonPublic);
 
+        private static PropertyInfo tlsResumed =
+                                    typeof(SslStream).Assembly.GetType("System.Net.Security.SslConnectionInfo")
+                                    .GetProperty("TlsResumed");
+
         private bool CheckResumeFlag(SslStream ssl)
         {
             // This works only on Debug build where SslStream has extra property so we can validate.
             object info = connectionInfo.GetValue(ssl);
-            return (bool)info.GetType().GetProperty("TlsResumed").GetValue(info);
+            return (bool)tlsResumed.GetValue(info);
         }
 
         [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103449", TestPlatforms.Windows)]
         public async Task ClientDisableTlsResume_Succeeds(bool testClient)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions

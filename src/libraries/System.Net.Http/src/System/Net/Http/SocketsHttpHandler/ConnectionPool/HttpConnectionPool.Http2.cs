@@ -27,6 +27,7 @@ namespace System.Net.Http
         private RequestQueue<Http2Connection?> _http2RequestQueue;
 
         private bool _http2Enabled;
+        private bool _http2SessionAuthSeen;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
 
@@ -63,7 +64,7 @@ namespace System.Net.Http
 
         private bool TryGetPooledHttp2Connection(HttpRequestMessage request, [NotNullWhen(true)] out Http2Connection? connection, out HttpConnectionWaiter<Http2Connection?>? waiter)
         {
-            Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http || _kind == HttpConnectionKind.SocksTunnel || _kind == HttpConnectionKind.SslSocksTunnel);
+            Debug.Assert(_kind is HttpConnectionKind.Https or HttpConnectionKind.SslProxyTunnel or HttpConnectionKind.Http or HttpConnectionKind.ProxyTunnel or HttpConnectionKind.SocksTunnel or HttpConnectionKind.SslSocksTunnel);
 
             // Look for a usable connection.
             while (true)
@@ -184,7 +185,7 @@ namespace System.Net.Http
             CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource(waiter);
             try
             {
-                (Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint) = await ConnectAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
+                (Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint, long connectionId) = await ConnectAsync(queueItem.Request, true, isForHttp2: true, cts.Token).ConfigureAwait(false);
 
                 if (IsSecure)
                 {
@@ -201,19 +202,19 @@ namespace System.Net.Http
                         }
                         else
                         {
-                            connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, activity, remoteEndPoint, cts.Token).ConfigureAwait(false);
+                            connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, activity, remoteEndPoint, connectionId, cts.Token).ConfigureAwait(false);
                         }
                     }
                     else
                     {
                         // We established an SSL connection, but the server denied our request for HTTP2.
-                        await HandleHttp11Downgrade(queueItem.Request, stream, transportContext, activity, remoteEndPoint, cts.Token).ConfigureAwait(false);
+                        await HandleHttp11Downgrade(queueItem.Request, stream, transportContext, activity, remoteEndPoint, connectionId, cts.Token).ConfigureAwait(false);
                         return;
                     }
                 }
                 else
                 {
-                    connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, activity, remoteEndPoint, cts.Token).ConfigureAwait(false);
+                    connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, activity, remoteEndPoint, connectionId, cts.Token).ConfigureAwait(false);
                 }
             }
             catch (Exception e)
@@ -243,11 +244,11 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<Http2Connection> ConstructHttp2ConnectionAsync(Stream stream, HttpRequestMessage request, Activity? activity, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)
+        private async ValueTask<Http2Connection> ConstructHttp2ConnectionAsync(Stream stream, HttpRequestMessage request, Activity? activity, IPEndPoint? remoteEndPoint, long connectionId, CancellationToken cancellationToken)
         {
-            stream = await ApplyPlaintextFilterAsync(async: true, stream, HttpVersion.Version20, request, cancellationToken).ConfigureAwait(false);
+            stream = await ApplyPlaintextFilterAsync(async: true, stream, HttpVersion.Version20, request, connectionId, cancellationToken).ConfigureAwait(false);
 
-            Http2Connection http2Connection = new Http2Connection(this, stream, activity, remoteEndPoint);
+            Http2Connection http2Connection = new Http2Connection(this, stream, activity, remoteEndPoint, connectionId);
             try
             {
                 await http2Connection.SetupAsync(cancellationToken).ConfigureAwait(false);
@@ -286,7 +287,19 @@ namespace System.Net.Http
             }
         }
 
-        private async Task HandleHttp11Downgrade(HttpRequestMessage request, Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)
+        /// <summary>
+        /// Marks this pool as having seen a session-based authentication challenge on HTTP/2.
+        /// Future requests that can fall back to HTTP/1.1 (see <see cref="CanFallBackToHttp11"/>)
+        /// will skip HTTP/2 and go directly to HTTP/1.1.
+        /// Requests that require HTTP/2 (e.g., <see cref="HttpVersionPolicy.RequestVersionExact"/>
+        /// with <see cref="HttpRequestMessage.Version"/> >= 2.0) continue to use HTTP/2 as before.
+        /// </summary>
+        internal void OnSessionAuthenticationChallengeSeen()
+        {
+            _http2SessionAuthSeen = true;
+        }
+
+        private async Task HandleHttp11Downgrade(HttpRequestMessage request, Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint, long connectionId, CancellationToken cancellationToken)
         {
             if (NetEventSource.Log.IsEnabled()) Trace("Server does not support HTTP2; disabling HTTP2 use and proceeding with HTTP/1.1 connection");
 
@@ -344,7 +357,7 @@ namespace System.Net.Http
             try
             {
                 // Note, the same CancellationToken from the original HTTP2 connection establishment still applies here.
-                http11Connection = await ConstructHttp11ConnectionAsync(true, stream, transportContext, request, activity, remoteEndPoint, cancellationToken).ConfigureAwait(false);
+                http11Connection = await ConstructHttp11ConnectionAsync(true, stream, transportContext, request, activity, remoteEndPoint, connectionId, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException oce) when (oce.CancellationToken == cancellationToken)
             {

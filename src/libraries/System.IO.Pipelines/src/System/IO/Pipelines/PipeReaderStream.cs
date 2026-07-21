@@ -57,7 +57,7 @@ namespace System.IO.Pipelines
 
         public override int ReadByte()
         {
-            Span<byte> oneByte = stackalloc byte[1];
+            Span<byte> oneByte = [0];
             return ReadInternal(oneByte) == 0 ? -1 : oneByte[0];
         }
 

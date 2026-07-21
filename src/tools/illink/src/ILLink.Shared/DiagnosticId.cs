@@ -58,6 +58,7 @@ namespace ILLink.Shared
         UnexpectedAttributeArgumentType = 1045,
         InvalidMetadataOption = 1046,
         InvalidDependenciesFileFormat = 1047,
+        MultipleEntryPointRoots = 1048,
 
         // Trimming diagnostic ids.
         TypeHasNoFieldsToPreserve = 2001,
@@ -218,15 +219,6 @@ namespace ILLink.Shared
         // Feature guard diagnostic ids.
         ReturnValueDoesNotMatchFeatureGuards = 4000,
         InvalidFeatureGuard = 4001,
-
-#if DEBUG
-        // RequiresUnsafe diagnostics are in the 5000 range, separate from other diagnostics.
-        RequiresUnsafe = 5000,
-        RequiresUnsafeAttributeMismatch = 5001,
-        RequiresUnsafeOnStaticConstructor = 5002,
-        RequiresUnsafeOnEntryPoint = 5003,
-        _EndRequiresUnsafeWarningsSentinel,
-#endif
     }
 
     public static class DiagnosticIdExtensions
@@ -251,9 +243,6 @@ namespace ILLink.Shared
                 >= 2109 and < (int)DiagnosticId._EndTrimAnalysisWarningsSentinel => MessageSubCategory.TrimAnalysis,
                 >= 3050 and <= 3052 => MessageSubCategory.AotAnalysis,
                 >= 3054 and <= 3058 => MessageSubCategory.AotAnalysis,
-#if DEBUG
-                >= 5000 and < (int)DiagnosticId._EndRequiresUnsafeWarningsSentinel => MessageSubCategory.None,
-#endif
                 _ => MessageSubCategory.None,
             };
 

@@ -742,7 +742,7 @@
 /* Enable System.WeakAttribute support */
 #cmakedefine ENABLE_WEAK_ATTR 1
 
-/* Enable WebCIL image loader */
+/* Enable Webcil image loader */
 #cmakedefine ENABLE_WEBCIL 1
 
 /* define if clockgettime exists */

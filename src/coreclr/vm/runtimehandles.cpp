@@ -31,6 +31,7 @@
 #include "castcache.h"
 #include "encee.h"
 #include "finalizerthread.h"
+#include "pregeneratedstringthunks.h"
 
 extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
 {
@@ -1091,6 +1092,22 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHan
     return;
 }
 
+extern "C" void QCALLTYPE RuntimeTypeHandle_MakeFunctionPointer(TypeHandle* pRetAndArgTypes, INT32 numArgs, BOOL isUnmanaged, QCall::ObjectHandleOnStack retType)
+{
+    QCALL_CONTRACT;
+
+    TypeHandle fnPtrHandle;
+
+    BEGIN_QCALL;
+    BYTE callConv = (BYTE)(isUnmanaged ? IMAGE_CEE_CS_CALLCONV_UNMANAGED : IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    fnPtrHandle = ClassLoader::LoadFnptrTypeThrowing(callConv, numArgs, pRetAndArgTypes);
+    GCX_COOP();
+    retType.Set(fnPtrHandle.GetManagedClassObject());
+    END_QCALL;
+
+    return;
+}
+
 extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType)
 {
     QCALL_CONTRACT;
@@ -1782,6 +1799,10 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
     DynamicMethodDesc* pDynamicMethodDesc = pMethod->AsDynamicMethodDesc();
 
     {
+#if defined(FEATURE_PORTABLE_ENTRYPOINTS)
+        ClearPendingThunkResolutionUnderLock(pDynamicMethodDesc);
+#endif
+
         GCX_COOP();
 
         // Destroy should be called only if the managed part is gone.
@@ -1790,9 +1811,11 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
         // Fire Unload Dynamic Method Event here
         ETW::MethodLog::DynamicMethodDestroyed(pMethod);
 
+#ifdef PROFILING_SUPPORTED
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackDynamicFunctionUnloads());
         (&g_profControlBlock)->DynamicMethodUnloaded((FunctionID)pMethod);
         END_PROFILER_CALLBACK();
+#endif // PROFILING_SUPPORTED
     }
 
     if (!pDynamicMethodDesc->TryDestroy())
@@ -1929,7 +1952,7 @@ extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodD
     if (pMethod->IsAsyncVariantMethod())
     {
         // do not report async variants to reflection.
-        pMethod = pMethod->GetAsyncOtherVariant(/*allowInstParam*/ false);
+        pMethod = pMethod->GetOrdinaryVariant(/*allowInstParam*/ false);
     }
 
     TypeHandle instType = declaringTypeHandle.AsTypeHandle();
@@ -1981,6 +2004,33 @@ FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetMethodFromCanonical, MethodDesc *pM
     return pMDescInCanonMT;
 }
 FCIMPLEND
+
+extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetNativeCode(MethodDesc* pMethod)
+{
+    QCALL_CONTRACT;
+
+    PCODE result = (PCODE)NULL;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(pMethod != NULL);
+
+    while (pMethod->IsWrapperStub())
+    {
+        MethodDesc* pWrapped = pMethod->GetWrappedMethodDesc();
+        if (pWrapped == NULL || pWrapped == pMethod)
+        {
+            break;
+        }
+        pMethod = pWrapped;
+    }
+
+    result = GetInterpreterCodeFromEntryPointIfPresent(pMethod->GetNativeCodeAnyVersion());
+
+    END_QCALL;
+
+    return result;
+}
 
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod, QCall::TypeHandle pDeclaringType, QCall::ObjectHandleOnStack result)
 {

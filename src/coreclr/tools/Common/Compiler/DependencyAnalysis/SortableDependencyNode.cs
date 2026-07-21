@@ -61,7 +61,7 @@ namespace ILCompiler.DependencyAnalysis
             //
             Win32ResourcesNode,
             CorHeaderNode,
-            ReadyToRunHeaderNode,
+            GlobalHeaderNode,
             ReadyToRunAssemblyHeaderNode,
             ImportSectionsTableNode,
             ImportSectionNode,
@@ -105,6 +105,15 @@ namespace ILCompiler.DependencyAnalysis
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,
             ArrayOfEmbeddedDataNode,
+            InterfaceDispatchCellInfoSection,
+            InterfaceDispatchCellSection,
+            GvmDispatchCellInfoSection,
+            GvmDispatchCellSection,
+
+            //
+            // Wasm type signatures (need to be emitted some time before the unordered phase)
+            //
+            WasmTypeNode,
         }
 
         public class EmbeddedObjectNodeComparer : IComparer<EmbeddedObjectNode>

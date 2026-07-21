@@ -47,9 +47,9 @@ namespace System.Diagnostics.Eventing.Reader
         // The dummy sync object for the two contexts.
         private readonly object _syncObject;
 
-        private readonly string _server;
-        private readonly string _user;
-        private readonly string _domain;
+        private readonly string? _server;
+        private readonly string? _user;
+        private readonly string? _domain;
         private readonly SessionAuthentication _logOnType;
 
         // Setup the System Context, once for all the EventRecords.
@@ -87,12 +87,11 @@ namespace System.Diagnostics.Eventing.Reader
         }
 
         public EventLogSession(string server)
-            :
-            this(server, null, null, (SecureString)null, SessionAuthentication.Default)
+            : this(server, null, null, (SecureString?)null, SessionAuthentication.Default)
         {
         }
 
-        public EventLogSession(string server, string domain, string user, SecureString password, SessionAuthentication logOnType)
+        public EventLogSession(string server, string? domain, string? user, SecureString? password, SessionAuthentication logOnType)
         {
             server ??= "localhost";
 
@@ -103,13 +102,12 @@ namespace System.Diagnostics.Eventing.Reader
             _user = user;
             _logOnType = logOnType;
 
-            UnsafeNativeMethods.EvtRpcLogin erLogin = default;
-            erLogin.Server = _server;
-            erLogin.User = _user;
-            erLogin.Domain = _domain;
-            erLogin.Flags = (int)_logOnType;
-            erLogin.Password = CoTaskMemUnicodeSafeHandle.Zero;
-
+            UnsafeNativeMethods.EvtRpcLogin erLogin = new UnsafeNativeMethods.EvtRpcLogin(
+                server: _server,
+                user: _user,
+                domain: _domain,
+                flags: (int)_logOnType,
+                password: CoTaskMemUnicodeSafeHandle.Zero);
             try
             {
                 if (password != null)
@@ -172,9 +170,12 @@ namespace System.Diagnostics.Eventing.Reader
 
                 do
                 {
-                    string s = NativeWrapper.EvtNextPublisherId(ProviderEnum, ref finish);
+                    string? s = NativeWrapper.EvtNextPublisherId(ProviderEnum, ref finish);
                     if (!finish)
+                    {
+                        Debug.Assert(s != null, "value should only be null when there are no more items");
                         namesList.Add(s);
+                    }
                 }
                 while (!finish);
 
@@ -192,9 +193,12 @@ namespace System.Diagnostics.Eventing.Reader
 
                 do
                 {
-                    string s = NativeWrapper.EvtNextChannelPath(channelEnum, ref finish);
+                    string? s = NativeWrapper.EvtNextChannelPath(channelEnum, ref finish);
                     if (!finish)
+                    {
+                        Debug.Assert(s != null, "value should only be null when there are no more items");
                         namesList.Add(s);
+                    }
                 }
                 while (!finish);
 
@@ -209,12 +213,12 @@ namespace System.Diagnostics.Eventing.Reader
             return new EventLogInformation(this, logName, pathType);
         }
 
-        public void ExportLog(string path, PathType pathType, string query, string targetFilePath)
+        public void ExportLog(string path, PathType pathType, string? query, string targetFilePath)
         {
             this.ExportLog(path, pathType, query, targetFilePath, false);
         }
 
-        public void ExportLog(string path, PathType pathType, string query, string targetFilePath, bool tolerateQueryErrors)
+        public void ExportLog(string path, PathType pathType, string? query, string targetFilePath, bool tolerateQueryErrors)
         {
             ArgumentNullException.ThrowIfNull(path);
             ArgumentNullException.ThrowIfNull(targetFilePath);
@@ -231,12 +235,12 @@ namespace System.Diagnostics.Eventing.Reader
                 NativeWrapper.EvtExportLog(this.Handle, path, query, targetFilePath, (int)flag | (int)UnsafeNativeMethods.EvtExportLogFlags.EvtExportLogTolerateQueryErrors);
         }
 
-        public void ExportLogAndMessages(string path, PathType pathType, string query, string targetFilePath)
+        public void ExportLogAndMessages(string path, PathType pathType, string? query, string targetFilePath)
         {
             this.ExportLogAndMessages(path, pathType, query, targetFilePath, false, CultureInfo.CurrentCulture);
         }
 
-        public void ExportLogAndMessages(string path, PathType pathType, string query, string targetFilePath, bool tolerateQueryErrors, CultureInfo targetCultureInfo)
+        public void ExportLogAndMessages(string path, PathType pathType, string? query, string targetFilePath, bool tolerateQueryErrors, CultureInfo? targetCultureInfo)
         {
             ExportLog(path, pathType, query, targetFilePath, tolerateQueryErrors);
             // Ignore the CultureInfo, pass 0 to use the calling thread's locale
@@ -248,7 +252,7 @@ namespace System.Diagnostics.Eventing.Reader
             this.ClearLog(logName, null);
         }
 
-        public void ClearLog(string logName, string backupPath)
+        public void ClearLog(string logName, string? backupPath)
         {
             ArgumentNullException.ThrowIfNull(logName);
 

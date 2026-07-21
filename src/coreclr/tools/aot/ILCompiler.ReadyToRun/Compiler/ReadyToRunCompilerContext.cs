@@ -11,11 +11,10 @@ namespace ILCompiler
 {
     partial class CompilerTypeSystemContext
     {
-        private readonly MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
-
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details)
         {
+            _virtualMethodAlgorithm = new AsyncAwareVirtualMethodResolutionAlgorithm(this);
             _continuationTypeHashtable = new(this);
             _genericsMode = genericsMode;
         }
@@ -343,7 +342,7 @@ namespace ILCompiler
 
         public static bool IsVectorOfTType(DefType type)
         {
-            return type.IsIntrinsic && type.Namespace.SequenceEqual("System.Numerics"u8) && type.Name.SequenceEqual("Vector`1"u8);
+            return type.IsIntrinsic && type.Namespace == "System.Numerics"u8 && type.Name == "Vector`1"u8;
         }
     }
 }

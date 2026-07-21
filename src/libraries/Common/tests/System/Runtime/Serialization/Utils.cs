@@ -365,13 +365,13 @@ namespace System.Runtime.Serialization.Tests
 
         public TestAssemblyLoadContext(string name, bool isCollectible, string mainAssemblyToLoadPath = null) : base(name, isCollectible)
         {
-            if (!PlatformDetection.IsBrowser)
+            if (!PlatformDetection.IsBrowser && !PlatformDetection.IsAppleMobile)
                 _resolver = new AssemblyDependencyResolver(mainAssemblyToLoadPath ?? Assembly.GetExecutingAssembly().Location);
         }
 
         protected override Assembly Load(AssemblyName name)
         {
-            if (PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsBrowser || PlatformDetection.IsAppleMobile)
             {
                 return base.Load(name);
             }

@@ -48,7 +48,7 @@ namespace System.Speech.Internal
         //  The ID for a null string is always 0, the ID for subsequent strings is the
         //  index of the string + 1;
         //
-        internal int Add(string psz, out int idWord)
+        internal int Add(string? psz, out int idWord)
         {
             int offset = 0;
             idWord = 0;
@@ -77,7 +77,7 @@ namespace System.Speech.Internal
         }
 
         // Returns idWord; use IndexFromId to recover string offset
-        internal int Find(string psz)
+        internal int Find(string? psz)
         {
             // Compatibility the SAPI version
             if (string.IsNullOrEmpty(psz) || _cWords == 0)
@@ -106,7 +106,7 @@ namespace System.Speech.Internal
         /// <summary>
         /// Only DEBUG code should use this
         /// </summary>
-        internal string FromOffset(int offset)
+        internal string? FromOffset(int offset)
         {
             int iPos = 1;
             int iWord = 1;

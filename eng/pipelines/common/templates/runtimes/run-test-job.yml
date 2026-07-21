@@ -11,6 +11,7 @@ parameters:
   hotColdSplitting: false
   liveLibrariesBuildConfig: ''
   compositeBuildMode: false
+  largeVersionBubble: false
   useCodeFlowEnforcement: ''
   helixQueues: ''
   condition: true
@@ -129,6 +130,9 @@ jobs:
       - ${{ if eq(parameters.hotColdSplitting, true) }}:
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2_HotColdSplitting
+      - ${{ if eq(parameters.largeVersionBubble, true) }}:
+        - name: LogNamePrefix
+          value: TestRunLogs_R2R_CG2_LargeVersionBubble
 
     - name: testFilterArg
       value: ''
@@ -243,13 +247,13 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts. This step also generates the final test execution scripts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg) $(extraBuildArgs)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) -arch $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg) $(extraBuildArgs)
       displayName: Copy native test components to test output folder
 
     # Compose the Core_Root folder containing all artifacts needed for running
     # CoreCLR tests. This step also compiles the framework using Crossgen2
     # in ReadyToRun jobs.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg) -ci $(extraBuildArgs)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) -arch $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg) -ci $(extraBuildArgs)
       displayName: Generate CORE_ROOT
 
     # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
@@ -266,10 +270,10 @@ jobs:
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:
       - ${{ if eq(parameters.archType, 'x64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot $(monoAotBuildshCommand) $(buildConfig) $(archType) $(runtimeVariantArg)
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot $(monoAotBuildshCommand) $(buildConfig) -arch $(archType) $(runtimeVariantArg)
           displayName: "LLVM AOT compile CoreCLR tests"
       - ${{ if eq(parameters.archType, 'arm64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot $(monoAotBuildshCommand) $(buildConfig) $(archType) cross $(runtimeVariantArg) -maxcpucount:2
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot $(monoAotBuildshCommand) $(buildConfig) -arch $(archType) cross $(runtimeVariantArg) -maxcpucount:2
           displayName: "LLVM AOT cross-compile CoreCLR tests"
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
@@ -316,6 +320,7 @@ jobs:
         runInterpreter: ${{ parameters.runInterpreter }}
         tieringTest: ${{ parameters.tieringTest }}
         hotColdSplitting: ${{ parameters.hotColdSplitting }}
+        largeVersionBubble: ${{ parameters.largeVersionBubble }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the
@@ -582,7 +587,7 @@ jobs:
           archiveType: $(archiveType)
           tarCompression: $(tarCompression)
           archiveExtension: $(archiveExtension)
-          artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+          artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
           displayName: 'Upload artifacts SuperPMI $(CollectionName)-$(CollectionType) collection'
           condition: always()
 
@@ -622,7 +627,7 @@ jobs:
         displayName: Publish SuperPMI logs
         inputs:
           targetPath: $(SpmiLogsLocation)
-          artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+          artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
         condition: always()
 
     ########################################################################################################

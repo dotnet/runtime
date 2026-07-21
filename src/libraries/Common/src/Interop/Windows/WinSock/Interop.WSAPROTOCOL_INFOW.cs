@@ -3,6 +3,7 @@
 
 using System;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -12,7 +13,7 @@ internal static partial class Interop
         public const int SO_PROTOCOL_INFOW = 0x2005;
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal unsafe struct WSAPROTOCOL_INFOW
+        internal struct WSAPROTOCOL_INFOW
         {
             private const int WSAPROTOCOL_LEN = 255;
 
@@ -35,16 +36,20 @@ internal static partial class Interop
             internal int iSecurityScheme;
             internal uint dwMessageSize;
             internal uint dwProviderReserved;
-            internal fixed char szProtocol[WSAPROTOCOL_LEN + 1];
+            internal ProtocolNameBuffer szProtocol;
+
+            [InlineArray(WSAPROTOCOL_LEN + 1)]
+            internal struct ProtocolNameBuffer
+            {
+                private char _element0;
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct WSAPROTOCOLCHAIN
+        internal struct WSAPROTOCOLCHAIN
         {
-            private const int MAX_PROTOCOL_CHAIN = 7;
-
             internal int ChainLen;
-            internal fixed uint ChainEntries[MAX_PROTOCOL_CHAIN];
+            internal InlineArray7<uint> ChainEntries;
         }
     }
 }

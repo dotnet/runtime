@@ -15,7 +15,6 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs" Link="Common\SourceGenerators\LiveReferencePack.cs" />
-    <Compile Include="$(CommonTestPath)SourceGenerators\GlobalOptionsOnlyProvider.cs" Link="Common\SourceGenerators\GlobalOptionsOnlyProvider.cs" />
     <Compile Include="..\Common\TestUtils.cs" Link="Common\TestUtils.cs" />
     <Compile Include="..\Common\CustomCollectionMarshallingCodeSnippets.cs" Link="Common\CustomCollectionMarshallingCodeSnippets.cs" />
     <Compile Include="..\Common\CustomStructMarshallingCodeSnippets.cs" Link="Common\CustomStructMarshallingCodeSnippets.cs" />
@@ -53,7 +52,7 @@
 
   <Target Name="AddNetAnalyzersAssemblyAsReference" BeforeTargets="ResolveAssemblyReferences" DependsOnTargets="ResolveProjectReferences">
     <ItemGroup>
-      <Reference Include="$(PkgMicrosoft_CodeAnalysis_NetAnalyzers)/analyzers/dotnet/Microsoft.CodeAnalysis.NetAnalyzers.dll" />
+      <Reference Include="$(PkgMicrosoft_CodeAnalysis_NetAnalyzers)/analyzers/dotnet/cs/Microsoft.CodeAnalysis.NetAnalyzers.dll" />
     </ItemGroup>
   </Target>
 </Project>

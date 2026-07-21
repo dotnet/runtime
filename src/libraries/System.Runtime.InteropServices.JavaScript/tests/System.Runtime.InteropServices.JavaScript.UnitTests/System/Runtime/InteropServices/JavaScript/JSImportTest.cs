@@ -58,8 +58,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("intentionallyMissingImportAsync must be a Function but was undefined", ex.Message);
         }
 
-#if !FEATURE_WASM_MANAGED_THREADS // because in MT JSHost.ImportAsync is really async, it will finish before the caller could cancel it
-        [Fact]
+        // because in MT JSHost.ImportAsync is really async, it will finish before the caller could cancel it
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public async Task CancelableImportAsync()
         {
             var cts = new CancellationTokenSource();
@@ -71,7 +71,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var actualEx = await Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs", new CancellationToken(true)));
             Assert.Equal("Error: OperationCanceledException", actualEx.Message);
         }
-#endif
 
         [Fact]
         public unsafe void GlobalThis()
@@ -127,7 +126,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.Reject(null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public unsafe void OptimizedPaths()
         {
             JavaScriptTestHelper.optimizedReached = 0;
@@ -286,11 +285,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var ex = Assert.Throws<JSException>(() => doubleThrows(1, 2));
             Assert.Equal("Error: test 1 2", ex.Message);
 
-#if !FEATURE_WASM_MANAGED_THREADS
-            Assert.Contains("create_function", ex.StackTrace);
-#else
-            Assert.Contains("omitted JavaScript stack trace", ex.StackTrace);
-#endif
+            if (!PlatformDetection.IsMultithreadingSupported)
+            {
+                Assert.Contains("create_function", ex.StackTrace);
+            }
+            else
+            {
+                Assert.Contains("omitted JavaScript stack trace", ex.StackTrace);
+            }
         }
 
         [Fact]
@@ -1102,7 +1104,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await JavaScriptTestHelper.sleep(100);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // slow
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))] // slow
         public async Task JsImportTaskTypes()
         {
             for (int i = 0; i < 100; i++)
@@ -1297,9 +1299,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task JsImportResolvedPromiseReturnsCompletedTask()
         {
             var promise = JavaScriptTestHelper.ReturnResolvedPromise();
-#if !FEATURE_WASM_MANAGED_THREADS
-            Assert.False(promise.IsCompleted);
-#endif
+
+            if (!PlatformDetection.IsMultithreadingSupported)
+            {
+                Assert.False(promise.IsCompleted);
+            }
+
             await promise;
             Assert.True(promise.IsCompleted);
         }
@@ -1308,7 +1313,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #region Action
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_EchoAction()
         {
             bool called = false;
@@ -1323,7 +1328,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void JsImportCallback_EchoActionThrows_MT()
         {
             bool called = false;
@@ -1376,7 +1381,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_Action()
         {
             bool called = false;
@@ -1387,7 +1392,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportEcho_ActionAction()
         {
             bool called = false;
@@ -1400,7 +1405,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportEcho_ActionIntActionInt()
         {
             int calledA = -1;
@@ -1413,7 +1418,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, calledA);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_ActionInt()
         {
             int called = -1;
@@ -1424,7 +1429,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_FunctionIntInt()
         {
             int called = -1;
@@ -1437,7 +1442,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, res);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportBackCallback_FunctionIntInt()
         {
             int called = -1;
@@ -1452,7 +1457,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(84, called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportBackCallback_FunctionIntIntIntInt()
         {
             int calledA = -1;
@@ -1471,7 +1476,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(84, calledB);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_ActionIntInt()
         {
             int calledA = -1;
@@ -1485,7 +1490,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_ActionLongLong()
         {
             long calledA = -1;
@@ -1499,7 +1504,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_ActionIntLong()
         {
             int calledA = -1;
@@ -1513,7 +1518,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_ActionIntLongDouble()
         {
             int calledA = -1;
@@ -1530,7 +1535,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(44.5, calledC);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_ActionIntThrow()
         {
             int called = -1;
@@ -1587,20 +1592,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var exThrow0 = Assert.Throws<JSException>(() => JavaScriptTestHelper.throw0());
             Assert.Contains("throw-0-msg", exThrow0.Message);
             Assert.DoesNotContain(" at ", exThrow0.Message);
-#if !FEATURE_WASM_MANAGED_THREADS
-            Assert.Contains("throw0fn", exThrow0.StackTrace);
-#else
-            Assert.Contains("omitted JavaScript stack trace", exThrow0.StackTrace);
-#endif
+            if (!PlatformDetection.IsMultithreadingSupported)
+            {
+                Assert.Contains("throw0fn", exThrow0.StackTrace);
+            }
 
             var exThrow1 = Assert.Throws<JSException>(() => throw1(value));
             Assert.Contains("throw1-msg", exThrow1.Message);
             Assert.DoesNotContain(" at ", exThrow1.Message);
-#if !FEATURE_WASM_MANAGED_THREADS
-            Assert.Contains("throw1fn", exThrow1.StackTrace);
-#else
-            Assert.Contains("omitted JavaScript stack trace", exThrow0.StackTrace);
-#endif
+            if (!PlatformDetection.IsMultithreadingSupported)
+            {
+                Assert.Contains("throw1fn", exThrow1.StackTrace);
+            }
+            else
+            {
+                Assert.Contains("omitted JavaScript stack trace", exThrow0.StackTrace);
+            }
 
             // anything is a system.object, sometimes it would be JSObject wrapper
             if (typeof(T).IsPrimitive)

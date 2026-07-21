@@ -112,8 +112,8 @@ private:
     // In these cases all calls are made by the platform equivalent of "call [addr]".
     //
     // DelegateCallSite are particular in that they can come in a variety of forms:
-    // a direct delegate call has a sequence defined by the jit but a multicast or wrapper delegate
-    // are defined in a stub and have a different shape
+    // a direct delegate call has a sequence defined by the jit but a multicast delegate
+    // is defined in a stub and has a different shape
     //
     PTR_PCODE       m_siteAddr;     // Stores the address of an indirection cell
     PCODE           m_returnAddr;
@@ -744,6 +744,17 @@ protected:
         return W("Unexpected. RangeSectionStubManager should report the name");
     }
 #endif
+
+    friend struct ::cdac_data<VirtualCallStubManager>;
+};
+
+template<>
+struct cdac_data<VirtualCallStubManager>
+{
+    static constexpr size_t IndcellHeap = offsetof(VirtualCallStubManager, indcell_heap);
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    static constexpr size_t CacheEntryHeap = offsetof(VirtualCallStubManager, cache_entry_heap);
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 };
 
 /********************************************************************************************************
@@ -1294,6 +1305,14 @@ public:
 #endif
           cache[idx] = elem;
         }
+
+#ifdef CHAIN_LOOKUP
+    inline Crst *GetWriteLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_writeLock;
+    }
+#endif
 
     inline void ClearCacheEntry(size_t idx)
     {

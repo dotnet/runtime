@@ -51,6 +51,8 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
     uint64_t previousSp = 0;
     uint64_t previousIp = 0;
     int ipMatchCount = 0;
+    bool isSignalFrame = false;
+    bool crossedSignalTrampoline = false;
 
     // For each native frame, add a page around the IP and any unwind info not already
     // added in VisitProgramHeader (Linux) and VisitSection (MacOS) to the dump.
@@ -69,9 +71,18 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
             sp++;
         }
 #endif
-        if (ip == 0 || sp <= previousSp) {
+        // When a signal handler uses SA_ONSTACK (alternate signal stack), the SP can legitimately
+        // decrease when unwinding crosses the signal trampoline back to the original thread stack.
+        // Allow the SP decrease if the current frame is a signal trampoline (detected by the
+        // previous unwind call) and we haven't already crossed one (limit to one crossing to
+        // bound corruption damage).
+        if (ip == 0 || sp == 0 || (sp <= previousSp && (!isSignalFrame || crossedSignalTrampoline))) {
             TRACE_VERBOSE("Unwind: sp not increasing or ip == 0 sp %p ip %p\n", (void*)sp, (void*)ip);
             break;
+        }
+        if (sp < previousSp)
+        {
+            crossedSignalTrampoline = true;
         }
         // Break out of the endless loop if the IP matches over a 1000 times. This is a fallback
         // behavior of libunwind when the module the IP is in doesn't have unwind info and for
@@ -104,7 +115,8 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
 
         // Unwind the native frame adding all the memory accessed to the core dump via the read memory adapter.
         ULONG64 functionStart;
-        if (!PAL_VirtualUnwindOutOfProc(pContext, &functionStart, baseAddress, ReadMemoryAdapter)) {
+        isSignalFrame = false;
+        if (!PAL_VirtualUnwindOutOfProc(pContext, &functionStart, baseAddress, ReadMemoryAdapter, &isSignalFrame)) {
             TRACE("Unwind: PAL_VirtualUnwindOutOfProc returned false\n");
             break;
         }
@@ -186,10 +198,10 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess, ISOSDacInterface* pS
                     ReleaseHolder<IXCLRDataTypeInstance> pExceptionType;
                     if (SUCCEEDED(pExceptionValue->GetType(&pExceptionType)))
                     {
-                        ArrayHolder<WCHAR> typeName = new WCHAR[MAX_LONGPATH + 1];
-                        if (SUCCEEDED(pExceptionType->GetName(0, MAX_LONGPATH, nullptr, typeName.GetPtr())))
+                        WStringHolder typeName = new WCHAR[MAX_LONGPATH + 1];
+                        if (SUCCEEDED(pExceptionType->GetName(0, MAX_LONGPATH, nullptr, typeName)))
                         {
-                            m_exceptionType = ConvertString(typeName.GetPtr());
+                            m_exceptionType = ConvertString(typeName);
                             TRACE("Unwind: exception type %s\n", m_exceptionType.c_str());
                         }
                     }
@@ -287,7 +299,7 @@ ThreadInfo::GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk)
     }
 
     // Add managed stack frame for the crash info notes
-    StackFrame frame(moduleAddress, ip, sp, pMethod.Detach(), nativeOffset, token, ilOffset);
+    StackFrame frame(moduleAddress, ip, sp, pMethod.Extract(), nativeOffset, token, ilOffset);
     AddStackFrame(frame);
 }
 

@@ -266,14 +266,15 @@ namespace System.Net.Http
                     connectionSetupActivity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(isSecure: true, _telemetryServerAddress, authority.Port);
                     // If the authority was sent as an option through alt-svc then include alt-used header.
                     connection = new Http3Connection(this, authority, includeAltUsedHeader: _http3Authority == authority);
-                    QuicConnection quicConnection = await ConnectHelper.ConnectQuicAsync(queueItem.Request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, connection.StreamCapacityCallback, cts.Token).ConfigureAwait(false);
+                    var connectEndPoint = new DnsEndPoint(authority.IdnHost, authority.Port);
+                    QuicConnection quicConnection = await ConnectHelper.ConnectQuicAsync(queueItem.Request, connectEndPoint, _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, connection.StreamCapacityCallback, cts.Token).ConfigureAwait(false);
                     if (quicConnection.NegotiatedApplicationProtocol != SslApplicationProtocol.Http3)
                     {
                         await quicConnection.DisposeAsync().ConfigureAwait(false);
                         throw new HttpRequestException(HttpRequestError.ConnectionError, "QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnConnectionFailure);
                     }
                     if (connectionSetupActivity is not null) ConnectionSetupDistributedTracing.StopConnectionSetupActivity(connectionSetupActivity, null, quicConnection.RemoteEndPoint);
-                    connection.InitQuicConnection(quicConnection, connectionSetupActivity);
+                    connection.InitQuicConnection(quicConnection, connectionSetupActivity, connectEndPoint);
                 }
                 else if (reasonException is not null)
                 {

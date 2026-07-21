@@ -9,6 +9,9 @@
          Suppress the NU1511 warning in the whole project as putting it on a P2P doesn't work: https://github.com/NuGet/Home/issues/14121 -->
     <NoWarn>$(NoWarn);NU1511</NoWarn>
     <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,9 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Link="Common\System\Collections\DictionaryExtensions.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DictionaryPolyfills.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Link="Common\Polyfills\DictionaryPolyfills.cs" />
     <!-- Reference internal product components for testing -->
     <Compile Include="..\src\System\Polyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitOperationsPolyfills.cs" Link="Common\Polyfills\BitOperationsPolyfills.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="$(CommonPath)Polyfills\CollectionsPolyfills.cs" Link="Common\Polyfills\CollectionsPolyfills.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="..\src\System\Collections\Frozen\String\Hashing.cs" Link="System\Collections\Frozen\String\Hashing.cs" />
     <Compile Include="..\src\System\Collections\Frozen\String\KeyAnalyzer.cs" Link="System\Collections\Frozen\String\KeyAnalyzer.cs" />
     <Compile Include="..\src\Validation\Requires.cs" Link="Validation\Requires.cs" />

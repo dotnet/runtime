@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if TARGET_LINUX || TARGET_WINDOWS
+#if TARGET_LINUX
 // use OS-provided compare-and-wait API.
+#define USE_FUTEX
+#elif TARGET_WINDOWS
+#define USE_FUTEX
 #else
 // fallback to monitor (condvar+mutex)
 #define USE_MONITOR
@@ -24,7 +27,7 @@ namespace System.Threading
     /// When OS provides a compare-and-wait API, such as futex, we use that.
     /// Otherwise we fallback to a heavier, but more portable condvar/mutex implementation.
     /// </summary>
-    internal unsafe class LowLevelThreadBlocker : IDisposable
+    internal unsafe struct LowLevelThreadBlocker : IDisposable
     {
         private int* _pState;
 
@@ -38,13 +41,17 @@ namespace System.Threading
             *_pState = 0;
 
 #if USE_MONITOR
-            _monitor.Initialize();
+            try
+            {
+                _monitor.Initialize();
+            }
+            catch
+            {
+                NativeMemory.AlignedFree(_pState);
+                _pState = null;
+                throw;
+            }
 #endif
-        }
-
-        ~LowLevelThreadBlocker()
-        {
-            Dispose();
         }
 
         public void Dispose()
@@ -60,8 +67,6 @@ namespace System.Threading
 #if USE_MONITOR
             _monitor.Dispose();
 #endif
-
-            GC.SuppressFinalize(this);
         }
 
 #if USE_MONITOR
@@ -117,7 +122,6 @@ namespace System.Threading
             _monitor.Signal_Release();
         }
 #else
-
         internal void Wait()
         {
             while (true)

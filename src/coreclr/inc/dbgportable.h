@@ -91,6 +91,17 @@ public:
 #endif // DBG_BYTE_SWAP_REQUIRED
     }
 
+    // Volatile-qualified accessor for fields accessed through volatile pointers
+    operator T () const volatile
+    {
+        T data = m_data;
+#ifdef DBG_BYTE_SWAP_REQUIRED
+        return ByteSwap(data);
+#else // DBG_BYTE_SWAP_REQUIRED
+        return data;
+#endif // DBG_BYTE_SWAP_REQUIRED
+    }
+
     bool operator == (T other) const
     {
 #ifdef DBG_BYTE_SWAP_REQUIRED
@@ -116,6 +127,44 @@ public:
 #else // DBG_BYTE_SWAP_REQUIRED
         return m_data;
 #endif // DBG_BYTE_SWAP_REQUIRED
+    }
+
+    // Forwarders to T's methods. Each one goes through operator=/operator T().
+    // Each is templated (or has a Dummy default) so it isn't instantiated for T's that don't define
+    // the underlying method (e.g. Portable<CORDB_ADDRESS>). Intended to be used for Portable<VMPTR>.
+    template <typename TPtr, typename Dummy = T>
+    auto SetRawPtr(TPtr * ptr) -> decltype(Dummy::MakePtr(ptr), void())
+    {
+        *this = T::MakePtr(ptr);
+    }
+
+    template <typename Dummy = T>
+    auto GetRawPtr() const -> decltype(Dummy().GetRawPtr())
+    {
+        Dummy tmp = *this;
+        return tmp.GetRawPtr();
+    }
+
+    template <typename Dummy = T>
+    auto GetDacPtr() const -> decltype(Dummy().GetDacPtr())
+    {
+        Dummy tmp = *this;
+        return tmp.GetDacPtr();
+    }
+
+    template <typename TAddr, typename Dummy = T>
+    auto SetDacTargetPtr(TAddr addr) -> decltype(Dummy().SetDacTargetPtr(addr))
+    {
+        Dummy tmp;
+        tmp.SetDacTargetPtr(addr);
+        *this = tmp;
+    }
+
+    template <typename Dummy = T>
+    auto IsNull() const -> decltype(Dummy().IsNull())
+    {
+        Dummy tmp = *this;
+        return tmp.IsNull();
     }
 
 private:

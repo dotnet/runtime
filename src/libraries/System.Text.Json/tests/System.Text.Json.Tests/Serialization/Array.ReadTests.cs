@@ -33,13 +33,13 @@ namespace System.Text.Json.Serialization.Tests
             byte[] arr = JsonSerializer.Deserialize<byte[]>("null");
             Assert.Null(arr);
 
-            PocoWithByteArrayProperty poco = JsonSerializer.Deserialize<PocoWithByteArrayProperty>(@"{""Value"":null}");
+            PocoWithByteArrayProperty poco = JsonSerializer.Deserialize<PocoWithByteArrayProperty>("""{"Value":null}""");
             Assert.Null(poco.Value);
 
-            byte[][] jaggedArr = JsonSerializer.Deserialize<byte[][]>(@"[null]");
+            byte[][] jaggedArr = JsonSerializer.Deserialize<byte[][]>("[null]");
             Assert.Null(jaggedArr[0]);
 
-            Dictionary<string, byte[]> dict = JsonSerializer.Deserialize<Dictionary<string, byte[]>>(@"{""key"":null}");
+            Dictionary<string, byte[]> dict = JsonSerializer.Deserialize<Dictionary<string, byte[]>>("""{"key":null}""");
             Assert.Null(dict["key"]);
         }
 
@@ -51,7 +51,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadEmptyByteArray()
         {
-            string json = @"""""";
+            string json = """
+                ""
+                """;
             byte[] arr = JsonSerializer.Deserialize<byte[]>(json);
             Assert.Equal(0, arr.Length);
         }
@@ -87,9 +89,13 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(@"""1""")]
-        [InlineData(@"""A===""")]
-        [InlineData(@"[1, 2]")]  // Currently not support deserializing JSON arrays as byte[] - only Base64 string.
+        [InlineData("""
+            "1"
+            """)]
+        [InlineData("""
+            "A==="
+            """)]
+        [InlineData("[1, 2]")]  // Currently not support deserializing JSON arrays as byte[] - only Base64 string.
         public static void ReadByteArrayFail(string json)
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<byte[]>(json));
@@ -127,7 +133,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadPrimitiveJagged2dArray()
         {
-            int[][] i = JsonSerializer.Deserialize<int[][]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int[][] i = JsonSerializer.Deserialize<int[][]>(Encoding.UTF8.GetBytes("[[1,2],[3,4]]"));
             Assert.Equal(1, i[0][0]);
             Assert.Equal(2, i[0][1]);
             Assert.Equal(3, i[1][0]);
@@ -137,7 +143,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadPrimitiveJagged3dArray()
         {
-            int[][][] i = JsonSerializer.Deserialize<int[][][]>(Encoding.UTF8.GetBytes(@"[[[11,12],[13,14]], [[21,22],[23,24]]]"));
+            int[][][] i = JsonSerializer.Deserialize<int[][][]>(Encoding.UTF8.GetBytes("[[[11,12],[13,14]], [[21,22],[23,24]]]"));
             Assert.Equal(11, i[0][0][0]);
             Assert.Equal(12, i[0][0][1]);
             Assert.Equal(13, i[0][1][0]);
@@ -175,11 +181,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadPrimitiveArray()
         {
-            int[] i = JsonSerializer.Deserialize<int[]>(Encoding.UTF8.GetBytes(@"[1,2]"));
+            int[] i = JsonSerializer.Deserialize<int[]>(Encoding.UTF8.GetBytes("[1,2]"));
             Assert.Equal(1, i[0]);
             Assert.Equal(2, i[1]);
 
-            i = JsonSerializer.Deserialize<int[]>(Encoding.UTF8.GetBytes(@"[]"));
+            i = JsonSerializer.Deserialize<int[]>(Encoding.UTF8.GetBytes("[]"));
             Assert.Equal(0, i.Length);
         }
 
@@ -197,7 +203,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadArrayWithEnums()
         {
-            SampleEnum[] i = JsonSerializer.Deserialize<SampleEnum[]>(Encoding.UTF8.GetBytes(@"[1,2]"));
+            SampleEnum[] i = JsonSerializer.Deserialize<SampleEnum[]>(Encoding.UTF8.GetBytes("[1,2]"));
             Assert.Equal(SampleEnum.One, i[0]);
             Assert.Equal(SampleEnum.Two, i[1]);
         }
@@ -206,13 +212,13 @@ namespace System.Text.Json.Serialization.Tests
         public static void ReadPrimitiveArrayFail()
         {
             // Invalid data
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int[]>(Encoding.UTF8.GetBytes(@"[1,""a""]")));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int[]>(Encoding.UTF8.GetBytes("""[1,"a"]""")));
 
             // Invalid data
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int?>>(Encoding.UTF8.GetBytes(@"[1,""a""]")));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int?>>(Encoding.UTF8.GetBytes("""[1,"a"]""")));
 
             // Multidimensional arrays currently not supported
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int[,]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]")));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int[,]>(Encoding.UTF8.GetBytes("[[1,2],[3,4]]")));
         }
 
         public static IEnumerable<object[]> ReadNullJson
@@ -453,7 +459,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void ClassWithNoSetter()
         {
             // We replace the contents of this collection; we don't attempt to add items to the existing collection instance.
-            string json = @"{""MyList"":[1,2]}";
+            string json = """{"MyList":[1,2]}""";
             ClassWithPopulatedListAndNoSetter obj = JsonSerializer.Deserialize<ClassWithPopulatedListAndNoSetter>(json);
             Assert.Equal(1, obj.MyList.Count);
         }
@@ -467,7 +473,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void ClassWithPopulatedList()
         {
             // We replace the contents of this collection; we don't attempt to add items to the existing collection instance.
-            string json = @"{""MyList"":[2,3]}";
+            string json = """{"MyList":[2,3]}""";
             ClassWithPopulatedListAndSetter obj = JsonSerializer.Deserialize<ClassWithPopulatedListAndSetter>(json);
             Assert.Equal(2, obj.MyList.Count);
         }
@@ -483,24 +489,28 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(@"{
-                ""SkippedChild1"": {},
-                ""ParsedChild1"": [1],
-                ""UnmatchedProp"": null,
-                ""SkippedChild2"": [{""DrainProp1"":{}, ""DrainProp2"":{""SubProp"":0}}],
-                ""SkippedChild2"": {},
-                ""ParsedChild2"": [2,2],
-                ""SkippedChild3"": {},
-                ""ParsedChild3"": [3,3]}")]
-        [InlineData(@"{
-                ""SkippedChild1"": null,
-                ""ParsedChild1"": [1],
-                ""UnmatchedProp"": null,
-                ""SkippedChild2"": [],
-                ""SkippedChild2"": null,
-                ""ParsedChild2"": [2,2],
-                ""SkippedChild3"": null,
-                ""ParsedChild3"": [3,3]}")]
+        [InlineData("""
+                {
+                                "SkippedChild1": {},
+                                "ParsedChild1": [1],
+                                "UnmatchedProp": null,
+                                "SkippedChild2": [{"DrainProp1":{}, "DrainProp2":{"SubProp":0}}],
+                                "SkippedChild2": {},
+                                "ParsedChild2": [2,2],
+                                "SkippedChild3": {},
+                                "ParsedChild3": [3,3]}
+            """)]
+        [InlineData("""
+                {
+                                "SkippedChild1": null,
+                                "ParsedChild1": [1],
+                                "UnmatchedProp": null,
+                                "SkippedChild2": [],
+                                "SkippedChild2": null,
+                                "ParsedChild2": [2,2],
+                                "SkippedChild3": null,
+                                "ParsedChild3": [3,3]}
+            """)]
         public static void ClassWithMixedSettersIsParsed(string json)
         {
             ClassWithMixedSetters parsedObject = JsonSerializer.Deserialize<ClassWithMixedSetters>(json);
@@ -609,13 +619,15 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             const string inputJsonWithCollectionElements =
-                @"{
-                    ""Array"":[""1""],
-                    ""List"":[""2""],
-                    ""ListWrapper"":[""3""],
-                    ""MyImmutableArray"":[""4""],
-                    ""MyImmutableList"":[""5""]
-                }";
+                """
+                        {
+                                            "Array":["1"],
+                                            "List":["2"],
+                                            "ListWrapper":["3"],
+                                            "MyImmutableArray":["4"],
+                                            "MyImmutableList":["5"]
+                                        }
+                    """;
 
             ClassWithNonNullEnumerableGetters obj = JsonSerializer.Deserialize<ClassWithNonNullEnumerableGetters>(inputJsonWithCollectionElements);
             Assert.Equal(1, obj.Array.Length);
@@ -636,13 +648,15 @@ namespace System.Text.Json.Serialization.Tests
             TestRoundTrip(obj);
 
             const string inputJsonWithoutCollectionElements =
-                @"{
-                    ""Array"":[],
-                    ""List"":[],
-                    ""ListWrapper"":[],
-                    ""MyImmutableArray"":[],
-                    ""MyImmutableList"":[]
-                }";
+                """
+                        {
+                                            "Array":[],
+                                            "List":[],
+                                            "ListWrapper":[],
+                                            "MyImmutableArray":[],
+                                            "MyImmutableList":[]
+                                        }
+                    """;
 
             obj = JsonSerializer.Deserialize<ClassWithNonNullEnumerableGetters>(inputJsonWithoutCollectionElements);
             Assert.Equal(0, obj.Array.Length);
@@ -653,18 +667,20 @@ namespace System.Text.Json.Serialization.Tests
             TestRoundTrip(obj);
 
             string inputJsonWithNullCollections =
-                @"{
-                    ""Array"":null,
-                    ""List"":null,
-                    ""ListWrapper"":null,
-                    ""MyImmutableList"":null
-                }";
+                """
+                        {
+                                            "Array":null,
+                                            "List":null,
+                                            "ListWrapper":null,
+                                            "MyImmutableList":null
+                                        }
+                    """;
 
             obj = JsonSerializer.Deserialize<ClassWithNonNullEnumerableGetters>(inputJsonWithNullCollections);
             TestRoundTrip(obj);
 
             // ImmutableArray<T> is a struct and cannot be null.
-            inputJsonWithNullCollections = @"{""MyImmutableArray"":null}";
+            inputJsonWithNullCollections = """{"MyImmutableArray":null}""";
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithNonNullEnumerableGetters>(inputJsonWithNullCollections));
         }
 
@@ -674,7 +690,7 @@ namespace System.Text.Json.Serialization.Tests
             Dealer dealer = new Dealer { NetworkCodeList = new List<string> { "Network1", "Network2" } };
 
             string serialized = JsonSerializer.Serialize(dealer);
-            Assert.Equal(@"{""NetworkCodeList"":[""Network1"",""Network2""]}", serialized);
+            Assert.Equal("""{"NetworkCodeList":["Network1","Network2"]}""", serialized);
 
             dealer = JsonSerializer.Deserialize<Dealer>(serialized);
 

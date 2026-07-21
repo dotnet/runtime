@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -410,7 +410,7 @@ namespace System.Globalization
             };
 
         // Cache of regions we've already looked up
-        private static volatile Dictionary<string, CultureData>? s_cachedRegions;
+        private static Dictionary<string, CultureData>? s_cachedRegions;
         private static Dictionary<string, string>? s_regionNames;
 
         /// <summary>
@@ -640,11 +640,10 @@ namespace System.Globalization
             invariant._iDefaultMacCodePage = 10000;         // default macintosh code page
             invariant._iDefaultEbcdicCodePage = 037;        // default EBCDIC code page
 
-            if (GlobalizationMode.InvariantNoLoad)
-            {
-                invariant._sLocalizedCountry = invariant._sNativeCountry;
-            }
-
+            // _sLocalizedCountry is intentionally left null here. It is populated lazily the first
+            // time the LocalizedCountryName property is accessed. We avoid reading GlobalizationMode
+            // here because doing so triggers ICU load in GlobalizationMode.Settings.cctor. During
+            // runtime startup that load can fail and crash the process on some platforms such as Android.
             return invariant;
         }
 
@@ -655,7 +654,7 @@ namespace System.Globalization
         internal static CultureData Invariant => field ??= CreateCultureWithInvariantData();
 
         // Cache of cultures we've already looked up
-        private static volatile Dictionary<string, CultureData>? s_cachedCultures;
+        private static Dictionary<string, CultureData>? s_cachedCultures;
 
         internal static CultureData? GetCultureData(string? cultureName, bool useUserOverride)
         {
@@ -713,7 +712,7 @@ namespace System.Globalization
             return culture;
         }
 
-        private static string NormalizeCultureName(string name, out bool isNeutralName)
+        private static unsafe string NormalizeCultureName(string name, out bool isNeutralName)
         {
             isNeutralName = true;
             int i = 0;
@@ -1159,22 +1158,28 @@ namespace System.Globalization
             get
             {
                 string? localizedCountry = _sLocalizedCountry;
-                if (localizedCountry == null && !GlobalizationMode.Invariant)
+                if (localizedCountry == null)
                 {
-                    try
+                    if (!GlobalizationMode.Invariant)
                     {
-                        localizedCountry = GlobalizationMode.UseNls ? NlsGetRegionDisplayName() : IcuGetRegionDisplayName();
+                        try
+                        {
+                            localizedCountry = GlobalizationMode.UseNls ? NlsGetRegionDisplayName() : IcuGetRegionDisplayName();
+                        }
+                        catch
+                        {
+                            // do nothing. we'll fallback
+                        }
+                        localizedCountry ??= NativeCountryName;
                     }
-                    catch
+                    else
                     {
-                        // do nothing. we'll fallback
+                        localizedCountry = NativeCountryName;
                     }
-
-                    localizedCountry ??= NativeCountryName;
                     _sLocalizedCountry = localizedCountry;
                 }
 
-                return localizedCountry!;
+                return localizedCountry;
             }
         }
 

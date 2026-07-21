@@ -57,7 +57,7 @@ extends:
           - windows_x64
           - windows_x86
           jobParameters:
-            buildArgs: -s clr.alljitscommunity+clr.spmi -c $(_BuildConfig)
+            buildArgs: -s clr.alljitscommunity+clr.wasmjit+clr.spmi -c $(_BuildConfig)
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -79,7 +79,7 @@ extends:
           - windows_x86
           - linux_x64
           jobParameters:
-            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig) /p:NoPgoOptimize=true
+            buildArgs: -s clr.alljits+clr.wasmjit+clr.spmi -c $(_BuildConfig) /p:NoPgoOptimize=true
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -120,5 +120,21 @@ extends:
           jobParameters:
             condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
             diffType: tpdiff
+            baseJitOptions: ${{ parameters.spmi_jitoptions_base }}
+            diffJitOptions: ${{ parameters.spmi_jitoptions_diff }}
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-diffs-job.yml
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          - windows_x86
+          - linux_x64
+          helixQueueGroup: superpmi-diffs
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
+            diffType: metricdiff
             baseJitOptions: ${{ parameters.spmi_jitoptions_base }}
             diffJitOptions: ${{ parameters.spmi_jitoptions_diff }}

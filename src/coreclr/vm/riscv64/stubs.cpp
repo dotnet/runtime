@@ -223,12 +223,10 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     if (updateFloats)
     {
         UpdateFloatingPointRegisters(pRD, GetSP());
-        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
     }
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     // copy the callee saved regs
     CalleeSavedRegisters *pCalleeSaved = GetCalleeSavedRegisters();
@@ -247,6 +245,36 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
+
+#ifdef FEATURE_INTERPRETER
+#ifndef DACCESS_COMPILE
+void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // The interpreter frame saves the floating point callee-saved registers (fs0-fs11) in the TransitionBlock,
+    // so we need to update them in the REGDISPLAY when we update the REGDISPLAY for an interpreter frame.
+    //
+    // Stack layout when pushCalleeSavedFloatRegs is used:
+    //   [fs0-fs11 (96 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 160 (96 + 64)
+    //
+    // RISC-V FP callee-saved: fs0=f8, fs1=f9, fs2-fs11=f18-f27
+    TADDR pTransitionBlock = GetTransitionBlock();
+    UINT64 *pCalleeSavedFloats = (UINT64*)((BYTE*)pTransitionBlock - 160);
+
+    // fs0 = f8, fs1 = f9
+    pRD->pCurrentContext->F[8] = pCalleeSavedFloats[0];
+    pRD->pCurrentContext->F[9] = pCalleeSavedFloats[1];
+
+    // fs2-fs11 = f18-f27
+    for (int i = 0; i < 10; i++)
+    {
+        pRD->pCurrentContext->F[18 + i] = pCalleeSavedFloats[2 + i];
+    }
+}
+#endif // DACCESS_COMPILE
+#endif // FEATURE_INTERPRETER
 
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
@@ -288,7 +316,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
@@ -316,12 +343,11 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
+        UpdateFloatingPointRegisters(pRD, dac_cast<TADDR>(GetCallSiteSP()));
     }
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;
 
     pRD->pCurrentContext->Pc = *(DWORD64 *)&m_pCallerReturnAddress;
     pRD->pCurrentContext->Sp = *(DWORD64 *)&m_pCallSiteSP;
@@ -415,7 +441,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->volatileCurrContextPointers.T6 = &m_Regs->T6;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
@@ -427,7 +452,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     LIMITED_METHOD_CONTRACT;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;
 
     pRD->pCurrentContext->Pc = m_ReturnAddress;
     size_t s = sizeof(struct HijackArgs);
@@ -438,9 +462,11 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
     pRD->pCurrentContext->A0 = m_Args->A0;
     pRD->pCurrentContext->A1 = m_Args->A1;
+    pRD->pCurrentContext->A2 = m_Args->A2;
 
     pRD->volatileCurrContextPointers.A0 = &m_Args->A0;
     pRD->volatileCurrContextPointers.A1 = &m_Args->A1;
+    pRD->volatileCurrContextPointers.A2 = &m_Args->A2;
 
 
     pRD->pCurrentContext->S1 = m_Args->S1;
@@ -479,14 +505,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 #endif // FEATURE_HIJACK
-
-#ifdef FEATURE_COMINTEROP
-
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-}
-#endif // FEATURE_COMINTEROP
 
 #if !defined(DACCESS_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
@@ -550,26 +568,44 @@ AdjustContextForVirtualStub(
 
     PCODE f_IP = GetIP(pContext);
 
-    StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
+    bool isVirtualStubNullCheck = false;
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
+    {
+        isVirtualStubNullCheck = true;
+    }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    if (!isVirtualStubNullCheck)
+    {
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
-    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
-    {
-        if (*PTR_DWORD(f_IP - 4) != DISPATCH_STUB_FIRST_DWORD)
+        if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
         {
-            _ASSERTE(!"AV in DispatchStub at unknown instruction");
-            return FALSE;
+            if (*PTR_DWORD(f_IP - 4) != DISPATCH_STUB_FIRST_DWORD)
+            {
+                _ASSERTE(!"AV in DispatchStub at unknown instruction");
+            }
+            else
+            {
+                isVirtualStubNullCheck = true;
+            }
+        }
+        else if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
+        {
+            if (*PTR_DWORD(f_IP) != RESOLVE_STUB_FIRST_DWORD)
+            {
+                _ASSERTE(!"AV in ResolveStub at unknown instruction");
+            }
+            else
+            {
+                isVirtualStubNullCheck = true;
+            }
         }
     }
-    else
-    if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
-    {
-        if (*PTR_DWORD(f_IP) != RESOLVE_STUB_FIRST_DWORD)
-        {
-            _ASSERTE(!"AV in ResolveStub at unknown instruction");
-            return FALSE;
-        }
-    }
-    else
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+
+    if (!isVirtualStubNullCheck)
     {
         return FALSE;
     }
@@ -978,6 +1014,8 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 //
 // Allocation of dynamic helpers
 //
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
 #define BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
@@ -1465,6 +1503,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         END_DYNAMIC_HELPER_EMIT();
     }
 }
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif // FEATURE_READYTORUN
 
 

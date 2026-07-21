@@ -138,7 +138,7 @@ namespace
             // No need to use cache for this PE image.
             // Composite r2r PE image is not a part of anyone's identity.
             // We only need it to obtain the native image, which will be cached at AppDomain level.
-            PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_NoCache, probeExtensionResult);
+            PEImageHolder pImage(PEImage::OpenImage(fullPath, MDInternalImport_NoCache, probeExtensionResult));
             PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_LOADED);
             // We will let pImage instance be freed after exiting this scope, but we will keep the layout,
             // thus the layout needs an AddRef, or it will be gone together with pImage.
@@ -226,15 +226,13 @@ NativeImage *NativeImage::Open(
     LPCUTF8 nativeImageFileName,
     AssemblyBinder *pAssemblyBinder,
     LoaderAllocator *pLoaderAllocator,
-    bool isPlatformNative,
-    /* out */ bool *isNewNativeImage)
+    bool isPlatformNative)
 {
     STANDARD_VM_CONTRACT;
 
     NativeImage *pExistingImage = AppDomain::GetCurrentDomain()->GetNativeImage(nativeImageFileName);
     if (pExistingImage != nullptr)
     {
-        *isNewNativeImage = false;
         if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
         {
             return pExistingImage;
@@ -294,12 +292,10 @@ NativeImage *NativeImage::Open(
     if (pExistingImage == nullptr)
     {
         // No pre-existing image, new image has been stored in the map
-        *isNewNativeImage = true;
         amTracker.SuppressRelease();
         return image.Extract();
     }
     // Return pre-existing image if it was loaded into the same ALC, null otherwise
-    *isNewNativeImage = false;
     if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
     {
         return pExistingImage;

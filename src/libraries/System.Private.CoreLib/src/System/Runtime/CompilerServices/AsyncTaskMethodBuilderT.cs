@@ -61,7 +61,16 @@ namespace System.Runtime.CompilerServices
         {
             try
             {
-                awaiter.OnCompleted(GetStateMachineBox(ref stateMachine, ref taskField).MoveNextAction);
+                IAsyncStateMachineBox box = GetStateMachineBox(ref stateMachine, ref taskField);
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
+                {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box, flags);
+                    }
+                }
+
+                awaiter.OnCompleted(box.MoveNextAction);
             }
             catch (Exception e)
             {
@@ -136,6 +145,14 @@ namespace System.Runtime.CompilerServices
                 // The awaiter isn't specially known. Fall back to doing a normal await.
                 try
                 {
+                    if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
+                    {
+                        if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                        {
+                            box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box, flags);
+                        }
+                    }
+
                     awaiter.UnsafeOnCompleted(box.MoveNextAction);
                 }
                 catch (Exception e)
@@ -212,31 +229,53 @@ namespace System.Runtime.CompilerServices
                 // cases is we lose the ability to properly step in the debugger, as the debugger uses that
                 // object's identity to track this specific builder/state machine.  As such, we proceed to
                 // overwrite whatever's there anyway, even if it's non-null.
+                AsyncStateMachineBox<TStateMachine> box;
+                AsyncInstrumentation.Flags flags = AsyncInstrumentation.Flags.Disabled;
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out flags))
+                {
 #if NATIVEAOT
-                // DebugFinalizableAsyncStateMachineBox looks like a small type, but it actually is not because
-                // it will have a copy of all the slots from its parent. It will add another hundred(s) bytes
-                // per each async method in NativeAOT binaries without adding much value. Avoid
-                // generating this extra code until a better solution is implemented.
-                var box = new AsyncStateMachineBox<TStateMachine>();
+                    // DebugFinalizableAsyncStateMachineBox looks like a small type, but it actually is not because
+                    // it will have a copy of all the slots from its parent. It will add another hundred(s) bytes
+                    // per each async method in NativeAOT binaries without adding much value. Avoid
+                    // generating this extra code until a better solution is implemented.
+                    box = new AsyncStateMachineBox<TStateMachine>();
 #else
-                AsyncStateMachineBox<TStateMachine> box = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
-                    CreateDebugFinalizableAsyncStateMachineBox<TStateMachine>() :
-                    new AsyncStateMachineBox<TStateMachine>();
+                    if (AsyncInstrumentation.IsEnabled.Tpl(flags) && AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                    {
+                        box = CreateDebugFinalizableAsyncStateMachineBox<TStateMachine>();
+                    }
+                    else if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        box = CreateAsyncProfilerAsyncStateMachineBox<TStateMachine>();
+                    }
+                    else
+                    {
+                        box = new AsyncStateMachineBox<TStateMachine>();
+                    }
 #endif
+                }
+                else
+                {
+                    box = new AsyncStateMachineBox<TStateMachine>();
+                }
+
                 taskField = box; // important: this must be done before storing stateMachine into box.StateMachine!
                 box.StateMachine = stateMachine;
                 box.Context = currentContext;
 
-                // Log the creation of the state machine box object / task for this async method.
-                if (TplEventSource.Log.IsEnabled())
+                if (flags != AsyncInstrumentation.Flags.Disabled)
                 {
-                    AsyncMethodBuilderCore.LogTraceOperationBegin(box, stateMachine.GetType());
-                }
+                    // Log the creation of the state machine box object / task for this async method.
+                    if (AsyncInstrumentation.IsEnabled.Tpl(flags))
+                    {
+                        AsyncMethodBuilderCore.LogTraceOperationBegin(box, stateMachine.GetType());
+                    }
 
-                // And if async debugging is enabled, track the task.
-                if (Threading.Tasks.Task.s_asyncDebuggingEnabled)
-                {
-                    Threading.Tasks.Task.AddToActiveTasks(box);
+                    // And if async debugging is enabled, track the task.
+                    if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
+                    {
+                        Threading.Tasks.Task.AddToActiveTasks(box);
+                    }
                 }
                 result = box;
             }
@@ -245,6 +284,99 @@ namespace System.Runtime.CompilerServices
         }
 
 #if !NATIVEAOT
+        // Avoid forcing the JIT to build AsyncProfilerAsyncStateMachineBox<TStateMachine> unless the async profiler is active.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static AsyncStateMachineBox<TStateMachine> CreateAsyncProfilerAsyncStateMachineBox<TStateMachine>()
+            where TStateMachine : IAsyncStateMachine =>
+            new AsyncProfilerAsyncStateMachineBox<TStateMachine>();
+
+        /// <summary>
+        /// A strongly-typed box allocated instead of <see cref="AsyncStateMachineBox{TStateMachine}"/>
+        /// while the async profiler is active. It carries the dispatcher machinery (dispatcher frame
+        /// and node identity) so the base box stays free of profiler-only state and behavior
+        /// on the common, profiler-disabled path.
+        /// </summary>
+        /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
+        private class AsyncProfilerAsyncStateMachineBox<TStateMachine> : // SOS DumpAsync command depends on this name
+            AsyncStateMachineBox<TStateMachine>, IAsyncStateMachineDispatcher
+            where TStateMachine : IAsyncStateMachine
+        {
+            private bool _isLeaf;
+
+            private int _dispatcherId;
+
+            bool IAsyncStateMachineDispatcher.IsLeaf
+            {
+                get => _isLeaf;
+                set => _isLeaf = value;
+            }
+
+            ulong IAsyncStateMachineDispatcher.DispatcherId
+            {
+                get => GetDispatcherId();
+            }
+
+            private ulong GetDispatcherId()
+            {
+                if (_dispatcherId == 0)
+                {
+                    _dispatcherId = NewId();
+                }
+                return (ulong)_dispatcherId;
+            }
+
+            private protected override void InstrumentedMoveNext(Thread? threadPoolThread, AsyncInstrumentation.Flags flags)
+            {
+                if (_isLeaf)
+                {
+                    MoveNextAsDispatcher(threadPoolThread, flags);
+                    return;
+                }
+
+                base.InstrumentedMoveNext(threadPoolThread, flags);
+            }
+
+            private unsafe void MoveNextAsDispatcher(Thread? threadPoolThread, AsyncInstrumentation.Flags flags)
+            {
+                AsyncStateMachineDispatcherInfo info;
+                ref AsyncStateMachineDispatcherInfo* refInfo = ref AsyncStateMachineDispatcherInfo.t_current;
+                AsyncStateMachineDispatcherInfo* refPreviousInfo = refInfo;
+                refInfo = &info;
+                info.Next = refPreviousInfo;
+
+                AsyncProfiler.InitInfo(ref info.AsyncProfilerInfo);
+
+                info.Dispatcher = this;
+                info.AsyncProfilerInfo.DispatcherId = GetDispatcherId();
+                info.AsyncProfilerInfo.CurrentContinuation = this;
+
+                _isLeaf = false;
+
+                try
+                {
+                    if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
+                    {
+                        AsyncProfiler.ResumeAsyncContext.Resume(ref info);
+                    }
+
+                    AsyncStateMachineDispatcherInfo.ResumeAsyncMethod(this, flags);
+
+                    MoveNext(threadPoolThread, flags);
+                }
+                finally
+                {
+                    // SuspendOrCompleteContext never throws, so the frame is always popped afterwards.
+                    bool suspended = AsyncStateMachineDispatcherInfo.SuspendOrCompleteContext(ref info, flags);
+                    if (!suspended)
+                    {
+                        _dispatcherId = 0;
+                    }
+
+                    refInfo = info.Next;
+                }
+            }
+        }
+
         // Avoid forcing the JIT to build DebugFinalizableAsyncStateMachineBox<TStateMachine> unless it's actually needed.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static AsyncStateMachineBox<TStateMachine> CreateDebugFinalizableAsyncStateMachineBox<TStateMachine>()
@@ -257,7 +389,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         private sealed class DebugFinalizableAsyncStateMachineBox<TStateMachine> : // SOS DumpAsync command depends on this name
-            AsyncStateMachineBox<TStateMachine>
+            AsyncProfilerAsyncStateMachineBox<TStateMachine>
             where TStateMachine : IAsyncStateMachine
         {
             ~DebugFinalizableAsyncStateMachineBox()
@@ -344,17 +476,37 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            internal sealed override void ExecuteFromThreadPool(Thread threadPoolThread) => MoveNext(threadPoolThread);
+            internal sealed override void ExecuteDirectly(Thread? threadPoolThread) => MoveNext(threadPoolThread);
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext() => MoveNext(threadPoolThread: null);
 
             private void MoveNext(Thread? threadPoolThread)
             {
+                AsyncInstrumentation.Flags flags = AsyncInstrumentation.Flags.Disabled;
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out flags))
+                {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        InstrumentedMoveNext(threadPoolThread, flags);
+                        return;
+                    }
+                }
+
+                MoveNext(threadPoolThread, flags);
+            }
+
+            private protected virtual void InstrumentedMoveNext(Thread? threadPoolThread, AsyncInstrumentation.Flags flags)
+            {
+                AsyncStateMachineDispatcherInfo.ResumeAsyncMethod(this, flags);
+                MoveNext(threadPoolThread, flags);
+            }
+
+            private protected void MoveNext(Thread? threadPoolThread, AsyncInstrumentation.Flags flags)
+            {
                 Debug.Assert(!IsCompleted);
 
-                bool loggingOn = TplEventSource.Log.IsEnabled();
-                if (loggingOn)
+                if (AsyncInstrumentation.IsEnabled.Tpl(flags))
                 {
                     TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
                 }
@@ -382,7 +534,7 @@ namespace System.Runtime.CompilerServices
                     ClearStateUponCompletion();
                 }
 
-                if (loggingOn)
+                if (AsyncInstrumentation.IsEnabled.Tpl(flags))
                 {
                     TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
                 }
@@ -396,10 +548,23 @@ namespace System.Runtime.CompilerServices
 
                 // This logic may be invoked multiple times on the same instance and needs to be robust against that.
 
-                // If async debugging is enabled, remove the task from tracking.
-                if (s_asyncDebuggingEnabled)
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
                 {
-                    RemoveFromActiveTasks(this);
+                    // If async debugging is enabled, remove the task from tracking.
+                    if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
+                    {
+                        RemoveFromActiveTasks(this);
+                    }
+
+#if !NATIVEAOT
+                    // In case this is a state machine box with a finalizer, suppress its finalization
+                    // as it's now complete. We only need the finalizer to run if the box is collected
+                    // without having been completed.
+                    if (AsyncInstrumentation.IsEnabled.Tpl(flags) && AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                    {
+                        GC.SuppressFinalize(this);
+                    }
+#endif
                 }
 
                 // Clear out state now that the async method has completed.
@@ -407,20 +572,26 @@ namespace System.Runtime.CompilerServices
                 // if this Task / state machine box is held onto.
                 StateMachine = default;
                 Context = default;
-
-#if !NATIVEAOT
-                // In case this is a state machine box with a finalizer, suppress its finalization
-                // as it's now complete.  We only need the finalizer to run if the box is collected
-                // without having been completed.
-                if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
-                {
-                    GC.SuppressFinalize(this);
-                }
-#endif
             }
 
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
             IAsyncStateMachine IAsyncStateMachineBox.GetStateMachineObject() => StateMachine!; // likely boxes, only use for debugging
+
+            bool IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
+            {
+                if (AsyncStateMachineDispatcherInfo.IsSupported)
+                {
+                    methodId = AsyncStateMachineDiagnostics<TStateMachine>.MethodId;
+                    state = AsyncStateMachineDiagnostics<TStateMachine>.GetState(ref StateMachine);
+                    nextContinuation = this.ContinuationForDiagnostics;
+                    return true;
+                }
+
+                methodId = 0;
+                state = -1;
+                nextContinuation = null;
+                return false;
+            }
         }
 
         /// <summary>Gets the <see cref="Task{TResult}"/> for this builder.</summary>
@@ -486,9 +657,17 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(task != null, "Expected non-null task");
 
-            if (TplEventSource.Log.IsEnabled())
+            if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
             {
-                TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                {
+                    AsyncStateMachineDispatcherInfo.CompleteAsyncMethod(task, flags);
+                }
+
+                if (AsyncInstrumentation.IsEnabled.Tpl(flags))
+                {
+                    TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
+                }
             }
 
             if (!task.TrySetResult(result))
@@ -515,6 +694,14 @@ namespace System.Runtime.CompilerServices
 
             // Get the task, forcing initialization if it hasn't already been initialized.
             Task<TResult> task = (taskField ??= new Task<TResult>());
+
+            if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
+            {
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                {
+                    AsyncStateMachineDispatcherInfo.UnwindAsyncFrame(task, flags);
+                }
+            }
 
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.
             bool successfullySet = exception is OperationCanceledException oce ?

@@ -296,7 +296,7 @@ LEAF_END GetThreadVarsAddress, _TEXT
 #ifndef TARGET_APPLE
 # EXTERN_C void* GetTlsIndexObjectDescOffset();
 
-#ifndef TARGET_ANDROID
+#ifndef FEATURE_EMULATED_TLS
 
 # <NOTE>
 # Helper to calculate the offset of native thread local variable `t_ThreadStatics`. The offset has to be found at runtime
@@ -320,7 +320,7 @@ LEAF_ENTRY GetTlsIndexObjectDescOffset, _TEXT
         call    EXTERNAL_C_FUNC(__tls_get_addr)                      # dummy call to have linker see the code pattern to replace the offset
         int 3
 LEAF_END GetTlsIndexObjectDescOffset, _TEXT
-#endif // !TARGET_ANDROID
+#endif // !FEATURE_EMULATED_TLS
 #endif // !TARGET_OSX
 
 LEAF_ENTRY  JIT_PollGC, _TEXT
@@ -1995,6 +1995,46 @@ END_PROLOGUE
         pop rbp
         ret
 NESTED_END CallJittedMethodRetDoubleDouble, _TEXT
+
+//==========================================================================
+// Create a real TransitionBlock and call CallInterpreterFuncletWorker
+// to execute an interpreter funclet (catch/finally/filter handler).
+//
+// extern "C" DWORD_PTR CallInterpreterFunclet(
+//     OBJECTREF throwable,        // rdi
+//     void* pHandler,             // rsi
+//     REGDISPLAY *pRD,            // rdx
+//     ExInfo *pExInfo,            // rcx
+//     bool isFilter               // r8
+// );
+//==========================================================================
+NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        // Pass TransitionBlock* as last (6th) argument
+        // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+        // Original args: rdi=throwable, rsi=pHandler, rdx=pRD, rcx=pExInfo, r8=isFilter
+
+        lea     r9, [rsp + __PWTB_TransitionBlock]         // TransitionBlock* as 6th param (r9)
+
+        // rdi, rsi, rdx, rcx, r8 remain unchanged (throwable, pHandler, pRD, pExInfo, isFilter)
+
+        call    C_FUNC(CallInterpreterFuncletWorker)
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END CallInterpreterFunclet, _TEXT
+
+NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea rdx, [rsp + __PWTB_TransitionBlock]
+        call C_FUNC(AsyncHelpers_ResumeInterpreterContinuationWorker)
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END AsyncHelpers_ResumeInterpreterContinuation, _TEXT
 
 #endif // FEATURE_INTERPRETER
 

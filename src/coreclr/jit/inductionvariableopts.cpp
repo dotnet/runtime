@@ -433,8 +433,8 @@ void PerLoopInfo::Invalidate(FlowGraphNaturalLoop* loop)
 //   sense that all their predecessors must come from inside the loop. Loop
 //   exit canonicalization guarantees this for regular exit blocks. It is not
 //   guaranteed for exceptional exits, but we do not expect to widen IVs that
-//   are live into exceptional exits since those are marked DNER which makes it
-//   unprofitable anyway.
+//   are live into exceptional exits since those are not register candidates
+//   (see optWidenPrimaryIV) which makes it unprofitable anyway.
 //
 //   Note that there may be natural loops that have not had their regular exits
 //   canonicalized at the time when IV opts run, in particular if RBO/assertion
@@ -470,10 +470,9 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 
 #ifdef DEBUG
     // We currently do not expect to ever widen IVs that are live into
-    // exceptional exits. Such IVs are expected to have been marked DNER
-    // previously (EH write-thru is only for single def locals) which makes it
-    // unprofitable. If this ever changes we need some more expansive handling
-    // here.
+    // exceptional exits. Such IVs are not currently register candidates (EH
+    // write-thru is only for single def locals) which makes it unprofitable.
+    // If this ever changes we need some more expansive handling here.
     loop->VisitLoopBlocks([=](BasicBlock* block) {
         block->VisitAllSuccs(this, [=](BasicBlock* succ) {
             if (!loop->ContainsBlock(succ) && bbIsHandlerBeg(succ))
@@ -895,12 +894,11 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
         return false;
     }
 
-    // If the IV is not enregisterable then uses/defs are going to go
-    // to stack regardless. This check also filters out IVs that may be
-    // live into exceptional exits since those are always marked DNER.
-    if (lclDsc->lvDoNotEnregister)
+    // If the IV is not enregisterable, or if it lives into a handler, then
+    // uses/defs are going to go to stack regardless.
+    if (lclDsc->lvDoNotEnregister || lclDsc->IsLiveInOutOfHandler())
     {
-        JITDUMP("  V%02u is marked DNER\n", lclNum);
+        JITDUMP("  V%02u is marked DNER or lives into a handler\n", lclNum);
         return false;
     }
 
@@ -923,7 +921,11 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
 
     BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
     BasicBlock* initBlock = preheader;
-    if ((startSsaDsc->GetBlock() != nullptr) && (startSsaDsc->GetDefNode() != nullptr))
+    // Prefer to initialize the widened IV in the same block as the reaching def
+    // of the narrow IV, but only if the reaching def is not a phi. RBO's jump threading
+    // can leave stale SSA with the once-containing block being unreachable.
+    if ((startSsaDsc->GetBlock() != nullptr) && (startSsaDsc->GetDefNode() != nullptr) &&
+        !startSsaDsc->GetDefNode()->IsPhiDefn())
     {
         initBlock = startSsaDsc->GetBlock();
     }
@@ -1330,15 +1332,18 @@ bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loo
         return true;
     }
 
-    if (varDsc->lvDoNotEnregister)
-    {
-        // This filters out locals that may be live into exceptional exits.
-        return true;
-    }
-
     if (!varDsc->lvTracked && !varDsc->lvInSsa)
     {
         // We do not have liveness we can use for this untracked local.
+        return true;
+    }
+
+    if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler())
+    {
+        // The local is live into an EH handler (an exceptional exit). The
+        // regular exit blocks visited below do not include handlers, and we
+        // use this as a cheap alternative to checking all EH successors
+        // of all blocks in the loop.
         return true;
     }
 
@@ -1359,6 +1364,25 @@ bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loo
         // (and whether it doesn't extend their lifetimes too much).
         return true;
     }
+
+#ifdef DEBUG
+    // We currently do not expect to optimize locals that are live into exceptional
+    // exits. Such IVs are not currently register candidates (EH write-thru is
+    // only for single def locals) which makes it unprofitable. If this ever
+    // changes we need some more expansive handling here.
+    loop->VisitLoopBlocks([=](BasicBlock* block) {
+        block->VisitAllSuccs(this, [=](BasicBlock* succ) {
+            if (!loop->ContainsBlock(succ) && bbIsHandlerBeg(succ))
+            {
+                assert(!optLocalIsLiveIntoBlock(lclNum, succ) && "Candidate local is live into exceptional exit");
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+
+        return BasicBlockVisit::Continue;
+    });
+#endif
 
     return false;
 }
@@ -2310,10 +2334,9 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     // Now use the fact that we keep ARR_ADDRs in the IR when we have
     // array/string accesses.
     GenTreeArrAddr* arrAddr = nullptr;
-    for (int i = 0; i < cursors->Height(); i++)
+    for (CursorInfo& cursor : cursors->BottomUpOrder())
     {
-        CursorInfo& cursor = cursors->BottomRef(i);
-        GenTree*    cur    = cursor.Tree;
+        GenTree* cur = cursor.Tree;
         while ((cur != nullptr) && !cur->OperIs(GT_ARR_ADDR))
         {
             cur = cur->gtGetParent(nullptr);
@@ -2361,9 +2384,8 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     // than the array/string's length.
     ValueNum arrLengthVN = m_compiler->vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, addRecStartBase.GetLiberal());
 
-    for (int i = 0; i < m_backEdgeBounds.Height(); i++)
+    for (Scev* const bound : m_backEdgeBounds.BottomUpOrder())
     {
-        Scev* bound = m_backEdgeBounds.Bottom(i);
         if (!bound->TypeIs(TYP_INT))
         {
             // Currently cannot handle bounds that aren't 32 bit.
@@ -2483,11 +2505,10 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
     DISPSTMT(stepStmt);
 
     // Replace uses.
-    for (int i = 0; i < cursors->Height(); i++)
+    for (CursorInfo& cursor : cursors->BottomUpOrder())
     {
-        CursorInfo& cursor = cursors->BottomRef(i);
-        GenTree*    newUse = m_compiler->gtNewLclVarNode(newPrimaryIV, iv->Type);
-        newUse             = RephraseIV(cursor.IV, iv, newUse);
+        GenTree* newUse = m_compiler->gtNewLclVarNode(newPrimaryIV, iv->Type);
+        newUse          = RephraseIV(cursor.IV, iv, newUse);
 
         JITDUMP("    Replacing use [%06u] with [%06u]. Before:\n", Compiler::dspTreeID(cursor.Tree),
                 Compiler::dspTreeID(newUse));
@@ -2525,10 +2546,9 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
     if (m_intermediateIVStores.Height() > 0)
     {
         JITDUMP("    Deleting stores of intermediate IVs\n");
-        for (int i = 0; i < m_intermediateIVStores.Height(); i++)
+        for (CursorInfo& cursor : m_intermediateIVStores.BottomUpOrder())
         {
-            CursorInfo&          cursor = m_intermediateIVStores.BottomRef(i);
-            GenTreeLclVarCommon* store  = cursor.Tree->AsLclVarCommon();
+            GenTreeLclVarCommon* store = cursor.Tree->AsLclVarCommon();
             JITDUMP("      Replacing [%06u] with a zero constant\n", Compiler::dspTreeID(store->Data()));
             // We cannot remove these stores entirely as that will break
             // downstream phases looking for SSA defs.. instead just replace
@@ -2635,9 +2655,8 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
 {
     BitVecTraits poTraits = m_loop->GetDfsTree()->PostOrderTraits();
     BitVec       blocksWithUses(BitVecOps::MakeEmpty(&poTraits));
-    for (int i = 0; i < cursors->Height(); i++)
+    for (CursorInfo& cursor : cursors->BottomUpOrder())
     {
-        CursorInfo& cursor = cursors->BottomRef(i);
         BitVecOps::AddElemD(&poTraits, blocksWithUses, cursor.Block->bbPostorderNum);
     }
 
@@ -2655,9 +2674,8 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
         }
 
         Statement* latestStmt = nullptr;
-        for (int i = 0; i < cursors->Height(); i++)
+        for (CursorInfo& cursor : cursors->BottomUpOrder())
         {
-            CursorInfo& cursor = cursors->BottomRef(i);
             if (cursor.Block != backEdgeDominator)
             {
                 continue;
@@ -2705,10 +2723,8 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
 bool StrengthReductionContext::InsertionPointPostDominatesUses(BasicBlock*             insertionPoint,
                                                                ArrayStack<CursorInfo>* cursors)
 {
-    for (int i = 0; i < cursors->Height(); i++)
+    for (CursorInfo& cursor : cursors->BottomUpOrder())
     {
-        CursorInfo& cursor = cursors->BottomRef(i);
-
         if (insertionPoint == cursor.Block)
         {
             if (insertionPoint->HasTerminator() && (cursor.Stmt == insertionPoint->lastStmt()))

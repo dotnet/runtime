@@ -164,7 +164,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 static Stream CreateStream(int count)
                 {
-                    byte[] objBytes = @"{""Test"":{},""Test2"":[],""Test3"":{""Value"":{}},""PersonType"":0,""Id"":2}"u8.ToArray();
+                    byte[] objBytes = """{"Test":{},"Test2":[],"Test3":{"Value":{}},"PersonType":0,"Id":2}"""u8.ToArray();
 
                     byte[] utf8Bom = Encoding.UTF8.GetPreamble();
 
@@ -326,6 +326,9 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [OuterLoop]
+        // Streams 5 GiB of JSON; the single-threaded wasm interpreter takes roughly an hour per
+        // case, so the suite exceeds the test timeout on CoreCLR browser. Still covered on Mono and other platforms.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [InlineData(typeof(ClassDeserializedFromLargeJson))]
         [InlineData(typeof(StructDeserializedFromLargeJson))]
         [InlineData(typeof(ClassWithSmallConstructorDeserializedFromLargeJson))]

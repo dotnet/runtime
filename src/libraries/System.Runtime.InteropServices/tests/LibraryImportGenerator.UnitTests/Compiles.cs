@@ -500,8 +500,9 @@ namespace LibraryImportGenerator.UnitTests
         public static IEnumerable<object[]> CodeSnippetsToValidateFallbackForwarder()
         {
             // Confirm that all unsupported target frameworks can be generated.
+            // LibraryImportAttribute and StringMarshalling are injected by the generator via RegisterPostInitializationOutput.
             {
-                string code = CodeSnippets.BasicParametersAndModifiers<byte>(CodeSnippets.LibraryImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiers<byte>();
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, false };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, false };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, false };
@@ -509,7 +510,7 @@ namespace LibraryImportGenerator.UnitTests
 
             // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
-                string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.LibraryImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiers<byte[]>();
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
@@ -517,7 +518,7 @@ namespace LibraryImportGenerator.UnitTests
 
             // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
-                string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.LibraryImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16);
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
@@ -525,25 +526,25 @@ namespace LibraryImportGenerator.UnitTests
 
             // Confirm that if support is missing for a type with an ITypeBasedMarshallingInfoProvider (like arrays and SafeHandles), we fall back to a forwarder even if other types are supported.
             {
-                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "System.Runtime.InteropServices.SafeHandle", CodeSnippets.LibraryImportAttributeDeclaration);
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "System.Runtime.InteropServices.SafeHandle");
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
             }
             {
-                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("System.Runtime.InteropServices.SafeHandle", "int", CodeSnippets.LibraryImportAttributeDeclaration);
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("System.Runtime.InteropServices.SafeHandle", "int");
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
             }
             {
-                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "int[]");
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
             }
             {
-                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("int", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("int", "int[]");
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
@@ -551,13 +552,13 @@ namespace LibraryImportGenerator.UnitTests
 
             // Confirm that if support is missing for a type without an ITypeBasedMarshallingInfoProvider (like StringBuilder), we fall back to a forwarder even if other types are supported.
             {
-                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "System.Text.StringBuilder", CodeSnippets.LibraryImportAttributeDeclaration);
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "System.Text.StringBuilder");
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
             }
             {
-                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("int", "System.Text.StringBuilder", CodeSnippets.LibraryImportAttributeDeclaration);
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("int", "System.Text.StringBuilder");
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
@@ -685,6 +686,67 @@ namespace LibraryImportGenerator.UnitTests
             }
         }
 
+        [Theory]
+        [InlineData("StringMarshalling.Utf16")]
+        [InlineData("StringMarshalling.Utf8")]
+        public async Task ForwardedTypesWithStringMarshalling_InnerDllImportHasCharSet(string stringMarshalling)
+        {
+            bool expectCharSetUnicode = stringMarshalling == "StringMarshalling.Utf16";
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", StringMarshalling = {{stringMarshalling}})]
+                    public static partial string Method(string s, int i);
+                }
+                """;
+
+            var test = new InnerDllImportCharSetTest(expectCharSetUnicode)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+
+            await test.RunAsync();
+        }
+
+        class InnerDllImportCharSetTest : VerifyCS.Test
+        {
+            private readonly bool _expectCharSetUnicode;
+
+            public InnerDllImportCharSetTest(bool expectCharSetUnicode)
+                : base(referenceAncillaryInterop: false)
+            {
+                _expectCharSetUnicode = expectCharSetUnicode;
+            }
+
+            protected override void VerifyFinalCompilation(Compilation compilation)
+            {
+                SyntaxTree generatedCode = compilation.SyntaxTrees.Last();
+                var localFunctions = generatedCode.GetRoot()
+                    .DescendantNodes().OfType<LocalFunctionStatementSyntax>()
+                    .ToList();
+
+                LocalFunctionStatementSyntax innerDllImport = Assert.Single(localFunctions);
+                AttributeSyntax dllImportAttr = innerDllImport.AttributeLists
+                    .SelectMany(al => al.Attributes)
+                    .Single(a => a.Name.ToString().EndsWith("DllImportAttribute") || a.Name.ToString() == "DllImport");
+
+                AttributeArgumentSyntax? charSetArgument = dllImportAttr.ArgumentList!.Arguments
+                    .SingleOrDefault(a => a.NameEquals?.Name.Identifier.Text == nameof(DllImportAttribute.CharSet));
+
+                if (_expectCharSetUnicode)
+                {
+                    Assert.NotNull(charSetArgument);
+                    Assert.EndsWith($"{nameof(CharSet)}.{nameof(CharSet.Unicode)}", charSetArgument.Expression.ToString());
+                }
+                else
+                {
+                    Assert.Null(charSetArgument);
+                }
+            }
+        }
+
         public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()
         {
             yield break;
@@ -761,20 +823,45 @@ namespace LibraryImportGenerator.UnitTests
         [InlineData(TestTargetFramework.Standard2_0)]
         [InlineData(TestTargetFramework.Framework)]
         [Theory]
-        public async Task ValidateNoGeneratedOutputForNoImportDownlevel(TestTargetFramework framework)
+        public async Task ValidateNoStubOutputForNoImportDownlevel(TestTargetFramework framework)
         {
+            // The DownlevelLibraryImportGenerator always injects type definitions for LibraryImportAttribute
+            // and StringMarshalling via RegisterPostInitializationOutput. When there are no [LibraryImport]
+            // usages, no method stubs should be generated beyond those type definitions.
             string source = """
                 using System.Runtime.InteropServices;
                 public class Basic { }
                 """;
 
-            var test = new NoChangeTest<Microsoft.Interop.DownlevelLibraryImportGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>(framework)
+            var test = new OnlyTypeDefinitionsOutputTest(framework)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
 
             await test.RunAsync();
+        }
+
+        class OnlyTypeDefinitionsOutputTest : Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.DownlevelLibraryImportGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>.Test
+        {
+            public OnlyTypeDefinitionsOutputTest(TestTargetFramework framework)
+                : base(framework)
+            {
+            }
+
+            protected override async Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
+            {
+                var originalCompilation = await project.GetCompilationAsync(cancellationToken);
+                var (newCompilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);
+                // The DownlevelLibraryImportGenerator should inject type definitions (for example, via
+                // RegisterPostInitializationOutput) but, when there are no [LibraryImport] usages, it
+                // must not emit any stub output such as the generated "LibraryImports" stub tree.
+                var originalTrees = originalCompilation!.SyntaxTrees.ToImmutableArray();
+                var newTrees = newCompilation.SyntaxTrees.ToImmutableArray();
+                var addedTrees = newTrees.Except(originalTrees).ToImmutableArray();
+                Assert.DoesNotContain(addedTrees, tree => tree.FilePath.Contains("LibraryImports", StringComparison.Ordinal));
+                return (newCompilation, diagnostics);
+            }
         }
 
         class NoChangeTest<TSourceGenerator, TAnalyzer> : Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<TSourceGenerator, TAnalyzer>.Test

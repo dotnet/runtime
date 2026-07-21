@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
         MethodDictionary,
         TypeDictionary,
         MethodEntry,
-        VirtualDispatchCell,
+        DispatchCell,
         DefaultConstructor,
         TypeHandleForCasting,
         ObjectAllocator,

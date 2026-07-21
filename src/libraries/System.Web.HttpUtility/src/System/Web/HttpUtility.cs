@@ -193,7 +193,7 @@ namespace System.Web
         public static byte[]? UrlDecodeToBytes(string? str) => UrlDecodeToBytes(str, Encoding.UTF8);
 
         [return: NotNullIfNotNull(nameof(str))]
-        public static byte[]? UrlDecodeToBytes(string? str, Encoding e)
+        public static unsafe byte[]? UrlDecodeToBytes(string? str, Encoding e)
         {
             const int StackallocThreshold = 512;
             if (str == null)
