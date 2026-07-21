@@ -902,7 +902,12 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
             break;
 
         case CodeGenInterface::VLT_REG_FP:
+#ifdef TARGET_AMD64
+            printf("%s", getRegName(static_cast<regNumber>(REG_FP_FIRST + var->loc.vlReg.vlrReg -
+                                                           ICorDebugInfo::REGNUM_FP_FIRST)));
+#else
             printf("%s", getRegName((regNumber)(var->loc.vlReg.vlrReg + REG_FP_FIRST)));
+#endif
             break;
 
         case CodeGenInterface::VLT_STK:
@@ -915,15 +920,32 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
             {
                 printf(STR_SPBASE "'[%d] (1 slot)", var->loc.vlStk.vlsOffset);
             }
-            if (var->loc.vlType == (ICorDebugInfo::VarLocType)CodeGenInterface::VLT_REG_BYREF)
+            if (var->loc.vlType == (ICorDebugInfo::VarLocType)CodeGenInterface::VLT_STK_BYREF)
             {
                 printf(" byref");
             }
             break;
 
         case CodeGenInterface::VLT_REG_REG:
+        {
+#ifdef TARGET_AMD64
+            auto toJitRegNum = [](ICorDebugInfo::RegNum reg) -> regNumber {
+                unsigned val     = static_cast<unsigned>(reg);
+                unsigned fpFirst = static_cast<unsigned>(ICorDebugInfo::REGNUM_FP_FIRST);
+                if (val >= fpFirst)
+                {
+                    return static_cast<regNumber>(REG_FP_FIRST + val - fpFirst);
+                }
+                return static_cast<regNumber>(reg);
+            };
+
+            printf("%s-%s", getRegName(toJitRegNum(var->loc.vlRegReg.vlrrReg1)),
+                   getRegName(toJitRegNum(var->loc.vlRegReg.vlrrReg2)));
+#else
             printf("%s-%s", getRegName(var->loc.vlRegReg.vlrrReg1), getRegName(var->loc.vlRegReg.vlrrReg2));
+#endif
             break;
+        }
 
 #ifndef TARGET_AMD64
         case CodeGenInterface::VLT_REG_STK:
@@ -1396,6 +1418,30 @@ CorInfoReloc Compiler::eeGetRelocTypeHint(void* target)
     {
         // No hints
         return CorInfoReloc::NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// eeGetAddressAlignment: Get the guaranteed alignment, in bytes, of the data referenced by
+//   'address' (a relocation target such as a static, RVA, or frozen-data blob).
+//
+// Arguments:
+//   address - the relocation target to query
+//
+// Return Value:
+//   The guaranteed alignment in bytes, or 1 when it cannot be determined (e.g. when the JIT's
+//   target does not match the VM). The JIT uses this to gate alignment-sensitive relocations.
+//
+uint32_t Compiler::eeGetAddressAlignment(void* address)
+{
+    if (info.compMatchedVM)
+    {
+        return info.compCompHnd->getAddressAlignment(address);
+    }
+    else
+    {
+        // The VM does not match the JIT target, so we cannot assume any alignment.
+        return 1;
     }
 }
 

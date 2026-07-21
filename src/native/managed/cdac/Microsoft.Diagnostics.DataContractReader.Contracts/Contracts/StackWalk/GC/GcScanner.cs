@@ -337,27 +337,6 @@ internal class GcScanner
     /// </summary>
     private void PromoteCallerStack(TargetPointer frameAddress, GcScanContext scanContext)
     {
-        IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
-        RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
-        RuntimeInfoOperatingSystem os = runtimeInfo.GetTargetOperatingSystem();
-        // Matches the ARGITER stress-test gate in CdacStressTests.cs. Platforms
-        // still missing calling-convention coverage (SystemV-AMD64 / RISC-V /
-        // LoongArch / WASM) fall through to RecordDeferredFrame.
-        // TODO(https://github.com/dotnet/runtime/issues/130008): extend
-        // ICallingConvention.TryComputeArgGCRefMapBlob coverage to the
-        // remaining targets so this path fires everywhere.
-        bool supportedByCallingConvention =
-            (os is RuntimeInfoOperatingSystem.Windows
-                && arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64 or RuntimeInfoArchitecture.Arm64)
-            || (os is RuntimeInfoOperatingSystem.Unix
-                && arch is RuntimeInfoArchitecture.Arm or RuntimeInfoArchitecture.Arm64);
-
-        if (!supportedByCallingConvention)
-        {
-            scanContext.RecordDeferredFrame(frameAddress);
-            return;
-        }
-
         Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
         if (fmf.MethodDescPtr == TargetPointer.Null)
         {

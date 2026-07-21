@@ -4384,6 +4384,11 @@ struct GenTreeConditional : public GenTreeOp
         assert(cond != nullptr);
     }
 
+    static bool Equals(GenTreeConditional* op1, GenTreeConditional* op2)
+    {
+        return Compare(op1->gtCond, op2->gtCond) && Compare(op1->gtOp1, op2->gtOp1) && Compare(op1->gtOp2, op2->gtOp2);
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeConditional()
         : GenTreeOp()
@@ -4532,6 +4537,11 @@ struct AsyncCallInfo
     // configured and whether it is a task await or custom await. This field
     // records that behavior.
     ::ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+
+    // Is this 'await valueTask.AsTask()'? These come with special semantics as
+    // they no longer transparently forward continuation context handling to an
+    // underlying IValueTaskSource, if present.
+    bool IsValueTaskAsTask = false;
 
     // Tail awaits do not generate suspension points and the JIT instead
     // directly returns the callee's continuation to the caller.
@@ -4793,29 +4803,8 @@ class CallArgs;
 enum class WellKnownArg : unsigned
 {
     None,
-    ThisPointer,
-    VarArgsCookie,
-    InstParam,
-    AsyncContinuation,
-    RetBuffer,
-    PInvokeFrame,
-    ShiftLow,
-    ShiftHigh,
-    VirtualStubCell,
-    PInvokeCookie,
-    PInvokeTarget,
-    R2RIndirectionCell,
-    ValidateIndirectCallTarget,
-    DispatchIndirectCallTarget,
-    SwiftError,
-    SwiftSelf,
-    X86TailCallSpecialArg,
-    StackArrayLocal,
-    RuntimeMethodHandle,
-    AsyncExecutionContext,
-    AsyncSynchronizationContext,
-    WasmShadowStackPointer,
-    WasmPortableEntryPoint
+#define WELL_KNOWN_ARG(name, shortName, isILArg, addedByMorph) name,
+#include "wellknownargs.h"
 };
 
 #ifdef DEBUG
@@ -6386,6 +6375,23 @@ public:
         return m_operands + startIndex;
     }
 
+    // Re-point "m_operands" into this node after its raw bytes were copied from
+    // "src" (e.g. by GenTree::ReplaceWith). When a MultiOp stores its operands
+    // inline, "m_operands" points into the node's own storage, so a byte copy
+    // leaves it aliasing "src". A heap operand array lives outside "src" and is
+    // left untouched.
+    void RelocateInlineOperandsFrom(GenTree* src)
+    {
+        char* srcBegin = reinterpret_cast<char*>(src);
+        char* srcEnd   = srcBegin + src->GetNodeSize();
+        char* operands = reinterpret_cast<char*>(m_operands);
+
+        if ((operands >= srcBegin) && (operands < srcEnd))
+        {
+            m_operands = reinterpret_cast<GenTree**>(reinterpret_cast<char*>(this) + (operands - srcBegin));
+        }
+    }
+
 protected:
     // Reconfigures the operand array, leaving it in a "dirty" state.
     void ResetOperandArray(size_t    newOperandCount,
@@ -6793,6 +6799,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     ClassLayout* GetLayout(Compiler* compiler) const;
 
     NamedIntrinsic GetHWIntrinsicId() const;
+
+#ifdef TARGET_WASM
+    GenTree* GetImmOp() const;
+#endif // TARGET_WASM
 
     //---------------------------------------------------------------------------------------
     // ChangeHWIntrinsicId: Change the intrinsic id for this node.

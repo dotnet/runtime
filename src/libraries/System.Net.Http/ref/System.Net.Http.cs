@@ -6,6 +6,18 @@
 
 namespace System.Net.Http
 {
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
+    public sealed partial class BrotliCompressedContent : System.Net.Http.HttpContent
+    {
+        public BrotliCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.BrotliCompressionOptions compressionOptions) { }
+        public BrotliCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.CompressionLevel compressionLevel = System.IO.Compression.CompressionLevel.Optimal) { }
+        protected override void Dispose(bool disposing) { }
+        protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected internal override bool TryComputeLength(out long length) { throw null; }
+    }
     public partial class ByteArrayContent : System.Net.Http.HttpContent
     {
         public ByteArrayContent(byte[] content) { }
@@ -41,6 +53,16 @@ namespace System.Net.Http
                 #nullable restore
             >> nameValueCollection) : base (default(byte[])) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
+    }
+    public sealed partial class GZipCompressedContent : System.Net.Http.HttpContent
+    {
+        public GZipCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.CompressionLevel compressionLevel = System.IO.Compression.CompressionLevel.Optimal) { }
+        public GZipCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.ZLibCompressionOptions compressionOptions) { }
+        protected override void Dispose(bool disposing) { }
+        protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected internal override bool TryComputeLength(out long length) { throw null; }
     }
     public delegate System.Text.Encoding? HeaderEncodingSelector<TContext>(string headerName, TContext context);
     public partial class HttpClient : System.Net.Http.HttpMessageInvoker
@@ -167,10 +189,6 @@ namespace System.Net.Http
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool UseProxy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
-        //
-        // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
-        // API compat will fail until this is fixed
-        //
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
@@ -500,6 +518,18 @@ namespace System.Net.Http
         public StringContent(string content, System.Text.Encoding? encoding, System.Net.Http.Headers.MediaTypeHeaderValue? mediaType) : base (default(byte[])) { }
         public StringContent(string content, System.Text.Encoding? encoding, string? mediaType) : base (default(byte[])) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
+    }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
+    public sealed partial class ZstandardCompressedContent : System.Net.Http.HttpContent
+    {
+        public ZstandardCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.CompressionLevel compressionLevel = System.IO.Compression.CompressionLevel.Optimal) { }
+        public ZstandardCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.ZstandardCompressionOptions compressionOptions) { }
+        protected override void Dispose(bool disposing) { }
+        protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected internal override bool TryComputeLength(out long length) { throw null; }
     }
 }
 namespace System.Net.Http.Headers
