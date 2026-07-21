@@ -215,7 +215,7 @@ instructionset     ,ARM64 ,Aes                   ,           ,9  ,Aes           
 instructionset     ,ARM64 ,Crc32                 ,           ,18 ,Crc32                 ,crc
 instructionset     ,ARM64 ,Dp                    ,           ,23 ,Dp                    ,dotprod
 instructionset     ,ARM64 ,Rdm                   ,           ,24 ,Rdm                   ,rdma
-instructionset     ,ARM64 ,                      ,Fp16       ,94 ,Fp16                  ,fp16
+instructionset     ,ARM64 ,                      ,Fp16       ,95 ,Fp16                  ,fp16
 instructionset     ,ARM64 ,Sha1                  ,           ,19 ,Sha1                  ,sha1
 instructionset     ,ARM64 ,Sha256                ,           ,20 ,Sha256                ,sha2
 instructionset     ,ARM64 ,                      ,Atomics    ,21 ,Atomics               ,lse
@@ -286,10 +286,12 @@ instructionset     ,RiscV64 , ,RiscV64Base       ,56 ,RiscV64Base         ,base
 instructionset     ,RiscV64 , ,Zba               ,57 ,Zba                 ,zba
 instructionset     ,RiscV64 , ,Zbb               ,58 ,Zbb                 ,zbb
 instructionset     ,RiscV64 , ,Zbs               ,84 ,Zbs                 ,zbs
+instructionset     ,RiscV64 , ,Zicond            ,94 ,Zicond              ,zicond
 
 implication        ,RiscV64 ,Zbb                 ,RiscV64Base
 implication        ,RiscV64 ,Zba                 ,RiscV64Base
 implication        ,RiscV64 ,Zbs                 ,RiscV64Base
+implication        ,RiscV64 ,Zicond              ,RiscV64Base
 
 ;                    ,name and aliases           ,archs    ,lower baselines included by implication
 instructionsetgroup  ,x86-64-v2                  ,X64 X86  ,base

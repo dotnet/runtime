@@ -1,18 +1,28 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
+    /// <summary>
+    /// Represents a decimal floating-point number that uses the IEEE 754 <c>decimal128</c> interchange format, providing 34 decimal digits of precision.
+    /// </summary>
+    /// <remarks>The IEEE 754 standard defines two interchange encodings for decimal floating-point: binary integer decimal (BID) and densely packed decimal (DPD). Which encoding is used is determined by the underlying ABI for the platform and defaults to BID where the ABI does not otherwise specify.</remarks>
     public readonly struct Decimal128
         : IComparable,
           IComparable<Decimal128>,
           IEquatable<Decimal128>,
+          IDecimalFloatingPointIeee754<Decimal128>,
+          ISpanFormattable,
           ISpanParsable<Decimal128>,
           IMinMaxValue<Decimal128>,
+          IUtf8SpanFormattable,
+          IUtf8SpanParsable<Decimal128>,
           IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>
     {
 #if BIGENDIAN
@@ -28,7 +38,7 @@ namespace System.Numerics
         private const int Precision = 34;
         private const int ExponentBias = 6176;
         private static UInt128 PositiveInfinityValue => new UInt128(upper: 0x7800_0000_0000_0000, lower: 0);
-        private static UInt128 NegativeInfinityValue => new UInt128(upper: 0xf800_0000_0000_0000, lower: 0);
+        private static UInt128 NegativeInfinityValue => new UInt128(upper: 0xF800_0000_0000_0000, lower: 0);
         // Canonical ±0 use the IEEE 754 preferred representation for integer values,
         // which stores zero with the biased exponent rather than the minimum exponent.
         private static UInt128 ZeroValue => new UInt128(0x3040_0000_0000_0000, 0);
@@ -44,16 +54,31 @@ namespace System.Numerics
 
         private const ulong SignMaskUpper = 0x8000_0000_0000_0000;
         private const ulong NaNMaskUpper = 0x7C00_0000_0000_0000;
+        private const ulong SNaNMaskUpper = 0x7E00_0000_0000_0000;
         private const ulong InfinityMaskUpper = 0x7800_0000_0000_0000;
 
+        /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         public static Decimal128 PositiveInfinity => new Decimal128(PositiveInfinityValue);
+
+        /// <summary>Gets a value that represents negative <c>infinity</c>.</summary>
         public static Decimal128 NegativeInfinity => new Decimal128(NegativeInfinityValue);
+
+        /// <summary>Gets a value that represents <c>NaN</c>.</summary>
         public static Decimal128 NaN => new Decimal128(QuietNaNValue);
+
+        /// <summary>Gets a value that represents negative <c>zero</c>.</summary>
         public static Decimal128 NegativeZero => new Decimal128(NegativeZeroValue);
+
+        /// <summary>Gets the value <c>0</c> for the type.</summary>
         public static Decimal128 Zero => new Decimal128(ZeroValue);
+
+        /// <summary>Gets the minimum value of the current type.</summary>
         public static Decimal128 MinValue => new Decimal128(upper: 0xDFFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
+
+        /// <summary>Gets the maximum value of the current type.</summary>
         public static Decimal128 MaxValue => new Decimal128(upper: 0x5FFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
 
+        /// <summary>Gets the smallest value such that can be added to <c>0</c> that does not result in <c>0</c>.</summary>
         public static Decimal128 Epsilon => new Decimal128(upper: 0x0000_0000_0000_0000, lower: 0x0000_0000_0000_0001); // Smallest positive subnormal value, aka 1 * 10^-6176
 
         internal Decimal128(UInt128 value)
@@ -221,6 +246,30 @@ namespace System.Numerics
             return Number.GetDecimalIeee754HashCode<Decimal128, UInt128>(new UInt128(_upper, _lower));
         }
 
+        /// <summary>Encodes a value as its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The BID bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static UInt128 EncodeBinary(Decimal128 x) => new UInt128(x._upper, x._lower);
+
+        /// <summary>Decodes a value from its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The BID bit pattern to decode.</param>
+        /// <returns>The value represented by the BID bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal128 DecodeBinary(UInt128 x) => new Decimal128(x);
+
+        /// <summary>Encodes a value as its IEEE 754 densely packed decimal (DPD) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The DPD bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static UInt128 EncodeDecimal(Decimal128 x) => Number.EncodeDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower));
+
+        /// <summary>Decodes a value from its IEEE 754 densely packed decimal (DPD) representation.</summary>
+        /// <param name="x">The DPD bit pattern to decode.</param>
+        /// <returns>The value represented by the DPD bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal128 DecodeDecimal(UInt128 x) => new Decimal128(Number.DecodeDecimalIeee754<Decimal128, UInt128>(x));
+
         /// <summary>
         /// Returns a string representation of the current value.
         /// </summary>
@@ -251,6 +300,18 @@ namespace System.Numerics
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower), format, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="ISpanFormattable.TryFormat(Span{char}, out int, ReadOnlySpan{char}, IFormatProvider?)" />
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        {
+            return Number.TryFormatDecimalIeee754<Decimal128, UInt128, char>(new UInt128(_upper, _lower), format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+        }
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat(Span{byte}, out int, ReadOnlySpan{char}, IFormatProvider?)" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        {
+            return Number.TryFormatDecimalIeee754<Decimal128, UInt128, byte>(new UInt128(_upper, _lower), format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
 
         /// <summary>Computes the unary plus of a value.</summary>
@@ -320,6 +381,295 @@ namespace System.Numerics
             UInt128 result = Number.DivideDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
             return new Decimal128(result);
         }
+
+        /// <summary>Divides two values together to compute their remainder.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <returns>The remainder of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        public static Decimal128 operator %(Decimal128 left, Decimal128 right)
+        {
+            UInt128 result = Number.RemainderDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+            return new Decimal128(result);
+        }
+
+        //
+        // Explicit conversions to Decimal128
+        //
+
+        /// <summary>Explicitly converts a <see cref="System.Int128" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        public static explicit operator Decimal128(Int128 value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, Int128>(value));
+
+        /// <summary>Explicitly converts a <see cref="System.UInt128" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator Decimal128(UInt128 value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, UInt128>(value));
+
+        /// <summary>Explicitly converts a <see cref="System.Half" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        public static explicit operator Decimal128(Half value) => new Decimal128(Number.ConvertFloatToDecimalIeee754<Half, Decimal128, UInt128>(value));
+
+        /// <summary>Explicitly converts a <see cref="float" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        public static explicit operator Decimal128(float value) => new Decimal128(Number.ConvertFloatToDecimalIeee754<float, Decimal128, UInt128>(value));
+
+        /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        public static explicit operator Decimal128(double value) => new Decimal128(Number.ConvertFloatToDecimalIeee754<double, Decimal128, UInt128>(value));
+
+        //
+        // Explicit conversions from Decimal128
+        //
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="byte" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="byte" /> value.</returns>
+        public static explicit operator byte(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, byte>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="byte" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="byte" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="byte" />.</exception>
+        public static explicit operator checked byte(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, byte>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="sbyte" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="sbyte" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator sbyte(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, sbyte>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="sbyte" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="sbyte" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="sbyte" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked sbyte(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, sbyte>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="char" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="char" /> value.</returns>
+        public static explicit operator char(Decimal128 value) => (char)Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, ushort>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="char" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="char" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="char" />.</exception>
+        public static explicit operator checked char(Decimal128 value) => (char)Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, ushort>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="short" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="short" /> value.</returns>
+        public static explicit operator short(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, short>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="short" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="short" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="short" />.</exception>
+        public static explicit operator checked short(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, short>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="ushort" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ushort" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator ushort(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, ushort>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="ushort" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ushort" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="ushort" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked ushort(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, ushort>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="int" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="int" /> value.</returns>
+        public static explicit operator int(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, int>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="int" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="int" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="int" />.</exception>
+        public static explicit operator checked int(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, int>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="uint" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="uint" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator uint(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, uint>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="uint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="uint" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="uint" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked uint(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, uint>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="System.IntPtr" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.IntPtr" /> value.</returns>
+        public static explicit operator nint(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, nint>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="System.IntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.IntPtr" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="System.IntPtr" />.</exception>
+        public static explicit operator checked nint(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, nint>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="System.UIntPtr" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.UIntPtr" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator nuint(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, nuint>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="System.UIntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.UIntPtr" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="System.UIntPtr" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked nuint(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, nuint>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="long" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="long" /> value.</returns>
+        public static explicit operator long(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, long>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="long" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="long" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="long" />.</exception>
+        public static explicit operator checked long(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, long>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="ulong" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ulong" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator ulong(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, ulong>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="ulong" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ulong" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="ulong" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked ulong(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, ulong>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="System.Int128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Int128" /> value.</returns>
+        public static explicit operator Int128(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, Int128>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="System.Int128" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Int128" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="System.Int128" />.</exception>
+        public static explicit operator checked Int128(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, Int128>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="System.UInt128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.UInt128" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator UInt128(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, UInt128>(new UInt128(value._upper, value._lower), isChecked: false);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="System.UInt128" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.UInt128" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="System.UInt128" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked UInt128(Decimal128 value) => Number.ConvertDecimalIeee754ToInteger<Decimal128, UInt128, UInt128>(new UInt128(value._upper, value._lower), isChecked: true);
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="System.Half" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Half" /> value.</returns>
+        public static explicit operator Half(Decimal128 value) => Number.ConvertDecimalIeee754ToFloat<Decimal128, UInt128, Half>(new UInt128(value._upper, value._lower));
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="float" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="float" /> value.</returns>
+        public static explicit operator float(Decimal128 value) => Number.ConvertDecimalIeee754ToFloat<Decimal128, UInt128, float>(new UInt128(value._upper, value._lower));
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="double" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="double" /> value.</returns>
+        public static explicit operator double(Decimal128 value) => Number.ConvertDecimalIeee754ToFloat<Decimal128, UInt128, double>(new UInt128(value._upper, value._lower));
+
+        /// <summary>Explicitly converts a <see cref="System.Numerics.Decimal128" /> value to its nearest representable <see cref="decimal" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="decimal" /> value.</returns>
+        /// <exception cref="System.OverflowException"><paramref name="value" /> is not representable by <see cref="decimal" />.</exception>
+        public static explicit operator decimal(Decimal128 value) => Number.ConvertDecimalIeee754ToDecimal<Decimal128, UInt128>(new UInt128(value._upper, value._lower));
+
+        //
+        // Implicit conversions to Decimal128
+        //
+
+        /// <summary>Implicitly converts a <see cref="byte" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        public static implicit operator Decimal128(byte value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, byte>(value));
+
+        /// <summary>Implicitly converts a <see cref="sbyte" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        [CLSCompliant(false)]
+        public static implicit operator Decimal128(sbyte value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, sbyte>(value));
+
+        /// <summary>Implicitly converts a <see cref="char" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        public static implicit operator Decimal128(char value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, ushort>(value));
+
+        /// <summary>Implicitly converts a <see cref="short" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        public static implicit operator Decimal128(short value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, short>(value));
+
+        /// <summary>Implicitly converts a <see cref="ushort" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        [CLSCompliant(false)]
+        public static implicit operator Decimal128(ushort value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, ushort>(value));
+
+        /// <summary>Implicitly converts a <see cref="int" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        public static implicit operator Decimal128(int value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, int>(value));
+
+        /// <summary>Implicitly converts a <see cref="uint" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        [CLSCompliant(false)]
+        public static implicit operator Decimal128(uint value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, uint>(value));
+
+        /// <summary>Implicitly converts a <see cref="System.IntPtr" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        public static implicit operator Decimal128(nint value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, nint>(value));
+
+        /// <summary>Implicitly converts a <see cref="System.UIntPtr" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        [CLSCompliant(false)]
+        public static implicit operator Decimal128(nuint value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, nuint>(value));
+
+        /// <summary>Implicitly converts a <see cref="long" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        public static implicit operator Decimal128(long value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, long>(value));
+
+        /// <summary>Implicitly converts a <see cref="ulong" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        [CLSCompliant(false)]
+        public static implicit operator Decimal128(ulong value) => new Decimal128(Number.ConvertIntegerToDecimalIeee754<Decimal128, UInt128, ulong>(value));
+
+        /// <summary>Implicitly converts a <see cref="decimal" /> value to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.Numerics.Decimal128" /> value.</returns>
+        public static implicit operator Decimal128(decimal value) => new Decimal128(Number.ConvertDecimalToDecimalIeee754<Decimal128, UInt128>(value));
 
         /// <summary>Compares two values to determine equality.</summary>
         /// <param name="left">The value to compare with <paramref name="right" />.</param>
@@ -400,6 +750,27 @@ namespace System.Numerics
             return Number.TryParseDecimalIeee754<byte, Decimal128, UInt128>(utf8Text, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
         }
 
+        /// <summary>
+        /// Tries to parse a <see cref="Decimal128"/> from a <see cref="ReadOnlySpan{Byte}"/> containing UTF-8 text in the default parse style.
+        /// </summary>
+        /// <param name="utf8Text">The UTF-8 input to be parsed.</param>
+        /// <param name="result">The equivalent <see cref="Decimal128"/> value representing the input if the parse was successful. If the input exceeds Decimal128's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal128"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out Decimal128 result) => TryParse(utf8Text, provider: null, out result);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static Decimal128 Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.ParseDecimalIeee754<byte, Decimal128, UInt128>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static Decimal128 Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal128 result) => Number.TryParseDecimalIeee754<byte, Decimal128, UInt128>(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
+
         /// <summary>Gets the value <c>1</c>.</summary>
         public static Decimal128 One => new Decimal128(OneValue);
 
@@ -414,6 +785,291 @@ namespace System.Numerics
 
         /// <summary>Gets the mathematical constant <c>tau</c>.</summary>
         public static Decimal128 Tau => new Decimal128(TauValue);
+
+        //
+        // IFloatingPoint
+        //
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        public static Decimal128 Ceiling(Decimal128 x) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), 0, MidpointRounding.ToPositiveInfinity));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(Decimal128 value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(Decimal128 value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        public static Decimal128 Floor(Decimal128 x) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), 0, MidpointRounding.ToNegativeInfinity));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        public static Decimal128 Round(Decimal128 x) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), 0, MidpointRounding.ToEven));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
+        public static Decimal128 Round(Decimal128 x, int digits) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), digits, MidpointRounding.ToEven));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, MidpointRounding)" />
+        public static Decimal128 Round(Decimal128 x, MidpointRounding mode) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), 0, mode));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int, MidpointRounding)" />
+        public static Decimal128 Round(Decimal128 x, int digits, MidpointRounding mode) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), digits, mode));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        public static Decimal128 Truncate(Decimal128 x) => new Decimal128(Number.RoundDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), 0, MidpointRounding.ToZero));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<Decimal128>.GetExponentByteCount() => sizeof(int);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        int IFloatingPoint<Decimal128>.GetExponentShortestBitLength()
+        {
+            int exponent = Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower)).UnbiasedExponent;
+
+            if (exponent >= 0)
+            {
+                return (sizeof(int) * 8) - int.LeadingZeroCount(exponent);
+            }
+            else
+            {
+                return (sizeof(int) * 8) + 1 - int.LeadingZeroCount(~exponent);
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<Decimal128>.GetSignificandBitLength() => 113;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<Decimal128>.GetSignificandByteCount() => Unsafe.SizeOf<UInt128>();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal128>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt32BigEndian(destination, Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower)).UnbiasedExponent))
+            {
+                bytesWritten = sizeof(int);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal128>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt32LittleEndian(destination, Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower)).UnbiasedExponent))
+            {
+                bytesWritten = sizeof(int);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal128>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt128BigEndian(destination, Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower)).Significand))
+            {
+                bytesWritten = Unsafe.SizeOf<UInt128>();
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal128>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt128LittleEndian(destination, Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower)).Significand))
+            {
+                bytesWritten = Unsafe.SizeOf<UInt128>();
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        //
+        // IFloatingPointIeee754
+        //
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        public static Decimal128 Acos(Decimal128 x) => new Decimal128(Number.AcosDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static Decimal128 AcosPi(Decimal128 x) => new Decimal128(Number.AcosPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        public static Decimal128 Acosh(Decimal128 x) => new Decimal128(Number.AcoshDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        public static Decimal128 Asin(Decimal128 x) => new Decimal128(Number.AsinDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static Decimal128 AsinPi(Decimal128 x) => new Decimal128(Number.AsinPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        public static Decimal128 Asinh(Decimal128 x) => new Decimal128(Number.AsinhDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        public static Decimal128 Atan(Decimal128 x) => new Decimal128(Number.AtanDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        public static Decimal128 Atan2(Decimal128 y, Decimal128 x) => new Decimal128(Number.Atan2DecimalIeee754<Decimal128, UInt128>(new UInt128(y._upper, y._lower), new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static Decimal128 Atan2Pi(Decimal128 y, Decimal128 x) => new Decimal128(Number.Atan2PiDecimalIeee754<Decimal128, UInt128>(new UInt128(y._upper, y._lower), new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static Decimal128 AtanPi(Decimal128 x) => new Decimal128(Number.AtanPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        public static Decimal128 Atanh(Decimal128 x) => new Decimal128(Number.AtanhDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
+        public static Decimal128 BitDecrement(Decimal128 x) => new Decimal128(Number.BitDecrementDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
+        public static Decimal128 BitIncrement(Decimal128 x) => new Decimal128(Number.BitIncrementDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        public static Decimal128 Cbrt(Decimal128 x) => new Decimal128(Number.CbrtDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        public static Decimal128 Cos(Decimal128 x) => new Decimal128(Number.CosDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static Decimal128 CosPi(Decimal128 x) => new Decimal128(Number.CosPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        public static Decimal128 Cosh(Decimal128 x) => new Decimal128(Number.CoshDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
+        public static Decimal128 Exp(Decimal128 x) => new Decimal128(Number.ExpDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static Decimal128 Exp10(Decimal128 x) => new Decimal128(Number.Exp10DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static Decimal128 Exp10M1(Decimal128 x) => new Decimal128(Number.Exp10M1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static Decimal128 Exp2(Decimal128 x) => new Decimal128(Number.Exp2DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static Decimal128 Exp2M1(Decimal128 x) => new Decimal128(Number.Exp2M1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static Decimal128 ExpM1(Decimal128 x) => new Decimal128(Number.ExpM1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        public static Decimal128 FusedMultiplyAdd(Decimal128 left, Decimal128 right, Decimal128 addend) => new Decimal128(Number.FusedMultiplyAddDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower), new UInt128(addend._upper, addend._lower)));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static Decimal128 Hypot(Decimal128 x, Decimal128 y) => new Decimal128(Number.HypotDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
+        public static Decimal128 Ieee754Remainder(Decimal128 left, Decimal128 right) => new Decimal128(Number.Ieee754RemainderDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(Decimal128 x) => Number.ILogBDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static Decimal128 Lerp(Decimal128 value1, Decimal128 value2, Decimal128 amount) => MultiplyAddEstimate(value1, One - amount, value2 * amount);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        public static Decimal128 Log(Decimal128 x) => new Decimal128(Number.LogDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
+        public static Decimal128 Log(Decimal128 x, Decimal128 newBase) => new Decimal128(Number.LogDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(newBase._upper, newBase._lower)));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        public static Decimal128 Log10(Decimal128 x) => new Decimal128(Number.Log10DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static Decimal128 Log10P1(Decimal128 x) => new Decimal128(Number.Log10P1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2(TSelf)" />
+        public static Decimal128 Log2(Decimal128 x) => new Decimal128(Number.Log2DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static Decimal128 Log2P1(Decimal128 x) => new Decimal128(Number.Log2P1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static Decimal128 LogP1(Decimal128 x) => new Decimal128(Number.LogP1DecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        public static Decimal128 Pow(Decimal128 x, Decimal128 y) => new Decimal128(Number.PowDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        public static Decimal128 ReciprocalEstimate(Decimal128 x) => One / x;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        public static Decimal128 ReciprocalSqrtEstimate(Decimal128 x) => One / Sqrt(x);
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
+        public static Decimal128 RootN(Decimal128 x, int n) => new Decimal128(Number.RootNDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), n));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
+        public static Decimal128 ScaleB(Decimal128 x, int n) => new Decimal128(Number.ScaleBDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), n));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        public static Decimal128 Sin(Decimal128 x) => new Decimal128(Number.SinDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (Decimal128 Sin, Decimal128 Cos) SinCos(Decimal128 x)
+        {
+            (UInt128 sin, UInt128 cos) = Number.SinCosDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower));
+            return (new Decimal128(sin), new Decimal128(cos));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
+        public static (Decimal128 SinPi, Decimal128 CosPi) SinCosPi(Decimal128 x)
+        {
+            (UInt128 sin, UInt128 cos) = Number.SinCosPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower));
+            return (new Decimal128(sin), new Decimal128(cos));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static Decimal128 SinPi(Decimal128 x) => new Decimal128(Number.SinPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        public static Decimal128 Sinh(Decimal128 x) => new Decimal128(Number.SinhDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        public static Decimal128 Sqrt(Decimal128 x) => new Decimal128(Number.SqrtDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        public static Decimal128 Tan(Decimal128 x) => new Decimal128(Number.TanDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static Decimal128 TanPi(Decimal128 x) => new Decimal128(Number.TanPiDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        public static Decimal128 Tanh(Decimal128 x) => new Decimal128(Number.TanhDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <summary>Adjusts a value to the quantum (exponent) of another value, rounding to nearest with ties to even.</summary>
+        /// <param name="x">The value whose quantum is adjusted.</param>
+        /// <param name="y">The value that provides the target quantum.</param>
+        /// <returns><paramref name="x" /> expressed with the quantum of <paramref name="y" />, or NaN when the value cannot be represented at that quantum.</returns>
+        public static Decimal128 Quantize(Decimal128 x, Decimal128 y) => new Decimal128(Number.QuantizeDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <summary>Computes the quantum of a value: one unit in the last place sharing its exponent.</summary>
+        /// <param name="x">The value whose quantum is returned.</param>
+        /// <returns>The quantum of <paramref name="x" />.</returns>
+        public static Decimal128 GetQuantum(Decimal128 x) => new Decimal128(Number.QuantumDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+
+        /// <summary>Determines whether two values have the same quantum (exponent).</summary>
+        /// <param name="x">The first value to compare.</param>
+        /// <param name="y">The second value to compare.</param>
+        /// <returns><c>true</c> if <paramref name="x" /> and <paramref name="y" /> have the same quantum; otherwise, <c>false</c>.</returns>
+        public static bool HaveSameQuantum(Decimal128 x, Decimal128 y) => Number.SameQuantumDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower));
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
@@ -594,6 +1250,452 @@ namespace System.Numerics
         /// <exception cref="ArithmeticException"><paramref name="value" /> is <c>NaN</c>.</exception>
         public static int Sign(Decimal128 value) => Number.SignDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower));
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<Decimal128>.Radix => 10;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<Decimal128>.IsCanonical(Decimal128 value) => Number.IsCanonicalDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower), nanReservedMask: new UInt128(0x01FF_C000_0000_0000, 0x0000_0000_0000_0000), nanPayloadMask: new UInt128(0x0000_3FFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), maxNaNPayload: new UInt128(0x0000_314D_C644_8D93, 0x38C1_5B09_FFFF_FFFF));
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<Decimal128>.IsComplexNumber(Decimal128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<Decimal128>.IsImaginaryNumber(Decimal128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<Decimal128>.IsZero(Decimal128 value) => Number.IsZeroDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower));
+
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        static Decimal128 IAdditiveIdentity<Decimal128, Decimal128>.AdditiveIdentity => Zero;
+
+        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        static Decimal128 IMultiplicativeIdentity<Decimal128, Decimal128>.MultiplicativeIdentity => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Decimal128 CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Decimal128 result;
+
+            if (typeof(TOther) == typeof(Decimal128))
+            {
+                result = (Decimal128)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Decimal128 CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Decimal128 result;
+
+            if (typeof(TOther) == typeof(Decimal128))
+            {
+                result = (Decimal128)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Decimal128 CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Decimal128 result;
+
+            if (typeof(TOther) == typeof(Decimal128))
+            {
+                result = (Decimal128)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Decimal128>.TryConvertFromChecked<TOther>(TOther value, out Decimal128 result) => TryConvertFrom(value, out result);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Decimal128>.TryConvertFromSaturating<TOther>(TOther value, out Decimal128 result) => TryConvertFrom(value, out result);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Decimal128>.TryConvertFromTruncating<TOther>(TOther value, out Decimal128 result) => TryConvertFrom(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFrom<TOther>(TOther value, out Decimal128 result)
+            where TOther : INumberBase<TOther>
+        {
+            // Decimal128 must handle every source type itself because the built-in numeric types
+            // predate the IEEE 754 decimal types and therefore never convert to them. Widening from
+            // an integer or floating-point value never throws; out-of-range inputs become infinity.
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                result = (byte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                result = (sbyte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                result = (char)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                result = (short)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                result = (ushort)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                result = (int)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                result = (uint)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                result = (long)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                result = (ulong)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                result = (Decimal128)(Int128)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (Decimal128)(UInt128)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                result = (nint)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                result = (nuint)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                result = (Decimal128)(Half)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                result = (Decimal128)(float)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                result = (Decimal128)(double)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                result = (decimal)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Decimal32))
+            {
+                result = (Decimal32)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Decimal64))
+            {
+                result = (Decimal64)(object)value;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Decimal128>.TryConvertToChecked<TOther>(Decimal128 value, [MaybeNullWhen(false)] out TOther result)
+        {
+            // Conversions to an integer target throw on overflow, NaN, or infinity. Conversions to a
+            // floating-point or narrower decimal target never throw; conversions to `System.Decimal`
+            // throw when the value cannot be represented, matching the checked contract.
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = checked((byte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = checked((sbyte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = checked((char)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = checked((short)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = checked((ushort)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = checked((int)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = checked((uint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = checked((long)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = checked((ulong)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = checked((Int128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = checked((UInt128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = checked((nint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = checked((nuint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                result = (TOther)(object)(Half)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                result = (TOther)(object)(float)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                result = (TOther)(object)(double)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                result = (TOther)(object)(decimal)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Decimal32))
+            {
+                result = (TOther)(object)(Decimal32)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Decimal64))
+            {
+                result = (TOther)(object)(Decimal64)value;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Decimal128>.TryConvertToSaturating<TOther>(Decimal128 value, [MaybeNullWhen(false)] out TOther result) => TryConvertTo(value, out result);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Decimal128>.TryConvertToTruncating<TOther>(Decimal128 value, [MaybeNullWhen(false)] out TOther result) => TryConvertTo(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertTo<TOther>(Decimal128 value, [MaybeNullWhen(false)] out TOther result)
+            where TOther : INumberBase<TOther>
+        {
+            // Conversions to an integer target saturate (NaN becomes zero, out-of-range clamps to the
+            // target's minimum or maximum). Truncating and saturating share this path because the
+            // integer conversion operators already saturate. Conversions to `System.Decimal` clamp to
+            // its range because that operator would otherwise throw.
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                result = (TOther)(object)(byte)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                result = (TOther)(object)(sbyte)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                result = (TOther)(object)(char)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                result = (TOther)(object)(short)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                result = (TOther)(object)(ushort)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                result = (TOther)(object)(int)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                result = (TOther)(object)(uint)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                result = (TOther)(object)(long)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                result = (TOther)(object)(ulong)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                result = (TOther)(object)(Int128)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (TOther)(object)(UInt128)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                result = (TOther)(object)(nint)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                result = (TOther)(object)(nuint)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                result = (TOther)(object)(Half)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                result = (TOther)(object)(float)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                result = (TOther)(object)(double)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = (value > (Decimal128)decimal.MaxValue) ? decimal.MaxValue :
+                                       (value < (Decimal128)decimal.MinValue) ? decimal.MinValue :
+                                       IsNaN(value) ? 0.0m : (decimal)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Decimal32))
+            {
+                result = (TOther)(object)(Decimal32)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Decimal64))
+            {
+                result = (TOther)(object)(Decimal64)value;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+
         private static readonly UInt128[] UInt128Powers10 =
             [
                 new UInt128(0, 1),
@@ -673,6 +1775,10 @@ namespace System.Numerics
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MinExponent => MinExponent;
 
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MaxAdjustedExponent => MaxExponent - Precision + 1;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MinAdjustedExponent => MinExponent - Precision + 1;
+
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.PositiveInfinity => PositiveInfinityValue;
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NegativeInfinity => NegativeInfinityValue;
@@ -684,6 +1790,8 @@ namespace System.Numerics
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MostSignificantBitOfSignificandMask => new UInt128(0x0002_0000_0000_0000, 0);
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NaNMask => new UInt128(NaNMaskUpper, 0);
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SNaNMask => new UInt128(SNaNMaskUpper, 0);
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SignMask => new UInt128(SignMaskUpper, 0);
 

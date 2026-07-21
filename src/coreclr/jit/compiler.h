@@ -3636,6 +3636,9 @@ public:
                                  var_types   simdBaseType,
                                  unsigned    simdSize);
 
+    GenTree* gtNewSimdNarrowWithSaturationNode(
+        var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+
     GenTree* gtNewSimdConcatNode(var_types type,
                                  GenTree*  op1,
                                  GenTree*  op2,
@@ -3676,6 +3679,15 @@ public:
                                   var_types   simdBaseType,
                                   unsigned    simdSize,
                                   bool        isShuffleNative);
+
+#if defined(TARGET_WASM)
+    GenTree* gtNewSimdWasmTwoSourceShuffleNode(var_types       type,
+                                               GenTree*        op1,
+                                               GenTree*        op2,
+                                               const uint32_t* selectors,
+                                               var_types       simdBaseType,
+                                               unsigned        simdSize);
+#endif // TARGET_WASM
 
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
@@ -6954,7 +6966,7 @@ public:
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks::CHECK_NONE);
-    bool fgDebugCheckProfileWeights(ProfileChecks checks);
+    bool fgDebugCheckProfileWeights(ProfileChecks checks, bool dump = false);
     bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
 
@@ -7412,6 +7424,34 @@ public:
 
         unsigned Data() const { return acdData; }
 
+        // Region-kind flag bits packed into acdData by bbThrowIndex.
+        static const unsigned AcdHandlerFlag = 0x40000000;
+        static const unsigned AcdFilterFlag  = 0x80000000;
+
+        // The EH region kind that keys this helper.
+        AcdKeyDesignator Designator() const
+        {
+            if (acdData == 0)
+            {
+                return AcdKeyDesignator::KD_NONE;
+            }
+            if ((acdData & AcdFilterFlag) != 0)
+            {
+                return AcdKeyDesignator::KD_FLT;
+            }
+            if ((acdData & AcdHandlerFlag) != 0)
+            {
+                return AcdKeyDesignator::KD_HND;
+            }
+            return AcdKeyDesignator::KD_TRY;
+        }
+
+        // The 0-based EH region index this helper is keyed to (not valid for KD_NONE).
+        unsigned RegionIndex() const
+        {
+            return (acdData & ~(AcdHandlerFlag | AcdFilterFlag)) - 1;
+        }
+
     private:
 
         SpecialCodeKind acdKind;
@@ -7812,15 +7852,12 @@ protected:
     CSEdsc* optCSEfindDsc(unsigned index);
     bool optUnmarkCSE(GenTree* tree);
 
-    // user defined callback data for the tree walk function optCSE_MaskHelper()
+    // Data for the tree walk that computes the mask of CSE definitions and uses
     struct optCSE_MaskData
     {
         EXPSET_TP CSE_defMask;
         EXPSET_TP CSE_useMask;
     };
-
-    // Treewalk helper for optCSE_DefMask and optCSE_UseMask
-    static fgWalkPreFn optCSE_MaskHelper;
 
     // This function walks all the node for an given tree
     // and return the mask of CSE definitions and uses for the tree
@@ -9523,6 +9560,13 @@ public:
 
     CORINFO_ASYNC_INFO* eeGetAsyncInfo();
 
+#if defined(TARGET_WASM)
+    CORINFO_WASM_WELLKNOWN_GLOBALS wasmWellKnownGlobals;
+    bool                           wasmWellKnownGlobalsInitialized = false;
+
+    CORINFO_WASM_WELLKNOWN_GLOBALS* eeGetWasmWellKnownGlobals();
+#endif // defined(TARGET_WASM)
+
     // Gets the offset of a SDArray's first element
     static unsigned eeGetArrayDataOffset();
 
@@ -10747,6 +10791,7 @@ private:
     }
 #endif // DEBUG
 
+public:
     bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
@@ -10790,6 +10835,7 @@ private:
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
+private:
 #ifdef DEBUG
     //------------------------------------------------------------------------
     // canUseEvexEncodingDebugOnly - Answer the question: Is Evex encoding supported on this target.
