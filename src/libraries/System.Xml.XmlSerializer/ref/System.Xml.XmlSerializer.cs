@@ -572,7 +572,6 @@ namespace System.Xml.Serialization
         protected static System.Reflection.Assembly? ResolveDynamicAssembly(string assemblyFullName) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XML serializer relies on dynamic code generation which is not available with Ahead of Time compilation")]
         protected System.Array? ShrinkArray(System.Array? a, int length, System.Type elementType, bool isNullable) { throw null; }
-        protected static string[] SplitXmlListValues(string value, bool removeEmptyEntries) { throw null; }
         protected byte[]? ToByteArrayBase64(bool isNull) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
         protected static byte[]? ToByteArrayBase64(string? value) { throw null; }

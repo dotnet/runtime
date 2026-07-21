@@ -21,6 +21,13 @@ namespace System.Xml.Serialization
     {
         private readonly XmlMapping _mapping;
 
+        // The XML specification defines whitespace as exactly these four characters (#x20, #x9, #xA,
+        // #xD). Splitting whitespace-separated list content on this set is the default; it matches the
+        // XSD list/NMTOKENS definition and lets items contain other Unicode whitespace. The
+        // UseLegacyXmlListSeparation switch restores the legacy behavior of splitting on .NET's broader
+        // char.IsWhiteSpace() set, which String.Split does when the separator array is null.
+        private static readonly char[] s_xmlListWhitespace = [' ', '\t', '\n', '\r'];
+
         internal static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
         internal static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
 
@@ -704,7 +711,8 @@ namespace System.Xml.Serialization
                         {
                             // The text content is a whitespace-separated list; split it and add each
                             // value to the array-like member (mirrors [XmlAttribute] list handling).
-                            foreach (string item in SplitXmlListValues(stringValue, removeEmptyEntries: true))
+                            char[]? separators = LocalAppContextSwitches.UseLegacyXmlListSeparation ? null : s_xmlListWhitespace;
+                            foreach (string item in stringValue.Split(separators, StringSplitOptions.RemoveEmptyEntries))
                             {
                                 anyText.Source!(item);
                             }
@@ -2019,7 +2027,11 @@ namespace System.Xml.Serialization
                 if (attribute.IsList)
                 {
                     string listValues = Reader.Value;
-                    string[] vals = SplitXmlListValues(listValues, removeEmptyEntries: false);
+                    // Split the whitespace-separated attribute list into its items. XSD list whitespace
+                    // normalization has already collapsed runs of whitespace in the attribute value by
+                    // the time we read it, so RemoveEmptyEntries is unnecessary here.
+                    char[]? separators = LocalAppContextSwitches.UseLegacyXmlListSeparation ? null : s_xmlListWhitespace;
+                    string[] vals = listValues.Split(separators);
                     Array arrayValue = Array.CreateInstance(member.Mapping.TypeDesc!.Type!.GetElementType()!, vals.Length);
                     for (int i = 0; i < vals.Length; i++)
                     {
