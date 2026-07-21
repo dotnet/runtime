@@ -137,8 +137,8 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
         [TestCategory("native-mono")]
-        public async Task GSharedVtConcreteMethodDependencies(Configuration config, bool aot)
-            => await TestMain("gsharedvt_concrete_method_dependencies", """
+        public async Task GSharedVtNullableBoxWrapper(Configuration config, bool aot)
+            => await TestMain("gsharedvt_nullable_box_wrapper", """
                 using System;
                 using System.Collections;
                 using System.Collections.Generic;

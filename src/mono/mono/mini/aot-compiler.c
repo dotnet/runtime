@@ -419,6 +419,8 @@ typedef struct MonoAotCompile {
 	GHashTable *blob_hash;
 	/* Maps MonoMethod*->GPtrArray* */
 	GHashTable *gshared_instances;
+	/* Maps generic type definitions to their concrete gsharedvt MonoClass* instances. */
+	GHashTable *gsharedvt_classes;
 	/* Maps gsharedvt MonoMethod*->GPtrArray<MonoRuntimeGenericContextInfoTemplate*>* */
 	GHashTable *gsharedvt_method_dependencies;
 	/* Hash of gshared methods where specific instances are preferred */
@@ -462,6 +464,7 @@ static MonoAssembly *dedup_assembly;
 static GHashTable *dedup_methods;
 static GPtrArray *dedup_methods_list;
 static GHashTable *dedup_gshared_instances;
+static GHashTable *dedup_gsharedvt_classes;
 static GHashTable *dedup_gsharedvt_method_dependencies;
 
 /* Cache of decoded method external icall symbol names. */
@@ -4457,16 +4460,21 @@ record_gshared_instance (MonoAotCompile *acfg, MonoMethod *gshared_method, MonoM
 }
 
 static void
-record_gshared_instance_for_method (MonoAotCompile *acfg, MonoMethod *instance)
+record_gsharedvt_class (MonoAotCompile *acfg, MonoClass *klass)
 {
-	ERROR_DECL (error);
-	MonoMethod *gshared_method = mini_get_shared_method_full (instance, SHARE_MODE_GSHAREDVT, error);
-	if (!is_ok (error)) {
-		mono_error_cleanup (error);
+	if (!mono_class_is_ginst (klass) || mono_class_get_generic_class (klass)->context.class_inst->is_open)
 		return;
-	}
 
-	record_gshared_instance (acfg, gshared_method, instance, TRUE);
+	gboolean use_dedup_classes = acfg->dedup_phase == DEDUP_COLLECT || acfg->dedup_phase == DEDUP_EMIT;
+	GHashTable *classes_hash = use_dedup_classes ? dedup_gsharedvt_classes : acfg->gsharedvt_classes;
+	MonoClass *container = mono_class_get_generic_class (klass)->container_class;
+	GPtrArray *classes = (GPtrArray *)g_hash_table_lookup (classes_hash, container);
+	if (!classes) {
+		classes = g_ptr_array_new ();
+		g_hash_table_insert (classes_hash, container, classes);
+	}
+	if (!g_ptr_array_find (classes, klass, NULL))
+		g_ptr_array_add (classes, klass);
 }
 
 static void
@@ -5818,6 +5826,9 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	}
 #endif
 
+	if (acfg->aot_opts.llvm_only && use_gsharedvt)
+		record_gsharedvt_class (acfg, klass);
+
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && method->is_inflated && mono_method_get_context (method)->method_inst) {
@@ -5829,8 +5840,11 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 		if (mono_method_is_generic_sharable_full (method, FALSE, FALSE, use_gsharedvt)) {
 			/* Already added */
-			if (acfg->aot_opts.llvm_only && use_gsharedvt)
-				record_gshared_instance_for_method (acfg, method);
+			if (acfg->aot_opts.llvm_only && use_gsharedvt) {
+				MonoMethodSignature *sig = mono_method_signature_internal (method);
+				if (sig && sig->ret->type == MONO_TYPE_GENERICINST)
+					record_gsharedvt_class (acfg, mono_class_from_mono_type_internal (sig->ret));
+			}
 			add_types_from_method_header (acfg, method);
 			continue;
 		}
@@ -6037,8 +6051,6 @@ add_types_from_method_header (MonoAotCompile *acfg, MonoMethod *method)
 	sig = mono_method_signature_internal (method);
 
 	if (sig) {
-		if (sig->ret->type == MONO_TYPE_GENERICINST)
-			add_generic_class_with_depth (acfg, mono_class_from_mono_type_internal (sig->ret), depth + 1, "ret");
 		for (j = 0; j < sig->param_count; ++j)
 			if (sig->params [j]->type == MONO_TYPE_GENERICINST)
 				add_generic_class_with_depth (acfg, mono_class_from_mono_type_internal (sig->params [j]), depth + 1, "arg");
@@ -9470,9 +9482,46 @@ add_gsharedvt_method_dependencies_range (MonoAotCompile *acfg, MonoMethod *insta
 }
 
 static void
-add_gsharedvt_method_dependencies (MonoAotCompile *acfg, GHashTable *instances_hash, MonoMethod *method, GPtrArray *dependencies,
+add_gsharedvt_method_instances (MonoAotCompile *acfg, GHashTable *instances_hash, GHashTable *classes_hash,
+								MonoMethod *method, GHashTable *processed_class_counts)
+{
+	MonoClass *gshared_container = mono_class_is_ginst (method->klass) ?
+		mono_class_get_generic_class (method->klass)->container_class : method->klass;
+	GPtrArray *classes = (GPtrArray *)g_hash_table_lookup (classes_hash, gshared_container);
+	if (!classes)
+		return;
+
+	guint processed_classes = GPOINTER_TO_UINT (g_hash_table_lookup (processed_class_counts, method));
+	for (guint i = processed_classes; i < classes->len; ++i) {
+		ERROR_DECL (error);
+		MonoClass *klass = (MonoClass *)g_ptr_array_index (classes, i);
+		MonoMethod *instance = mono_class_get_method_generic (klass, method, error);
+		if (!is_ok (error)) {
+			mono_error_cleanup (error);
+			continue;
+		}
+		if (!instance || is_open_method (instance))
+			continue;
+
+		MonoMethod *gshared_method = mini_get_shared_method_full (instance, SHARE_MODE_GSHAREDVT, error);
+		if (!is_ok (error)) {
+			mono_error_cleanup (error);
+			continue;
+		}
+		if (gshared_method == method)
+			record_gshared_instance (acfg, method, instance, TRUE);
+	}
+
+	g_hash_table_insert (processed_class_counts, method, GUINT_TO_POINTER (classes->len));
+}
+
+static void
+add_gsharedvt_method_dependencies (MonoAotCompile *acfg, GHashTable *instances_hash, GHashTable *classes_hash,
+								   MonoMethod *method, GPtrArray *dependencies, GHashTable *processed_class_counts,
 								   GHashTable *processed_dependency_counts, GHashTable *processed_instance_counts, int depth)
 {
+	add_gsharedvt_method_instances (acfg, instances_hash, classes_hash, method, processed_class_counts);
+
 	GPtrArray *instances = (GPtrArray *)g_hash_table_lookup (instances_hash, method);
 	if (!instances)
 		return;
@@ -13344,6 +13393,9 @@ compile_methods (MonoAotCompile *acfg)
 			dedup_gsharedvt_method_dependencies : acfg->gsharedvt_method_dependencies;
 		GHashTable *instances_hash = acfg->dedup_phase == DEDUP_EMIT ?
 			dedup_gshared_instances : acfg->gshared_instances;
+		GHashTable *classes_hash = acfg->dedup_phase == DEDUP_EMIT ?
+			dedup_gsharedvt_classes : acfg->gsharedvt_classes;
+		GHashTable *processed_class_counts = g_hash_table_new (NULL, NULL);
 		GHashTable *processed_dependency_counts = g_hash_table_new (NULL, NULL);
 		GHashTable *processed_instance_counts = g_hash_table_new (NULL, NULL);
 		do {
@@ -13352,12 +13404,13 @@ compile_methods (MonoAotCompile *acfg)
 			gpointer method, dependencies;
 			g_hash_table_iter_init (&iter, dependencies_hash);
 			while (g_hash_table_iter_next (&iter, &method, &dependencies))
-				add_gsharedvt_method_dependencies (acfg, instances_hash, (MonoMethod *)method, (GPtrArray *)dependencies,
-												   processed_dependency_counts, processed_instance_counts,
+				add_gsharedvt_method_dependencies (acfg, instances_hash, classes_hash, (MonoMethod *)method, (GPtrArray *)dependencies,
+												   processed_class_counts, processed_dependency_counts, processed_instance_counts,
 												   GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_depth, method)));
 			for (guint i = methods_len; i < acfg->methods->len; ++i)
 				compile_method (acfg, (MonoMethod *)g_ptr_array_index (acfg->methods, i));
 		} while (methods_len != acfg->methods->len);
+		g_hash_table_destroy (processed_class_counts);
 		g_hash_table_destroy (processed_dependency_counts);
 		g_hash_table_destroy (processed_instance_counts);
 	}
@@ -14442,6 +14495,7 @@ acfg_create (MonoAssembly *ass, guint32 jit_opts)
 	acfg->gsharedvt_out_signatures = g_hash_table_new ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal);
 	acfg->profile_methods = g_hash_table_new (NULL, NULL);
 	acfg->gshared_instances = g_hash_table_new (NULL, NULL);
+	acfg->gsharedvt_classes = g_hash_table_new (NULL, NULL);
 	acfg->gsharedvt_method_dependencies = g_hash_table_new (NULL, NULL);
 	acfg->prefer_instances = g_hash_table_new (NULL, NULL);
 	acfg->exported_methods = g_ptr_array_new ();
@@ -16020,6 +16074,7 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		dedup_methods = g_hash_table_new (NULL, NULL);
 		dedup_methods_list = g_ptr_array_new ();
 		dedup_gshared_instances = g_hash_table_new (NULL, NULL);
+		dedup_gsharedvt_classes = g_hash_table_new (NULL, NULL);
 		dedup_gsharedvt_method_dependencies = g_hash_table_new (NULL, NULL);
 	}
 
