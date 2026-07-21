@@ -184,8 +184,14 @@ namespace System.Numerics
                     // left is infinite; normalize its parts to a signed 1/0
                     a = T.CopySign(T.IsInfinity(a) ? T.One : T.Zero, a);
                     b = T.CopySign(T.IsInfinity(b) ? T.One : T.Zero, b);
-                    if (T.IsNaN(c)) c = T.CopySign(T.Zero, c);
-                    if (T.IsNaN(d)) d = T.CopySign(T.Zero, d);
+                    if (T.IsNaN(c))
+                    {
+                        c = T.CopySign(T.Zero, c);
+                    }
+                    if (T.IsNaN(d))
+                    {
+                        d = T.CopySign(T.Zero, d);
+                    }
                     recalc = true;
                 }
 
@@ -194,8 +200,14 @@ namespace System.Numerics
                     // right is infinite; normalize its parts to a signed 1/0
                     c = T.CopySign(T.IsInfinity(c) ? T.One : T.Zero, c);
                     d = T.CopySign(T.IsInfinity(d) ? T.One : T.Zero, d);
-                    if (T.IsNaN(a)) a = T.CopySign(T.Zero, a);
-                    if (T.IsNaN(b)) b = T.CopySign(T.Zero, b);
+                    if (T.IsNaN(a))
+                    {
+                        a = T.CopySign(T.Zero, a);
+                    }
+                    if (T.IsNaN(b))
+                    {
+                        b = T.CopySign(T.Zero, b);
+                    }
                     recalc = true;
                 }
 
@@ -203,10 +215,22 @@ namespace System.Numerics
                 {
                     // neither operand is infinite, but a product overflowed with a NaN
                     // operand; treat the NaN as a signed zero and recover.
-                    if (T.IsNaN(a)) a = T.CopySign(T.Zero, a);
-                    if (T.IsNaN(b)) b = T.CopySign(T.Zero, b);
-                    if (T.IsNaN(c)) c = T.CopySign(T.Zero, c);
-                    if (T.IsNaN(d)) d = T.CopySign(T.Zero, d);
+                    if (T.IsNaN(a))
+                    {
+                        a = T.CopySign(T.Zero, a);
+                    }
+                    if (T.IsNaN(b))
+                    {
+                        b = T.CopySign(T.Zero, b);
+                    }
+                    if (T.IsNaN(c))
+                    {
+                        c = T.CopySign(T.Zero, c);
+                    }
+                    if (T.IsNaN(d))
+                    {
+                        d = T.CopySign(T.Zero, d);
+                    }
                     recalc = true;
                 }
 
@@ -470,8 +494,14 @@ namespace System.Numerics
                 u = T.Atan(bPrime);
             }
 
-            if (value.Real < T.Zero) u = -u;
-            if (value.Imaginary < T.Zero) v = -v;
+            if (value.Real < T.Zero)
+            {
+                u = -u;
+            }
+            if (value.Imaginary < T.Zero)
+            {
+                v = -v;
+            }
 
             return new Complex<T>(u, v);
         }
@@ -587,8 +617,14 @@ namespace System.Numerics
                 u = T.Atan(T.One / bPrime);
             }
 
-            if (value.Real < T.Zero) u = T.Pi - u;
-            if (value.Imaginary > T.Zero) v = -v;
+            if (value.Real < T.Zero)
+            {
+                u = T.Pi - u;
+            }
+            if (value.Imaginary > T.Zero)
+            {
+                v = -v;
+            }
 
             return new Complex<T>(u, v);
         }
@@ -993,7 +1029,10 @@ namespace System.Numerics
             else
             {
                 y = T.Sqrt((T.Hypot(realCopy, imaginaryCopy) - realCopy) * half);
-                if (imaginaryCopy < T.Zero) y = -y;
+                if (imaginaryCopy < T.Zero)
+                {
+                    y = -y;
+                }
                 x = imaginaryCopy / (T.CreateChecked(2) * y);
             }
 

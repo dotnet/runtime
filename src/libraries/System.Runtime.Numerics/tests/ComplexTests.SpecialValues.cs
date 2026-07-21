@@ -72,26 +72,53 @@ namespace System.Numerics.Tests
                 {
                     a = double.CopySign(double.IsInfinity(a) ? 1.0 : 0.0, a);
                     b = double.CopySign(double.IsInfinity(b) ? 1.0 : 0.0, b);
-                    if (double.IsNaN(c)) c = double.CopySign(0.0, c);
-                    if (double.IsNaN(d)) d = double.CopySign(0.0, d);
+                    if (double.IsNaN(c))
+                    {
+                        c = double.CopySign(0.0, c);
+                    }
+                    if (double.IsNaN(d))
+                    {
+                        d = double.CopySign(0.0, d);
+                    }
                     recalc = true;
                 }
+
                 if (double.IsInfinity(c) || double.IsInfinity(d))
                 {
                     c = double.CopySign(double.IsInfinity(c) ? 1.0 : 0.0, c);
                     d = double.CopySign(double.IsInfinity(d) ? 1.0 : 0.0, d);
-                    if (double.IsNaN(a)) a = double.CopySign(0.0, a);
-                    if (double.IsNaN(b)) b = double.CopySign(0.0, b);
+                    if (double.IsNaN(a))
+                    {
+                        a = double.CopySign(0.0, a);
+                    }
+                    if (double.IsNaN(b))
+                    {
+                        b = double.CopySign(0.0, b);
+                    }
                     recalc = true;
                 }
+
                 if (!recalc && (double.IsInfinity(a * c) || double.IsInfinity(b * d) || double.IsInfinity(a * d) || double.IsInfinity(b * c)))
                 {
-                    if (double.IsNaN(a)) a = double.CopySign(0.0, a);
-                    if (double.IsNaN(b)) b = double.CopySign(0.0, b);
-                    if (double.IsNaN(c)) c = double.CopySign(0.0, c);
-                    if (double.IsNaN(d)) d = double.CopySign(0.0, d);
+                    if (double.IsNaN(a))
+                    {
+                        a = double.CopySign(0.0, a);
+                    }
+                    if (double.IsNaN(b))
+                    {
+                        b = double.CopySign(0.0, b);
+                    }
+                    if (double.IsNaN(c))
+                    {
+                        c = double.CopySign(0.0, c);
+                    }
+                    if (double.IsNaN(d))
+                    {
+                        d = double.CopySign(0.0, d);
+                    }
                     recalc = true;
                 }
+
                 if (recalc)
                 {
                     x = double.PositiveInfinity * ((a * c) - (b * d));
@@ -151,9 +178,18 @@ namespace System.Numerics.Tests
 
         private static double Logb(double value)
         {
-            if (value == 0.0) return double.NegativeInfinity;
-            if (double.IsInfinity(value)) return double.PositiveInfinity;
-            if (double.IsNaN(value)) return double.NaN;
+            if (value == 0.0)
+            {
+                return double.NegativeInfinity;
+            }
+            if (double.IsInfinity(value))
+            {
+                return double.PositiveInfinity;
+            }
+            if (double.IsNaN(value))
+            {
+                return double.NaN;
+            }
             return Math.Floor(Math.Log2(Math.Abs(value)));
         }
 
