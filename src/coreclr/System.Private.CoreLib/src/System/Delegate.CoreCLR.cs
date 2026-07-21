@@ -418,7 +418,7 @@ namespace System
                 if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
                 {
                     _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
-                    GC.KeepAlive(method);
+                    GC.KeepAlive(methodType);
                 }
 
                 if (bindToMethodDetails.selfReferentialTarget != 0)
