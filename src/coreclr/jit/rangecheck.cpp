@@ -2446,7 +2446,7 @@ Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncre
         JITDUMP("[RangeCheck::GetRangeWorker] " FMT_BB " ", block->bbNum);
         m_compiler->gtDispTree(expr);
         Indent(indent);
-        JITDUMP("{\n", expr);
+        JITDUMP("{\n");
     }
 #endif
 
@@ -2461,7 +2461,7 @@ Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncre
         JITDUMP("   %s Range [%06d] => %s\n", (pRange == nullptr) ? "Computed" : "Cached", Compiler::dspTreeID(expr),
                 range.ToString(m_compiler));
         Indent(indent);
-        JITDUMP("}\n", expr);
+        JITDUMP("}\n");
     }
 #endif
     return range;
