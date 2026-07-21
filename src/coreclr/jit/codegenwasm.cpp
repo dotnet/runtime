@@ -2862,14 +2862,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
     else // A normal store, not a WriteBarrier store
     {
-        var_types type = tree->TypeGet();
-        if (type == TYP_SIMD16)
-        {
-            // Storing a SIMD16 value emits v128.store, but the data operand is not
-            // materialized as a v128 (it comes through as an i32), producing an invalid
-            // module. Bail until SIMD16 store is properly supported.
-            NYI_WASM_SIMD("SIMD16 store indirect");
-        }
+        var_types   type = tree->TypeGet();
+        instruction ins  = ins_Store(type);
 
         // TODO-WASM: Memory barriers
 
