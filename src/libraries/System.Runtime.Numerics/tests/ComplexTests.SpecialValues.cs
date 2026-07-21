@@ -396,6 +396,35 @@ namespace System.Numerics.Tests
             Verify<Half>(Complex<Half>.Tanh, "Tanh", real, imaginary, expectedReal, expectedImaginary);
         }
 
+        [Fact]
+        public static void Tanh_LargeImaginary_HasStableZeroSign()
+        {
+            // ctanh(+-INF + iy) is +-1 + i*copysign(0, sin(2y)). Once |y| passes MaxValue/2,
+            // 2*y overflows and sin() collapses to a NaN, so the zero's sign must be recovered
+            // without doubling y. Pin it through the Annex G symmetry ctanh(conj(z)) ==
+            // conj(ctanh(z)): the two zero imaginary parts must carry opposite signs.
+            TanhLargeImaginaryCore<double>();
+            TanhLargeImaginaryCore<float>();
+            TanhLargeImaginaryCore<Half>();
+        }
+
+        private static void TanhLargeImaginaryCore<T>()
+            where T : IFloatingPointIeee754<T>, IMinMaxValue<T>
+        {
+            T y = T.MaxValue; // y + y overflows to +INF for every supported T
+            Complex<T> plus = Complex<T>.Tanh(new Complex<T>(T.PositiveInfinity, y));
+            Complex<T> minus = Complex<T>.Tanh(new Complex<T>(T.PositiveInfinity, -y));
+
+            string context = $"Tanh<{typeof(T).Name}>(+INF, +-MaxValue)";
+            Assert.True(plus.Real == T.One, $"{context}.Real: expected 1, got {plus.Real}");
+            Assert.True(minus.Real == T.One, $"{context}(conj).Real: expected 1, got {minus.Real}");
+            Assert.True(plus.Imaginary == T.Zero, $"{context}.Imaginary: expected 0, got {plus.Imaginary}");
+            Assert.True(minus.Imaginary == T.Zero, $"{context}(conj).Imaginary: expected 0, got {minus.Imaginary}");
+
+            Assert.True(T.IsNegative(plus.Imaginary) != T.IsNegative(minus.Imaginary),
+                $"{context}: conjugate symmetry lost, both zero signs are {(T.IsNegative(plus.Imaginary) ? "negative" : "positive")}");
+        }
+
         [Theory]
         [MemberData(nameof(Asin_SpecialValues))]
         public static void Asin(double real, double imaginary, double expectedReal, double expectedImaginary)

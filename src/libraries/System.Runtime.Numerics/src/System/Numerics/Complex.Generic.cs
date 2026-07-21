@@ -765,7 +765,10 @@ namespace System.Numerics
                 T re = T.CopySign(T.One, real);
                 if (T.IsFinite(imaginary))
                 {
-                    return new Complex<T>(re, T.CopySign(T.Zero, T.Sin(imaginary + imaginary)));
+                    // Compute sin(2y) as 2*sin(y)*cos(y) so the sign stays stable even when
+                    // 2*y would overflow to an infinity (which sin() maps to a NaN).
+                    (T sin, T cos) = T.SinCos(imaginary);
+                    return new Complex<T>(re, T.CopySign(T.Zero, sin * cos));
                 }
                 return new Complex<T>(re, T.CopySign(T.Zero, imaginary));
             }
