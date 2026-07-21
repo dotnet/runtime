@@ -2525,6 +2525,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
                 // byte code. This happens for String constructors, whose managed Ctor factory method is
                 // R2R-compiled. Publish the helper's native code into this method's own portable
                 // entrypoint so callers dispatch directly to it instead of looping back into the prestub.
+                // In this path helperMD comes from an FCall helper entrypoint, so native code must exist.
                 _ASSERTE(PortableEntryPoint::HasNativeEntryPoint(pCode));
                 PortableEntryPoint::SetActualCode(entryPoint, (PCODE)(TADDR)PortableEntryPoint::GetActualCode(pCode));
             }

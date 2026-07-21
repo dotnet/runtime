@@ -1382,11 +1382,16 @@ InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContex
     {
         const char *thunkKey = nullptr;
 
-        if (metaSig.NumFixedArgs() == 1 && metaSig.NextArg() == ELEMENT_TYPE_VALUETYPE)
+        if (metaSig.NumFixedArgs() == 1)
         {
-            thunkKey = "MiS8p"; // String constructor with a single argument of type System.ReadOnlySpan<char>
+            MetaSig ctorSig = metaSig;
+            if (ctorSig.NextArg() == ELEMENT_TYPE_VALUETYPE)
+            {
+                thunkKey = "MiS8p"; // String constructor with a single argument of type System.ReadOnlySpan<char>
+            }
         }
-        else
+
+        if (thunkKey == nullptr)
         {
             switch (metaSig.NumFixedArgs())
             {
@@ -1404,7 +1409,7 @@ InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContex
                     break;
                 default:
                     PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk for string constructor");
-                    return NULL;
+                    return nullptr;
             }
         }
 
