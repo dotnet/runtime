@@ -967,9 +967,10 @@ namespace System.Numerics.Tests
 
             if (realRight == 0.0 && imaginaryRight == 0.0)
             {
-                // Dividing by a zero divisor yields a directed infinity under C23 Annex G,
-                // not the NaN the magnitude-based oracle below would compute. Covered
-                // exhaustively by ComplexGenericSpecialValueTests.
+                // Dividing by a zero divisor is governed by C23 Annex G, where the result is a
+                // directed infinity or a NaN (e.g. 0/0 yields NaN via infinity * 0) rather than
+                // the value the magnitude-based oracle below would compute. Covered exhaustively
+                // by ComplexGenericSpecialValueTests.
                 return;
             }
 

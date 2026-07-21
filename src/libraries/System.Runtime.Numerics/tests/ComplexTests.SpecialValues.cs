@@ -8,9 +8,10 @@ namespace System.Numerics.Tests
 {
     // Special-value conformance for Complex<T>, modeled on the C23 Annex G
     // (IEC 60559-compatible complex arithmetic) value tables. The same table is
-    // shared across double/float/Half: every listed expected component is exactly
-    // representable in all three, so the type-independent special-value handling
-    // must reproduce it bit-for-bit, including the sign of zero.
+    // shared across double/float/Half: every listed expected component is either
+    // exactly representable in all three or a multiple of pi that each type forms
+    // identically to CreateTruncating of the shared double, so the type-independent
+    // special-value handling must reproduce it bit-for-bit, including the sign of zero.
     public static class ComplexGenericSpecialValueTests
     {
         private const double NaN = double.NaN;
@@ -452,6 +453,63 @@ namespace System.Numerics.Tests
             Verify<Half>(Complex<Half>.Atan, "Atan", real, imaginary, expectedReal, expectedImaginary);
         }
 
+        // C23 G.6.4: cpow(z, w) special values are those of cexp(w * clog(z)). Pow defers any
+        // non-finite input or magnitude-overflowing base to that expression; verify the deferral
+        // holds bit-for-bit so a future rewrite cannot silently route these through the polar core.
+        [Fact]
+        public static void Pow_DefersToExpLogForSpecialValues()
+        {
+            PowDefersCore<double>();
+            PowDefersCore<float>();
+            PowDefersCore<Half>();
+        }
+
+        private static void PowDefersCore<T>()
+            where T : IFloatingPointIeee754<T>, IMinMaxValue<T>
+        {
+            T inf = T.PositiveInfinity;
+            T ninf = T.NegativeInfinity;
+            T nan = T.NaN;
+            T zero = T.Zero;
+            T one = T.One;
+            T two = T.CreateChecked(2);
+
+            Complex<T>[] bases =
+            {
+                new Complex<T>(inf, zero), new Complex<T>(ninf, one), new Complex<T>(zero, inf),
+                new Complex<T>(nan, one), new Complex<T>(one, nan), new Complex<T>(inf, inf),
+                new Complex<T>(T.MaxValue, T.MaxValue), // finite, but Abs overflows to infinity
+            };
+            Complex<T>[] powers =
+            {
+                new Complex<T>(two, zero), new Complex<T>(one, one), new Complex<T>(zero, one),
+                new Complex<T>(inf, zero),
+            };
+
+            foreach (Complex<T> b in bases)
+            {
+                foreach (Complex<T> p in powers)
+                {
+                    Complex<T> actual = Complex<T>.Pow(b, p);
+                    Complex<T> expected = Complex<T>.Exp(p * Complex<T>.Log(b));
+                    string context = $"Pow<{typeof(T).Name}>({b}, {p}).";
+                    AssertIdentical(actual.Real, expected.Real, context + "Real");
+                    AssertIdentical(actual.Imaginary, expected.Imaginary, context + "Imaginary");
+                }
+            }
+        }
+
+        private static void AssertIdentical<T>(T actual, T expected, string context)
+            where T : IFloatingPointIeee754<T>
+        {
+            if (T.IsNaN(expected))
+            {
+                Assert.True(T.IsNaN(actual), $"{context}: expected NaN, got {actual}");
+                return;
+            }
+            Assert.True((actual == expected) && (T.IsNegative(actual) == T.IsNegative(expected)), $"{context}: expected {expected}, got {actual}");
+        }
+
         public static IEnumerable<object[]> Sqrt_SpecialValues() => new object[][]
         {
             new object[] { NegativeInfinity, NegativeInfinity, PositiveInfinity, NegativeInfinity },
@@ -811,6 +869,12 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> Asin_SpecialValues() => new object[][]
         {
+            new object[] { NegativeInfinity, NegativeInfinity, -(Math.PI / 4), NegativeInfinity },
+            new object[] { NegativeInfinity, -1.0, -(Math.PI / 2), NegativeInfinity },
+            new object[] { NegativeInfinity, -0.0, -(Math.PI / 2), NegativeInfinity },
+            new object[] { NegativeInfinity, 0.0, -(Math.PI / 2), PositiveInfinity },
+            new object[] { NegativeInfinity, 1.0, -(Math.PI / 2), PositiveInfinity },
+            new object[] { NegativeInfinity, PositiveInfinity, -(Math.PI / 4), PositiveInfinity },
             new object[] { NegativeInfinity, NaN, NaN, NegativeInfinity },
             new object[] { -1.0, NegativeInfinity, -0.0, NegativeInfinity },
             new object[] { -1.0, PositiveInfinity, -0.0, PositiveInfinity },
@@ -824,6 +888,12 @@ namespace System.Numerics.Tests
             new object[] { 1.0, NegativeInfinity, 0.0, NegativeInfinity },
             new object[] { 1.0, PositiveInfinity, 0.0, PositiveInfinity },
             new object[] { 1.0, NaN, NaN, NaN },
+            new object[] { PositiveInfinity, NegativeInfinity, Math.PI / 4, NegativeInfinity },
+            new object[] { PositiveInfinity, -1.0, Math.PI / 2, NegativeInfinity },
+            new object[] { PositiveInfinity, -0.0, Math.PI / 2, NegativeInfinity },
+            new object[] { PositiveInfinity, 0.0, Math.PI / 2, PositiveInfinity },
+            new object[] { PositiveInfinity, 1.0, Math.PI / 2, PositiveInfinity },
+            new object[] { PositiveInfinity, PositiveInfinity, Math.PI / 4, PositiveInfinity },
             new object[] { PositiveInfinity, NaN, NaN, NegativeInfinity },
             new object[] { NaN, NegativeInfinity, NaN, NegativeInfinity },
             new object[] { NaN, -1.0, NaN, NaN },
@@ -836,13 +906,31 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> Acos_SpecialValues() => new object[][]
         {
+            new object[] { NegativeInfinity, NegativeInfinity, 3.0 * (Math.PI / 4), PositiveInfinity },
+            new object[] { NegativeInfinity, -1.0, Math.PI, PositiveInfinity },
+            new object[] { NegativeInfinity, -0.0, Math.PI, PositiveInfinity },
+            new object[] { NegativeInfinity, 0.0, Math.PI, NegativeInfinity },
+            new object[] { NegativeInfinity, 1.0, Math.PI, NegativeInfinity },
+            new object[] { NegativeInfinity, PositiveInfinity, 3.0 * (Math.PI / 4), NegativeInfinity },
             new object[] { NegativeInfinity, NaN, NaN, PositiveInfinity },
+            new object[] { -1.0, NegativeInfinity, Math.PI / 2, PositiveInfinity },
+            new object[] { -1.0, PositiveInfinity, Math.PI / 2, NegativeInfinity },
             new object[] { -1.0, NaN, NaN, NaN },
+            new object[] { -0.0, NegativeInfinity, Math.PI / 2, PositiveInfinity },
+            new object[] { -0.0, PositiveInfinity, Math.PI / 2, NegativeInfinity },
+            new object[] { -0.0, NaN, Math.PI / 2, NaN },
+            new object[] { 0.0, NegativeInfinity, Math.PI / 2, PositiveInfinity },
+            new object[] { 0.0, PositiveInfinity, Math.PI / 2, NegativeInfinity },
+            new object[] { 0.0, NaN, Math.PI / 2, NaN },
+            new object[] { 1.0, NegativeInfinity, Math.PI / 2, PositiveInfinity },
+            new object[] { 1.0, PositiveInfinity, Math.PI / 2, NegativeInfinity },
             new object[] { 1.0, NaN, NaN, NaN },
+            new object[] { PositiveInfinity, NegativeInfinity, Math.PI / 4, PositiveInfinity },
             new object[] { PositiveInfinity, -1.0, 0.0, PositiveInfinity },
             new object[] { PositiveInfinity, -0.0, 0.0, PositiveInfinity },
             new object[] { PositiveInfinity, 0.0, 0.0, NegativeInfinity },
             new object[] { PositiveInfinity, 1.0, 0.0, NegativeInfinity },
+            new object[] { PositiveInfinity, PositiveInfinity, Math.PI / 4, NegativeInfinity },
             new object[] { PositiveInfinity, NaN, NaN, PositiveInfinity },
             new object[] { NaN, NegativeInfinity, NaN, PositiveInfinity },
             new object[] { NaN, -1.0, NaN, NaN },
@@ -855,10 +943,32 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> Atan_SpecialValues() => new object[][]
         {
+            new object[] { NegativeInfinity, NegativeInfinity, -(Math.PI / 2), -0.0 },
+            new object[] { NegativeInfinity, -1.0, -(Math.PI / 2), -0.0 },
+            new object[] { NegativeInfinity, -0.0, -(Math.PI / 2), -0.0 },
+            new object[] { NegativeInfinity, 0.0, -(Math.PI / 2), 0.0 },
+            new object[] { NegativeInfinity, 1.0, -(Math.PI / 2), 0.0 },
+            new object[] { NegativeInfinity, PositiveInfinity, -(Math.PI / 2), 0.0 },
+            new object[] { NegativeInfinity, NaN, -(Math.PI / 2), -0.0 },
+            new object[] { -1.0, NegativeInfinity, -(Math.PI / 2), -0.0 },
+            new object[] { -1.0, PositiveInfinity, -(Math.PI / 2), 0.0 },
             new object[] { -1.0, NaN, NaN, NaN },
+            new object[] { -0.0, NegativeInfinity, -(Math.PI / 2), -0.0 },
+            new object[] { -0.0, PositiveInfinity, -(Math.PI / 2), 0.0 },
             new object[] { -0.0, NaN, NaN, NaN },
+            new object[] { 0.0, NegativeInfinity, Math.PI / 2, -0.0 },
+            new object[] { 0.0, PositiveInfinity, Math.PI / 2, 0.0 },
             new object[] { 0.0, NaN, NaN, NaN },
+            new object[] { 1.0, NegativeInfinity, Math.PI / 2, -0.0 },
+            new object[] { 1.0, PositiveInfinity, Math.PI / 2, 0.0 },
             new object[] { 1.0, NaN, NaN, NaN },
+            new object[] { PositiveInfinity, NegativeInfinity, Math.PI / 2, -0.0 },
+            new object[] { PositiveInfinity, -1.0, Math.PI / 2, -0.0 },
+            new object[] { PositiveInfinity, -0.0, Math.PI / 2, -0.0 },
+            new object[] { PositiveInfinity, 0.0, Math.PI / 2, 0.0 },
+            new object[] { PositiveInfinity, 1.0, Math.PI / 2, 0.0 },
+            new object[] { PositiveInfinity, PositiveInfinity, Math.PI / 2, 0.0 },
+            new object[] { PositiveInfinity, NaN, Math.PI / 2, -0.0 },
             new object[] { NaN, NegativeInfinity, NaN, -0.0 },
             new object[] { NaN, -1.0, NaN, NaN },
             new object[] { NaN, -0.0, NaN, -0.0 },
@@ -867,6 +977,5 @@ namespace System.Numerics.Tests
             new object[] { NaN, PositiveInfinity, NaN, 0.0 },
             new object[] { NaN, NaN, NaN, NaN },
         };
-
     }
 }
