@@ -1560,7 +1560,8 @@ void HelperCallProperties::init()
                 break;
 
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
-                isPure     = true;
+                // In runtime async methods, execution may resume on a different thread after suspension.
+                // So managed thread ID is not a constant/pure value, but the helper is still no-throw.
                 exceptions = ExceptionSetFlags::None;
                 break;
 

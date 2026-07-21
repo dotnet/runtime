@@ -60,7 +60,7 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
 
-// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of Thunk, None.
+// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of Thunk, None, IsAsyncVariant.
 enum class AsyncMethodFlags
 {
     // Method uses CORINFO_CALLCONV_ASYNCCALL call convention.
@@ -148,6 +148,13 @@ struct AsyncMethodData
 };
 
 typedef DPTR(struct AsyncMethodData) PTR_AsyncMethodData;
+
+template<>
+struct cdac_data<AsyncMethodData>
+{
+    static constexpr size_t Flags = offsetof(AsyncMethodData, flags);
+    static constexpr size_t Signature = offsetof(AsyncMethodData, sig);
+};
 
 //=============================================================
 // Splits methoddef token into two pieces for
@@ -283,7 +290,11 @@ using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 enum class AsyncVariantLookup
 {
     Ordinary = 0,
-    Async
+    Async,
+    // Matches only ReturnDroppingThunk methods. Used by FindOrCreateAssociatedMethodDesc to
+    // look up a parallel method that is itself a ReturnDroppingThunk and differs from the
+    // primary only in something other than async kind (e.g. generic arguments).
+    ReturnDroppingThunk
 };
 
 enum class MethodReturnKind
@@ -1729,11 +1740,7 @@ public:
                                                         BOOL allowCreate = TRUE,
                                                         ClassLoadLevel level = CLASS_LOADED)
     {
-        // If this assert fires, we may just need to add a lookup that matches AsyncMethodFlags::ReturnDroppingThunk
-        // It does not look like there is a scenario for directly calling ReturnDroppingThunk right now.
-        _ASSERTE(!pPrimaryMD->IsReturnDroppingThunk());
-        // by default async lookup matches the primaryMD
-        AsyncVariantLookup variantLookup = pPrimaryMD->IsAsyncVariantMethod() ? AsyncVariantLookup::Async : AsyncVariantLookup::Ordinary;
+        AsyncVariantLookup variantLookup = pPrimaryMD->GetMatchingAsyncVariantLookup();
 
         return FindOrCreateAssociatedMethodDesc(
             pPrimaryMD,
@@ -2114,13 +2121,30 @@ public:
                 return false;
 
             // Note: AsyncVariantLookup::Async only matches regular async variants. ReturnDroppingThunk intentionally
-            //       does not match any lookups. Noone should call ReturnDroppingThunk directly. The only way it gets
-            //       invoked is when it adds itself as a virtual override to a regular async variant.
+            //       does not match this lookup. ReturnDroppingThunk is only matched by AsyncVariantLookup::ReturnDroppingThunk,
+            //       which is used to find a parallel ReturnDroppingThunk method that differs in something other than async
+            //       kind (e.g. generic arguments).
             AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
             return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant) && !hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
         }
 
+        if (lookup == AsyncVariantLookup::ReturnDroppingThunk)
+        {
+            return IsReturnDroppingThunk();
+        }
+
         return false;
+    }
+
+    // Returns the AsyncVariantLookup that matches this method's async kind.
+    inline AsyncVariantLookup GetMatchingAsyncVariantLookup() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (IsReturnDroppingThunk())
+            return AsyncVariantLookup::ReturnDroppingThunk;
+        if (IsAsyncVariantMethod())
+            return AsyncVariantLookup::Async;
+        return AsyncVariantLookup::Ordinary;
     }
 
     // Is this an Async variant method for a method that
@@ -2317,6 +2341,13 @@ public:
 public:
     PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Probe for precompiled R2R native code for an UnmanagedCallersOnly method and, if present,
+    // publish it into this method's portable entrypoint WITHOUT compiling interpreter byte code.
+    // Returns true if native code was found and published, false otherwise.
+    bool TryPublishR2RCodeForUnmanagedCallersOnly();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
@@ -3915,7 +3946,7 @@ public:
                                                                     mdMethodDef methodDef,
                                                                     Instantiation methodInst,
                                                                     BOOL getSharedNotStub,
-                                                                    BOOL asyncThunk);
+                                                                    AsyncVariantLookup variantLookup);
 
 private:
 

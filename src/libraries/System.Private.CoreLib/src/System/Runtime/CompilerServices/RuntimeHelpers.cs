@@ -185,6 +185,11 @@ namespace System.Runtime.CompilerServices
         internal static bool IsKnownConstant<T>(T t) where T : struct => false;
 #pragma warning restore IDE0060
 
+        // Returns true if the method being compiled is a runtime-async method.
+        // This is folded to a compile-time constant by the JIT and the interpreter.
+        [Intrinsic]
+        internal static bool IsRuntimeAsync() => false;
+
         /// <returns>true if the given type is a reference type or a value type that contains references or by-refs; otherwise, false.</returns>
         [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>() where T : allows ref struct => IsReferenceOrContainsReferences<T>();

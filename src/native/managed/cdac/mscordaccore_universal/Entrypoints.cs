@@ -18,6 +18,7 @@ internal static class Entrypoints
         delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget,
         delegate* unmanaged<ulong, byte*, uint, void*, int> writeToTarget,
         delegate* unmanaged<uint, uint, uint, byte*, void*, int> readThreadContext,
+        delegate* unmanaged<uint, uint, byte*, void*, int> writeThreadContext,
         delegate* unmanaged<uint, ulong*, void*, int> allocVirtual,
         void* delegateContext,
         IntPtr* handle)
@@ -48,6 +49,36 @@ internal static class Entrypoints
                     fixed (ulong* addrPtr = &allocatedAddress)
                     {
                         return allocVirtual((uint)size, addrPtr, delegateContext);
+                    }
+                };
+            }
+
+            // Build the setThreadContext delegate if the caller provided a callback
+            ContractDescriptorTarget.SetTargetThreadContextDelegate setThreadContextDelegate =
+                (uint threadId, ReadOnlySpan<byte> context) => HResults.E_NOTIMPL;
+
+            if (writeThreadContext != null)
+            {
+                setThreadContextDelegate = (uint threadId, ReadOnlySpan<byte> context) =>
+                {
+                    const nuint RequiredAlignment = 16;
+                    fixed (byte* contextPtr = context)
+                    {
+                        if (((nuint)contextPtr & (RequiredAlignment - 1)) == 0)
+                        {
+                            return writeThreadContext(threadId, (uint)context.Length, contextPtr, delegateContext);
+                        }
+
+                        byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, RequiredAlignment);
+                        try
+                        {
+                            context.CopyTo(new Span<byte>(alignedBuffer, context.Length));
+                            return writeThreadContext(threadId, (uint)context.Length, alignedBuffer, delegateContext);
+                        }
+                        finally
+                        {
+                            NativeMemory.AlignedFree(alignedBuffer);
+                        }
                     }
                 };
             }
@@ -96,6 +127,7 @@ internal static class Entrypoints
                         }
                     }
                 },
+                setThreadContextDelegate,
                 allocDelegate,
                 [Contracts.CoreCLRContracts.Register],
                 out ContractDescriptorTarget? target))
@@ -221,6 +253,53 @@ internal static class Entrypoints
         return CLRDataCreateInstanceImpl(pIID, pLegacyTarget, pLegacyImpl, iface);
     }
 
+    [UnmanagedCallersOnly(EntryPoint = "DacDbiInterfaceInstance")]
+    private static unsafe int DacDbiInterfaceInstance(
+        IntPtr /*ICorDebugDataTarget*/ pTarget,
+        ulong runtimeBase,
+        IntPtr /*IDacDbiInterface::IAllocator*/ pAllocator,
+        IntPtr /*IDacDbiInterface::IMetaDataLookup*/ pMetaDataLookup,
+        void** iface)
+    {
+        // Match the native DAC export (DacDbiInterfaceInstance in dacdbiimpl.cpp), which only
+        // validates the target, base address, and out parameter. The allocator and metadata
+        // lookup pointers are not used by the managed implementation, so don't require them.
+        if (pTarget == IntPtr.Zero
+            || runtimeBase == 0
+            || iface == null)
+        {
+            return HResults.E_INVALIDARG;
+        }
+
+        *iface = null;
+
+        try
+        {
+            object dataTarget = ComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged((void*)pTarget)!;
+            if (dataTarget is ICLRRuntimeLocator runtimeLocator)
+            {
+                ulong locatedRuntimeBase;
+                int hr = runtimeLocator.GetRuntimeBase(&locatedRuntimeBase);
+                if (hr < 0)
+                    return hr;
+                if (locatedRuntimeBase != runtimeBase)
+                    return HResults.E_INVALIDARG;
+            }
+
+            ContractDescriptorTarget target = CreateTargetFromCorDebugDataTarget(dataTarget);
+            Legacy.DacDbiImpl impl = new(target, legacyObj: null);
+            *iface = ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
+            return HResults.S_OK;
+        }
+        catch (Exception ex)
+        {
+            if (iface != null)
+                *iface = null;
+            int hr = ex.HResult;
+            return hr < 0 ? hr : HResults.E_FAIL;
+        }
+    }
+
     // Same export name and signature as DAC CLRDataCreateInstance in daccess.cpp
     [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstance")]
     private static unsafe int CLRDataCreateInstance(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, void** iface)
@@ -314,6 +393,28 @@ internal static class Entrypoints
                     return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
                 }
             },
+            (threadId, context) =>
+            {
+                const nuint RequiredAlignment = 16;
+                fixed (byte* contextPtr = context)
+                {
+                    if (((nuint)contextPtr & (RequiredAlignment - 1)) == 0)
+                    {
+                        return dataTarget.SetThreadContext(threadId, (uint)context.Length, contextPtr);
+                    }
+
+                    byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, RequiredAlignment);
+                    try
+                    {
+                        context.CopyTo(new Span<byte>(alignedBuffer, context.Length));
+                        return dataTarget.SetThreadContext(threadId, (uint)context.Length, alignedBuffer);
+                    }
+                    finally
+                    {
+                        NativeMemory.AlignedFree(alignedBuffer);
+                    }
+                }
+            },
             allocVirtual,
             [Contracts.CoreCLRContracts.Register],
             out ContractDescriptorTarget? target))
@@ -330,5 +431,54 @@ internal static class Entrypoints
         ComInterfaceMarshaller<IXCLRDataProcess>.Free(ccw);
 
         return 0;
+    }
+
+    private static unsafe ContractDescriptorTarget CreateTargetFromCorDebugDataTarget(object targetObject)
+    {
+        ICorDebugDataTarget dataTarget = targetObject as ICorDebugDataTarget ?? throw new ArgumentException(
+            $"Data target does not implement {nameof(ICorDebugDataTarget)}", nameof(targetObject));
+        ICLRContractLocator contractLocator = targetObject as ICLRContractLocator ?? throw new ArgumentException(
+            $"Data target does not implement {nameof(ICLRContractLocator)}", nameof(targetObject));
+
+        ulong contractAddress;
+        int hr = contractLocator.GetContractDescriptor(&contractAddress);
+        if (hr != 0)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
+        }
+
+        if (!ContractDescriptorTarget.TryCreate(
+            contractAddress,
+            (address, buffer) =>
+            {
+                fixed (byte* bufferPtr = buffer)
+                {
+                    uint bytesRead;
+                    return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
+                }
+            },
+            (address, buffer) => HResults.E_NOTIMPL,
+            (threadId, contextFlags, bufferToFill) =>
+            {
+                fixed (byte* bufferPtr = bufferToFill)
+                {
+                    return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
+                }
+            },
+            (threadId, context) => HResults.E_NOTIMPL,
+            (ulong size, out ulong allocatedAddress) =>
+            {
+                allocatedAddress = 0;
+                return HResults.E_NOTIMPL;
+            },
+            [Contracts.CoreCLRContracts.Register],
+            out ContractDescriptorTarget? target))
+        {
+            throw new InvalidOperationException(
+                $"Failed to create a {nameof(ContractDescriptorTarget)} from the contract descriptor at 0x{contractAddress:x}.");
+        }
+
+        return target!;
     }
 }

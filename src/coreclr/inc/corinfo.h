@@ -562,7 +562,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,  // Transition to preemptive mode in reverse P/Invoke epilog, frame is the first argument
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.
 
-    CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
+    CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and dispatch cell
     CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT,  // Dispatch a non-generic interface method from this pointer and dispatch cell
     CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT,  // Resolve a non-generic interface method from this pointer and dispatch cell
 
@@ -999,6 +999,7 @@ typedef struct CORINFO_JUST_MY_CODE_HANDLE_*CORINFO_JUST_MY_CODE_HANDLE;
 typedef struct CORINFO_PROFILING_STRUCT_*   CORINFO_PROFILING_HANDLE;   // a handle guaranteed to be unique per process
 typedef struct CORINFO_GENERIC_STRUCT_*     CORINFO_GENERIC_HANDLE;     // a generic handle (could be any of the above)
 typedef struct CORINFO_WASM_TYPE_SYMBOL_STRUCT_* CORINFO_WASM_TYPE_SYMBOL_HANDLE; // a handle for WASM type symbols
+typedef struct CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* CORINFO_WASM_GLOBAL_SYMBOL_HANDLE; // a handle for a WASM global symbol
 
 // what is actually passed on the varargs call
 typedef struct CORINFO_VarArgInfo *         CORINFO_VARARGS_HANDLE;
@@ -1797,26 +1798,29 @@ enum CorInfoContinuationFlags
     // If this bit is set the continuation context is a TaskScheduler that
     // we should continue on.
     CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 1 << 2,
+    // If this bit is set this is an await of valueTask.AsTask()
+    // (common pattern when returning a value-task in an async version)
+    CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK = 1 << 3,
 
     // The flags encode where in the continuation various members are stored.
     // If the encoded index is 0, it means no such member is present.
     // Otherwise the exact offset of the member is computed as
     //   OFFSETOF__CORINFO_Continuation__data + (index - 1) * PointerSize
 
-    CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT = 3,
+    CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT = 4,
     CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS = 2,
 
-    CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT = 5,
+    CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT = 6,
     CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS = 2,
 
-    CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT = 7,
+    CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT = 8,
     CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS = 3,
 
     // For JIT, the continuation stores space for every possible type of
     // async callee's result. We need to represent the offset to each of
     // these, so we allocate the rest of the bits for this.
-    CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 10,
-    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 22,
+    CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 11,
+    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 21,
 };
 
 struct CORINFO_ASYNC_INFO
@@ -1845,6 +1849,19 @@ struct CORINFO_ASYNC_INFO
     CORINFO_METHOD_HANDLE finishSuspensionNoContinuationContextMethHnd;
     // Finish suspension with saving continuation context (i.e. normal task await)
     CORINFO_METHOD_HANDLE finishSuspensionWithContinuationContextMethHnd;
+};
+
+// The well-known wasm globals that JIT-generated code references via
+// WASM_GLOBAL_INDEX_LEB relocations. Each handle is the relocation target for the
+// corresponding well-known global; the object writer resolves it to the final wasm global index.
+struct CORINFO_WASM_WELLKNOWN_GLOBALS
+{
+    // Shadow stack pointer global (read at the root frame, then threaded through locals).
+    CORINFO_WASM_GLOBAL_SYMBOL_HANDLE stackPointer;
+    // Image base global (__memory_base), added to static data offsets.
+    CORINFO_WASM_GLOBAL_SYMBOL_HANDLE imageBase;
+    // Table base global (__table_base), added to funclet pointer offsets.
+    CORINFO_WASM_GLOBAL_SYMBOL_HANDLE tableBase;
 };
 
 // Flags passed from JIT to runtime.
@@ -3140,7 +3157,14 @@ public:
 
     // Get information about which await call to use to await the return type
     // of the non-async version of an async call.
-    virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg) = 0;
+    //
+    // Returns the method handle of the await call to insert. 'contextHandle' is
+    // set to the context to use when inlining the await call, exactly as
+    // getCallInfo would report it for a direct call to it (it may be an
+    // approximate/shared instantiation when 'instArg' requires a runtime
+    // lookup). 'instArg' is filled with the (potentially runtime-looked-up)
+    // instantiation argument that must be passed to the await call.
+    virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg) = 0;
 
     /*********************************************************************************/
     //
@@ -3202,6 +3226,21 @@ public:
     // Returns the primitive type for passing/returning a Wasm struct by value,
     // or CORINFO_WASM_TYPE_VOID if passing/returning must be by reference.
     virtual CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) = 0;
+
+    // Returns the guaranteed alignment, in bytes, of the data referenced by 'address'.
+    // 'address' is a relocation target such as a static, RVA, or frozen-data blob. The JIT
+    // uses this to decide whether it can emit an alignment-sensitive relocation against the
+    // target (e.g. the Arm64 LDST64 ':lo12:' page-offset fold, which requires the target to
+    // be 8-byte aligned).
+    virtual uint32_t getAddressAlignment(
+            void* address
+            ) = 0;
+
+    // Get the well-known wasm global symbols (shadow stack pointer, image base, table base)
+    // that JIT-generated wasm code references via WASM_GLOBAL_INDEX_LEB relocations.
+    virtual void getWasmWellKnownGlobals(
+        CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut
+    ) = 0;
 };
 
 /*****************************************************************************

@@ -108,6 +108,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
             {
                 if (!strcmp(methodName, "IsReferenceOrContainsReferences"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                else if (!strcmp(methodName, "IsRuntimeAsync"))
+                    return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync;
                 else if (!strcmp(methodName, "GetMethodTable"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                 else if (!strcmp(methodName, "SetNextCallGenericContext"))
@@ -171,6 +173,20 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
             if (!strcmp(className, "Task`1") || !strcmp(className, "Task") ||
                 !strcmp(className, "ValueTask`1") || !strcmp(className, "ValueTask"))
                 return NI_System_Threading_Tasks_Task_ConfigureAwait;
+        }
+        else if (!strcmp(className, "ValueTask"))
+        {
+            if (!strcmp(methodName, ".ctor"))
+                return NI_System_Threading_Tasks_ValueTask__ctor;
+            else if (!strcmp(methodName, "AsTask"))
+                return NI_System_Threading_Tasks_ValueTask_AsTask;
+        }
+        else if (!strcmp(className, "ValueTask`1"))
+        {
+            if (!strcmp(methodName, ".ctor"))
+                return NI_System_Threading_Tasks_ValueTask_1__ctor;
+            else if (!strcmp(methodName, "AsTask"))
+                return NI_System_Threading_Tasks_ValueTask_1_AsTask;
         }
     }
 

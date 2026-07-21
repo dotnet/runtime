@@ -109,6 +109,35 @@ public enum WellKnownMethodTable
     Canon,
 }
 
+// cDAC-owned representation of a SystemV AMD64 eightbyte register classification. The values mirror
+// the ABI classification (see the runtime's Internal.JitInterface.SystemVClassificationType), but the
+// enum is owned by the cDAC contract surface so consumers don't depend on runtime-internal types.
+public enum SystemVAmd64Classification : byte
+{
+    Unknown = 0,
+    Struct = 1,
+    NoClass = 2,
+    Memory = 3,
+    Integer = 4,
+    IntegerReference = 5,
+    IntegerByRef = 6,
+    SSE = 7,
+}
+
+// A single SystemV AMD64 eightbyte register-passing slot for a value type: how that eightbyte is
+// classified and how many of its bytes are occupied (1-8; the final eightbyte may be partial).
+public readonly record struct SystemVAmd64EightByte(
+    SystemVAmd64Classification Classification,
+    byte Size);
+
+// SystemV AMD64 eightbyte register-passing classification for a value type, read from the type's
+// EEClass optional fields (populated only on UNIX_AMD64_ABI builds). A value type is passed in at
+// most two eightbytes (CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS): First is always
+// present, Second is present only when the value spans a second eightbyte.
+public readonly record struct SystemVAmd64EightByteClassification(
+    SystemVAmd64EightByte First,
+    SystemVAmd64EightByte? Second);
+
 
 public interface IRuntimeTypeSystem : IContract
 {
@@ -122,9 +151,6 @@ public interface IRuntimeTypeSystem : IContract
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
     TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
-    // Returns the EEClass pointer for this MethodTable. For non-canonical MTs, follows the tagged pointer
-    // to the canonical MT and returns its EEClass.
-    TargetPointer GetClassPointer(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if this MethodTable is the canonical MethodTable (i.e., EEClassOrCanonMT points directly to the EEClass)
     bool IsCanonicalMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
     TargetPointer GetParentMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
@@ -152,8 +178,18 @@ public interface IRuntimeTypeSystem : IContract
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if MethodTable represents a byreflike value (Span<T>, ReadOnlySpan<T>, etc.).
     bool IsByRefLike(TypeHandle typeHandle) => throw new NotImplementedException();
+    // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
+    // to 4, 8, or 16. Returns false otherwise (including on targets that don't
+    // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
+    // src/coreclr/vm/class.cpp.
+    bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize) => throw new NotImplementedException();
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
+    // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
+    // (used to decide how a struct is passed in registers), or false if the type has no such
+    // classification (not applicable, or the runtime was not built with UNIX_AMD64_ABI). Mirrors
+    // the EEClass::GetSystemVAmd64EightByteInfo runtime data used by the JIT.
+    bool TryGetSystemVAmd64EightByteClassification(TypeHandle typeHandle, out SystemVAmd64EightByteClassification classification) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation subtype that has no metadata of its own
     bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => throw new NotImplementedException();
     /// <summary>
@@ -249,8 +285,10 @@ public interface IRuntimeTypeSystem : IContract
     // Or something else similar.
     // A no metadata method is also a StoredSigMethodDesc
     bool IsNoMetadataMethod(MethodDescHandle methodDesc, out string methodName) => throw new NotImplementedException();
-    // A StoredSigMethodDesc is a MethodDesc for which the signature isn't found in metadata.
-    bool IsStoredSigMethodDesc(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature) => throw new NotImplementedException();
+
+    // Gets the raw signature bytes for a MethodDesc by checking stored signature, async variant signature, then metadata.
+    // Returns false if no signature could be resolved.
+    bool TryGetMethodSignature(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature) => throw new NotImplementedException();
 
     // Return true for a MethodDesc that describes a method represented by the System.Reflection.Emit.DynamicMethod class
     // A DynamicMethod is also a StoredSigMethodDesc, and a NoMetadataMethod
@@ -299,6 +337,7 @@ public interface IRuntimeTypeSystem : IContract
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef) => throw new NotImplementedException();
     TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    bool TryGetFieldDescNext(TargetPointer fieldDescPointer, out TargetPointer nextFieldDesc) => throw new NotImplementedException();
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
     TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();

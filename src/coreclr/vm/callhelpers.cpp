@@ -401,6 +401,15 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 argDest.CopyStructToRegisters(pSrc, th.AsMethodTable()->GetNumInstanceFieldBytes(), 0);
             }
             else
+#elif defined(TARGET_ARM64)
+            if (argDest.IsHFA())
+            {
+                // An HFA/HVA struct argument is enregistered with each field in its own
+                // floating-point/vector register. Expand the packed struct data into the
+                // register slots instead of copying it verbatim.
+                argDest.CopyHFAStructToRegister(pSrc, stackSize);
+            }
+            else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if (argDest.IsStructPassedInRegs())
             {
@@ -563,7 +572,14 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
 
-    defaultCtorInvoker.InvokeThrowing(&ref, pMD->GetSingleCallableAddrOfCode());
+    PCODE ctorCode = pMD->GetSingleCallableAddrOfCode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // CallDefaultConstructor invokes the ctor via the function pointer, so its portable entrypoint
+    // must resolve to real code if possible.
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(ctorCode);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    defaultCtorInvoker.InvokeThrowing(&ref, ctorCode);
 
     GCPROTECT_END ();
 }

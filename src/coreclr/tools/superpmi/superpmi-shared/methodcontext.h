@@ -565,9 +565,13 @@ public:
     void dmpGetAsyncInfo(DWORD key, const Agnostic_CORINFO_ASYNC_INFO& value);
     void repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut);
 
-    void recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_LOOKUP* instArg, CORINFO_METHOD_HANDLE methHnd);
+    void recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg, CORINFO_METHOD_HANDLE methHnd);
     void dmpGetAwaitReturnCall(DWORDLONG key, Agnostic_GetAwaitReturnCallResult& value);
-    CORINFO_METHOD_HANDLE repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_LOOKUP* instArg);
+    CORINFO_METHOD_HANDLE repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
+
+    void recGetWasmWellKnownGlobals(const CORINFO_WASM_WELLKNOWN_GLOBALS* pBaseGlobals);
+    void dmpGetWasmWellKnownGlobals(DWORD key, const Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS& value);
+    void repGetWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
 
     void recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
     void dmpGetGSCookie(DWORD key, DLDL value);
@@ -792,6 +796,10 @@ public:
     void recGetRelocTypeHint(void* target, CorInfoReloc result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     CorInfoReloc repGetRelocTypeHint(void* target);
+
+    void recGetAddressAlignment(void* address, uint32_t result);
+    void dmpGetAddressAlignment(DWORDLONG key, DWORD value);
+    uint32_t repGetAddressAlignment(void* address);
 
     void recGetExpectedTargetArchitecture(DWORD result);
     void dmpGetExpectedTargetArchitecture(DWORD key, DWORD result);
@@ -1220,6 +1228,8 @@ enum mcPackets
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
     Packet_GetAwaitReturnCall = 238,
+    Packet_GetAddressAlignment = 239,
+    Packet_GetWasmWellKnownGlobals = 240,
 };
 
 void SetDebugDumpVariables();

@@ -64,6 +64,7 @@ internal sealed class MockLoaderModule : TypedView
     private const string FlagsFieldName = "Flags";
     private const string LoaderAllocatorFieldName = "LoaderAllocator";
     private const string DynamicMetadataFieldName = "DynamicMetadata";
+    private const string MetadataGenerationFieldName = "MetadataGeneration";
     private const string SimpleNameFieldName = "SimpleName";
     private const string PathFieldName = "Path";
     private const string FileNameFieldName = "FileName";
@@ -88,6 +89,7 @@ internal sealed class MockLoaderModule : TypedView
             .AddUInt32Field(FlagsFieldName)
             .AddPointerField(LoaderAllocatorFieldName)
             .AddPointerField(DynamicMetadataFieldName)
+            .AddUInt32Field(MetadataGenerationFieldName)
             .AddPointerField(SimpleNameFieldName)
             .AddPointerField(PathFieldName)
             .AddPointerField(FileNameFieldName)
