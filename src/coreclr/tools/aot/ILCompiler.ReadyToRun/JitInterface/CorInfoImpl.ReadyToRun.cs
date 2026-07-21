@@ -582,14 +582,6 @@ namespace Internal.JitInterface
                 return true;
             }
 
-            // Currently crossgen2 does not support compiling async versions of synchronous Task-returning functions.
-            // We would compile a wrapper thunk but that comes with different perf characteristics and diagnostics
-            // that we do not want to deal with.
-            if (methodNeedingCode.SupportsAsyncVersionCodegen())
-            {
-                return true;
-            }
-
             if (ShouldCodeNotBeCompiledIntoFinalImage(instructionSetSupport, methodNeedingCode))
             {
                 return true;
@@ -2558,7 +2550,7 @@ namespace Internal.JitInterface
                         }
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.SymbolNodeFactory.InterfaceDispatchCell(
+                            _compilation.SymbolNodeFactory.DispatchCell(
                                 ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
                                 MethodBeingCompiled));
 
@@ -3611,6 +3603,18 @@ namespace Internal.JitInterface
             if ((callSig != null) && _compilation.NodeFactory.Target.IsWasm)
             {
                 var sig = HandleToObject(callSig->methodSignature);
+
+                if (callSig->callConv == CorInfoCallConv.CORINFO_CALLCONV_DEFAULT &&
+                    callSig->retType == CorInfoType.CORINFO_TYPE_CLASS &&
+                    !sig.IsStatic &&
+                    sig.ReturnType == sig.Context.GetWellKnownType(WellKnownType.Void))
+                {
+                    // Detect special case for string ctors
+                    if (sig.Context.GetWellKnownType(WellKnownType.String).GetMethod(".ctor"u8, sig) is not null)
+                    {
+                        sig = WasmLowering.GetStringCtorActualSignature(sig);
+                    }
+                }
 
                 WasmLowering.LoweringFlags flags = 0;
                 if (callSig->hasTypeArg())

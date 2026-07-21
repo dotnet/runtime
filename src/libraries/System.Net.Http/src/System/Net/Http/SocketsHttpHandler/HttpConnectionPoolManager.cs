@@ -94,6 +94,18 @@ namespace System.Net.Http
                     _cleanPoolTimeout = timerPeriod.TotalSeconds >= MinScavengeSeconds ? timerPeriod : TimeSpan.FromSeconds(MinScavengeSeconds);
                 }
 
+                // The connection eviction callback is invoked from this timer. If one is set, make sure the timer
+                // fires at least this often so eviction decisions happen on a predictable cadence, regardless of
+                // how large (or infinite) the idle timeout is, which would otherwise drive the period alone.
+                if (settings._shouldEvictConnection is not null)
+                {
+                    const int MaxEvictionIntervalSeconds = 5;
+                    if (_cleanPoolTimeout.TotalSeconds > MaxEvictionIntervalSeconds)
+                    {
+                        _cleanPoolTimeout = TimeSpan.FromSeconds(MaxEvictionIntervalSeconds);
+                    }
+                }
+
                 using (ExecutionContext.SuppressFlow()) // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
                 {
                     // Create the timer.  Ensure the Timer has a weak reference to this manager; otherwise, it
@@ -272,9 +284,13 @@ namespace System.Net.Http
                 }
                 else if (sslHostName == null)
                 {
-                    if (HttpUtilities.IsNonSecureWebSocketScheme(uri.Scheme))
+                    // Both non-secure WebSockets (WS) and cleartext HTTP/2 (h2c) need a CONNECT tunnel to the destination,
+                    // because they can't be expressed using the absolute-form request line an HTTP proxy expects.
+                    // h2c is only tunneled when HTTP/2 is required or preferred; requests that allow downgrading to
+                    // HTTP/1.1 (RequestVersionOrLower) keep using the shared HTTP/1.1 proxy pool below.
+                    if (HttpUtilities.IsNonSecureWebSocketScheme(uri.Scheme) ||
+                        (request.Version.Major == 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower))
                     {
-                        // Non-secure websocket connection through proxy to the destination.
                         return new HttpConnectionKey(HttpConnectionKind.ProxyTunnel, uri.IdnHost, uri.Port, null, proxyUri, identity);
                     }
                     else

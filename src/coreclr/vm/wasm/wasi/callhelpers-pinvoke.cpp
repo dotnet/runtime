@@ -44,6 +44,7 @@ extern "C" {
     int32_t GlobalizationNative_IndexOf (void *, void *, int32_t, void *, int32_t, int32_t, void *);
     void GlobalizationNative_InitICUFunctions (void *, void *, void *, void *);
     void GlobalizationNative_InitOrdinalCasingPage (int32_t, void *);
+    void GlobalizationNative_InitOrdinalLowerCasingPage (int32_t, void *);
     int32_t GlobalizationNative_IsNormalized (int32_t, void *, int32_t);
     int32_t GlobalizationNative_IsPredefinedLocale (void *);
     int32_t GlobalizationNative_LastIndexOf (void *, void *, int32_t, void *, int32_t, int32_t, void *);
@@ -232,6 +233,7 @@ static const Entry s_libSystem_Globalization_Native [] = {
     DllImportEntry(GlobalizationNative_IndexOf) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_InitICUFunctions) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_InitOrdinalCasingPage) // System.Private.CoreLib
+    DllImportEntry(GlobalizationNative_InitOrdinalLowerCasingPage) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_IsNormalized) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_IsPredefinedLocale) // System.Private.CoreLib
     DllImportEntry(GlobalizationNative_LastIndexOf) // System.Private.CoreLib
@@ -403,15 +405,15 @@ static const Entry s_libSystem_Native [] = {
 };
 
 static const Entry s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8 [] = {
-    DllImportEntry(WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_now) // System.Private.CoreLib
-    DllImportEntry(WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_resolution) // System.Private.CoreLib
-    DllImportEntry(WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_duration) // System.Private.CoreLib
-    DllImportEntry(WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_instant) // System.Private.CoreLib
+    { "now", (void*)&WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_now }, // System.Private.CoreLib
+    { "resolution", (void*)&WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_resolution }, // System.Private.CoreLib
+    { "subscribe-duration", (void*)&WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_duration }, // System.Private.CoreLib
+    { "subscribe-instant", (void*)&WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_instant }, // System.Private.CoreLib
 };
 
 static const Entry s_wasi_3A_io_2F_poll_40_0_2_8 [] = {
-    DllImportEntry(WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23__5B_resource_drop_5D_pollable) // System.Private.CoreLib
-    DllImportEntry(WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23_poll) // System.Private.CoreLib
+    { "[resource-drop]pollable", (void*)&WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23__5B_resource_drop_5D_pollable }, // System.Private.CoreLib
+    { "poll", (void*)&WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23_poll }, // System.Private.CoreLib
 };
 
 typedef struct PInvokeTable {
@@ -421,7 +423,7 @@ typedef struct PInvokeTable {
 } PInvokeTable;
 
 static PInvokeTable s_PInvokeTables[] = {
-    {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
+    {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 8},
     {"libSystem.Native", s_libSystem_Native, 146},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},

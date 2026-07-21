@@ -58,9 +58,27 @@ This applies to all GitHub interactions: PR descriptions, issue bodies, comments
 
 # Building & Testing in dotnet/runtime
 
-## ⚠️ MANDATORY: Run Baseline Build First
+## Baseline Build
 
-**You MUST complete a baseline build BEFORE making any code changes.** Skipping this causes "missing testhost" and "shared framework" errors that waste time.
+A successful baseline build of the affected component is required for incremental builds and tests. Without it you'll hit "missing testhost" and "shared framework" errors that cost 20+ minutes per occurrence.
+
+### When running under CCA — MANDATORY
+
+⚠️ **You MUST complete the baseline build BEFORE making any code changes.** No exceptions. The CCA environment is fresh; there are no pre-existing artifacts, and incremental builds will fail in ways that waste significant compute. Skipping this step IS a task failure — do not proceed with code changes until the baseline build succeeds.
+
+If the baseline build fails, STOP, report the failure, and do not attempt to work around it.
+
+### When running under CLI (interactive) — flexible
+
+A baseline may already exist in the user's workspace from prior work. Don't re-run a 40-minute baseline if the existing one is usable. Apply this rule (works for human users and for local agents driving the CLI):
+
+1. **Check the sentinel artifact** for the work you're about to do. Each component-specific workflow below lists a sentinel path under `artifacts/`. If it's missing, run the baseline before proceeding.
+2. **Otherwise, attempt the incremental work.** If a build or test step then fails with a baseline-missing signature from [Troubleshooting](#troubleshooting) (e.g., "shared framework must be built", "testhost" missing, `FileNotFoundException` on shared framework paths), run the baseline once and retry. Do not loop.
+3. **Honor explicit user signals when offered.** If the user (or a driving agent) volunteered "just built" / "skip baseline", trust it and skip step 1's check. If they said "fresh checkout" / "no baseline", run the baseline up front without probing.
+
+If you're uncertain which mode you're in, follow the CCA rule.
+
+The remaining steps below apply in both modes whenever a baseline build is actually being performed.
 
 ### Step 1: Identify Your Component
 
@@ -82,7 +100,10 @@ Based on file paths you will modify:
 
 ### Step 2: Run the Baseline Build (from repo root)
 
-From the repo root, on the branch you intend to modify, ensure you have a clean working tree (no uncommitted changes) at the current HEAD, then run the appropriate build command **before making any code changes**:
+From the repo root, run the appropriate build command on the branch you intend to modify. The baseline reflects whatever is in your working tree at that moment, so:
+
+- If you're baselining up front (CCA, or CLI with a fresh checkout), ensure HEAD is clean — no uncommitted changes.
+- If you're baselining after a probe failure and already have work-in-progress changes, either stash them first or accept that the baseline incorporates those changes.
 
 | Component | Command |
 |-----------|---------|
@@ -106,16 +127,17 @@ export PATH="$(pwd)/.dotnet:$PATH"
 dotnet --version  # Should match sdk.version in global.json
 ```
 
-**Only proceed with changes after the baseline build succeeds.** If it fails, report the failure and stop.
+**If the baseline build fails, report the failure and stop** before proceeding with changes that depend on it.
 
 ---
 
 ## Component-Specific Workflows
 
-After completing the baseline build above (the baseline build MUST be completed before running tests), use the appropriate workflow for your changes.
-All commands must complete with exit code 0, and all tests must pass with zero failures.
+These workflows assume a usable baseline build exists for the component (either freshly produced per the section above, or already present in the user's workspace under CLI use). Each workflow lists a **Baseline sentinel** — a path under `artifacts/` whose absence indicates the baseline is missing and must be run before proceeding. All commands must complete with exit code 0, and all tests must pass with zero failures.
 
 ### Libraries (Most Common)
+
+**Baseline sentinel (for tests):** `artifacts/bin/testhost/` and `artifacts/bin/microsoft.netcore.app.runtime.<RID>/<config>/`. (Building a single library typically works without a baseline; running its tests does not.)
 
 **Build and test a specific library:**
 ```bash
@@ -134,9 +156,13 @@ Before completing, ensure ALL tests for affected libraries pass.
 
 ### CoreCLR
 
+**Baseline sentinel:** `artifacts/bin/coreclr/<OS>.<arch>.<config>/` for incremental runtime builds; `artifacts/tests/coreclr/<OS>.<arch>.<config>/Tests/Core_Root/` for running tests.
+
 **Test:** `cd src/tests && ./build.sh && ./run.sh`
 
 ### Mono
+
+**Baseline sentinel:** `artifacts/bin/mono/<OS>.<arch>.<config>/` for incremental runtime builds; `artifacts/tests/coreclr/<OS>.<arch>.<config>/Tests/Core_Root/` for running tests (Mono tests reuse the Core_Root layout).
 
 **Test:**
 ```bash
@@ -148,11 +174,15 @@ cd src/tests
 
 ### WASM Libraries
 
+**Baseline sentinel:** `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/<config>/`.
+
 **Build:** `./build.sh libs -os browser`
 
 **Test:** `./build.sh libs.tests -test -os browser`
 
 ### Host
+
+**Baseline sentinel:** `artifacts/bin/coreclr/<OS>.<arch>.<config>/` and `artifacts/bin/testhost/` (host build/tests need both clr and libs in place).
 
 **Build:** `./build.sh host -rc release -lc release`
 
@@ -160,15 +190,21 @@ cd src/tests
 
 ### Tools
 
+**Baseline sentinel:** `artifacts/bin/coreclr/<OS>.<arch>.<config>/` and `artifacts/bin/testhost/`.
+
 **Build:** `./build.sh tools+tools.ilasm`
 
 **Test:** `./build.sh tools+tools.ilasm+tools.illinktests+tools.cdactests -test`
 
 ### Build Tasks
 
+**Baseline sentinel:** none required for `./build.sh tasks` — it's self-contained. If you go on to consume the tasks from a workflow that does need a baseline (e.g., libraries tests), apply that workflow's sentinel instead.
+
 **Build:** `./build.sh tasks`
 
 ### Runtime Tests
+
+**Baseline sentinel:** `artifacts/tests/coreclr/<OS>.<arch>.<config>/Tests/Core_Root/` (required to run individual tests; produced by the baseline build plus `src/tests/build.sh -GenerateLayoutOnly`).
 
 Subdirectories under `src/tests/` may contain `README.md` files with
 area-specific guidance (e.g., EventPipe test patterns).

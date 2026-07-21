@@ -460,34 +460,21 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     }
 #endif
 
-#ifdef TARGET_WASM
-    // genHomeRegisterParams can generate arbitrary amounts of code on Wasm, so
-    // we have moved it out of the prolog to the first basic block in order to
-    // work around the restriction that the prolog can only be one insGroup.
-    if (block->IsFirst())
-    {
-        genHomeRegisterParamsOutsideProlog();
-    }
-#endif
-
-    // Emit any code that needs to occur straight after the prolog, but does not want
-    // to be part of the prolog itself.
-    if (block->IsFirst())
-    {
 #ifdef TARGET_ARM64
-        if (m_compiler->compUsesUnknownSizeFrame)
-        {
-            genZeroInitializeUnknownSizeFrame();
-        }
+    if (m_compiler->compUsesUnknownSizeFrame && block->IsFirst())
+    {
+        genZeroInitializeUnknownSizeFrame();
+    }
 #endif
 
 #ifndef TARGET_WASM // TODO-WASM: enable genPoisonFrame
-        if (m_compiler->compShouldPoisonFrame())
-        {
-            genPoisonFrame(newLiveRegSet);
-        }
-#endif // !TARGET_WASM
+    // Emit poisoning into the init BB that comes right after prolog.
+    // We cannot emit this code in the prolog as it might use a helper call that kills argument regs.
+    if (m_compiler->compShouldPoisonFrame() && block->IsFirst())
+    {
+        genPoisonFrame(newLiveRegSet);
     }
+#endif // !TARGET_WASM
 
     // Traverse the block in linear order, generating code for each node as we
     // as we encounter it.
