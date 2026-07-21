@@ -51,6 +51,12 @@ namespace System.Net.Security
         {
             ArgumentNullException.ThrowIfNull(serverOptions);
 
+            if (serverOptions.Policy?.PolicyEnforcement == PolicyEnforcement.Always &&
+                !ExtendedProtectionPolicy.OSSupportsExtendedProtection)
+            {
+                throw new PlatformNotSupportedException(SR.net_extprotection_not_supported);
+            }
+
             _isServer = true;
             _requestedPackage = serverOptions.Package;
             _requiredImpersonationLevel = serverOptions.RequiredImpersonationLevel;

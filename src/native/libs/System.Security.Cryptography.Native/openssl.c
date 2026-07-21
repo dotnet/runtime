@@ -669,7 +669,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                                 if (sizeof(szOidUpn) == cchLocalOid &&
                                     0 == strncmp(localOid, szOidUpn, sizeof(szOidUpn)))
                                 {
-                                    if (value->value)
+                                    if (value->value && value->value->type == V_ASN1_UTF8STRING)
                                     {
                                         // OTHERNAME->ASN1_TYPE->union.field
                                         str = value->value->value.asn1_string;
