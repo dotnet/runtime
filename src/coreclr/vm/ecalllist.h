@@ -68,7 +68,6 @@ FCFuncStart(gStringFuncs)
 FCFuncEnd()
 
 FCFuncStart(gEnvironmentFuncs)
-    FCFuncElement("get_CurrentManagedThreadId", JIT_GetCurrentManagedThreadId)
     FCFuncElement("set_ExitCode", EnvironmentNative::SetExitCode)
     FCFuncElement("get_ExitCode", EnvironmentNative::GetExitCode)
 FCFuncEnd()
@@ -258,20 +257,15 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("CatchAtSafePoint", ThreadNative::CatchAtSafePoint)
     FCFuncElement("CurrentThreadIsFinalizerThread", ThreadNative::CurrentThreadIsFinalizerThread)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
+#ifdef TARGET_WASM
+    FCFuncElement("GetThreadStaticsBaseNative", ThreadNative::GetThreadStaticsBaseNative)
+#endif
 FCFuncEnd()
 
 FCFuncStart(gObjectHeaderFuncs)
-    FCFuncElement("AcquireInternal", ObjHeader_AcquireThinLock)
-    FCFuncElement("Release", ObjHeader_ReleaseThinLock)
+    FCFuncElement("GetLockHandleIfExists", ObjectHeader_GetLockHandleIfExists)
 FCFuncEnd()
 
-FCFuncStart(gMonitorFuncs)
-    FCFuncElement("GetLockHandleIfExists", Monitor_GetLockHandleIfExists)
-FCFuncEnd()
-
-FCFuncStart(gCastHelpers)
-    FCFuncElement("WriteBarrier", ::WriteBarrier_Helper)
-FCFuncEnd()
 
 FCFuncStart(gArrayFuncs)
     FCFuncElement("GetCorElementTypeOfElementType", ArrayNative::GetCorElementTypeOfElementType)
@@ -395,7 +389,6 @@ FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadCont
 FCClassElement("AsyncHelpers", "System.Runtime.CompilerServices", gAsyncHelpers)
 #endif
 FCClassElement("Buffer", "System", gBufferFuncs)
-FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
 FCClassElement("Delegate", "System", gDelegateFuncs)
 FCClassElement("DependentHandle", "System.Runtime", gDependentHandleFuncs)
 FCClassElement("Environment", "System", gEnvironmentFuncs)
@@ -411,10 +404,7 @@ FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
-FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
-
 FCClassElement("ObjectHeader", "System.Threading", gObjectHeaderFuncs)
-
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gRuntimeHelpers)

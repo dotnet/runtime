@@ -759,10 +759,8 @@ namespace System.Collections.Immutable
             /// </returns>
             internal int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
             {
-                Requires.Range(index >= 0, nameof(index));
-                Requires.Range(count >= 0, nameof(count));
-                Requires.Range(count <= this.Count, nameof(count));
-                Requires.Range(index + count <= this.Count, nameof(count));
+                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+                Requires.Range(count >= 0 && (uint)(index + count) <= (uint)this.Count, nameof(count));
 
                 equalityComparer ??= EqualityComparer<T>.Default;
                 using (var enumerator = new Enumerator(this, startIndex: index, count: count))

@@ -161,7 +161,7 @@ void InterpreterWalker::Decode()
         m_nextIP = NULL;
         LOG((LF_CORDB, LL_INFO10000, "InterpreterWalker::Decode: WALK_THROW\n"));
     }
-    else if (m_opcode == INTOP_BREAKPOINT || m_opcode == INTOP_HALT)
+    else if (m_opcode == INTOP_BREAKPOINT)
     {
         m_type = WALK_BREAK;
         m_nextIP = m_skipIP;

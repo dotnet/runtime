@@ -44,7 +44,7 @@ Supported target architectures:
 
 - Download and install [OpenJDK 23](https://openjdk.org/projects/jdk/23/)
 - Download and install [Android Studio](https://developer.android.com/studio/install) and the following:
-  - Android SDK (minimum supported API level is 21)
+  - Android SDK (minimum supported API level is 24)
   - Android NDK r27c
 
 > [!NOTE]
@@ -201,9 +201,9 @@ This can be achieved in `Android Studio` via `Profile or Debug APK`.
 
 > [!NOTE]
 > Steps 5) through 8) can be omitted if the runtime is built without stripping debug symbols to a separate file (e.g., `libcoreclr.so.dbg`).
-> This can be achieved by including `-keepnativesymbols true` option when building the runtime, e.g.,:
+> This can be achieved by including `-keepnativesymbols` option when building the runtime, e.g.,:
 > ```
-> ./build.sh clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs -os android -arch <x64|arm64> -c Debug -keepnativesymbols true
+> ./build.sh clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs -os android -arch <x64|arm64> -c Debug -keepnativesymbols
 > ```
 
 ## See also

@@ -33,6 +33,8 @@ namespace System.Text.Json.Serialization.Metadata
                 new IAsyncEnumerableConverterFactory(),
                 // IEnumerable should always be second to last since they can convert any IEnumerable.
                 new IEnumerableConverterFactory(),
+                // Union converter should be before Object since it converts [JsonUnion] types.
+                new JsonUnionConverterFactory(),
                 // Object should always be last since it converts any type.
                 new ObjectConverterFactory()
             ];
@@ -45,6 +47,10 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Use a dictionary for simple converters.
             // When adding to this, update NumberOfSimpleConverters above.
+            //
+            // When adding/removing a built-in converter here, also update
+            // gen/JsonSourceGenerator.Parser.cs::GetSupportedJsonValueTypes so the union
+            // ambiguity diagnostic (SYSLIB1227) agrees with JsonTypeInfo.BuildUnionValueTypeMap.
             Add(JsonMetadataServices.BooleanConverter);
             Add(JsonMetadataServices.ByteConverter);
             Add(JsonMetadataServices.ByteArrayConverter);
@@ -112,7 +118,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 // Since the object and IEnumerable converters cover all types, we should have a converter.
-                Debug.Assert(converter != null);
+                Debug.Assert(converter is not null);
                 return converter;
             }
         }
@@ -147,10 +153,10 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter? converter = options.GetConverterFromList(typeToConvert);
 
             // Priority 2: Attempt to get converter from [JsonConverter] on the type being converted.
-            if (resolveJsonConverterAttribute && converter == null)
+            if (resolveJsonConverterAttribute && converter is null)
             {
                 JsonConverterAttribute? converterAttribute = typeToConvert.GetUniqueCustomAttribute<JsonConverterAttribute>(inherit: false);
-                if (converterAttribute != null)
+                if (converterAttribute is not null)
                 {
                     converter = GetConverterFromAttribute(converterAttribute, typeToConvert: typeToConvert, memberInfo: null, options);
                 }
@@ -182,7 +188,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // Allow the attribute to create the converter.
                 converter = converterAttribute.CreateConverter(typeToConvert);
-                if (converter == null)
+                if (converter is null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(declaringType, memberInfo, typeToConvert);
                 }
@@ -214,7 +220,7 @@ namespace System.Text.Json.Serialization.Metadata
                 converter = (JsonConverter)Activator.CreateInstance(converterType)!;
             }
 
-            Debug.Assert(converter != null);
+            Debug.Assert(converter is not null);
             if (!converter.CanConvert(typeToConvert))
             {
                 Type? underlyingType = Nullable.GetUnderlyingType(typeToConvert);

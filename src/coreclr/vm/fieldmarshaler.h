@@ -11,7 +11,9 @@
 #include "util.hpp"
 #include "mlinfo.h"
 #include "eeconfig.h"
-#include "olevariant.h"
+
+VARTYPE GetVarTypeForTypeHandle(TypeHandle typeHnd);
+MethodTable* GetNativeMethodTableForVarType(VARTYPE vt, MethodTable* pManagedMT);
 
 // Forward references
 class EEClassLayoutInfo;

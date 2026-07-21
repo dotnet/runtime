@@ -118,7 +118,7 @@ A ProcessID is unique system-wide for the lifetime of the process. All other IDs
 
 ### Hierarchy & Containment
 
-ID's are arranged in a hierarchy, mirroring the hierarchy in the process. Processes contain AppDomains contain Assemblies contain Modules contain Classes contain Functions. Threads are contained within Processes, and may move from AppDomain to AppDomain. Objects are mostly contained within AppDomains (a very few objects may be members of more than one AppDomain at a time). Contexts are contained within Processes.
+ID's are arranged in a hierarchy, mirroring the hierarchy in the process. Processes contain the global AppDomain which contains Assemblies which contain Modules which contain Classes which contain Functions. Threads are contained within Processes. Objects are contained within the AppDomain. Contexts are contained within Processes.
 
 ### Lifetime & Stability
 
@@ -139,12 +139,6 @@ ObjectID – Alive beginning with the call to ObjectAllocated. Eligible to chang
 GCHandleID – Alive from the call to HandleCreated until the return from HandleDestroyed.
 
 In addition, any ID returned from a profiling API function will be alive at the time it is returned.
-
-### App-Domain Affinity
-
-There is an AppDomainID for each user-created app-domain in the process, plus the "default" domain, plus a special pseudo-domain used for holding domain-neutral assemblies.
-
-Assembly, Module, Class, Function, and GCHandleIDs have app-domain affinity, meaning that if an assembly is loaded into multiple app domains, it (and all of the modules, classes, and functions contained within it) will have a different ID in each, and operations upon each ID will take effect only in the associated app domain. Domain-neutral assemblies will appear in the special pseudo-domain mentioned above.
 
 ### Special Notes
 
@@ -386,8 +380,8 @@ There are four types of statics. The following table describes what they are and
 
 | **Static Type** | **Definition** | **Identifying in Metadata** |
 | --------------- | -------------- | --------------------------- |
-| AppDomain       | Your basic static field—has a different value in each app domain. | Static field with no attached custom attributes |
-| Thread          | Managed TLS—a static field with a unique value for each thread and each app domain. | Static field with System.ThreadStaticAttribute |
+| AppDomain       | Your basic static field. | Static field with no attached custom attributes |
+| Thread          | Managed TLS—a static field with a unique value for each thread. | Static field with System.ThreadStaticAttribute |
 | RVA             | Process-scoped static field with a home in the module's data section | Static field with hasRVA flag |
 | Context         | Static field with a different value in each COM+ Context | Static field with System.ContextStaticAttribute |
 

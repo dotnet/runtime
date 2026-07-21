@@ -166,7 +166,10 @@ namespace ILCompiler
         {
             // Rooting module metadata roots type forwarder metadata for all types in the module that are reflection visible.
             // (We don't track individual type forwarders right now.)
+            // TODO-ILTRIM: add handling of type forwards
+#if !ILTRIM
             _dependencies.Add(_factory.ModuleMetadata(assembly), "Type used through forwarder");
+#endif
             return base.ProcessExportedType(exported, assembly, nav);
         }
 

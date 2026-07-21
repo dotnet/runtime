@@ -31,7 +31,7 @@ namespace System.Text.Json
 
         private JsonEncodedText(byte[] utf8Value)
         {
-            Debug.Assert(utf8Value != null);
+            Debug.Assert(utf8Value is not null);
 
             _value = JsonReaderHelper.GetTextFromUtf8(utf8Value);
             _utf8Value = utf8Value;
@@ -73,7 +73,7 @@ namespace System.Text.Json
             return TranscodeAndEncode(value, encoder);
         }
 
-        private static JsonEncodedText TranscodeAndEncode(ReadOnlySpan<char> value, JavaScriptEncoder? encoder)
+        private static unsafe JsonEncodedText TranscodeAndEncode(ReadOnlySpan<char> value, JavaScriptEncoder? encoder)
         {
             JsonWriterHelper.ValidateValue(value);
 
@@ -143,9 +143,9 @@ namespace System.Text.Json
         /// </remarks>
         public bool Equals(JsonEncodedText other)
         {
-            if (_value == null)
+            if (_value is null)
             {
-                return other._value == null;
+                return other._value is null;
             }
             else
             {
@@ -187,6 +187,6 @@ namespace System.Text.Json
         /// Returns 0 on a default instance of <see cref="JsonEncodedText"/>.
         /// </remarks>
         public override int GetHashCode()
-            => _value == null ? 0 : _value.GetHashCode();
+            => _value?.GetHashCode() ?? 0;
     }
 }

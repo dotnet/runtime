@@ -155,7 +155,7 @@ jobs:
         - wasi_wasm
         - wasi_wasm_win
       nameSuffix: '_Smoke'
-      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=false /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       shouldRunSmokeOnly: true
       # ignore test failures for runtime-extra-platforms, but not when this
       # is run as part of a wasm specific pipeline like runtime-wasm
@@ -187,6 +187,31 @@ jobs:
       publishArtifactsForWorkload: true
       publishWBT: false
 
+  # Release build of browser wasm for CoreCLR. Only stages the CoreCLR runtime pack
+  # (BuildArtifacts_browser_wasm_<os>_Release_CoreCLR) that the wasm-tools workload
+  # install in the Wasm.Build.Tests job below requires.
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: Release
+      platforms:
+        - browser_wasm
+        - browser_wasm_win
+      jobParameters:
+        nameSuffix: CoreCLR
+        buildArgs: -s clr+libs+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:InstallWorkloadForTesting=false
+        timeoutInMinutes: 120
+        postBuildSteps:
+          - template: /eng/pipelines/common/wasm-post-build-steps.yml
+            parameters:
+              publishArtifactsForWorkload: true
+              publishWBT: false
+        extraVariablesTemplates:
+          - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+            parameters:
+              testGroup: innerloop
+              liveLibrariesBuildConfig: Release
+
   # Browser Wasm.Build.Tests
   - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
     parameters:
@@ -194,6 +219,9 @@ jobs:
         - browser_wasm
         - browser_wasm_win
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      # The CoreCLR build-only job above stages the CoreCLR runtime pack for the
+      # wasm-tools workload install.
+      includeCoreClrRuntimePack: true
 
   - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
     parameters:
@@ -218,7 +246,8 @@ jobs:
       platforms:
         - wasi_wasm
         - wasi_wasm_win
-      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=false /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      shouldRunSmokeOnly: true
       # always run for wasm only pipelines
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}

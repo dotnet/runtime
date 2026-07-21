@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
@@ -13,45 +14,101 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 {
-    private Dictionary<ModuleHandle, MetadataReaderProvider?> _metadata = new();
+    // Heap index size flags (ECMA-335 II.24.2.6)
+    private const byte HEAP_STRING_4 = 0x01;
+    private const byte HEAP_GUID_4 = 0x02;
+    private const byte HEAP_BLOB_4 = 0x04;
+    private readonly Dictionary<ModuleHandle, (uint Generation, MetadataReaderProvider? Provider)> _metadata = [];
+    private readonly Dictionary<ModuleHandle, TargetSpan> _readOnlyMetadataAddress = [];
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
-        _metadata.Clear();
+        if (scope == FlushScope.All)
+        {
+            _metadata.Clear();
+            _readOnlyMetadataAddress.Clear();
+        }
     }
 
     public TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
     {
+        if (_readOnlyMetadataAddress.TryGetValue(handle, out TargetSpan cached))
+            return cached;
+
         ILoader loader = target.Contracts.Loader;
 
         if (!loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint imageFlags))
         {
             throw new InvalidOperationException("Module is not loaded.");
         }
-        bool isMapped = (imageFlags & 0x1) != 0; // FLAG_MAPPED = 0x1
-        PEStreamOptions isLoaded = isMapped ? PEStreamOptions.IsLoadedImage : PEStreamOptions.Default;
 
-        TargetStream stream = new(target, baseAddress, size);
-        using PEReader peReader = new PEReader(stream, PEStreamOptions.PrefetchMetadata | isLoaded);
+        TargetSpan result;
+        if (IsWebcilImage(baseAddress))
+        {
+            // Webcil (flat) images -- e.g. ReadyToRun corelib on WASM -- are a stripped/rewrapped PE
+            // that System.Reflection.Metadata's PEReader cannot parse. Locate the metadata via the
+            // webcil header instead.
+            result = GetWebcilReadOnlyMetadataAddress(handle, baseAddress);
+        }
+        else
+        {
+            bool isMapped = (imageFlags & 0x1) != 0; // FLAG_MAPPED = 0x1
+            PEStreamOptions isLoaded = isMapped ? PEStreamOptions.IsLoadedImage : PEStreamOptions.Default;
 
-        int metadataStartOffset = peReader.PEHeaders.MetadataStartOffset;
-        int metadataSize = peReader.PEHeaders.MetadataSize;
+            TargetStream stream = new(target, baseAddress, size);
+            using PEReader peReader = new PEReader(stream, isLoaded);
 
-        return new TargetSpan(baseAddress + (ulong)metadataStartOffset, (ulong)metadataSize);
+            int metadataStartOffset = peReader.PEHeaders.MetadataStartOffset;
+            int metadataSize = peReader.PEHeaders.MetadataSize;
+
+            result = new TargetSpan(baseAddress + (ulong)metadataStartOffset, (ulong)metadataSize);
+        }
+
+        _readOnlyMetadataAddress[handle] = result;
+        return result;
+    }
+
+    // 'W','b','I','L' little-endian -- the magic at the start of a webcil header (see docs/design/mono/webcil.md).
+    private const uint WebcilMagic = 0x4C49_6257;
+
+    private bool IsWebcilImage(TargetPointer baseAddress)
+        => target.ReadLittleEndian<uint>(baseAddress) == WebcilMagic;
+
+    private TargetSpan GetWebcilReadOnlyMetadataAddress(ModuleHandle handle, TargetPointer webcilBase)
+    {
+        // The webcil header points to the PE CLI (COR20) header; the metadata directory (RVA + size
+        // at offset 8 in the COR20 header) locates the ECMA-335 metadata blob. RVAs are resolved
+        // through the loader, which understands the webcil section layout.
+        Data.WebcilHeader header = target.ProcessedData.GetOrAdd<Data.WebcilHeader>(webcilBase);
+        Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        ILoader loader = target.Contracts.Loader;
+
+        TargetPointer cliHeader = loader.GetILAddr(module.PEAssembly, checked((int)header.PeCliHeaderRva));
+
+        // IMAGE_COR20_HEADER: cb (4) + MajorRuntimeVersion (2) + MinorRuntimeVersion (2) then the
+        // MetaData IMAGE_DATA_DIRECTORY (RVA @ 8, Size @ 12).
+        Data.ImageDataDirectory metadataDirectory = target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(cliHeader + 8);
+
+        TargetPointer metadataAddress = loader.GetILAddr(module.PEAssembly, checked((int)metadataDirectory.VirtualAddress));
+        return new TargetSpan(metadataAddress, metadataDirectory.Size);
     }
 
     public MetadataReader? GetMetadata(ModuleHandle handle)
     {
-        if (_metadata.TryGetValue(handle, out MetadataReaderProvider? result))
+        uint generation = GetMetadataGeneration(handle);
+
+        if (_metadata.TryGetValue(handle, out (uint Generation, MetadataReaderProvider? Provider) cached))
         {
-            return result?.GetMetadataReader();
+            if (cached.Generation == generation)
+            {
+                return cached.Provider?.GetMetadataReader();
+            }
+            cached.Provider?.Dispose();
         }
-        else
-        {
-            MetadataReaderProvider? provider = GetMetadataProvider(handle);
-            _metadata.Add(handle, provider);
-            return provider?.GetMetadataReader();
-        }
+
+        MetadataReaderProvider? provider = GetMetadataProvider(handle);
+        _metadata[handle] = (generation, provider);
+        return provider?.GetMetadataReader();
     }
 
     private MetadataReaderProvider? GetMetadataProvider(ModuleHandle handle)
@@ -95,7 +152,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
                 builder.WriteUInt32(0);
 
                 string version = targetEcmaMetadata.Schema.MetadataVersion;
-                builder.WriteInt32(AlignUp(version.Length, 4));
+                builder.WriteInt32(AlignUp(version.Length + 1, 4));
                 Write4ByteAlignedString(builder, version);
 
                 // reserved
@@ -118,44 +175,44 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
                     WriteStreamHeader(builder, "#JTD", 0).WriteInt32(builder.Count);
                 }
 
-                BlobWriter stringsOffset = WriteStreamHeader(builder, "#Strings", (int)AlignUp(targetEcmaMetadata.StringHeap.Size, 4ul));
-                BlobWriter blobOffset = WriteStreamHeader(builder, "#Blob", (int)targetEcmaMetadata.BlobHeap.Size);
-                BlobWriter guidOffset = WriteStreamHeader(builder, "#GUID", (int)targetEcmaMetadata.GuidHeap.Size);
-                BlobWriter userStringOffset = WriteStreamHeader(builder, "#US", (int)targetEcmaMetadata.UserStringHeap.Size);
+                BlobWriter stringsOffset = WriteStreamHeader(builder, "#Strings", (int)AlignUp((ulong)targetEcmaMetadata.StringHeap.Length, 4ul));
+                BlobWriter blobOffset = WriteStreamHeader(builder, "#Blob", (int)AlignUp((ulong)targetEcmaMetadata.BlobHeap.Length, 4ul));
+                BlobWriter guidOffset = WriteStreamHeader(builder, "#GUID", (int)AlignUp((ulong)targetEcmaMetadata.GuidHeap.Length, 4ul));
+                BlobWriter userStringOffset = WriteStreamHeader(builder, "#US", (int)AlignUp((ulong)targetEcmaMetadata.UserStringHeap.Length, 4ul));
 
                 // We'll use the "uncompressed" tables stream name as the runtime may have created the *Ptr tables
                 // that are only present in the uncompressed tables stream.
-                BlobWriter tablesOffset = WriteStreamHeader(builder, "#-", 0);
+                BlobWriter tablesOffset = new(builder.ReserveBytes(4));
+                BlobWriter tablesSize = new(builder.ReserveBytes(4));
+                Write4ByteAlignedString(builder, "#-");
 
                 // Write the heap-style Streams
 
                 stringsOffset.WriteInt32(builder.Count);
-                WriteTargetSpan(builder, targetEcmaMetadata.StringHeap);
-                for (ulong i = targetEcmaMetadata.StringHeap.Size; i < AlignUp(targetEcmaMetadata.StringHeap.Size, 4ul); i++)
-                {
-                    builder.WriteByte(0);
-                }
+                WriteAlignedHeap(builder, targetEcmaMetadata.StringHeap);
 
                 blobOffset.WriteInt32(builder.Count);
-                WriteTargetSpan(builder, targetEcmaMetadata.BlobHeap);
+                WriteAlignedHeap(builder, targetEcmaMetadata.BlobHeap);
 
                 guidOffset.WriteInt32(builder.Count);
-                WriteTargetSpan(builder, targetEcmaMetadata.GuidHeap);
+                WriteAlignedHeap(builder, targetEcmaMetadata.GuidHeap);
 
                 userStringOffset.WriteInt32(builder.Count);
-                WriteTargetSpan(builder, targetEcmaMetadata.UserStringHeap);
+                WriteAlignedHeap(builder, targetEcmaMetadata.UserStringHeap);
 
                 // Write tables stream
-                tablesOffset.WriteInt32(builder.Count);
+                int tableStreamStart = builder.Count;
+                tablesOffset.WriteInt32(tableStreamStart);
 
                 // Write tables stream header
                 builder.WriteInt32(0); // reserved
+                // ECMA-335 II.24.2.6: MajorVersion shall be 2, MinorVersion shall be 0.
                 builder.WriteByte(2); // major version
                 builder.WriteByte(0); // minor version
                 uint heapSizes =
-                    (targetEcmaMetadata.Schema.LargeStringHeap ? 1u << 0 : 0) |
-                    (targetEcmaMetadata.Schema.LargeBlobHeap ? 1u << 1 : 0) |
-                    (targetEcmaMetadata.Schema.LargeGuidHeap ? 1u << 2 : 0);
+                    (targetEcmaMetadata.Schema.LargeStringHeap ? (uint)HEAP_STRING_4 : 0) |
+                    (targetEcmaMetadata.Schema.LargeGuidHeap ? (uint)HEAP_GUID_4 : 0) |
+                    (targetEcmaMetadata.Schema.LargeBlobHeap ? (uint)HEAP_BLOB_4 : 0);
 
                 builder.WriteByte((byte)heapSizes);
                 builder.WriteByte(1); // reserved
@@ -190,20 +247,18 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
                 }
 
                 // Write the tables
-                foreach (TargetSpan span in targetEcmaMetadata.Tables)
+                foreach (byte[] table in targetEcmaMetadata.Tables)
                 {
-                    WriteTargetSpan(builder, span);
+                    builder.WriteBytes(table);
                 }
+
+                // Patch the #- stream size now that the full table stream has been written.
+                tablesSize.WriteInt32(builder.Count - tableStreamStart);
 
                 MemoryStream metadataStream = new MemoryStream();
                 builder.WriteContentTo(metadataStream);
+                metadataStream.Position = 0;
                 return MetadataReaderProvider.FromMetadataStream(metadataStream);
-
-                void WriteTargetSpan(BlobBuilder builder, TargetSpan span)
-                {
-                    Blob blob = builder.ReserveBytes(checked((int)span.Size));
-                    target.ReadBuffer(span.Address, blob.GetBytes().AsSpan());
-                }
 
                 static BlobWriter WriteStreamHeader(BlobBuilder builder, string name, int size)
                 {
@@ -213,13 +268,24 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
                     return offset;
                 }
 
+                static void WriteAlignedHeap(BlobBuilder builder, byte[] heap)
+                {
+                    builder.WriteBytes(heap);
+                    for (int i = heap.Length; i < (int)AlignUp((ulong)heap.Length, 4ul); i++)
+                    {
+                        builder.WriteByte(0);
+                    }
+                }
+
                 static void Write4ByteAlignedString(BlobBuilder builder, string value)
                 {
                     int bufferStart = builder.Count;
                     builder.WriteUTF8(value);
                     builder.WriteByte(0);
                     int stringEnd = builder.Count;
-                    for (int i = stringEnd; i < bufferStart + AlignUp(value.Length, 4); i++)
+                    // The name field occupies the null-terminated string padded to a 4-byte boundary,
+                    // i.e. AlignUp(length + 1, 4) bytes (the +1 accounts for the null terminator).
+                    for (int i = stringEnd; i < bufferStart + AlignUp(value.Length + 1, 4); i++)
                     {
                         builder.WriteByte(0);
                     }
@@ -266,11 +332,11 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     private sealed class TargetEcmaMetadata
     {
         public TargetEcmaMetadata(EcmaMetadataSchema schema,
-                            TargetSpan[] tables,
-                            TargetSpan stringHeap,
-                            TargetSpan userStringHeap,
-                            TargetSpan blobHeap,
-                            TargetSpan guidHeap)
+                            byte[][] tables,
+                            byte[] stringHeap,
+                            byte[] userStringHeap,
+                            byte[] blobHeap,
+                            byte[] guidHeap)
         {
             Schema = schema;
             _tables = tables;
@@ -282,12 +348,12 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 
         public EcmaMetadataSchema Schema { get; init; }
 
-        private TargetSpan[] _tables;
-        public ReadOnlySpan<TargetSpan> Tables => _tables;
-        public TargetSpan StringHeap { get; init; }
-        public TargetSpan UserStringHeap { get; init; }
-        public TargetSpan BlobHeap { get; init; }
-        public TargetSpan GuidHeap { get; init; }
+        private byte[][] _tables;
+        public ReadOnlySpan<byte[]> Tables => _tables;
+        public byte[] StringHeap { get; init; }
+        public byte[] UserStringHeap { get; init; }
+        public byte[] BlobHeap { get; init; }
+        public byte[] GuidHeap { get; init; }
     }
 
     [Flags]
@@ -306,12 +372,25 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         AvailableMetadataType flags = AvailableMetadataType.None;
 
         if (module.DynamicMetadata != TargetPointer.Null)
+        {
             flags |= AvailableMetadataType.ReadWriteSavedCopy;
+        }
+        else if (module.MetadataGeneration != 0)
+        {
+            flags |= AvailableMetadataType.ReadWrite;
+        }
         else
+        {
             flags |= AvailableMetadataType.ReadOnly;
+        }
 
-        // TODO(cdac) implement direct reading of unsaved ReadWrite metadata
         return flags;
+    }
+
+    private uint GetMetadataGeneration(ModuleHandle handle)
+    {
+        Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.MetadataGeneration;
     }
 
     private TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle)
@@ -324,7 +403,101 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 
     private TargetEcmaMetadata GetReadWriteMetadata(ModuleHandle handle)
     {
-        throw new NotImplementedException();
+        TargetPointer peAssemblyPtr = target.Contracts.Loader.GetPEAssembly(handle);
+        Data.PEAssembly peAssembly = target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
+        Data.MDInternalRW mdRW = target.ProcessedData.GetOrAdd<Data.MDInternalRW>(peAssembly.MDImport);
+        Data.CLiteWeightStgdbRW stgdb = target.ProcessedData.GetOrAdd<Data.CLiteWeightStgdbRW>(mdRW.Stgdb);
+        Data.CMiniMdRW miniMd = target.ProcessedData.GetOrAdd<Data.CMiniMdRW>(stgdb.MiniMd);
+        Data.CMiniMdSchema schema = target.ProcessedData.GetOrAdd<Data.CMiniMdSchema>(miniMd.Schema);
+
+        int tableCount = checked((int)miniMd.TableCount);
+        if ((uint)tableCount > (uint)MetadataTokens.TableCount)
+        {
+            throw new InvalidOperationException($"Unexpected metadata table count {tableCount}.");
+        }
+
+        // ECMA-335 II.24.2.6
+        int[] rowCounts = new int[tableCount];
+        for (int i = 0; i < tableCount; i++)
+        {
+            rowCounts[i] = checked((int)target.Read<uint>(schema.RecordCounts + (ulong)(i * sizeof(uint))));
+        }
+
+        // ECMA-335 II.24.2.6
+        bool[] isSorted = new bool[tableCount];
+        for (int i = 0; i < tableCount; i++)
+        {
+            isSorted[i] = (schema.Sorted & (1UL << i)) != 0;
+        }
+
+        bool largeStringHeap = (schema.Heaps & HEAP_STRING_4) != 0;
+        bool largeGuidHeap = (schema.Heaps & HEAP_GUID_4) != 0;
+        bool largeBlobHeap = (schema.Heaps & HEAP_BLOB_4) != 0;
+        byte[] stringHeap = ReadStoragePool(miniMd.StringHeap);
+        byte[] blobHeap = ReadStoragePool(miniMd.BlobHeap);
+        byte[] userStringHeap = ReadStoragePool(miniMd.UserStringHeap);
+        byte[] guidHeap = ReadStoragePool(miniMd.GuidHeap);
+
+        // Coalesce the record data for each table.
+        byte[][] tables = new byte[tableCount][];
+        for (int i = 0; i < tableCount; i++)
+        {
+            tables[i] = ReadStoragePool(miniMd.TableSegments[i]);
+        }
+
+        string version = EcmaMetadataUtils.ReadMetadataVersion(target, stgdb.MetadataAddress);
+
+        EcmaMetadataSchema ecmaSchema = new EcmaMetadataSchema(
+            version,
+            largeStringHeap,
+            largeBlobHeap,
+            largeGuidHeap,
+            rowCounts,
+            isSorted,
+            miniMd.All4ByteColumns);
+        return new TargetEcmaMetadata(ecmaSchema, tables, stringHeap, userStringHeap, blobHeap, guidHeap);
+    }
+
+    private byte[] ReadStoragePool(TargetPointer poolAddress)
+    {
+        List<(TargetPointer Data, uint Size)> segments = [];
+        long totalSize = 0;
+
+        Data.StgPool head = target.ProcessedData.GetOrAdd<Data.StgPool>(poolAddress);
+        TargetPointer segData = head.SegData;
+        uint dataSize = head.DataSize;
+        TargetPointer nextSegment = head.NextSegment;
+
+        while (true)
+        {
+            if (totalSize > 100000000 || dataSize > 100000000)
+            {
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CLDB_E_FILE_CORRUPT)!;
+            }
+            if (dataSize > 0)
+            {
+                segments.Add((segData, dataSize));
+                totalSize += dataSize;
+            }
+            if (nextSegment == TargetPointer.Null)
+            {
+                break;
+            }
+
+            Data.StgPoolSeg segment = target.ProcessedData.GetOrAdd<Data.StgPoolSeg>(nextSegment);
+            segData = segment.SegData;
+            dataSize = segment.DataSize;
+            nextSegment = segment.NextSegment;
+        }
+
+        byte[] result = new byte[checked((int)totalSize)];
+        int offset = 0;
+        foreach ((TargetPointer data, uint size) in segments)
+        {
+            target.ReadBuffer(data, result.AsSpan(offset, checked((int)size)));
+            offset += (int)size;
+        }
+        return result;
     }
 
     private static T AlignUp<T>(T input, T alignment)

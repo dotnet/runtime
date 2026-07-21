@@ -8,7 +8,6 @@ using System.Reflection.PortableExecutable;
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using WasmAppBuilder;
 
 namespace Microsoft.WebAssembly.Build.Tasks;
 

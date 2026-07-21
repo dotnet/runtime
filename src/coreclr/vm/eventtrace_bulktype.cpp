@@ -361,7 +361,7 @@ void BulkComLogger::AddCcwHandle(Object **handle)
 // BulkStaticsLogger: Batches up and logs static variable roots
 //---------------------------------------------------------------------------------------
 
-#include "domainassembly.h"
+#include "assembly.hpp"
 
 BulkStaticsLogger::BulkStaticsLogger(BulkTypeEventLogger *typeLogger)
     : m_buffer(0), m_used(0), m_count(0), m_domain(0), m_typeLogger(typeLogger)
@@ -420,9 +420,11 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     EventDataDescCreate(&eventData[3], m_buffer, m_used);
 
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootStaticVar, ARRAY_SIZE(eventData), eventData);
-#else
+#elif defined(FEATURE_EVENTSOURCE_XPLAT)
     ULONG result = FireEtXplatGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
-#endif //!defined(HOST_UNIX)
+#else
+    ULONG result = ERROR_SUCCESS;
+#endif
     result |= EventPipeWriteEventGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
 
     _ASSERTE(result == ERROR_SUCCESS);
@@ -510,8 +512,8 @@ void BulkStaticsLogger::LogAllStatics()
             if (module == NULL)
                 continue;
 
-            DomainAssembly *domainAssembly = module->GetDomainAssembly();
-            if (domainAssembly == NULL)
+            Assembly *assembly = module->GetAssembly();
+            if (assembly == NULL)
                 continue;
 
             // Ensure the module has fully loaded.
@@ -559,7 +561,7 @@ void BulkStaticsLogger::LogAllStatics()
                     WriteEntry(domain, address, *address, field);
                 } // foreach static field
             }
-        } // foreach domain assembly
+        } // foreach assembly
     } // foreach AppDomain
 } // BulkStaticsLogger::LogAllStatics
 

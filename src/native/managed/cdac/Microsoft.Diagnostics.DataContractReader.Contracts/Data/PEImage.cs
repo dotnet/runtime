@@ -3,17 +3,12 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class PEImage : IData<PEImage>
+[CdacType(nameof(DataType.PEImage))]
+internal sealed partial class PEImage : IData<PEImage>
 {
-    static PEImage IData<PEImage>.Create(Target target, TargetPointer address) => new PEImage(target, address);
-    public PEImage(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.PEImage);
-
-        LoadedImageLayout = target.ReadPointerField(address, type, nameof(LoadedImageLayout));
-        ProbeExtensionResult = target.ProcessedData.GetOrAdd<ProbeExtensionResult>(address + (ulong)type.Fields[nameof(ProbeExtensionResult)].Offset);
-    }
-
-    public TargetPointer LoadedImageLayout { get; init; }
-    public ProbeExtensionResult ProbeExtensionResult { get; init; }
+    // The flat image layout (m_pLayouts[IMAGE_FLAT]). Present since the field was added to the
+    // descriptor; nullable so older descriptors that predate it simply read as null.
+    [Field] public TargetPointer? FlatImageLayout { get; }
+    [Field] public TargetPointer LoadedImageLayout { get; }
+    [Field] public ProbeExtensionResult ProbeExtensionResult { get; }
 }

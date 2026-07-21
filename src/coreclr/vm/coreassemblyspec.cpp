@@ -15,7 +15,6 @@
 #include "appdomain.inl"
 #include <peimage.h>
 #include "peimagelayout.inl"
-#include "domainassembly.h"
 #include "holder.h"
 #include <assemblyprobeextension.h>
 #include "strongnameinternal.h"
@@ -27,7 +26,7 @@
 #include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
-HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly)
+HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly, SString* pDiagnosticInfo)
 {
     CONTRACTL
     {
@@ -63,7 +62,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     {
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
-        hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm);
+        hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm, pDiagnosticInfo);
     }
 
     if (SUCCEEDED(hr))
@@ -78,7 +77,8 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
 
 STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
                             PEImage               **ppPEImage,
-                            ProbeExtensionResult    probeExtensionResult)
+                            ProbeExtensionResult    probeExtensionResult,
+                            SString                *pDiagnosticInfo)
 {
     HRESULT hr = S_OK;
 
@@ -94,6 +94,15 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
             hr = pImage->TryOpenFile();
             if (FAILED(hr))
             {
+                if (pDiagnosticInfo != NULL)
+                {
+                    StackSString format;
+                    format.LoadResource(IDS_BINDING_FAILED_TO_OPEN_FILE);
+                    SString pathStr(wszAssemblyPath);
+                    StackSString hrMsg;
+                    GetHRMsg(hr, hrMsg);
+                    pDiagnosticInfo->Printf(format.GetUTF8(), pathStr.GetUTF8(), hrMsg.GetUTF8());
+                }
                 goto Exit;
             }
         }
@@ -101,7 +110,21 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
         if (pImage)
             *ppPEImage = pImage.Detach();
     }
-    EX_CATCH_HRESULT(hr);
+    EX_CATCH
+    {
+        hr = GET_EXCEPTION()->GetHR();
+        _ASSERTE(FAILED(hr));
+        if (pDiagnosticInfo != NULL)
+        {
+            StackSString format;
+            format.LoadResource(IDS_BINDING_EXCEPTION_OPENING_FILE);
+            SString pathStr(wszAssemblyPath);
+            StackSString exMessage;
+            GET_EXCEPTION()->GetMessage(exMessage);
+            pDiagnosticInfo->Printf(format.GetUTF8(), pathStr.GetUTF8(), exMessage.GetUTF8());
+        }
+    }
+    EX_END_CATCH
 
  Exit:
     return hr;
@@ -287,18 +310,6 @@ void BaseAssemblySpec::InitializeWithAssemblyIdentity(BINDER_SPACE::AssemblyIden
     {
         m_dwFlags |= afRetargetable;
     }
-
-    // Content type
-    if (identity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE))
-    {
-        DWORD dwContentType = identity->m_kContentType;
-
-        _ASSERTE((dwContentType == AssemblyContentType_Default) || (dwContentType == AssemblyContentType_WindowsRuntime));
-        if (dwContentType == AssemblyContentType_WindowsRuntime)
-        {
-            m_dwFlags |= afContentType_WindowsRuntime;
-        }
-    }
 }
 
 namespace
@@ -407,12 +418,6 @@ VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString &result) const
         assemblyIdentity.SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE);
     }
 
-    if ((flags & ASM_DISPLAYF_CONTENT_TYPE) && (m_dwFlags & afContentType_Mask) == afContentType_WindowsRuntime)
-    {
-        assemblyIdentity.SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE);
-        assemblyIdentity.m_kContentType = AssemblyContentType_WindowsRuntime;
-    }
-
     IfFailThrow(BINDER_SPACE::TextualIdentityParser::ToString(&assemblyIdentity,
                                                              assemblyIdentity.m_dwIdentityFlags,
                                                              result));
@@ -460,11 +465,5 @@ void BaseAssemblySpec::PopulateAssemblyNameData(AssemblyNameData &data) const
     if ((m_dwFlags & afRetargetable) != 0)
     {
         data.IdentityFlags |= BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE;
-    }
-
-    if ((m_dwFlags & afContentType_Mask) == afContentType_WindowsRuntime)
-    {
-        data.ContentType = AssemblyContentType_WindowsRuntime;
-        data.IdentityFlags |= BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE;
     }
 }

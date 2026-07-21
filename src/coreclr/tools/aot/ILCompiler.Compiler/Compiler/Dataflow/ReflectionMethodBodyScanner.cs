@@ -124,9 +124,11 @@ namespace ILCompiler.Dataflow
             base.Scan(methodIL, ref interproceduralState);
         }
 
-        public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodIL, out List<INodeWithRuntimeDeterminedDependencies> runtimeDependencies)
+        public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodIL, out List<(MethodDesc OwningMethod, INodeWithRuntimeDeterminedDependencies Dependency)> runtimeDependencies)
         {
+#if !ILTRIM
             methodIL = AsyncMaskingILProvider.WrapIL(methodIL);
+#endif
 
             var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger, new MessageOrigin(methodIL.OwningMethod));
 

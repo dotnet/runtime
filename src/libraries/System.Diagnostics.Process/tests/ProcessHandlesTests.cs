@@ -303,6 +303,18 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void StartDetached_ThrowsOnUseShellExecute()
+        {
+            ProcessStartInfo psi = new("dummy")
+            {
+                UseShellExecute = true,
+                StartDetached = true
+            };
+
+            Assert.Throws<InvalidOperationException>(() => SafeProcessHandle.Start(psi));
+        }
+
+        [Fact]
         public void StandardHandles_DefaultIsNull()
         {
             ProcessStartInfo startInfo = new("cmd");

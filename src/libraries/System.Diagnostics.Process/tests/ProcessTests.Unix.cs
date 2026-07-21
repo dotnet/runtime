@@ -15,6 +15,7 @@ using System.Security;
 using Xunit;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tests
 {
@@ -173,7 +174,13 @@ namespace System.Diagnostics.Tests
             File.WriteAllText(filename, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
             File.SetUnixFileMode(filename, ExecutablePermissions);
 
-            using (var process = Process.Start(new ProcessStartInfo { FileName = filename }))
+            using SafeFileHandle nullHandle = File.OpenNullHandle();
+            ProcessStartInfo psi = new(filename)
+            {
+                StandardOutputHandle = nullHandle,
+                StandardErrorHandle= nullHandle
+            };
+            using (var process = Process.Start(psi))
             {
                 try
                 {
@@ -186,10 +193,40 @@ namespace System.Diagnostics.Tests
                 }
                 finally
                 {
-                    process.Kill();
+                    process.Kill(entireProcessTree: true);
                     process.WaitForExit();
                 }
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessStart_SkipsNonExecutableFilesInCurrentDirectory()
+        {
+            const string ScriptName = "script";
+
+            // Create an executable script on PATH
+            string pathDir = Path.Combine(TestDirectory, "Path1");
+            Directory.CreateDirectory(pathDir);
+            WriteScriptFile(pathDir, ScriptName, returnValue: 42);
+
+            // Create a non-executable file named ScriptName in the working directory
+            string workDir = Path.Combine(TestDirectory, "WorkDir");
+            Directory.CreateDirectory(workDir);
+            File.WriteAllText(Path.Combine(workDir, ScriptName), "Not executable");
+
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["PATH"] = pathDir;
+            options.StartInfo.WorkingDirectory = workDir;
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var px = Process.Start(new ProcessStartInfo { FileName = ScriptName }))
+                {
+                    Assert.NotNull(px);
+                    px.WaitForExit();
+                    Assert.True(px.HasExited);
+                    Assert.Equal(42, px.ExitCode);
+                }
+            }, options).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -960,8 +997,7 @@ namespace System.Diagnostics.Tests
 
         private static IDictionary GetWaitStateDictionary(bool childDictionary)
         {
-            Assembly assembly = typeof(Process).Assembly;
-            Type waitStateType = assembly.GetType("System.Diagnostics.ProcessWaitState");
+            Type waitStateType = Type.GetType("System.Diagnostics.ProcessWaitState, System.Diagnostics.Process")!;
             FieldInfo dictionaryField = waitStateType.GetField(childDictionary ? "s_childProcessWaitStates" : "s_processWaitStates", BindingFlags.NonPublic | BindingFlags.Static);
             return (IDictionary)dictionaryField.GetValue(null);
         }
@@ -974,7 +1010,8 @@ namespace System.Diagnostics.Tests
 
         private static int GetWaitStateReferenceCount(object waitState)
         {
-            FieldInfo referenCountField = waitState.GetType().GetField("_outstandingRefCount", BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo referenCountField = Type.GetType("System.Diagnostics.ProcessWaitState, System.Diagnostics.Process")!
+                .GetField("_outstandingRefCount", BindingFlags.NonPublic | BindingFlags.Instance);
             return (int)referenCountField.GetValue(waitState);
         }
 
@@ -1051,7 +1088,18 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        private static void SendSignal(PosixSignal signal, Process process) => Assert.True(process.SafeHandle.Signal(signal));
+        private static void SendSignal(PosixSignal signal, Process process, bool entireProcessGroup = false)
+        {
+            if (entireProcessGroup)
+            {
+                int signalNumber = Interop.Sys.GetPlatformSignalNumber(signal);
+                Assert.Equal(0, Interop.Sys.Kill(-process.Id, signalNumber));
+            }
+            else
+            {
+                Assert.True(process.SafeHandle.Signal(signal));
+            }
+        }
 
         private static unsafe void ReEnableCtrlCHandlerIfNeeded(PosixSignal signal) { }
 

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using Microsoft.Diagnostics.DataContractReader;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -61,13 +62,12 @@ public struct TypeNameBuilder
         AppendMethodImpl(target, stringBuilder, method, default, format);
     }
 
-    public static void AppendMethodImpl(Target target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, ReadOnlySpan<TypeHandle> typeInstantiation, TypeNameFormat format)
+    public static void AppendMethodImpl(Target target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, ReadOnlySpan<ITypeHandle> typeInstantiation, TypeNameFormat format)
     {
         IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
         ILoader loader = target.Contracts.Loader;
         string methodName;
-        TypeHandle th = default;
-        Contracts.ModuleHandle module = default;
+        ITypeHandle? th = null;
 
         bool isNoMetadataMethod = runtimeTypeSystem.IsNoMetadataMethod(method, out methodName);
         if (isNoMetadataMethod)
@@ -119,37 +119,35 @@ public struct TypeNameBuilder
         }
         else
         {
-            module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th));
-            MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
-            MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
-            stringBuilder.Append(reader.GetString(methodDef.Name));
+            uint rowId = EcmaMetadataUtils.GetRowId(runtimeTypeSystem.GetMethodToken(method));
+            if (rowId != 0)
+            {
+                ITypeHandle methodType = th ?? throw new InvalidOperationException("Metadata-backed method has no declaring type.");
+                Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(methodType));
+                MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
+                MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)rowId));
+                stringBuilder.Append(reader.GetString(methodDef.Name));
+            }
         }
 
-        ReadOnlySpan<TypeHandle> genericMethodInstantiation = runtimeTypeSystem.GetGenericMethodInstantiation(method);
+        ReadOnlySpan<ITypeHandle> genericMethodInstantiation = runtimeTypeSystem.GetGenericMethodInstantiation(method);
         if (genericMethodInstantiation.Length > 0 && !runtimeTypeSystem.IsGenericMethodDefinition(method))
         {
             AppendInst(target, stringBuilder, genericMethodInstantiation, format);
         }
 
-        if (format.HasFlag(TypeNameFormat.FormatSignature))
+        if (format.HasFlag(TypeNameFormat.FormatSignature) &&
+            runtimeTypeSystem.TryGetMethodSignature(method, out ReadOnlySpan<byte> signature))
         {
-            ReadOnlySpan<byte> signature;
-            MetadataReader? reader = default;
-            if (!runtimeTypeSystem.IsStoredSigMethodDesc(method, out signature))
-            {
-                reader = target.Contracts.EcmaMetadata.GetMetadata(module);
-                if (reader is not null)
-                {
-                    MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
-                    signature = reader.GetBlobBytes(methodDef.Signature);
-                }
-            }
+            Contracts.ModuleHandle methodModule = loader.GetModuleHandleFromModulePtr(
+                runtimeTypeSystem.GetModule(runtimeTypeSystem.GetTypeHandle(runtimeTypeSystem.GetMethodTable(method))));
+            MetadataReader? reader = target.Contracts.EcmaMetadata.GetMetadata(methodModule);
 
-            ReadOnlySpan<TypeHandle> typeInstantiationSigFormat = default;
-            if (!th.IsNull)
+            ReadOnlySpan<ITypeHandle> typeInstantiationSigFormat = default;
+            if (th is not null)
             {
                 typeInstantiationSigFormat = runtimeTypeSystem.GetInstantiation(th);
-                if (typeInstantiationSigFormat.IsEmpty && runtimeTypeSystem.IsArray(th, out _))
+                if (typeInstantiationSigFormat.Length == 0 && runtimeTypeSystem.IsArray(th, out _))
                 {
                     // For arrays, fill in the instantiation with the element type handle
                     // See MethodTable::GetArrayInstantiation for coreclr equivalent
@@ -161,9 +159,9 @@ public struct TypeNameBuilder
         }
     }
 
-    public static TypeHandle GetExactOwningType(IRuntimeTypeSystem runtimeTypeSystem, TypeHandle possiblyDerivedType, MethodDescHandle method)
+    public static ITypeHandle GetExactOwningType(IRuntimeTypeSystem runtimeTypeSystem, ITypeHandle possiblyDerivedType, MethodDescHandle method)
     {
-        TypeHandle approxOwner = runtimeTypeSystem.GetTypeHandle(runtimeTypeSystem.GetMethodTable(method));
+        ITypeHandle approxOwner = runtimeTypeSystem.GetTypeHandle(runtimeTypeSystem.GetMethodTable(method));
 
         uint typeDefTokenOfOwner = runtimeTypeSystem.GetTypeDefToken(approxOwner);
         TargetPointer moduleOfOwner = runtimeTypeSystem.GetModule(approxOwner);
@@ -187,22 +185,22 @@ public struct TypeNameBuilder
         } while (true);
     }
 
-    public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, TypeNameFormat format)
+    public static void AppendType(Target target, StringBuilder stringBuilder, ITypeHandle? typeHandle, TypeNameFormat format)
     {
         AppendType(target, stringBuilder, typeHandle, default, format);
     }
 
-    public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, ReadOnlySpan<TypeHandle> typeInstantiation, TypeNameFormat format)
+    public static void AppendType(Target target, StringBuilder stringBuilder, ITypeHandle? typeHandle, ReadOnlySpan<ITypeHandle> typeInstantiation, TypeNameFormat format)
     {
         TypeNameBuilder builder = new(stringBuilder, target, format);
         AppendTypeCore(ref builder, typeHandle, typeInstantiation, format);
     }
 
-    private static void AppendTypeCore(ref TypeNameBuilder tnb, Contracts.TypeHandle typeHandle, ReadOnlySpan<Contracts.TypeHandle> instantiation, TypeNameFormat format)
+    private static void AppendTypeCore(ref TypeNameBuilder tnb, ITypeHandle? typeHandle, ReadOnlySpan<ITypeHandle> instantiation, TypeNameFormat format)
     {
         bool toString = format.HasFlag(TypeNameFormat.FormatNamespace) && !format.HasFlag(TypeNameFormat.FormatFullInst) && !format.HasFlag(TypeNameFormat.FormatAssembly);
 
-        if (typeHandle.IsNull)
+        if (typeHandle is null)
         {
             tnb.AddName("(null)");
         }
@@ -215,13 +213,13 @@ public struct TypeNameBuilder
                 if (elemType != Contracts.CorElementType.ValueType)
                 {
                     typeSystemContract.IsArray(typeHandle, out uint rank);
-                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), default(ReadOnlySpan<Contracts.TypeHandle>), (TypeNameFormat)(format & ~TypeNameFormat.FormatAssembly));
+                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), default, (TypeNameFormat)(format & ~TypeNameFormat.FormatAssembly));
                     AppendParamTypeQualifier(ref tnb, elemType, rank);
                 }
                 else
                 {
                     tnb.TypeString.Append("VALUETYPE");
-                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), Array.Empty<Contracts.TypeHandle>(), format & ~TypeNameFormat.FormatAssembly);
+                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), default, format & ~TypeNameFormat.FormatAssembly);
                 }
             }
             else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
@@ -244,7 +242,7 @@ public struct TypeNameBuilder
                 tnb.AddName(reader.GetString(genericParam.Name));
                 format &= ~TypeNameFormat.FormatAssembly;
             }
-            else if (typeSystemContract.IsFunctionPointer(typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv))
+            else if (typeSystemContract.IsFunctionPointer(typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv))
             {
                 if (format.HasFlag(TypeNameFormat.FormatNamespace))
                 {
@@ -260,7 +258,7 @@ public struct TypeNameBuilder
                         AppendType(tnb.Target, stringBuilder, retAndArgTypes[i], format);
                     }
 
-                    if ((callConv & 0x7) == 0x5) // Is this the VARARG calling convention?
+                    if (((byte)callConv & 0x7) == 0x5) // Is this the VARARG calling convention?
                     {
                         if (retAndArgTypes.Length > 2)
                         {
@@ -283,7 +281,14 @@ public struct TypeNameBuilder
                 Contracts.ModuleHandle moduleHandle = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(typeSystemContract.GetModule(typeHandle));
                 if (MetadataTokens.EntityHandle((int)typeDefToken).IsNil)
                 {
-                    tnb.AddName("(dynamicClass)");
+                    if (typeSystemContract.IsContinuationWithoutMetadata(typeHandle))
+                    {
+                        AppendContinuationName(ref tnb, typeSystemContract, typeHandle);
+                    }
+                    else
+                    {
+                        tnb.AddName("(dynamicClass)");
+                    }
                 }
                 else
                 {
@@ -295,7 +300,7 @@ public struct TypeNameBuilder
 
                 if (format.HasFlag(TypeNameFormat.FormatNamespace) || format.HasFlag(TypeNameFormat.FormatAssembly))
                 {
-                    ReadOnlySpan<TypeHandle> instantiationSpan = typeSystemContract.GetInstantiation(typeHandle);
+                    ReadOnlySpan<ITypeHandle> instantiationSpan = typeSystemContract.GetInstantiation(typeHandle);
 
                     if ((instantiationSpan.Length > 0) && (!typeSystemContract.IsGenericTypeDefinition(typeHandle) || toString))
                     {
@@ -325,16 +330,16 @@ public struct TypeNameBuilder
     // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
     // and enclose each parameter in square brackets to disambiguate the commas
     // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
-    private static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<TypeHandle> inst, TypeNameFormat format)
+    private static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<ITypeHandle> inst, TypeNameFormat format)
     {
         TypeNameBuilder tnb = new(stringBuilder, target, format, initialStateIsName: true);
         AppendInst(ref tnb, inst, format);
     }
 
-    private static void AppendInst(ref TypeNameBuilder tnb, ReadOnlySpan<TypeHandle> inst, TypeNameFormat format)
+    private static void AppendInst(ref TypeNameBuilder tnb, ReadOnlySpan<ITypeHandle> inst, TypeNameFormat format)
     {
         tnb.OpenGenericArguments();
-        foreach (TypeHandle arg in inst)
+        foreach (ITypeHandle arg in inst)
         {
             tnb.OpenGenericArgument();
             if (format.HasFlag(TypeNameFormat.FormatFullInst) && !tnb.Target.Contracts.RuntimeTypeSystem.IsGenericVariable(arg, out _, out _))
@@ -478,6 +483,52 @@ public struct TypeNameBuilder
 
             HasAssemblySpec = true;
         }
+    }
+
+    /// <summary>
+    /// Builds the synthetic name for a dynamically-created continuation method table, mirroring the
+    /// native <c>AsyncContinuationsManager::PrintContinuationName</c> in <c>asynccontinuations.h</c>.
+    /// </summary>
+    /// <remarks>
+    /// The name has the form:
+    /// <c>Continuation_&lt;dataSize&gt;[_&lt;gcOffset&gt;_&lt;gcCount&gt;]*</c>
+    /// where:
+    /// <list type="bullet">
+    ///   <item><description>
+    ///     <c>dataSize</c> is the number of bytes of data payload (base size minus the fixed
+    ///     object-header and continuation-header overhead).
+    ///   </description></item>
+    ///   <item><description>
+    ///     Each <c>_gcOffset_gcCount</c> pair describes one GC-pointer run: <c>gcOffset</c> is the
+    ///     offset in bytes from the start of the data payload to the run, and <c>gcCount</c> is the
+    ///     number of pointer-sized GC references in that run.
+    ///   </description></item>
+    /// </list>
+    /// Only GC descriptor series whose <c>startoffset</c> is at or above the continuation data
+    /// payload (i.e., after the fixed <c>CORINFO_Continuation</c> header fields) are included.
+    /// </remarks>
+    private static void AppendContinuationName(ref TypeNameBuilder tnb, IRuntimeTypeSystem typeSystemContract, ITypeHandle typeHandle)
+    {
+        uint baseSize = typeSystemContract.GetBaseSize(typeHandle);
+        uint continuationDataOffset = tnb.Target.GetTypeInfo(DataType.ContinuationObject).Size!.Value;
+        uint objHeaderSize = tnb.Target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        uint dataSize = baseSize - (objHeaderSize + continuationDataOffset);
+
+        var name = new StringBuilder("Continuation_");
+        name.Append(dataSize);
+
+        foreach ((uint seriesOffset, uint seriesSize) in typeSystemContract.GetGCDescSeries(typeHandle))
+        {
+            if (seriesOffset < continuationDataOffset)
+                continue;
+
+            name.Append('_');
+            name.Append(seriesOffset - continuationDataOffset);
+            name.Append('_');
+            name.Append(seriesSize / (uint)tnb.Target.PointerSize);
+        }
+
+        tnb.AddNameNoEscaping(name);
     }
 
     private static void AppendNestedTypeDef(ref TypeNameBuilder tnb, MetadataReader reader, TypeDefinitionHandle typeDefToken, TypeNameFormat format)

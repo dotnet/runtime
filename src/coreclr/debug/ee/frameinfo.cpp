@@ -97,7 +97,6 @@ struct DebuggerFrameData
         this->fHitExitFrame = false;
 
         this->info.eStubFrameType = STUBFRAME_NONE;
-        this->info.quickUnwind = false;
 
         this->info.frame     = NULL;
         this->needParentInfo = false;
@@ -653,7 +652,6 @@ void FrameInfo::InitForUMChain(FramePointer fpRoot, REGDISPLAY * pRDSrc)
     CopyREGDISPLAY(&(this->registers), pRDSrc);
     this->fp = fpRoot;
 
-    this->quickUnwind = false;
     this->internal = false;
     this->managed = false;
 
@@ -750,7 +748,6 @@ void FrameInfo::InitFromStubHelper(
         this->fp = GetSP(pRDSrc);
     }
 
-    this->quickUnwind = false;
     this->internal    = false;
     this->managed     = true;
     this->relOffset   = 0;
@@ -805,21 +802,6 @@ void FrameInfo::InitForU2MInternalFrame(CrawlFrame * pCF)
 }
 
 //-----------------------------------------------------------------------------
-// Init for an AD transition
-//-----------------------------------------------------------------------------
-void FrameInfo::InitForADTransition(CrawlFrame * pCF)
-{
-    Frame * pFrame;
-    pFrame = pCF->GetFrame();
-    _ASSERTE(pFrame->GetTransitionType() == Frame::TT_AppDomain);
-    MethodDesc * pMDWrapper = NULL;
-
-    InitFromStubHelper(pCF, pMDWrapper, STUBFRAME_APPDOMAIN_TRANSITION);
-    InitForScratchFrameInfo();
-}
-
-
-//-----------------------------------------------------------------------------
 // Init frame for a dynamic method.
 //-----------------------------------------------------------------------------
 void FrameInfo::InitForDynamicMethod(CrawlFrame * pCF)
@@ -861,7 +843,6 @@ void FrameInfo::InitForThreadStart(Thread * pThread, REGDISPLAY * pRDSrc)
     this->md = NULL;
     CopyREGDISPLAY(&(this->registers), pRDSrc);
     this->fp    = FramePointer::MakeFramePointer(pThread->GetCachedStackBase());
-    this->quickUnwind = false;
     this->internal = false;
     this->managed     = false;
     this->relOffset   = 0;
@@ -904,7 +885,6 @@ void FrameInfo::InitForEnterManagedChain(FramePointer fpRoot)
     memset((void *)&this->registers, 0, sizeof(this->registers));
     this->fp = fpRoot;
 
-    this->quickUnwind = true;
     this->internal    = false;
     this->managed     = true;
     this->relOffset   = 0;
@@ -970,7 +950,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
         // Sometimes we may not want to show an UM chain b/c we know it's just
         // code inside of mscorwks. (Eg: Funcevals & AD transitions both fall into this category).
         // These are perfectly valid UM chains and we could give them if we wanted to.
-        if ((t == Frame::TT_AppDomain) || (ft == Frame::TYPE_FUNC_EVAL))
+        if (ft == Frame::TYPE_FUNC_EVAL)
         {
             d->CancelUMChain();
             return SWA_CONTINUE;
@@ -1728,14 +1708,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
             f.InitForU2MInternalFrame(pCF);
             fUse = true;
         }
-        else if (t == Frame::TT_AppDomain)
-        {
-            // Internal frame for an Appdomain transition.
-            // We used to ignore frames for ADs which we hadn't sent a Create event for yet.  In V3 we send AppDomain
-            // create events immediately (before any assemblies are loaded), so this should no longer be an issue.
-            f.InitForADTransition(pCF);
-            fUse = true;
-        }
 
         // Frame's setup. Now invoke the callback.
         if (fUse)
@@ -1834,7 +1806,7 @@ bool ShouldSendUMLeafChain(Thread * pThread)
     }
 
     // If a thread is suspended for sync purposes, it was suspended from managed
-    // code and the only native code is a mscorwks hijack.
+    // code and the only native code is a runtime hijack.
     // There are a few caveats here:
     // - This means a thread will lose it's UM chain. But what if a user inactive thread
     // enters the CLR from native code and hits a GC toggle? We'll lose that entire
@@ -1842,15 +1814,15 @@ bool ShouldSendUMLeafChain(Thread * pThread)
     // - at a managed-only stop, preemptive threads are still live. Thus a thread
     // may not have this state set, run a little, try to enter the GC, and then get
     // this state set. Thus we'll lose the UM chain right out from under our noses.
-    Thread::ThreadState ts = pThread->GetSnapshotState();
-    if ((ts & Thread::TS_SyncSuspended) != 0)
+    Thread::ThreadState ts = pThread->GetState();
+    if ((ts & Thread::TS_DebugSyncSuspended) != 0)
     {
         // If we've been stopped inside the runtime (eg, at a gc-toggle) but
         // not actually at a stopping context, then the thread must have some
-        // leafframes in mscorwks.
+        // leafframes in the runtime.
         // We can detect this case by checking if GetManagedStoppedCtx(pThread) == NULL.
         // This is very significant for notifcations (like LogMessage) that are
-        // dispatches from within mscorwks w/o a filter context.
+        // dispatches from within the runtime w/o a filter context.
         // We don't send a UM chain for these cases because that would
         // cause managed debug events to be dispatched w/ UM chains on the callstack.
         // And that just seems wrong ...
