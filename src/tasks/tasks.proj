@@ -2,8 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="**\*.csproj" />
-    <!-- Task unit test projects are built and run via the libs.tests subset, not as part of building the tasks. -->
-    <ProjectReference Remove="**\tests\**\*.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
