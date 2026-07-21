@@ -115,11 +115,11 @@
   #define RBM_SHIFT                RBM_ALLINT
 
   // This is a general scratch register that does not conflict with the argument registers
-  #define REG_SCRATCH              REG_R12
+  #define REG_SCRATCH              REG_R0
 
   // This is a general register that can be optionally reserved for other purposes during codegen
-  #define REG_OPT_RSVD             REG_R11
-  #define RBM_OPT_RSVD             RBM_R11
+  #define REG_OPT_RSVD             REG_R13
+  #define RBM_OPT_RSVD             RBM_R13
 
   // Where is the exception object on entry to the handler block?
   #define REG_EXCEPTION_OBJECT     REG_R3
@@ -157,21 +157,21 @@
   /* ppc64lemarker - currently implementing the register set for the lsra, hence removing the unrelated register values */
   /* to fix build errors - please visit back and update values accordingly.					    */
 
-  #define REG_WRITE_BARRIER_DST          REG_R11
-  #define RBM_WRITE_BARRIER_DST          RBM_R11
+  #define REG_WRITE_BARRIER_DST          REG_R3
+  #define RBM_WRITE_BARRIER_DST          RBM_R3
 
-  #define REG_WRITE_BARRIER_SRC          REG_R12
-  #define RBM_WRITE_BARRIER_SRC          RBM_R12
+  #define REG_WRITE_BARRIER_SRC          REG_R4
+  #define RBM_WRITE_BARRIER_SRC          RBM_R4
 
-  #define REG_WRITE_BARRIER_DST_BYREF    REG_R11
-  #define RBM_WRITE_BARRIER_DST_BYREF    RBM_R11
+  #define REG_WRITE_BARRIER_DST_BYREF    REG_R3
+  #define RBM_WRITE_BARRIER_DST_BYREF    RBM_R3
 
-  #define REG_WRITE_BARRIER_SRC_BYREF    REG_R12
-  #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_R12
+  #define REG_WRITE_BARRIER_SRC_BYREF    REG_R4
+  #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_R4
 
 
 
-  #define RBM_CALLEE_TRASH_NOGC          (RBM_R11|RBM_R12|RBM_DEFAULT_HELPER_CALL_TARGET)
+  #define RBM_CALLEE_TRASH_NOGC          (RBM_R5|RBM_R6|RBM_R7|RBM_DEFAULT_HELPER_CALL_TARGET)
 
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_R14|RBM_CALLEE_TRASH_NOGC)
@@ -191,12 +191,12 @@
   #define RBM_PINVOKE_COOKIE_PARAM          RBM_R11
 
   // GenericPInvokeCalliHelper unmanaged target Parameter
-  #define REG_PINVOKE_TARGET_PARAM          REG_R13
-  #define RBM_PINVOKE_TARGET_PARAM          RBM_R13
+  #define REG_PINVOKE_TARGET_PARAM          REG_R12
+  #define RBM_PINVOKE_TARGET_PARAM          RBM_R12
 
   // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
-  #define REG_SECRET_STUB_PARAM     REG_R13
-  #define RBM_SECRET_STUB_PARAM     RBM_R13
+  #define REG_SECRET_STUB_PARAM     REG_R11
+  #define RBM_SECRET_STUB_PARAM     RBM_R11
 
   // R2R indirect call. Use the same registers as VSD
   #define REG_R2R_INDIRECT_PARAM          REG_R12

@@ -12586,7 +12586,7 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "GetCharsFast",
        "AddKey",
        "Copy",
-
+       "get_Current"
 
 
     };
@@ -12615,7 +12615,7 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
 	{ "System.Reflection.Missing",".ctor"},
 	{ "<>c",".cctor"},
 	{ "<>c",".ctor"},
-	{ "System.RuntimeType",".cctor"},
+	//{ "System.RuntimeType",".cctor"},
         { "System.RuntimeTypeHandle",".ctor"},
         { "System.Runtime.CompilerServices.TypeHandle",".ctor"},
 	{ "System.BitConverter",".cctor"},
@@ -12647,7 +12647,7 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         { "System.Diagnostics.Tracing.Statics",".cctor"},
         { "OrdinalComparer",".ctor"},
         { "System.Collections.Generic.List`1[Char]",".cctor"},
-        { "System.Collections.Generic.Dictionary`2[Char,__Canon]",".ctor"},
+        //{ "System.Collections.Generic.Dictionary`2[Char,__Canon]",".ctor"},
         { "System.Diagnostics.Tracing.EventSourceInitHelper",".cctor"},
         { "System.Collections.Generic.List`1[__Canon]",".cctor"},
         { "OverrideEventProvider",".ctor"},
