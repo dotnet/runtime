@@ -181,6 +181,7 @@ enum ClrModifiableAssemblies : uint
 | `PEAssembly` | `AssemblyBinder` | Pointer to the PEAssembly's binder |
 | `AssemblyBinder` | `AssemblyLoadContext` | Pointer to the AssemblyBinder's AssemblyLoadContext |
 | `PEImage` | `LoadedImageLayout` | Pointer to the PEImage's loaded PEImageLayout |
+| `PEImage` | `FlatImageLayout` | Pointer to the PEImage's flat PEImageLayout (used when there is no loaded layout, e.g. webcil images) |
 | `PEImage` | `ProbeExtensionResult` | PEImage's ProbeExtensionResult |
 | `ProbeExtensionResult` | `Type` | Type of ProbeExtensionResult |
 | `PEImageLayout` | `Base` | Base address of the image layout |
@@ -436,6 +437,14 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
     // try to get loaded PE image (peImage), if not loaded return false
 
     TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
+    if (peImageLayout == TargetPointer.Null)
+    {
+        // Images that are never mapped/loaded (e.g. a webcil ReadyToRun image on WASM) have no
+        // loaded layout; their metadata lives in the flat layout (m_pLayouts[IMAGE_FLAT]).
+        peImageLayout = target.ReadPointer(peImage + /* PEImage::FlatImageLayout offset */);
+        if (peImageLayout == TargetPointer.Null)
+            return false;
+    }
 
     baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
     size = target.Read<uint>(peImageLayout + /* PEImageLayout::Size offset */);
@@ -472,7 +481,13 @@ private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNu
 
     TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
     if(peImageLayout == TargetPointer.Null)
-        throw new InvalidOperationException("PEImage does not have a LoadedImageLayout associated with it.");
+    {
+        // Images that are never mapped/loaded (e.g. a webcil ReadyToRun image on WASM) have no
+        // loaded layout; fall back to the flat layout (m_pLayouts[IMAGE_FLAT]).
+        peImageLayout = target.ReadPointer(peImage + /* PEImage::FlatImageLayout offset */);
+        if(peImageLayout == TargetPointer.Null)
+            throw new InvalidOperationException("PEImage does not have a usable image layout associated with it.");
+    }
 
     // Get base address and flags from PEImageLayout
     TargetPointer baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
@@ -700,8 +715,12 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         MethodDefToDescMap: target.ReadPointer(handle.Address + /* Module::MethodDefToDescMap */),
         TypeDefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */),
         TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */),
-        MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
-        Module::MethodDefToILCodeVersioningState */),
+        // Module::MethodDefToILCodeVersioningState is only present when the target was built
+        // with code versioning (FEATURE_CODE_VERSIONING). When absent (e.g. on WASM) it is
+        // treated as a null (empty) table.
+        MethodDefToILCodeVersioningState: HasField(Module::MethodDefToILCodeVersioningState)
+            ? target.ReadPointer(handle.Address + /* Module::MethodDefToILCodeVersioningState */)
+            : TargetPointer.Null,
         TableDataOffset: tableDataOffset);
 }
 

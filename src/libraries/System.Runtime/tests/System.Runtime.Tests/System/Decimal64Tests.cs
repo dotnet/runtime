@@ -2963,7 +2963,7 @@ namespace System.Tests
         [InlineData(0xFC00000000000000UL, 0xFC00000000000000UL)] // quantum(-NaN) = -NaN (propagated)
         public static void QuantumTest(ulong value, ulong expected)
         {
-            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Quantum(Unsafe.BitCast<ulong, Decimal64>(value))));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.GetQuantum(Unsafe.BitCast<ulong, Decimal64>(value))));
         }
 
         [Theory]
@@ -2976,7 +2976,70 @@ namespace System.Tests
         [InlineData(0x7800000000000000UL, 0x31C0000000000001UL, false)] // Infinity vs finite
         public static void SameQuantumTest(ulong x, ulong y, bool expected)
         {
-            Assert.Equal(expected, Decimal64.SameQuantum(Unsafe.BitCast<ulong, Decimal64>(x), Unsafe.BitCast<ulong, Decimal64>(y)));
+            Assert.Equal(expected, Decimal64.HaveSameQuantum(Unsafe.BitCast<ulong, Decimal64>(x), Unsafe.BitCast<ulong, Decimal64>(y)));
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL)] // +0
+        [InlineData(0xB1C0000000000000UL)] // -0
+        [InlineData(0x31C0000000000001UL)] // +1
+        [InlineData(0x7800000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL)] // -Infinity
+        [InlineData(0x7C00000000000000UL)] // NaN
+        [InlineData(0x3180000000003039UL)] // 123.45
+        [InlineData(0x7DFC0000000004D2UL)] // NaN with reserved-bit garbage (binary copy preserves non-canonical bits)
+        public static void EncodeDecodeBinaryRoundTrips(ulong bits)
+        {
+            Decimal64 value = Decimal64.DecodeBinary(bits);
+            Assert.Equal(bits, Decimal64.EncodeBinary(value));
+            Assert.Equal(bits, Unsafe.BitCast<Decimal64, ulong>(value));
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL, 0x2238000000000000UL)] // +0
+        [InlineData(0x31C0000000000001UL, 0x2238000000000001UL)] // +1
+        public static void EncodeDecimalKnownVectors(ulong bid, ulong dpd)
+        {
+            Assert.Equal(dpd, Decimal64.EncodeDecimal(Decimal64.DecodeBinary(bid)));
+            Assert.Equal(bid, Decimal64.EncodeBinary(Decimal64.DecodeDecimal(dpd)));
+        }
+
+        [Theory]
+        [InlineData(0x31C0000000000000UL)] // +0
+        [InlineData(0xB1C0000000000000UL)] // -0
+        [InlineData(0x31C0000000000001UL)] // +1
+        [InlineData(0x3180000000003039UL)] // 123.45
+        [InlineData(0x6C7386F26FC0FFFFUL)] // 9999999999999999 (leading digit 9)
+        [InlineData(0x7800000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL)] // -Infinity
+        [InlineData(0x7C00000000000000UL)] // NaN
+        [InlineData(0x7C000000000004D2UL)] // NaN with payload
+        public static void EncodeDecodeDecimalRoundTrips(ulong bits)
+        {
+            Decimal64 value = Decimal64.DecodeBinary(bits);
+            Assert.Equal(bits, Unsafe.BitCast<Decimal64, ulong>(Decimal64.DecodeDecimal(Decimal64.EncodeDecimal(value))));
+        }
+
+        [Fact]
+        public static void CrossEncodingCanonicalizesNaN()
+        {
+            // The bits between the signaling bit and the payload are reserved; a cross-encoding conversion drops them.
+            const ulong ReservedMask = 0x01FC_0000_0000_0000UL;
+            const ulong SignalingBit = 0x0200_0000_0000_0000UL;
+
+            // BID -> DPD drops reserved-bit garbage while preserving the sign, marker, signaling bit, and payload.
+            ulong canonicalDpd = Decimal64.EncodeDecimal(Decimal64.DecodeBinary(0x7C000000000004D2UL));
+            ulong garbageDpd = Decimal64.EncodeDecimal(Decimal64.DecodeBinary(0x7C000000000004D2UL | ReservedMask));
+            Assert.Equal(canonicalDpd, garbageDpd);
+            Assert.Equal(0ul, garbageDpd & ReservedMask);
+
+            // DPD -> BID canonicalizes the same way.
+            Assert.Equal(0x7C000000000004D2UL, Decimal64.EncodeBinary(Decimal64.DecodeDecimal(canonicalDpd | ReservedMask)));
+
+            // The signaling bit is preserved both ways (IEEE 754 exceptions are treated as disabled, so sNaN is not quieted).
+            ulong signalingDpd = Decimal64.EncodeDecimal(Decimal64.DecodeBinary(0x7C000000000004D2UL | SignalingBit));
+            Assert.Equal(SignalingBit, signalingDpd & SignalingBit);
+            Assert.Equal(0x7C000000000004D2UL | SignalingBit, Decimal64.EncodeBinary(Decimal64.DecodeDecimal(signalingDpd)));
         }
 
 
@@ -3146,7 +3209,7 @@ namespace System.Tests
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal64Quantum), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void Quantum_IntelReferenceVectors(ulong value, ulong expected)
         {
-            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Quantum(Unsafe.BitCast<ulong, Decimal64>(value))));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(Decimal64.GetQuantum(Unsafe.BitCast<ulong, Decimal64>(value))));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
